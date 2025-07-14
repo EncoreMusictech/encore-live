@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CatalogValuationPage from "./pages/CatalogValuation";
 import DealSimulatorPage from "./pages/DealSimulatorPage";
+import ModulesPage from "./pages/ModulesPage";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +19,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/modules" element={<ModulesPage />} />
           <Route path="/catalog-valuation" element={<CatalogValuationPage />} />
           <Route path="/deal-simulator" element={<DealSimulatorPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

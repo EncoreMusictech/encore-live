@@ -19,9 +19,9 @@ const Header = () => {
         </Link>
 
         <nav className="hidden md:flex items-center space-x-6">
-          <a href="#modules" className="text-sm font-medium text-foreground/60 hover:text-foreground transition-colors">
+          <Link to="/modules" className="text-sm font-medium text-foreground/60 hover:text-foreground transition-colors">
             Modules
-          </a>
+          </Link>
           <a href="#pricing" className="text-sm font-medium text-foreground/60 hover:text-foreground transition-colors">
             Pricing
           </a>
