@@ -17,7 +17,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 }) => {
   console.log('AudioPlayer props:', { src, title, artist });
 
-  if (!src) {
+  // Check if we have track info to show the component
+  const hasTrackInfo = artist !== "Unknown Artist" || title !== "Unknown Track";
+  
+  if (!src && !hasTrackInfo) {
     return (
       <div className={`p-4 border rounded-lg bg-muted/50 ${className}`}>
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -28,8 +31,9 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     );
   }
 
-  const openSpotifyLink = () => {
-    window.open(src, '_blank');
+  const openSpotifySearch = () => {
+    const searchQuery = encodeURIComponent(`${title} ${artist}`);
+    window.open(`https://open.spotify.com/search/${searchQuery}`, '_blank');
   };
 
   return (
@@ -44,11 +48,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={openSpotifyLink}
+            onClick={src ? () => window.open(src, '_blank') : openSpotifySearch}
             className="flex items-center gap-2"
           >
             <ExternalLink className="h-3 w-3" />
-            Listen
+            {src ? 'Listen' : 'Search on Spotify'}
           </Button>
         </div>
       </div>
