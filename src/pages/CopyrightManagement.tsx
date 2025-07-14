@@ -92,7 +92,13 @@ const CopyrightManagement = () => {
   const filteredCopyrights = copyrights.filter(copyright =>
     copyright.songTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
     copyright.isrc.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    copyright.iswc.toLowerCase().includes(searchTerm.toLowerCase())
+    copyright.iswc.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    copyright.writers.some(writer => 
+      writer.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ) ||
+    copyright.publishers.some(publisher => 
+      publisher.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
 
   const addWriter = () => {
@@ -236,7 +242,7 @@ const CopyrightManagement = () => {
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Search by title, ISRC, or ISWC..."
+                  placeholder="Search by title, songwriter, publisher, ISRC, or ISWC..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
