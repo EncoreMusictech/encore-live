@@ -21,3 +21,24 @@ export const useSyncAgents = () => {
     },
   });
 };
+
+export const useSyncSources = () => {
+  return useQuery({
+    queryKey: ["sync-sources"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sync_licenses")
+        .select("source")
+        .not("source", "is", null)
+        .not("source", "eq", "");
+
+      if (error) {
+        throw error;
+      }
+
+      // Get unique source names
+      const uniqueSources = [...new Set(data.map(item => item.source))];
+      return uniqueSources.filter(Boolean) as string[];
+    },
+  });
+};

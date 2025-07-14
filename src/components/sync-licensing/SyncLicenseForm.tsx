@@ -44,7 +44,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { SyncLicense, useCreateSyncLicense, useUpdateSyncLicense } from "@/hooks/useSyncLicenses";
-import { useSyncAgents } from "@/hooks/useSyncAgents";
+import { useSyncAgents, useSyncSources } from "@/hooks/useSyncAgents";
 
 interface SyncLicenseFormProps {
   open: boolean;
@@ -60,9 +60,11 @@ const invoiceStatuses = ["Not Issued", "Issued", "Paid"];
 
 export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseFormProps) => {
   const [agentOpen, setAgentOpen] = useState(false);
+  const [sourceOpen, setSourceOpen] = useState(false);
   const createMutation = useCreateSyncLicense();
   const updateMutation = useUpdateSyncLicense();
   const { data: existingAgents = [] } = useSyncAgents();
+  const { data: existingSources = [] } = useSyncSources();
   const isEditing = !!license;
 
   const form = useForm({
@@ -336,11 +338,58 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     control={form.control}
                     name="source"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex flex-col">
                         <FormLabel>Source</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Agency, Direct, Portal, etc." {...field} />
-                        </FormControl>
+                        <Popover open={sourceOpen} onOpenChange={setSourceOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn(
+                                  "w-full justify-between",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value || "Select or enter source"}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0">
+                            <Command>
+                              <CommandInput 
+                                placeholder="Search or type new source..." 
+                                value={field.value || ""} 
+                                onValueChange={field.onChange}
+                              />
+                              <CommandList>
+                                <CommandEmpty>
+                                  <div className="p-2">
+                                    <div className="text-sm">No source found.</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      Press Enter to add "{field.value}"
+                                    </div>
+                                  </div>
+                                </CommandEmpty>
+                                <CommandGroup>
+                                  {existingSources.map((source) => (
+                                    <CommandItem
+                                      key={source}
+                                      value={source}
+                                      onSelect={() => {
+                                        field.onChange(source);
+                                        setSourceOpen(false);
+                                      }}
+                                    >
+                                      {source}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
