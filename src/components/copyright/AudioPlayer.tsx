@@ -15,6 +15,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   artist = "Unknown Artist",
   className 
 }) => {
+  console.log('AudioPlayer props:', { src, title, artist });
+
   if (!src) {
     return (
       <div className={`p-4 border rounded-lg bg-muted/50 ${className}`}>
