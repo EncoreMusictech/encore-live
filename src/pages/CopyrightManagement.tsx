@@ -2,357 +2,78 @@ import { useState, useCallback, useEffect } from "react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, AlertTriangle, CheckCircle, Clock, Music, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Plus, Search, Music, FileText, Users, CheckCircle, Clock, AlertTriangle, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useCopyright } from "@/hooks/useCopyright";
+import { EnhancedCopyrightForm } from "@/components/copyright/EnhancedCopyrightForm";
 
-interface Copyright {
-  id: string;
-  songTitle: string;
-  isrc: string;
-  iswc: string;
-  writers: Writer[];
-  publishers: Publisher[];
-  proStatus: "registered" | "pending" | "not_registered";
-  duplicateWarning: boolean;
-  createdAt: string;
-}
-
-interface Writer {
-  name: string;
-  ipi: string;
-  share: number;
-}
-
-interface Publisher {
-  name: string;
-  share: number;
-}
 
 const CopyrightManagement = () => {
   const { toast } = useToast();
+  const { copyrights, loading, getWritersForCopyright, refetch } = useCopyright();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [copyrights, setCopyrights] = useState<Copyright[]>([
-    {
-      id: "1",
-      songTitle: "Summer Nights",
-      isrc: "USRC17607839",
-      iswc: "T-070.600.001-1",
-      writers: [
-        { name: "John Smith", ipi: "00199123456", share: 50 },
-        { name: "Jane Doe", ipi: "00299654321", share: 50 }
-      ],
-      publishers: [
-        { name: "Music Publishing Co.", share: 100 }
-      ],
-      proStatus: "registered",
-      duplicateWarning: false,
-      createdAt: "2024-01-15"
-    },
-    {
-      id: "2",
-      songTitle: "Electric Dreams",
-      isrc: "USRC17607840",
-      iswc: "T-070.600.002-1",
-      writers: [
-        { name: "Mike Johnson", ipi: "00399789012", share: 100 }
-      ],
-      publishers: [
-        { name: "Dream Music Ltd.", share: 100 }
-      ],
-      proStatus: "pending",
-      duplicateWarning: true,
-      createdAt: "2024-01-20"
-    }
-  ]);
+  const [writers, setWriters] = useState<{[key: string]: any[]}>({});
 
-  const [formData, setFormData] = useState<{
-    songTitle: string;
-    isrc: string;
-    iswc: string;
-    recordingArtist: string;
-    duration: number | "";
-    releaseDate: string;
-    writers: Writer[];
-    publishers: Publisher[];
-    proStatus: Copyright["proStatus"];
-  }>({
-    songTitle: "",
-    isrc: "",
-    iswc: "",
-    recordingArtist: "",
-    duration: "",
-    releaseDate: "",
-    writers: [{ name: "", ipi: "", share: 0 }],
-    publishers: [{ name: "", share: 0 }],
-    proStatus: "not_registered"
-  });
-
-  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
-  const [spotifyMetadata, setSpotifyMetadata] = useState<any>(null);
-  const [ascapLoading, setAscapLoading] = useState(false);
-  const [searchWriter, setSearchWriter] = useState('');
-  const [searchPublisher, setSearchPublisher] = useState('');
-
-  // Debounced function to fetch Spotify metadata
-  const fetchSpotifyMetadata = useCallback(async (workTitle: string) => {
-    if (!workTitle.trim() || workTitle.length < 3) return;
-
-    setIsLoadingMetadata(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('spotify-track-metadata', {
-        body: { workTitle }
-      });
-
-      if (error) {
-        console.error('Error fetching Spotify metadata:', error);
-        return;
-      }
-
-      if (data?.success && data?.bestMatch) {
-        setSpotifyMetadata(data);
-        
-        // Auto-populate the form with best match data
-        setFormData(prev => ({
-          ...prev,
-          isrc: data.bestMatch.isrc || prev.isrc,
-          recordingArtist: data.bestMatch.artist || prev.recordingArtist,
-          duration: data.bestMatch.duration || prev.duration,
-          releaseDate: data.bestMatch.releaseDate || prev.releaseDate
-        }));
-
-        toast({
-          title: "Metadata Found",
-          description: `Auto-filled metadata for "${data.bestMatch.trackName}" by ${data.bestMatch.artist}`,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching metadata:', error);
-    } finally {
-      setIsLoadingMetadata(false);
-    }
-  }, [toast]);
-
-  // Debounce the metadata fetching
+  // Load writers for each copyright
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (formData.songTitle) {
-        fetchSpotifyMetadata(formData.songTitle);
+    const loadWriters = async () => {
+      const writersData: {[key: string]: any[]} = {};
+      for (const copyright of copyrights) {
+        try {
+          const copyrightWriters = await getWritersForCopyright(copyright.id);
+          writersData[copyright.id] = copyrightWriters;
+        } catch (error) {
+          console.error('Error loading writers:', error);
+        }
       }
-    }, 1000); // Wait 1 second after user stops typing
-
-    return () => clearTimeout(timeoutId);
-  }, [formData.songTitle, fetchSpotifyMetadata]);
-
-  const filteredCopyrights = copyrights.filter(copyright =>
-    copyright.songTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    copyright.isrc.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    copyright.iswc.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    copyright.writers.some(writer => 
-      writer.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ) ||
-    copyright.publishers.some(publisher => 
-      publisher.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
-
-  const addWriter = () => {
-    setFormData(prev => ({
-      ...prev,
-      writers: [...prev.writers, { name: "", ipi: "", share: 0 }]
-    }));
-  };
-
-  const addPublisher = () => {
-    setFormData(prev => ({
-      ...prev,
-      publishers: [...prev.publishers, { name: "", share: 0 }]
-    }));
-  };
-
-  const updateWriter = (index: number, field: keyof Writer, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      writers: prev.writers.map((writer, i) => 
-        i === index ? { ...writer, [field]: value } : writer
-      )
-    }));
-  };
-
-  const updatePublisher = (index: number, field: keyof Publisher, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      publishers: prev.publishers.map((publisher, i) => 
-        i === index ? { ...publisher, [field]: value } : publisher
-      )
-    }));
-  };
-
-  const removeWriter = (index: number) => {
-    if (formData.writers.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        writers: prev.writers.filter((_, i) => i !== index)
-      }));
-    }
-  };
-
-  const removePublisher = (index: number) => {
-    if (formData.publishers.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        publishers: prev.publishers.filter((_, i) => i !== index)
-      }));
-    }
-  };
-
-  const validateShares = () => {
-    const writerTotal = formData.writers.reduce((sum, writer) => sum + writer.share, 0);
-    const publisherTotal = formData.publishers.reduce((sum, publisher) => sum + publisher.share, 0);
-    
-    if (writerTotal !== 100) {
-      toast({
-        title: "Invalid Writer Shares",
-        description: `Writer shares must total 100%. Current total: ${writerTotal}%`,
-        variant: "destructive"
-      });
-      return false;
-    }
-    
-    if (publisherTotal !== 100) {
-      toast({
-        title: "Invalid Publisher Shares",
-        description: `Publisher shares must total 100%. Current total: ${publisherTotal}%`,
-        variant: "destructive"
-      });
-      return false;
-    }
-    
-    return true;
-  };
-
-  const searchASCAP = async () => {
-    if (!formData.songTitle && !searchWriter && !searchPublisher) {
-      toast({
-        title: "Missing search criteria",
-        description: "Please provide at least a work title, writer name, or publisher name.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setAscapLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('ascap-lookup', {
-        body: {
-          workTitle: formData.songTitle,
-          writerName: searchWriter,
-          publisherName: searchPublisher
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.found) {
-        // Auto-populate ISWC if found
-        if (data.iswc && !formData.iswc) {
-          setFormData(prev => ({ ...prev, iswc: data.iswc }));
-        }
-
-        // Auto-populate writers if found
-        if (data.writers && data.writers.length > 0) {
-          const ascapWriters = data.writers.map((w: any) => ({
-            name: w.name || '',
-            ipi: w.ipi || '',
-            share: w.share || 0
-          }));
-          setFormData(prev => ({ ...prev, writers: ascapWriters }));
-        }
-
-        // Auto-populate publishers if found
-        if (data.publishers && data.publishers.length > 0) {
-          const ascapPublishers = data.publishers.map((p: any) => ({
-            name: p.name || '',
-            share: p.share || 0
-          }));
-          setFormData(prev => ({ ...prev, publishers: ascapPublishers }));
-        }
-
-        toast({
-          title: "ASCAP data found",
-          description: `Found ${data.writers?.length || 0} writers and ${data.publishers?.length || 0} publishers. Form auto-populated.`,
-          variant: "default"
-        });
-      } else {
-        toast({
-          title: "No results found",
-          description: "No matching records found in ASCAP Repertory database.",
-          variant: "default"
-        });
-      }
-    } catch (error) {
-      console.error('ASCAP lookup error:', error);
-      toast({
-        title: "Search error",
-        description: "Failed to search ASCAP database. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setAscapLoading(false);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateShares()) return;
-
-    const newCopyright: Copyright = {
-      id: Date.now().toString(),
-      ...formData,
-      duplicateWarning: copyrights.some(c => 
-        c.isrc === formData.isrc || c.iswc === formData.iswc
-      ),
-      createdAt: new Date().toISOString().split('T')[0]
+      setWriters(writersData);
     };
 
-    setCopyrights(prev => [newCopyright, ...prev]);
-    setShowForm(false);
-    setFormData({
-      songTitle: "",
-      isrc: "",
-      iswc: "",
-      recordingArtist: "",
-      duration: "",
-      releaseDate: "",
-      writers: [{ name: "", ipi: "", share: 0 }],
-      publishers: [{ name: "", share: 0 }],
-      proStatus: "not_registered"
-    });
+    if (copyrights.length > 0) {
+      loadWriters();
+    }
+  }, [copyrights, getWritersForCopyright]);
 
-    toast({
-      title: "Copyright Registered",
-      description: "Copyright metadata has been successfully saved."
-    });
-  };
+  const filteredCopyrights = copyrights.filter(copyright =>
+    copyright.work_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    copyright.iswc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    copyright.work_id?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const getStatusBadge = (status: Copyright["proStatus"]) => {
+
+  const getRegistrationStatusBadge = (status: string) => {
     switch (status) {
-      case "registered":
-        return <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Registered</Badge>;
-      case "pending":
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
-      case "not_registered":
+      case 'fully_registered':
+        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Fully Registered</Badge>;
+      case 'pending_registration':
+        return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+      case 'needs_amendment':
+        return <Badge className="bg-red-100 text-red-800"><AlertTriangle className="w-3 h-3 mr-1" />Needs Amendment</Badge>;
+      case 'not_registered':
+      default:
         return <Badge variant="outline">Not Registered</Badge>;
     }
+  };
+
+  const getRegistrationProgress = (status: string) => {
+    switch (status) {
+      case 'not_registered': return 0;
+      case 'pending_registration': return 33;
+      case 'needs_amendment': return 66;
+      case 'fully_registered': return 100;
+      default: return 0;
+    }
+  };
+
+  const calculateControlledShare = (copyrightWriters: any[]) => {
+    return copyrightWriters
+      .filter(w => w.controlled_status === 'C')
+      .reduce((sum, w) => sum + w.ownership_percentage, 0);
   };
 
   return (
@@ -391,401 +112,192 @@ const CopyrightManagement = () => {
               </Button>
             </div>
 
-            <div className="grid gap-4">
-              {filteredCopyrights.map((copyright) => (
-                <Card key={copyright.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          <Music className="w-5 h-5" />
-                          {copyright.songTitle}
-                          {copyright.duplicateWarning && (
-                            <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                          )}
-                        </CardTitle>
-                        <CardDescription>
-                          Registered on {new Date(copyright.createdAt).toLocaleDateString()}
-                        </CardDescription>
-                      </div>
-                      {getStatusBadge(copyright.proStatus)}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-semibold mb-2">Identifiers</h4>
-                        <div className="space-y-1 text-sm">
-                          <div><strong>ISRC:</strong> {copyright.isrc}</div>
-                          <div><strong>ISWC:</strong> {copyright.iswc}</div>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="mt-2 text-muted-foreground">Loading copyrights...</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {filteredCopyrights.map((copyright) => {
+                  const copyrightWriters = writers[copyright.id] || [];
+                  const controlledShare = calculateControlledShare(copyrightWriters);
+                  
+                  return (
+                    <Card key={copyright.id}>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="flex items-center gap-2">
+                              <Music className="w-5 h-5" />
+                              {copyright.work_title}
+                              <Badge variant="outline" className="text-xs">
+                                {copyright.work_id}
+                              </Badge>
+                            </CardTitle>
+                            <CardDescription>
+                              Created on {new Date(copyright.created_at).toLocaleDateString()}
+                              {copyright.album_title && ` • Album: ${copyright.album_title}`}
+                            </CardDescription>
+                          </div>
+                          <div className="flex flex-col gap-2 items-end">
+                            {getRegistrationStatusBadge(copyright.registration_status || 'not_registered')}
+                            <Progress 
+                              value={getRegistrationProgress(copyright.registration_status || 'not_registered')}
+                              className="w-20 h-2"
+                            />
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-semibold mb-2">Writers</h4>
-                        <div className="space-y-1 text-sm">
-                          {copyright.writers.map((writer, index) => (
-                            <div key={index}>
-                              <strong>{writer.name}</strong> ({writer.share}%)
-                              <br />
-                              <span className="text-muted-foreground">IPI: {writer.ipi}</span>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid md:grid-cols-3 gap-6">
+                          <div>
+                            <h4 className="font-semibold mb-2 flex items-center gap-1">
+                              <FileText className="w-4 h-4" />
+                              Metadata
+                            </h4>
+                            <div className="space-y-1 text-sm">
+                              {copyright.iswc && <div><strong>ISWC:</strong> {copyright.iswc}</div>}
+                              {copyright.masters_ownership && <div><strong>Masters:</strong> {copyright.masters_ownership}</div>}
+                              {copyright.contains_sample && <div><Badge variant="secondary">Contains Sample</Badge></div>}
+                              {copyright.akas && copyright.akas.length > 0 && (
+                                <div><strong>AKAs:</strong> {copyright.akas.join(', ')}</div>
+                              )}
                             </div>
-                          ))}
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-semibold mb-2 flex items-center gap-1">
+                              <Users className="w-4 h-4" />
+                              Writers ({copyrightWriters.length})
+                            </h4>
+                            <div className="space-y-1 text-sm">
+                              {copyrightWriters.slice(0, 3).map((writer, index) => (
+                                <div key={index}>
+                                  <strong>{writer.writer_name}</strong> ({writer.ownership_percentage}%)
+                                  {writer.controlled_status === 'C' && (
+                                    <Badge variant="secondary" className="ml-1 text-xs">Controlled</Badge>
+                                  )}
+                                  {writer.pro_affiliation && (
+                                    <div className="text-muted-foreground text-xs">{writer.pro_affiliation}</div>
+                                  )}
+                                </div>
+                              ))}
+                              {copyrightWriters.length > 3 && (
+                                <div className="text-muted-foreground text-xs">+{copyrightWriters.length - 3} more</div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-semibold mb-2 flex items-center gap-1">
+                              <CheckCircle className="w-4 h-4" />
+                              Ownership & PRO
+                            </h4>
+                            <div className="space-y-2 text-sm">
+                              <div>
+                                <strong>Total Controlled:</strong> {controlledShare.toFixed(1)}%
+                              </div>
+                              {copyright.ascap_work_id && (
+                                <Badge variant="outline" className="text-xs">ASCAP: {copyright.ascap_work_id}</Badge>
+                              )}
+                              {copyright.bmi_work_id && (
+                                <Badge variant="outline" className="text-xs">BMI: {copyright.bmi_work_id}</Badge>
+                              )}
+                              {copyright.mp3_link && (
+                                <div>
+                                  <a 
+                                    href={copyright.mp3_link} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    <Link2 className="w-3 h-3" />
+                                    Listen
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="md:col-span-2">
-                        <h4 className="font-semibold mb-2">Publishers</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {copyright.publishers.map((publisher, index) => (
-                            <Badge key={index} variant="outline">
-                              {publisher.name} ({publisher.share}%)
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                
+                {filteredCopyrights.length === 0 && !loading && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Music className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No copyrights found</p>
+                    <p className="text-sm">Try adjusting your search or register a new copyright</p>
+                  </div>
+                )}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="register">
-            <Card>
-              <CardHeader>
-                <CardTitle>Register New Copyright</CardTitle>
-                <CardDescription>
-                  Enter copyright metadata and ownership information
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="relative">
-                      <Label htmlFor="songTitle">Work Title *</Label>
-                      <Input
-                        id="songTitle"
-                        value={formData.songTitle}
-                        onChange={(e) => setFormData(prev => ({ ...prev, songTitle: e.target.value }))}
-                        required
-                      />
-                      {isLoadingMetadata && (
-                        <div className="absolute right-3 top-8 flex items-center">
-                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="proStatus">PRO Registration Status</Label>
-                      <Select 
-                        value={formData.proStatus}
-                        onValueChange={(value) => setFormData(prev => ({ 
-                          ...prev, 
-                          proStatus: value as Copyright["proStatus"]
-                        }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="not_registered">Not Registered</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="registered">Registered</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="isrc">ISRC</Label>
-                      <Input
-                        id="isrc"
-                        value={formData.isrc}
-                        onChange={(e) => setFormData(prev => ({ ...prev, isrc: e.target.value }))}
-                        placeholder="e.g., USRC17607839"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="iswc">ISWC</Label>
-                      <Input
-                        id="iswc"
-                        value={formData.iswc}
-                        onChange={(e) => setFormData(prev => ({ ...prev, iswc: e.target.value }))}
-                        placeholder="e.g., T-070.600.001-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="language">Language</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select language" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="EN">English</SelectItem>
-                          <SelectItem value="ES">Spanish</SelectItem>
-                          <SelectItem value="FR">French</SelectItem>
-                          <SelectItem value="DE">German</SelectItem>
-                          <SelectItem value="IT">Italian</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* ASCAP Lookup Section */}
-                  <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-base font-semibold">ASCAP Database Lookup</Label>
-                      <Badge variant="secondary" className="text-xs">Auto-populate</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Search the ASCAP Repertory database to automatically populate writer and publisher information.
-                    </p>
-                    
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="searchWriter">Writer Name (optional)</Label>
-                        <Input
-                          id="searchWriter"
-                          value={searchWriter}
-                          onChange={(e) => setSearchWriter(e.target.value)}
-                          placeholder="Enter writer/composer name"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="searchPublisher">Publisher Name (optional)</Label>
-                        <Input
-                          id="searchPublisher"
-                          value={searchPublisher}
-                          onChange={(e) => setSearchPublisher(e.target.value)}
-                          placeholder="Enter publisher name"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-start">
-                      <Button 
-                        type="button" 
-                        onClick={searchASCAP}
-                        disabled={ascapLoading || (!formData.songTitle && !searchWriter && !searchPublisher)}
-                        variant="outline"
-                        className="flex items-center gap-2"
-                      >
-                        <Search className="h-4 w-4" />
-                        {ascapLoading ? "Searching ASCAP..." : "Search ASCAP Database"}
-                      </Button>
-                    </div>
-                    
-                    {ascapLoading && (
-                      <div className="text-sm text-muted-foreground">
-                        Searching ASCAP Repertory database for matching records...
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Recording Information */}
-                  <div className="space-y-4">
-                    <Label className="text-base font-semibold">Recording Information</Label>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="recordingArtist">Recording Artist</Label>
-                        <Input
-                          id="recordingArtist"
-                          value={formData.recordingArtist}
-                          onChange={(e) => setFormData(prev => ({ ...prev, recordingArtist: e.target.value }))}
-                          placeholder="Artist name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="duration">Duration (seconds)</Label>
-                        <Input
-                          id="duration"
-                          type="number"
-                          value={formData.duration}
-                          onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) || "" }))}
-                          placeholder="240"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="releaseDate">Release Date</Label>
-                      <Input
-                        id="releaseDate"
-                        type="date"
-                        value={formData.releaseDate}
-                        onChange={(e) => setFormData(prev => ({ ...prev, releaseDate: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Territory and Contract Information */}
-                  <div className="space-y-4">
-                    <Label className="text-base font-semibold">Territory & Contract Information</Label>
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="territory">Territory</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select territory" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="US">United States</SelectItem>
-                            <SelectItem value="CA">Canada</SelectItem>
-                            <SelectItem value="UK">United Kingdom</SelectItem>
-                            <SelectItem value="DE">Germany</SelectItem>
-                            <SelectItem value="FR">France</SelectItem>
-                            <SelectItem value="AU">Australia</SelectItem>
-                            <SelectItem value="JP">Japan</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="contractId">Contract ID</Label>
-                        <Input
-                          id="contractId"
-                          placeholder="e.g., AGR-2024-001"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="contractStartDate">Contract Start Date</Label>
-                        <Input
-                          id="contractStartDate"
-                          type="date"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="contractEndDate">Contract End Date</Label>
-                      <Input
-                        id="contractEndDate"
-                        type="date"
-                        className="max-w-md"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <Label>Writers & Splits</Label>
-                      <Button type="button" variant="outline" size="sm" onClick={addWriter}>
-                        <Plus className="w-4 h-4 mr-1" />
-                        Add Writer
-                      </Button>
-                    </div>
-                    
-                    {formData.writers.map((writer, index) => (
-                      <div key={index} className="grid md:grid-cols-4 gap-2 mb-2">
-                        <Input
-                          placeholder="Writer name"
-                          value={writer.name}
-                          onChange={(e) => updateWriter(index, "name", e.target.value)}
-                        />
-                        <Input
-                          placeholder="IPI number"
-                          value={writer.ipi}
-                          onChange={(e) => updateWriter(index, "ipi", e.target.value)}
-                        />
-                        <Input
-                          type="number"
-                          placeholder="Share %"
-                          value={writer.share || ""}
-                          onChange={(e) => updateWriter(index, "share", Number(e.target.value))}
-                          min="0"
-                          max="100"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeWriter(index)}
-                          disabled={formData.writers.length === 1}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <Label>Publishers & Splits</Label>
-                      <Button type="button" variant="outline" size="sm" onClick={addPublisher}>
-                        <Plus className="w-4 h-4 mr-1" />
-                        Add Publisher
-                      </Button>
-                    </div>
-                    
-                    {formData.publishers.map((publisher, index) => (
-                      <div key={index} className="grid md:grid-cols-3 gap-2 mb-2">
-                        <Input
-                          placeholder="Publisher name"
-                          value={publisher.name}
-                          onChange={(e) => updatePublisher(index, "name", e.target.value)}
-                        />
-                        <Input
-                          type="number"
-                          placeholder="Share %"
-                          value={publisher.share || ""}
-                          onChange={(e) => updatePublisher(index, "share", Number(e.target.value))}
-                          min="0"
-                          max="100"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removePublisher(index)}
-                          disabled={formData.publishers.length === 1}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Button type="submit" className="w-full">
-                    Register Copyright
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            <EnhancedCopyrightForm 
+              onSuccess={() => {
+                setShowForm(false);
+                refetch();
+                toast({
+                  title: "Copyright Created",
+                  description: "Your copyright work has been successfully created with all metadata."
+                });
+              }}
+              onCancel={() => setShowForm(false)}
+            />
           </TabsContent>
 
           <TabsContent value="analytics">
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-4 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Total Copyrights</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{copyrights.length}</div>
-                  <p className="text-muted-foreground">Registered works</p>
+                  <p className="text-muted-foreground text-sm">Registered works</p>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardHeader>
-                  <CardTitle>PRO Registered</CardTitle>
+                  <CardTitle>Fully Registered</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">
-                    {copyrights.filter(c => c.proStatus === "registered").length}
+                    {copyrights.filter(c => c.registration_status === "fully_registered").length}
                   </div>
-                  <p className="text-muted-foreground">Active registrations</p>
+                  <p className="text-muted-foreground text-sm">Complete registration</p>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardHeader>
-                  <CardTitle>Duplicate Warnings</CardTitle>
+                  <CardTitle>Pending</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-yellow-600">
-                    {copyrights.filter(c => c.duplicateWarning).length}
+                    {copyrights.filter(c => c.registration_status === "pending_registration").length}
                   </div>
-                  <p className="text-muted-foreground">Potential conflicts</p>
+                  <p className="text-muted-foreground text-sm">Awaiting registration</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Controlled Works</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-600">
+                    {copyrights.filter(c => {
+                      const copyrightWriters = writers[c.id] || [];
+                      return calculateControlledShare(copyrightWriters) > 0;
+                    }).length}
+                  </div>
+                  <p className="text-muted-foreground text-sm">With controlled shares</p>
                 </CardContent>
               </Card>
             </div>

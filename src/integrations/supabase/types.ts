@@ -531,6 +531,7 @@ export type Database = {
       copyright_writers: {
         Row: {
           cae_number: string | null
+          controlled_status: string | null
           copyright_id: string
           created_at: string
           id: string
@@ -547,6 +548,7 @@ export type Database = {
         }
         Insert: {
           cae_number?: string | null
+          controlled_status?: string | null
           copyright_id: string
           created_at?: string
           id?: string
@@ -563,6 +565,7 @@ export type Database = {
         }
         Update: {
           cae_number?: string | null
+          controlled_status?: string | null
           copyright_id?: string
           created_at?: string
           id?: string
@@ -589,19 +592,33 @@ export type Database = {
       }
       copyrights: {
         Row: {
+          akas: string[] | null
+          album_title: string | null
+          ascap_work_id: string | null
+          bmi_work_id: string | null
           catalogue_number: string | null
           collection_territories: string[] | null
+          contains_sample: boolean | null
+          copyright_date: string | null
+          copyright_reg_number: string | null
           created_at: string
           creation_date: string | null
+          date_submitted: string | null
           duration_seconds: number | null
           id: string
           internal_id: string | null
           iswc: string | null
           language_code: string | null
+          masters_ownership: string | null
+          mp3_link: string | null
           notes: string | null
+          notice_date: string | null
           opus_number: string | null
+          registration_status: string | null
           registration_type: string | null
           rights_types: string[] | null
+          sesac_work_id: string | null
+          socan_work_id: string | null
           status: string | null
           submission_date: string | null
           supports_cwr: boolean | null
@@ -611,23 +628,38 @@ export type Database = {
           validation_errors: Json | null
           validation_status: Json | null
           work_classification: string | null
+          work_id: string | null
           work_title: string
           work_type: string | null
         }
         Insert: {
+          akas?: string[] | null
+          album_title?: string | null
+          ascap_work_id?: string | null
+          bmi_work_id?: string | null
           catalogue_number?: string | null
           collection_territories?: string[] | null
+          contains_sample?: boolean | null
+          copyright_date?: string | null
+          copyright_reg_number?: string | null
           created_at?: string
           creation_date?: string | null
+          date_submitted?: string | null
           duration_seconds?: number | null
           id?: string
           internal_id?: string | null
           iswc?: string | null
           language_code?: string | null
+          masters_ownership?: string | null
+          mp3_link?: string | null
           notes?: string | null
+          notice_date?: string | null
           opus_number?: string | null
+          registration_status?: string | null
           registration_type?: string | null
           rights_types?: string[] | null
+          sesac_work_id?: string | null
+          socan_work_id?: string | null
           status?: string | null
           submission_date?: string | null
           supports_cwr?: boolean | null
@@ -637,23 +669,38 @@ export type Database = {
           validation_errors?: Json | null
           validation_status?: Json | null
           work_classification?: string | null
+          work_id?: string | null
           work_title: string
           work_type?: string | null
         }
         Update: {
+          akas?: string[] | null
+          album_title?: string | null
+          ascap_work_id?: string | null
+          bmi_work_id?: string | null
           catalogue_number?: string | null
           collection_territories?: string[] | null
+          contains_sample?: boolean | null
+          copyright_date?: string | null
+          copyright_reg_number?: string | null
           created_at?: string
           creation_date?: string | null
+          date_submitted?: string | null
           duration_seconds?: number | null
           id?: string
           internal_id?: string | null
           iswc?: string | null
           language_code?: string | null
+          masters_ownership?: string | null
+          mp3_link?: string | null
           notes?: string | null
+          notice_date?: string | null
           opus_number?: string | null
+          registration_status?: string | null
           registration_type?: string | null
           rights_types?: string[] | null
+          sesac_work_id?: string | null
+          socan_work_id?: string | null
           status?: string | null
           submission_date?: string | null
           supports_cwr?: boolean | null
@@ -663,6 +710,7 @@ export type Database = {
           validation_errors?: Json | null
           validation_status?: Json | null
           work_classification?: string | null
+          work_id?: string | null
           work_title?: string
           work_type?: string | null
         }
@@ -1091,7 +1139,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_controlled_share: {
+        Args: { copyright_id_param: string }
+        Returns: number
+      }
       generate_copyright_internal_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_work_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

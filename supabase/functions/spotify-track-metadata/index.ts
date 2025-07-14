@@ -13,6 +13,9 @@ interface SpotifyTrackMetadata {
   releaseDate: string;
   trackName: string;
   albumName: string;
+  label?: string;
+  previewUrl?: string;
+  popularity?: number;
 }
 
 serve(async (req) => {
@@ -101,7 +104,10 @@ serve(async (req) => {
       duration: Math.round(track.duration_ms / 1000), // Convert to seconds
       releaseDate: track.album?.release_date || '',
       trackName: track.name,
-      albumName: track.album?.name || ''
+      albumName: track.album?.name || '',
+      label: track.album?.label || 'Unknown Label',
+      previewUrl: track.preview_url || undefined,
+      popularity: track.popularity || 0
     }));
 
     // Return the best match (first result) and alternatives

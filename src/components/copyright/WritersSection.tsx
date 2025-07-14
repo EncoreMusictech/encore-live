@@ -66,6 +66,7 @@ export const WritersSection: React.FC<WritersSectionProps> = ({
       mechanical_share: 0,
       performance_share: 0,
       synchronization_share: 0,
+      controlled_status: 'NC',
       created_at: new Date().toISOString()
     };
 

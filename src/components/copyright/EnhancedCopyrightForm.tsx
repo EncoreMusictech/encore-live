@@ -1,0 +1,736 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
+import { CalendarIcon, Plus, X, AlertTriangle, CheckCircle, Search, Music, FileText, Users, Gavel, Link2, Loader2 } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { CopyrightInsert, useCopyright } from '@/hooks/useCopyright';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface EnhancedCopyrightFormProps {
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+interface Writer {
+  id: string;
+  name: string;
+  ipi: string;
+  share: number;
+  proAffiliation: string;
+  controlled: 'C' | 'NC';
+}
+
+interface SpotifyMetadata {
+  albumTitle?: string;
+  masterOwner?: string;
+  previewUrl?: string;
+  popularity?: number;
+  isrc?: string;
+  artist?: string;
+  duration?: number;
+  releaseDate?: string;
+}
+
+export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ onSuccess, onCancel }) => {
+  const { createCopyright } = useCopyright();
+  const { toast } = useToast();
+  
+  const [loading, setLoading] = useState(false);
+  const [spotifyLoading, setSpotifyLoading] = useState(false);
+  const [ascapLoading, setAscapLoading] = useState(false);
+  
+  // Collapsible section states
+  const [metadataOpen, setMetadataOpen] = useState(true);
+  const [writersOpen, setWritersOpen] = useState(true);
+  const [proRegistrationOpen, setProRegistrationOpen] = useState(false);
+  const [legalFilingOpen, setLegalFilingOpen] = useState(false);
+  const [contractLinkOpen, setContractLinkOpen] = useState(false);
+
+  // Form data
+  const [formData, setFormData] = useState<Partial<CopyrightInsert & {
+    work_id?: string;
+    album_title?: string;
+    masters_ownership?: string;
+    mp3_link?: string;
+    contains_sample?: boolean;
+    akas?: string[];
+    ascap_work_id?: string;
+    bmi_work_id?: string;
+    socan_work_id?: string;
+    sesac_work_id?: string;
+    registration_status?: string;
+    date_submitted?: string;
+    copyright_reg_number?: string;
+    copyright_date?: string;
+    notice_date?: string;
+  }>>({
+    work_title: '',
+    work_type: 'original',
+    language_code: 'EN',
+    registration_type: 'new',
+    status: 'draft',
+    supports_ddex: true,
+    supports_cwr: true,
+    collection_territories: [],
+    rights_types: [],
+    contains_sample: false,
+    akas: [],
+    registration_status: 'not_registered'
+  });
+
+  const [writers, setWriters] = useState<Writer[]>([]);
+  const [spotifyMetadata, setSpotifyMetadata] = useState<SpotifyMetadata | null>(null);
+  const [newAka, setNewAka] = useState('');
+
+  // Calculate total controlled share
+  const totalControlledShare = writers
+    .filter(w => w.controlled === 'C')
+    .reduce((sum, w) => sum + w.share, 0);
+
+  const totalWriterShare = writers.reduce((sum, w) => sum + w.share, 0);
+
+  // Debounced Spotify metadata fetch
+  const fetchSpotifyMetadata = useCallback(async (workTitle: string, artist?: string) => {
+    if (!workTitle.trim() || workTitle.length < 3) return;
+
+    setSpotifyLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('spotify-track-metadata', {
+        body: { workTitle: artist ? `${workTitle} ${artist}` : workTitle }
+      });
+
+      if (error) {
+        console.error('Error fetching Spotify metadata:', error);
+        return;
+      }
+
+      if (data?.success && data?.bestMatch) {
+        const metadata: SpotifyMetadata = {
+          albumTitle: data.bestMatch.albumName,
+          masterOwner: data.bestMatch.label,
+          previewUrl: data.bestMatch.previewUrl,
+          popularity: data.bestMatch.popularity,
+          isrc: data.bestMatch.isrc,
+          artist: data.bestMatch.artist,
+          duration: data.bestMatch.duration,
+          releaseDate: data.bestMatch.releaseDate
+        };
+
+        setSpotifyMetadata(metadata);
+        
+        // Auto-populate form fields
+        setFormData(prev => ({
+          ...prev,
+          album_title: metadata.albumTitle || prev.album_title,
+          masters_ownership: metadata.masterOwner || prev.masters_ownership,
+          mp3_link: metadata.previewUrl || prev.mp3_link,
+          duration_seconds: metadata.duration || prev.duration_seconds
+        }));
+
+        toast({
+          title: "Spotify Metadata Found",
+          description: `Auto-filled metadata for "${data.bestMatch.trackName}" by ${data.bestMatch.artist}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching metadata:', error);
+    } finally {
+      setSpotifyLoading(false);
+    }
+  }, [toast]);
+
+  // Debounce the metadata fetching
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (formData.work_title) {
+        fetchSpotifyMetadata(formData.work_title);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.work_title, fetchSpotifyMetadata]);
+
+  const searchASCAP = async () => {
+    if (!formData.work_title) {
+      toast({
+        title: "Missing search criteria",
+        description: "Please provide a work title to search ASCAP.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setAscapLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ascap-lookup', {
+        body: {
+          workTitle: formData.work_title
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.found) {
+        // Auto-populate ISWC if found
+        if (data.iswc && !formData.iswc) {
+          setFormData(prev => ({ ...prev, iswc: data.iswc }));
+        }
+
+        // Auto-populate writers if found
+        if (data.writers && data.writers.length > 0) {
+          const ascapWriters = data.writers.map((w: any, index: number) => ({
+            id: `ascap-${index}`,
+            name: w.name || '',
+            ipi: w.ipi || '',
+            share: w.share || 0,
+            proAffiliation: 'ASCAP',
+            controlled: 'NC' as const
+          }));
+          setWriters(ascapWriters);
+        }
+
+        toast({
+          title: "ASCAP data found",
+          description: `Found ${data.writers?.length || 0} writers. Form auto-populated.`,
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "No results found",
+          description: "No matching records found in ASCAP Repertory database.",
+          variant: "default"
+        });
+      }
+    } catch (error) {
+      console.error('ASCAP lookup error:', error);
+      toast({
+        title: "Search error",
+        description: "Failed to search ASCAP database. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setAscapLoading(false);
+    }
+  };
+
+  const addWriter = () => {
+    const newWriter: Writer = {
+      id: `writer-${Date.now()}`,
+      name: '',
+      ipi: '',
+      share: 0,
+      proAffiliation: '',
+      controlled: 'NC'
+    };
+    setWriters([...writers, newWriter]);
+  };
+
+  const removeWriter = (id: string) => {
+    setWriters(writers.filter(w => w.id !== id));
+  };
+
+  const updateWriter = (id: string, field: keyof Writer, value: any) => {
+    setWriters(writers.map(w => w.id === id ? { ...w, [field]: value } : w));
+  };
+
+  const addAka = () => {
+    if (newAka && !formData.akas?.includes(newAka)) {
+      const updatedAkas = [...(formData.akas || []), newAka];
+      setFormData(prev => ({ ...prev, akas: updatedAkas }));
+      setNewAka('');
+    }
+  };
+
+  const removeAka = (aka: string) => {
+    const updatedAkas = formData.akas?.filter(a => a !== aka) || [];
+    setFormData(prev => ({ ...prev, akas: updatedAkas }));
+  };
+
+  const getRegistrationStatusColor = (status: string) => {
+    switch (status) {
+      case 'not_registered': return 'bg-gray-400';
+      case 'pending_registration': return 'bg-yellow-400';
+      case 'fully_registered': return 'bg-green-400';
+      case 'needs_amendment': return 'bg-red-400';
+      default: return 'bg-gray-400';
+    }
+  };
+
+  const getRegistrationStatusValue = (status: string) => {
+    switch (status) {
+      case 'not_registered': return 0;
+      case 'pending_registration': return 33;
+      case 'fully_registered': return 100;
+      case 'needs_amendment': return 66;
+      default: return 0;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.work_title) return;
+
+    // Validate writer shares
+    if (totalWriterShare !== 100) {
+      toast({
+        title: "Invalid Writer Shares",
+        description: `Writer shares must total 100%. Current total: ${totalWriterShare}%`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Create the copyright record first
+      const copyrightData = await createCopyright(formData as CopyrightInsert);
+      
+      // Then create writer records
+      for (const writer of writers) {
+        await supabase.from('copyright_writers').insert({
+          copyright_id: copyrightData.id,
+          writer_name: writer.name,
+          ipi_number: writer.ipi || null,
+          ownership_percentage: writer.share,
+          pro_affiliation: writer.proAffiliation || null,
+          controlled_status: writer.controlled,
+          writer_role: 'composer'
+        });
+      }
+      
+      onSuccess?.();
+    } catch (error) {
+      console.error('Error creating copyright:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isFormValid = formData.work_title && formData.work_title.length > 0 && totalWriterShare === 100;
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Metadata Section */}
+      <Collapsible open={metadataOpen} onOpenChange={setMetadataOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                📁 Metadata
+                <Badge variant="outline" className="text-xs">Required</Badge>
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="work_title">Work Title *</Label>
+                  <div className="relative">
+                    <Input
+                      id="work_title"
+                      value={formData.work_title || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, work_title: e.target.value }))}
+                      placeholder="Enter work title"
+                      required
+                    />
+                    {spotifyLoading && (
+                      <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="work_id">Work ID</Label>
+                  <Input
+                    id="work_id"
+                    value="Auto-generated"
+                    disabled
+                    placeholder="W20240714-000001"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="album_title">Album Title</Label>
+                  <Input
+                    id="album_title"
+                    value={formData.album_title || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, album_title: e.target.value }))}
+                    placeholder={spotifyMetadata?.albumTitle ? "Auto-filled from Spotify" : "Enter album title"}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="masters_ownership">Masters Ownership</Label>
+                  <Input
+                    id="masters_ownership"
+                    value={formData.masters_ownership || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, masters_ownership: e.target.value }))}
+                    placeholder={spotifyMetadata?.masterOwner ? "Auto-filled from Spotify" : "Label or distributor"}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="mp3_link">MP3 Link</Label>
+                  <Input
+                    id="mp3_link"
+                    type="url"
+                    value={formData.mp3_link || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, mp3_link: e.target.value }))}
+                    placeholder={spotifyMetadata?.previewUrl ? "Auto-filled from Spotify" : "Spotify preview URL"}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Contains Sample?</Label>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.contains_sample || false}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, contains_sample: checked }))}
+                    />
+                    <Label className="text-sm text-muted-foreground">
+                      {formData.contains_sample ? 'Yes' : 'No'}
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* AKAs Section */}
+              <div className="space-y-2">
+                <Label>AKAs (Alternate Titles)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={newAka}
+                    onChange={(e) => setNewAka(e.target.value)}
+                    placeholder="Enter alternate title"
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAka())}
+                  />
+                  <Button type="button" onClick={addAka} disabled={!newAka}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.akas?.map(aka => (
+                    <Badge key={aka} variant="secondary" className="flex items-center gap-1">
+                      {aka}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => removeAka(aka)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* ASCAP Lookup Button */}
+              <div className="flex justify-start">
+                <Button 
+                  type="button" 
+                  onClick={searchASCAP}
+                  disabled={ascapLoading || !formData.work_title}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Search className="h-4 w-4" />
+                  {ascapLoading ? "Searching ASCAP..." : "Search ASCAP Database"}
+                </Button>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Writers Section */}
+      <Collapsible open={writersOpen} onOpenChange={setWritersOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                🧑‍🎼 Writers
+                <Badge variant={totalWriterShare === 100 ? "default" : "destructive"}>
+                  {writers.length} writers • {totalWriterShare}% total
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4">
+              {writers.map((writer) => (
+                <div key={writer.id} className="p-4 border rounded-lg space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label>Writer Name *</Label>
+                      <Input
+                        value={writer.name}
+                        onChange={(e) => updateWriter(writer.id, 'name', e.target.value)}
+                        placeholder="John Doe"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Writer IPI</Label>
+                      <Input
+                        value={writer.ipi}
+                        onChange={(e) => updateWriter(writer.id, 'ipi', e.target.value)}
+                        placeholder="123456789"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Writer Share %</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={writer.share}
+                        onChange={(e) => updateWriter(writer.id, 'share', parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>PRO Affiliation</Label>
+                      <Select
+                        value={writer.proAffiliation}
+                        onValueChange={(value) => updateWriter(writer.id, 'proAffiliation', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select PRO" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ASCAP">ASCAP</SelectItem>
+                          <SelectItem value="BMI">BMI</SelectItem>
+                          <SelectItem value="SESAC">SESAC</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <Label>Controlled?</Label>
+                      <Select
+                        value={writer.controlled}
+                        onValueChange={(value: 'C' | 'NC') => updateWriter(writer.id, 'controlled', value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="C">C (Controlled)</SelectItem>
+                          <SelectItem value="NC">NC (Non-Controlled)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => removeWriter(writer.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                <div>
+                  <p className="font-medium">Total Pub Controlled: {totalControlledShare.toFixed(2)}%</p>
+                  <p className="text-sm text-muted-foreground">Total Writer Share: {totalWriterShare.toFixed(2)}%</p>
+                </div>
+                <Button type="button" onClick={addWriter} variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Writer
+                </Button>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* PRO Registration Section */}
+      <Collapsible open={proRegistrationOpen} onOpenChange={setProRegistrationOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50">
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                🗂 PRO Registration
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Registration Status</Label>
+                <Select
+                  value={formData.registration_status}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, registration_status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_registered">Not Registered</SelectItem>
+                    <SelectItem value="pending_registration">Pending Registration</SelectItem>
+                    <SelectItem value="fully_registered">Fully Registered</SelectItem>
+                    <SelectItem value="needs_amendment">Needs Amendment</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="mt-2">
+                  <Progress 
+                    value={getRegistrationStatusValue(formData.registration_status || 'not_registered')}
+                    className="h-2"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ascap_work_id">ASCAP #</Label>
+                  <Input
+                    id="ascap_work_id"
+                    value={formData.ascap_work_id || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, ascap_work_id: e.target.value }))}
+                    placeholder="ASCAP Work ID"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bmi_work_id">BMI #</Label>
+                  <Input
+                    id="bmi_work_id"
+                    value={formData.bmi_work_id || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, bmi_work_id: e.target.value }))}
+                    placeholder="BMI Work ID"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="socan_work_id">SOCAN #</Label>
+                  <Input
+                    id="socan_work_id"
+                    value={formData.socan_work_id || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, socan_work_id: e.target.value }))}
+                    placeholder="SOCAN Work ID"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sesac_work_id">SESAC #</Label>
+                  <Input
+                    id="sesac_work_id"
+                    value={formData.sesac_work_id || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, sesac_work_id: e.target.value }))}
+                    placeholder="SESAC Work ID"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Legal Filing Section */}
+      <Collapsible open={legalFilingOpen} onOpenChange={setLegalFilingOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50">
+              <CardTitle className="flex items-center gap-2">
+                <Gavel className="h-5 w-5" />
+                ⚖️ Legal Filing
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="copyright_reg_number">Copyright Reg. Number</Label>
+                  <Input
+                    id="copyright_reg_number"
+                    value={formData.copyright_reg_number || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, copyright_reg_number: e.target.value }))}
+                    placeholder="From U.S. Copyright Office"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="copyright_date">Copyright Date</Label>
+                  <Input
+                    id="copyright_date"
+                    type="date"
+                    value={formData.copyright_date || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, copyright_date: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="date_submitted">Date Submitted</Label>
+                  <Input
+                    id="date_submitted"
+                    type="date"
+                    value={formData.date_submitted || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, date_submitted: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notice_date">Notice Date / Recordation Date</Label>
+                  <Input
+                    id="notice_date"
+                    type="date"
+                    value={formData.notice_date || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notice_date: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Contract Link Section */}
+      <Collapsible open={contractLinkOpen} onOpenChange={setContractLinkOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50">
+              <CardTitle className="flex items-center gap-2">
+                <Link2 className="h-5 w-5" />
+                🔗 Contract Link
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Dynamic schedules of works will be automatically generated for contracts containing controlled writers from this work.
+              </p>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Submit Buttons */}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={!isFormValid || loading}>
+          {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          Create Copyright
+        </Button>
+      </div>
+    </form>
+  );
+};
