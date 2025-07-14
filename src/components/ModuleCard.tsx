@@ -67,7 +67,13 @@ const ModuleCard = ({
         </ul>
 
         <Button 
-          onClick={onGetStarted}
+          onClick={() => {
+            if (title === "Catalog Valuation") {
+              window.location.href = "/catalog-valuation";
+            } else {
+              onGetStarted();
+            }
+          }}
           className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
         >
           Get Started

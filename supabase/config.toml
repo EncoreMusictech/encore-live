@@ -1,1 +1,4 @@
 project_id = "plxsenykjisqutxcvjeg"
+
+[functions.spotify-catalog-valuation]
+verify_jwt = false
