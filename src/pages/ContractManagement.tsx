@@ -15,6 +15,7 @@ const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
+  const [creationMethod, setCreationMethod] = useState<string | null>(null);
 
   const contractTypes = [
     {
@@ -86,11 +87,63 @@ const ContractManagement = () => {
               <DialogHeader>
                 <DialogTitle>Create New Contract</DialogTitle>
                 <DialogDescription>
-                  Choose a contract type to begin creating your agreement.
+                  {!creationMethod ? "Choose how you'd like to create your contract." : 
+                   creationMethod === 'new' ? "Choose a contract type to begin creating your agreement." :
+                   creationMethod === 'template' ? "Select a template to start with." :
+                   "Upload an existing contract to import."}
                 </DialogDescription>
               </DialogHeader>
               
-              {!selectedContractType ? (
+              {!creationMethod ? (
+                // Step 1: Choose creation method
+                <div className="grid md:grid-cols-3 gap-4 mt-4">
+                  <Card 
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => setCreationMethod('new')}
+                  >
+                    <CardHeader className="pb-3 text-center">
+                      <div className="bg-gradient-primary rounded-lg p-3 w-fit mx-auto mb-2">
+                        <Plus className="h-6 w-6 text-primary-foreground" />
+                      </div>
+                      <CardTitle className="text-lg">Create New</CardTitle>
+                      <CardDescription className="text-sm">
+                        Build a contract from scratch using our smart forms
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+
+                  <Card 
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => setCreationMethod('template')}
+                  >
+                    <CardHeader className="pb-3 text-center">
+                      <div className="bg-gradient-primary rounded-lg p-3 w-fit mx-auto mb-2">
+                        <FileText className="h-6 w-6 text-primary-foreground" />
+                      </div>
+                      <CardTitle className="text-lg">Use Template</CardTitle>
+                      <CardDescription className="text-sm">
+                        Start with a pre-built industry standard template
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+
+                  <Card 
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => setCreationMethod('upload')}
+                  >
+                    <CardHeader className="pb-3 text-center">
+                      <div className="bg-gradient-primary rounded-lg p-3 w-fit mx-auto mb-2">
+                        <Upload className="h-6 w-6 text-primary-foreground" />
+                      </div>
+                      <CardTitle className="text-lg">Upload Existing</CardTitle>
+                      <CardDescription className="text-sm">
+                        Import from DocuSign or upload from your computer
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                </div>
+              ) : creationMethod === 'new' && !selectedContractType ? (
+                // Step 2a: Choose contract type for new contract
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                   {contractTypes.map((type) => {
                     const IconComponent = type.icon;
@@ -113,13 +166,96 @@ const ContractManagement = () => {
                     );
                   })}
                 </div>
+              ) : creationMethod === 'template' ? (
+                // Step 2b: Template selection
+                <div className="space-y-4">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setCreationMethod(null)}
+                    className="gap-2"
+                  >
+                    ← Back to options
+                  </Button>
+                  <TemplateLibrary 
+                    selectionMode={true}
+                    onTemplateSelect={(template) => {
+                      setSelectedContractType(template.contract_type);
+                      // Pre-fill form with template data
+                    }}
+                  />
+                </div>
+              ) : creationMethod === 'upload' ? (
+                // Step 2c: Upload options
+                <div className="space-y-6">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setCreationMethod(null)}
+                    className="gap-2"
+                  >
+                    ← Back to options
+                  </Button>
+                  
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardHeader className="text-center">
+                        <div className="bg-blue-500 rounded-lg p-3 w-fit mx-auto mb-2">
+                          <FileText className="h-6 w-6 text-white" />
+                        </div>
+                        <CardTitle className="text-lg">Import from DocuSign</CardTitle>
+                        <CardDescription>
+                          Connect your DocuSign account to import existing contracts
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button className="w-full" disabled>
+                          Connect DocuSign (Coming Soon)
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardHeader className="text-center">
+                        <div className="bg-green-500 rounded-lg p-3 w-fit mx-auto mb-2">
+                          <Upload className="h-6 w-6 text-white" />
+                        </div>
+                        <CardTitle className="text-lg">Upload PDF</CardTitle>
+                        <CardDescription>
+                          Upload a contract PDF and we'll extract the key terms
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          className="hidden"
+                          id="contract-upload"
+                          onChange={(e) => {
+                            // Handle file upload
+                            console.log('File uploaded:', e.target.files?.[0]);
+                          }}
+                        />
+                        <Button 
+                          className="w-full" 
+                          onClick={() => document.getElementById('contract-upload')?.click()}
+                        >
+                          Choose File
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
               ) : (
+                // Step 3: Contract form
                 <ContractForm 
                   contractType={selectedContractType}
-                  onCancel={() => setSelectedContractType(null)}
+                  onCancel={() => {
+                    setSelectedContractType(null);
+                    setCreationMethod(null);
+                  }}
                   onSuccess={() => {
                     setIsCreateDialogOpen(false);
                     setSelectedContractType(null);
+                    setCreationMethod(null);
                   }}
                 />
               )}

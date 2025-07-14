@@ -16,7 +16,12 @@ interface Template {
   template_data: any;
 }
 
-export function TemplateLibrary() {
+interface TemplateLibraryProps {
+  selectionMode?: boolean;
+  onTemplateSelect?: (template: any) => void;
+}
+
+export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: TemplateLibraryProps) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -177,9 +182,13 @@ export function TemplateLibrary() {
                     <Eye className="h-4 w-4" />
                     Preview
                   </Button>
-                  <Button size="sm" className="flex-1 gap-2">
+                  <Button 
+                    size="sm" 
+                    className="flex-1 gap-2"
+                    onClick={() => selectionMode && onTemplateSelect ? onTemplateSelect(template) : undefined}
+                  >
                     <Download className="h-4 w-4" />
-                    Use Template
+                    {selectionMode ? 'Select' : 'Use Template'}
                   </Button>
                 </div>
               </CardContent>
