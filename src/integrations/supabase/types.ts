@@ -366,6 +366,308 @@ export type Database = {
         }
         Relationships: []
       }
+      copyright_exports: {
+        Row: {
+          copyright_id: string | null
+          created_at: string
+          error_message: string | null
+          export_format: string
+          export_status: string | null
+          export_type: string | null
+          file_url: string | null
+          id: string
+          record_count: number | null
+          user_id: string
+        }
+        Insert: {
+          copyright_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          export_format: string
+          export_status?: string | null
+          export_type?: string | null
+          file_url?: string | null
+          id?: string
+          record_count?: number | null
+          user_id: string
+        }
+        Update: {
+          copyright_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          export_format?: string
+          export_status?: string | null
+          export_type?: string | null
+          file_url?: string | null
+          id?: string
+          record_count?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copyright_exports_copyright_id_fkey"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copyright_publishers: {
+        Row: {
+          agreement_end_date: string | null
+          agreement_start_date: string | null
+          agreement_type: string | null
+          cae_number: string | null
+          copyright_id: string
+          created_at: string
+          id: string
+          ipi_number: string | null
+          isni: string | null
+          mechanical_share: number | null
+          ownership_percentage: number
+          performance_share: number | null
+          pro_affiliation: string | null
+          publisher_name: string
+          publisher_role: string | null
+          synchronization_share: number | null
+          territory: string | null
+        }
+        Insert: {
+          agreement_end_date?: string | null
+          agreement_start_date?: string | null
+          agreement_type?: string | null
+          cae_number?: string | null
+          copyright_id: string
+          created_at?: string
+          id?: string
+          ipi_number?: string | null
+          isni?: string | null
+          mechanical_share?: number | null
+          ownership_percentage: number
+          performance_share?: number | null
+          pro_affiliation?: string | null
+          publisher_name: string
+          publisher_role?: string | null
+          synchronization_share?: number | null
+          territory?: string | null
+        }
+        Update: {
+          agreement_end_date?: string | null
+          agreement_start_date?: string | null
+          agreement_type?: string | null
+          cae_number?: string | null
+          copyright_id?: string
+          created_at?: string
+          id?: string
+          ipi_number?: string | null
+          isni?: string | null
+          mechanical_share?: number | null
+          ownership_percentage?: number
+          performance_share?: number | null
+          pro_affiliation?: string | null
+          publisher_name?: string
+          publisher_role?: string | null
+          synchronization_share?: number | null
+          territory?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copyright_publishers_copyright_id_fkey"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copyright_recordings: {
+        Row: {
+          artist_name: string | null
+          copyright_id: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          isrc: string | null
+          label_name: string | null
+          recording_title: string | null
+          recording_version: string | null
+          release_date: string | null
+        }
+        Insert: {
+          artist_name?: string | null
+          copyright_id: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          isrc?: string | null
+          label_name?: string | null
+          recording_title?: string | null
+          recording_version?: string | null
+          release_date?: string | null
+        }
+        Update: {
+          artist_name?: string | null
+          copyright_id?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          isrc?: string | null
+          label_name?: string | null
+          recording_title?: string | null
+          recording_version?: string | null
+          release_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copyright_recordings_copyright_id_fkey"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copyright_writers: {
+        Row: {
+          cae_number: string | null
+          copyright_id: string
+          created_at: string
+          id: string
+          ipi_number: string | null
+          isni: string | null
+          mechanical_share: number | null
+          nationality: string | null
+          ownership_percentage: number
+          performance_share: number | null
+          pro_affiliation: string | null
+          synchronization_share: number | null
+          writer_name: string
+          writer_role: string | null
+        }
+        Insert: {
+          cae_number?: string | null
+          copyright_id: string
+          created_at?: string
+          id?: string
+          ipi_number?: string | null
+          isni?: string | null
+          mechanical_share?: number | null
+          nationality?: string | null
+          ownership_percentage: number
+          performance_share?: number | null
+          pro_affiliation?: string | null
+          synchronization_share?: number | null
+          writer_name: string
+          writer_role?: string | null
+        }
+        Update: {
+          cae_number?: string | null
+          copyright_id?: string
+          created_at?: string
+          id?: string
+          ipi_number?: string | null
+          isni?: string | null
+          mechanical_share?: number | null
+          nationality?: string | null
+          ownership_percentage?: number
+          performance_share?: number | null
+          pro_affiliation?: string | null
+          synchronization_share?: number | null
+          writer_name?: string
+          writer_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copyright_writers_copyright_id_fkey"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copyrights: {
+        Row: {
+          catalogue_number: string | null
+          collection_territories: string[] | null
+          created_at: string
+          creation_date: string | null
+          duration_seconds: number | null
+          id: string
+          internal_id: string | null
+          iswc: string | null
+          language_code: string | null
+          notes: string | null
+          opus_number: string | null
+          registration_type: string | null
+          rights_types: string[] | null
+          status: string | null
+          submission_date: string | null
+          supports_cwr: boolean | null
+          supports_ddex: boolean | null
+          updated_at: string
+          user_id: string
+          validation_errors: Json | null
+          validation_status: Json | null
+          work_classification: string | null
+          work_title: string
+          work_type: string | null
+        }
+        Insert: {
+          catalogue_number?: string | null
+          collection_territories?: string[] | null
+          created_at?: string
+          creation_date?: string | null
+          duration_seconds?: number | null
+          id?: string
+          internal_id?: string | null
+          iswc?: string | null
+          language_code?: string | null
+          notes?: string | null
+          opus_number?: string | null
+          registration_type?: string | null
+          rights_types?: string[] | null
+          status?: string | null
+          submission_date?: string | null
+          supports_cwr?: boolean | null
+          supports_ddex?: boolean | null
+          updated_at?: string
+          user_id: string
+          validation_errors?: Json | null
+          validation_status?: Json | null
+          work_classification?: string | null
+          work_title: string
+          work_type?: string | null
+        }
+        Update: {
+          catalogue_number?: string | null
+          collection_territories?: string[] | null
+          created_at?: string
+          creation_date?: string | null
+          duration_seconds?: number | null
+          id?: string
+          internal_id?: string | null
+          iswc?: string | null
+          language_code?: string | null
+          notes?: string | null
+          opus_number?: string | null
+          registration_type?: string | null
+          rights_types?: string[] | null
+          status?: string | null
+          submission_date?: string | null
+          supports_cwr?: boolean | null
+          supports_ddex?: boolean | null
+          updated_at?: string
+          user_id?: string
+          validation_errors?: Json | null
+          validation_status?: Json | null
+          work_classification?: string | null
+          work_title?: string
+          work_type?: string | null
+        }
+        Relationships: []
+      }
       deal_scenarios: {
         Row: {
           artist_id: string
@@ -789,7 +1091,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_copyright_internal_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       artist_type: "indie" | "label" | "360" | "distribution_only"
