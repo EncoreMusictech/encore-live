@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, AlertTriangle, CheckCircle, Clock, Music } from "lucide-react";
+import { Plus, Search, AlertTriangle, CheckCircle, Clock, Music, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Copyright {
   id: string;
@@ -77,6 +78,9 @@ const CopyrightManagement = () => {
     songTitle: string;
     isrc: string;
     iswc: string;
+    recordingArtist: string;
+    duration: number | "";
+    releaseDate: string;
     writers: Writer[];
     publishers: Publisher[];
     proStatus: Copyright["proStatus"];
@@ -84,10 +88,66 @@ const CopyrightManagement = () => {
     songTitle: "",
     isrc: "",
     iswc: "",
+    recordingArtist: "",
+    duration: "",
+    releaseDate: "",
     writers: [{ name: "", ipi: "", share: 0 }],
     publishers: [{ name: "", share: 0 }],
     proStatus: "not_registered"
   });
+
+  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
+  const [spotifyMetadata, setSpotifyMetadata] = useState<any>(null);
+
+  // Debounced function to fetch Spotify metadata
+  const fetchSpotifyMetadata = useCallback(async (workTitle: string) => {
+    if (!workTitle.trim() || workTitle.length < 3) return;
+
+    setIsLoadingMetadata(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('spotify-track-metadata', {
+        body: { workTitle }
+      });
+
+      if (error) {
+        console.error('Error fetching Spotify metadata:', error);
+        return;
+      }
+
+      if (data?.success && data?.bestMatch) {
+        setSpotifyMetadata(data);
+        
+        // Auto-populate the form with best match data
+        setFormData(prev => ({
+          ...prev,
+          isrc: data.bestMatch.isrc || prev.isrc,
+          recordingArtist: data.bestMatch.artist || prev.recordingArtist,
+          duration: data.bestMatch.duration || prev.duration,
+          releaseDate: data.bestMatch.releaseDate || prev.releaseDate
+        }));
+
+        toast({
+          title: "Metadata Found",
+          description: `Auto-filled metadata for "${data.bestMatch.trackName}" by ${data.bestMatch.artist}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching metadata:', error);
+    } finally {
+      setIsLoadingMetadata(false);
+    }
+  }, [toast]);
+
+  // Debounce the metadata fetching
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (formData.songTitle) {
+        fetchSpotifyMetadata(formData.songTitle);
+      }
+    }, 1000); // Wait 1 second after user stops typing
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.songTitle, fetchSpotifyMetadata]);
 
   const filteredCopyrights = copyrights.filter(copyright =>
     copyright.songTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -196,6 +256,9 @@ const CopyrightManagement = () => {
       songTitle: "",
       isrc: "",
       iswc: "",
+      recordingArtist: "",
+      duration: "",
+      releaseDate: "",
       writers: [{ name: "", ipi: "", share: 0 }],
       publishers: [{ name: "", share: 0 }],
       proStatus: "not_registered"
@@ -325,7 +388,7 @@ const CopyrightManagement = () => {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
-                    <div>
+                    <div className="relative">
                       <Label htmlFor="songTitle">Work Title *</Label>
                       <Input
                         id="songTitle"
@@ -333,6 +396,11 @@ const CopyrightManagement = () => {
                         onChange={(e) => setFormData(prev => ({ ...prev, songTitle: e.target.value }))}
                         required
                       />
+                      {isLoadingMetadata && (
+                        <div className="absolute right-3 top-8 flex items-center">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="proStatus">PRO Registration Status</Label>
@@ -399,6 +467,8 @@ const CopyrightManagement = () => {
                         <Label htmlFor="recordingArtist">Recording Artist</Label>
                         <Input
                           id="recordingArtist"
+                          value={formData.recordingArtist}
+                          onChange={(e) => setFormData(prev => ({ ...prev, recordingArtist: e.target.value }))}
                           placeholder="Artist name"
                         />
                       </div>
@@ -407,6 +477,8 @@ const CopyrightManagement = () => {
                         <Input
                           id="duration"
                           type="number"
+                          value={formData.duration}
+                          onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) || "" }))}
                           placeholder="240"
                         />
                       </div>
@@ -416,6 +488,8 @@ const CopyrightManagement = () => {
                       <Input
                         id="releaseDate"
                         type="date"
+                        value={formData.releaseDate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, releaseDate: e.target.value }))}
                       />
                     </div>
                   </div>
