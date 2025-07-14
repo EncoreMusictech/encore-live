@@ -117,9 +117,69 @@ serve(async (req) => {
       topTracks.reduce((acc, track) => acc + (track.popularity * 50000), 0)
     );
 
-    // Calculate estimated valuation (simplified formula)
-    // Real valuation would consider many more factors
-    const estimatedValuation = Math.floor(estimatedTotalStreams * 0.003); // $0.003 per stream
+    // Calculate growth rates and forecasts
+    const baseGrowthRate = Math.max(0.05, Math.min(0.25, artist.popularity / 400)); // 5-25% based on popularity
+    const industryGrowthRate = 0.08; // 8% industry average
+    const streamGrowthRate = (baseGrowthRate + industryGrowthRate) / 2;
+
+    // Scenario analysis
+    const scenarios = {
+      pessimistic: {
+        growthRate: streamGrowthRate * 0.5, // 50% of base growth
+        multipleRange: { min: 10, max: 15 }
+      },
+      base: {
+        growthRate: streamGrowthRate,
+        multipleRange: { min: 15, max: 25 }
+      },
+      optimistic: {
+        growthRate: streamGrowthRate * 1.5, // 150% of base growth
+        multipleRange: { min: 25, max: 35 }
+      }
+    };
+
+    // Calculate forecasts for each scenario
+    const forecasts = {};
+    const valuations = {};
+    
+    Object.entries(scenarios).forEach(([scenario, { growthRate, multipleRange }]) => {
+      const yearlyForecasts = [];
+      let currentStreams = estimatedTotalStreams;
+      
+      for (let year = 1; year <= 5; year++) {
+        currentStreams = Math.floor(currentStreams * (1 + growthRate));
+        const revenue = currentStreams * 0.003; // $0.003 per stream
+        const valuation = revenue * ((multipleRange.min + multipleRange.max) / 2);
+        
+        yearlyForecasts.push({
+          year,
+          streams: currentStreams,
+          revenue: Math.floor(revenue),
+          valuation: Math.floor(valuation)
+        });
+      }
+      
+      forecasts[scenario] = yearlyForecasts;
+      valuations[scenario] = {
+        current: Math.floor(estimatedTotalStreams * 0.003 * ((multipleRange.min + multipleRange.max) / 2)),
+        year5: yearlyForecasts[4].valuation,
+        cagr: ((Math.pow(yearlyForecasts[4].valuation / (estimatedTotalStreams * 0.003 * ((multipleRange.min + multipleRange.max) / 2)), 1/5) - 1) * 100).toFixed(1)
+      };
+    });
+
+    // Calculate fair market value range
+    const fairMarketValue = {
+      low: valuations.pessimistic.current,
+      mid: valuations.base.current,
+      high: valuations.optimistic.current
+    };
+
+    // Find comparable artists (simplified - in real scenario would use more sophisticated matching)
+    const comparableArtists = [
+      { name: "Similar Artist 1", valuation: fairMarketValue.mid * 0.8, followers: artist.followers.total * 0.9 },
+      { name: "Similar Artist 2", valuation: fairMarketValue.mid * 1.2, followers: artist.followers.total * 1.1 },
+      { name: "Similar Artist 3", valuation: fairMarketValue.mid * 0.95, followers: artist.followers.total * 0.85 }
+    ];
 
     const valuationData = {
       artist_name: artist.name,
@@ -130,17 +190,26 @@ serve(async (req) => {
         popularity: track.popularity,
         spotify_url: track.external_urls.spotify
       })),
-      valuation_amount: estimatedValuation,
+      valuation_amount: fairMarketValue.mid,
       currency: 'USD',
       spotify_data: {
         artist_id: artist.id,
         genres: artist.genres,
         popularity: artist.popularity,
         followers: artist.followers.total
+      },
+      forecasts,
+      valuations,
+      fair_market_value: fairMarketValue,
+      comparable_artists: comparableArtists,
+      growth_metrics: {
+        estimated_cagr: streamGrowthRate * 100,
+        industry_growth: industryGrowthRate * 100,
+        base_multiple: (scenarios.base.multipleRange.min + scenarios.base.multipleRange.max) / 2
       }
     };
 
-    console.log(`Calculated valuation: $${estimatedValuation} for ${estimatedTotalStreams} streams`);
+    console.log(`Calculated valuation range: $${fairMarketValue.low} - $${fairMarketValue.high} (mid: $${fairMarketValue.mid})`);
 
     return new Response(
       JSON.stringify(valuationData),
