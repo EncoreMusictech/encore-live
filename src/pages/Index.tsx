@@ -190,8 +190,10 @@ const Index = () => {
               <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow">
                 Start Your Free Trial
               </Button>
-              <Button variant="outline" size="lg" className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground">
-                Schedule a Demo
+              <Button variant="outline" size="lg" className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground" asChild>
+                <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
+                  Schedule a Demo
+                </a>
               </Button>
             </div>
           </div>

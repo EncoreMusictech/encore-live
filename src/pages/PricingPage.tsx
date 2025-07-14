@@ -600,8 +600,10 @@ const PricingPage = () => {
             <Button size="lg" className="bg-gradient-primary text-primary-foreground px-8">
               Start Free Trial
             </Button>
-            <Button size="lg" variant="outline" className="px-8">
-              Schedule Demo
+            <Button size="lg" variant="outline" className="px-8" asChild>
+              <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
+                Schedule Demo
+              </a>
             </Button>
           </div>
         </div>

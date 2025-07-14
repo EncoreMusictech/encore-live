@@ -31,8 +31,10 @@ const Hero = () => {
               Start Free Trial
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button variant="outline" size="lg" className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground">
-              Schedule Demo
+            <Button variant="outline" size="lg" className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground" asChild>
+              <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
+                Schedule Demo
+              </a>
             </Button>
           </div>
 
