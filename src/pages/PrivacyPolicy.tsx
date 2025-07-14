@@ -102,8 +102,8 @@ export default function PrivacyPolicy() {
               <h2 className="text-2xl font-semibold mb-4">8. Contact Us</h2>
               <p>
                 If you have any questions about this privacy policy, please contact us at{" "}
-                <a href="mailto:privacy@company.com" className="text-primary hover:underline">
-                  privacy@company.com
+                <a href="mailto:info@encoremusic.tech" className="text-primary hover:underline">
+                  info@encoremusic.tech
                 </a>
               </p>
             </section>
