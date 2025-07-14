@@ -35,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
       .join('');
 
     const emailResponse = await resend.emails.send({
-      from: "Music Contracts <contracts@yourdomain.com>", // You'll need to update this with your verified domain
+      from: "Music Contracts <onboarding@resend.dev>", // Using Resend's default domain - update with your verified domain
       to: [to],
       subject: `Contract for Review: ${contractTitle}`,
       html: `
