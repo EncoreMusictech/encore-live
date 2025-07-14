@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright } from "lucide-react";
 
 const ModulesPage = () => {
   const subscribedModules = [
@@ -30,6 +30,14 @@ const ModulesPage = () => {
       icon: FileText,
       status: "Active",
       path: "/contract-management"
+    },
+    {
+      id: "copyright-management",
+      title: "Copyright Management",
+      description: "Register and track copyrights with split assignments and metadata management",
+      icon: Copyright,
+      status: "Active",
+      path: "/copyright-management"
     }
   ];
 

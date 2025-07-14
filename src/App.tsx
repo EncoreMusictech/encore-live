@@ -9,6 +9,7 @@ import CatalogValuationPage from "./pages/CatalogValuation";
 import DealSimulatorPage from "./pages/DealSimulatorPage";
 import ModulesPage from "./pages/ModulesPage";
 import ContractManagement from "./pages/ContractManagement";
+import CopyrightManagement from "./pages/CopyrightManagement";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/catalog-valuation" element={<CatalogValuationPage />} />
           <Route path="/deal-simulator" element={<DealSimulatorPage />} />
           <Route path="/contract-management" element={<ContractManagement />} />
+          <Route path="/copyright-management" element={<CopyrightManagement />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
