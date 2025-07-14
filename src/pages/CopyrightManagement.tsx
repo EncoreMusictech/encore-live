@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Search, Music, FileText, Users, CheckCircle, Clock, AlertTriangle, Link2 } from "lucide-react";
+import { Plus, Search, Music, FileText, Users, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCopyright } from "@/hooks/useCopyright";
 import { EnhancedCopyrightForm } from "@/components/copyright/EnhancedCopyrightForm";
+import { AudioPlayer } from "@/components/copyright/AudioPlayer";
 
 
 const CopyrightManagement = () => {
@@ -205,16 +206,12 @@ const CopyrightManagement = () => {
                                 <Badge variant="outline" className="text-xs">BMI: {copyright.bmi_work_id}</Badge>
                               )}
                               {copyright.mp3_link && (
-                                <div>
-                                  <a 
-                                    href={copyright.mp3_link} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline flex items-center gap-1"
-                                  >
-                                    <Link2 className="w-3 h-3" />
-                                    Listen
-                                  </a>
+                                <div className="mt-2">
+                                  <AudioPlayer 
+                                    src={copyright.mp3_link}
+                                    title={copyright.work_title}
+                                    className="max-w-md"
+                                  />
                                 </div>
                               )}
                             </div>
