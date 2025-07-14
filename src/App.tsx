@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ModuleProtectedRoute from "@/components/ModuleProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
@@ -33,7 +34,9 @@ const App = () => (
               path="/catalog-valuation" 
               element={
                 <ProtectedRoute>
-                  <CatalogValuationPage />
+                  <ModuleProtectedRoute moduleId="catalog-valuation" moduleName="Catalog Valuation">
+                    <CatalogValuationPage />
+                  </ModuleProtectedRoute>
                 </ProtectedRoute>
               } 
             />
@@ -41,7 +44,9 @@ const App = () => (
               path="/deal-simulator" 
               element={
                 <ProtectedRoute>
-                  <DealSimulatorPage />
+                  <ModuleProtectedRoute moduleId="deal-simulator" moduleName="Deal Simulator">
+                    <DealSimulatorPage />
+                  </ModuleProtectedRoute>
                 </ProtectedRoute>
               } 
             />
@@ -49,7 +54,9 @@ const App = () => (
               path="/contract-management" 
               element={
                 <ProtectedRoute>
-                  <ContractManagement />
+                  <ModuleProtectedRoute moduleId="contract-management" moduleName="Contract Management">
+                    <ContractManagement />
+                  </ModuleProtectedRoute>
                 </ProtectedRoute>
               } 
             />
@@ -57,7 +64,9 @@ const App = () => (
               path="/copyright-management" 
               element={
                 <ProtectedRoute>
-                  <CopyrightManagement />
+                  <ModuleProtectedRoute moduleId="copyright-management" moduleName="Copyright Management">
+                    <CopyrightManagement />
+                  </ModuleProtectedRoute>
                 </ProtectedRoute>
               } 
             />

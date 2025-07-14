@@ -3,6 +3,7 @@ import { Music, Menu, User, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DemoUserBadge } from "@/components/DemoUserBadge";
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -41,9 +42,12 @@ const Header = () => {
         <div className="flex items-center space-x-3">
           {user ? (
             <>
-              <span className="text-sm text-muted-foreground hidden md:block">
-                {user.email}
-              </span>
+              <div className="flex items-center space-x-2">
+                <DemoUserBadge />
+                <span className="text-sm text-muted-foreground hidden md:block">
+                  {user.email}
+                </span>
+              </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm">
