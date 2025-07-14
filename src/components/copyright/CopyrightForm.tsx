@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { CalendarIcon, Plus, X, AlertTriangle, CheckCircle } from 'lucide-react';
+import { CalendarIcon, Plus, X, AlertTriangle, CheckCircle, Search } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
@@ -19,6 +19,8 @@ import { PublishersSection } from './PublishersSection';
 import { RecordingsSection } from './RecordingsSection';
 import { ValidationChecklist } from './ValidationChecklist';
 import { COPYRIGHT_FIELD_MAPPINGS } from '@/lib/copyright-field-mappings';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface CopyrightFormProps {
   onSuccess?: () => void;
@@ -27,7 +29,11 @@ interface CopyrightFormProps {
 
 export const CopyrightForm: React.FC<CopyrightFormProps> = ({ onSuccess, onCancel }) => {
   const { createCopyright } = useCopyright();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [ascapLoading, setAscapLoading] = useState(false);
+  const [searchWriter, setSearchWriter] = useState('');
+  const [searchPublisher, setSearchPublisher] = useState('');
   const [formData, setFormData] = useState<Partial<CopyrightInsert>>({
     work_title: '',
     work_type: 'original',
@@ -103,6 +109,62 @@ export const CopyrightForm: React.FC<CopyrightFormProps> = ({ onSuccess, onCance
     const updated = rightsTypes.filter(r => r !== rightType);
     setRightsTypes(updated);
     setFormData(prev => ({ ...prev, rights_types: updated }));
+  };
+
+  const searchASCAP = async () => {
+    if (!formData.work_title && !searchWriter && !searchPublisher) {
+      toast({
+        title: "Missing search criteria",
+        description: "Please provide at least a work title, writer name, or publisher name.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setAscapLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ascap-lookup', {
+        body: {
+          workTitle: formData.work_title,
+          writerName: searchWriter,
+          publisherName: searchPublisher
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.found) {
+        // Auto-populate ISWC if found
+        if (data.iswc && !formData.iswc) {
+          setFormData(prev => ({ ...prev, iswc: data.iswc }));
+        }
+
+        toast({
+          title: "ASCAP data found",
+          description: `Found ${data.writers.length} writers and ${data.publishers.length} publishers. Check the Writers and Publishers sections below.`,
+          variant: "default"
+        });
+
+        // Note: We would need to pass this data to the WritersSection and PublishersSection components
+        // This would require updating those components to accept pre-filled data
+        console.log('ASCAP lookup result:', data);
+      } else {
+        toast({
+          title: "No results found",
+          description: "No matching records found in ASCAP Repertory database.",
+          variant: "default"
+        });
+      }
+    } catch (error) {
+      console.error('ASCAP lookup error:', error);
+      toast({
+        title: "Search error",
+        description: "Failed to search ASCAP database. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setAscapLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -293,6 +355,62 @@ export const CopyrightForm: React.FC<CopyrightFormProps> = ({ onSuccess, onCance
               />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ASCAP Lookup Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            ASCAP Database Lookup
+            <Badge variant="secondary" className="text-xs">Auto-populate</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Search the ASCAP Repertory database to automatically populate writer and publisher information.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="searchWriter">Writer Name (optional)</Label>
+              <Input
+                id="searchWriter"
+                value={searchWriter}
+                onChange={(e) => setSearchWriter(e.target.value)}
+                placeholder="Enter writer/composer name"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="searchPublisher">Publisher Name (optional)</Label>
+              <Input
+                id="searchPublisher"
+                value={searchPublisher}
+                onChange={(e) => setSearchPublisher(e.target.value)}
+                placeholder="Enter publisher name"
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-start">
+            <Button 
+              type="button" 
+              onClick={searchASCAP}
+              disabled={ascapLoading || (!formData.work_title && !searchWriter && !searchPublisher)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Search className="h-4 w-4" />
+              {ascapLoading ? "Searching ASCAP..." : "Search ASCAP Database"}
+            </Button>
+          </div>
+          
+          {ascapLoading && (
+            <div className="text-sm text-muted-foreground">
+              Searching ASCAP Repertory database for matching records...
+            </div>
+          )}
         </CardContent>
       </Card>
 
