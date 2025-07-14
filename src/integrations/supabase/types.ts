@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      catalog_valuations: {
+        Row: {
+          artist_name: string
+          created_at: string
+          currency: string | null
+          id: string
+          monthly_listeners: number | null
+          top_tracks: Json | null
+          total_streams: number | null
+          updated_at: string
+          user_id: string
+          valuation_amount: number | null
+        }
+        Insert: {
+          artist_name: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          monthly_listeners?: number | null
+          top_tracks?: Json | null
+          total_streams?: number | null
+          updated_at?: string
+          user_id: string
+          valuation_amount?: number | null
+        }
+        Update: {
+          artist_name?: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          monthly_listeners?: number | null
+          top_tracks?: Json | null
+          total_streams?: number | null
+          updated_at?: string
+          user_id?: string
+          valuation_amount?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
