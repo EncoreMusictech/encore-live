@@ -175,6 +175,7 @@ serve(async (req) => {
     };
 
     // Find comparable artists using Spotify's related artists API
+    console.log(`Fetching related artists for artist ID: ${artist.id}`);
     const relatedArtistsResponse = await fetch(
       `https://api.spotify.com/v1/artists/${artist.id}/related-artists`,
       {
@@ -184,18 +185,22 @@ serve(async (req) => {
       }
     );
 
+    console.log(`Related artists API response status: ${relatedArtistsResponse.status}`);
     let comparableArtists = [];
     
     if (relatedArtistsResponse.ok) {
       const relatedData = await relatedArtistsResponse.json();
-      console.log(`Found ${relatedData.artists.length} related artists`);
+      console.log(`Found ${relatedData.artists?.length || 0} related artists for ${artist.name}`);
       
-      // Take top 3 most popular related artists and calculate their valuations
-      const topRelatedArtists = relatedData.artists
-        .sort((a: SpotifyArtist, b: SpotifyArtist) => b.popularity - a.popularity)
-        .slice(0, 3);
-      
-      comparableArtists = topRelatedArtists.map((relatedArtist: SpotifyArtist) => {
+      if (relatedData.artists && relatedData.artists.length > 0) {
+        // Take top 3 most popular related artists and calculate their valuations
+        const topRelatedArtists = relatedData.artists
+          .sort((a: SpotifyArtist, b: SpotifyArtist) => b.popularity - a.popularity)
+          .slice(0, 3);
+        
+        console.log(`Top related artists: ${topRelatedArtists.map((a: SpotifyArtist) => a.name).join(', ')}`);
+        
+        comparableArtists = topRelatedArtists.map((relatedArtist: SpotifyArtist) => {
         // Calculate estimated streams for related artist using same methodology
         const relatedEstimatedStreams = Math.floor(
           (relatedArtist.followers.total * relatedArtist.popularity * 2.5)
@@ -213,10 +218,23 @@ serve(async (req) => {
           popularity: relatedArtist.popularity,
           genres: relatedArtist.genres,
           spotify_id: relatedArtist.id
-        };
-      });
+          };
+        });
+        
+        console.log(`Calculated valuations for ${comparableArtists.length} comparable artists`);
+      } else {
+        console.log('No related artists found in API response, using fallback data');
+        // Fallback to placeholder data
+        comparableArtists = [
+          { name: "Similar Artist 1", valuation: fairMarketValue.mid * 0.8, followers: artist.followers.total * 0.9, popularity: artist.popularity - 5 },
+          { name: "Similar Artist 2", valuation: fairMarketValue.mid * 1.2, followers: artist.followers.total * 1.1, popularity: artist.popularity + 3 },
+          { name: "Similar Artist 3", valuation: fairMarketValue.mid * 0.95, followers: artist.followers.total * 0.85, popularity: artist.popularity - 2 }
+        ];
+      }
     } else {
-      console.log('Could not fetch related artists, using fallback data');
+      const errorText = await relatedArtistsResponse.text();
+      console.log(`Related artists API failed with status ${relatedArtistsResponse.status}: ${errorText}`);
+      console.log('Using fallback comparable artists data');
       // Fallback to placeholder data if API call fails
       comparableArtists = [
         { name: "Similar Artist 1", valuation: fairMarketValue.mid * 0.8, followers: artist.followers.total * 0.9, popularity: artist.popularity - 5 },
