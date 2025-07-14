@@ -76,6 +76,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     copyright_reg_number?: string;
     copyright_date?: string;
     notice_date?: string;
+    isrc?: string;
   }>>({
     work_title: '',
     work_type: 'original',
@@ -137,7 +138,8 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           album_title: metadata.albumTitle || prev.album_title,
           masters_ownership: metadata.masterOwner || prev.masters_ownership,
           mp3_link: metadata.previewUrl || prev.mp3_link,
-          duration_seconds: metadata.duration || prev.duration_seconds
+          duration_seconds: metadata.duration || prev.duration_seconds,
+          isrc: metadata.isrc || prev.isrc
         }));
 
         toast({
@@ -302,6 +304,28 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                     value="Auto-generated"
                     disabled
                     placeholder="W20240714-000001"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="iswc">ISWC</Label>
+                  <Input
+                    id="iswc"
+                    value={formData.iswc || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, iswc: e.target.value }))}
+                    placeholder="T-123.456.789-0"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="isrc">ISRC</Label>
+                  <Input
+                    id="isrc"
+                    value={formData.isrc || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isrc: e.target.value }))}
+                    placeholder={spotifyMetadata?.isrc ? "Auto-filled from Spotify" : "USAT21234567"}
                   />
                 </div>
               </div>
