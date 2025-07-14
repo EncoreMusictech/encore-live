@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText, Copyright } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film } from "lucide-react";
 
 const ModulesPage = () => {
   const subscribedModules = [
@@ -38,6 +38,14 @@ const ModulesPage = () => {
       icon: Copyright,
       status: "Active",
       path: "/copyright-management"
+    },
+    {
+      id: "sync-licensing",
+      title: "Sync Licensing Tracker",
+      description: "Comprehensive sync deal pipeline with pitch tracking and deal memo generation",
+      icon: Film,
+      status: "Active",
+      path: "/sync-licensing"
     }
   ];
 
