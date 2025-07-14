@@ -18,6 +18,7 @@ import { WritersSection } from './WritersSection';
 import { PublishersSection } from './PublishersSection';
 import { RecordingsSection } from './RecordingsSection';
 import { ValidationChecklist } from './ValidationChecklist';
+import { COPYRIGHT_FIELD_MAPPINGS } from '@/lib/copyright-field-mappings';
 
 interface CopyrightFormProps {
   onSuccess?: () => void;
@@ -261,14 +262,36 @@ export const CopyrightForm: React.FC<CopyrightFormProps> = ({ onSuccess, onCance
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="classification">Work Classification</Label>
-            <Input
-              id="classification"
-              value={formData.work_classification || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, work_classification: e.target.value }))}
-              placeholder="Popular Music, Classical, Jazz, etc."
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="classification">Work Classification</Label>
+              <Input
+                id="classification"
+                value={formData.work_classification || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, work_classification: e.target.value }))}
+                placeholder="Popular Music, Classical, Jazz, etc."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="catalogue_number">Catalogue Number</Label>
+              <Input
+                id="catalogue_number"
+                value={formData.catalogue_number || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, catalogue_number: e.target.value }))}
+                placeholder="CAT-001"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="opus_number">Opus Number</Label>
+              <Input
+                id="opus_number"
+                value={formData.opus_number || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, opus_number: e.target.value }))}
+                placeholder="Op. 27"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
