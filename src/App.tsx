@@ -10,6 +10,7 @@ import DealSimulatorPage from "./pages/DealSimulatorPage";
 import ModulesPage from "./pages/ModulesPage";
 import ContractManagement from "./pages/ContractManagement";
 import CopyrightManagement from "./pages/CopyrightManagement";
+import SyncLicensingPage from "./pages/SyncLicensingPage";
 import PricingPage from "./pages/PricingPage";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/deal-simulator" element={<DealSimulatorPage />} />
           <Route path="/contract-management" element={<ContractManagement />} />
           <Route path="/copyright-management" element={<CopyrightManagement />} />
+          <Route path="/sync-licensing" element={<SyncLicensingPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

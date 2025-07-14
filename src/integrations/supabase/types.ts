@@ -944,6 +944,185 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_license_comments: {
+        Row: {
+          comment: string
+          comment_type: string | null
+          created_at: string
+          id: string
+          sync_license_id: string
+          user_id: string
+        }
+        Insert: {
+          comment: string
+          comment_type?: string | null
+          created_at?: string
+          id?: string
+          sync_license_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string
+          comment_type?: string | null
+          created_at?: string
+          id?: string
+          sync_license_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_license_comments_sync_license_id_fkey"
+            columns: ["sync_license_id"]
+            isOneToOne: false
+            referencedRelation: "sync_licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_licenses: {
+        Row: {
+          approval_documentation_url: string | null
+          approval_issued: string | null
+          check_copy_remittance_url: string | null
+          created_at: string
+          currency: string | null
+          fe_license_returned: boolean | null
+          fe_license_url: string | null
+          first_confirmation_of_use: string | null
+          id: string
+          invoice_issued: string | null
+          invoice_status: string | null
+          invoiced_amount: number | null
+          license_issued: string | null
+          license_status: string | null
+          linked_copyright_ids: string[] | null
+          master_fee: number | null
+          master_share_percentage: number | null
+          master_splits: Json | null
+          media_type: string | null
+          mfn: boolean | null
+          music_type: string | null
+          music_use: string | null
+          notes: string | null
+          payment_received: string | null
+          payment_status: string | null
+          pe_license_received: string | null
+          project_title: string
+          pub_fee: number | null
+          pub_fee_all_in: number | null
+          pub_share_percentage: number | null
+          publisher_splits: Json | null
+          request_attachment_url: string | null
+          request_received: string | null
+          royalties: string | null
+          smpte: string | null
+          source: string | null
+          synch_agent: string | null
+          synch_id: string
+          synch_status: string | null
+          term_end: string | null
+          term_start: string | null
+          territories: string[] | null
+          territory_of_licensee: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approval_documentation_url?: string | null
+          approval_issued?: string | null
+          check_copy_remittance_url?: string | null
+          created_at?: string
+          currency?: string | null
+          fe_license_returned?: boolean | null
+          fe_license_url?: string | null
+          first_confirmation_of_use?: string | null
+          id?: string
+          invoice_issued?: string | null
+          invoice_status?: string | null
+          invoiced_amount?: number | null
+          license_issued?: string | null
+          license_status?: string | null
+          linked_copyright_ids?: string[] | null
+          master_fee?: number | null
+          master_share_percentage?: number | null
+          master_splits?: Json | null
+          media_type?: string | null
+          mfn?: boolean | null
+          music_type?: string | null
+          music_use?: string | null
+          notes?: string | null
+          payment_received?: string | null
+          payment_status?: string | null
+          pe_license_received?: string | null
+          project_title: string
+          pub_fee?: number | null
+          pub_fee_all_in?: number | null
+          pub_share_percentage?: number | null
+          publisher_splits?: Json | null
+          request_attachment_url?: string | null
+          request_received?: string | null
+          royalties?: string | null
+          smpte?: string | null
+          source?: string | null
+          synch_agent?: string | null
+          synch_id: string
+          synch_status?: string | null
+          term_end?: string | null
+          term_start?: string | null
+          territories?: string[] | null
+          territory_of_licensee?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approval_documentation_url?: string | null
+          approval_issued?: string | null
+          check_copy_remittance_url?: string | null
+          created_at?: string
+          currency?: string | null
+          fe_license_returned?: boolean | null
+          fe_license_url?: string | null
+          first_confirmation_of_use?: string | null
+          id?: string
+          invoice_issued?: string | null
+          invoice_status?: string | null
+          invoiced_amount?: number | null
+          license_issued?: string | null
+          license_status?: string | null
+          linked_copyright_ids?: string[] | null
+          master_fee?: number | null
+          master_share_percentage?: number | null
+          master_splits?: Json | null
+          media_type?: string | null
+          mfn?: boolean | null
+          music_type?: string | null
+          music_use?: string | null
+          notes?: string | null
+          payment_received?: string | null
+          payment_status?: string | null
+          pe_license_received?: string | null
+          project_title?: string
+          pub_fee?: number | null
+          pub_fee_all_in?: number | null
+          pub_share_percentage?: number | null
+          publisher_splits?: Json | null
+          request_attachment_url?: string | null
+          request_received?: string | null
+          royalties?: string | null
+          smpte?: string | null
+          source?: string | null
+          synch_agent?: string | null
+          synch_id?: string
+          synch_status?: string | null
+          term_end?: string | null
+          term_start?: string | null
+          territories?: string[] | null
+          territory_of_licensee?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_addon_subscriptions: {
         Row: {
           addon_id: string | null
@@ -1147,9 +1326,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_sync_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_work_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      setup_demo_user: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
