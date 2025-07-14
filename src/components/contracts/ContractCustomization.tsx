@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, Send, Mail, FileSignature, Calendar, DollarSign, AlertCircle } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
+import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +40,8 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
   const [contractContent, setContractContent] = useState("");
   const [customFields, setCustomFields] = useState<{[key: string]: string}>({});
   const [showSendOptions, setShowSendOptions] = useState(false);
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof customizationSchema>>({
@@ -51,6 +53,40 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
       notes: "",
     },
   });
+
+  // Auto-calculate duration when dates change
+  useEffect(() => {
+    if (startDate && endDate && endDate > startDate) {
+      const years = differenceInYears(endDate, startDate);
+      const months = differenceInMonths(endDate, startDate) % 12;
+      
+      let durationText = "";
+      if (years > 0) {
+        durationText = years === 1 ? "1 year" : `${years} years`;
+        if (months > 0) {
+          durationText += ` and ${months} month${months === 1 ? '' : 's'}`;
+        }
+      } else if (months > 0) {
+        durationText = months === 1 ? "1 month" : `${months} months`;
+      } else {
+        const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        durationText = days === 1 ? "1 day" : `${days} days`;
+      }
+      
+      // Update duration in custom fields
+      const durationFields = ['DURATION', 'TERM LENGTH', 'TERM', 'DURATION YEARS', 'LENGTH'];
+      durationFields.forEach(field => {
+        if (customFields.hasOwnProperty(field)) {
+          handleFieldChange(field, durationText);
+        }
+      });
+      
+      // Also update specific year fields
+      if (customFields.hasOwnProperty('YEARS')) {
+        handleFieldChange('YEARS', years.toString());
+      }
+    }
+  }, [startDate, endDate, customFields]);
 
   useEffect(() => {
     loadTemplateContent();
@@ -126,8 +162,8 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
           title: values.title,
           counterparty_name: values.counterparty_name,
           contract_type: template.contract_type,
-          start_date: values.start_date?.toISOString().split('T')[0] || null,
-          end_date: values.end_date?.toISOString().split('T')[0] || null,
+           start_date: startDate?.toISOString().split('T')[0] || null,
+           end_date: endDate?.toISOString().split('T')[0] || null,
           notes: values.notes || null,
           recipient_email: values.recipient_email,
           contract_data: {
@@ -299,6 +335,95 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
                 <p className="text-sm text-red-500">{form.formState.errors.recipient_email.message}</p>
               )}
             </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Start Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "PPP") : "Select start date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label>End Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "PPP") : "Select end date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                      disabled={(date) => startDate ? date < startDate : false}
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            {/* Duration Display */}
+            {startDate && endDate && endDate > startDate && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900">Contract Duration:</span>
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    {(() => {
+                      const years = differenceInYears(endDate, startDate);
+                      const months = differenceInMonths(endDate, startDate) % 12;
+                      
+                      if (years > 0) {
+                        let duration = years === 1 ? "1 year" : `${years} years`;
+                        if (months > 0) {
+                          duration += ` and ${months} month${months === 1 ? '' : 's'}`;
+                        }
+                        return duration;
+                      } else if (months > 0) {
+                        return months === 1 ? "1 month" : `${months} months`;
+                      } else {
+                        const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                        return days === 1 ? "1 day" : `${days} days`;
+                      }
+                    })()}
+                  </Badge>
+                </div>
+                <p className="text-xs text-blue-700 mt-1">
+                  Duration fields in the contract will be automatically filled with this value
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
