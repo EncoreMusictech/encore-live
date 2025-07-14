@@ -163,67 +163,8 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     return () => clearTimeout(timeoutId);
   }, [formData.work_title, fetchSpotifyMetadata]);
 
-  const searchASCAP = async () => {
-    if (!formData.work_title) {
-      toast({
-        title: "Missing search criteria",
-        description: "Please provide a work title to search ASCAP.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setAscapLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('ascap-lookup', {
-        body: {
-          workTitle: formData.work_title
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.found) {
-        // Auto-populate ISWC if found
-        if (data.iswc && !formData.iswc) {
-          setFormData(prev => ({ ...prev, iswc: data.iswc }));
-        }
-
-        // Auto-populate writers if found
-        if (data.writers && data.writers.length > 0) {
-          const ascapWriters = data.writers.map((w: any, index: number) => ({
-            id: `ascap-${index}`,
-            name: w.name || '',
-            ipi: w.ipi || '',
-            share: w.share || 0,
-            proAffiliation: 'ASCAP',
-            controlled: 'NC' as const
-          }));
-          setWriters(ascapWriters);
-        }
-
-        toast({
-          title: "ASCAP data found",
-          description: `Found ${data.writers?.length || 0} writers. Form auto-populated.`,
-          variant: "default"
-        });
-      } else {
-        toast({
-          title: "No results found",
-          description: "No matching records found in ASCAP Repertory database.",
-          variant: "default"
-        });
-      }
-    } catch (error) {
-      console.error('ASCAP lookup error:', error);
-      toast({
-        title: "Search error",
-        description: "Failed to search ASCAP database. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setAscapLoading(false);
-    }
+  const searchASCAP = () => {
+    window.open('https://www.ascap.com/repertory#/', '_blank');
   };
 
   const addWriter = () => {
@@ -456,12 +397,11 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                 <Button 
                   type="button" 
                   onClick={searchASCAP}
-                  disabled={ascapLoading || !formData.work_title}
                   variant="outline"
                   className="flex items-center gap-2"
                 >
                   <Search className="h-4 w-4" />
-                  {ascapLoading ? "Searching ASCAP..." : "Search ASCAP Database"}
+                  Search ASCAP Database
                 </Button>
               </div>
             </CardContent>
