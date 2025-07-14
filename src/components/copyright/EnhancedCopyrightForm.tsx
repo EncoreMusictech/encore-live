@@ -240,6 +240,16 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
       return;
     }
 
+    // Validate controlled share
+    if (totalControlledShare > 100) {
+      toast({
+        title: "Invalid Controlled Share",
+        description: `Total controlled publisher share cannot exceed 100%. Current total: ${totalControlledShare}%`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // Create the copyright record first
@@ -266,7 +276,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     }
   };
 
-  const isFormValid = formData.work_title && formData.work_title.length > 0 && totalWriterShare === 100;
+  const isFormValid = formData.work_title && formData.work_title.length > 0 && totalWriterShare === 100 && totalControlledShare <= 100;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -447,6 +457,9 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                 Writers
                 <Badge variant={totalWriterShare === 100 ? "default" : "destructive"}>
                   {writers.length} writers • {totalWriterShare}% total
+                </Badge>
+                <Badge variant={totalControlledShare <= 100 ? "default" : "destructive"}>
+                  {totalControlledShare}% controlled
                 </Badge>
               </CardTitle>
             </CardHeader>
