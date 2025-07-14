@@ -326,7 +326,7 @@ const CopyrightManagement = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="songTitle">Song Title *</Label>
+                      <Label htmlFor="songTitle">Work Title *</Label>
                       <Input
                         id="songTitle"
                         value={formData.songTitle}
@@ -355,7 +355,7 @@ const CopyrightManagement = () => {
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="isrc">ISRC</Label>
                       <Input
@@ -372,6 +372,96 @@ const CopyrightManagement = () => {
                         value={formData.iswc}
                         onChange={(e) => setFormData(prev => ({ ...prev, iswc: e.target.value }))}
                         placeholder="e.g., T-070.600.001-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="language">Language</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EN">English</SelectItem>
+                          <SelectItem value="ES">Spanish</SelectItem>
+                          <SelectItem value="FR">French</SelectItem>
+                          <SelectItem value="DE">German</SelectItem>
+                          <SelectItem value="IT">Italian</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Recording Information */}
+                  <div className="space-y-4">
+                    <Label className="text-base font-semibold">Recording Information</Label>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="recordingArtist">Recording Artist</Label>
+                        <Input
+                          id="recordingArtist"
+                          placeholder="Artist name"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="duration">Duration (seconds)</Label>
+                        <Input
+                          id="duration"
+                          type="number"
+                          placeholder="240"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="releaseDate">Release Date</Label>
+                      <Input
+                        id="releaseDate"
+                        type="date"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Territory and Contract Information */}
+                  <div className="space-y-4">
+                    <Label className="text-base font-semibold">Territory & Contract Information</Label>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="territory">Territory</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select territory" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="US">United States</SelectItem>
+                            <SelectItem value="CA">Canada</SelectItem>
+                            <SelectItem value="UK">United Kingdom</SelectItem>
+                            <SelectItem value="DE">Germany</SelectItem>
+                            <SelectItem value="FR">France</SelectItem>
+                            <SelectItem value="AU">Australia</SelectItem>
+                            <SelectItem value="JP">Japan</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="contractId">Contract ID</Label>
+                        <Input
+                          id="contractId"
+                          placeholder="e.g., AGR-2024-001"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="contractStartDate">Contract Start Date</Label>
+                        <Input
+                          id="contractStartDate"
+                          type="date"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="contractEndDate">Contract End Date</Label>
+                      <Input
+                        id="contractEndDate"
+                        type="date"
+                        className="max-w-md"
                       />
                     </div>
                   </div>
