@@ -294,7 +294,7 @@ const PricingPage = () => {
                   key={tier.id}
                   className={`relative transition-all duration-300 hover:shadow-elegant ${
                     tier.is_popular ? 'ring-2 ring-music-purple shadow-glow scale-105' : ''
-                  } ${tier.tier_level >= 5 ? 'bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20' : ''}`}
+                  } ${tier.tier_level >= 5 ? 'bg-gradient-to-br from-music-purple/5 to-music-blue/5 border-music-purple/20' : ''}`}
                 >
                   {tier.is_popular && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
