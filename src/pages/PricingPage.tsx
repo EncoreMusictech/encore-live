@@ -219,36 +219,58 @@ const PricingPage = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="container mx-auto px-4 py-20">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Flexible <span className="bg-gradient-accent bg-clip-text text-transparent">Pricing</span> for Every Creator
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Choose from our comprehensive subscription tiers, add-ons, or build your own plan with individual modules.
-          </p>
-          
-          {/* Billing Toggle */}
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <span className={`text-sm ${!isAnnual ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-              Monthly
-            </span>
-            <Switch 
-              checked={isAnnual} 
-              onCheckedChange={setIsAnnual}
-              className="data-[state=checked]:bg-music-purple"
-            />
-            <span className={`text-sm ${isAnnual ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-              Annual
-            </span>
-            {isAnnual && (
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                Save up to 17%
-              </Badge>
-            )}
+      {/* Hero Section with improved styling */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-music-purple/10 via-transparent to-music-blue/10 pointer-events-none" />
+        <div className="container mx-auto px-4 py-20 relative">
+          <div className="text-center mb-16 animate-fade-in">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+              Flexible <span className="bg-gradient-accent bg-clip-text text-transparent">Pricing</span> for Every Creator
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+              Choose from our comprehensive subscription tiers, add-ons, or build your own plan with individual modules.
+            </p>
+            
+            {/* Enhanced Billing Toggle */}
+            <div className="flex items-center justify-center gap-4 mb-8 p-1 bg-secondary/50 backdrop-blur-sm rounded-full w-fit mx-auto">
+              <span className={`text-sm px-4 py-2 rounded-full transition-all ${!isAnnual ? 'text-foreground font-medium bg-background shadow-sm' : 'text-muted-foreground'}`}>
+                Monthly
+              </span>
+              <Switch 
+                checked={isAnnual} 
+                onCheckedChange={setIsAnnual}
+                className="data-[state=checked]:bg-music-purple"
+              />
+              <span className={`text-sm px-4 py-2 rounded-full transition-all ${isAnnual ? 'text-foreground font-medium bg-background shadow-sm' : 'text-muted-foreground'}`}>
+                Annual
+              </span>
+              {isAnnual && (
+                <Badge variant="secondary" className="bg-gradient-accent text-accent-foreground ml-2 animate-slide-up">
+                  Save up to 17%
+                </Badge>
+              )}
+            </div>
+
+            {/* Trust indicators */}
+            <div className="flex items-center justify-center gap-8 mt-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-music-purple" />
+                <span>No setup fees</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-music-purple" />
+                <span>Cancel anytime</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-music-purple" />
+                <span>14-day free trial</span>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
+      <div className="container mx-auto px-4 pb-20">
         <Tabs defaultValue="tiers" className="w-full">
           <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-12">
             <TabsTrigger value="tiers" className="flex items-center gap-2">
@@ -512,6 +534,77 @@ const PricingPage = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* FAQ Section */}
+        <div className="max-w-4xl mx-auto mt-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
+            <p className="text-muted-foreground">Everything you need to know about our pricing</p>
+          </div>
+
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Can I switch between plans?</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate the billing accordingly.</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">What happens if I exceed my usage limits?</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">We'll notify you when you're approaching your limits. You can either upgrade your plan or purchase add-ons to increase your limits for the current month.</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Do you offer refunds?</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">We offer a 14-day money-back guarantee on all paid plans. If you're not satisfied, contact our support team for a full refund.</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Can I cancel anytime?</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Absolutely. You can cancel your subscription at any time from your account settings. Your access will continue until the end of your current billing period.</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">What payment methods do you accept?</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">We accept all major credit cards (Visa, MasterCard, American Express) and PayPal. Enterprise customers can also pay via bank transfer.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="text-center mt-20 py-16 bg-gradient-to-r from-music-purple/10 to-music-blue/10 rounded-3xl">
+          <h2 className="text-3xl font-bold mb-4">Ready to get started?</h2>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Join thousands of music creators who trust ENCORE to manage their rights and maximize their revenue.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="bg-gradient-primary text-primary-foreground px-8">
+              Start Free Trial
+            </Button>
+            <Button size="lg" variant="outline" className="px-8">
+              Schedule Demo
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
