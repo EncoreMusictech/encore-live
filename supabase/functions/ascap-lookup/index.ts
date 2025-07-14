@@ -35,6 +35,17 @@ serve(async (req) => {
   }
 
   try {
+    console.log('ASCAP lookup function called');
+    
+    // Check if Perplexity API key is available
+    if (!perplexityApiKey) {
+      console.error('PERPLEXITY_API_KEY not found in environment');
+      return new Response(
+        JSON.stringify({ error: 'Perplexity API key not configured' }), 
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { workTitle, writerName, publisherName }: ASCAPSearchParams = await req.json();
 
     if (!workTitle && !writerName && !publisherName) {
@@ -54,6 +65,8 @@ serve(async (req) => {
     if (publisherName) searchQuery += `publisher: "${publisherName}" `;
     
     searchQuery += `. Extract the following information if found: writer names with IPI numbers and ownership percentages, publisher names with ownership percentages, and ISWC code. Format the response as structured data with exact percentages and IPI numbers as they appear in ASCAP.`;
+
+    console.log('Making Perplexity API call with query:', searchQuery);
 
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
@@ -85,8 +98,12 @@ serve(async (req) => {
       }),
     });
 
+    console.log('Perplexity API response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`Perplexity API error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Perplexity API error response:', errorText);
+      throw new Error(`Perplexity API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
