@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { TemplatePreview } from "./TemplatePreview";
 import { downloadSamplePDF, samplePDFs } from "./SamplePDFData";
+import { ContractCustomization } from "./ContractCustomization";
 
 interface Template {
   id: string;
@@ -29,6 +30,7 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
+  const [customizeTemplate, setCustomizeTemplate] = useState<any | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -151,6 +153,22 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
     }
   ];
 
+  if (customizeTemplate) {
+    return (
+      <ContractCustomization
+        template={customizeTemplate}
+        onBack={() => setCustomizeTemplate(null)}
+        onSuccess={() => {
+          setCustomizeTemplate(null);
+          toast({
+            title: "Success",
+            description: "Contract sent successfully!",
+          });
+        }}
+      />
+    );
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -259,7 +277,13 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
                   <Button 
                     size="sm" 
                     className="flex-1 gap-2"
-                    onClick={() => selectionMode && onTemplateSelect ? onTemplateSelect(template) : undefined}
+                    onClick={() => {
+                      if (selectionMode && onTemplateSelect) {
+                        onTemplateSelect(template);
+                      } else {
+                        setCustomizeTemplate(template);
+                      }
+                    }}
                   >
                     <Download className="h-4 w-4" />
                     {selectionMode ? 'Select' : 'Use'}

@@ -122,6 +122,50 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_change_logs: {
+        Row: {
+          change_type: string
+          contract_id: string
+          created_at: string
+          description: string | null
+          field_name: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          user_id: string
+        }
+        Insert: {
+          change_type: string
+          contract_id: string
+          created_at?: string
+          description?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id: string
+        }
+        Update: {
+          change_type?: string
+          contract_id?: string
+          created_at?: string
+          description?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_change_logs_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_royalty_connections: {
         Row: {
           catalog_id: string | null
@@ -214,10 +258,14 @@ export type Database = {
           financial_terms: Json | null
           generated_pdf_url: string | null
           id: string
+          last_sent_date: string | null
           notes: string | null
           original_pdf_url: string | null
+          recipient_email: string | null
           royalty_splits: Json | null
+          signature_status: string | null
           start_date: string | null
+          template_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -234,10 +282,14 @@ export type Database = {
           financial_terms?: Json | null
           generated_pdf_url?: string | null
           id?: string
+          last_sent_date?: string | null
           notes?: string | null
           original_pdf_url?: string | null
+          recipient_email?: string | null
           royalty_splits?: Json | null
+          signature_status?: string | null
           start_date?: string | null
+          template_id?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -254,10 +306,14 @@ export type Database = {
           financial_terms?: Json | null
           generated_pdf_url?: string | null
           id?: string
+          last_sent_date?: string | null
           notes?: string | null
           original_pdf_url?: string | null
+          recipient_email?: string | null
           royalty_splits?: Json | null
+          signature_status?: string | null
           start_date?: string | null
+          template_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
