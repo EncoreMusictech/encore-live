@@ -149,17 +149,29 @@ const Index = () => {
                   <Button 
                     className="w-full mt-6 bg-gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
                     onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: `${tier.name} plan will be available soon!`,
-                      });
+                      if (tier.name === "Free") {
+                        window.location.href = "/modules";
+                      } else {
+                        window.location.href = "/pricing";
+                      }
                     }}
                   >
-                    {tier.price === "Custom" ? "Contact Sales" : "Start Free Trial"}
+                    {tier.price === "Custom" ? "Contact Sales" : tier.name === "Free" ? "Get Started" : "View Details"}
                   </Button>
                 </CardContent>
               </Card>
             ))}
+          </div>
+          
+          <div className="text-center mt-12">
+            <Button 
+              asChild
+              variant="outline" 
+              size="lg"
+              className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground"
+            >
+              <a href="/pricing">View All Pricing Options</a>
+            </Button>
           </div>
         </div>
       </section>

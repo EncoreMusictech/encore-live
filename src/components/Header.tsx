@@ -22,9 +22,9 @@ const Header = () => {
           <Link to="/modules" className="text-sm font-medium text-foreground/60 hover:text-foreground transition-colors">
             Modules
           </Link>
-          <a href="#pricing" className="text-sm font-medium text-foreground/60 hover:text-foreground transition-colors">
+          <Link to="/pricing" className="text-sm font-medium text-foreground/60 hover:text-foreground transition-colors">
             Pricing
-          </a>
+          </Link>
           <a href="#contact" className="text-sm font-medium text-foreground/60 hover:text-foreground transition-colors">
             Contact
           </a>

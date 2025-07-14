@@ -44,6 +44,51 @@ export type Database = {
         }
         Relationships: []
       }
+      bundle_products: {
+        Row: {
+          annual_price: number | null
+          created_at: string | null
+          description: string | null
+          discount_percentage: number | null
+          features: Json | null
+          id: string
+          included_modules: string[]
+          is_active: boolean | null
+          is_popular: boolean | null
+          monthly_price: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          annual_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          discount_percentage?: number | null
+          features?: Json | null
+          id?: string
+          included_modules: string[]
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          monthly_price: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          annual_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          discount_percentage?: number | null
+          features?: Json | null
+          id?: string
+          included_modules?: string[]
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          monthly_price?: number
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       catalog_valuations: {
         Row: {
           artist_name: string
@@ -396,6 +441,125 @@ export type Database = {
           revenue_multiple_max?: number | null
           revenue_multiple_min?: number | null
           streams_to_revenue_ratio?: number | null
+        }
+        Relationships: []
+      }
+      module_products: {
+        Row: {
+          annual_price: number | null
+          created_at: string | null
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          module_id: string
+          monthly_price: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          annual_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          module_id: string
+          monthly_price: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          annual_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          module_id?: string
+          monthly_price?: number
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_module_access: {
+        Row: {
+          access_source: string
+          expires_at: string | null
+          granted_at: string | null
+          id: string
+          module_id: string
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          access_source: string
+          expires_at?: string | null
+          granted_at?: string | null
+          id?: string
+          module_id: string
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          access_source?: string
+          expires_at?: string | null
+          granted_at?: string | null
+          id?: string
+          module_id?: string
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_module_access_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_subscriptions: {
+        Row: {
+          billing_cycle: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          product_id: string
+          started_at: string | null
+          status: string
+          stripe_subscription_id: string | null
+          subscription_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          billing_cycle: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          product_id: string
+          started_at?: string | null
+          status?: string
+          stripe_subscription_id?: string | null
+          subscription_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          billing_cycle?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          product_id?: string
+          started_at?: string | null
+          status?: string
+          stripe_subscription_id?: string | null
+          subscription_type?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
