@@ -346,6 +346,28 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="track_duration">Track Duration</Label>
+                  <Input
+                    id="track_duration"
+                    value={spotifyMetadata?.duration ? `${Math.floor(spotifyMetadata.duration / 60)}:${(spotifyMetadata.duration % 60).toString().padStart(2, '0')}` : ''}
+                    placeholder={spotifyMetadata?.duration ? "Auto-filled from Spotify" : "e.g., 3:45"}
+                    disabled
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="release_date">Release Date</Label>
+                  <Input
+                    id="release_date"
+                    value={spotifyMetadata?.releaseDate || ''}
+                    placeholder={spotifyMetadata?.releaseDate ? "Auto-filled from Spotify" : "YYYY-MM-DD"}
+                    disabled
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="album_title">Album Title</Label>
                   <Input
                     id="album_title"
