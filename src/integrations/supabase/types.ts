@@ -1151,10 +1151,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      setup_demo_user: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
     }
     Enums: {
       artist_type: "indie" | "label" | "360" | "distribution_only"
