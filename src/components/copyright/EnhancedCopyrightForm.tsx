@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
-import { CalendarIcon, Plus, X, AlertTriangle, CheckCircle, Search, Music, FileText, Users, Gavel, Link2, Loader2 } from 'lucide-react';
+import { CalendarIcon, Plus, X, AlertTriangle, CheckCircle, Search, Music, FileText, Users, Gavel, Link2, Loader2, ExternalLink } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -18,6 +18,8 @@ import { CopyrightInsert, useCopyright } from '@/hooks/useCopyright';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AudioPlayer } from './AudioPlayer';
+import { useWriterContracts } from '@/hooks/useWriterContracts';
+import { WriterAgreementSection } from './WriterAgreementSection';
 
 interface EnhancedCopyrightFormProps {
   onSuccess?: () => void;
@@ -558,32 +560,39 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                         placeholder="Publisher IPI Number"
                       />
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <Label>Controlled?</Label>
-                      <Select
-                        value={writer.controlled}
-                        onValueChange={(value: 'C' | 'NC') => updateWriter(writer.id, 'controlled', value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="C">C (Controlled)</SelectItem>
-                          <SelectItem value="NC">NC (Non-Controlled)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removeWriter(writer.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+                   </div>
+                   
+                   {/* Agreement Section */}
+                   <div className="space-y-2">
+                     <Label>Writer Agreements</Label>
+                     <WriterAgreementSection writerName={writer.name} />
+                   </div>
+                   
+                   <div className="flex items-center justify-between">
+                     <div className="space-y-2">
+                       <Label>Controlled?</Label>
+                       <Select
+                         value={writer.controlled}
+                         onValueChange={(value: 'C' | 'NC') => updateWriter(writer.id, 'controlled', value)}
+                       >
+                         <SelectTrigger className="w-32">
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="C">C (Controlled)</SelectItem>
+                           <SelectItem value="NC">NC (Non-Controlled)</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                     <Button
+                       type="button"
+                       variant="destructive"
+                       size="sm"
+                       onClick={() => removeWriter(writer.id)}
+                     >
+                       <X className="h-4 w-4" />
+                     </Button>
+                   </div>
                 </div>
               ))}
 
