@@ -58,6 +58,23 @@ const currencies = ["USD", "EUR", "GBP", "CAD", "AUD"];
 const paymentStatuses = ["Pending", "Partial", "Paid in Full"];
 const invoiceStatuses = ["Not Issued", "Issued", "Paid"];
 
+// Music industry specific options
+const musicTypes = [
+  "Featured", "Background", "Theme", "Bumper", "Jingle", "Score", 
+  "Source Music", "Underscore", "Main Title", "End Credits"
+];
+
+const musicUses = [
+  "Trailer", "Scene", "Credits", "Opening", "Montage", "Commercial", 
+  "Promo", "Background", "Main Theme", "End Credits", "Transition"
+];
+
+const territories = [
+  "Worldwide", "North America", "United States", "Canada", "Europe", 
+  "United Kingdom", "Germany", "France", "Australia", "Japan", 
+  "Latin America", "Asia Pacific", "Specific Territory"
+];
+
 export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseFormProps) => {
   const [agentOpen, setAgentOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
@@ -405,9 +422,20 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Territory of Licensee</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Worldwide, US, etc." {...field} />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select territory" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {territories.map((territory) => (
+                              <SelectItem key={territory} value={territory}>
+                                {territory}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -419,9 +447,20 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Music Type</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Featured, Background, Theme, etc." {...field} />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select music type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {musicTypes.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {type}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -513,9 +552,20 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Music Use</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Trailer, Scene, Credits, etc." {...field} />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select music use" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {musicUses.map((use) => (
+                              <SelectItem key={use} value={use}>
+                                {use}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
