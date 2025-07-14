@@ -565,7 +565,14 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                    {/* Agreement Section */}
                    <div className="space-y-2">
                      <Label>Writer Agreements</Label>
-                     <WriterAgreementSection writerName={writer.name} />
+                     <WriterAgreementSection 
+                       writerName={writer.name}
+                       onControlledStatusChange={(hasAgreements) => {
+                         if (hasAgreements && writer.controlled !== 'C') {
+                           updateWriter(writer.id, 'controlled', 'C');
+                         }
+                       }}
+                     />
                    </div>
                    
                    <div className="flex items-center justify-between">

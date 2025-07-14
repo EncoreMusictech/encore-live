@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Loader2 } from 'lucide-react';
@@ -7,11 +7,22 @@ import { useNavigate } from 'react-router-dom';
 
 interface WriterAgreementSectionProps {
   writerName: string;
+  onControlledStatusChange?: (hasAgreements: boolean) => void;
 }
 
-export const WriterAgreementSection: React.FC<WriterAgreementSectionProps> = ({ writerName }) => {
+export const WriterAgreementSection: React.FC<WriterAgreementSectionProps> = ({ 
+  writerName, 
+  onControlledStatusChange 
+}) => {
   const { contracts, loading } = useWriterContracts(writerName);
   const navigate = useNavigate();
+
+  // Automatically update controlled status when agreements are found
+  useEffect(() => {
+    if (!loading && onControlledStatusChange) {
+      onControlledStatusChange(contracts.length > 0);
+    }
+  }, [contracts.length, loading, onControlledStatusChange]);
 
   const handleOpenContract = (contractId: string) => {
     navigate(`/contract-management?id=${contractId}`);
