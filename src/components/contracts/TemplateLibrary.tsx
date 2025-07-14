@@ -3,9 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { FileText, Search, Star, Download, Eye, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { FileText, Search, Star, Download, Eye, Plus, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { TemplatePreview } from "./TemplatePreview";
+import { downloadSamplePDF, samplePDFs } from "./SamplePDFData";
 
 interface Template {
   id: string;
@@ -25,6 +28,7 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -82,39 +86,68 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
     }
   };
 
-  // Sample templates for demonstration
+  const handleDownloadSample = async (contractType: string) => {
+    try {
+      await downloadSamplePDF(contractType);
+      toast({
+        title: "Download Started",
+        description: "Sample PDF is being downloaded to your device.",
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download sample PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Enhanced sample templates with PDF data
   const sampleTemplates = [
     {
       id: 'sample-1',
       template_name: 'Standard Publishing Agreement',
       contract_type: 'publishing',
       is_public: true,
-      description: 'Industry standard publishing agreement template with standard splits',
-      popularity: 'High'
+      description: 'Industry standard publishing agreement template with 50/50 splits and standard terms',
+      popularity: 'High',
+      keyFeatures: ['50/50 songwriter/publisher split', 'Worldwide territory', '3-5 year terms']
     },
     {
       id: 'sample-2', 
-      template_name: 'Indie Artist Deal',
+      template_name: 'Independent Artist Deal',
       contract_type: 'artist',
       is_public: true,
-      description: 'Independent artist agreement template with fair terms',
-      popularity: 'Medium'
+      description: 'Fair and balanced recording agreement for independent artists with advance structure',
+      popularity: 'High',
+      keyFeatures: ['$25K advance example', '18% royalty rate', 'Marketing support included']
     },
     {
       id: 'sample-3',
-      template_name: 'Producer Points Deal',
+      template_name: 'Producer Points Agreement',
       contract_type: 'producer',
       is_public: true,
-      description: 'Producer agreement with backend points and royalties',
-      popularity: 'High'
+      description: 'Producer agreement with upfront fee plus backend points for ongoing revenue',
+      popularity: 'Medium',
+      keyFeatures: ['$3K per track fee', '3% producer points', 'Sample clearance terms']
     },
     {
       id: 'sample-4',
       template_name: 'TV Sync License',
       contract_type: 'sync',
       is_public: true,
-      description: 'Television synchronization license template',
-      popularity: 'Medium'
+      description: 'Television synchronization license with standard terms and usage restrictions',
+      popularity: 'Medium',
+      keyFeatures: ['$8K license fee example', '3-year term', 'Worldwide territory']
+    },
+    {
+      id: 'sample-5',
+      template_name: 'Digital Distribution Deal',
+      contract_type: 'distribution',
+      is_public: true,
+      description: 'Modern digital distribution agreement for streaming platforms and downloads',
+      popularity: 'High',
+      keyFeatures: ['85/15 revenue split', '100+ platforms', 'Monthly reporting']
     }
   ];
 
@@ -174,21 +207,62 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground mb-3">
                   {template.description}
                 </p>
+                {template.keyFeatures && (
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Key Features:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {template.keyFeatures.slice(0, 2).map((feature, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {feature}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 gap-2">
-                    <Eye className="h-4 w-4" />
-                    Preview
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 gap-2"
+                        onClick={() => setPreviewTemplate(template.contract_type)}
+                      >
+                        <Eye className="h-4 w-4" />
+                        Preview
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl max-h-[80vh]">
+                      <DialogHeader>
+                        <DialogTitle>Template Preview</DialogTitle>
+                        <DialogDescription>
+                          Preview of {template.template_name} structure and terms
+                        </DialogDescription>
+                      </DialogHeader>
+                      {previewTemplate && <TemplatePreview contractType={previewTemplate} />}
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <Button 
+                    variant="outline"
+                    size="sm" 
+                    className="gap-2"
+                    onClick={() => handleDownloadSample(template.contract_type)}
+                  >
+                    <FileDown className="h-4 w-4" />
+                    PDF
                   </Button>
+                  
                   <Button 
                     size="sm" 
                     className="flex-1 gap-2"
                     onClick={() => selectionMode && onTemplateSelect ? onTemplateSelect(template) : undefined}
                   >
                     <Download className="h-4 w-4" />
-                    {selectionMode ? 'Select' : 'Use Template'}
+                    {selectionMode ? 'Select' : 'Use'}
                   </Button>
                 </div>
               </CardContent>
