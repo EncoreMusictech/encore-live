@@ -47,39 +47,78 @@ export type Database = {
       catalog_valuations: {
         Row: {
           artist_name: string
+          cash_flow_projections: Json | null
+          catalog_age_years: number | null
+          comparable_multiples: Json | null
+          confidence_score: number | null
           created_at: string
           currency: string | null
+          dcf_valuation: number | null
+          discount_rate: number | null
+          genre: string | null
+          growth_assumptions: Json | null
           id: string
+          ltm_revenue: number | null
           monthly_listeners: number | null
+          multiple_valuation: number | null
+          popularity_score: number | null
+          risk_adjusted_value: number | null
           top_tracks: Json | null
           total_streams: number | null
           updated_at: string
           user_id: string
           valuation_amount: number | null
+          valuation_methodology: string | null
         }
         Insert: {
           artist_name: string
+          cash_flow_projections?: Json | null
+          catalog_age_years?: number | null
+          comparable_multiples?: Json | null
+          confidence_score?: number | null
           created_at?: string
           currency?: string | null
+          dcf_valuation?: number | null
+          discount_rate?: number | null
+          genre?: string | null
+          growth_assumptions?: Json | null
           id?: string
+          ltm_revenue?: number | null
           monthly_listeners?: number | null
+          multiple_valuation?: number | null
+          popularity_score?: number | null
+          risk_adjusted_value?: number | null
           top_tracks?: Json | null
           total_streams?: number | null
           updated_at?: string
           user_id: string
           valuation_amount?: number | null
+          valuation_methodology?: string | null
         }
         Update: {
           artist_name?: string
+          cash_flow_projections?: Json | null
+          catalog_age_years?: number | null
+          comparable_multiples?: Json | null
+          confidence_score?: number | null
           created_at?: string
           currency?: string | null
+          dcf_valuation?: number | null
+          discount_rate?: number | null
+          genre?: string | null
+          growth_assumptions?: Json | null
           id?: string
+          ltm_revenue?: number | null
           monthly_listeners?: number | null
+          multiple_valuation?: number | null
+          popularity_score?: number | null
+          risk_adjusted_value?: number | null
           top_tracks?: Json | null
           total_streams?: number | null
           updated_at?: string
           user_id?: string
           valuation_amount?: number | null
+          valuation_methodology?: string | null
         }
         Relationships: []
       }
@@ -117,6 +156,75 @@ export type Database = {
           projections?: Json
           scenario_name?: string
           selected_tracks?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      industry_benchmarks: {
+        Row: {
+          created_at: string
+          genre: string
+          growth_rate_assumption: number | null
+          id: string
+          last_updated: string
+          market_risk_factor: number | null
+          revenue_multiple_avg: number | null
+          revenue_multiple_max: number | null
+          revenue_multiple_min: number | null
+          streams_to_revenue_ratio: number | null
+        }
+        Insert: {
+          created_at?: string
+          genre: string
+          growth_rate_assumption?: number | null
+          id?: string
+          last_updated?: string
+          market_risk_factor?: number | null
+          revenue_multiple_avg?: number | null
+          revenue_multiple_max?: number | null
+          revenue_multiple_min?: number | null
+          streams_to_revenue_ratio?: number | null
+        }
+        Update: {
+          created_at?: string
+          genre?: string
+          growth_rate_assumption?: number | null
+          id?: string
+          last_updated?: string
+          market_risk_factor?: number | null
+          revenue_multiple_avg?: number | null
+          revenue_multiple_max?: number | null
+          revenue_multiple_min?: number | null
+          streams_to_revenue_ratio?: number | null
+        }
+        Relationships: []
+      }
+      valuation_tiers: {
+        Row: {
+          created_at: string
+          features_enabled: Json
+          id: string
+          max_valuations_per_month: number | null
+          tier_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          features_enabled?: Json
+          id?: string
+          max_valuations_per_month?: number | null
+          tier_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          features_enabled?: Json
+          id?: string
+          max_valuations_per_month?: number | null
+          tier_name?: string
           updated_at?: string
           user_id?: string
         }
