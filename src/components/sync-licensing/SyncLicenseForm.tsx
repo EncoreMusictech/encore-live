@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,9 +33,18 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { SyncLicense, useCreateSyncLicense, useUpdateSyncLicense } from "@/hooks/useSyncLicenses";
+import { useSyncAgents } from "@/hooks/useSyncAgents";
 
 interface SyncLicenseFormProps {
   open: boolean;
@@ -50,8 +59,10 @@ const paymentStatuses = ["Pending", "Partial", "Paid in Full"];
 const invoiceStatuses = ["Not Issued", "Issued", "Paid"];
 
 export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseFormProps) => {
+  const [agentOpen, setAgentOpen] = useState(false);
   const createMutation = useCreateSyncLicense();
   const updateMutation = useUpdateSyncLicense();
+  const { data: existingAgents = [] } = useSyncAgents();
   const isEditing = !!license;
 
   const form = useForm({
@@ -196,11 +207,58 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     control={form.control}
                     name="synch_agent"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex flex-col">
                         <FormLabel>Sync Agent</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Agent name" {...field} />
-                        </FormControl>
+                        <Popover open={agentOpen} onOpenChange={setAgentOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn(
+                                  "w-full justify-between",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value || "Select or enter agent name"}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0">
+                            <Command>
+                              <CommandInput 
+                                placeholder="Search or type new agent..." 
+                                value={field.value || ""} 
+                                onValueChange={field.onChange}
+                              />
+                              <CommandList>
+                                <CommandEmpty>
+                                  <div className="p-2">
+                                    <div className="text-sm">No agent found.</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      Press Enter to add "{field.value}"
+                                    </div>
+                                  </div>
+                                </CommandEmpty>
+                                <CommandGroup>
+                                  {existingAgents.map((agent) => (
+                                    <CommandItem
+                                      key={agent}
+                                      value={agent}
+                                      onSelect={() => {
+                                        field.onChange(agent);
+                                        setAgentOpen(false);
+                                      }}
+                                    >
+                                      {agent}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
