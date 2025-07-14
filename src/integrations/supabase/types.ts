@@ -122,6 +122,149 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_royalty_connections: {
+        Row: {
+          catalog_id: string | null
+          contract_id: string
+          created_at: string
+          id: string
+          payment_priority: number | null
+          recipient_name: string
+          recipient_type: string
+          recoupment_applicable: boolean | null
+          royalty_type: string
+          split_percentage: number
+        }
+        Insert: {
+          catalog_id?: string | null
+          contract_id: string
+          created_at?: string
+          id?: string
+          payment_priority?: number | null
+          recipient_name: string
+          recipient_type: string
+          recoupment_applicable?: boolean | null
+          royalty_type: string
+          split_percentage: number
+        }
+        Update: {
+          catalog_id?: string | null
+          contract_id?: string
+          created_at?: string
+          id?: string
+          payment_priority?: number | null
+          recipient_name?: string
+          recipient_type?: string
+          recoupment_applicable?: boolean | null
+          royalty_type?: string
+          split_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_royalty_connections_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_templates: {
+        Row: {
+          contract_type: Database["public"]["Enums"]["contract_type"]
+          created_at: string
+          id: string
+          is_public: boolean | null
+          template_data: Json
+          template_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contract_type: Database["public"]["Enums"]["contract_type"]
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          template_data?: Json
+          template_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contract_type?: Database["public"]["Enums"]["contract_type"]
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          template_data?: Json
+          template_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contracts: {
+        Row: {
+          associated_catalog_ids: string[] | null
+          contract_data: Json | null
+          contract_status: Database["public"]["Enums"]["contract_status"]
+          contract_type: Database["public"]["Enums"]["contract_type"]
+          counterparty_name: string
+          created_at: string
+          end_date: string | null
+          financial_terms: Json | null
+          generated_pdf_url: string | null
+          id: string
+          notes: string | null
+          original_pdf_url: string | null
+          royalty_splits: Json | null
+          start_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          version: number | null
+        }
+        Insert: {
+          associated_catalog_ids?: string[] | null
+          contract_data?: Json | null
+          contract_status?: Database["public"]["Enums"]["contract_status"]
+          contract_type: Database["public"]["Enums"]["contract_type"]
+          counterparty_name: string
+          created_at?: string
+          end_date?: string | null
+          financial_terms?: Json | null
+          generated_pdf_url?: string | null
+          id?: string
+          notes?: string | null
+          original_pdf_url?: string | null
+          royalty_splits?: Json | null
+          start_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          version?: number | null
+        }
+        Update: {
+          associated_catalog_ids?: string[] | null
+          contract_data?: Json | null
+          contract_status?: Database["public"]["Enums"]["contract_status"]
+          contract_type?: Database["public"]["Enums"]["contract_type"]
+          counterparty_name?: string
+          created_at?: string
+          end_date?: string | null
+          financial_terms?: Json | null
+          generated_pdf_url?: string | null
+          id?: string
+          notes?: string | null
+          original_pdf_url?: string | null
+          royalty_splits?: Json | null
+          start_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          version?: number | null
+        }
+        Relationships: []
+      }
       deal_scenarios: {
         Row: {
           artist_id: string
@@ -238,7 +381,17 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      artist_type: "indie" | "label" | "360" | "distribution_only"
+      contract_status: "draft" | "signed" | "active" | "expired" | "terminated"
+      contract_type:
+        | "publishing"
+        | "artist"
+        | "producer"
+        | "sync"
+        | "distribution"
+      producer_type: "flat_fee" | "points" | "hybrid"
+      publishing_type: "admin" | "copub" | "full_pub" | "jv"
+      sync_type: "one_time" | "mfn" | "perpetual" | "term_limited"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -365,6 +518,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      artist_type: ["indie", "label", "360", "distribution_only"],
+      contract_status: ["draft", "signed", "active", "expired", "terminated"],
+      contract_type: [
+        "publishing",
+        "artist",
+        "producer",
+        "sync",
+        "distribution",
+      ],
+      producer_type: ["flat_fee", "points", "hybrid"],
+      publishing_type: ["admin", "copub", "full_pub", "jv"],
+      sync_type: ["one_time", "mfn", "perpetual", "term_limited"],
+    },
   },
 } as const

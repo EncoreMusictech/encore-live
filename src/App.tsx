@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import CatalogValuationPage from "./pages/CatalogValuation";
 import DealSimulatorPage from "./pages/DealSimulatorPage";
 import ModulesPage from "./pages/ModulesPage";
+import ContractManagement from "./pages/ContractManagement";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/modules" element={<ModulesPage />} />
           <Route path="/catalog-valuation" element={<CatalogValuationPage />} />
           <Route path="/deal-simulator" element={<DealSimulatorPage />} />
+          <Route path="/contract-management" element={<ContractManagement />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
