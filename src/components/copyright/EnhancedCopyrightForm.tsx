@@ -330,7 +330,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
             <CardHeader className="cursor-pointer hover:bg-muted/50">
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                📁 Metadata
+                Metadata
                 <Badge variant="outline" className="text-xs">Required</Badge>
               </CardTitle>
             </CardHeader>
@@ -476,7 +476,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
             <CardHeader className="cursor-pointer hover:bg-muted/50">
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                🧑‍🎼 Writers
+                Writers
                 <Badge variant={totalWriterShare === 100 ? "default" : "destructive"}>
                   {writers.length} writers • {totalWriterShare}% total
                 </Badge>
@@ -583,7 +583,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
             <CardHeader className="cursor-pointer hover:bg-muted/50">
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5" />
-                🗂 PRO Registration
+                PRO Registration
               </CardTitle>
             </CardHeader>
           </CollapsibleTrigger>
@@ -663,7 +663,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
             <CardHeader className="cursor-pointer hover:bg-muted/50">
               <CardTitle className="flex items-center gap-2">
                 <Gavel className="h-5 w-5" />
-                ⚖️ Legal Filing
+                Legal Filing
               </CardTitle>
             </CardHeader>
           </CollapsibleTrigger>
@@ -719,7 +719,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
             <CardHeader className="cursor-pointer hover:bg-muted/50">
               <CardTitle className="flex items-center gap-2">
                 <Link2 className="h-5 w-5" />
-                🔗 Contract Link
+                Contract Link
               </CardTitle>
             </CardHeader>
           </CollapsibleTrigger>
