@@ -1,5 +1,8 @@
 project_id = "plxsenykjisqutxcvjeg"
 
+[functions.send-welcome-email]
+verify_jwt = false
+
 [functions.spotify-catalog-valuation]
 verify_jwt = false
 
