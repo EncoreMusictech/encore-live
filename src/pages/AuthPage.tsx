@@ -254,13 +254,22 @@ export default function AuthPage() {
                       />
                     </svg>
                     Continue with Google
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+                   </Button>
+                 </form>
+               </CardContent>
+             </Card>
+           </TabsContent>
+         </Tabs>
+         
+         <div className="mt-8 text-center">
+           <Link 
+             to="/privacy" 
+             className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+           >
+             Privacy Policy
+           </Link>
+         </div>
+       </div>
+     </div>
   );
 }

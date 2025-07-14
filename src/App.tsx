@@ -15,6 +15,7 @@ import ModulesPage from "./pages/ModulesPage";
 import ContractManagement from "./pages/ContractManagement";
 import CopyrightManagement from "./pages/CopyrightManagement";
 import PricingPage from "./pages/PricingPage";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/modules" element={<ModulesPage />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route 
               path="/catalog-valuation" 
               element={
