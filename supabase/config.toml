@@ -2,3 +2,6 @@ project_id = "plxsenykjisqutxcvjeg"
 
 [functions.spotify-catalog-valuation]
 verify_jwt = false
+
+[functions.artist-discography]
+verify_jwt = false

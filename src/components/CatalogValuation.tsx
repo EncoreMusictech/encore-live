@@ -316,6 +316,32 @@ ${reportData.comparables.map(comp =>
             </Card>
           </div>
 
+          {/* Enhanced Analysis Link */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Advanced Deal Analysis</CardTitle>
+              <CardDescription>
+                Simulate catalog acquisition and licensing deals with detailed financial projections
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Deal Simulator</p>
+                  <p className="text-sm text-muted-foreground">
+                    Select specific tracks/albums and model acquisition scenarios with 5-year projections
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => window.location.href = `/deal-simulator?artist=${encodeURIComponent(result.artist_name)}&id=${encodeURIComponent(result.spotify_data.artist_id)}`}
+                  className="bg-gradient-primary text-primary-foreground"
+                >
+                  Launch Deal Simulator
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Scenario Analysis */}
             <Card className="lg:col-span-2">

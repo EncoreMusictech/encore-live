@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      artist_discography: {
+        Row: {
+          albums: Json
+          artist_id: string
+          artist_name: string
+          created_at: string
+          id: string
+          last_updated: string
+          singles: Json
+        }
+        Insert: {
+          albums: Json
+          artist_id: string
+          artist_name: string
+          created_at?: string
+          id?: string
+          last_updated?: string
+          singles: Json
+        }
+        Update: {
+          albums?: Json
+          artist_id?: string
+          artist_name?: string
+          created_at?: string
+          id?: string
+          last_updated?: string
+          singles?: Json
+        }
+        Relationships: []
+      }
       catalog_valuations: {
         Row: {
           artist_name: string
@@ -50,6 +80,45 @@ export type Database = {
           updated_at?: string
           user_id?: string
           valuation_amount?: number | null
+        }
+        Relationships: []
+      }
+      deal_scenarios: {
+        Row: {
+          artist_id: string
+          artist_name: string
+          created_at: string
+          deal_terms: Json
+          id: string
+          projections: Json
+          scenario_name: string
+          selected_tracks: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          artist_id: string
+          artist_name: string
+          created_at?: string
+          deal_terms: Json
+          id?: string
+          projections: Json
+          scenario_name: string
+          selected_tracks: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          artist_id?: string
+          artist_name?: string
+          created_at?: string
+          deal_terms?: Json
+          id?: string
+          projections?: Json
+          scenario_name?: string
+          selected_tracks?: Json
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
