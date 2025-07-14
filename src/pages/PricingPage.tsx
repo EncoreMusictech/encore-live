@@ -7,7 +7,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Check, Star, Package, Zap } from "lucide-react";
+import { Check, Star, Package, Zap, Crown, Building, Users, Plus, Infinity } from "lucide-react";
+
+interface SubscriptionTier {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  monthly_price: number;
+  annual_price: number;
+  tier_level: number;
+  included_modules: string[];
+  max_valuations_per_month: number | null;
+  max_deal_simulations_per_month: number | null;
+  max_contracts_per_month: number | null;
+  api_access_enabled: boolean;
+  priority_support: boolean;
+  custom_branding: boolean;
+  features: string[];
+  is_popular: boolean;
+}
+
+interface SubscriptionAddon {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  monthly_price: number;
+  addon_type: string;
+  features: string[];
+}
 
 interface ModuleProduct {
   id: string;
@@ -19,23 +48,13 @@ interface ModuleProduct {
   features: string[];
 }
 
-interface BundleProduct {
-  id: string;
-  name: string;
-  description: string;
-  monthly_price: number;
-  annual_price: number;
-  included_modules: string[];
-  discount_percentage: number;
-  is_popular: boolean;
-  features: string[];
-}
-
 const PricingPage = () => {
   const { toast } = useToast();
+  const [tiers, setTiers] = useState<SubscriptionTier[]>([]);
+  const [addons, setAddons] = useState<SubscriptionAddon[]>([]);
   const [modules, setModules] = useState<ModuleProduct[]>([]);
-  const [bundles, setBundles] = useState<BundleProduct[]>([]);
   const [isAnnual, setIsAnnual] = useState(false);
+  const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
   const [selectedModules, setSelectedModules] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
@@ -47,7 +66,25 @@ const PricingPage = () => {
     try {
       setLoading(true);
       
-      // Load module products
+      // Load subscription tiers
+      const { data: tiersData, error: tiersError } = await supabase
+        .from('subscription_tiers')
+        .select('*')
+        .eq('is_active', true)
+        .order('tier_level');
+
+      if (tiersError) throw tiersError;
+
+      // Load add-ons
+      const { data: addonsData, error: addonsError } = await supabase
+        .from('subscription_addons')
+        .select('*')
+        .eq('is_active', true)
+        .order('monthly_price');
+
+      if (addonsError) throw addonsError;
+
+      // Load individual modules (for a la carte)
       const { data: moduleData, error: moduleError } = await supabase
         .from('module_products')
         .select('*')
@@ -56,16 +93,36 @@ const PricingPage = () => {
 
       if (moduleError) throw moduleError;
 
-      // Load bundle products
-      const { data: bundleData, error: bundleError } = await supabase
-        .from('bundle_products')
-        .select('*')
-        .eq('is_active', true)
-        .order('monthly_price');
+      // Transform the data
+      const transformedTiers = (tiersData || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        slug: item.slug,
+        description: item.description || '',
+        monthly_price: item.monthly_price,
+        annual_price: item.annual_price || 0,
+        tier_level: item.tier_level,
+        included_modules: item.included_modules || [],
+        max_valuations_per_month: item.max_valuations_per_month,
+        max_deal_simulations_per_month: item.max_deal_simulations_per_month,
+        max_contracts_per_month: item.max_contracts_per_month,
+        api_access_enabled: item.api_access_enabled || false,
+        priority_support: item.priority_support || false,
+        custom_branding: item.custom_branding || false,
+        features: Array.isArray(item.features) ? item.features.map(f => String(f)) : [],
+        is_popular: item.is_popular || false
+      }));
 
-      if (bundleError) throw bundleError;
+      const transformedAddons = (addonsData || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        slug: item.slug,
+        description: item.description || '',
+        monthly_price: item.monthly_price,
+        addon_type: item.addon_type,
+        features: Array.isArray(item.features) ? item.features.map(f => String(f)) : []
+      }));
 
-      // Transform the data to match our interfaces
       const transformedModules = (moduleData || []).map(item => ({
         id: item.id,
         module_id: item.module_id,
@@ -75,21 +132,10 @@ const PricingPage = () => {
         annual_price: item.annual_price || 0,
         features: Array.isArray(item.features) ? item.features.map(f => String(f)) : []
       }));
-      
-      const transformedBundles = (bundleData || []).map(item => ({
-        id: item.id,
-        name: item.name,
-        description: item.description || '',
-        monthly_price: item.monthly_price,
-        annual_price: item.annual_price || 0,
-        included_modules: item.included_modules || [],
-        discount_percentage: item.discount_percentage || 0,
-        is_popular: item.is_popular || false,
-        features: Array.isArray(item.features) ? item.features.map(f => String(f)) : []
-      }));
 
+      setTiers(transformedTiers);
+      setAddons(transformedAddons);
       setModules(transformedModules);
-      setBundles(transformedBundles);
     } catch (error) {
       console.error('Error loading pricing data:', error);
       toast({
@@ -102,6 +148,16 @@ const PricingPage = () => {
     }
   };
 
+  const handleAddonToggle = (addonId: string) => {
+    const newSelected = new Set(selectedAddons);
+    if (newSelected.has(addonId)) {
+      newSelected.delete(addonId);
+    } else {
+      newSelected.add(addonId);
+    }
+    setSelectedAddons(newSelected);
+  };
+
   const handleModuleToggle = (moduleId: string) => {
     const newSelected = new Set(selectedModules);
     if (newSelected.has(moduleId)) {
@@ -112,6 +168,11 @@ const PricingPage = () => {
     setSelectedModules(newSelected);
   };
 
+  const calculateSelectedAddonsPrice = () => {
+    const selectedAddonProducts = addons.filter(a => selectedAddons.has(a.id));
+    return selectedAddonProducts.reduce((total, addon) => total + addon.monthly_price, 0);
+  };
+
   const calculateSelectedModulesPrice = () => {
     const selectedModuleProducts = modules.filter(m => selectedModules.has(m.module_id));
     return selectedModuleProducts.reduce((total, module) => {
@@ -119,11 +180,28 @@ const PricingPage = () => {
     }, 0);
   };
 
-  const handlePurchase = (type: 'module' | 'bundle', productId: string) => {
+  const handlePurchase = (type: 'tier' | 'addon' | 'module', productId: string) => {
     toast({
       title: "Coming Soon",
       description: "Payment integration will be available soon!",
     });
+  };
+
+  const getTierIcon = (tierLevel: number) => {
+    switch (tierLevel) {
+      case 1: return <Zap className="w-5 h-5" />;
+      case 2: return <Star className="w-5 h-5" />;
+      case 3: return <Crown className="w-5 h-5" />;
+      case 4: return <Building className="w-5 h-5" />;
+      case 5: return <Users className="w-5 h-5" />;
+      case 6: return <Package className="w-5 h-5" />;
+      default: return <Zap className="w-5 h-5" />;
+    }
+  };
+
+  const formatUsageLimit = (value: number | null) => {
+    if (value === null) return <Infinity className="w-4 h-4 inline" />;
+    return value;
   };
 
   if (loading) {
@@ -144,10 +222,10 @@ const PricingPage = () => {
       <div className="container mx-auto px-4 py-20">
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Choose Your <span className="bg-gradient-accent bg-clip-text text-transparent">Perfect Plan</span>
+            Flexible <span className="bg-gradient-accent bg-clip-text text-transparent">Pricing</span> for Every Creator
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Buy individual modules or save with our bundles. Switch between monthly and annual billing.
+            Choose from our comprehensive subscription tiers, add-ons, or build your own plan with individual modules.
           </p>
           
           {/* Billing Toggle */}
@@ -171,28 +249,32 @@ const PricingPage = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="bundles" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-12">
-            <TabsTrigger value="bundles" className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              Bundles
+        <Tabs defaultValue="tiers" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-12">
+            <TabsTrigger value="tiers" className="flex items-center gap-2">
+              <Crown className="w-4 h-4" />
+              Subscription Tiers
             </TabsTrigger>
-            <TabsTrigger value="individual" className="flex items-center gap-2">
-              <Zap className="w-4 h-4" />
-              Individual Modules
+            <TabsTrigger value="addons" className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Add-ons
+            </TabsTrigger>
+            <TabsTrigger value="modules" className="flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              À la Carte
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="bundles">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {bundles.map((bundle) => (
+          <TabsContent value="tiers">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+              {tiers.map((tier) => (
                 <Card 
-                  key={bundle.id}
+                  key={tier.id}
                   className={`relative transition-all duration-300 hover:shadow-elegant ${
-                    bundle.is_popular ? 'ring-2 ring-music-purple shadow-glow scale-105' : ''
-                  }`}
+                    tier.is_popular ? 'ring-2 ring-music-purple shadow-glow scale-105' : ''
+                  } ${tier.tier_level >= 5 ? 'bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20' : ''}`}
                 >
-                  {bundle.is_popular && (
+                  {tier.is_popular && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                       <Badge className="bg-gradient-accent text-accent-foreground">
                         <Star className="w-3 h-3 mr-1" />
@@ -202,24 +284,48 @@ const PricingPage = () => {
                   )}
                   
                   <CardHeader className="text-center">
-                    <CardTitle className="text-2xl">{bundle.name}</CardTitle>
-                    <div className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                      ${isAnnual ? bundle.annual_price : bundle.monthly_price}
-                      <span className="text-lg text-muted-foreground">
-                        /{isAnnual ? 'year' : 'month'}
-                      </span>
+                    <div className="flex items-center justify-center mb-2">
+                      {getTierIcon(tier.tier_level)}
                     </div>
-                    {isAnnual && bundle.discount_percentage > 0 && (
-                      <div className="text-sm text-muted-foreground">
-                        Save {bundle.discount_percentage}% annually
-                      </div>
-                    )}
-                    <CardDescription>{bundle.description}</CardDescription>
+                    <CardTitle className="text-2xl">{tier.name}</CardTitle>
+                    <div className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                      {tier.monthly_price === 0 ? 'Free' : `$${isAnnual ? tier.annual_price : tier.monthly_price}`}
+                      {tier.monthly_price > 0 && (
+                        <span className="text-lg text-muted-foreground">
+                          /{isAnnual ? 'year' : 'month'}
+                        </span>
+                      )}
+                    </div>
+                    <CardDescription>{tier.description}</CardDescription>
                   </CardHeader>
 
                   <CardContent className="space-y-4">
+                    {/* Usage Limits */}
+                    {(tier.max_valuations_per_month || tier.max_deal_simulations_per_month || tier.max_contracts_per_month) && (
+                      <div className="border-b pb-4 space-y-2">
+                        {tier.max_valuations_per_month && (
+                          <div className="text-sm flex justify-between">
+                            <span>Valuations/month:</span>
+                            <span className="font-medium">{formatUsageLimit(tier.max_valuations_per_month)}</span>
+                          </div>
+                        )}
+                        {tier.max_deal_simulations_per_month && (
+                          <div className="text-sm flex justify-between">
+                            <span>Deal simulations/month:</span>
+                            <span className="font-medium">{formatUsageLimit(tier.max_deal_simulations_per_month)}</span>
+                          </div>
+                        )}
+                        {tier.max_contracts_per_month && (
+                          <div className="text-sm flex justify-between">
+                            <span>Contracts/month:</span>
+                            <span className="font-medium">{formatUsageLimit(tier.max_contracts_per_month)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <ul className="space-y-3">
-                      {bundle.features.map((feature, index) => (
+                      {tier.features.map((feature, index) => (
                         <li key={index} className="flex items-center space-x-3">
                           <Check className="h-4 w-4 text-music-purple flex-shrink-0" />
                           <span className="text-sm">{feature}</span>
@@ -229,9 +335,9 @@ const PricingPage = () => {
 
                     <Button 
                       className="w-full mt-6 bg-gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
-                      onClick={() => handlePurchase('bundle', bundle.id)}
+                      onClick={() => handlePurchase('tier', tier.id)}
                     >
-                      {bundle.monthly_price === 0 ? 'Get Started Free' : 'Subscribe Now'}
+                      {tier.monthly_price === 0 ? 'Get Started Free' : `Choose ${tier.name}`}
                     </Button>
                   </CardContent>
                 </Card>
@@ -239,8 +345,93 @@ const PricingPage = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="individual">
+          <TabsContent value="addons">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold mb-2">Boost Your Plan</h2>
+                <p className="text-muted-foreground">Add extra features and increased limits to any subscription tier.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {addons.map((addon) => (
+                  <Card 
+                    key={addon.id}
+                    className={`transition-all duration-300 cursor-pointer ${
+                      selectedAddons.has(addon.id) 
+                        ? 'ring-2 ring-music-purple shadow-glow' 
+                        : 'hover:shadow-elegant'
+                    }`}
+                    onClick={() => handleAddonToggle(addon.id)}
+                  >
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{addon.name}</CardTitle>
+                        <div className="text-right">
+                          <div className="text-xl font-bold">
+                            ${addon.monthly_price}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            /month
+                          </div>
+                        </div>
+                      </div>
+                      <CardDescription>{addon.description}</CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="space-y-2">
+                      {addon.features.map((feature, index) => (
+                        <div key={index} className="flex items-center space-x-2 text-sm">
+                          <Check className="h-3 w-3 text-music-purple flex-shrink-0" />
+                          <span className="text-muted-foreground">{feature}</span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Selected add-ons summary */}
+              {selectedAddons.size > 0 && (
+                <Card className="bg-secondary/30 border-dashed">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Selected Add-ons ({selectedAddons.size})</span>
+                      <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                        ${calculateSelectedAddonsPrice().toFixed(2)}
+                        <span className="text-sm text-muted-foreground">/month</span>
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {Array.from(selectedAddons).map(addonId => {
+                        const addon = addons.find(a => a.id === addonId);
+                        return addon ? (
+                          <Badge key={addonId} variant="secondary">
+                            {addon.name}
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                    <Button 
+                      className="w-full bg-gradient-primary text-primary-foreground"
+                      onClick={() => handlePurchase('addon', Array.from(selectedAddons).join(','))}
+                    >
+                      Add Selected Add-ons
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="modules">
             <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold mb-2">Build Your Own Plan</h2>
+                <p className="text-muted-foreground">Pick and choose individual modules to create a custom solution.</p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {modules.map((module) => (
                   <Card 
@@ -311,13 +502,7 @@ const PricingPage = () => {
                     </div>
                     <Button 
                       className="w-full bg-gradient-primary text-primary-foreground"
-                      onClick={() => {
-                        // For now, just show coming soon
-                        toast({
-                          title: "Coming Soon",
-                          description: "Custom module purchases will be available soon!",
-                        });
-                      }}
+                      onClick={() => handlePurchase('module', Array.from(selectedModules).join(','))}
                     >
                       Purchase Selected Modules
                     </Button>

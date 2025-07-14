@@ -483,6 +483,161 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_addons: {
+        Row: {
+          addon_type: string
+          created_at: string
+          description: string | null
+          features: Json
+          id: string
+          is_active: boolean
+          limit_increase: number | null
+          monthly_price: number
+          name: string
+          slug: string
+          target_limit_field: string | null
+          updated_at: string
+        }
+        Insert: {
+          addon_type: string
+          created_at?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          limit_increase?: number | null
+          monthly_price: number
+          name: string
+          slug: string
+          target_limit_field?: string | null
+          updated_at?: string
+        }
+        Update: {
+          addon_type?: string
+          created_at?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          limit_increase?: number | null
+          monthly_price?: number
+          name?: string
+          slug?: string
+          target_limit_field?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscription_tiers: {
+        Row: {
+          annual_price: number | null
+          api_access_enabled: boolean
+          created_at: string
+          custom_branding: boolean
+          description: string | null
+          features: Json
+          id: string
+          included_modules: string[]
+          is_active: boolean
+          is_popular: boolean
+          max_contracts_per_month: number | null
+          max_deal_simulations_per_month: number | null
+          max_valuations_per_month: number | null
+          monthly_price: number
+          name: string
+          priority_support: boolean
+          slug: string
+          tier_level: number
+          updated_at: string
+        }
+        Insert: {
+          annual_price?: number | null
+          api_access_enabled?: boolean
+          created_at?: string
+          custom_branding?: boolean
+          description?: string | null
+          features?: Json
+          id?: string
+          included_modules?: string[]
+          is_active?: boolean
+          is_popular?: boolean
+          max_contracts_per_month?: number | null
+          max_deal_simulations_per_month?: number | null
+          max_valuations_per_month?: number | null
+          monthly_price: number
+          name: string
+          priority_support?: boolean
+          slug: string
+          tier_level: number
+          updated_at?: string
+        }
+        Update: {
+          annual_price?: number | null
+          api_access_enabled?: boolean
+          created_at?: string
+          custom_branding?: boolean
+          description?: string | null
+          features?: Json
+          id?: string
+          included_modules?: string[]
+          is_active?: boolean
+          is_popular?: boolean
+          max_contracts_per_month?: number | null
+          max_deal_simulations_per_month?: number | null
+          max_valuations_per_month?: number | null
+          monthly_price?: number
+          name?: string
+          priority_support?: boolean
+          slug?: string
+          tier_level?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_addon_subscriptions: {
+        Row: {
+          addon_id: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          started_at: string
+          status: string
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          addon_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          addon_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_addon_subscriptions_addon_id_fkey"
+            columns: ["addon_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_addons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_module_access: {
         Row: {
           access_source: string
@@ -560,6 +715,42 @@ export type Database = {
           subscription_type?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_usage_tracking: {
+        Row: {
+          api_calls_made: number
+          contracts_created: number
+          created_at: string
+          deal_simulations_used: number
+          id: string
+          month_year: string
+          updated_at: string
+          user_id: string
+          valuations_used: number
+        }
+        Insert: {
+          api_calls_made?: number
+          contracts_created?: number
+          created_at?: string
+          deal_simulations_used?: number
+          id?: string
+          month_year: string
+          updated_at?: string
+          user_id: string
+          valuations_used?: number
+        }
+        Update: {
+          api_calls_made?: number
+          contracts_created?: number
+          created_at?: string
+          deal_simulations_used?: number
+          id?: string
+          month_year?: string
+          updated_at?: string
+          user_id?: string
+          valuations_used?: number
         }
         Relationships: []
       }
