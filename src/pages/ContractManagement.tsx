@@ -10,12 +10,14 @@ import { Input } from "@/components/ui/input";
 import { ContractList } from "@/components/contracts/ContractList";
 import { ContractForm } from "@/components/contracts/ContractForm";
 import { TemplateLibrary } from "@/components/contracts/TemplateLibrary";
+import { DocuSignImport } from "@/components/contracts/DocuSignImport";
 
 const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
   const [creationMethod, setCreationMethod] = useState<string | null>(null);
+  const [showDocuSignImport, setShowDocuSignImport] = useState(false);
 
   const contractTypes = [
     {
@@ -207,8 +209,11 @@ const ContractManagement = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <Button className="w-full" disabled>
-                          Connect DocuSign (Coming Soon)
+                        <Button 
+                          className="w-full" 
+                          onClick={() => setShowDocuSignImport(true)}
+                        >
+                          Connect DocuSign
                         </Button>
                       </CardContent>
                     </Card>
@@ -243,22 +248,33 @@ const ContractManagement = () => {
                       </CardContent>
                     </Card>
                   </div>
-                </div>
-              ) : (
-                // Step 3: Contract form
-                <ContractForm 
-                  contractType={selectedContractType}
-                  onCancel={() => {
-                    setSelectedContractType(null);
-                    setCreationMethod(null);
-                  }}
-                  onSuccess={() => {
-                    setIsCreateDialogOpen(false);
-                    setSelectedContractType(null);
-                    setCreationMethod(null);
-                  }}
-                />
-              )}
+                 </div>
+               ) : showDocuSignImport ? (
+                 // DocuSign Import Flow
+                 <DocuSignImport
+                   onBack={() => setShowDocuSignImport(false)}
+                   onSuccess={() => {
+                     setIsCreateDialogOpen(false);
+                     setSelectedContractType(null);
+                     setCreationMethod(null);
+                     setShowDocuSignImport(false);
+                   }}
+                 />
+               ) : (
+                 // Step 3: Contract form
+                 <ContractForm 
+                   contractType={selectedContractType}
+                   onCancel={() => {
+                     setSelectedContractType(null);
+                     setCreationMethod(null);
+                   }}
+                   onSuccess={() => {
+                     setIsCreateDialogOpen(false);
+                     setSelectedContractType(null);
+                     setCreationMethod(null);
+                   }}
+                 />
+               )}
             </DialogContent>
           </Dialog>
         </div>
