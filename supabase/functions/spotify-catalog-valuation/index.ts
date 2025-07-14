@@ -174,12 +174,56 @@ serve(async (req) => {
       high: valuations.optimistic.current
     };
 
-    // Find comparable artists (simplified - in real scenario would use more sophisticated matching)
-    const comparableArtists = [
-      { name: "Similar Artist 1", valuation: fairMarketValue.mid * 0.8, followers: artist.followers.total * 0.9 },
-      { name: "Similar Artist 2", valuation: fairMarketValue.mid * 1.2, followers: artist.followers.total * 1.1 },
-      { name: "Similar Artist 3", valuation: fairMarketValue.mid * 0.95, followers: artist.followers.total * 0.85 }
-    ];
+    // Find comparable artists using Spotify's related artists API
+    const relatedArtistsResponse = await fetch(
+      `https://api.spotify.com/v1/artists/${artist.id}/related-artists`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    let comparableArtists = [];
+    
+    if (relatedArtistsResponse.ok) {
+      const relatedData = await relatedArtistsResponse.json();
+      console.log(`Found ${relatedData.artists.length} related artists`);
+      
+      // Take top 3 most popular related artists and calculate their valuations
+      const topRelatedArtists = relatedData.artists
+        .sort((a: SpotifyArtist, b: SpotifyArtist) => b.popularity - a.popularity)
+        .slice(0, 3);
+      
+      comparableArtists = topRelatedArtists.map((relatedArtist: SpotifyArtist) => {
+        // Calculate estimated streams for related artist using same methodology
+        const relatedEstimatedStreams = Math.floor(
+          (relatedArtist.followers.total * relatedArtist.popularity * 2.5)
+        );
+        
+        // Calculate valuation using base case scenario
+        const relatedValuation = Math.floor(
+          relatedEstimatedStreams * 0.003 * scenarios.base.multipleRange.min
+        );
+        
+        return {
+          name: relatedArtist.name,
+          valuation: relatedValuation,
+          followers: relatedArtist.followers.total,
+          popularity: relatedArtist.popularity,
+          genres: relatedArtist.genres,
+          spotify_id: relatedArtist.id
+        };
+      });
+    } else {
+      console.log('Could not fetch related artists, using fallback data');
+      // Fallback to placeholder data if API call fails
+      comparableArtists = [
+        { name: "Similar Artist 1", valuation: fairMarketValue.mid * 0.8, followers: artist.followers.total * 0.9, popularity: artist.popularity - 5 },
+        { name: "Similar Artist 2", valuation: fairMarketValue.mid * 1.2, followers: artist.followers.total * 1.1, popularity: artist.popularity + 3 },
+        { name: "Similar Artist 3", valuation: fairMarketValue.mid * 0.95, followers: artist.followers.total * 0.85, popularity: artist.popularity - 2 }
+      ];
+    }
 
     const valuationData = {
       artist_name: artist.name,

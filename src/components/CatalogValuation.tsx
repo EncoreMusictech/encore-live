@@ -36,6 +36,9 @@ interface ComparableArtist {
   name: string;
   valuation: number;
   followers: number;
+  popularity: number;
+  genres?: string[];
+  spotify_id?: string;
 }
 
 interface ValuationResult {
@@ -401,13 +404,40 @@ ${reportData.comparables.map(comp =>
                 <div className="space-y-3">
                   {result.comparable_artists.map((comp, index) => (
                     <div key={index} className="p-3 border rounded-lg">
-                      <p className="font-medium">{comp.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatNumber(comp.followers)} followers
-                      </p>
-                      <p className="font-bold text-music-purple">
-                        {formatCurrency(comp.valuation)}
-                      </p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium">{comp.name}</p>
+                        {comp.spotify_id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`https://open.spotify.com/artist/${comp.spotify_id}`, '_blank')}
+                          >
+                            View
+                          </Button>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">
+                          {formatNumber(comp.followers)} followers
+                        </p>
+                        {comp.popularity && (
+                          <p className="text-sm text-muted-foreground">
+                            Popularity: {comp.popularity}/100
+                          </p>
+                        )}
+                        <p className="font-bold text-music-purple">
+                          {formatCurrency(comp.valuation)}
+                        </p>
+                        {comp.genres && comp.genres.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {comp.genres.slice(0, 2).map((genre, genreIndex) => (
+                              <Badge key={genreIndex} variant="outline" className="text-xs">
+                                {genre}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                   
