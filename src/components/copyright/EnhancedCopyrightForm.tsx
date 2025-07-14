@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { CopyrightInsert, useCopyright } from '@/hooks/useCopyright';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { AudioPlayer } from './AudioPlayer';
 
 interface EnhancedCopyrightFormProps {
   onSuccess?: () => void;
@@ -388,14 +389,25 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="mp3_link">MP3 Link</Label>
-                  <Input
-                    id="mp3_link"
-                    type="url"
-                    value={formData.mp3_link || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, mp3_link: e.target.value }))}
-                    placeholder={spotifyMetadata?.previewUrl ? "Auto-filled from Spotify" : "Spotify preview URL"}
+                  <Label>Audio Preview</Label>
+                  <AudioPlayer 
+                    src={formData.mp3_link || spotifyMetadata?.previewUrl}
+                    title={formData.work_title}
+                    artist={spotifyMetadata?.artist}
                   />
+                  {(!formData.mp3_link && !spotifyMetadata?.previewUrl) && (
+                    <div className="mt-2">
+                      <Label htmlFor="mp3_link_manual">Manual Audio URL (optional)</Label>
+                      <Input
+                        id="mp3_link_manual"
+                        type="url"
+                        value={formData.mp3_link || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, mp3_link: e.target.value }))}
+                        placeholder="Enter audio preview URL"
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
