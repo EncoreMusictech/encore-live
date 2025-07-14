@@ -98,6 +98,9 @@ const CopyrightManagement = () => {
 
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
   const [spotifyMetadata, setSpotifyMetadata] = useState<any>(null);
+  const [ascapLoading, setAscapLoading] = useState(false);
+  const [searchWriter, setSearchWriter] = useState('');
+  const [searchPublisher, setSearchPublisher] = useState('');
 
   // Debounced function to fetch Spotify metadata
   const fetchSpotifyMetadata = useCallback(async (workTitle: string) => {
@@ -234,6 +237,77 @@ const CopyrightManagement = () => {
     }
     
     return true;
+  };
+
+  const searchASCAP = async () => {
+    if (!formData.songTitle && !searchWriter && !searchPublisher) {
+      toast({
+        title: "Missing search criteria",
+        description: "Please provide at least a work title, writer name, or publisher name.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setAscapLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ascap-lookup', {
+        body: {
+          workTitle: formData.songTitle,
+          writerName: searchWriter,
+          publisherName: searchPublisher
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.found) {
+        // Auto-populate ISWC if found
+        if (data.iswc && !formData.iswc) {
+          setFormData(prev => ({ ...prev, iswc: data.iswc }));
+        }
+
+        // Auto-populate writers if found
+        if (data.writers && data.writers.length > 0) {
+          const ascapWriters = data.writers.map((w: any) => ({
+            name: w.name || '',
+            ipi: w.ipi || '',
+            share: w.share || 0
+          }));
+          setFormData(prev => ({ ...prev, writers: ascapWriters }));
+        }
+
+        // Auto-populate publishers if found
+        if (data.publishers && data.publishers.length > 0) {
+          const ascapPublishers = data.publishers.map((p: any) => ({
+            name: p.name || '',
+            share: p.share || 0
+          }));
+          setFormData(prev => ({ ...prev, publishers: ascapPublishers }));
+        }
+
+        toast({
+          title: "ASCAP data found",
+          description: `Found ${data.writers?.length || 0} writers and ${data.publishers?.length || 0} publishers. Form auto-populated.`,
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "No results found",
+          description: "No matching records found in ASCAP Repertory database.",
+          variant: "default"
+        });
+      }
+    } catch (error) {
+      console.error('ASCAP lookup error:', error);
+      toast({
+        title: "Search error",
+        description: "Failed to search ASCAP database. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setAscapLoading(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -457,6 +531,58 @@ const CopyrightManagement = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  {/* ASCAP Lookup Section */}
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-base font-semibold">ASCAP Database Lookup</Label>
+                      <Badge variant="secondary" className="text-xs">Auto-populate</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Search the ASCAP Repertory database to automatically populate writer and publisher information.
+                    </p>
+                    
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="searchWriter">Writer Name (optional)</Label>
+                        <Input
+                          id="searchWriter"
+                          value={searchWriter}
+                          onChange={(e) => setSearchWriter(e.target.value)}
+                          placeholder="Enter writer/composer name"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="searchPublisher">Publisher Name (optional)</Label>
+                        <Input
+                          id="searchPublisher"
+                          value={searchPublisher}
+                          onChange={(e) => setSearchPublisher(e.target.value)}
+                          placeholder="Enter publisher name"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-start">
+                      <Button 
+                        type="button" 
+                        onClick={searchASCAP}
+                        disabled={ascapLoading || (!formData.songTitle && !searchWriter && !searchPublisher)}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <Search className="h-4 w-4" />
+                        {ascapLoading ? "Searching ASCAP..." : "Search ASCAP Database"}
+                      </Button>
+                    </div>
+                    
+                    {ascapLoading && (
+                      <div className="text-sm text-muted-foreground">
+                        Searching ASCAP Repertory database for matching records...
+                      </div>
+                    )}
                   </div>
 
                   {/* Recording Information */}
