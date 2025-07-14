@@ -31,6 +31,8 @@ interface Writer {
   share: number;
   proAffiliation: string;
   controlled: 'C' | 'NC';
+  publisherName: string;
+  publisherIpi: string;
 }
 
 interface SpotifyMetadata {
@@ -176,7 +178,9 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
       ipi: '',
       share: 0,
       proAffiliation: '',
-      controlled: 'NC'
+      controlled: 'NC',
+      publisherName: '',
+      publisherIpi: ''
     };
     setWriters([...writers, newWriter]);
   };
@@ -495,6 +499,25 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                           <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Publisher Name</Label>
+                      <Input
+                        value={writer.publisherName}
+                        onChange={(e) => updateWriter(writer.id, 'publisherName', e.target.value)}
+                        placeholder="Publisher Name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Publisher IPI</Label>
+                      <Input
+                        value={writer.publisherIpi}
+                        onChange={(e) => updateWriter(writer.id, 'publisherIpi', e.target.value)}
+                        placeholder="Publisher IPI Number"
+                      />
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
