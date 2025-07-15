@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Search, MoreHorizontal, Edit, Trash2, Download, FileText, Upload } from "lucide-react";
+import { Search, MoreHorizontal, Edit, Trash2, Download, FileText, Upload, RefreshCw } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { ReconciliationBatchForm } from "./ReconciliationBatchForm";
 
@@ -20,10 +20,11 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [editingBatch, setEditingBatch] = useState<any>(null);
-  const { batches, loading, deleteBatch } = useReconciliationBatches();
+  const { batches, loading, deleteBatch, refreshBatches } = useReconciliationBatches();
 
   const filteredBatches = batches.filter(batch => {
-    const matchesSearch = batch.batch_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const batchId = batch.batch_id || '';
+    const matchesSearch = batchId.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          batch.source.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || batch.status === statusFilter;
     const matchesSource = sourceFilter === "all" || batch.source === sourceFilter;
@@ -59,6 +60,20 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
 
   return (
     <div className="space-y-4">
+      {/* Header with refresh button */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-medium">Reconciliation Batches</h3>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={refreshBatches}
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+      
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -112,7 +127,7 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
           <TableBody>
             {filteredBatches.map((batch) => (
               <TableRow key={batch.id}>
-                <TableCell className="font-medium">{batch.batch_id}</TableCell>
+                <TableCell className="font-medium">{batch.batch_id || 'Generating...'}</TableCell>
                 <TableCell>
                   <Badge className={getSourceColor(batch.source)}>
                     {batch.source}
