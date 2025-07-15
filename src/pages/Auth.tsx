@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { PlayCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import DemoUserSetup from '@/components/DemoUserSetup';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -42,24 +43,7 @@ const Auth = () => {
 
   const handleDemoLogin = async () => {
     setLoading(true);
-    
-    try {
-      // Try to sign in first
-      const { error: signInError } = await signIn('info@encoremusic.tech', 'demo123');
-      
-      // If sign in fails, create the demo user first
-      if (signInError && signInError.message === 'Invalid login credentials') {
-        const { data } = await supabase.functions.invoke('setup-demo-user');
-        
-        if (data?.success) {
-          // Try signing in again after creating the user
-          await signIn('info@encoremusic.tech', 'demo123');
-        }
-      }
-    } catch (error) {
-      console.error('Demo login error:', error);
-    }
-    
+    await signIn('info@encoremusic.tech', 'demo123');
     setLoading(false);
   };
 
@@ -161,6 +145,8 @@ const Auth = () => {
               </p>
             </div>
           </div>
+          
+          <DemoUserSetup />
         </CardContent>
       </Card>
     </div>
