@@ -254,8 +254,16 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
     setLoading(true);
     try {
-      // Create the copyright record first
-      const copyrightData = await createCopyright(formData as CopyrightInsert);
+      // Create the copyright record first - filter out non-existent fields
+      const {
+        ascap_status,
+        bmi_status,
+        socan_status,
+        sesac_status,
+        ...validFormData
+      } = formData as any;
+      
+      const copyrightData = await createCopyright(validFormData as CopyrightInsert);
       
       // Then create writer records
       for (const writer of writers) {
