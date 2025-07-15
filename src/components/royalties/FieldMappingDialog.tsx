@@ -179,13 +179,13 @@ export function FieldMappingDialog({
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className={`mb-2 p-2 bg-white border rounded-lg shadow-sm cursor-move transition-transform ${
-                                snapshot.isDragging ? 'rotate-2 shadow-lg' : 'hover:shadow-md'
+                              className={`mb-2 p-3 bg-card border border-border rounded-lg shadow-sm cursor-move transition-all duration-200 ${
+                                snapshot.isDragging ? 'rotate-2 shadow-lg scale-105' : 'hover:shadow-md hover:border-primary/50'
                               }`}
                             >
                               <div className="flex items-center gap-2">
-                                <GripVertical className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm font-medium">{field}</span>
+                                <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="text-sm font-medium text-foreground">{field}</span>
                               </div>
                             </div>
                           )}
@@ -193,8 +193,9 @@ export function FieldMappingDialog({
                       ))}
                       {provided.placeholder}
                       {availableFields.length === 0 && (
-                        <div className="text-center text-muted-foreground text-sm py-8">
-                          All fields have been mapped
+                        <div className="text-center text-muted-foreground text-sm py-8 border border-dashed border-muted-foreground/25 rounded-lg bg-muted/30">
+                          <div className="font-medium">All fields mapped!</div>
+                          <div className="text-xs mt-1">Drag fields back here to unmap them</div>
                         </div>
                       )}
                     </div>
@@ -206,7 +207,10 @@ export function FieldMappingDialog({
             {/* Mapping Targets */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Mapping Targets</CardTitle>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <GripVertical className="h-5 w-5" />
+                  Mapping Targets
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {mappingTargets.map((target) => (
@@ -228,7 +232,7 @@ export function FieldMappingDialog({
                             <Badge variant={target.type === 'required' ? 'destructive' : 'secondary'}>
                               {target.type}
                             </Badge>
-                            <span className="font-medium text-sm">{target.name}</span>
+                            <span className="font-medium text-sm text-foreground">{target.name}</span>
                           </div>
                           {fieldMapping[target.id] && (
                             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -236,7 +240,7 @@ export function FieldMappingDialog({
                         </div>
                         
                         {target.description && (
-                          <p className="text-xs text-muted-foreground mb-2">{target.description}</p>
+                          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{target.description}</p>
                         )}
 
                         {fieldMapping[target.id] ? (
@@ -249,20 +253,20 @@ export function FieldMappingDialog({
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`p-2 bg-white border rounded shadow-sm cursor-move transition-transform ${
-                                  snapshot.isDragging ? 'rotate-2 shadow-lg' : ''
+                                className={`p-3 bg-card border border-green-200 rounded shadow-sm cursor-move transition-all duration-200 ${
+                                  snapshot.isDragging ? 'rotate-2 shadow-lg scale-105' : 'hover:shadow-md'
                                 }`}
                               >
                                 <div className="flex items-center gap-2">
-                                  <ArrowRight className="h-3 w-3 text-green-600" />
-                                  <span className="text-sm">{fieldMapping[target.id]}</span>
+                                  <ArrowRight className="h-3 w-3 text-green-600 flex-shrink-0" />
+                                  <span className="text-sm font-medium text-foreground">{fieldMapping[target.id]}</span>
                                 </div>
                               </div>
                             )}
                           </Draggable>
                         ) : (
-                          <div className="text-center text-muted-foreground text-xs py-2">
-                            Drop field here
+                          <div className="text-center text-muted-foreground text-xs py-3 border-2 border-dashed border-muted-foreground/25 rounded bg-muted/20">
+                            <div>Drop field here</div>
                           </div>
                         )}
                         {provided.placeholder}
