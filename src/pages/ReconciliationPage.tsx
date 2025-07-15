@@ -7,12 +7,11 @@ import { Plus, Upload, FileText, DollarSign } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
 import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
-import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportStaging";
+
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 
 export default function ReconciliationPage() {
   const [showForm, setShowForm] = useState(false);
-  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { batches, loading } = useReconciliationBatches();
 
   const totalGrossAmount = batches.reduce((sum, batch) => sum + batch.total_gross_amount, 0);
@@ -105,13 +104,9 @@ export default function ReconciliationPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ReconciliationBatchList onSelectBatch={setSelectedBatchId} />
+              <ReconciliationBatchList />
             </CardContent>
           </Card>
-
-          {selectedBatchId && (
-            <RoyaltiesImportStaging batchId={selectedBatchId} />
-          )}
         </div>
       </div>
     </div>
