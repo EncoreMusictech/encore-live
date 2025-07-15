@@ -3,7 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CatalogValuationPage from "./pages/CatalogValuation";
 import DealSimulatorPage from "./pages/DealSimulatorPage";
@@ -18,25 +21,64 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/modules" element={<ModulesPage />} />
-          <Route path="/catalog-valuation" element={<CatalogValuationPage />} />
-          <Route path="/deal-simulator" element={<DealSimulatorPage />} />
-          <Route path="/contract-management" element={<ContractManagement />} />
-          <Route path="/copyright-management" element={<CopyrightManagement />} />
-          <Route path="/sync-licensing" element={<SyncLicensingPage />} />
-          <Route path="/sync-licensing-preview" element={<SyncLicensingPreviewPage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+            <Route path="/modules" element={
+              <ProtectedRoute>
+                <ModulesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/catalog-valuation" element={
+              <ProtectedRoute>
+                <CatalogValuationPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/deal-simulator" element={
+              <ProtectedRoute>
+                <DealSimulatorPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/contract-management" element={
+              <ProtectedRoute>
+                <ContractManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/copyright-management" element={
+              <ProtectedRoute>
+                <CopyrightManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/sync-licensing" element={
+              <ProtectedRoute>
+                <SyncLicensingPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/sync-licensing-preview" element={
+              <ProtectedRoute>
+                <SyncLicensingPreviewPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/pricing" element={
+              <ProtectedRoute>
+                <PricingPage />
+              </ProtectedRoute>
+            } />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

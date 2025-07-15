@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Music, Menu, User } from "lucide-react";
+import { Music, Menu, User, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
+  const { user, signOut } = useAuth();
+
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -31,12 +34,31 @@ const Header = () => {
         </nav>
 
         <div className="flex items-center space-x-3">
-          <Button variant="ghost" size="sm">
-            Sign In
-          </Button>
-          <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow">
-            Start Free Trial
-          </Button>
+          {user ? (
+            <>
+              <div className="flex items-center space-x-2 text-sm">
+                <User className="h-4 w-4" />
+                <span className="text-muted-foreground">{user.email}</span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/auth">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/auth">
+                <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow">
+                  Start Free Trial
+                </Button>
+              </Link>
+            </>
+          )}
           <Button variant="ghost" size="icon" className="md:hidden">
             <Menu className="h-5 w-5" />
           </Button>
