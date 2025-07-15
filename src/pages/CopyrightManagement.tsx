@@ -192,15 +192,17 @@ const CopyrightManagement = () => {
 
         {/* Edit Copyright Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Edit Copyright</DialogTitle>
+              <DialogTitle>Edit Copyright - {editingCopyright?.work_title}</DialogTitle>
             </DialogHeader>
-            <EnhancedCopyrightForm 
-              editingCopyright={editingCopyright}
-              onSuccess={handleEditSuccess}
-              onCancel={handleEditCancel}
-            />
+            <div className="max-h-[75vh] overflow-y-auto pr-2">
+              <EnhancedCopyrightForm 
+                editingCopyright={editingCopyright}
+                onSuccess={handleEditSuccess}
+                onCancel={handleEditCancel}
+              />
+            </div>
           </DialogContent>
         </Dialog>
       </main>
