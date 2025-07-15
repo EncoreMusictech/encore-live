@@ -167,6 +167,48 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          address: string | null
+          contact_type: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          payment_info: Json | null
+          phone: string | null
+          tax_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          contact_type?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          payment_info?: Json | null
+          phone?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          contact_type?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          payment_info?: Json | null
+          phone?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contract_change_logs: {
         Row: {
           change_type: string
@@ -898,6 +940,296 @@ export type Database = {
         }
         Relationships: []
       }
+      payout_royalties: {
+        Row: {
+          allocated_amount: number
+          created_at: string
+          id: string
+          payout_id: string
+          royalty_id: string
+        }
+        Insert: {
+          allocated_amount?: number
+          created_at?: string
+          id?: string
+          payout_id: string
+          royalty_id: string
+        }
+        Update: {
+          allocated_amount?: number
+          created_at?: string
+          id?: string
+          payout_id?: string
+          royalty_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_royalties_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_royalties_royalty_id_fkey"
+            columns: ["royalty_id"]
+            isOneToOne: false
+            referencedRelation: "royalty_allocations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payouts: {
+        Row: {
+          amount_due: number
+          client_id: string
+          created_at: string
+          gross_royalties: number
+          id: string
+          net_payable: number
+          notes: string | null
+          payment_date: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_reference: string | null
+          payments_to_date: number
+          period: string
+          period_end: string | null
+          period_start: string | null
+          royalties_to_date: number
+          statement_pdf_url: string | null
+          status: string | null
+          total_expenses: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_due?: number
+          client_id: string
+          created_at?: string
+          gross_royalties?: number
+          id?: string
+          net_payable?: number
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_reference?: string | null
+          payments_to_date?: number
+          period: string
+          period_end?: string | null
+          period_start?: string | null
+          royalties_to_date?: number
+          statement_pdf_url?: string | null
+          status?: string | null
+          total_expenses?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_due?: number
+          client_id?: string
+          created_at?: string
+          gross_royalties?: number
+          id?: string
+          net_payable?: number
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_reference?: string | null
+          payments_to_date?: number
+          period?: string
+          period_end?: string | null
+          period_start?: string | null
+          royalties_to_date?: number
+          statement_pdf_url?: string | null
+          status?: string | null
+          total_expenses?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payouts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reconciliation_batches: {
+        Row: {
+          batch_id: string
+          created_at: string
+          date_received: string
+          id: string
+          notes: string | null
+          source: Database["public"]["Enums"]["royalty_source"]
+          statement_file_url: string | null
+          statement_period_end: string | null
+          statement_period_start: string | null
+          status: Database["public"]["Enums"]["batch_status"]
+          total_gross_amount: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          date_received?: string
+          id?: string
+          notes?: string | null
+          source: Database["public"]["Enums"]["royalty_source"]
+          statement_file_url?: string | null
+          statement_period_end?: string | null
+          statement_period_start?: string | null
+          status?: Database["public"]["Enums"]["batch_status"]
+          total_gross_amount?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          date_received?: string
+          id?: string
+          notes?: string | null
+          source?: Database["public"]["Enums"]["royalty_source"]
+          statement_file_url?: string | null
+          statement_period_end?: string | null
+          statement_period_start?: string | null
+          status?: Database["public"]["Enums"]["batch_status"]
+          total_gross_amount?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      royalty_allocations: {
+        Row: {
+          artist: string | null
+          batch_id: string | null
+          comments: string | null
+          contract_terms: Json | null
+          controlled_status:
+            | Database["public"]["Enums"]["controlled_status"]
+            | null
+          copyright_id: string | null
+          created_at: string
+          gross_royalty_amount: number
+          id: string
+          isrc: string | null
+          ownership_splits: Json | null
+          recoupable_expenses: boolean | null
+          song_title: string
+          updated_at: string
+          user_id: string
+          work_id: string | null
+        }
+        Insert: {
+          artist?: string | null
+          batch_id?: string | null
+          comments?: string | null
+          contract_terms?: Json | null
+          controlled_status?:
+            | Database["public"]["Enums"]["controlled_status"]
+            | null
+          copyright_id?: string | null
+          created_at?: string
+          gross_royalty_amount?: number
+          id?: string
+          isrc?: string | null
+          ownership_splits?: Json | null
+          recoupable_expenses?: boolean | null
+          song_title: string
+          updated_at?: string
+          user_id: string
+          work_id?: string | null
+        }
+        Update: {
+          artist?: string | null
+          batch_id?: string | null
+          comments?: string | null
+          contract_terms?: Json | null
+          controlled_status?:
+            | Database["public"]["Enums"]["controlled_status"]
+            | null
+          copyright_id?: string | null
+          created_at?: string
+          gross_royalty_amount?: number
+          id?: string
+          isrc?: string | null
+          ownership_splits?: Json | null
+          recoupable_expenses?: boolean | null
+          song_title?: string
+          updated_at?: string
+          user_id?: string
+          work_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "royalty_allocations_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "reconciliation_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "royalty_allocations_copyright_id_fkey"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      royalty_writers: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          mechanical_share: number | null
+          performance_share: number | null
+          royalty_id: string
+          synchronization_share: number | null
+          writer_share_percentage: number
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          mechanical_share?: number | null
+          performance_share?: number | null
+          royalty_id: string
+          synchronization_share?: number | null
+          writer_share_percentage?: number
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          mechanical_share?: number | null
+          performance_share?: number | null
+          royalty_id?: string
+          synchronization_share?: number | null
+          writer_share_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "royalty_writers_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "royalty_writers_royalty_id_fkey"
+            columns: ["royalty_id"]
+            isOneToOne: false
+            referencedRelation: "royalty_allocations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_addons: {
         Row: {
           addon_type: string
@@ -1387,7 +1719,15 @@ export type Database = {
         Args: { copyright_id_param: string }
         Returns: number
       }
+      generate_batch_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_copyright_internal_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_royalty_work_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
@@ -1421,6 +1761,7 @@ export type Database = {
     }
     Enums: {
       artist_type: "indie" | "label" | "360" | "distribution_only"
+      batch_status: "Pending" | "Imported" | "Processed"
       contract_status: "draft" | "signed" | "active" | "expired" | "terminated"
       contract_type:
         | "publishing"
@@ -1428,8 +1769,11 @@ export type Database = {
         | "producer"
         | "sync"
         | "distribution"
+      controlled_status: "Controlled" | "Non-Controlled"
+      payment_method: "ACH" | "Wire" | "PayPal" | "Check"
       producer_type: "flat_fee" | "points" | "hybrid"
       publishing_type: "admin" | "copub" | "full_pub" | "jv"
+      royalty_source: "DSP" | "PRO" | "YouTube" | "Other"
       sync_type: "one_time" | "mfn" | "perpetual" | "term_limited"
     }
     CompositeTypes: {
@@ -1559,6 +1903,7 @@ export const Constants = {
   public: {
     Enums: {
       artist_type: ["indie", "label", "360", "distribution_only"],
+      batch_status: ["Pending", "Imported", "Processed"],
       contract_status: ["draft", "signed", "active", "expired", "terminated"],
       contract_type: [
         "publishing",
@@ -1567,8 +1912,11 @@ export const Constants = {
         "sync",
         "distribution",
       ],
+      controlled_status: ["Controlled", "Non-Controlled"],
+      payment_method: ["ACH", "Wire", "PayPal", "Check"],
       producer_type: ["flat_fee", "points", "hybrid"],
       publishing_type: ["admin", "copub", "full_pub", "jv"],
+      royalty_source: ["DSP", "PRO", "YouTube", "Other"],
       sync_type: ["one_time", "mfn", "perpetual", "term_limited"],
     },
   },
