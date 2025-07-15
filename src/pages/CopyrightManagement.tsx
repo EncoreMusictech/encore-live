@@ -79,17 +79,21 @@ const CopyrightManagement = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleEditSuccess = () => {
+  const handleEditSuccess = async () => {
     console.log('handleEditSuccess called, refreshing copyright data...');
-    refetch();
     setEditingCopyright(null);
     setIsEditDialogOpen(false);
+    
+    // Wait a moment for the database update to complete, then refetch
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await refetch();
+    
     toast({
-      title: "Copyright Updated",
+      title: "Copyright Updated", 
       description: "Your copyright work has been successfully updated."
     });
     
-    // Log the updated data after a brief delay to see if it changed
+    // Log the updated data after refetch
     setTimeout(() => {
       console.log('Current copyrights after update:', copyrights);
       const updatedCopyright = copyrights?.find(c => c.id === editingCopyright?.id);
@@ -100,6 +104,7 @@ const CopyrightManagement = () => {
           socan_status: (updatedCopyright as any).socan_status,
           sesac_status: (updatedCopyright as any).sesac_status
         });
+        console.log('Full updated copyright object:', updatedCopyright);
       }
     }, 1000);
   };
