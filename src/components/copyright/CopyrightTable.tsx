@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink, Edit } from 'lucide-react';
 import { Copyright, CopyrightWriter } from '@/hooks/useCopyright';
 import { AudioPlayer } from './AudioPlayer';
 
@@ -12,12 +12,13 @@ interface CopyrightTableProps {
   copyrights: Copyright[];
   writers: { [key: string]: CopyrightWriter[] };
   loading: boolean;
+  onEdit?: (copyright: Copyright) => void;
 }
 
 type SortDirection = 'asc' | 'desc';
 type SortField = 'work_title' | 'work_id' | 'created_at' | 'registration_status' | 'controlled_share';
 
-export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writers, loading }) => {
+export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writers, loading, onEdit }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('work_title');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -191,6 +192,7 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                       {getSortIcon('created_at')}
                     </div>
                   </TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -295,6 +297,18 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(copyright.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {onEdit && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onEdit(copyright)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   );

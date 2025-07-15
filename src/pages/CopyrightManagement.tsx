@@ -18,6 +18,8 @@ const CopyrightManagement = () => {
   const { toast } = useToast();
   const { copyrights, loading, getWritersForCopyright, refetch } = useCopyright();
   const [writers, setWriters] = useState<{[key: string]: any[]}>({});
+  const [editingCopyright, setEditingCopyright] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("copyrights");
 
   // Load writers for each copyright
   useEffect(() => {
@@ -70,6 +72,28 @@ const CopyrightManagement = () => {
       .reduce((sum, w) => sum + w.ownership_percentage, 0);
   };
 
+  const handleEdit = (copyright: any) => {
+    setEditingCopyright(copyright);
+    setActiveTab("edit");
+  };
+
+  const handleEditSuccess = () => {
+    refetch();
+    setEditingCopyright(null);
+    setActiveTab("copyrights");
+    toast({
+      title: editingCopyright ? "Copyright Updated" : "Copyright Created",
+      description: editingCopyright 
+        ? "Your copyright work has been successfully updated."
+        : "Your copyright work has been successfully created with all metadata."
+    });
+  };
+
+  const handleEditCancel = () => {
+    setEditingCopyright(null);
+    setActiveTab("copyrights");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -82,10 +106,11 @@ const CopyrightManagement = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="copyrights" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="copyrights">My Copyrights</TabsTrigger>
             <TabsTrigger value="register">Register New</TabsTrigger>
+            {editingCopyright && <TabsTrigger value="edit">Edit Copyright</TabsTrigger>}
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -94,6 +119,7 @@ const CopyrightManagement = () => {
               copyrights={copyrights}
               writers={writers}
               loading={loading}
+              onEdit={handleEdit}
             />
           </TabsContent>
 
@@ -107,6 +133,14 @@ const CopyrightManagement = () => {
                 });
               }}
               onCancel={() => {}}
+            />
+          </TabsContent>
+
+          <TabsContent value="edit">
+            <EnhancedCopyrightForm 
+              editingCopyright={editingCopyright}
+              onSuccess={handleEditSuccess}
+              onCancel={handleEditCancel}
             />
           </TabsContent>
 

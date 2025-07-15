@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { CopyrightInsert, useCopyright } from '@/hooks/useCopyright';
+import { CopyrightInsert, useCopyright, Copyright } from '@/hooks/useCopyright';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AudioPlayer } from './AudioPlayer';
@@ -24,6 +24,7 @@ import { WriterAgreementSection } from './WriterAgreementSection';
 interface EnhancedCopyrightFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  editingCopyright?: Copyright | null;
 }
 
 interface Writer {
@@ -48,8 +49,8 @@ interface SpotifyMetadata {
   releaseDate?: string;
 }
 
-export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ onSuccess, onCancel }) => {
-  const { createCopyright } = useCopyright();
+export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ onSuccess, onCancel, editingCopyright }) => {
+  const { createCopyright, updateCopyright, getWritersForCopyright } = useCopyright();
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(false);
@@ -167,7 +168,68 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     }, 1000);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.work_title, fetchSpotifyMetadata]);
+   }, [formData.work_title, fetchSpotifyMetadata]);
+
+  // Load existing copyright data when editing
+  useEffect(() => {
+    const loadEditingData = async () => {
+      if (editingCopyright) {
+        // Populate form with existing copyright data
+        setFormData({
+          work_title: editingCopyright.work_title || '',
+          work_type: editingCopyright.work_type || 'original',
+          language_code: editingCopyright.language_code || 'EN',
+          registration_type: editingCopyright.registration_type || 'new',
+          status: editingCopyright.status || 'draft',
+          supports_ddex: editingCopyright.supports_ddex ?? true,
+          supports_cwr: editingCopyright.supports_cwr ?? true,
+          collection_territories: editingCopyright.collection_territories || [],
+          rights_types: editingCopyright.rights_types || [],
+          contains_sample: editingCopyright.contains_sample || false,
+          akas: editingCopyright.akas || [],
+          registration_status: editingCopyright.registration_status || 'not_registered',
+          ascap_work_id: editingCopyright.ascap_work_id || '',
+          bmi_work_id: editingCopyright.bmi_work_id || '',
+          socan_work_id: editingCopyright.socan_work_id || '',
+          sesac_work_id: editingCopyright.sesac_work_id || '',
+          copyright_reg_number: editingCopyright.copyright_reg_number || '',
+          copyright_date: editingCopyright.copyright_date || '',
+          notice_date: editingCopyright.notice_date || '',
+          creation_date: editingCopyright.creation_date || '',
+          work_classification: editingCopyright.work_classification || '',
+          notes: editingCopyright.notes || '',
+          internal_id: editingCopyright.internal_id || '',
+          iswc: editingCopyright.iswc || '',
+          catalogue_number: editingCopyright.catalogue_number || '',
+          opus_number: editingCopyright.opus_number || '',
+          duration_seconds: editingCopyright.duration_seconds || null,
+          album_title: editingCopyright.album_title || '',
+          masters_ownership: editingCopyright.masters_ownership || '',
+          mp3_link: editingCopyright.mp3_link || ''
+        });
+
+        // Load existing writers
+        try {
+          const existingWriters = await getWritersForCopyright(editingCopyright.id);
+          const formattedWriters: Writer[] = existingWriters.map((writer, index) => ({
+            id: writer.id || `writer-${index}`,
+            name: writer.writer_name || '',
+            ipi: writer.ipi_number || '',
+            share: writer.ownership_percentage || 0,
+            proAffiliation: writer.pro_affiliation || '',
+            controlled: (writer.controlled_status as 'C' | 'NC') || 'NC',
+            publisherName: '',
+            publisherIpi: ''
+          }));
+          setWriters(formattedWriters);
+        } catch (error) {
+          console.error('Error loading existing writers:', error);
+        }
+      }
+    };
+
+    loadEditingData();
+  }, [editingCopyright, getWritersForCopyright]);
 
   const searchASCAP = () => {
     window.open('https://www.ascap.com/repertory#/', '_blank');
@@ -282,7 +344,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
     setLoading(true);
     try {
-      // Create the copyright record with only valid database fields
+      // Prepare the copyright data with only valid database fields
       const cleanFormData: Omit<CopyrightInsert, 'user_id'> = {
         work_title: formData.work_title || '',
         work_type: formData.work_type,
@@ -316,9 +378,19 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         mp3_link: formData.mp3_link
       };
       
-      const copyrightData = await createCopyright(cleanFormData as CopyrightInsert);
+      let copyrightData;
+      if (editingCopyright) {
+        // Update existing copyright
+        copyrightData = await updateCopyright(editingCopyright.id, cleanFormData as Partial<CopyrightInsert>);
+        
+        // Delete existing writers and recreate them
+        await supabase.from('copyright_writers').delete().eq('copyright_id', editingCopyright.id);
+      } else {
+        // Create new copyright
+        copyrightData = await createCopyright(cleanFormData as CopyrightInsert);
+      }
       
-      // Then create writer records
+      // Create/recreate writer records
       for (const writer of writers) {
         await supabase.from('copyright_writers').insert({
           copyright_id: copyrightData.id,
@@ -331,12 +403,14 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         });
       }
       
-      // Reset the form after successful creation
-      resetForm();
+      // Reset the form after successful creation/update (only for new creations)
+      if (!editingCopyright) {
+        resetForm();
+      }
       
       onSuccess?.();
     } catch (error) {
-      console.error('Error creating copyright:', error);
+      console.error('Error saving copyright:', error);
     } finally {
       setLoading(false);
     }
@@ -821,7 +895,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         </Button>
         <Button type="submit" disabled={!isFormValid || loading}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Create Copyright
+          {editingCopyright ? 'Update Copyright' : 'Create Copyright'}
         </Button>
       </div>
     </form>
