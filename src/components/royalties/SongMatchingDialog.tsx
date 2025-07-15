@@ -253,7 +253,7 @@ export function SongMatchingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh]">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Music className="h-5 w-5" />
@@ -272,7 +272,7 @@ export function SongMatchingDialog({
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-6 flex-1 overflow-hidden flex flex-col">
             {/* Summary */}
             <div className="grid grid-cols-3 gap-4">
               <Card>
@@ -302,15 +302,15 @@ export function SongMatchingDialog({
             </div>
 
             {/* Matches Table */}
-            <Card>
-              <CardHeader>
+            <Card className="flex-1 flex flex-col min-h-0">
+              <CardHeader className="flex-shrink-0">
                 <CardTitle>Song Matches</CardTitle>
                 <CardDescription>
                   Review and adjust matches before processing
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-96">
+              <CardContent className="flex-1 min-h-0">
+                <ScrollArea className="h-full">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -395,7 +395,7 @@ export function SongMatchingDialog({
             </Card>
 
             {/* Actions */}
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-end gap-4 flex-shrink-0 pt-4 border-t">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
