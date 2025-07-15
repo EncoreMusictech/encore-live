@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { PlayCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const Auth = () => {
@@ -34,6 +36,12 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     await signUp(email, password);
+    setLoading(false);
+  };
+
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    await signIn('info@encoremusic.tech', 'demo123');
     setLoading(false);
   };
 
@@ -114,6 +122,27 @@ const Auth = () => {
               </form>
             </TabsContent>
           </Tabs>
+          
+          <div className="mt-6">
+            <Separator className="my-4" />
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-3">
+                Want to try the app without signing up?
+              </p>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={handleDemoLogin}
+                disabled={loading}
+              >
+                <PlayCircle className="h-4 w-4 mr-2" />
+                {loading ? 'Logging in...' : 'Try Demo Account'}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                Demo account has access to all modules
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
