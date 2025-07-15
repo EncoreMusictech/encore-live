@@ -167,10 +167,15 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
   // Debounce the metadata fetching - only for new copyrights, not when editing
   useEffect(() => {
     // Skip Spotify search when editing existing copyright
-    if (editingCopyright) return;
+    if (editingCopyright) {
+      console.log('Skipping Spotify search - editing existing copyright');
+      return;
+    }
     
+    console.log('Setting up Spotify search timeout for:', formData.work_title);
     const timeoutId = setTimeout(() => {
       if (formData.work_title) {
+        console.log('Triggering Spotify search for:', formData.work_title);
         fetchSpotifyMetadata(formData.work_title);
       }
     }, 1000);
