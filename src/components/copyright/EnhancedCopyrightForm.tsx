@@ -148,7 +148,6 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           masters_ownership: metadata.masterOwner || prev.masters_ownership,
           mp3_link: metadata.previewUrl || prev.mp3_link,
           duration_seconds: metadata.duration || prev.duration_seconds,
-          isrc: metadata.isrc || prev.isrc,
           creation_date: metadata.releaseDate || prev.creation_date
         }));
 
@@ -500,15 +499,6 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="isrc">ISRC</Label>
-                  <Input
-                    id="isrc"
-                    value={formData.isrc || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isrc: e.target.value }))}
-                    placeholder={spotifyMetadata?.isrc ? "Auto-filled from Spotify" : "USAT21234567"}
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
