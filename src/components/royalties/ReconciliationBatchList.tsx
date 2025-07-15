@@ -172,14 +172,16 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                           <Edit className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-4xl">
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>Edit Reconciliation Batch</DialogTitle>
                         </DialogHeader>
-                        <ReconciliationBatchForm
-                          batch={editingBatch}
-                          onCancel={() => setEditingBatch(null)}
-                        />
+                        <div className="overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
+                          <ReconciliationBatchForm
+                            batch={editingBatch}
+                            onCancel={() => setEditingBatch(null)}
+                          />
+                        </div>
                       </DialogContent>
                     </Dialog>
                     <AlertDialog>
