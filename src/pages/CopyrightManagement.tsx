@@ -13,6 +13,8 @@ import { useCopyright } from "@/hooks/useCopyright";
 import { EnhancedCopyrightForm } from "@/components/copyright/EnhancedCopyrightForm";
 import { AudioPlayer } from "@/components/copyright/AudioPlayer";
 import { CopyrightTable } from "@/components/copyright/CopyrightTable";
+import { BulkUpload } from "@/components/copyright/BulkUpload";
+import { ActivityLog } from "@/components/copyright/ActivityLog";
 
 
 const CopyrightManagement = () => {
@@ -139,6 +141,8 @@ const CopyrightManagement = () => {
           <TabsList>
             <TabsTrigger value="copyrights">My Copyrights</TabsTrigger>
             <TabsTrigger value="register">Register New</TabsTrigger>
+            <TabsTrigger value="bulk-upload">Bulk Upload</TabsTrigger>
+            <TabsTrigger value="activity">Activity Log</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -163,6 +167,19 @@ const CopyrightManagement = () => {
               }}
               onCancel={() => {}}
             />
+          </TabsContent>
+
+          <TabsContent value="bulk-upload">
+            <BulkUpload 
+              onSuccess={() => {
+                refetch();
+                setActiveTab("copyrights");
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <ActivityLog />
           </TabsContent>
 
 

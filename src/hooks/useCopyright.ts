@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tables, TablesInsert } from '@/integrations/supabase/types';
+import { useActivityLog } from '@/hooks/useActivityLog';
 
 export type Copyright = Tables<'copyrights'>;
 export type CopyrightWriter = Tables<'copyright_writers'>;
@@ -13,6 +14,7 @@ export const useCopyright = () => {
   const [copyrights, setCopyrights] = useState<Copyright[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { logActivity } = useActivityLog();
 
   const fetchCopyrights = async () => {
     try {
@@ -52,6 +54,19 @@ export const useCopyright = () => {
       if (error) throw error;
       
       setCopyrights(prev => [data, ...prev]);
+      
+      // Log the create activity
+      await logActivity({
+        copyright_id: data.id,
+        action_type: 'create',
+        operation_details: {
+          work_title: data.work_title,
+          work_type: data.work_type,
+          language: data.language_code
+        },
+        new_values: data
+      });
+      
       toast({
         title: "Success",
         description: "Copyright work created successfully",
@@ -80,7 +95,22 @@ export const useCopyright = () => {
 
       if (error) throw error;
       
+      const oldCopyright = copyrights.find(c => c.id === id);
       setCopyrights(prev => prev.map(c => c.id === id ? data : c));
+      
+      // Log the update activity
+      await logActivity({
+        copyright_id: id,
+        action_type: 'update',
+        operation_details: {
+          work_title: data.work_title,
+          updated_fields: Object.keys(updates)
+        },
+        affected_fields: Object.keys(updates),
+        old_values: oldCopyright,
+        new_values: data
+      });
+      
       toast({
         title: "Success",
         description: "Copyright work updated successfully",
@@ -100,12 +130,25 @@ export const useCopyright = () => {
 
   const deleteCopyright = async (id: string) => {
     try {
+      const copyrightToDelete = copyrights.find(c => c.id === id);
+      
       const { error } = await supabase
         .from('copyrights')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
+      
+      // Log the delete activity
+      await logActivity({
+        copyright_id: id,
+        action_type: 'delete',
+        operation_details: {
+          work_title: copyrightToDelete?.work_title,
+          deleted_at: new Date().toISOString()
+        },
+        old_values: copyrightToDelete
+      });
       
       setCopyrights(prev => prev.filter(c => c.id !== id));
       toast({

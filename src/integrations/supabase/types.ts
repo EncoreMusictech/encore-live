@@ -366,6 +366,59 @@ export type Database = {
         }
         Relationships: []
       }
+      copyright_activity_logs: {
+        Row: {
+          action_type: string
+          affected_fields: string[] | null
+          batch_id: string | null
+          copyright_id: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          new_values: Json | null
+          old_values: Json | null
+          operation_details: Json | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          affected_fields?: string[] | null
+          batch_id?: string | null
+          copyright_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          operation_details?: Json | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          affected_fields?: string[] | null
+          batch_id?: string | null
+          copyright_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          operation_details?: Json | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copyright_activity_logs_copyright_id_fkey"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       copyright_exports: {
         Row: {
           copyright_id: string | null
@@ -1344,6 +1397,21 @@ export type Database = {
       }
       generate_work_id: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      log_copyright_activity: {
+        Args: {
+          p_user_id: string
+          p_copyright_id: string
+          p_action_type: string
+          p_operation_details?: Json
+          p_affected_fields?: string[]
+          p_old_values?: Json
+          p_new_values?: Json
+          p_batch_id?: string
+          p_ip_address?: string
+          p_user_agent?: string
+        }
         Returns: string
       }
       setup_demo_user: {
