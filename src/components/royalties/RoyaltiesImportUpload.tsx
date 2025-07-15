@@ -74,8 +74,8 @@ export function RoyaltiesImportUpload({ batchId, onComplete, onCancel }: Royalti
 
       // Step 2: Detect Source (or use manual selection)
       updateStep(1, 'processing');
-      let detectedSource = manualSource || parsedData.detectedSource;
-      if (detectedSource === 'Unknown' && !manualSource) {
+      let detectedSource = (manualSource && manualSource !== "auto-detect") ? manualSource : parsedData.detectedSource;
+      if (detectedSource === 'Unknown' && (!manualSource || manualSource === "auto-detect")) {
         updateStep(1, 'error', 'Could not detect source. Please select manually.');
         return;
       }
@@ -229,7 +229,7 @@ export function RoyaltiesImportUpload({ batchId, onComplete, onCancel }: Royalti
                   <SelectValue placeholder="Auto-detect source" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Auto-detect</SelectItem>
+                  <SelectItem value="auto-detect">Auto-detect</SelectItem>
                   <SelectItem value="BMI">BMI</SelectItem>
                   <SelectItem value="ASCAP">ASCAP</SelectItem>
                   <SelectItem value="YouTube">YouTube</SelectItem>
