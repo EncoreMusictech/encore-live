@@ -151,6 +151,12 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           creation_date: metadata.releaseDate || prev.creation_date
         }));
 
+        // Store ISRC in spotifyMetadata for display/use
+        setSpotifyMetadata(prev => ({
+          ...prev,
+          isrc: metadata.isrc
+        }));
+
         toast({
           title: "Spotify Metadata Found",
           description: `Auto-filled metadata for "${data.bestMatch.trackName}" by ${data.bestMatch.artist}`,
@@ -499,6 +505,17 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                   />
                 </div>
                 
+                <div className="space-y-2">
+                  <Label htmlFor="isrc">ISRC</Label>
+                  <Input
+                    id="isrc"
+                    value={spotifyMetadata?.isrc || ''}
+                    onChange={(e) => {
+                      setSpotifyMetadata(prev => ({ ...prev, isrc: e.target.value }));
+                    }}
+                    placeholder={spotifyMetadata?.isrc ? "Auto-filled from Spotify" : "USAT21234567"}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
