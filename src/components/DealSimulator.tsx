@@ -15,6 +15,7 @@ interface DealTerms {
   dealType: 'acquisition' | 'licensing' | 'co-publishing';
   recoupmentRate: number;
   minimumGuarantee: number;
+  ownershipPercentage: number;
 }
 
 interface DealProjection {
@@ -40,7 +41,8 @@ const DealSimulator = ({ selectedTracks, artistName, onSaveScenario }: DealSimul
     termLength: 5,
     dealType: 'acquisition',
     recoupmentRate: 75,
-    minimumGuarantee: 50000
+    minimumGuarantee: 50000,
+    ownershipPercentage: 100
   });
 
   const [scenarioName, setScenarioName] = useState("");
@@ -78,12 +80,15 @@ const DealSimulator = ({ selectedTracks, artistName, onSaveScenario }: DealSimul
       // Calculate net revenue (after platform fees, etc.)
       const netRevenue = grossRevenue * 0.7; // 30% platform/distribution fees
       
+      // Apply ownership percentage to the revenue (what portion of catalog you own)
+      const ownedRevenue = netRevenue * (dealTerms.ownershipPercentage / 100);
+      
       // Calculate earnings split
       const acquirerShare = dealTerms.dealType === 'acquisition' ? 100 : dealTerms.royaltyRate;
       const artistShare = 100 - acquirerShare;
       
-      const acquirerEarnings = (netRevenue * acquirerShare) / 100;
-      const artistEarnings = (netRevenue * artistShare) / 100;
+      const acquirerEarnings = (ownedRevenue * acquirerShare) / 100;
+      const artistEarnings = (ownedRevenue * artistShare) / 100;
       
       // Calculate recoupment
       const recoupmentPayment = Math.min(currentRecoupment, acquirerEarnings * (dealTerms.recoupmentRate / 100));
@@ -250,6 +255,28 @@ const DealSimulator = ({ selectedTracks, artistName, onSaveScenario }: DealSimul
                   value={dealTerms.minimumGuarantee}
                   onChange={(e) => setDealTerms({...dealTerms, minimumGuarantee: parseInt(e.target.value) || 0})}
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="ownershipPercentage">Your Catalog Ownership (%)</Label>
+                <div className="px-3">
+                  <Slider
+                    value={[dealTerms.ownershipPercentage]}
+                    onValueChange={(value) => setDealTerms({...dealTerms, ownershipPercentage: value[0]})}
+                    max={100}
+                    min={1}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-sm text-muted-foreground mt-1">
+                    <span>1%</span>
+                    <span>{dealTerms.ownershipPercentage}%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Percentage of the catalog/songs you own
+                </p>
               </div>
             </div>
           </div>
