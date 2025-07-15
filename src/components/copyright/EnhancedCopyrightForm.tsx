@@ -228,6 +228,34 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     }
   };
 
+  // Function to reset the form to initial state
+  const resetForm = () => {
+    setFormData({
+      work_title: '',
+      work_type: 'original',
+      language_code: 'EN',
+      registration_type: 'new',
+      status: 'draft',
+      supports_ddex: true,
+      supports_cwr: true,
+      collection_territories: [],
+      rights_types: [],
+      contains_sample: false,
+      akas: [],
+      registration_status: 'not_registered'
+    });
+    setWriters([]);
+    setSpotifyMetadata(null);
+    setNewAka('');
+    
+    // Reset collapsible sections to initial state
+    setMetadataOpen(true);
+    setWritersOpen(true);
+    setProRegistrationOpen(false);
+    setLegalFilingOpen(false);
+    setContractLinkOpen(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.work_title) return;
@@ -302,6 +330,9 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           writer_role: 'composer'
         });
       }
+      
+      // Reset the form after successful creation
+      resetForm();
       
       onSuccess?.();
     } catch (error) {
