@@ -92,9 +92,9 @@ export function SongMatchingDialog({
     setLoading(true);
     
     try {
-      const songMatches: SongMatch[] = [];
+      // First, process and deduplicate the imported songs
+      const processedSongs: { [key: string]: any } = {};
       
-      // Process each row in mapped data
       for (const row of mappedData) {
         const importedSong = {
           workId: row['Work ID'] || '',
@@ -107,6 +107,23 @@ export function SongMatchingDialog({
 
         // Skip if no song title
         if (!importedSong.songTitle) continue;
+
+        // Create a deduplication key based on title, writers, and share
+        const normalizeString = (str: string) => str.toLowerCase().trim().replace(/\s+/g, ' ');
+        const dedupeKey = `${normalizeString(importedSong.songTitle)}|${normalizeString(importedSong.workWriters)}|${importedSong.share}`;
+        
+        // If this combination already exists, combine the gross amounts
+        if (processedSongs[dedupeKey]) {
+          processedSongs[dedupeKey].grossAmount += importedSong.grossAmount;
+        } else {
+          processedSongs[dedupeKey] = importedSong;
+        }
+      }
+
+      const songMatches: SongMatch[] = [];
+      
+      // Process each unique song
+      for (const importedSong of Object.values(processedSongs)) {
 
         // Find best match from copyrights
         let bestMatch = null;
