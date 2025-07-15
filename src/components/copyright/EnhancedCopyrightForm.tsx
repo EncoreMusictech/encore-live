@@ -179,72 +179,70 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
   // Load existing copyright data when editing
   useEffect(() => {
-    console.log('EnhancedCopyrightForm - editingCopyright changed:', editingCopyright);
+    if (!editingCopyright) return;
     
-    const loadEditingData = async () => {
-      if (editingCopyright) {
-        console.log('Loading editing data for copyright:', editingCopyright.id, editingCopyright.work_title);
-        
-        // Populate form with existing copyright data
-        setFormData({
-          work_title: editingCopyright.work_title || '',
-          work_type: editingCopyright.work_type || 'original',
-          language_code: editingCopyright.language_code || 'EN',
-          registration_type: editingCopyright.registration_type || 'new',
-          status: editingCopyright.status || 'draft',
-          supports_ddex: editingCopyright.supports_ddex ?? true,
-          supports_cwr: editingCopyright.supports_cwr ?? true,
-          collection_territories: editingCopyright.collection_territories || [],
-          rights_types: editingCopyright.rights_types || [],
-          contains_sample: editingCopyright.contains_sample || false,
-          akas: editingCopyright.akas || [],
-          registration_status: editingCopyright.registration_status || 'not_registered',
-          ascap_work_id: editingCopyright.ascap_work_id || '',
-          bmi_work_id: editingCopyright.bmi_work_id || '',
-          socan_work_id: editingCopyright.socan_work_id || '',
-          sesac_work_id: editingCopyright.sesac_work_id || '',
-          ascap_status: (editingCopyright as any).ascap_status || 'not_registered',
-          bmi_status: (editingCopyright as any).bmi_status || 'not_registered',
-          socan_status: (editingCopyright as any).socan_status || 'not_registered',
-          sesac_status: (editingCopyright as any).sesac_status || 'not_registered',
-          copyright_reg_number: editingCopyright.copyright_reg_number || '',
-          copyright_date: editingCopyright.copyright_date || '',
-          notice_date: editingCopyright.notice_date || '',
-          creation_date: editingCopyright.creation_date || '',
-          work_classification: editingCopyright.work_classification || '',
-          notes: editingCopyright.notes || '',
-          internal_id: editingCopyright.internal_id || '',
-          iswc: editingCopyright.iswc || '',
-          catalogue_number: editingCopyright.catalogue_number || '',
-          opus_number: editingCopyright.opus_number || '',
-          duration_seconds: editingCopyright.duration_seconds || null,
-          album_title: editingCopyright.album_title || '',
-          masters_ownership: editingCopyright.masters_ownership || '',
-          mp3_link: editingCopyright.mp3_link || ''
-        });
+    console.log('Loading editing data for copyright:', editingCopyright.id, editingCopyright.work_title);
+    
+    // Populate form with existing copyright data
+    setFormData({
+      work_title: editingCopyright.work_title || '',
+      work_type: editingCopyright.work_type || 'original',
+      language_code: editingCopyright.language_code || 'EN',
+      registration_type: editingCopyright.registration_type || 'new',
+      status: editingCopyright.status || 'draft',
+      supports_ddex: editingCopyright.supports_ddex ?? true,
+      supports_cwr: editingCopyright.supports_cwr ?? true,
+      collection_territories: editingCopyright.collection_territories || [],
+      rights_types: editingCopyright.rights_types || [],
+      contains_sample: editingCopyright.contains_sample || false,
+      akas: editingCopyright.akas || [],
+      registration_status: editingCopyright.registration_status || 'not_registered',
+      ascap_work_id: editingCopyright.ascap_work_id || '',
+      bmi_work_id: editingCopyright.bmi_work_id || '',
+      socan_work_id: editingCopyright.socan_work_id || '',
+      sesac_work_id: editingCopyright.sesac_work_id || '',
+      ascap_status: (editingCopyright as any).ascap_status || 'not_registered',
+      bmi_status: (editingCopyright as any).bmi_status || 'not_registered',
+      socan_status: (editingCopyright as any).socan_status || 'not_registered',
+      sesac_status: (editingCopyright as any).sesac_status || 'not_registered',
+      copyright_reg_number: editingCopyright.copyright_reg_number || '',
+      copyright_date: editingCopyright.copyright_date || '',
+      notice_date: editingCopyright.notice_date || '',
+      creation_date: editingCopyright.creation_date || '',
+      work_classification: editingCopyright.work_classification || '',
+      notes: editingCopyright.notes || '',
+      internal_id: editingCopyright.internal_id || '',
+      iswc: editingCopyright.iswc || '',
+      catalogue_number: editingCopyright.catalogue_number || '',
+      opus_number: editingCopyright.opus_number || '',
+      duration_seconds: editingCopyright.duration_seconds || null,
+      album_title: editingCopyright.album_title || '',
+      masters_ownership: editingCopyright.masters_ownership || '',
+      mp3_link: editingCopyright.mp3_link || ''
+    });
 
-        // Load existing writers
-        try {
-          const existingWriters = await getWritersForCopyright(editingCopyright.id);
-          const formattedWriters: Writer[] = existingWriters.map((writer, index) => ({
-            id: writer.id || `writer-${index}`,
-            name: writer.writer_name || '',
-            ipi: writer.ipi_number || '',
-            share: writer.ownership_percentage || 0,
-            proAffiliation: writer.pro_affiliation || '',
-            controlled: (writer.controlled_status as 'C' | 'NC') || 'NC',
-            publisherName: '',
-            publisherIpi: ''
-          }));
-          setWriters(formattedWriters);
-        } catch (error) {
-          console.error('Error loading existing writers:', error);
-        }
+    // Load existing writers
+    const loadWriters = async () => {
+      try {
+        const existingWriters = await getWritersForCopyright(editingCopyright.id);
+        const formattedWriters: Writer[] = existingWriters.map((writer, index) => ({
+          id: writer.id || `writer-${index}`,
+          name: writer.writer_name || '',
+          ipi: writer.ipi_number || '',
+          share: writer.ownership_percentage || 0,
+          proAffiliation: writer.pro_affiliation || '',
+          controlled: (writer.controlled_status as 'C' | 'NC') || 'NC',
+          publisherName: '',
+          publisherIpi: ''
+        }));
+        setWriters(formattedWriters);
+      } catch (error) {
+        console.error('Error loading existing writers:', error);
       }
     };
 
-    loadEditingData();
-  }, [editingCopyright, getWritersForCopyright]);
+    loadWriters();
+  }, [editingCopyright?.id]); // Only depend on the ID to prevent infinite loops
 
   const searchASCAP = () => {
     window.open('https://www.ascap.com/repertory#/', '_blank');
