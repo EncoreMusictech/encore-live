@@ -287,7 +287,6 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                       {getSortIcon('controlled_share')}
                     </div>
                   </TableHead>
-                  <TableHead>PRO Registration</TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('registration_status')}
@@ -370,52 +369,6 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                       <TableCell className="text-center">
                         <div className="font-bold text-sm">
                           {controlledShare.toFixed(1)}%
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex flex-col space-y-1">
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs font-medium">ASCAP:</span>
-                              <Badge 
-                                variant={copyright.ascap_status === 'registered' ? 'default' : 
-                                        copyright.ascap_status === 'pending' ? 'secondary' : 'outline'} 
-                                className="text-xs"
-                              >
-                                {copyright.ascap_status || 'Not Registered'}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs font-medium">BMI:</span>
-                              <Badge 
-                                variant={copyright.bmi_status === 'registered' ? 'default' : 
-                                        copyright.bmi_status === 'pending' ? 'secondary' : 'outline'} 
-                                className="text-xs"
-                              >
-                                {copyright.bmi_status || 'Not Registered'}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs font-medium">SOCAN:</span>
-                              <Badge 
-                                variant={copyright.socan_status === 'registered' ? 'default' : 
-                                        copyright.socan_status === 'pending' ? 'secondary' : 'outline'} 
-                                className="text-xs"
-                              >
-                                {copyright.socan_status || 'Not Registered'}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs font-medium">SESAC:</span>
-                              <Badge 
-                                variant={copyright.sesac_status === 'registered' ? 'default' : 
-                                        copyright.sesac_status === 'pending' ? 'secondary' : 'outline'} 
-                                className="text-xs"
-                              >
-                                {copyright.sesac_status || 'Not Registered'}
-                              </Badge>
-                            </div>
-                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
