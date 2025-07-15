@@ -254,16 +254,41 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
     setLoading(true);
     try {
-      // Create the copyright record first - filter out non-existent fields
-      const {
-        ascap_status,
-        bmi_status,
-        socan_status,
-        sesac_status,
-        ...validFormData
-      } = formData as any;
+      // Create the copyright record with only valid database fields
+      const cleanFormData: Omit<CopyrightInsert, 'user_id'> = {
+        work_title: formData.work_title || '',
+        work_type: formData.work_type,
+        language_code: formData.language_code,
+        registration_type: formData.registration_type,
+        status: formData.status,
+        supports_ddex: formData.supports_ddex,
+        supports_cwr: formData.supports_cwr,
+        collection_territories: formData.collection_territories,
+        rights_types: formData.rights_types,
+        contains_sample: formData.contains_sample,
+        akas: formData.akas,
+        registration_status: formData.registration_status,
+        ascap_work_id: formData.ascap_work_id,
+        bmi_work_id: formData.bmi_work_id,
+        socan_work_id: formData.socan_work_id,
+        sesac_work_id: formData.sesac_work_id,
+        copyright_reg_number: formData.copyright_reg_number,
+        copyright_date: formData.copyright_date,
+        notice_date: formData.notice_date,
+        creation_date: formData.creation_date,
+        work_classification: formData.work_classification,
+        notes: formData.notes,
+        internal_id: formData.internal_id,
+        iswc: formData.iswc,
+        catalogue_number: formData.catalogue_number,
+        opus_number: formData.opus_number,
+        duration_seconds: formData.duration_seconds,
+        album_title: formData.album_title,
+        masters_ownership: formData.masters_ownership,
+        mp3_link: formData.mp3_link
+      };
       
-      const copyrightData = await createCopyright(validFormData as CopyrightInsert);
+      const copyrightData = await createCopyright(cleanFormData as CopyrightInsert);
       
       // Then create writer records
       for (const writer of writers) {
