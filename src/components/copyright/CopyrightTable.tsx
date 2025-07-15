@@ -119,13 +119,13 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
         writerOwnership,
         `${controlledShare.toFixed(1)}%`,
         copyright.ascap_work_id || '',
-        copyright.ascap_status || '',
+        copyright.ascap_status || 'Not Registered',
         copyright.bmi_work_id || '',
-        copyright.bmi_status || '',
+        copyright.bmi_status || 'Not Registered',
         copyright.socan_work_id || '',
-        copyright.socan_status || '',
+        copyright.socan_status || 'Not Registered',
         copyright.sesac_work_id || '',
-        copyright.sesac_status || '',
+        copyright.sesac_status || 'Not Registered',
         new Date(copyright.created_at).toISOString(),
         new Date(copyright.updated_at).toISOString()
       ];
@@ -374,26 +374,48 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          {copyright.ascap_work_id && (
-                            <Badge variant="outline" className="text-xs block w-fit">
-                              ASCAP: {copyright.ascap_work_id}
-                            </Badge>
-                          )}
-                          {copyright.bmi_work_id && (
-                            <Badge variant="outline" className="text-xs block w-fit">
-                              BMI: {copyright.bmi_work_id}
-                            </Badge>
-                          )}
-                          {copyright.socan_work_id && (
-                            <Badge variant="outline" className="text-xs block w-fit">
-                              SOCAN: {copyright.socan_work_id}
-                            </Badge>
-                          )}
-                          {copyright.sesac_work_id && (
-                            <Badge variant="outline" className="text-xs block w-fit">
-                              SESAC: {copyright.sesac_work_id}
-                            </Badge>
-                          )}
+                          <div className="flex flex-col space-y-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-medium">ASCAP:</span>
+                              <Badge 
+                                variant={copyright.ascap_status === 'registered' ? 'default' : 
+                                        copyright.ascap_status === 'pending' ? 'secondary' : 'outline'} 
+                                className="text-xs"
+                              >
+                                {copyright.ascap_status || 'Not Registered'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-medium">BMI:</span>
+                              <Badge 
+                                variant={copyright.bmi_status === 'registered' ? 'default' : 
+                                        copyright.bmi_status === 'pending' ? 'secondary' : 'outline'} 
+                                className="text-xs"
+                              >
+                                {copyright.bmi_status || 'Not Registered'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-medium">SOCAN:</span>
+                              <Badge 
+                                variant={copyright.socan_status === 'registered' ? 'default' : 
+                                        copyright.socan_status === 'pending' ? 'secondary' : 'outline'} 
+                                className="text-xs"
+                              >
+                                {copyright.socan_status || 'Not Registered'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-medium">SESAC:</span>
+                              <Badge 
+                                variant={copyright.sesac_status === 'registered' ? 'default' : 
+                                        copyright.sesac_status === 'pending' ? 'secondary' : 'outline'} 
+                                className="text-xs"
+                              >
+                                {copyright.sesac_status || 'Not Registered'}
+                              </Badge>
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
