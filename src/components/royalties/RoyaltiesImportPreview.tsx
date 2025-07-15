@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, AlertTriangle, CheckCircle, FileText, Users, Wrench, Settings, Music } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle, FileText, Users, Wrench, Settings, Music, Download } from "lucide-react";
 import { RoyaltiesImportStaging, useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { FieldMappingDialog } from "./FieldMappingDialog";
 import { SongMatchingDialog } from "./SongMatchingDialog";
@@ -113,6 +113,56 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         variant: "destructive",
       });
     }
+  };
+
+  const downloadCSV = (data: any[], filename: string) => {
+    if (data.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No data available to download",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get all unique headers from the data
+    const headers = Array.from(new Set(
+      data.flatMap(row => Object.keys(row))
+    )).sort();
+
+    // Create CSV content
+    const csvContent = [
+      // Header row
+      headers.join(','),
+      // Data rows
+      ...data.map(row => 
+        headers.map(header => {
+          const value = row[header] || '';
+          // Escape quotes and wrap in quotes if contains comma or quote
+          if (String(value).includes(',') || String(value).includes('"')) {
+            return `"${String(value).replace(/"/g, '""')}"`;
+          }
+          return String(value);
+        }).join(',')
+      )
+    ].join('\n');
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download Complete",
+      description: `${filename} downloaded successfully`,
+    });
   };
 
   const rawData = Array.isArray(localRecord.raw_data) ? localRecord.raw_data : [];
@@ -317,10 +367,34 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
       {/* Data Preview */}
       <Card>
         <CardHeader>
-          <CardTitle>Data Preview</CardTitle>
-          <CardDescription>
-            Review the imported and mapped data
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Data Preview</CardTitle>
+              <CardDescription>
+                Review the imported and mapped data
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadCSV(rawData, `${record.original_filename}_raw.csv`)}
+                disabled={rawData.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Raw CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadCSV(mappedData, `${record.original_filename}_mapped.csv`)}
+                disabled={mappedData.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Mapped CSV
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs value={selectedTab} onValueChange={setSelectedTab}>
