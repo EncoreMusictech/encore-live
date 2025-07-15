@@ -322,6 +322,11 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
         const copyright = validData[i];
         
         try {
+          // Add a small delay to ensure unique work_id generation
+          if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+
           // Create copyright
           const createdCopyright = await createCopyright({
             work_title: copyright.work_title,
