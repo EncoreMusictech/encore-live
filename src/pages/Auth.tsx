@@ -42,8 +42,30 @@ const Auth = () => {
 
   const handleDemoLogin = async () => {
     setLoading(true);
-    await signIn('info@encoremusic.tech', 'demo123');
-    setLoading(false);
+    try {
+      // Try to sign in first
+      const { error: signInError } = await signIn('info@encoremusic.tech', 'demo123');
+      
+      if (signInError) {
+        // If sign in fails, create the demo user via edge function
+        const response = await fetch('https://plxsenykjisqutxcvjeg.supabase.co/functions/v1/create-demo-user', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBseHNlbnlramlzcXV0eGN2amVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0OTQ5OTcsImV4cCI6MjA2ODA3MDk5N30.f-luEprJjlx1sN-siFWgAKlHJ3c1aewKxPqwxIb9gtA',
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          // Try to sign in again after creating the user
+          await signIn('info@encoremusic.tech', 'demo123');
+        }
+      }
+    } catch (error) {
+      console.error('Demo login error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
