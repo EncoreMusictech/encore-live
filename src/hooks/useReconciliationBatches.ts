@@ -12,6 +12,7 @@ export interface ReconciliationBatch {
   statement_period_end?: string;
   date_received: string;
   total_gross_amount: number;
+  linked_statement_id?: string;
   statement_file_url?: string;
   status: 'Pending' | 'Imported' | 'Processed';
   notes?: string;

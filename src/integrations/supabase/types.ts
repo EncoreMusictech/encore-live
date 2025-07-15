@@ -1062,6 +1062,7 @@ export type Database = {
           created_at: string
           date_received: string
           id: string
+          linked_statement_id: string | null
           notes: string | null
           source: Database["public"]["Enums"]["royalty_source"]
           statement_file_url: string | null
@@ -1078,6 +1079,7 @@ export type Database = {
           created_at?: string
           date_received?: string
           id?: string
+          linked_statement_id?: string | null
           notes?: string | null
           source: Database["public"]["Enums"]["royalty_source"]
           statement_file_url?: string | null
@@ -1094,6 +1096,7 @@ export type Database = {
           created_at?: string
           date_received?: string
           id?: string
+          linked_statement_id?: string | null
           notes?: string | null
           source?: Database["public"]["Enums"]["royalty_source"]
           statement_file_url?: string | null
@@ -1105,7 +1108,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reconciliation_batches_linked_statement_id_fkey"
+            columns: ["linked_statement_id"]
+            isOneToOne: false
+            referencedRelation: "royalties_import_staging"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       royalties_import_staging: {
         Row: {
