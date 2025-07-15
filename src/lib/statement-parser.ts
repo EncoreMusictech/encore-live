@@ -19,7 +19,11 @@ export interface SourceDetectionRule {
 export const DEFAULT_SOURCE_RULES: SourceDetectionRule[] = [
   {
     source: 'BMI',
-    headerPatterns: ['Work Title', 'IP Name', 'Current Quarter Royalties', 'Work ID'],
+    headerPatterns: [
+      'Work Title', 'IP Name', 'Current Quarter Royalties', 'Work ID',
+      'Writer Name', 'Writer', 'Performance Type', 'Society Work ID',
+      'Amount', 'Royalty', 'Payment', 'Quarter', 'Period'
+    ],
     requiredFields: ['Work Title', 'IP Name'],
     confidence: 0.8,
   },
@@ -136,37 +140,51 @@ export class StatementParser {
 
   private detectSource(headers: string[]): { source: string; confidence: number } {
     let bestMatch = { source: 'Unknown', confidence: 0 };
+    
+    console.log('Source detection - Headers:', headers);
 
     for (const rule of this.sourceRules) {
       let matchScore = 0;
       let totalPatterns = rule.headerPatterns.length;
+      
+      console.log(`Testing ${rule.source} rule:`, rule);
 
       // Check how many patterns match
       for (const pattern of rule.headerPatterns) {
-        if (headers.some(header => 
+        const hasMatch = headers.some(header => 
           header?.toLowerCase().includes(pattern.toLowerCase()) ||
           pattern.toLowerCase().includes(header?.toLowerCase() || '')
-        )) {
+        );
+        if (hasMatch) {
           matchScore++;
+          console.log(`✓ Pattern "${pattern}" matched with headers`);
+        } else {
+          console.log(`✗ Pattern "${pattern}" not found in headers`);
         }
       }
 
       // Check required fields
-      const requiredFieldsFound = rule.requiredFields.every(required =>
-        headers.some(header => 
+      const requiredFieldsFound = rule.requiredFields.every(required => {
+        const found = headers.some(header => 
           header?.toLowerCase().includes(required.toLowerCase()) ||
           required.toLowerCase().includes(header?.toLowerCase() || '')
-        )
-      );
+        );
+        console.log(`Required field "${required}": ${found ? '✓' : '✗'}`);
+        return found;
+      });
 
       if (requiredFieldsFound && matchScore > 0) {
         const confidence = (matchScore / totalPatterns) * rule.confidence;
+        console.log(`${rule.source} - Match score: ${matchScore}/${totalPatterns}, Confidence: ${confidence}`);
         if (confidence > bestMatch.confidence) {
           bestMatch = { source: rule.source, confidence };
         }
+      } else {
+        console.log(`${rule.source} - Required fields not found or no pattern matches`);
       }
     }
 
+    console.log('Best match:', bestMatch);
     return bestMatch;
   }
 

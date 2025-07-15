@@ -61,7 +61,7 @@ export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
     SoundExchange: 'Share Percentage',
   },
   'Gross Amount': {
-    BMI: ['Current Quarter Royalties', 'Amount'],
+    BMI: ['Current Quarter Royalties', 'Amount', 'Royalty', 'Payment', 'Total Amount', 'Quarter Royalties'],
     ASCAP: 'Amount Paid',
     YouTube: 'Earnings',
     SoundExchange: 'Royalty',
