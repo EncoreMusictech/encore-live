@@ -253,171 +253,175 @@ export function SongMatchingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Music className="h-5 w-5" />
-            Song Matching
-          </DialogTitle>
-          <DialogDescription>
-            Match imported songs with existing work titles in your copyright catalog
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0">
+        <ScrollArea className="max-h-[90vh]">
+          <div className="p-6 space-y-6">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Music className="h-5 w-5" />
+                Song Matching
+              </DialogTitle>
+              <DialogDescription>
+                Match imported songs with existing work titles in your copyright catalog
+              </DialogDescription>
+            </DialogHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-sm text-muted-foreground">Finding matches...</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6 flex-1 overflow-hidden flex flex-col">
-            {/* Summary */}
-            <div className="grid grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Songs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{matches.length}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-green-600">Matched</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{matchedCount}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-orange-600">Unmatched</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">{unmatchedCount}</div>
-                </CardContent>
-              </Card>
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-sm text-muted-foreground">Finding matches...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Summary */}
+                <div className="grid grid-cols-3 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Total Songs</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{matches.length}</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-green-600">Matched</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-600">{matchedCount}</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-orange-600">Unmatched</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-orange-600">{unmatchedCount}</div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-            {/* Matches Table */}
-            <Card className="flex-1 flex flex-col min-h-0">
-              <CardHeader className="flex-shrink-0">
-                <CardTitle>Song Matches</CardTitle>
-                <CardDescription>
-                  Review and adjust matches before processing
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 min-h-0">
-                <ScrollArea className="h-full">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Imported Song</TableHead>
-                        <TableHead>Matched Copyright</TableHead>
-                        <TableHead>Confidence</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {matches.map((match, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="font-medium">{match.importedSong.songTitle}</div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                <User className="h-3 w-3" />
-                                {match.importedSong.clientName}
-                              </div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                <Percent className="h-3 w-3" />
-                                {match.importedSong.share}% - ${match.importedSong.grossAmount}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {match.matchedCopyright ? (
-                              <div className="space-y-1">
-                                <div className="font-medium">{match.matchedCopyright.work_title}</div>
-                                <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                  <FileText className="h-3 w-3" />
-                                  {match.matchedCopyright.internal_id || match.matchedCopyright.work_id}
+                {/* Matches Table */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Song Matches</CardTitle>
+                    <CardDescription>
+                      Review and adjust matches before processing
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-96 overflow-y-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Imported Song</TableHead>
+                            <TableHead>Matched Copyright</TableHead>
+                            <TableHead>Confidence</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Action</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {matches.map((match, index) => (
+                            <TableRow key={index}>
+                              <TableCell>
+                                <div className="space-y-1">
+                                  <div className="font-medium">{match.importedSong.songTitle}</div>
+                                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                    <User className="h-3 w-3" />
+                                    {match.importedSong.clientName}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                    <Percent className="h-3 w-3" />
+                                    {match.importedSong.share}% - ${match.importedSong.grossAmount}
+                                  </div>
                                 </div>
-                              </div>
-                            ) : (
-                              <div className="text-muted-foreground text-sm">No match found</div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {match.confidence > 0 && (
-                              <div className="flex items-center gap-2">
-                                <Progress value={match.confidence} className="w-16" />
-                                <span className="text-xs">{match.confidence}%</span>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              match.status === 'matched' ? 'default' : 
-                              match.status === 'unmatched' ? 'destructive' : 'secondary'
-                            }>
-                              {match.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleMatch(index)}
-                              disabled={!match.matchedCopyright}
-                            >
-                              {match.status === 'matched' ? (
-                                <>
-                                  <XCircle className="h-4 w-4 mr-1" />
-                                  Unmatch
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Match
-                                </>
-                              )}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+                              </TableCell>
+                              <TableCell>
+                                {match.matchedCopyright ? (
+                                  <div className="space-y-1">
+                                    <div className="font-medium">{match.matchedCopyright.work_title}</div>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                      <FileText className="h-3 w-3" />
+                                      {match.matchedCopyright.internal_id || match.matchedCopyright.work_id}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-muted-foreground text-sm">No match found</div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {match.confidence > 0 && (
+                                  <div className="flex items-center gap-2">
+                                    <Progress value={match.confidence} className="w-16" />
+                                    <span className="text-xs">{match.confidence}%</span>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={
+                                  match.status === 'matched' ? 'default' : 
+                                  match.status === 'unmatched' ? 'destructive' : 'secondary'
+                                }>
+                                  {match.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => toggleMatch(index)}
+                                  disabled={!match.matchedCopyright}
+                                >
+                                  {match.status === 'matched' ? (
+                                    <>
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                      Unmatch
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle className="h-4 w-4 mr-1" />
+                                      Match
+                                    </>
+                                  )}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {/* Actions */}
-            <div className="flex justify-end gap-4 flex-shrink-0 pt-4 border-t">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={processMatches}
-                disabled={processing || matches.length === 0}
-              >
-                {processing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Process Matches
-                  </>
-                )}
-              </Button>
-            </div>
+                {/* Actions */}
+                <div className="flex justify-end gap-4 pt-4 border-t">
+                  <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={processMatches}
+                    disabled={processing || matches.length === 0}
+                  >
+                    {processing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Process Matches
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
