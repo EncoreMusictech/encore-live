@@ -11,12 +11,10 @@ import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationL
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportStaging";
 import { RoyaltiesDiscrepancyReport } from "@/components/royalties/RoyaltiesDiscrepancyReport";
-import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
 
 export default function RoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState("allocations");
-  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { allocations, loading } = useRoyaltyAllocations();
 
   const totalRoyalties = allocations.reduce((sum, allocation) => sum + allocation.gross_royalty_amount, 0);
@@ -64,23 +62,7 @@ export default function RoyaltiesPage() {
               </div>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Reconciliation Batches</CardTitle>
-                <CardDescription>
-                  Manage batches for organizing royalty statement imports
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ReconciliationBatchList 
-                  onSelectBatch={(batchId) => setSelectedBatchId(batchId)}
-                />
-              </CardContent>
-            </Card>
-
-            {selectedBatchId && (
-              <RoyaltiesImportStaging batchId={selectedBatchId} />
-            )}
+            <RoyaltiesImportStaging />
           </TabsContent>
 
           <TabsContent value="allocations" className="space-y-6">

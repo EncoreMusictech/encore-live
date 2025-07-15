@@ -22,8 +22,7 @@ export const DEFAULT_SOURCE_RULES: SourceDetectionRule[] = [
     headerPatterns: [
       'Work Title', 'IP Name', 'Current Quarter Royalties', 'Work ID',
       'Writer Name', 'Writer', 'Performance Type', 'Society Work ID',
-      'Amount', 'Royalty', 'Payment', 'Quarter', 'Period', 'Title Name',
-      'Participant Name', 'Royalty Amount'
+      'Amount', 'Royalty', 'Payment', 'Quarter', 'Period'
     ],
     requiredFields: ['Work Title', 'IP Name'],
     confidence: 0.8,
@@ -33,20 +32,9 @@ export const DEFAULT_SOURCE_RULES: SourceDetectionRule[] = [
     headerPatterns: [
       'Title', 'Writer Name', 'Amount Paid', 'Survey',
       'Work Title', 'Writer', 'Performance Type', 'Royalty',
-      'Amount', 'Payment', 'Total', 'Quarter', 'Period', 'Title Name',
-      'Participant Name', 'Royalty Amount'
+      'Amount', 'Payment', 'Total', 'Quarter', 'Period'
     ],
     requiredFields: ['Title', 'Writer Name'],
-    confidence: 0.8,
-  },
-  {
-    source: 'SESAC',
-    headerPatterns: [
-      'Title Name', 'Participant Name', 'Royalty Amount', 'Period',
-      'Work Title', 'Writer', 'Performance Type', 'Show Name',
-      'Use Code', 'Participant %', 'Perf Count', 'W OR P'
-    ],
-    requiredFields: ['Title Name', 'Participant Name'],
     confidence: 0.8,
   },
   {
@@ -60,15 +48,6 @@ export const DEFAULT_SOURCE_RULES: SourceDetectionRule[] = [
     headerPatterns: ['Sound Recording Title', 'Featured Artist', 'Royalty', 'Album Title'],
     requiredFields: ['Sound Recording Title', 'Featured Artist'],
     confidence: 0.8,
-  },
-  {
-    source: 'Generic PRO',
-    headerPatterns: [
-      'Title', 'Name', 'Amount', 'Royalty', 'Period', 'Share',
-      'Performance', 'Work', 'Writer', 'Publisher', 'Society'
-    ],
-    requiredFields: ['Title', 'Name'],
-    confidence: 0.6,
   },
 ];
 

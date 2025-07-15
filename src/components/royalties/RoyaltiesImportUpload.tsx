@@ -232,10 +232,8 @@ export function RoyaltiesImportUpload({ batchId, onComplete, onCancel }: Royalti
                   <SelectItem value="auto-detect">Auto-detect</SelectItem>
                   <SelectItem value="BMI">BMI</SelectItem>
                   <SelectItem value="ASCAP">ASCAP</SelectItem>
-                  <SelectItem value="SESAC">SESAC</SelectItem>
                   <SelectItem value="YouTube">YouTube</SelectItem>
                   <SelectItem value="SoundExchange">SoundExchange</SelectItem>
-                  <SelectItem value="Generic PRO">Generic PRO</SelectItem>
                 </SelectContent>
               </Select>
             </div>
