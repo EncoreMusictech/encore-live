@@ -1067,6 +1067,7 @@ export type Database = {
           statement_file_url: string | null
           statement_period_end: string | null
           statement_period_start: string | null
+          statement_total: number | null
           status: Database["public"]["Enums"]["batch_status"]
           total_gross_amount: number | null
           updated_at: string
@@ -1082,6 +1083,7 @@ export type Database = {
           statement_file_url?: string | null
           statement_period_end?: string | null
           statement_period_start?: string | null
+          statement_total?: number | null
           status?: Database["public"]["Enums"]["batch_status"]
           total_gross_amount?: number | null
           updated_at?: string
@@ -1097,6 +1099,7 @@ export type Database = {
           statement_file_url?: string | null
           statement_period_end?: string | null
           statement_period_start?: string | null
+          statement_total?: number | null
           status?: Database["public"]["Enums"]["batch_status"]
           total_gross_amount?: number | null
           updated_at?: string

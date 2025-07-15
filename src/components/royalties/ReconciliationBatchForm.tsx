@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Upload, X } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
+import { StatementParser } from "@/lib/statement-parser";
+import { EncoreMapper } from "@/lib/encore-mapper";
+import { toast } from "@/hooks/use-toast";
 
 interface ReconciliationBatchFormProps {
   onCancel: () => void;
@@ -24,6 +27,7 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       statement_period_end: batch?.statement_period_end || '',
       date_received: batch?.date_received || new Date().toISOString().split('T')[0],
       total_gross_amount: batch?.total_gross_amount || 0,
+      statement_total: batch?.statement_total || 0,
       statement_file_url: batch?.statement_file_url || '',
       status: batch?.status || 'Pending',
       notes: batch?.notes || '',
@@ -49,14 +53,37 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
 
     setUploading(true);
     try {
-      // In a real implementation, you would upload to Supabase storage
-      // For now, we'll just simulate the upload
-      setTimeout(() => {
-        setValue('statement_file_url', `uploads/${file.name}`);
-        setUploading(false);
-      }, 1000);
+      // Parse the statement to calculate totals
+      const parser = new StatementParser();
+      const mapper = new EncoreMapper();
+      
+      const parsedData = await parser.parseFile(file);
+      const mappingResult = mapper.mapData(parsedData.data, parsedData.detectedSource);
+      
+      // Calculate the total gross amount from parsed data
+      const statementTotal = mappingResult.mappedData.reduce((total, row) => {
+        const grossAmount = parseFloat(row['Gross Amount']) || 0;
+        return total + grossAmount;
+      }, 0);
+      
+      // Update form fields with calculated values
+      setValue('statement_file_url', `uploads/${file.name}`);
+      setValue('statement_total', statementTotal);
+      
+      toast({
+        title: "Statement Parsed",
+        description: `Calculated total: $${statementTotal.toLocaleString()} from ${mappingResult.mappedData.length} rows`,
+      });
+      
+      setUploading(false);
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error('Error processing file:', error);
+      setValue('statement_file_url', `uploads/${file.name}`);
+      toast({
+        title: "Upload Complete",
+        description: "File uploaded but could not parse statement data",
+        variant: "destructive",
+      });
       setUploading(false);
     }
   };
@@ -117,6 +144,21 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
             step="0.01"
             {...register('total_gross_amount', { valueAsNumber: true })}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="statement_total">Statement Total</Label>
+          <Input
+            id="statement_total"
+            type="number"
+            step="0.01"
+            {...register('statement_total', { valueAsNumber: true })}
+            readOnly
+            className="bg-muted"
+          />
+          <p className="text-xs text-muted-foreground">
+            Automatically calculated from uploaded statement
+          </p>
         </div>
 
         <div className="space-y-2">
