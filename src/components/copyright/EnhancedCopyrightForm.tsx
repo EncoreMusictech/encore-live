@@ -777,7 +777,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="ascap_work_id">ASCAP Work ID</Label>
                   <Input
@@ -804,18 +804,6 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                       <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mt-6"
-                    onClick={searchASCAP}
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    Search ASCAP
-                  </Button>
                 </div>
                 
                 <div className="space-y-2">
@@ -847,18 +835,6 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                 </div>
                 
                 <div className="space-y-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mt-6"
-                    onClick={() => window.open('https://repertoire.bmi.com/Search', '_blank')}
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    Search BMI
-                  </Button>
-                </div>
-                
-                <div className="space-y-2">
                   <Label htmlFor="socan_work_id">SOCAN Work ID</Label>
                   <Input
                     id="socan_work_id"
@@ -887,18 +863,6 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                 </div>
                 
                 <div className="space-y-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mt-6"
-                    onClick={() => window.open('https://www.socan.com/members/music-search', '_blank')}
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    Search SOCAN
-                  </Button>
-                </div>
-                
-                <div className="space-y-2">
                   <Label htmlFor="sesac_work_id">SESAC Work ID</Label>
                   <Input
                     id="sesac_work_id"
@@ -924,18 +888,6 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                       <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mt-6"
-                    onClick={() => window.open('https://www.sesac.com/', '_blank')}
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    Search SESAC
-                  </Button>
                 </div>
               </div>
             </CardContent>
