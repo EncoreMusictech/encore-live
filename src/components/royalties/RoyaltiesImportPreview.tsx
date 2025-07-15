@@ -6,8 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, AlertTriangle, CheckCircle, FileText, Users, Wrench, Settings } from "lucide-react";
-import { RoyaltiesImportStaging } from "@/hooks/useRoyaltiesImport";
+import { RoyaltiesImportStaging, useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { FieldMappingDialog } from "./FieldMappingDialog";
+import { EncoreMapper, DEFAULT_ENCORE_MAPPING } from "@/lib/encore-mapper";
+import { toast } from "@/hooks/use-toast";
 
 interface RoyaltiesImportPreviewProps {
   record: RoyaltiesImportStaging;
@@ -17,10 +19,12 @@ interface RoyaltiesImportPreviewProps {
 export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPreviewProps) {
   const [selectedTab, setSelectedTab] = useState("mapped");
   const [showMappingDialog, setShowMappingDialog] = useState(false);
+  const [localRecord, setLocalRecord] = useState(record);
+  const { updateStagingRecord } = useRoyaltiesImport();
 
-  const rawData = Array.isArray(record.raw_data) ? record.raw_data : [];
-  const mappedData = Array.isArray(record.mapped_data) ? record.mapped_data : [];
-  const validationStatus = record.validation_status || {};
+  const rawData = Array.isArray(localRecord.raw_data) ? localRecord.raw_data : [];
+  const mappedData = Array.isArray(localRecord.mapped_data) ? localRecord.mapped_data : [];
+  const validationStatus = localRecord.validation_status || {};
   const errors = validationStatus.errors || [];
   
   // Remove duplicate errors
@@ -29,9 +33,67 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
   // Common required fields for royalty statements
   const requiredFields = ['Song Title', 'Client Name', 'Gross Amount', 'Period Start'];
 
-  const handleSaveMapping = (mapping: { [key: string]: string }) => {
+  const handleSaveMapping = async (mapping: { [key: string]: string }) => {
     console.log('Saving field mapping:', mapping);
-    // TODO: Implement actual mapping save logic
+    
+    try {
+      // Create a new mapping configuration based on saved mappings
+      const customMapping = { ...DEFAULT_ENCORE_MAPPING };
+      
+      // Apply user-defined mappings
+      Object.entries(mapping).forEach(([targetField, sourceField]) => {
+        // Remove 'required-' or 'validation-' prefix from target field
+        const cleanTargetField = targetField.replace(/^(required-|validation-)/, '');
+        
+        // Update the mapping for the detected source
+        if (customMapping[cleanTargetField]) {
+          customMapping[cleanTargetField][localRecord.detected_source] = sourceField;
+        }
+      });
+
+      // Re-run the mapping and validation with the new configuration
+      const mapper = new EncoreMapper(customMapping);
+      const result = mapper.mapData(rawData, localRecord.detected_source);
+
+      // Update the local record state
+      const updatedRecord = {
+        ...localRecord,
+        mapped_data: result.mappedData,
+        unmapped_fields: result.unmappedFields,
+        validation_status: {
+          errors: result.validationErrors,
+          last_validated: new Date().toISOString(),
+        },
+        processing_status: result.validationErrors.length > 0 ? 'needs_review' as const : 'processed' as const,
+      };
+
+      setLocalRecord(updatedRecord);
+
+      // Update the record in the database
+      await updateStagingRecord(localRecord.id, {
+        mapped_data: result.mappedData,
+        unmapped_fields: result.unmappedFields,
+        validation_status: {
+          errors: result.validationErrors,
+          last_validated: new Date().toISOString(),
+        },
+        processing_status: result.validationErrors.length > 0 ? 'needs_review' : 'processed',
+      });
+
+      toast({
+        title: "Success",
+        description: `Field mapping saved and data re-validated. ${result.validationErrors.length === 0 ? 'No validation errors found!' : `${result.validationErrors.length} validation errors remaining.`}`,
+      });
+
+      setShowMappingDialog(false);
+    } catch (error) {
+      console.error('Error saving field mapping:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save field mapping and re-validate data",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -66,8 +128,8 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
                 Import preview and validation results
               </CardDescription>
             </div>
-            <Badge className={getStatusColor(record.processing_status)}>
-              {record.processing_status.replace('_', ' ')}
+            <Badge className={getStatusColor(localRecord.processing_status)}>
+              {localRecord.processing_status.replace('_', ' ')}
             </Badge>
           </div>
         </CardHeader>
@@ -75,7 +137,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <div className="text-sm font-medium text-muted-foreground">Source</div>
-              <div className="text-lg font-semibold">{record.detected_source}</div>
+              <div className="text-lg font-semibold">{localRecord.detected_source}</div>
             </div>
             <div>
               <div className="text-sm font-medium text-muted-foreground">Records</div>
@@ -83,7 +145,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
             </div>
             <div>
               <div className="text-sm font-medium text-muted-foreground">Unmapped Fields</div>
-              <div className="text-lg font-semibold text-yellow-600">{record.unmapped_fields.length}</div>
+              <div className="text-lg font-semibold text-yellow-600">{localRecord.unmapped_fields.length}</div>
             </div>
             <div>
               <div className="text-sm font-medium text-muted-foreground">Validation Errors</div>
@@ -94,7 +156,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
       </Card>
 
       {/* Issues Summary */}
-      {(record.unmapped_fields.length > 0 || uniqueErrors.length > 0) && (
+      {(localRecord.unmapped_fields.length > 0 || uniqueErrors.length > 0) && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -119,13 +181,13 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {record.unmapped_fields.length > 0 && (
+            {localRecord.unmapped_fields.length > 0 && (
               <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-2">
-                  Unmapped Fields ({record.unmapped_fields.length})
+                  Unmapped Fields ({localRecord.unmapped_fields.length})
                 </h4>
                 <div className="flex flex-wrap gap-2">
-                  {record.unmapped_fields.map((field, index) => (
+                  {localRecord.unmapped_fields.map((field, index) => (
                     <Badge key={index} variant="outline" className="cursor-pointer hover:bg-muted">
                       {field}
                     </Badge>
@@ -322,7 +384,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
       <FieldMappingDialog
         open={showMappingDialog}
         onOpenChange={setShowMappingDialog}
-        unmappedFields={record.unmapped_fields}
+        unmappedFields={localRecord.unmapped_fields}
         validationErrors={errors}
         requiredFields={requiredFields}
         onSaveMapping={handleSaveMapping}
