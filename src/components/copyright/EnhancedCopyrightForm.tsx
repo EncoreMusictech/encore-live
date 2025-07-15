@@ -163,8 +163,11 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     }
   }, [toast]);
 
-  // Debounce the metadata fetching
+  // Debounce the metadata fetching - only for new copyrights, not when editing
   useEffect(() => {
+    // Skip Spotify search when editing existing copyright
+    if (editingCopyright) return;
+    
     const timeoutId = setTimeout(() => {
       if (formData.work_title) {
         fetchSpotifyMetadata(formData.work_title);
@@ -172,7 +175,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     }, 1000);
 
     return () => clearTimeout(timeoutId);
-   }, [formData.work_title, fetchSpotifyMetadata]);
+   }, [formData.work_title, fetchSpotifyMetadata, editingCopyright]);
 
   // Load existing copyright data when editing
   useEffect(() => {
@@ -464,10 +467,11 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                        placeholder="Enter work title"
                        required
                      />
-                    {spotifyLoading && (
-                      <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />
-                    )}
-                  </div>
+                     {/* Only show Spotify loading spinner for new registrations */}
+                     {spotifyLoading && !editingCopyright && (
+                       <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />
+                     )}
+                   </div>
                 </div>
                 
                 <div className="space-y-2">
