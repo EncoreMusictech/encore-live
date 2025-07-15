@@ -173,7 +173,7 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
                 </SelectItem>
               ))}
               {availableStatements.length === 0 && !loadingStatements && (
-                <SelectItem value="" disabled>No available statements</SelectItem>
+                <SelectItem value="no-statements" disabled>No available statements</SelectItem>
               )}
             </SelectContent>
           </Select>

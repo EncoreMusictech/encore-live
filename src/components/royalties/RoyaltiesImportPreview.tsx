@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, AlertTriangle, CheckCircle, FileText, Users, Wrench } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle, FileText, Users, Wrench, Settings } from "lucide-react";
 import { RoyaltiesImportStaging } from "@/hooks/useRoyaltiesImport";
+import { FieldMappingDialog } from "./FieldMappingDialog";
 
 interface RoyaltiesImportPreviewProps {
   record: RoyaltiesImportStaging;
@@ -15,11 +16,23 @@ interface RoyaltiesImportPreviewProps {
 
 export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPreviewProps) {
   const [selectedTab, setSelectedTab] = useState("mapped");
+  const [showMappingDialog, setShowMappingDialog] = useState(false);
 
   const rawData = Array.isArray(record.raw_data) ? record.raw_data : [];
   const mappedData = Array.isArray(record.mapped_data) ? record.mapped_data : [];
   const validationStatus = record.validation_status || {};
   const errors = validationStatus.errors || [];
+  
+  // Remove duplicate errors
+  const uniqueErrors = Array.from(new Set(errors));
+  
+  // Common required fields for royalty statements
+  const requiredFields = ['Song Title', 'Client Name', 'Gross Amount', 'Period Start'];
+
+  const handleSaveMapping = (mapping: { [key: string]: string }) => {
+    console.log('Saving field mapping:', mapping);
+    // TODO: Implement actual mapping save logic
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -81,39 +94,62 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
       </Card>
 
       {/* Issues Summary */}
-      {(record.unmapped_fields.length > 0 || errors.length > 0) && (
+      {(record.unmapped_fields.length > 0 || uniqueErrors.length > 0) && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              Issues Requiring Attention
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                Issues Requiring Attention
+                {uniqueErrors.length < errors.length && (
+                  <Badge variant="secondary" className="ml-2">
+                    {errors.length - uniqueErrors.length} duplicates removed
+                  </Badge>
+                )}
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMappingDialog(true)}
+                className="gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Map Fields
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {record.unmapped_fields.length > 0 && (
               <div>
-                <h4 className="font-medium text-sm text-muted-foreground mb-2">Unmapped Fields</h4>
+                <h4 className="font-medium text-sm text-muted-foreground mb-2">
+                  Unmapped Fields ({record.unmapped_fields.length})
+                </h4>
                 <div className="flex flex-wrap gap-2">
                   {record.unmapped_fields.map((field, index) => (
-                    <Badge key={index} variant="outline">
+                    <Badge key={index} variant="outline" className="cursor-pointer hover:bg-muted">
                       {field}
                     </Badge>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Click "Map Fields" to drag and drop these fields to their correct mappings
+                </p>
               </div>
             )}
-            {errors.length > 0 && (
+            {uniqueErrors.length > 0 && (
               <div>
-                <h4 className="font-medium text-sm text-muted-foreground mb-2">Validation Errors</h4>
+                <h4 className="font-medium text-sm text-muted-foreground mb-2">
+                  Validation Errors ({uniqueErrors.length} unique)
+                </h4>
                 <div className="space-y-1">
-                  {errors.slice(0, 5).map((error: string, index: number) => (
+                  {uniqueErrors.slice(0, 5).map((error: string, index: number) => (
                     <div key={index} className="text-sm text-red-600 bg-red-50 p-2 rounded">
                       {error}
                     </div>
                   ))}
-                  {errors.length > 5 && (
+                  {uniqueErrors.length > 5 && (
                     <div className="text-sm text-muted-foreground">
-                      ... and {errors.length - 5} more errors
+                      ... and {uniqueErrors.length - 5} more unique errors
                     </div>
                   )}
                 </div>
@@ -267,7 +303,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
               <CheckCircle className="h-4 w-4 mr-2" />
               Approve & Process
             </Button>
-            <Button variant="outline" disabled>
+            <Button variant="outline" onClick={() => setShowMappingDialog(true)}>
               <Wrench className="h-4 w-4 mr-2" />
               Edit Mappings
             </Button>
@@ -277,10 +313,20 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
             </Button>
           </div>
           <div className="mt-2 text-sm text-muted-foreground">
-            Advanced processing features coming soon
+            Use "Edit Mappings" to configure field mappings with drag and drop
           </div>
         </CardContent>
       </Card>
+
+      {/* Field Mapping Dialog */}
+      <FieldMappingDialog
+        open={showMappingDialog}
+        onOpenChange={setShowMappingDialog}
+        unmappedFields={record.unmapped_fields}
+        validationErrors={errors}
+        requiredFields={requiredFields}
+        onSaveMapping={handleSaveMapping}
+      />
     </div>
   );
 }
