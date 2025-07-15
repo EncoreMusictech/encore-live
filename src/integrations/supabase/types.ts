@@ -1104,6 +1104,71 @@ export type Database = {
         }
         Relationships: []
       }
+      royalties_import_staging: {
+        Row: {
+          batch_id: string | null
+          created_at: string
+          detected_source: string
+          id: string
+          import_tags: string[] | null
+          mapped_data: Json
+          mapping_version: string
+          original_filename: string
+          payee_matches: Json | null
+          processing_status: string | null
+          raw_data: Json
+          unmapped_fields: string[] | null
+          updated_at: string
+          user_id: string
+          validation_status: Json | null
+          work_matches: Json | null
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string
+          detected_source: string
+          id?: string
+          import_tags?: string[] | null
+          mapped_data: Json
+          mapping_version?: string
+          original_filename: string
+          payee_matches?: Json | null
+          processing_status?: string | null
+          raw_data: Json
+          unmapped_fields?: string[] | null
+          updated_at?: string
+          user_id: string
+          validation_status?: Json | null
+          work_matches?: Json | null
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string
+          detected_source?: string
+          id?: string
+          import_tags?: string[] | null
+          mapped_data?: Json
+          mapping_version?: string
+          original_filename?: string
+          payee_matches?: Json | null
+          processing_status?: string | null
+          raw_data?: Json
+          unmapped_fields?: string[] | null
+          updated_at?: string
+          user_id?: string
+          validation_status?: Json | null
+          work_matches?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "royalties_import_staging_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "reconciliation_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       royalty_allocations: {
         Row: {
           artist: string | null
@@ -1229,6 +1294,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      source_mapping_config: {
+        Row: {
+          created_at: string
+          header_patterns: string[] | null
+          id: string
+          is_active: boolean | null
+          mapping_rules: Json
+          source_name: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          header_patterns?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          mapping_rules: Json
+          source_name: string
+          updated_at?: string
+          version?: string
+        }
+        Update: {
+          created_at?: string
+          header_patterns?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          mapping_rules?: Json
+          source_name?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
       }
       subscription_addons: {
         Row: {

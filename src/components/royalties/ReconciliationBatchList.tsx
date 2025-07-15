@@ -7,11 +7,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Search, MoreHorizontal, Edit, Trash2, Download, FileText } from "lucide-react";
+import { Search, MoreHorizontal, Edit, Trash2, Download, FileText, Upload } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { ReconciliationBatchForm } from "./ReconciliationBatchForm";
 
-export function ReconciliationBatchList() {
+interface ReconciliationBatchListProps {
+  onSelectBatch?: (batchId: string) => void;
+}
+
+export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
@@ -130,6 +134,16 @@ export function ReconciliationBatchList() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
+                    {onSelectBatch && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => onSelectBatch(batch.id)}
+                        title="Import Statements"
+                      >
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                    )}
                     {batch.statement_file_url && (
                       <Button variant="ghost" size="sm" asChild>
                         <a href={batch.statement_file_url} download>
