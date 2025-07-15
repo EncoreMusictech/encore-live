@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink, Edit } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink, Edit, Download } from 'lucide-react';
 import { Copyright, CopyrightWriter } from '@/hooks/useCopyright';
 import { AudioPlayer } from './AudioPlayer';
 
@@ -57,6 +57,111 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
     return sortDirection === 'asc' ? 
       <ChevronUp className="w-4 h-4 ml-1" /> : 
       <ChevronDown className="w-4 h-4 ml-1" />;
+  };
+
+  const exportToCSV = () => {
+    if (filteredAndSortedCopyrights.length === 0) {
+      return;
+    }
+
+    // Define CSV headers
+    const headers = [
+      'Work ID',
+      'Work Title',
+      'ISWC',
+      'Album Title',
+      'Masters Ownership',
+      'Creation Date',
+      'Copyright Date',
+      'Registration Status',
+      'Work Type',
+      'Language',
+      'Contains Sample',
+      'Duration (seconds)',
+      'Notes',
+      'Writers',
+      'Writers Ownership %',
+      'Controlled Share %',
+      'ASCAP Work ID',
+      'ASCAP Status',
+      'BMI Work ID',
+      'BMI Status',
+      'SOCAN Work ID',
+      'SOCAN Status',
+      'SESAC Work ID',
+      'SESAC Status',
+      'Created At',
+      'Updated At'
+    ];
+
+    // Convert data to CSV rows
+    const rows = filteredAndSortedCopyrights.map(copyright => {
+      const copyrightWriters = writers[copyright.id] || [];
+      const controlledShare = calculateControlledShare(copyrightWriters);
+      const writerNames = copyrightWriters.map(w => w.writer_name).join('; ');
+      const writerOwnership = copyrightWriters.map(w => `${w.writer_name}: ${w.ownership_percentage}%`).join('; ');
+
+      return [
+        copyright.work_id || '',
+        copyright.work_title || '',
+        copyright.iswc || '',
+        copyright.album_title || '',
+        copyright.masters_ownership || '',
+        copyright.creation_date || '',
+        copyright.copyright_date || '',
+        copyright.registration_status || '',
+        copyright.work_type || '',
+        copyright.language_code || '',
+        copyright.contains_sample ? 'Yes' : 'No',
+        copyright.duration_seconds || '',
+        copyright.notes || '',
+        writerNames,
+        writerOwnership,
+        `${controlledShare.toFixed(1)}%`,
+        copyright.ascap_work_id || '',
+        copyright.ascap_status || '',
+        copyright.bmi_work_id || '',
+        copyright.bmi_status || '',
+        copyright.socan_work_id || '',
+        copyright.socan_status || '',
+        copyright.sesac_work_id || '',
+        copyright.sesac_status || '',
+        new Date(copyright.created_at).toISOString(),
+        new Date(copyright.updated_at).toISOString()
+      ];
+    });
+
+    // Combine headers and rows
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(field => {
+        // Escape fields containing commas, quotes, or newlines
+        const stringField = String(field);
+        if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+          return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+      }).join(','))
+      .join('\n');
+
+    // Create and download the file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      
+      // Generate filename with current date and filter info
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filterSuffix = searchTerm ? `_filtered_${searchTerm.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+      link.setAttribute('download', `copyrights_export_${timestamp}${filterSuffix}.csv`);
+      
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
   };
 
   const filteredAndSortedCopyrights = useMemo(() => {
@@ -128,6 +233,16 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
         <div className="text-sm text-muted-foreground">
           {filteredAndSortedCopyrights.length} copyright{filteredAndSortedCopyrights.length !== 1 ? 's' : ''}
         </div>
+        <Button
+          onClick={exportToCSV}
+          disabled={filteredAndSortedCopyrights.length === 0}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
       </div>
 
       <Card>
