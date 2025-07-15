@@ -193,6 +193,12 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     if (!editingCopyright) return;
     
     console.log('Loading editing data for copyright:', editingCopyright.id, editingCopyright.work_title);
+    console.log('Raw PRO status from database:', {
+      ascap_status: (editingCopyright as any).ascap_status,
+      bmi_status: (editingCopyright as any).bmi_status,
+      socan_status: (editingCopyright as any).socan_status,
+      sesac_status: (editingCopyright as any).sesac_status
+    });
     
     // Populate form with existing copyright data
     setFormData({
@@ -367,6 +373,15 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     }
 
     setLoading(true);
+    
+    console.log('Form submitted with data:', formData);
+    console.log('PRO Status Values:', {
+      ascap_status: formData.ascap_status,
+      bmi_status: formData.bmi_status,
+      socan_status: formData.socan_status,
+      sesac_status: formData.sesac_status
+    });
+    
     try {
       // Prepare the copyright data with only valid database fields
       const cleanFormData: Omit<CopyrightInsert, 'user_id'> = {

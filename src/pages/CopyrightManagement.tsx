@@ -88,6 +88,20 @@ const CopyrightManagement = () => {
       title: "Copyright Updated",
       description: "Your copyright work has been successfully updated."
     });
+    
+    // Log the updated data after a brief delay to see if it changed
+    setTimeout(() => {
+      console.log('Current copyrights after update:', copyrights);
+      const updatedCopyright = copyrights?.find(c => c.id === editingCopyright?.id);
+      if (updatedCopyright) {
+        console.log('Updated copyright PRO status:', {
+          ascap_status: (updatedCopyright as any).ascap_status,
+          bmi_status: (updatedCopyright as any).bmi_status,
+          socan_status: (updatedCopyright as any).socan_status,
+          sesac_status: (updatedCopyright as any).sesac_status
+        });
+      }
+    }, 1000);
   };
 
   const handleEditCancel = () => {
