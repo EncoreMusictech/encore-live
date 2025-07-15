@@ -4,7 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink, Edit, Download } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink, Edit, Download, Trash2 } from 'lucide-react';
 import { Copyright, CopyrightWriter } from '@/hooks/useCopyright';
 import { AudioPlayer } from './AudioPlayer';
 
@@ -13,12 +24,13 @@ interface CopyrightTableProps {
   writers: { [key: string]: CopyrightWriter[] };
   loading: boolean;
   onEdit?: (copyright: Copyright) => void;
+  onDelete?: (copyright: Copyright) => void;
 }
 
 type SortDirection = 'asc' | 'desc';
 type SortField = 'work_title' | 'work_id' | 'created_at' | 'registration_status' | 'controlled_share';
 
-export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writers, loading, onEdit }) => {
+export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writers, loading, onEdit, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('work_title');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -390,16 +402,48 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                         {new Date(copyright.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        {onEdit && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onEdit(copyright)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {onEdit && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onEdit(copyright)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {onDelete && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Copyright Work</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{copyright.work_title}"? This action cannot be undone and will remove all associated writers, publishers, and recordings.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>No, Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => onDelete(copyright)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Yes, Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

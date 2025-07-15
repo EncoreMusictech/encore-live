@@ -17,7 +17,7 @@ import { CopyrightTable } from "@/components/copyright/CopyrightTable";
 
 const CopyrightManagement = () => {
   const { toast } = useToast();
-  const { copyrights, loading, getWritersForCopyright, refetch } = useCopyright();
+  const { copyrights, loading, getWritersForCopyright, deleteCopyright, refetch } = useCopyright();
   const [writers, setWriters] = useState<{[key: string]: any[]}>({});
   const [editingCopyright, setEditingCopyright] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -114,6 +114,15 @@ const CopyrightManagement = () => {
     setIsEditDialogOpen(false);
   };
 
+  const handleDelete = async (copyright: any) => {
+    try {
+      await deleteCopyright(copyright.id);
+      // No need to refetch as the deleteCopyright function in the hook already updates the state
+    } catch (error) {
+      console.error('Error deleting copyright:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -139,6 +148,7 @@ const CopyrightManagement = () => {
               writers={writers}
               loading={loading}
               onEdit={handleEdit}
+              onDelete={handleDelete}
             />
           </TabsContent>
 
