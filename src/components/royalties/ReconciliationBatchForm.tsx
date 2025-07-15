@@ -32,10 +32,18 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
 
   const onSubmit = async (data: any) => {
     try {
+      // Ensure empty date strings are converted to null
+      const cleanedData = {
+        ...data,
+        statement_period_start: data.statement_period_start || null,
+        statement_period_end: data.statement_period_end || null,
+        date_received: data.date_received || new Date().toISOString().split('T')[0],
+      };
+      
       if (batch) {
-        await updateBatch(batch.id, data);
+        await updateBatch(batch.id, cleanedData);
       } else {
-        await createBatch(data);
+        await createBatch(cleanedData);
       }
       onCancel();
     } catch (error) {
