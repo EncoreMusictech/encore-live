@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Search, Music, FileText, Users, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCopyright } from "@/hooks/useCopyright";
@@ -19,6 +20,7 @@ const CopyrightManagement = () => {
   const { copyrights, loading, getWritersForCopyright, refetch } = useCopyright();
   const [writers, setWriters] = useState<{[key: string]: any[]}>({});
   const [editingCopyright, setEditingCopyright] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("copyrights");
 
   // Load writers for each copyright
@@ -74,24 +76,22 @@ const CopyrightManagement = () => {
 
   const handleEdit = (copyright: any) => {
     setEditingCopyright(copyright);
-    setActiveTab("edit");
+    setIsEditDialogOpen(true);
   };
 
   const handleEditSuccess = () => {
     refetch();
     setEditingCopyright(null);
-    setActiveTab("copyrights");
+    setIsEditDialogOpen(false);
     toast({
-      title: editingCopyright ? "Copyright Updated" : "Copyright Created",
-      description: editingCopyright 
-        ? "Your copyright work has been successfully updated."
-        : "Your copyright work has been successfully created with all metadata."
+      title: "Copyright Updated",
+      description: "Your copyright work has been successfully updated."
     });
   };
 
   const handleEditCancel = () => {
     setEditingCopyright(null);
-    setActiveTab("copyrights");
+    setIsEditDialogOpen(false);
   };
 
   return (
@@ -110,7 +110,6 @@ const CopyrightManagement = () => {
           <TabsList>
             <TabsTrigger value="copyrights">My Copyrights</TabsTrigger>
             <TabsTrigger value="register">Register New</TabsTrigger>
-            {editingCopyright && <TabsTrigger value="edit">Edit Copyright</TabsTrigger>}
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -136,13 +135,6 @@ const CopyrightManagement = () => {
             />
           </TabsContent>
 
-          <TabsContent value="edit">
-            <EnhancedCopyrightForm 
-              editingCopyright={editingCopyright}
-              onSuccess={handleEditSuccess}
-              onCancel={handleEditCancel}
-            />
-          </TabsContent>
 
           <TabsContent value="analytics">
             <div className="grid md:grid-cols-4 gap-6">
@@ -197,6 +189,20 @@ const CopyrightManagement = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Edit Copyright Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Copyright</DialogTitle>
+            </DialogHeader>
+            <EnhancedCopyrightForm 
+              editingCopyright={editingCopyright}
+              onSuccess={handleEditSuccess}
+              onCancel={handleEditCancel}
+            />
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
