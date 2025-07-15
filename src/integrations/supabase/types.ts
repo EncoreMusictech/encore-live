@@ -1058,7 +1058,7 @@ export type Database = {
       }
       reconciliation_batches: {
         Row: {
-          batch_id: string
+          batch_id: string | null
           created_at: string
           date_received: string
           id: string
@@ -1073,7 +1073,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          batch_id: string
+          batch_id?: string | null
           created_at?: string
           date_received?: string
           id?: string
@@ -1088,7 +1088,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          batch_id?: string
+          batch_id?: string | null
           created_at?: string
           date_received?: string
           id?: string
