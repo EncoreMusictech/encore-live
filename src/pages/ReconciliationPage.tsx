@@ -8,6 +8,7 @@ import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
 import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
 import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportStaging";
+import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 
 export default function ReconciliationPage() {
   const [showForm, setShowForm] = useState(false);
@@ -22,6 +23,8 @@ export default function ReconciliationPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto py-8 px-4">
+        <RoyaltiesModuleNav />
+        
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Reconciliation - Batches</h1>

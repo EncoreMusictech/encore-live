@@ -7,6 +7,7 @@ import { Plus, CreditCard, DollarSign, Users, TrendingUp } from "lucide-react";
 import { usePayouts } from "@/hooks/usePayouts";
 import { PayoutForm } from "@/components/royalties/PayoutForm";
 import { PayoutList } from "@/components/royalties/PayoutList";
+import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 
 export default function PayoutsPage() {
   const [showForm, setShowForm] = useState(false);
@@ -21,6 +22,8 @@ export default function PayoutsPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto py-8 px-4">
+        <RoyaltiesModuleNav />
+        
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Payouts & Client Accounting</h1>

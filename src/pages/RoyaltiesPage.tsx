@@ -7,6 +7,7 @@ import { Plus, Music, DollarSign, Users, AlertTriangle } from "lucide-react";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
+import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 
 export default function RoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
@@ -20,6 +21,8 @@ export default function RoyaltiesPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto py-8 px-4">
+        <RoyaltiesModuleNav />
+        
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Royalties Allocation</h1>
