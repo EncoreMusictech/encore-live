@@ -62,7 +62,7 @@ export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
   },
   'Gross Amount': {
     BMI: ['Current Quarter Royalties', 'Amount', 'Royalty', 'Payment', 'Total Amount', 'Quarter Royalties'],
-    ASCAP: 'Amount Paid',
+    ASCAP: ['Amount Paid', 'Amount', 'Royalty', 'Payment', 'Total', 'Total Amount', 'Quarter Royalties'],
     YouTube: 'Earnings',
     SoundExchange: 'Royalty',
   },

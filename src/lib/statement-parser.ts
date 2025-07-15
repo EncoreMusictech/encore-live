@@ -29,7 +29,11 @@ export const DEFAULT_SOURCE_RULES: SourceDetectionRule[] = [
   },
   {
     source: 'ASCAP',
-    headerPatterns: ['Title', 'Writer Name', 'Amount Paid', 'Survey'],
+    headerPatterns: [
+      'Title', 'Writer Name', 'Amount Paid', 'Survey',
+      'Work Title', 'Writer', 'Performance Type', 'Royalty',
+      'Amount', 'Payment', 'Total', 'Quarter', 'Period'
+    ],
     requiredFields: ['Title', 'Writer Name'],
     confidence: 0.8,
   },

@@ -74,6 +74,12 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
         } else if (file.name.toLowerCase().includes('ascap')) {
           detectedSource = 'ASCAP';
           console.log('Detected ASCAP from filename');
+        } else if (file.name.toLowerCase().includes('youtube')) {
+          detectedSource = 'YouTube';
+          console.log('Detected YouTube from filename');
+        } else if (file.name.toLowerCase().includes('soundexchange')) {
+          detectedSource = 'SoundExchange';
+          console.log('Detected SoundExchange from filename');
         }
       }
       
