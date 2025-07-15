@@ -1,16 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { Upload, X } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
-import { StatementParser } from "@/lib/statement-parser";
-import { EncoreMapper } from "@/lib/encore-mapper";
+import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ReconciliationBatchFormProps {
   onCancel: () => void;
@@ -18,8 +17,10 @@ interface ReconciliationBatchFormProps {
 }
 
 export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatchFormProps) {
-  const [uploading, setUploading] = useState(false);
+  const [availableStatements, setAvailableStatements] = useState<any[]>([]);
+  const [loadingStatements, setLoadingStatements] = useState(false);
   const { createBatch, updateBatch } = useReconciliationBatches();
+  const { user } = useAuth();
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
       source: batch?.source || 'DSP',
@@ -27,12 +28,62 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       statement_period_end: batch?.statement_period_end || '',
       date_received: batch?.date_received || new Date().toISOString().split('T')[0],
       total_gross_amount: batch?.total_gross_amount || 0,
-      statement_total: batch?.statement_total || 0,
-      statement_file_url: batch?.statement_file_url || '',
+      linked_statement_id: batch?.linked_statement_id || '',
       status: batch?.status || 'Pending',
       notes: batch?.notes || '',
     }
   });
+
+  // Fetch available statements that aren't already linked to other batches
+  const fetchAvailableStatements = async () => {
+    if (!user) return;
+    
+    setLoadingStatements(true);
+    try {
+      // Get all royalties import staging records
+      const { data: statements, error: statementsError } = await supabase
+        .from('royalties_import_staging')
+        .select('id, original_filename, detected_source, created_at, batch_id')
+        .order('created_at', { ascending: false });
+
+      if (statementsError) throw statementsError;
+
+      // Get all batch IDs that already have linked statements
+      const { data: linkedBatches, error: batchesError } = await supabase
+        .from('reconciliation_batches')
+        .select('id, linked_statement_id')
+        .not('linked_statement_id', 'is', null);
+
+      if (batchesError) throw batchesError;
+
+      // Filter out statements that are already linked to other batches (excluding current batch if editing)
+      const linkedStatementIds = new Set(
+        linkedBatches
+          ?.filter(b => batch ? b.id !== batch.id : true)
+          ?.map(b => b.linked_statement_id)
+          ?.filter(Boolean) || []
+      );
+
+      const available = statements?.filter(statement => 
+        !linkedStatementIds.has(statement.id)
+      ) || [];
+
+      setAvailableStatements(available);
+    } catch (error) {
+      console.error('Error fetching available statements:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch available statements",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingStatements(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAvailableStatements();
+  }, [user]);
 
   const onSubmit = async (data: any) => {
     try {
@@ -44,118 +95,6 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       onCancel();
     } catch (error) {
       console.error('Error saving batch:', error);
-    }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      // Parse the statement to calculate totals
-      const parser = new StatementParser();
-      const mapper = new EncoreMapper();
-      
-      console.log('Starting file parsing for:', file.name);
-      const parsedData = await parser.parseFile(file);
-      console.log('Parsed data:', parsedData);
-      console.log('Detected source:', parsedData.detectedSource);
-      console.log('Headers found:', parsedData.headers);
-      console.log('Raw data sample:', parsedData.data.slice(0, 3));
-      
-      // If source detection failed, try to detect manually from filename or headers
-      let detectedSource = parsedData.detectedSource;
-      if (detectedSource === 'Unknown') {
-        console.log('Source detection failed, checking filename and headers...');
-        if (file.name.toLowerCase().includes('bmi')) {
-          detectedSource = 'BMI';
-          console.log('Detected BMI from filename');
-        } else if (file.name.toLowerCase().includes('ascap')) {
-          detectedSource = 'ASCAP';
-          console.log('Detected ASCAP from filename');
-        } else if (file.name.toLowerCase().includes('youtube')) {
-          detectedSource = 'YouTube';
-          console.log('Detected YouTube from filename');
-        } else if (file.name.toLowerCase().includes('soundexchange')) {
-          detectedSource = 'SoundExchange';
-          console.log('Detected SoundExchange from filename');
-        }
-      }
-      
-      console.log('Final detected source:', detectedSource);
-      
-      const mappingResult = mapper.mapData(parsedData.data, detectedSource);
-      console.log('Mapping result for source', detectedSource, ':', mappingResult);
-      console.log('Mapped data sample:', mappingResult.mappedData.slice(0, 3));
-      
-      // Check what gross amount fields are available
-      const firstRow = mappingResult.mappedData[0];
-      if (firstRow) {
-        console.log('First mapped row keys:', Object.keys(firstRow));
-        console.log('First row Gross Amount value:', firstRow['Gross Amount']);
-        
-        // If Gross Amount is still undefined, try to find amount fields in raw data
-        if (firstRow['Gross Amount'] === undefined) {
-          console.log('Gross Amount not found, checking raw data headers:', parsedData.headers);
-          console.log('First raw row:', parsedData.data[0]);
-        }
-      }
-      
-      // Calculate the total gross amount from parsed data
-      let statementTotal = 0;
-      
-      // Try mapped data first
-      if (mappingResult.mappedData.length > 0 && mappingResult.mappedData[0]['Gross Amount'] !== undefined) {
-        statementTotal = mappingResult.mappedData.reduce((total, row) => {
-          const grossAmount = parseFloat(row['Gross Amount']) || 0;
-          console.log('Processing row gross amount:', row['Gross Amount'], 'parsed as:', grossAmount);
-          return total + grossAmount;
-        }, 0);
-      } else {
-        // Fallback: try to find amount columns in raw data
-        console.log('Fallback: searching for amount fields in raw data...');
-        const amountFields = parsedData.headers.filter(header => 
-          header && (
-            header.toLowerCase().includes('amount') ||
-            header.toLowerCase().includes('royalt') ||
-            header.toLowerCase().includes('earning') ||
-            header.toLowerCase().includes('payment')
-          )
-        );
-        console.log('Found potential amount fields:', amountFields);
-        
-        if (amountFields.length > 0) {
-          const amountField = amountFields[0];
-          statementTotal = parsedData.data.reduce((total, row) => {
-            const amount = parseFloat(row[amountField]) || 0;
-            console.log('Processing raw row amount:', row[amountField], 'parsed as:', amount);
-            return total + amount;
-          }, 0);
-        }
-      }
-      
-      console.log('Calculated statement total:', statementTotal);
-      
-      // Update form fields with calculated values
-      setValue('statement_file_url', `uploads/${file.name}`);
-      setValue('statement_total', statementTotal);
-      
-      toast({
-        title: "Statement Parsed",
-        description: `Calculated total: $${statementTotal.toLocaleString()} from ${mappingResult.mappedData.length} rows`,
-      });
-      
-      setUploading(false);
-    } catch (error) {
-      console.error('Error processing file:', error);
-      setValue('statement_file_url', `uploads/${file.name}`);
-      toast({
-        title: "Upload Complete",
-        description: "File uploaded but could not parse statement data",
-        variant: "destructive",
-      });
-      setUploading(false);
     }
   };
 
@@ -218,17 +157,28 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="statement_total">Statement Total</Label>
-          <Input
-            id="statement_total"
-            type="number"
-            step="0.01"
-            {...register('statement_total', { valueAsNumber: true })}
-            readOnly
-            className="bg-muted"
-          />
+          <Label htmlFor="linked_statement_id">Link Statement</Label>
+          <Select 
+            onValueChange={(value) => setValue('linked_statement_id', value)} 
+            defaultValue={watch('linked_statement_id')}
+            disabled={loadingStatements}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={loadingStatements ? "Loading statements..." : "Select a statement to link"} />
+            </SelectTrigger>
+            <SelectContent>
+              {availableStatements.map((statement) => (
+                <SelectItem key={statement.id} value={statement.id}>
+                  {statement.original_filename} ({statement.detected_source})
+                </SelectItem>
+              ))}
+              {availableStatements.length === 0 && !loadingStatements && (
+                <SelectItem value="" disabled>No available statements</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
           <p className="text-xs text-muted-foreground">
-            Automatically calculated from uploaded statement
+            Only statements not linked to other batches are shown
           </p>
         </div>
 
@@ -248,49 +198,6 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       </div>
 
       <div className="space-y-2">
-        <Label>Upload Royalty Statement</Label>
-        <Card className="border-dashed border-2 border-muted-foreground/25 hover:border-muted-foreground/50 transition-colors">
-          <CardContent className="p-6">
-            <div className="text-center">
-              <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-              <div className="mt-4">
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <span className="text-sm font-medium text-primary hover:text-primary/90">
-                    Click to upload
-                  </span>
-                  <span className="text-sm text-muted-foreground"> or drag and drop</span>
-                </label>
-                <input
-                  id="file-upload"
-                  type="file"
-                  accept=".csv,.xls,.xlsx"
-                  className="sr-only"
-                  onChange={handleFileUpload}
-                  disabled={uploading}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                CSV or Excel files only
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        {watch('statement_file_url') && (
-          <div className="flex items-center justify-between p-2 bg-muted rounded">
-            <span className="text-sm">{watch('statement_file_url')}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setValue('statement_file_url', '')}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-2">
         <Label htmlFor="notes">Notes</Label>
         <Textarea
           id="notes"
@@ -303,8 +210,8 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={uploading}>
-          {uploading ? 'Uploading...' : batch ? 'Update Batch' : 'Create Batch'}
+        <Button type="submit" disabled={loadingStatements}>
+          {batch ? 'Update Batch' : 'Create Batch'}
         </Button>
       </div>
     </form>
