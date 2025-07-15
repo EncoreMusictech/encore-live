@@ -436,9 +436,15 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         resetForm();
       }
       
+      console.log('Copyright saved successfully, calling onSuccess callback');
       onSuccess?.();
     } catch (error) {
       console.error('Error saving copyright:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save copyright work",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

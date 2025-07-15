@@ -80,6 +80,7 @@ const CopyrightManagement = () => {
   };
 
   const handleEditSuccess = () => {
+    console.log('handleEditSuccess called, refreshing copyright data...');
     refetch();
     setEditingCopyright(null);
     setIsEditDialogOpen(false);
