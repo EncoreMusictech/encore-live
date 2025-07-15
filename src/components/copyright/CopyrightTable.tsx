@@ -284,17 +284,18 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                       <TableCell>
                         {getRegistrationStatusBadge(copyright.registration_status || 'not_registered')}
                       </TableCell>
-                      <TableCell>
-                        {copyright.mp3_link ? (
-                          <AudioPlayer 
-                            src={copyright.mp3_link}
-                            title={copyright.work_title}
-                            className="max-w-[180px]"
-                          />
-                        ) : (
-                          <span className="text-muted-foreground text-sm">-</span>
-                        )}
-                      </TableCell>
+                       <TableCell>
+                         {copyright.mp3_link ? (
+                           <AudioPlayer 
+                             src={copyright.mp3_link}
+                             title={copyright.work_title}
+                             artist={writers[copyright.id]?.[0]?.writer_name || "Unknown Artist"}
+                             className="max-w-[180px]"
+                           />
+                         ) : (
+                           <span className="text-muted-foreground text-sm">-</span>
+                         )}
+                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(copyright.created_at).toLocaleDateString()}
                       </TableCell>
