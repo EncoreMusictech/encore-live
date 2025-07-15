@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, AlertTriangle, CheckCircle, FileText, Users, Wrench, Settings } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle, FileText, Users, Wrench, Settings, Music } from "lucide-react";
 import { RoyaltiesImportStaging, useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { FieldMappingDialog } from "./FieldMappingDialog";
+import { SongMatchingDialog } from "./SongMatchingDialog";
 import { EncoreMapper, DEFAULT_ENCORE_MAPPING } from "@/lib/encore-mapper";
 import { toast } from "@/hooks/use-toast";
 
@@ -19,6 +20,7 @@ interface RoyaltiesImportPreviewProps {
 export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPreviewProps) {
   const [selectedTab, setSelectedTab] = useState("mapped");
   const [showMappingDialog, setShowMappingDialog] = useState(false);
+  const [showSongMatchingDialog, setShowSongMatchingDialog] = useState(false);
   const [localRecord, setLocalRecord] = useState(record);
   const { updateStagingRecord } = useRoyaltiesImport();
   
@@ -67,6 +69,24 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         variant: "destructive",
       });
     }
+  };
+
+  const handleSongMatchingComplete = (results: { matched: number; unmatched: number }) => {
+    toast({
+      title: "Song Matching Complete",
+      description: `${results.matched} songs matched, ${results.unmatched} unmatched and added to allocations`,
+    });
+
+    // Update the work_matches in the record
+    const updatedRecord = {
+      ...localRecord,
+      work_matches: {
+        matched_count: results.matched,
+        unmatched_count: results.unmatched,
+        match_date: new Date().toISOString(),
+      },
+    };
+    setLocalRecord(updatedRecord);
   };
 
   const handleApproveAndProcess = async () => {
@@ -446,6 +466,10 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
               <Users className="h-4 w-4 mr-2" />
               Match Payees
             </Button>
+            <Button variant="outline" onClick={() => setShowSongMatchingDialog(true)}>
+              <Music className="h-4 w-4 mr-2" />
+              Song Matching
+            </Button>
           </div>
           <div className="mt-2 text-sm text-muted-foreground">
             Use "Edit Mappings" to configure field mappings with drag and drop
@@ -461,6 +485,15 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         validationErrors={errors}
         requiredFields={requiredFields}
         onSaveMapping={handleSaveMapping}
+      />
+
+      {/* Song Matching Dialog */}
+      <SongMatchingDialog
+        open={showSongMatchingDialog}
+        onOpenChange={setShowSongMatchingDialog}
+        mappedData={mappedData}
+        batchId={localRecord.batch_id || ''}
+        onMatchingComplete={handleSongMatchingComplete}
       />
     </div>
   );
