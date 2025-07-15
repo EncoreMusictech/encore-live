@@ -176,8 +176,12 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
   // Load existing copyright data when editing
   useEffect(() => {
+    console.log('EnhancedCopyrightForm - editingCopyright changed:', editingCopyright);
+    
     const loadEditingData = async () => {
       if (editingCopyright) {
+        console.log('Loading editing data for copyright:', editingCopyright.id, editingCopyright.work_title);
+        
         // Populate form with existing copyright data
         setFormData({
           work_title: editingCopyright.work_title || '',
@@ -450,13 +454,16 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                 <div className="space-y-2">
                   <Label htmlFor="work_title">Work Title *</Label>
                   <div className="relative">
-                    <Input
-                      id="work_title"
-                      value={formData.work_title || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, work_title: e.target.value }))}
-                      placeholder="Enter work title"
-                      required
-                    />
+                     <Input
+                       id="work_title"
+                       value={formData.work_title || ''}
+                       onChange={(e) => {
+                         console.log('Work title changing to:', e.target.value);
+                         setFormData(prev => ({ ...prev, work_title: e.target.value }));
+                       }}
+                       placeholder="Enter work title"
+                       required
+                     />
                     {spotifyLoading && (
                       <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />
                     )}
