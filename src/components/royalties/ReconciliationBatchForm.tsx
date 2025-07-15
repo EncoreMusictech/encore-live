@@ -57,14 +57,31 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       const parser = new StatementParser();
       const mapper = new EncoreMapper();
       
+      console.log('Starting file parsing for:', file.name);
       const parsedData = await parser.parseFile(file);
+      console.log('Parsed data:', parsedData);
+      console.log('Detected source:', parsedData.detectedSource);
+      console.log('Raw data sample:', parsedData.data.slice(0, 3));
+      
       const mappingResult = mapper.mapData(parsedData.data, parsedData.detectedSource);
+      console.log('Mapping result:', mappingResult);
+      console.log('Mapped data sample:', mappingResult.mappedData.slice(0, 3));
+      
+      // Check what gross amount fields are available
+      const firstRow = mappingResult.mappedData[0];
+      if (firstRow) {
+        console.log('First mapped row keys:', Object.keys(firstRow));
+        console.log('First row Gross Amount value:', firstRow['Gross Amount']);
+      }
       
       // Calculate the total gross amount from parsed data
       const statementTotal = mappingResult.mappedData.reduce((total, row) => {
         const grossAmount = parseFloat(row['Gross Amount']) || 0;
+        console.log('Processing row gross amount:', row['Gross Amount'], 'parsed as:', grossAmount);
         return total + grossAmount;
       }, 0);
+      
+      console.log('Calculated statement total:', statementTotal);
       
       // Update form fields with calculated values
       setValue('statement_file_url', `uploads/${file.name}`);
