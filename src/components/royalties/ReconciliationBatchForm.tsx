@@ -61,10 +61,26 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       const parsedData = await parser.parseFile(file);
       console.log('Parsed data:', parsedData);
       console.log('Detected source:', parsedData.detectedSource);
+      console.log('Headers found:', parsedData.headers);
       console.log('Raw data sample:', parsedData.data.slice(0, 3));
       
-      const mappingResult = mapper.mapData(parsedData.data, parsedData.detectedSource);
-      console.log('Mapping result:', mappingResult);
+      // If source detection failed, try to detect manually from filename or headers
+      let detectedSource = parsedData.detectedSource;
+      if (detectedSource === 'Unknown') {
+        console.log('Source detection failed, checking filename and headers...');
+        if (file.name.toLowerCase().includes('bmi')) {
+          detectedSource = 'BMI';
+          console.log('Detected BMI from filename');
+        } else if (file.name.toLowerCase().includes('ascap')) {
+          detectedSource = 'ASCAP';
+          console.log('Detected ASCAP from filename');
+        }
+      }
+      
+      console.log('Final detected source:', detectedSource);
+      
+      const mappingResult = mapper.mapData(parsedData.data, detectedSource);
+      console.log('Mapping result for source', detectedSource, ':', mappingResult);
       console.log('Mapped data sample:', mappingResult.mappedData.slice(0, 3));
       
       // Check what gross amount fields are available
@@ -72,14 +88,46 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       if (firstRow) {
         console.log('First mapped row keys:', Object.keys(firstRow));
         console.log('First row Gross Amount value:', firstRow['Gross Amount']);
+        
+        // If Gross Amount is still undefined, try to find amount fields in raw data
+        if (firstRow['Gross Amount'] === undefined) {
+          console.log('Gross Amount not found, checking raw data headers:', parsedData.headers);
+          console.log('First raw row:', parsedData.data[0]);
+        }
       }
       
       // Calculate the total gross amount from parsed data
-      const statementTotal = mappingResult.mappedData.reduce((total, row) => {
-        const grossAmount = parseFloat(row['Gross Amount']) || 0;
-        console.log('Processing row gross amount:', row['Gross Amount'], 'parsed as:', grossAmount);
-        return total + grossAmount;
-      }, 0);
+      let statementTotal = 0;
+      
+      // Try mapped data first
+      if (mappingResult.mappedData.length > 0 && mappingResult.mappedData[0]['Gross Amount'] !== undefined) {
+        statementTotal = mappingResult.mappedData.reduce((total, row) => {
+          const grossAmount = parseFloat(row['Gross Amount']) || 0;
+          console.log('Processing row gross amount:', row['Gross Amount'], 'parsed as:', grossAmount);
+          return total + grossAmount;
+        }, 0);
+      } else {
+        // Fallback: try to find amount columns in raw data
+        console.log('Fallback: searching for amount fields in raw data...');
+        const amountFields = parsedData.headers.filter(header => 
+          header && (
+            header.toLowerCase().includes('amount') ||
+            header.toLowerCase().includes('royalt') ||
+            header.toLowerCase().includes('earning') ||
+            header.toLowerCase().includes('payment')
+          )
+        );
+        console.log('Found potential amount fields:', amountFields);
+        
+        if (amountFields.length > 0) {
+          const amountField = amountFields[0];
+          statementTotal = parsedData.data.reduce((total, row) => {
+            const amount = parseFloat(row[amountField]) || 0;
+            console.log('Processing raw row amount:', row[amountField], 'parsed as:', amount);
+            return total + amount;
+          }, 0);
+        }
+      }
       
       console.log('Calculated statement total:', statementTotal);
       
