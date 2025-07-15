@@ -76,6 +76,10 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     bmi_work_id?: string;
     socan_work_id?: string;
     sesac_work_id?: string;
+    ascap_status?: string;
+    bmi_status?: string;
+    socan_status?: string;
+    sesac_status?: string;
     registration_status?: string;
     date_submitted?: string;
     copyright_reg_number?: string;
@@ -192,6 +196,10 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           bmi_work_id: editingCopyright.bmi_work_id || '',
           socan_work_id: editingCopyright.socan_work_id || '',
           sesac_work_id: editingCopyright.sesac_work_id || '',
+          ascap_status: (editingCopyright as any).ascap_status || 'not_registered',
+          bmi_status: (editingCopyright as any).bmi_status || 'not_registered',
+          socan_status: (editingCopyright as any).socan_status || 'not_registered',
+          sesac_status: (editingCopyright as any).sesac_status || 'not_registered',
           copyright_reg_number: editingCopyright.copyright_reg_number || '',
           copyright_date: editingCopyright.copyright_date || '',
           notice_date: editingCopyright.notice_date || '',
@@ -362,6 +370,10 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         bmi_work_id: formData.bmi_work_id,
         socan_work_id: formData.socan_work_id,
         sesac_work_id: formData.sesac_work_id,
+        ascap_status: formData.ascap_status,
+        bmi_status: formData.bmi_status,
+        socan_status: formData.socan_status,
+        sesac_status: formData.sesac_status,
         copyright_reg_number: formData.copyright_reg_number,
         copyright_date: formData.copyright_date,
         notice_date: formData.notice_date,
@@ -765,9 +777,9 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="ascap_work_id">ASCAP #</Label>
+                  <Label htmlFor="ascap_work_id">ASCAP Work ID</Label>
                   <Input
                     id="ascap_work_id"
                     value={formData.ascap_work_id || ''}
@@ -777,7 +789,37 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="bmi_work_id">BMI #</Label>
+                  <Label htmlFor="ascap_status">ASCAP Status</Label>
+                  <Select
+                    value={formData.ascap_status || 'not_registered'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, ascap_status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_registered">Not Registered</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="registered">Registered</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full mt-6"
+                    onClick={searchASCAP}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Search ASCAP
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="bmi_work_id">BMI Work ID</Label>
                   <Input
                     id="bmi_work_id"
                     value={formData.bmi_work_id || ''}
@@ -787,7 +829,37 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="socan_work_id">SOCAN #</Label>
+                  <Label htmlFor="bmi_status">BMI Status</Label>
+                  <Select
+                    value={formData.bmi_status || 'not_registered'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, bmi_status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_registered">Not Registered</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="registered">Registered</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full mt-6"
+                    onClick={() => window.open('https://repertoire.bmi.com/Search', '_blank')}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Search BMI
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="socan_work_id">SOCAN Work ID</Label>
                   <Input
                     id="socan_work_id"
                     value={formData.socan_work_id || ''}
@@ -797,13 +869,73 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="sesac_work_id">SESAC #</Label>
+                  <Label htmlFor="socan_status">SOCAN Status</Label>
+                  <Select
+                    value={formData.socan_status || 'not_registered'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, socan_status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_registered">Not Registered</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="registered">Registered</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full mt-6"
+                    onClick={() => window.open('https://www.socan.com/members/music-search', '_blank')}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Search SOCAN
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="sesac_work_id">SESAC Work ID</Label>
                   <Input
                     id="sesac_work_id"
                     value={formData.sesac_work_id || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, sesac_work_id: e.target.value }))}
                     placeholder="SESAC Work ID"
                   />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="sesac_status">SESAC Status</Label>
+                  <Select
+                    value={formData.sesac_status || 'not_registered'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, sesac_status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_registered">Not Registered</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="registered">Registered</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full mt-6"
+                    onClick={() => window.open('https://www.sesac.com/', '_blank')}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Search SESAC
+                  </Button>
                 </div>
               </div>
             </CardContent>

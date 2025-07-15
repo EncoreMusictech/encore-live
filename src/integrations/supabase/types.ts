@@ -594,7 +594,9 @@ export type Database = {
         Row: {
           akas: string[] | null
           album_title: string | null
+          ascap_status: string | null
           ascap_work_id: string | null
+          bmi_status: string | null
           bmi_work_id: string | null
           catalogue_number: string | null
           collection_territories: string[] | null
@@ -617,7 +619,9 @@ export type Database = {
           registration_status: string | null
           registration_type: string | null
           rights_types: string[] | null
+          sesac_status: string | null
           sesac_work_id: string | null
+          socan_status: string | null
           socan_work_id: string | null
           status: string | null
           submission_date: string | null
@@ -635,7 +639,9 @@ export type Database = {
         Insert: {
           akas?: string[] | null
           album_title?: string | null
+          ascap_status?: string | null
           ascap_work_id?: string | null
+          bmi_status?: string | null
           bmi_work_id?: string | null
           catalogue_number?: string | null
           collection_territories?: string[] | null
@@ -658,7 +664,9 @@ export type Database = {
           registration_status?: string | null
           registration_type?: string | null
           rights_types?: string[] | null
+          sesac_status?: string | null
           sesac_work_id?: string | null
+          socan_status?: string | null
           socan_work_id?: string | null
           status?: string | null
           submission_date?: string | null
@@ -676,7 +684,9 @@ export type Database = {
         Update: {
           akas?: string[] | null
           album_title?: string | null
+          ascap_status?: string | null
           ascap_work_id?: string | null
+          bmi_status?: string | null
           bmi_work_id?: string | null
           catalogue_number?: string | null
           collection_territories?: string[] | null
@@ -699,7 +709,9 @@ export type Database = {
           registration_status?: string | null
           registration_type?: string | null
           rights_types?: string[] | null
+          sesac_status?: string | null
           sesac_work_id?: string | null
+          socan_status?: string | null
           socan_work_id?: string | null
           status?: string | null
           submission_date?: string | null
