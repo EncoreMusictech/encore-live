@@ -148,7 +148,8 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           masters_ownership: metadata.masterOwner || prev.masters_ownership,
           mp3_link: metadata.previewUrl || prev.mp3_link,
           duration_seconds: metadata.duration || prev.duration_seconds,
-          isrc: metadata.isrc || prev.isrc
+          isrc: metadata.isrc || prev.isrc,
+          creation_date: metadata.releaseDate || prev.creation_date
         }));
 
         toast({
