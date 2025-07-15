@@ -16,6 +16,9 @@ import CopyrightManagement from "./pages/CopyrightManagement";
 import SyncLicensingPage from "./pages/SyncLicensingPage";
 import SyncLicensingPreviewPage from "./pages/SyncLicensingPreviewPage";
 import PricingPage from "./pages/PricingPage";
+import ReconciliationPage from "./pages/ReconciliationPage";
+import RoyaltiesPage from "./pages/RoyaltiesPage";
+import PayoutsPage from "./pages/PayoutsPage";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +69,21 @@ const App = () => (
             <Route path="/sync-licensing-preview" element={
               <ProtectedRoute>
                 <SyncLicensingPreviewPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/reconciliation" element={
+              <ProtectedRoute>
+                <ReconciliationPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/royalties" element={
+              <ProtectedRoute>
+                <RoyaltiesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/payouts" element={
+              <ProtectedRoute>
+                <PayoutsPage />
               </ProtectedRoute>
             } />
             <Route path="/pricing" element={

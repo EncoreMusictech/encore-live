@@ -4,10 +4,58 @@ import {
   Copyright, 
   Film, 
   DollarSign, 
-  Users 
+  Users,
+  Archive,
+  Music,
+  CreditCard
 } from "lucide-react";
 
 export const modules = [
+  {
+    id: "reconciliation",
+    title: "Reconciliation - Batches",
+    description: "Track incoming royalty payments from DSPs, PROs, YouTube, and other sources",
+    icon: Archive,
+    tier: "Pro" as const,
+    isPopular: true,
+    features: [
+      "Bulk import royalty statements",
+      "Auto-generated batch IDs",
+      "Multi-source tracking (DSP/PRO/YouTube)",
+      "Revenue reconciliation tools",
+      "Status tracking workflow"
+    ]
+  },
+  {
+    id: "royalties",
+    title: "Royalties Allocation",
+    description: "Map works and their rightsholders to reconciled revenue with automated calculations",
+    icon: Music,
+    tier: "Pro" as const,
+    isPopular: true,
+    features: [
+      "Work-to-rightsholder mapping",
+      "Automated royalty calculations",
+      "Split validation (100% check)",
+      "Recoupable expense tracking",
+      "Contract terms integration"
+    ]
+  },
+  {
+    id: "payouts",
+    title: "Payouts & Client Accounting",
+    description: "Handle periodic statements and payments for clients with automated calculations",
+    icon: CreditCard,
+    tier: "Pro" as const,
+    isPopular: false,
+    features: [
+      "Periodic client statements",
+      "Gross to net calculations",
+      "Payment tracking & history",
+      "PDF statement exports",
+      "Multiple payment methods"
+    ]
+  },
   {
     id: "catalog-valuation",
     title: "Catalog Valuation",
