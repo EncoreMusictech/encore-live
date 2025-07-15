@@ -21,6 +21,32 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
   const [showMappingDialog, setShowMappingDialog] = useState(false);
   const [localRecord, setLocalRecord] = useState(record);
   const { updateStagingRecord } = useRoyaltiesImport();
+  
+  const handleApproveAndProcess = async () => {
+    try {
+      await updateStagingRecord(localRecord.id, {
+        processing_status: 'processed',
+      });
+
+      const updatedRecord = {
+        ...localRecord,
+        processing_status: 'processed' as const,
+      };
+      setLocalRecord(updatedRecord);
+
+      toast({
+        title: "Success",
+        description: "Statement approved and processed successfully",
+      });
+    } catch (error) {
+      console.error('Error approving statement:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to approve and process statement",
+        variant: "destructive",
+      });
+    }
+  };
 
   const rawData = Array.isArray(localRecord.raw_data) ? localRecord.raw_data : [];
   const mappedData = Array.isArray(localRecord.mapped_data) ? localRecord.mapped_data : [];
@@ -361,7 +387,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
-            <Button disabled>
+            <Button onClick={handleApproveAndProcess}>
               <CheckCircle className="h-4 w-4 mr-2" />
               Approve & Process
             </Button>
