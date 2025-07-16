@@ -97,15 +97,6 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
   };
 
   const handleSongMatching = async () => {
-    if (!localRecord.batch_id) {
-      toast({
-        title: "No Batch Linked",
-        description: "This statement must be linked to a reconciliation batch before song matching. Please create or link a batch first.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setShowSongMatchingDialog(true);
   };
 
@@ -501,21 +492,13 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
               <Users className="h-4 w-4 mr-2" />
               Match Payees
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleSongMatching}
-              disabled={!localRecord.batch_id}
-            >
+            <Button variant="outline" onClick={handleSongMatching}>
               <Music className="h-4 w-4 mr-2" />
               Song Matching
             </Button>
           </div>
           <div className="mt-2 text-sm text-muted-foreground">
-            {!localRecord.batch_id ? (
-              <span className="text-orange-600">Song Matching requires this statement to be linked to a reconciliation batch first.</span>
-            ) : (
-              "Use Song Matching to create royalty allocations from matched works."
-            )}
+            Use Song Matching to create royalty allocations from matched works.
           </div>
         </CardContent>
       </Card>
