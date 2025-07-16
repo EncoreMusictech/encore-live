@@ -22,44 +22,47 @@ const Index = () => {
 
   const pricingTiers = [
     {
-      name: "Free",
-      price: "$0",
-      description: "Perfect for independent artists and small operations",
+      name: "Starter Creator",
+      price: "$79",
+      originalPrice: "$158",
+      description: "Perfect for indie songwriters starting out",
+      audience: "Indie songwriters",
       features: [
-        "Contract Management",
-        "Copyright Management", 
-        "Up to 100 tracks",
-        "Basic reporting",
-        "Email support"
+        "Copyright Management",
+        "Contract Manager", 
+        "Up to 50 works per month",
+        "Email support",
+        "Save 50%"
       ]
     },
     {
-      name: "Pro",
-      price: "$49",
-      description: "Ideal for managers, small labels, and growing businesses",
+      name: "Publishing Pro",
+      price: "$299",
+      originalPrice: "$357",
+      description: "Complete solution for indie publishers",
+      audience: "Indie publishers",
       features: [
-        "Everything in Free",
-        "Catalog Valuation",
-        "Sync Licensing Tracker",
-        "Client Portal",
-        "Unlimited tracks",
-        "Advanced reporting",
-        "Priority support"
+        "Advanced royalty management",
+        "Bulk copyright processing",
+        "Contract automation",
+        "Multi-writer splits",
+        "Phone support"
       ],
       popular: true
     },
     {
-      name: "Enterprise",
-      price: "Custom",
-      description: "For large publishers, labels, and rights organizations",
+      name: "Enterprise Suite",
+      price: "$849",
+      originalPrice: "$1,145",
+      description: "Everything for large publishers and labels",
+      audience: "Enterprise users",
       features: [
-        "Everything in Pro",
-        "Royalties Processing",
+        "All modules included",
+        "API access",
+        "Priority support",
         "Custom integrations",
         "Dedicated account manager",
-        "API access",
-        "White-label options",
-        "SLA guarantee"
+        "White-label options"
       ]
     }
   ];
@@ -106,7 +109,7 @@ const Index = () => {
               Choose Your <span className="bg-gradient-accent bg-clip-text text-transparent">Plan</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Flexible pricing for every stage of your music business
+              Bundled packages with significant savings, or build your own modular solution
             </p>
           </div>
 
@@ -129,9 +132,17 @@ const Index = () => {
                 
                 <CardHeader className="text-center">
                   <CardTitle className="text-2xl">{tier.name}</CardTitle>
-                  <div className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                    {tier.price}
-                    {tier.price !== "Custom" && <span className="text-lg text-muted-foreground">/month</span>}
+                  <p className="text-sm text-muted-foreground mb-4">Ideal for {tier.audience}</p>
+                  <div className="space-y-1">
+                    {tier.originalPrice && (
+                      <div className="text-sm text-muted-foreground line-through">
+                        {tier.originalPrice}/mo
+                      </div>
+                    )}
+                    <div className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                      {tier.price}
+                      <span className="text-lg text-muted-foreground">/month</span>
+                    </div>
                   </div>
                   <CardDescription>{tier.description}</CardDescription>
                 </CardHeader>
@@ -149,14 +160,10 @@ const Index = () => {
                   <Button 
                     className="w-full mt-6 bg-gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
                     onClick={() => {
-                      if (tier.name === "Free") {
-                        window.location.href = "/modules";
-                      } else {
-                        window.location.href = "/pricing";
-                      }
+                      window.location.href = "/pricing";
                     }}
                   >
-                    {tier.price === "Custom" ? "Contact Sales" : tier.name === "Free" ? "Get Started" : "View Details"}
+                    {tier.name === "Enterprise Suite" ? "Contact Sales" : "Get Started"}
                   </Button>
                 </CardContent>
               </Card>
