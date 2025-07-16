@@ -132,14 +132,14 @@ export class EncoreMapper {
             // Handle multiple possible source fields
             for (const field of sourceField) {
               if (row[field] !== undefined && row[field] !== null && row[field] !== '') {
-                mappedRow[encoreField] = this.normalizeValue(row[field], encoreField);
+                mappedRow[encoreField] = this.normalizeValue(row[field], encoreField, detectedSource);
                 break;
               }
             }
           } else if (sourceField !== '') {
             // Handle single source field
             if (row[sourceField] !== undefined) {
-              mappedRow[encoreField] = this.normalizeValue(row[sourceField], encoreField);
+              mappedRow[encoreField] = this.normalizeValue(row[sourceField], encoreField, detectedSource);
             }
           }
         }
@@ -166,7 +166,7 @@ export class EncoreMapper {
     };
   }
 
-  private normalizeValue(value: any, encoreField: string): any {
+  private normalizeValue(value: any, encoreField: string, detectedSource?: string): any {
     if (value === null || value === undefined) return null;
 
     const stringValue = String(value).trim();
@@ -186,6 +186,13 @@ export class EncoreMapper {
         return isNaN(percentValue) ? 0 : percentValue;
 
       case 'Period Start':
+        // Special handling for BMI Period extraction
+        if (detectedSource === 'BMI') {
+          return this.extractBMIPeriodStart(stringValue);
+        }
+        // Fall through to date normalization for other sources
+        return this.normalizeDate(stringValue);
+
       case 'Period End':
       case 'Payment Date':
         // Normalize date formats
@@ -198,6 +205,40 @@ export class EncoreMapper {
 
       default:
         return stringValue;
+    }
+  }
+
+  private extractBMIPeriodStart(periodValue: string): string | null {
+    if (!periodValue || periodValue.length < 5) return null;
+
+    try {
+      // Extract year (first 4 digits) and quarter (last digit)
+      const year = periodValue.substring(0, 4);
+      const quarter = periodValue.slice(-1);
+
+      // Validate year and quarter
+      const yearNum = parseInt(year);
+      const quarterNum = parseInt(quarter);
+
+      if (isNaN(yearNum) || isNaN(quarterNum) || quarterNum < 1 || quarterNum > 4) {
+        return null;
+      }
+
+      // Calculate Period Start based on quarter
+      switch (quarterNum) {
+        case 1:
+          return `${year}-01-01`;
+        case 2:
+          return `${year}-04-01`;
+        case 3:
+          return `${year}-07-01`;
+        case 4:
+          return `${year}-10-01`;
+        default:
+          return null;
+      }
+    } catch (error) {
+      return null;
     }
   }
 
