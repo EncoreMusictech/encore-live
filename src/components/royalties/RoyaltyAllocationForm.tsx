@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Music } from "lucide-react";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { useContacts } from "@/hooks/useContacts";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface RoyaltyAllocationFormProps {
   onCancel: () => void;
@@ -20,9 +23,12 @@ interface RoyaltyAllocationFormProps {
 
 export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocationFormProps) {
   const [writers, setWriters] = useState<any[]>(allocation?.writers || []);
+  const [availableCopyrights, setAvailableCopyrights] = useState<any[]>([]);
+  const [loadingCopyrights, setLoadingCopyrights] = useState(false);
   const { createAllocation, updateAllocation } = useRoyaltyAllocations();
   const { contacts } = useContacts();
   const { batches } = useReconciliationBatches();
+  const { user } = useAuth();
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
@@ -40,6 +46,76 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
 
   const availableContacts = contacts.filter(c => c.contact_type === 'writer');
   const processedBatches = batches.filter(b => b.status === 'Processed');
+
+  // Load available copyrights
+  useEffect(() => {
+    const loadCopyrights = async () => {
+      if (!user) return;
+      
+      setLoadingCopyrights(true);
+      try {
+        const { data, error } = await supabase
+          .from('copyrights')
+          .select(`
+            id,
+            work_title,
+            internal_id,
+            copyright_writers (
+              id,
+              writer_name,
+              ownership_percentage,
+              performance_share,
+              mechanical_share,
+              synchronization_share
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('work_title');
+
+        if (error) throw error;
+        setAvailableCopyrights(data || []);
+      } catch (error) {
+        console.error('Error loading copyrights:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load copyrights",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingCopyrights(false);
+      }
+    };
+
+    loadCopyrights();
+  }, [user]);
+
+  // Handle copyright selection and auto-populate writers
+  const handleCopyrightChange = (copyrightId: string) => {
+    setValue('copyright_id', copyrightId);
+    
+    if (copyrightId) {
+      const selectedCopyright = availableCopyrights.find(c => c.id === copyrightId);
+      if (selectedCopyright && selectedCopyright.copyright_writers) {
+        // Auto-populate writers from the selected copyright
+        const copyrightWriters = selectedCopyright.copyright_writers.map((writer: any) => ({
+          id: Date.now() + Math.random(), // Temporary ID for form
+          contact_id: '', // User will need to map to contacts
+          writer_name: writer.writer_name,
+          writer_share_percentage: writer.ownership_percentage || 0,
+          performance_share: writer.performance_share || 0,
+          mechanical_share: writer.mechanical_share || 0,
+          synchronization_share: writer.synchronization_share || 0,
+        }));
+        
+        setWriters(copyrightWriters);
+        
+        toast({
+          title: "Writers Loaded",
+          description: `Loaded ${copyrightWriters.length} writers from copyright`,
+        });
+      }
+    }
+  };
 
   const onSubmit = async (data: any) => {
     try {
@@ -159,6 +235,38 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             </SelectContent>
           </Select>
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="copyright_id">Linked Copyright</Label>
+          <Select 
+            onValueChange={handleCopyrightChange} 
+            defaultValue={watch('copyright_id')}
+            disabled={loadingCopyrights}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={loadingCopyrights ? "Loading copyrights..." : "Select a copyright"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">No copyright linked</SelectItem>
+              {availableCopyrights.map((copyright) => (
+                <SelectItem key={copyright.id} value={copyright.id}>
+                  <div className="flex items-center gap-2">
+                    <Music className="h-4 w-4" />
+                    <span>{copyright.work_title}</span>
+                    {copyright.internal_id && (
+                      <Badge variant="outline" className="text-xs">
+                        {copyright.internal_id}
+                      </Badge>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Selecting a copyright will automatically populate writers and their shares
+          </p>
+        </div>
       </div>
 
       <div className="flex items-center space-x-2">
@@ -222,6 +330,11 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
                       ))}
                     </SelectContent>
                   </Select>
+                  {writer.writer_name && (
+                    <p className="text-xs text-muted-foreground">
+                      From copyright: {writer.writer_name}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
