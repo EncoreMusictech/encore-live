@@ -18,7 +18,6 @@ import { AllocationSongMatchDialog } from "./AllocationSongMatchDialog";
 
 export function RoyaltyAllocationList() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [territoryFilter, setTerritoryFilter] = useState<string>("all");
   const [writerFilter, setWriterFilter] = useState("");
@@ -35,11 +34,7 @@ export function RoyaltyAllocationList() {
                          (allocation.artist && allocation.artist.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (allocation.isrc && allocation.isrc.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesStatus = statusFilter === "all" || 
-                         (statusFilter === "controlled" && allocation.controlled_status === 'Controlled') ||
-                         (statusFilter === "recoupable" && allocation.recoupable_expenses);
-    
-    const matchesSource = sourceFilter === "all" || 
+    const matchesSource = sourceFilter === "all" ||
                          (allocation.contract_terms?.source && allocation.contract_terms.source === sourceFilter);
     
     const matchesTerritory = territoryFilter === "all" || 
@@ -53,7 +48,7 @@ export function RoyaltyAllocationList() {
     const matchesDateFrom = !dateFrom || allocationDate >= dateFrom;
     const matchesDateTo = !dateTo || allocationDate <= dateTo;
     
-    return matchesSearch && matchesStatus && matchesSource && matchesTerritory && matchesWriter && matchesDateFrom && matchesDateTo;
+    return matchesSearch && matchesSource && matchesTerritory && matchesWriter && matchesDateFrom && matchesDateTo;
   });
 
   const getControlledStatusColor = (status: string) => {
@@ -75,7 +70,6 @@ export function RoyaltyAllocationList() {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setStatusFilter("all");
     setSourceFilter("all");
     setTerritoryFilter("all");
     setWriterFilter("");
@@ -118,21 +112,7 @@ export function RoyaltyAllocationList() {
 
       {/* Advanced Filters */}
       {showFilters && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 p-4 border rounded-lg bg-muted/30">
-          <div>
-            <Label htmlFor="status-filter" className="text-sm font-medium">Status</Label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Royalties</SelectItem>
-                <SelectItem value="controlled">Controlled Only</SelectItem>
-                <SelectItem value="recoupable">Recoupable Only</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/30">
           <div>
             <Label htmlFor="source-filter" className="text-sm font-medium">Source</Label>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
@@ -373,7 +353,7 @@ export function RoyaltyAllocationList() {
 
       {filteredAllocations.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          {searchTerm || statusFilter !== "all" || sourceFilter !== "all" || territoryFilter !== "all" || writerFilter || dateFrom || dateTo
+          {searchTerm || sourceFilter !== "all" || territoryFilter !== "all" || writerFilter || dateFrom || dateTo
             ? "No royalties found matching your filters."
             : "No royalties found. Create your first royalty to get started."}
         </div>
