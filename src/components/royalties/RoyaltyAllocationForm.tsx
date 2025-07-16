@@ -101,15 +101,22 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
       
       if (selectedCopyright && selectedCopyright.copyright_writers) {
         // Auto-populate writers from the selected copyright
-        const copyrightWriters = selectedCopyright.copyright_writers.map((writer: any) => ({
-          id: Date.now() + Math.random(), // Temporary ID for form
-          contact_id: '', // User will need to map to contacts
-          writer_name: writer.writer_name,
-          writer_share_percentage: writer.ownership_percentage || 0,
-          performance_share: writer.performance_share || 0,
-          mechanical_share: writer.mechanical_share || 0,
-          synchronization_share: writer.synchronization_share || 0,
-        }));
+        const copyrightWriters = selectedCopyright.copyright_writers.map((writer: any) => {
+          // Try to find a matching contact by name
+          const matchingContact = availableContacts.find(contact => 
+            contact.name.toLowerCase().trim() === writer.writer_name.toLowerCase().trim()
+          );
+          
+          return {
+            id: Date.now() + Math.random(), // Temporary ID for form
+            contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
+            writer_name: writer.writer_name,
+            writer_share_percentage: writer.ownership_percentage || 0,
+            performance_share: writer.performance_share || 0,
+            mechanical_share: writer.mechanical_share || 0,
+            synchronization_share: writer.synchronization_share || 0,
+          };
+        });
         
         console.log('Mapped writers:', copyrightWriters);
         setWriters(copyrightWriters);
