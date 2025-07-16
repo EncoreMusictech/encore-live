@@ -96,17 +96,41 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
     
     if (!batchId) {
       try {
+        // Map detected source to valid royalty_source enum values
+        const mapSourceToEnum = (detectedSource: string): 'DSP' | 'PRO' | 'YouTube' | 'Other' => {
+          const source = detectedSource?.toUpperCase();
+          switch (source) {
+            case 'DSP':
+            case 'SPOTIFY':
+            case 'APPLE MUSIC':
+            case 'STREAMING':
+              return 'DSP';
+            case 'PRO':
+            case 'ASCAP':
+            case 'BMI':
+            case 'SESAC':
+            case 'SOCAN':
+              return 'PRO';
+            case 'YOUTUBE':
+            case 'YT':
+              return 'YouTube';
+            default:
+              return 'Other';
+          }
+        };
+
         // Create a reconciliation batch for this staging record
         const { data: batchData, error: batchError } = await supabase
           .from('reconciliation_batches')
           .insert({
             user_id: localRecord.user_id,
-            source: localRecord.detected_source as any,
+            source: mapSourceToEnum(localRecord.detected_source),
             date_received: new Date().toISOString().split('T')[0],
-            statement_period_start: new Date().toISOString().split('T')[0],
-            statement_period_end: new Date().toISOString().split('T')[0],
+            statement_period_start: null, // Set to null instead of empty dates
+            statement_period_end: null,   // Set to null instead of empty dates
             linked_statement_id: localRecord.id,
             notes: `Auto-created batch for ${localRecord.original_filename}`,
+            total_gross_amount: 0,
           })
           .select()
           .single();
