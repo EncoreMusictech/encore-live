@@ -216,28 +216,40 @@ export class EncoreMapper {
       const year = periodValue.substring(0, 4);
       const quarter = periodValue.slice(-1);
 
+      console.log('BMI Period extraction:', { periodValue, year, quarter });
+
       // Validate year and quarter
       const yearNum = parseInt(year);
       const quarterNum = parseInt(quarter);
 
       if (isNaN(yearNum) || isNaN(quarterNum) || quarterNum < 1 || quarterNum > 4) {
+        console.log('Invalid year or quarter:', { yearNum, quarterNum });
         return null;
       }
 
       // Calculate Period Start based on quarter
+      let periodStart: string;
       switch (quarterNum) {
         case 1:
-          return `${year}-01-01`;
+          periodStart = `${year}-01-01`;
+          break;
         case 2:
-          return `${year}-04-01`;
+          periodStart = `${year}-04-01`;
+          break;
         case 3:
-          return `${year}-07-01`;
+          periodStart = `${year}-07-01`;
+          break;
         case 4:
-          return `${year}-10-01`;
+          periodStart = `${year}-10-01`;
+          break;
         default:
           return null;
       }
+
+      console.log('BMI Period Start calculated:', periodStart);
+      return periodStart;
     } catch (error) {
+      console.error('Error extracting BMI period:', error);
       return null;
     }
   }
