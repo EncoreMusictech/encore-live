@@ -356,16 +356,16 @@ export function SongMatchingDialog({
             </CardHeader>
             <CardContent className="flex-1 pt-0 min-h-0">
               <ScrollArea className="h-full">
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {loading ? (
-                    <div className="text-center py-4 text-sm text-muted-foreground">
+                    <div className="text-center py-4 text-muted-foreground">
                       Loading copyrights...
                     </div>
                   ) : filteredCopyrights.length > 0 ? (
                     filteredCopyrights.map((copyright) => (
                       <div
                         key={copyright.id}
-                        className="p-2 rounded border hover:bg-muted/50 cursor-pointer"
+                        className="p-3 rounded border hover:bg-muted/50 cursor-pointer transition-colors"
                         onClick={() => {
                           // Find first unmatched song and match it
                           const unmatchedIndex = songMatches.findIndex(m => !m.isMatched);
@@ -374,12 +374,12 @@ export function SongMatchingDialog({
                           }
                         }}
                       >
-                        <div className="font-medium text-sm">{copyright.work_title}</div>
-                        <div className="text-xs text-muted-foreground">{copyright.internal_id}</div>
+                        <div className="font-medium text-base leading-tight">{copyright.work_title}</div>
+                        <div className="text-sm text-muted-foreground mt-1">{copyright.internal_id}</div>
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-4 text-sm text-muted-foreground">
+                    <div className="text-center py-4 text-muted-foreground">
                       No copyrights found
                     </div>
                   )}
