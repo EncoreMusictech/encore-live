@@ -91,10 +91,14 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
 
   // Handle copyright selection and auto-populate writers
   const handleCopyrightChange = (copyrightId: string) => {
+    console.log('Copyright selected:', copyrightId);
     setValue('copyright_id', copyrightId === 'none' ? '' : copyrightId);
     
     if (copyrightId && copyrightId !== 'none') {
       const selectedCopyright = availableCopyrights.find(c => c.id === copyrightId);
+      console.log('Selected copyright:', selectedCopyright);
+      console.log('Copyright writers:', selectedCopyright?.copyright_writers);
+      
       if (selectedCopyright && selectedCopyright.copyright_writers) {
         // Auto-populate writers from the selected copyright
         const copyrightWriters = selectedCopyright.copyright_writers.map((writer: any) => ({
@@ -107,13 +111,24 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
           synchronization_share: writer.synchronization_share || 0,
         }));
         
+        console.log('Mapped writers:', copyrightWriters);
         setWriters(copyrightWriters);
         
         toast({
           title: "Writers Loaded",
           description: `Loaded ${copyrightWriters.length} writers from copyright`,
         });
+      } else {
+        console.log('No writers found for this copyright');
+        toast({
+          title: "No Writers Found",
+          description: "This copyright doesn't have any writers associated with it",
+          variant: "destructive",
+        });
       }
+    } else {
+      // Clear writers when no copyright is selected
+      setWriters([]);
     }
   };
 
