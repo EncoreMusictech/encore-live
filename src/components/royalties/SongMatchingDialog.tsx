@@ -213,16 +213,10 @@ export function SongMatchingDialog({
 
         // Store all row data in contract_terms for later reference
         const contractTerms = {
-          source: row['Statement Source'] || row['SOURCE'] || '',
-          territory: row['COUNTRY'] || row['TERRITORY'] || '',
-          period: row['QUARTER'] || row['PERIOD'] || '',
-          statement_id: row['Statement Source'] || row['STATEMENT_ID'] || '',
-          revenue_source: row['REVENUE SOURCE'] || '',
-          media_type: row['MEDIA TYPE'] || '',
-          media_sub_type: row['MEDIA SUB-TYPE'] || '',
-          work_identifier: row['WORK IDENTIFIER'] || '',
-          share: row['SHARE'] || '',
-          quantity: row['QUANTITY'] || '',
+          source: row['SOURCE'] || '',
+          territory: row['TERRITORY'] || '',
+          period: row['PERIOD'] || '',
+          statement_id: row['STATEMENT_ID'] || '',
           original_row_data: row
         };
 
