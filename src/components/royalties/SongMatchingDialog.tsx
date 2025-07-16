@@ -197,21 +197,44 @@ export function SongMatchingDialog({
     try {
       const allocationsToCreate = [];
 
-      for (const match of songMatches) {
+      // Create individual allocations for each royalty line in the mapped data
+      for (const row of mappedData) {
+        const songTitle = row['WORK TITLE'] || row['Song Title'] || '';
+        const artist = row['WORK WRITERS'] || row['Artist'] || '';
+        const grossAmount = parseFloat(row['GROSS'] || row['Gross Amount'] || '0');
+        
+        if (!songTitle.trim()) continue; // Skip empty song titles
+
+        // Find the matching song match to determine if it's matched and get copyright info
+        const matchKey = `${songTitle}-${artist}`.toLowerCase();
+        const correspondingMatch = songMatches.find(match => 
+          `${match.songTitle}-${match.artist}`.toLowerCase() === matchKey
+        );
+
+        // Store all row data in contract_terms for later reference
+        const contractTerms = {
+          source: row['SOURCE'] || '',
+          territory: row['TERRITORY'] || '',
+          period: row['PERIOD'] || '',
+          statement_id: row['STATEMENT_ID'] || '',
+          original_row_data: row
+        };
+
         const baseAllocation = {
           user_id: user.id,
           batch_id: batchId || null, // Allow null batch_id for standalone allocations
-          song_title: match.songTitle,
-          artist: match.artist,
-          gross_royalty_amount: match.grossAmount,
+          song_title: songTitle,
+          artist: artist,
+          gross_royalty_amount: grossAmount,
           work_id: null, // Explicitly set to null so trigger can generate it
+          contract_terms: contractTerms,
         };
 
-        // Create allocations for matched songs
-        if (match.isMatched && match.matchedCopyright) {
+        // Create allocations based on whether the song was matched
+        if (correspondingMatch?.isMatched && correspondingMatch.matchedCopyright) {
           allocationsToCreate.push({
             ...baseAllocation,
-            copyright_id: match.matchedCopyright.id,
+            copyright_id: correspondingMatch.matchedCopyright.id,
             controlled_status: 'Controlled' as const,
           });
         } else {
