@@ -556,7 +556,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         open={showSongMatchingDialog}
         onOpenChange={setShowSongMatchingDialog}
         mappedData={mappedData}
-        batchId={localRecord.batch_id || ''}
+        batchId={localRecord.batch_id} // Can be null/undefined for standalone allocations
         onMatchingComplete={handleSongMatchingComplete}
       />
     </div>

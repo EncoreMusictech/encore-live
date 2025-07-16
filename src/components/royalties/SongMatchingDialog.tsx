@@ -28,7 +28,7 @@ interface SongMatchingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mappedData: any[];
-  batchId: string;
+  batchId?: string; // Made optional since allocations can be created without batches
   onMatchingComplete: (results: { matched: number; unmatched: number }) => void;
 }
 
@@ -191,14 +191,7 @@ export function SongMatchingDialog({
       return;
     }
 
-    if (!batchId) {
-      toast({
-        title: "Error", 
-        description: "No batch ID provided",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Note: batchId is optional for royalty allocations
 
     setProcessing(true);
     try {
@@ -207,7 +200,7 @@ export function SongMatchingDialog({
       for (const match of songMatches) {
         const baseAllocation = {
           user_id: user.id,
-          batch_id: batchId,
+          batch_id: batchId || null, // Allow null batch_id for standalone allocations
           song_title: match.songTitle,
           artist: match.artist,
           gross_royalty_amount: match.grossAmount,
@@ -251,8 +244,8 @@ export function SongMatchingDialog({
       onOpenChange(false);
 
       toast({
-        title: "Success",
-        description: `Created ${allocationsToCreate.length} royalty allocations`,
+        title: "Allocations Created",
+        description: `Successfully created ${data.length} royalty allocations (${matchedCount} matched, ${unmatchedCount} unmatched)${batchId ? ` for batch ${batchId}` : ' as standalone allocations'}`,
       });
     } catch (error) {
       console.error('Error creating allocations:', error);
