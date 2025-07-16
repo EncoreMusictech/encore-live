@@ -240,6 +240,7 @@ export function RoyaltyAllocationList() {
           <TableHeader>
             <TableRow>
               <TableHead>Work ID</TableHead>
+              <TableHead>Statement ID</TableHead>
               <TableHead>Work Title</TableHead>
               <TableHead>Work Writers</TableHead>
               <TableHead>Source</TableHead>
@@ -261,6 +262,15 @@ export function RoyaltyAllocationList() {
                   <code className="text-xs bg-muted px-1 py-0.5 rounded">
                     {allocation.work_id || 'N/A'}
                   </code>
+                </TableCell>
+                <TableCell className="font-mono text-sm">
+                  {allocation.contract_terms?.statement_id ? (
+                    <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                      {allocation.contract_terms.statement_id}
+                    </code>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">N/A</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
