@@ -332,30 +332,40 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
 
             <TabsContent value="mapped">
               <ScrollArea className="h-96 w-full">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Song Title</TableHead>
-                      <TableHead>Client Name</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Royalty Type</TableHead>
-                      <TableHead>Gross Amount</TableHead>
-                      <TableHead>Period Start</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mappedData.slice(0, 100).map((row: any, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{row['Song Title'] || '-'}</TableCell>
-                        <TableCell>{row['Client Name'] || '-'}</TableCell>
-                        <TableCell>{row['Source'] || '-'}</TableCell>
-                        <TableCell>{row['Royalty Type'] || '-'}</TableCell>
-                        <TableCell>${row['Gross Amount'] || 0}</TableCell>
-                        <TableCell>{row['Period Start'] || '-'}</TableCell>
+                {mappedData.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {/* Dynamically show all mapped fields that have data */}
+                        {Object.keys(mappedData[0])
+                          .filter(key => !key.startsWith('_'))
+                          .map((header) => (
+                            <TableHead key={header}>{header}</TableHead>
+                          ))}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {mappedData.slice(0, 100).map((row: any, index) => (
+                        <TableRow key={index}>
+                          {Object.entries(row)
+                            .filter(([key]) => !key.startsWith('_'))
+                            .map(([key, value], cellIndex) => (
+                              <TableCell key={cellIndex} className={key === 'WORK TITLE' ? 'font-medium' : ''}>
+                                {key === 'GROSS' || key === 'NET' 
+                                  ? (typeof value === 'number' ? `$${value.toFixed(2)}` : String(value || '-'))
+                                  : String(value || '-')
+                                }
+                              </TableCell>
+                            ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No mapped data available
+                  </div>
+                )}
                 {mappedData.length > 100 && (
                   <div className="text-center py-4 text-sm text-muted-foreground">
                     Showing first 100 of {mappedData.length} records
