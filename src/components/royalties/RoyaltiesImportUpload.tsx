@@ -102,6 +102,15 @@ export function RoyaltiesImportUpload({ batchId, onComplete, onCancel }: Royalti
       // Step 5: Save to Staging
       updateStep(4, 'processing');
       
+      console.log('About to save staging record:', {
+        batchId,
+        filename: file.name,
+        detectedSource,
+        recordCount: mappingResult.mappedData.length,
+        hasErrors,
+        hasUnmapped
+      });
+      
       // If no batchId is provided, we'll still save the record but let the database generate one
       const stagingRecord = await createStagingRecord({
         batch_id: batchId || null, // Let the database handle null batch_id
@@ -121,6 +130,8 @@ export function RoyaltiesImportUpload({ batchId, onComplete, onCancel }: Royalti
         payee_matches: {},
         import_tags: hasErrors || hasUnmapped ? ['Needs Review'] : [],
       });
+
+      console.log('Staging record result:', stagingRecord);
 
       if (!stagingRecord) {
         updateStep(4, 'error', 'Failed to save to staging table');

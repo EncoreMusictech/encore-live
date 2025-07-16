@@ -22,9 +22,11 @@ export const DEFAULT_SOURCE_RULES: SourceDetectionRule[] = [
     headerPatterns: [
       'Work Title', 'IP Name', 'Current Quarter Royalties', 'Work ID',
       'Writer Name', 'Writer', 'Performance Type', 'Society Work ID',
-      'Amount', 'Royalty', 'Payment', 'Quarter', 'Period'
+      'Amount', 'Royalty', 'Payment', 'Quarter', 'Period',
+      // Add additional BMI patterns based on actual file formats
+      'TITLE NAME', 'PARTICIPANT NAME', 'ROYALTY AMOUNT', 'PERIOD'
     ],
-    requiredFields: ['Work Title', 'IP Name'],
+    requiredFields: ['Work Title', 'IP Name'], // Keep original as primary
     confidence: 0.8,
   },
   {
@@ -167,15 +169,31 @@ export class StatementParser {
         }
       }
 
-      // Check required fields
-      const requiredFieldsFound = rule.requiredFields.every(required => {
-        const found = headers.some(header => 
-          header?.toLowerCase().includes(required.toLowerCase()) ||
-          required.toLowerCase().includes(header?.toLowerCase() || '')
-        );
-        console.log(`Required field "${required}": ${found ? '✓' : '✗'}`);
-        return found;
-      });
+      // Check required fields - for BMI, check alternative field names
+      let requiredFieldsFound;
+      if (rule.source === 'BMI') {
+        // For BMI, check if we have either the original required fields OR the alternative ones
+        requiredFieldsFound = 
+          (headers.some(h => h?.toLowerCase().includes('work title') || h?.toLowerCase().includes('title name')) &&
+           headers.some(h => h?.toLowerCase().includes('ip name') || h?.toLowerCase().includes('participant name'))) ||
+          rule.requiredFields.every(required => 
+            headers.some(header => 
+              header?.toLowerCase().includes(required.toLowerCase()) ||
+              required.toLowerCase().includes(header?.toLowerCase() || '')
+            )
+          );
+      } else {
+        requiredFieldsFound = rule.requiredFields.every(required => {
+          const found = headers.some(header => 
+            header?.toLowerCase().includes(required.toLowerCase()) ||
+            required.toLowerCase().includes(header?.toLowerCase() || '')
+          );
+          console.log(`Required field "${required}": ${found ? '✓' : '✗'}`);
+          return found;
+        });
+      }
+      
+      console.log(`${rule.source} - Required fields found: ${requiredFieldsFound ? '✓' : '✗'}`);
 
       if (requiredFieldsFound && matchScore > 0) {
         const confidence = (matchScore / totalPatterns) * rule.confidence;
