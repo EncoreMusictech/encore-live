@@ -88,7 +88,13 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
       const mapperWithConfig = new EncoreMapper(undefined, savedConfig ? [savedConfig] : []);
       
       const mappingResult = mapperWithConfig.mapData(parsedData.data, detectedSource);
-      updateStep(2, 'completed', `Mapped ${mappingResult.mappedData.length} records using ${savedConfig ? 'saved' : 'default'} mappings`);
+      
+      if (savedConfig) {
+        updateStep(2, 'completed', `Applied saved ${detectedSource} field mappings to ${mappingResult.mappedData.length} records`);
+        console.log(`Used saved mapping configuration for ${detectedSource}:`, savedConfig.mapping_rules);
+      } else {
+        updateStep(2, 'completed', `Applied default ${detectedSource} mappings to ${mappingResult.mappedData.length} records (no saved mappings found)`);
+      }
 
       // Step 4: Validate Data
       updateStep(3, 'processing');
@@ -146,7 +152,9 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
 
       toast({
         title: "Import Successful",
-        description: `Imported ${mappingResult.mappedData.length} records from ${file.name}`,
+        description: savedConfig 
+          ? `Imported ${mappingResult.mappedData.length} records using saved ${detectedSource} mappings`
+          : `Imported ${mappingResult.mappedData.length} records using default ${detectedSource} mappings`,
       });
 
       setTimeout(() => {

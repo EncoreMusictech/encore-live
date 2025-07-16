@@ -139,7 +139,12 @@ export function FieldMappingDialog({
           <DialogDescription>
             Drag and drop fields from the left to map them to ENCORE standard fields. 
             Required fields must be mapped for successful processing.
-            {detectedSource && ` Current source: ${detectedSource} - Your mappings will be remembered for future imports.`}
+            {detectedSource && (
+              <span className="block mt-2 p-2 bg-blue-50 text-blue-800 rounded text-sm">
+                🔄 <strong>Mapping Memory:</strong> Your mappings for {detectedSource} statements will be automatically 
+                saved and applied to future imports from the same source.
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
