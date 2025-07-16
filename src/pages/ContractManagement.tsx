@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ContractList } from "@/components/contracts/ContractList";
-import { ContractForm } from "@/components/contracts/ContractForm";
+import { EnhancedContractForm } from "@/components/contracts/EnhancedContractForm";
 import { TemplateLibrary } from "@/components/contracts/TemplateLibrary";
 import { DocuSignImport } from "@/components/contracts/DocuSignImport";
 
@@ -260,21 +260,21 @@ const ContractManagement = () => {
                      setShowDocuSignImport(false);
                    }}
                  />
-               ) : (
-                 // Step 3: Contract form
-                 <ContractForm 
-                   contractType={selectedContractType}
-                   onCancel={() => {
-                     setSelectedContractType(null);
-                     setCreationMethod(null);
-                   }}
-                   onSuccess={() => {
-                     setIsCreateDialogOpen(false);
-                     setSelectedContractType(null);
-                     setCreationMethod(null);
-                   }}
-                 />
-               )}
+                ) : (
+                  // Step 3: Enhanced Contract form
+                  <EnhancedContractForm 
+                    contractType={selectedContractType}
+                    onCancel={() => {
+                      setSelectedContractType(null);
+                      setCreationMethod(null);
+                    }}
+                    onSuccess={() => {
+                      setIsCreateDialogOpen(false);
+                      setSelectedContractType(null);
+                      setCreationMethod(null);
+                    }}
+                  />
+                )}
             </DialogContent>
           </Dialog>
         </div>

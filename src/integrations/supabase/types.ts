@@ -253,6 +253,95 @@ export type Database = {
           },
         ]
       }
+      contract_interested_parties: {
+        Row: {
+          address: string | null
+          administrator_role: string | null
+          affiliation: string | null
+          cae_number: string | null
+          co_publisher: string | null
+          contract_id: string
+          controlled_status: string
+          created_at: string
+          dba_alias: string | null
+          email: string | null
+          grand_rights_percentage: number | null
+          id: string
+          ipi_number: string | null
+          karaoke_percentage: number | null
+          mechanical_percentage: number | null
+          name: string
+          original_publisher: string | null
+          party_type: string
+          performance_percentage: number | null
+          phone: string | null
+          print_percentage: number | null
+          synch_percentage: number | null
+          tax_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          administrator_role?: string | null
+          affiliation?: string | null
+          cae_number?: string | null
+          co_publisher?: string | null
+          contract_id: string
+          controlled_status?: string
+          created_at?: string
+          dba_alias?: string | null
+          email?: string | null
+          grand_rights_percentage?: number | null
+          id?: string
+          ipi_number?: string | null
+          karaoke_percentage?: number | null
+          mechanical_percentage?: number | null
+          name: string
+          original_publisher?: string | null
+          party_type?: string
+          performance_percentage?: number | null
+          phone?: string | null
+          print_percentage?: number | null
+          synch_percentage?: number | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          administrator_role?: string | null
+          affiliation?: string | null
+          cae_number?: string | null
+          co_publisher?: string | null
+          contract_id?: string
+          controlled_status?: string
+          created_at?: string
+          dba_alias?: string | null
+          email?: string | null
+          grand_rights_percentage?: number | null
+          id?: string
+          ipi_number?: string | null
+          karaoke_percentage?: number | null
+          mechanical_percentage?: number | null
+          name?: string
+          original_publisher?: string | null
+          party_type?: string
+          performance_percentage?: number | null
+          phone?: string | null
+          print_percentage?: number | null
+          synch_percentage?: number | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_interested_parties_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_royalty_connections: {
         Row: {
           catalog_id: string | null
@@ -300,6 +389,78 @@ export type Database = {
           },
         ]
       }
+      contract_schedule_works: {
+        Row: {
+          album_title: string | null
+          artist_name: string | null
+          contract_id: string
+          copyright_id: string | null
+          created_at: string
+          id: string
+          inherits_controlled_status: boolean | null
+          inherits_recoupment_status: boolean | null
+          inherits_royalty_splits: boolean | null
+          isrc: string | null
+          iswc: string | null
+          song_title: string
+          updated_at: string
+          work_id: string | null
+          work_specific_advance: number | null
+          work_specific_rate_reduction: number | null
+        }
+        Insert: {
+          album_title?: string | null
+          artist_name?: string | null
+          contract_id: string
+          copyright_id?: string | null
+          created_at?: string
+          id?: string
+          inherits_controlled_status?: boolean | null
+          inherits_recoupment_status?: boolean | null
+          inherits_royalty_splits?: boolean | null
+          isrc?: string | null
+          iswc?: string | null
+          song_title: string
+          updated_at?: string
+          work_id?: string | null
+          work_specific_advance?: number | null
+          work_specific_rate_reduction?: number | null
+        }
+        Update: {
+          album_title?: string | null
+          artist_name?: string | null
+          contract_id?: string
+          copyright_id?: string | null
+          created_at?: string
+          id?: string
+          inherits_controlled_status?: boolean | null
+          inherits_recoupment_status?: boolean | null
+          inherits_royalty_splits?: boolean | null
+          isrc?: string | null
+          iswc?: string | null
+          song_title?: string
+          updated_at?: string
+          work_id?: string | null
+          work_specific_advance?: number | null
+          work_specific_rate_reduction?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_schedule_works_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_schedule_works_copyright_id_fkey"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_templates: {
         Row: {
           contract_type: Database["public"]["Enums"]["contract_type"]
@@ -335,76 +496,130 @@ export type Database = {
       }
       contracts: {
         Row: {
+          administrator: string | null
+          advance_amount: number | null
+          agreement_id: string | null
           associated_catalog_ids: string[] | null
+          commission_percentage: number | null
+          contact_address: string | null
+          contact_name: string | null
+          contact_phone: string | null
           contract_data: Json | null
           contract_status: Database["public"]["Enums"]["contract_status"]
           contract_type: Database["public"]["Enums"]["contract_type"]
+          controlled_percentage: number | null
           counterparty_name: string
           created_at: string
+          direct_deposit_auth_url: string | null
+          distribution_cycle: string | null
           end_date: string | null
+          fe_agreement_url: string | null
           financial_terms: Json | null
           generated_pdf_url: string | null
           id: string
           last_sent_date: string | null
           notes: string | null
           original_pdf_url: string | null
+          original_publisher: string | null
+          rate_reduction_amount: number | null
+          rate_reduction_percentage: number | null
           recipient_email: string | null
+          recoupment_status: string | null
           royalty_splits: Json | null
           signature_status: string | null
           start_date: string | null
+          statement_delivery: string | null
           template_id: string | null
+          territories: string[] | null
           title: string
           updated_at: string
           user_id: string
           version: number | null
+          w9_url: string | null
         }
         Insert: {
+          administrator?: string | null
+          advance_amount?: number | null
+          agreement_id?: string | null
           associated_catalog_ids?: string[] | null
+          commission_percentage?: number | null
+          contact_address?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           contract_data?: Json | null
           contract_status?: Database["public"]["Enums"]["contract_status"]
           contract_type: Database["public"]["Enums"]["contract_type"]
+          controlled_percentage?: number | null
           counterparty_name: string
           created_at?: string
+          direct_deposit_auth_url?: string | null
+          distribution_cycle?: string | null
           end_date?: string | null
+          fe_agreement_url?: string | null
           financial_terms?: Json | null
           generated_pdf_url?: string | null
           id?: string
           last_sent_date?: string | null
           notes?: string | null
           original_pdf_url?: string | null
+          original_publisher?: string | null
+          rate_reduction_amount?: number | null
+          rate_reduction_percentage?: number | null
           recipient_email?: string | null
+          recoupment_status?: string | null
           royalty_splits?: Json | null
           signature_status?: string | null
           start_date?: string | null
+          statement_delivery?: string | null
           template_id?: string | null
+          territories?: string[] | null
           title: string
           updated_at?: string
           user_id: string
           version?: number | null
+          w9_url?: string | null
         }
         Update: {
+          administrator?: string | null
+          advance_amount?: number | null
+          agreement_id?: string | null
           associated_catalog_ids?: string[] | null
+          commission_percentage?: number | null
+          contact_address?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           contract_data?: Json | null
           contract_status?: Database["public"]["Enums"]["contract_status"]
           contract_type?: Database["public"]["Enums"]["contract_type"]
+          controlled_percentage?: number | null
           counterparty_name?: string
           created_at?: string
+          direct_deposit_auth_url?: string | null
+          distribution_cycle?: string | null
           end_date?: string | null
+          fe_agreement_url?: string | null
           financial_terms?: Json | null
           generated_pdf_url?: string | null
           id?: string
           last_sent_date?: string | null
           notes?: string | null
           original_pdf_url?: string | null
+          original_publisher?: string | null
+          rate_reduction_amount?: number | null
+          rate_reduction_percentage?: number | null
           recipient_email?: string | null
+          recoupment_status?: string | null
           royalty_splits?: Json | null
           signature_status?: string | null
           start_date?: string | null
+          statement_delivery?: string | null
           template_id?: string | null
+          territories?: string[] | null
           title?: string
           updated_at?: string
           user_id?: string
           version?: number | null
+          w9_url?: string | null
         }
         Relationships: []
       }
@@ -1827,6 +2042,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_contract_controlled_percentage: {
+        Args: { contract_id_param: string }
+        Returns: number
+      }
       calculate_controlled_share: {
         Args: { copyright_id_param: string }
         Returns: number
@@ -1869,6 +2088,14 @@ export type Database = {
       setup_demo_user: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      validate_royalty_splits: {
+        Args: { contract_id_param: string }
+        Returns: {
+          right_type: string
+          total_percentage: number
+          is_valid: boolean
+        }[]
       }
     }
     Enums: {
