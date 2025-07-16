@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye } from "lucide-react";
+import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft } from "lucide-react";
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, Area, AreaChart, ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar } from 'recharts';
 
 interface TopTrack {
@@ -771,6 +771,22 @@ Actual market values may vary significantly based on numerous factors not captur
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">
+              {/* Back Navigation */}
+              <div className="flex items-center gap-2 mb-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    const overviewTab = document.querySelector('[data-value="overview"]') as HTMLElement;
+                    if (overviewTab) overviewTab.click();
+                  }}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Overview
+                </Button>
+              </div>
+              
               {/* Comprehensive Analytics Dashboard */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Valuation Components Breakdown */}
@@ -1141,6 +1157,22 @@ Actual market values may vary significantly based on numerous factors not captur
             </TabsContent>
 
             <TabsContent value="reports" className="space-y-6">
+              {/* Back Navigation */}
+              <div className="flex items-center gap-2 mb-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    const overviewTab = document.querySelector('[data-value="overview"]') as HTMLElement;
+                    if (overviewTab) overviewTab.click();
+                  }}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Overview
+                </Button>
+              </div>
+              
               {/* Comprehensive Reporting Suite */}
               <Card>
                 <CardHeader>
