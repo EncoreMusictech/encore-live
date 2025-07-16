@@ -11,6 +11,7 @@ import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationL
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportStaging";
 import { RoyaltiesDiscrepancyReport } from "@/components/royalties/RoyaltiesDiscrepancyReport";
+import { RoyaltiesAnalyticsDashboard } from "@/components/royalties/RoyaltiesAnalyticsDashboard";
 export default function RoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState("allocations");
@@ -36,7 +37,7 @@ export default function RoyaltiesPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="statements" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Statements
@@ -44,6 +45,10 @@ export default function RoyaltiesPage() {
             <TabsTrigger value="allocations" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               Royalties
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="discrepancies" className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
@@ -147,6 +152,10 @@ export default function RoyaltiesPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <RoyaltiesAnalyticsDashboard />
           </TabsContent>
 
           <TabsContent value="discrepancies" className="space-y-6">
