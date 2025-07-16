@@ -67,7 +67,7 @@ export default function RoyaltiesPage() {
           <TabsContent value="allocations" className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-semibold">Royalty Allocations</h2>
+                <h2 className="text-xl font-semibold">Royalties</h2>
                 <p className="text-muted-foreground">
                   Map works and their rightsholders to reconciled revenue
                 </p>
@@ -82,7 +82,7 @@ export default function RoyaltiesPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Allocations</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Royalties</CardTitle>
                   <Music className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
