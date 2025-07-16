@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Plus, Trash2, ExternalLink } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { useCopyright } from "@/hooks/useCopyright";
-import { EnhancedScheduleWorkForm } from "./EnhancedScheduleWorkForm";
+import { WorkSelectionDialog } from "./WorkSelectionDialog";
 
 interface ScheduleWorksTableProps {
   contractId: string;
@@ -49,11 +49,11 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
                 <DialogHeader>
                   <DialogTitle>Add Work to Schedule</DialogTitle>
                   <DialogDescription>
-                    Create a new work with full copyright registration and link it to this contract
+                    Select existing works from your copyright catalog or create new works to add to this contract
                   </DialogDescription>
                 </DialogHeader>
                 
-                <EnhancedScheduleWorkForm 
+                <WorkSelectionDialog 
                   contractId={contractId}
                   onSuccess={handleWorkAdded}
                   onCancel={() => setIsAddDialogOpen(false)}
