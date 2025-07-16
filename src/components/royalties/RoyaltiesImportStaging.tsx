@@ -8,16 +8,18 @@ import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { RoyaltiesImportUpload } from "./RoyaltiesImportUpload";
 import { RoyaltiesImportPreview } from "./RoyaltiesImportPreview";
 import { ImportToAllocationsButton } from "./ImportToAllocationsButton";
-
 interface RoyaltiesImportStagingProps {
   // No batchId prop needed - imports are not tied to batches during upload
 }
-
 export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
-  const { stagingRecords, loading, deleteStagingRecord, refreshRecords } = useRoyaltiesImport();
+  const {
+    stagingRecords,
+    loading,
+    deleteStagingRecord,
+    refreshRecords
+  } = useRoyaltiesImport();
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'processed':
@@ -30,7 +32,6 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
         return <FileText className="h-4 w-4 text-blue-600" />;
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'processed':
@@ -43,30 +44,16 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
         return 'bg-blue-100 text-blue-800';
     }
   };
-
   if (selectedRecord) {
     const record = stagingRecords.find(r => r.id === selectedRecord);
     if (record) {
-      return (
-        <RoyaltiesImportPreview
-          record={record}
-          onBack={() => setSelectedRecord(null)}
-        />
-      );
+      return <RoyaltiesImportPreview record={record} onBack={() => setSelectedRecord(null)} />;
     }
   }
-
   if (showUpload) {
-    return (
-      <RoyaltiesImportUpload
-        onComplete={() => setShowUpload(false)}
-        onCancel={() => setShowUpload(false)}
-      />
-    );
+    return <RoyaltiesImportUpload onComplete={() => setShowUpload(false)} onCancel={() => setShowUpload(false)} />;
   }
-
-  return (
-    <Card>
+  return <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
           <div>
@@ -81,14 +68,9 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="text-center py-8">Loading imports...</div>
-        ) : stagingRecords.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+        {loading ? <div className="text-center py-8">Loading imports...</div> : stagingRecords.length === 0 ? <div className="text-center py-8 text-muted-foreground">
             No imported statements found. Click "Import Statement" to get started.
-          </div>
-        ) : (
-          <div className="space-y-4">
+          </div> : <div className="space-y-4">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -98,13 +80,12 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
                   <TableHead>Records</TableHead>
                   <TableHead>Unmapped Fields</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead>Import</TableHead>
+                  <TableHead>Song Matching</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {stagingRecords.map((record) => (
-                  <TableRow key={record.id}>
+                {stagingRecords.map(record => <TableRow key={record.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4" />
@@ -126,48 +107,30 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
                       {Array.isArray(record.mapped_data) ? record.mapped_data.length : 0}
                     </TableCell>
                     <TableCell>
-                      {record.unmapped_fields.length > 0 ? (
-                        <Badge variant="destructive">
+                      {record.unmapped_fields.length > 0 ? <Badge variant="destructive">
                           {record.unmapped_fields.length} unmapped
-                        </Badge>
-                      ) : (
-                        <Badge variant="default">All mapped</Badge>
-                      )}
+                        </Badge> : <Badge variant="default">All mapped</Badge>}
                     </TableCell>
                     <TableCell>
                       {new Date(record.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <ImportToAllocationsButton
-                        stagingRecord={record}
-                        onComplete={refreshRecords}
-                      />
+                      <ImportToAllocationsButton stagingRecord={record} onComplete={refreshRecords} />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedRecord(record.id)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => setSelectedRecord(record.id)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteStagingRecord(record.id)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => deleteStagingRecord(record.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
-                  </TableRow>
-                ))}
+                  </TableRow>)}
               </TableBody>
             </Table>
-          </div>
-        )}
+          </div>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
