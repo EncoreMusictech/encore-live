@@ -9,15 +9,23 @@ import { FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter } f
 import { Input } from "@/components/ui/input";
 import { ContractList } from "@/components/contracts/ContractList";
 import { EnhancedContractForm } from "@/components/contracts/EnhancedContractForm";
+import { EditContractForm } from "@/components/contracts/EditContractForm";
 import { TemplateLibrary } from "@/components/contracts/TemplateLibrary";
 import { DocuSignImport } from "@/components/contracts/DocuSignImport";
 
 const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingContract, setEditingContract] = useState<any>(null);
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
   const [creationMethod, setCreationMethod] = useState<string | null>(null);
   const [showDocuSignImport, setShowDocuSignImport] = useState(false);
+
+  const handleEditContract = (contract: any) => {
+    setEditingContract(contract);
+    setIsEditDialogOpen(true);
+  };
 
   const contractTypes = [
     {
@@ -277,6 +285,32 @@ const ContractManagement = () => {
                 )}
             </DialogContent>
           </Dialog>
+
+          {/* Edit Contract Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Contract</DialogTitle>
+                <DialogDescription>
+                  Update your contract details and manage parties and works.
+                </DialogDescription>
+              </DialogHeader>
+              
+              {editingContract && (
+                <EditContractForm 
+                  contract={editingContract}
+                  onCancel={() => {
+                    setIsEditDialogOpen(false);
+                    setEditingContract(null);
+                  }}
+                  onSuccess={() => {
+                    setIsEditDialogOpen(false);
+                    setEditingContract(null);
+                  }}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Stats Overview */}
@@ -324,7 +358,7 @@ const ContractManagement = () => {
               </Button>
             </div>
 
-            <ContractList />
+            <ContractList onEdit={handleEditContract} />
           </TabsContent>
 
           <TabsContent value="templates">

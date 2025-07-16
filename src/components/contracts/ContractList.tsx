@@ -21,7 +21,11 @@ interface Contract {
   version: number;
 }
 
-export function ContractList() {
+interface ContractListProps {
+  onEdit?: (contract: Contract) => void;
+}
+
+export function ContractList({ onEdit }: ContractListProps) {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -197,7 +201,7 @@ export function ContractList() {
                         <Eye className="h-4 w-4 mr-2" />
                         View
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onEdit?.(contract)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
