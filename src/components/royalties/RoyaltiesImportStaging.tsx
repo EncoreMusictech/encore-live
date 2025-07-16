@@ -10,11 +10,11 @@ import { RoyaltiesImportPreview } from "./RoyaltiesImportPreview";
 import { ImportToAllocationsButton } from "./ImportToAllocationsButton";
 
 interface RoyaltiesImportStagingProps {
-  batchId?: string;
+  // No batchId prop needed - imports are not tied to batches during upload
 }
 
-export function RoyaltiesImportStaging({ batchId }: RoyaltiesImportStagingProps) {
-  const { stagingRecords, loading, deleteStagingRecord, refreshRecords } = useRoyaltiesImport(batchId);
+export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
+  const { stagingRecords, loading, deleteStagingRecord, refreshRecords } = useRoyaltiesImport();
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
 
@@ -59,7 +59,6 @@ export function RoyaltiesImportStaging({ batchId }: RoyaltiesImportStagingProps)
   if (showUpload) {
     return (
       <RoyaltiesImportUpload
-        batchId={batchId}
         onComplete={() => setShowUpload(false)}
         onCancel={() => setShowUpload(false)}
       />

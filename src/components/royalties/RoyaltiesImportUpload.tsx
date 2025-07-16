@@ -12,7 +12,6 @@ import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { toast } from "@/hooks/use-toast";
 
 interface RoyaltiesImportUploadProps {
-  batchId?: string;
   onComplete: () => void;
   onCancel: () => void;
 }
@@ -23,7 +22,7 @@ interface ProcessingStep {
   message?: string;
 }
 
-export function RoyaltiesImportUpload({ batchId, onComplete, onCancel }: RoyaltiesImportUploadProps) {
+export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [manualSource, setManualSource] = useState<string>("");
   const [processing, setProcessing] = useState(false);
@@ -103,7 +102,6 @@ export function RoyaltiesImportUpload({ batchId, onComplete, onCancel }: Royalti
       updateStep(4, 'processing');
       
       console.log('About to save staging record:', {
-        batchId,
         filename: file.name,
         detectedSource,
         recordCount: mappingResult.mappedData.length,
@@ -111,9 +109,10 @@ export function RoyaltiesImportUpload({ batchId, onComplete, onCancel }: Royalti
         hasUnmapped
       });
       
-      // If no batchId is provided, we'll still save the record but let the database generate one
+      // Import statements are not linked to batches during import
+      // Batches are created manually through the Reconciliation tab
       const stagingRecord = await createStagingRecord({
-        batch_id: batchId || null, // Let the database handle null batch_id
+        batch_id: null, // No batch association during import
         original_filename: file.name,
         detected_source: detectedSource,
         mapping_version: '1.0',
