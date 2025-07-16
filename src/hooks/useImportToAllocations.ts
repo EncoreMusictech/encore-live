@@ -65,7 +65,7 @@ export function useImportToAllocations() {
           period_start: row.period_start || null,
           period_end: row.period_end || null,
           writers: row.writers || row.composer || null,
-          statement_id: stagingRecord.statement_id,
+          statement_id: stagingRecord.statement_id || null,
           staging_record_id: stagingRecordId,
           original_data: row
         },
