@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { RoyaltiesImportStaging } from './useRoyaltiesImport';
+import { RoyaltyAllocationInsert } from './useRoyaltyAllocations';
 
 export interface ImportToAllocationParams {
   stagingRecordId: string;
@@ -42,7 +43,7 @@ export function useImportToAllocations() {
       }
 
       // Transform mapped data to royalty allocations
-      const allocations = rowsToImport.map((row: any) => ({
+      const allocations: RoyaltyAllocationInsert[] = rowsToImport.map((row: any) => ({
         user_id: user.id,
         batch_id: stagingRecord.batch_id,
         song_title: row.song_title || row.work_title || 'Unknown Title',
@@ -70,12 +71,12 @@ export function useImportToAllocations() {
         },
         ownership_splits: row.ownership_splits || {},
         comments: `Imported from ${stagingRecord.detected_source} statement: ${stagingRecord.original_filename}`
-      }));
+      } as RoyaltyAllocationInsert));
 
-      // Insert allocations
+      // Insert allocations (cast to any to bypass TypeScript issue with auto-generated fields)
       const { data: insertedAllocations, error: insertError } = await supabase
         .from('royalty_allocations')
-        .insert(allocations)
+        .insert(allocations as any)
         .select();
 
       if (insertError) throw insertError;

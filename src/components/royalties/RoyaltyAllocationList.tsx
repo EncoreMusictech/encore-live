@@ -239,19 +239,20 @@ export function RoyaltyAllocationList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Work ID</TableHead>
+              <TableHead>Royalty ID</TableHead>
               <TableHead>Statement ID</TableHead>
-              <TableHead>Work Title</TableHead>
-              <TableHead>Work Writers</TableHead>
               <TableHead>Source</TableHead>
               <TableHead>Revenue Source</TableHead>
               <TableHead>Quarter</TableHead>
-              <TableHead>Country</TableHead>
+              <TableHead>Work ID</TableHead>
+              <TableHead>Work Title</TableHead>
+              <TableHead>Work Writers</TableHead>
+              <TableHead>Share</TableHead>
               <TableHead>Media Type</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead>Country</TableHead>
               <TableHead>Gross</TableHead>
               <TableHead>Net</TableHead>
-              <TableHead>Share</TableHead>
-              <TableHead>Quantity</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -259,8 +260,8 @@ export function RoyaltyAllocationList() {
             {filteredAllocations.map((allocation) => (
               <TableRow key={allocation.id}>
                 <TableCell className="font-medium">
-                  <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                    {allocation.work_id || 'N/A'}
+                  <code className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
+                    {allocation.royalty_id}
                   </code>
                 </TableCell>
                 <TableCell className="font-mono text-sm">
@@ -271,6 +272,18 @@ export function RoyaltyAllocationList() {
                   ) : (
                     <span className="text-muted-foreground text-xs">N/A</span>
                   )}
+                </TableCell>
+                <TableCell>
+                  {allocation.contract_terms?.source ? (
+                    <Badge variant="outline">{allocation.contract_terms.source}</Badge>
+                  ) : 'N/A'}
+                </TableCell>
+                <TableCell>{allocation.contract_terms?.revenue_source || allocation.contract_terms?.performance_type || 'N/A'}</TableCell>
+                <TableCell>{allocation.contract_terms?.quarter || allocation.contract_terms?.period || 'N/A'}</TableCell>
+                <TableCell className="font-medium">
+                  <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                    {allocation.work_id || 'N/A'}
+                  </code>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -289,23 +302,16 @@ export function RoyaltyAllocationList() {
                   </div>
                 </TableCell>
                 <TableCell>{allocation.artist || allocation.contract_terms?.writers || 'N/A'}</TableCell>
-                <TableCell>
-                  {allocation.contract_terms?.source ? (
-                    <Badge variant="outline">{allocation.contract_terms.source}</Badge>
-                  ) : 'N/A'}
-                </TableCell>
-                <TableCell>{allocation.contract_terms?.revenue_source || allocation.contract_terms?.performance_type || 'N/A'}</TableCell>
-                <TableCell>{allocation.contract_terms?.quarter || allocation.contract_terms?.period || 'N/A'}</TableCell>
-                <TableCell>{allocation.contract_terms?.territory || allocation.contract_terms?.country || 'N/A'}</TableCell>
+                <TableCell>{allocation.contract_terms?.share || allocation.ownership_splits?.writer_share || 'N/A'}</TableCell>
                 <TableCell>{allocation.contract_terms?.media_type || 'N/A'}</TableCell>
+                <TableCell>{allocation.contract_terms?.quantity || allocation.contract_terms?.units || 'N/A'}</TableCell>
+                <TableCell>{allocation.contract_terms?.territory || allocation.contract_terms?.country || 'N/A'}</TableCell>
                 <TableCell className="font-medium">
                   ${allocation.gross_royalty_amount?.toFixed(2) || '0.00'}
                 </TableCell>
                 <TableCell>
                   ${allocation.contract_terms?.net_amount?.toFixed(2) || allocation.gross_royalty_amount?.toFixed(2) || '0.00'}
                 </TableCell>
-                <TableCell>{allocation.contract_terms?.share || allocation.ownership_splits?.writer_share || 'N/A'}</TableCell>
-                <TableCell>{allocation.contract_terms?.quantity || allocation.contract_terms?.units || 'N/A'}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <Dialog>
@@ -346,7 +352,7 @@ export function RoyaltyAllocationList() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will permanently delete the royalty "{allocation.work_id}" and all associated data.
+                            This will permanently delete the royalty "{allocation.royalty_id}" and all associated data.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

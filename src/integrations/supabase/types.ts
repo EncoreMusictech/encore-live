@@ -1417,6 +1417,7 @@ export type Database = {
           isrc: string | null
           ownership_splits: Json | null
           recoupable_expenses: boolean | null
+          royalty_id: string
           song_title: string
           updated_at: string
           user_id: string
@@ -1437,6 +1438,7 @@ export type Database = {
           isrc?: string | null
           ownership_splits?: Json | null
           recoupable_expenses?: boolean | null
+          royalty_id: string
           song_title: string
           updated_at?: string
           user_id: string
@@ -1457,6 +1459,7 @@ export type Database = {
           isrc?: string | null
           ownership_splits?: Json | null
           recoupable_expenses?: boolean | null
+          royalty_id?: string
           song_title?: string
           updated_at?: string
           user_id?: string
@@ -2058,6 +2061,10 @@ export type Database = {
         Returns: string
       }
       generate_copyright_internal_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_royalty_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
