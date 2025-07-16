@@ -7,6 +7,7 @@ export interface RoyaltiesImportStaging {
   id: string;
   user_id: string;
   batch_id: string;
+  statement_id: string;
   original_filename: string;
   detected_source: string;
   mapping_version: string;
@@ -79,7 +80,7 @@ export function useRoyaltiesImport(batchId?: string) {
     }
   };
 
-  const createStagingRecord = async (recordData: Omit<RoyaltiesImportStaging, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+  const createStagingRecord = async (recordData: Omit<RoyaltiesImportStaging, 'id' | 'user_id' | 'statement_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
 
     try {

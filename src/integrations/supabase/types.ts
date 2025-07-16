@@ -1346,6 +1346,7 @@ export type Database = {
           payee_matches: Json | null
           processing_status: string | null
           raw_data: Json
+          statement_id: string | null
           unmapped_fields: string[] | null
           updated_at: string
           user_id: string
@@ -1364,6 +1365,7 @@ export type Database = {
           payee_matches?: Json | null
           processing_status?: string | null
           raw_data: Json
+          statement_id?: string | null
           unmapped_fields?: string[] | null
           updated_at?: string
           user_id: string
@@ -1382,6 +1384,7 @@ export type Database = {
           payee_matches?: Json | null
           processing_status?: string | null
           raw_data?: Json
+          statement_id?: string | null
           unmapped_fields?: string[] | null
           updated_at?: string
           user_id?: string
@@ -2059,6 +2062,10 @@ export type Database = {
         Returns: string
       }
       generate_royalty_work_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_statement_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

@@ -74,11 +74,11 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Statement ID</TableHead>
                   <TableHead>File</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Records</TableHead>
-                  
                   <TableHead>Created</TableHead>
                   <TableHead>Song Matching</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -86,6 +86,11 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
               </TableHeader>
               <TableBody>
                 {stagingRecords.map(record => <TableRow key={record.id}>
+                    <TableCell className="font-mono text-sm">
+                      <code className="bg-muted px-2 py-1 rounded text-xs">
+                        {record.statement_id}
+                      </code>
+                    </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4" />
@@ -106,7 +111,6 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
                     <TableCell>
                       {Array.isArray(record.mapped_data) ? record.mapped_data.length : 0}
                     </TableCell>
-                    
                     <TableCell>
                       {new Date(record.created_at).toLocaleDateString()}
                     </TableCell>
