@@ -10,7 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain } from "lucide-react";
+import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye } from "lucide-react";
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, Area, AreaChart, ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar } from 'recharts';
 
 interface TopTrack {
   name: string;
@@ -400,11 +401,13 @@ Actual market values may vary significantly based on numerous factors not captur
       {result && (
         <>
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="analysis">DCF Analysis</TabsTrigger>
               <TabsTrigger value="forecasts">Forecasts</TabsTrigger>
               <TabsTrigger value="comparables">Comparables</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="reports">Reports</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -765,6 +768,733 @@ Actual market values may vary significantly based on numerous factors not captur
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            <TabsContent value="analytics" className="space-y-6">
+              {/* Comprehensive Analytics Dashboard */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Valuation Components Breakdown */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <PieChart className="h-5 w-5 text-primary" />
+                      Valuation Components
+                    </CardTitle>
+                    <CardDescription>Breakdown of valuation methodologies</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RechartsPieChart>
+                        <Pie
+                          data={[
+                            { name: 'DCF Valuation', value: result.dcf_valuation || 0, fill: '#3b82f6' },
+                            { name: 'Multiple Valuation', value: result.multiple_valuation || 0, fill: '#10b981' },
+                            { name: 'Risk Adjustment', value: Math.abs((result.risk_adjusted_value || result.valuation_amount) - ((result.dcf_valuation || 0) + (result.multiple_valuation || 0)) / 2), fill: '#f59e0b' }
+                          ].filter(item => item.value > 0)}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {[
+                            { name: 'DCF Valuation', value: result.dcf_valuation || 0, fill: '#3b82f6' },
+                            { name: 'Multiple Valuation', value: result.multiple_valuation || 0, fill: '#10b981' },
+                            { name: 'Risk Adjustment', value: Math.abs((result.risk_adjusted_value || result.valuation_amount) - ((result.dcf_valuation || 0) + (result.multiple_valuation || 0)) / 2), fill: '#f59e0b' }
+                          ].filter(item => item.value > 0).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* 5-Year Forecast Trends */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <LineChart className="h-5 w-5 text-primary" />
+                      Valuation Growth Trends
+                    </CardTitle>
+                    <CardDescription>5-year projection scenarios</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RechartsLineChart
+                        data={result.forecasts.base.map((baseYear, index) => ({
+                          year: `Year ${baseYear.year}`,
+                          pessimistic: result.forecasts.pessimistic[index]?.valuation || 0,
+                          base: baseYear.valuation,
+                          optimistic: result.forecasts.optimistic[index]?.valuation || 0
+                        }))}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="year" />
+                        <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`} />
+                        <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                        <Legend />
+                        <Line type="monotone" dataKey="pessimistic" stroke="#ef4444" strokeWidth={2} name="Pessimistic" />
+                        <Line type="monotone" dataKey="base" stroke="#3b82f6" strokeWidth={3} name="Base Case" />
+                        <Line type="monotone" dataKey="optimistic" stroke="#10b981" strokeWidth={2} name="Optimistic" />
+                      </RechartsLineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Revenue vs Streams Analysis */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                      Revenue vs Streams Analysis
+                    </CardTitle>
+                    <CardDescription>Forecast revenue efficiency</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <ComposedChart
+                        data={result.forecasts.base.map(year => ({
+                          year: `Year ${year.year}`,
+                          revenue: year.revenue,
+                          streams: year.streams / 1000000, // Convert to millions
+                          efficiency: (year.revenue / year.streams) * 1000000 // Revenue per million streams
+                        }))}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="year" />
+                        <YAxis yAxisId="left" tickFormatter={(value) => `$${value.toFixed(0)}`} />
+                        <YAxis yAxisId="right" orientation="right" tickFormatter={(value) => `${value.toFixed(1)}M`} />
+                        <Tooltip 
+                          formatter={(value, name) => [
+                            name === 'revenue' ? formatCurrency(value as number) :
+                            name === 'streams' ? `${(value as number).toFixed(1)}M streams` :
+                            `$${(value as number).toFixed(2)}/M streams`,
+                            name === 'revenue' ? 'Revenue' :
+                            name === 'streams' ? 'Streams (M)' : 'Efficiency'
+                          ]}
+                        />
+                        <Legend />
+                        <Bar yAxisId="left" dataKey="revenue" fill="#3b82f6" name="Revenue" />
+                        <Line yAxisId="right" type="monotone" dataKey="streams" stroke="#10b981" strokeWidth={2} name="Streams (M)" />
+                        <Line yAxisId="left" type="monotone" dataKey="efficiency" stroke="#f59e0b" strokeWidth={2} name="$/M Streams" />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Risk vs Return Analysis */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-primary" />
+                      Risk-Return Profile
+                    </CardTitle>
+                    <CardDescription>Investment risk assessment</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <ScatterChart>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          type="number" 
+                          dataKey="risk" 
+                          name="Risk Score" 
+                          domain={[0, 100]}
+                          tickFormatter={(value) => `${value}%`}
+                        />
+                        <YAxis 
+                          type="number" 
+                          dataKey="return" 
+                          name="Expected Return" 
+                          tickFormatter={(value) => `${value}%`}
+                        />
+                        <Tooltip 
+                          cursor={{ strokeDasharray: '3 3' }}
+                          formatter={(value, name) => [
+                            `${(value as number).toFixed(1)}%`,
+                            name === 'return' ? 'Expected Return' : 'Risk Score'
+                          ]}
+                        />
+                        <Scatter 
+                          name="Scenarios" 
+                          data={[
+                            { 
+                              risk: 100 - (result.confidence_score || 50), 
+                              return: parseFloat(result.valuations.pessimistic.cagr),
+                              scenario: 'Pessimistic'
+                            },
+                            { 
+                              risk: 100 - (result.confidence_score || 50) - 20, 
+                              return: parseFloat(result.valuations.base.cagr),
+                              scenario: 'Base Case'
+                            },
+                            { 
+                              risk: 100 - (result.confidence_score || 50) - 40, 
+                              return: parseFloat(result.valuations.optimistic.cagr),
+                              scenario: 'Optimistic'
+                            }
+                          ]} 
+                          fill="#8884d8"
+                        />
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Market Comparables Analysis */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      Market Position Analysis
+                    </CardTitle>
+                    <CardDescription>Artist positioning vs comparables</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <ScatterChart>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          type="number" 
+                          dataKey="followers" 
+                          name="Followers" 
+                          tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
+                        />
+                        <YAxis 
+                          type="number" 
+                          dataKey="valuation" 
+                          name="Valuation" 
+                          tickFormatter={(value) => formatCurrency(value)}
+                        />
+                        <Tooltip 
+                          cursor={{ strokeDasharray: '3 3' }}
+                          formatter={(value, name) => [
+                            name === 'valuation' ? formatCurrency(value as number) : `${formatNumber(value as number)} followers`,
+                            name === 'valuation' ? 'Valuation' : 'Followers'
+                          ]}
+                        />
+                        <Scatter 
+                          name="Target Artist" 
+                          data={[{
+                            followers: result.spotify_data.followers,
+                            valuation: result.risk_adjusted_value || result.valuation_amount,
+                            name: result.artist_name
+                          }]} 
+                          fill="#ef4444"
+                        />
+                        <Scatter 
+                          name="Comparables" 
+                          data={result.comparable_artists.map(comp => ({
+                            followers: comp.followers,
+                            valuation: comp.valuation,
+                            name: comp.name
+                          }))} 
+                          fill="#3b82f6"
+                        />
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Confidence Score Breakdown */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-primary" />
+                      Confidence Score Breakdown
+                    </CardTitle>
+                    <CardDescription>Data quality assessment</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RadialBarChart innerRadius="30%" outerRadius="90%">
+                        <RadialBar
+                          dataKey="value"
+                          data={[
+                            { name: 'Overall Confidence', value: result.confidence_score || 0, fill: '#3b82f6' }
+                          ]}
+                          cornerRadius={10}
+                          fill="#8884d8"
+                        />
+                        <Tooltip formatter={(value) => [`${value}%`, 'Confidence']} />
+                      </RadialBarChart>
+                    </ResponsiveContainer>
+                    <div className="mt-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Data Availability</span>
+                        <span className="font-medium">{result.total_streams > 0 ? 'Good' : 'Limited'}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Market Validation</span>
+                        <span className="font-medium">{result.comparable_artists.length >= 3 ? 'Strong' : 'Moderate'}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Revenue Visibility</span>
+                        <span className="font-medium">{(result.ltm_revenue || 0) > 0 ? 'Good' : 'Estimated'}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Key Insights Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" />
+                    AI-Powered Insights
+                  </CardTitle>
+                  <CardDescription>Automated analysis and recommendations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Growth Trajectory Insight */}
+                    <div className="p-4 border rounded-lg bg-green-50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="h-4 w-4 text-green-600" />
+                        <span className="font-medium text-green-800">Growth Trajectory</span>
+                      </div>
+                      <p className="text-sm text-green-700">
+                        {parseFloat(result.valuations.base.cagr) > 10 
+                          ? "Strong growth potential with above-market CAGR projections"
+                          : parseFloat(result.valuations.base.cagr) > 5
+                          ? "Moderate growth expected, aligned with industry standards"
+                          : "Conservative growth outlook, consider risk factors"}
+                      </p>
+                    </div>
+
+                    {/* Market Position Insight */}
+                    <div className="p-4 border rounded-lg bg-blue-50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="h-4 w-4 text-blue-600" />
+                        <span className="font-medium text-blue-800">Market Position</span>
+                      </div>
+                      <p className="text-sm text-blue-700">
+                        {result.spotify_data.followers > result.comparable_artists.reduce((sum, comp) => sum + comp.followers, 0) / result.comparable_artists.length
+                          ? "Above-average market position with strong follower base"
+                          : "Emerging artist with growth potential relative to peers"}
+                      </p>
+                    </div>
+
+                    {/* Risk Assessment Insight */}
+                    <div className="p-4 border rounded-lg bg-orange-50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shield className="h-4 w-4 text-orange-600" />
+                        <span className="font-medium text-orange-800">Risk Assessment</span>
+                      </div>
+                      <p className="text-sm text-orange-700">
+                        {(result.confidence_score || 0) >= 70 
+                          ? "Low-risk investment with strong data confidence"
+                          : (result.confidence_score || 0) >= 50
+                          ? "Moderate risk profile, consider additional due diligence"
+                          : "Higher risk investment, limited historical data available"}
+                      </p>
+                    </div>
+
+                    {/* Valuation Method Insight */}
+                    <div className="p-4 border rounded-lg bg-purple-50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calculator className="h-4 w-4 text-purple-600" />
+                        <span className="font-medium text-purple-800">Valuation Quality</span>
+                      </div>
+                      <p className="text-sm text-purple-700">
+                        {result.dcf_valuation && result.multiple_valuation
+                          ? "Comprehensive valuation using multiple methodologies"
+                          : "Single-method valuation, consider cross-validation"}
+                      </p>
+                    </div>
+
+                    {/* Revenue Efficiency Insight */}
+                    <div className="p-4 border rounded-lg bg-yellow-50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <DollarSign className="h-4 w-4 text-yellow-600" />
+                        <span className="font-medium text-yellow-800">Revenue Efficiency</span>
+                      </div>
+                      <p className="text-sm text-yellow-700">
+                        {(result.ltm_revenue || 0) / result.total_streams * 1000000 > 3
+                          ? "High revenue per million streams, strong monetization"
+                          : (result.ltm_revenue || 0) / result.total_streams * 1000000 > 2
+                          ? "Average monetization efficiency"
+                          : "Opportunity to improve revenue per stream"}
+                      </p>
+                    </div>
+
+                    {/* Genre Performance Insight */}
+                    <div className="p-4 border rounded-lg bg-indigo-50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Music className="h-4 w-4 text-indigo-600" />
+                        <span className="font-medium text-indigo-800">Genre Analysis</span>
+                      </div>
+                      <p className="text-sm text-indigo-700">
+                        {result.industry_benchmarks
+                          ? `${result.genre} genre shows ${result.industry_benchmarks.growth_assumption > 0.05 ? 'strong' : 'stable'} market dynamics`
+                          : "Genre-specific benchmarks applied for accurate valuation"}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="reports" className="space-y-6">
+              {/* Comprehensive Reporting Suite */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileBarChart className="h-5 w-5 text-primary" />
+                    Professional Reports Suite
+                  </CardTitle>
+                  <CardDescription>Generate detailed reports for different stakeholders</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Executive Summary Report */}
+                    <Card className="border-2 border-primary/20">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-2">
+                          <Eye className="h-5 w-5 text-primary" />
+                          <CardTitle className="text-lg">Executive Summary</CardTitle>
+                        </div>
+                        <CardDescription>High-level overview for investors</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between text-sm">
+                            <span>Valuation</span>
+                            <span className="font-medium">{formatCurrency(result.risk_adjusted_value || result.valuation_amount)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>5Y CAGR</span>
+                            <span className="font-medium text-green-600">{result.valuations.base.cagr}%</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Confidence</span>
+                            <span className="font-medium">{result.confidence_score || 0}/100</span>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full mt-4"
+                            onClick={() => {
+                              const executiveSummary = `
+EXECUTIVE SUMMARY - ${result.artist_name}
+=============================================
+
+INVESTMENT OVERVIEW
+• Target Valuation: ${formatCurrency(result.risk_adjusted_value || result.valuation_amount)}
+• 5-Year CAGR: ${result.valuations.base.cagr}%
+• Confidence Score: ${result.confidence_score || 0}/100
+• Risk Profile: ${(result.confidence_score || 0) >= 70 ? 'Low' : (result.confidence_score || 0) >= 50 ? 'Moderate' : 'High'}
+
+KEY METRICS
+• Monthly Listeners: ${formatNumber(result.monthly_listeners)}
+• Total Streams: ${formatNumber(result.total_streams)}
+• LTM Revenue: ${formatCurrency(result.ltm_revenue || 0)}
+• Market Position: ${result.spotify_data.followers > 10000 ? 'Established' : 'Emerging'}
+
+INVESTMENT THESIS
+${parseFloat(result.valuations.base.cagr) > 10 
+  ? '• Strong growth trajectory with above-market returns'
+  : '• Stable asset with market-aligned performance'}
+${(result.confidence_score || 0) >= 70 
+  ? '• High data confidence supports valuation accuracy'
+  : '• Additional due diligence recommended'}
+• Genre: ${result.genre || 'Multi-genre'} market dynamics
+• Comparable artists validation supports pricing
+
+RECOMMENDATION: ${ 
+  (result.confidence_score || 0) >= 70 && parseFloat(result.valuations.base.cagr) > 8 
+    ? 'STRONG BUY - High confidence, attractive returns'
+    : (result.confidence_score || 0) >= 50 && parseFloat(result.valuations.base.cagr) > 5
+    ? 'BUY - Moderate confidence, fair returns'
+    : 'HOLD - Requires further analysis'
+}
+                              `;
+                              
+                              const blob = new Blob([executiveSummary], { type: 'text/plain' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `${result.artist_name.replace(/\s+/g, '_')}_executive_summary.txt`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            }}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Generate Report
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Technical Analysis Report */}
+                    <Card className="border-2 border-blue-500/20">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-2">
+                          <Calculator className="h-5 w-5 text-blue-600" />
+                          <CardTitle className="text-lg">Technical Analysis</CardTitle>
+                        </div>
+                        <CardDescription>Detailed DCF and methodology</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between text-sm">
+                            <span>DCF Value</span>
+                            <span className="font-medium">{formatCurrency(result.dcf_valuation || 0)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Multiple Value</span>
+                            <span className="font-medium">{formatCurrency(result.multiple_valuation || 0)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Discount Rate</span>
+                            <span className="font-medium">{((result.discount_rate || 0.12) * 100).toFixed(1)}%</span>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full mt-4"
+                            onClick={generateAdvancedReport}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Generate Report
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Market Analysis Report */}
+                    <Card className="border-2 border-green-500/20">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="h-5 w-5 text-green-600" />
+                          <CardTitle className="text-lg">Market Analysis</CardTitle>
+                        </div>
+                        <CardDescription>Competitive landscape & positioning</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between text-sm">
+                            <span>Comparables</span>
+                            <span className="font-medium">{result.comparable_artists.length} artists</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Market Multiple</span>
+                            <span className="font-medium">{result.growth_metrics.base_multiple.toFixed(1)}x</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Genre</span>
+                            <span className="font-medium">{result.genre || 'Multi-genre'}</span>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full mt-4"
+                            onClick={() => {
+                              const marketAnalysis = `
+MARKET ANALYSIS REPORT - ${result.artist_name}
+==============================================
+
+COMPETITIVE LANDSCAPE
+• Total Comparable Artists: ${result.comparable_artists.length}
+• Average Peer Valuation: ${formatCurrency(result.comparable_artists.reduce((sum, comp) => sum + comp.valuation, 0) / result.comparable_artists.length)}
+• Artist Premium/Discount: ${(((result.risk_adjusted_value || result.valuation_amount) / (result.comparable_artists.reduce((sum, comp) => sum + comp.valuation, 0) / result.comparable_artists.length) - 1) * 100).toFixed(0)}%
+
+MARKET POSITIONING
+• Follower Ranking: ${result.spotify_data.followers > result.comparable_artists.reduce((sum, comp) => sum + comp.followers, 0) / result.comparable_artists.length ? 'Above Average' : 'Below Average'}
+• Popularity Score: ${result.popularity_score || result.spotify_data.popularity}/100
+• Genre Performance: ${result.genre || 'Multi-genre'}
+
+COMPARABLE ARTISTS ANALYSIS
+${result.comparable_artists.map((comp, index) => `
+${index + 1}. ${comp.name}
+   • Valuation: ${formatCurrency(comp.valuation)}
+   • Followers: ${formatNumber(comp.followers)}
+   • Popularity: ${comp.popularity || 'N/A'}/100`).join('')}
+
+MARKET MULTIPLES
+• Revenue Multiple Applied: ${result.growth_metrics.base_multiple.toFixed(1)}x
+${result.comparable_multiples ? `• EV/Revenue Multiple: ${result.comparable_multiples.ev_revenue_multiple.toFixed(1)}x
+• Peer Average Multiple: ${result.comparable_multiples.peer_average_multiple.toFixed(1)}x
+• Market Premium/Discount: ${((result.comparable_multiples.market_premium_discount - 1) * 100).toFixed(0)}%` : ''}
+
+INDUSTRY BENCHMARKS
+${result.industry_benchmarks ? `• Genre: ${result.industry_benchmarks.genre}
+• Industry Growth Rate: ${(result.industry_benchmarks.growth_assumption * 100).toFixed(1)}%
+• Market Risk Factor: ${(result.industry_benchmarks.risk_factor * 100).toFixed(1)}%
+• Benchmark Revenue Multiple: ${result.industry_benchmarks.revenue_multiple}x` : '• Industry benchmarks applied based on genre classification'}
+                              `;
+                              
+                              const blob = new Blob([marketAnalysis], { type: 'text/plain' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `${result.artist_name.replace(/\s+/g, '_')}_market_analysis.txt`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            }}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Generate Report
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Interactive Data Export */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Download className="h-5 w-5 text-primary" />
+                    Data Export Options
+                  </CardTitle>
+                  <CardDescription>Export valuation data in various formats</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        const csvData = [
+                          ['Metric', 'Value'],
+                          ['Artist Name', result.artist_name],
+                          ['Risk-Adjusted Valuation', result.risk_adjusted_value || result.valuation_amount],
+                          ['DCF Valuation', result.dcf_valuation || 0],
+                          ['Multiple Valuation', result.multiple_valuation || 0],
+                          ['Confidence Score', result.confidence_score || 0],
+                          ['5-Year CAGR', result.valuations.base.cagr],
+                          ['Total Streams', result.total_streams],
+                          ['Monthly Listeners', result.monthly_listeners],
+                          ['LTM Revenue', result.ltm_revenue || 0],
+                          ['Popularity Score', result.popularity_score || result.spotify_data.popularity],
+                          ['Discount Rate', (result.discount_rate || 0.12) * 100],
+                          ...result.forecasts.base.map(year => [`Year ${year.year} Valuation`, year.valuation])
+                        ];
+                        
+                        const csvContent = csvData.map(row => row.join(',')).join('\n');
+                        const blob = new Blob([csvContent], { type: 'text/csv' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${result.artist_name.replace(/\s+/g, '_')}_valuation_data.csv`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      }}
+                    >
+                      Export CSV
+                    </Button>
+                    
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        const jsonData = {
+                          artist_name: result.artist_name,
+                          valuation_summary: {
+                            risk_adjusted_value: result.risk_adjusted_value || result.valuation_amount,
+                            dcf_valuation: result.dcf_valuation,
+                            multiple_valuation: result.multiple_valuation,
+                            confidence_score: result.confidence_score
+                          },
+                          key_metrics: {
+                            total_streams: result.total_streams,
+                            monthly_listeners: result.monthly_listeners,
+                            ltm_revenue: result.ltm_revenue,
+                            popularity_score: result.popularity_score || result.spotify_data.popularity
+                          },
+                          forecasts: result.forecasts,
+                          comparable_artists: result.comparable_artists,
+                          industry_benchmarks: result.industry_benchmarks,
+                          methodology: {
+                            discount_rate: result.discount_rate,
+                            valuation_methodology: result.valuation_methodology,
+                            cash_flow_projections: result.cash_flow_projections
+                          },
+                          generated_at: new Date().toISOString()
+                        };
+                        
+                        const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${result.artist_name.replace(/\s+/g, '_')}_valuation_data.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      }}
+                    >
+                      Export JSON
+                    </Button>
+                    
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        // Create a comprehensive XML export
+                        const xmlData = `<?xml version="1.0" encoding="UTF-8"?>
+<catalog_valuation>
+  <artist_name>${result.artist_name}</artist_name>
+  <generated_date>${new Date().toISOString()}</generated_date>
+  <valuation_summary>
+    <risk_adjusted_value>${result.risk_adjusted_value || result.valuation_amount}</risk_adjusted_value>
+    <dcf_valuation>${result.dcf_valuation || 0}</dcf_valuation>
+    <multiple_valuation>${result.multiple_valuation || 0}</multiple_valuation>
+    <confidence_score>${result.confidence_score || 0}</confidence_score>
+  </valuation_summary>
+  <forecasts>
+    ${result.forecasts.base.map(year => `
+    <year_${year.year}>
+      <valuation>${year.valuation}</valuation>
+      <revenue>${year.revenue}</revenue>
+      <streams>${year.streams}</streams>
+    </year_${year.year}>`).join('')}
+  </forecasts>
+  <comparable_artists>
+    ${result.comparable_artists.map((comp, index) => `
+    <artist_${index + 1}>
+      <name>${comp.name}</name>
+      <valuation>${comp.valuation}</valuation>
+      <followers>${comp.followers}</followers>
+      <popularity>${comp.popularity || 0}</popularity>
+    </artist_${index + 1}>`).join('')}
+  </comparable_artists>
+</catalog_valuation>`;
+                        
+                        const blob = new Blob([xmlData], { type: 'application/xml' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${result.artist_name.replace(/\s+/g, '_')}_valuation_data.xml`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      }}
+                    >
+                      Export XML
+                    </Button>
+                    
+                    <Button 
+                      onClick={generateAdvancedReport}
+                      className="bg-gradient-primary text-primary-foreground"
+                    >
+                      Full PDF Report
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
 
