@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { GripVertical, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { ENCORE_STANDARD_FIELDS } from "@/lib/encore-mapper";
 
 interface FieldMappingDialogProps {
   open: boolean;
@@ -20,7 +21,7 @@ interface FieldMappingDialogProps {
 interface MappingTarget {
   id: string;
   name: string;
-  type: 'required' | 'validation';
+  type: 'required' | 'optional';
   description?: string;
 }
 
@@ -32,24 +33,18 @@ export function FieldMappingDialog({
   requiredFields,
   onSaveMapping 
 }: FieldMappingDialogProps) {
-  // Create unique validation errors (remove duplicates)
-  const uniqueValidationErrors = Array.from(new Set(validationErrors));
+  // Required ENCORE fields
+  const requiredEncoreFields = ['WORK TITLE', 'WORK WRITERS', 'GROSS'];
   
-  // Create mapping targets from required fields and unique errors
-  const mappingTargets: MappingTarget[] = [
-    ...requiredFields.map(field => ({
-      id: `required-${field}`,
-      name: field,
-      type: 'required' as const,
-      description: `Required field for proper processing`
-    })),
-    ...uniqueValidationErrors.map((error, index) => ({
-      id: `validation-${index}`,
-      name: error.split(':')[0] || error,
-      type: 'validation' as const,
-      description: error
-    }))
-  ];
+  // Create mapping targets from ENCORE standard fields
+  const mappingTargets: MappingTarget[] = ENCORE_STANDARD_FIELDS.map(field => ({
+    id: field,
+    name: field,
+    type: requiredEncoreFields.includes(field) ? 'required' as const : 'optional' as const,
+    description: requiredEncoreFields.includes(field) 
+      ? 'Required field for proper processing' 
+      : 'Optional ENCORE standard field'
+  }));
 
   const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({});
   const [availableFields, setAvailableFields] = useState(unmappedFields);
@@ -134,12 +129,8 @@ export function FieldMappingDialog({
             Field Mapping
           </DialogTitle>
           <DialogDescription>
-            Drag and drop fields from the left to map them to required fields or resolve validation errors.
-            {uniqueValidationErrors.length < validationErrors.length && (
-              <div className="text-sm text-blue-600 mt-1">
-                Showing {uniqueValidationErrors.length} unique errors (removed {validationErrors.length - uniqueValidationErrors.length} duplicates)
-              </div>
-            )}
+            Drag and drop fields from the left to map them to ENCORE standard fields. 
+            Required fields must be mapped for successful processing.
           </DialogDescription>
         </DialogHeader>
 
@@ -227,17 +218,17 @@ export function FieldMappingDialog({
                             : 'border-dashed border-muted-foreground/25'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={target.type === 'required' ? 'destructive' : 'secondary'}>
-                              {target.type}
-                            </Badge>
-                            <span className="font-medium text-sm text-foreground">{target.name}</span>
-                          </div>
-                          {fieldMapping[target.id] && (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                          )}
-                        </div>
+                         <div className="flex items-center justify-between mb-2">
+                           <div className="flex items-center gap-2">
+                             <Badge variant={target.type === 'required' ? 'destructive' : 'secondary'}>
+                               {target.type}
+                             </Badge>
+                             <span className="font-medium text-sm text-foreground">{target.name}</span>
+                           </div>
+                           {fieldMapping[target.id] && (
+                             <CheckCircle className="h-4 w-4 text-green-600" />
+                           )}
+                         </div>
                         
                         {target.description && (
                           <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{target.description}</p>

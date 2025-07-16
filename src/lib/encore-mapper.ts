@@ -10,19 +10,104 @@ export interface MappedResult {
   validationErrors: string[];
 }
 
+// ENCORE Standard Field Definitions
+export const ENCORE_STANDARD_FIELDS = [
+  'QUARTER',
+  'SOURCE', 
+  'REVENUE SOURCE',
+  'WORK IDENTIFIER',
+  'WORK TITLE',
+  'WORK WRITERS',
+  'SHARE',
+  'MEDIA TYPE',
+  'MEDIA SUB-TYPE', 
+  'COUNTRY',
+  'QUANTITY',
+  'GROSS',
+  'NET',
+  'ISWC',
+  'ISRC'
+] as const;
+
 // Default ENCORE mapping configuration
 export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
-  'Work ID': {
+  'QUARTER': {
+    BMI: 'Period',
+    ASCAP: 'Quarter',
+    YouTube: 'Period',
+    SoundExchange: 'Quarter',
+  },
+  'SOURCE': {
+    BMI: 'Source',
+    ASCAP: 'Source', 
+    YouTube: 'Platform',
+    SoundExchange: 'Service',
+  },
+  'REVENUE SOURCE': {
+    BMI: 'Performance Type',
+    ASCAP: 'Survey',
+    YouTube: 'Revenue Type',
+    SoundExchange: 'Royalty Type',
+  },
+  'WORK IDENTIFIER': {
     BMI: 'Work ID',
     ASCAP: 'Work Number',
     YouTube: '',
-    SoundExchange: 'ISRC',
+    SoundExchange: '',
   },
-  'Song Title': {
+  'WORK TITLE': {
     BMI: 'Work Title',
     ASCAP: 'Title',
     YouTube: 'Asset Title',
     SoundExchange: 'Sound Recording Title',
+  },
+  'WORK WRITERS': {
+    BMI: 'IP Name',
+    ASCAP: 'Writer Name',
+    YouTube: 'Channel Name',
+    SoundExchange: 'Featured Artist',
+  },
+  'SHARE': {
+    BMI: 'Share %',
+    ASCAP: 'Writer Share',
+    YouTube: 'Share',
+    SoundExchange: 'Share Percentage',
+  },
+  'MEDIA TYPE': {
+    BMI: 'Media Type',
+    ASCAP: 'Media Type',
+    YouTube: 'Content Type',
+    SoundExchange: 'Service Type',
+  },
+  'MEDIA SUB-TYPE': {
+    BMI: 'Media Sub-Type',
+    ASCAP: 'Media Sub-Type',
+    YouTube: 'Content Sub-Type',
+    SoundExchange: 'Service Sub-Type',
+  },
+  'COUNTRY': {
+    BMI: 'Country',
+    ASCAP: 'Territory',
+    YouTube: 'Country',
+    SoundExchange: 'Country',
+  },
+  'QUANTITY': {
+    BMI: 'Performances',
+    ASCAP: 'Plays',
+    YouTube: 'Views',
+    SoundExchange: 'Plays',
+  },
+  'GROSS': {
+    BMI: ['Current Quarter Royalties', 'Amount', 'Royalty', 'Payment', 'Total Amount', 'Quarter Royalties'],
+    ASCAP: ['Amount Paid', 'Amount', 'Royalty', 'Payment', 'Total', 'Total Amount', 'Quarter Royalties'],
+    YouTube: 'Earnings',
+    SoundExchange: 'Royalty',
+  },
+  'NET': {
+    BMI: 'Net Amount',
+    ASCAP: 'Net Amount',
+    YouTube: 'Net Earnings',
+    SoundExchange: 'Net Royalty',
   },
   'ISWC': {
     BMI: 'ISWC',
@@ -30,59 +115,11 @@ export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
     YouTube: '',
     SoundExchange: '',
   },
-  'Client Name': {
-    BMI: 'IP Name',
-    ASCAP: 'Writer Name',
-    YouTube: 'Channel Name',
-    SoundExchange: 'Featured Artist',
-  },
-  'Client Role': {
-    BMI: 'IP Role',
-    ASCAP: 'Role',
-    YouTube: 'Owner',
-    SoundExchange: 'Artist Type',
-  },
-  'Source': {
-    BMI: 'Source',
-    ASCAP: 'Source',
-    YouTube: 'Platform',
-    SoundExchange: 'Service',
-  },
-  'Royalty Type': {
-    BMI: 'Performance Type',
-    ASCAP: 'Survey',
-    YouTube: 'Revenue Type',
-    SoundExchange: 'Royalty Type',
-  },
-  'Share %': {
-    BMI: 'Share %',
-    ASCAP: 'Writer Share',
-    YouTube: 'Share',
-    SoundExchange: 'Share Percentage',
-  },
-  'Gross Amount': {
-    BMI: ['Current Quarter Royalties', 'Amount', 'Royalty', 'Payment', 'Total Amount', 'Quarter Royalties'],
-    ASCAP: ['Amount Paid', 'Amount', 'Royalty', 'Payment', 'Total', 'Total Amount', 'Quarter Royalties'],
-    YouTube: 'Earnings',
-    SoundExchange: 'Royalty',
-  },
-  'Period Start': {
-    BMI: 'Period',
-    ASCAP: 'Start Date',
-    YouTube: 'Revenue Start',
-    SoundExchange: 'Usage Period Start',
-  },
-  'Period End': {
-    BMI: 'Period',
-    ASCAP: 'End Date',
-    YouTube: 'Revenue End',
-    SoundExchange: 'Usage Period End',
-  },
-  'Payment Date': {
-    BMI: 'Payment Date',
-    ASCAP: 'Payment Date',
-    YouTube: 'Payment Date',
-    SoundExchange: 'Distribution Date',
+  'ISRC': {
+    BMI: '',
+    ASCAP: '',
+    YouTube: 'ISRC',
+    SoundExchange: 'ISRC',
   },
 };
 
@@ -145,8 +182,8 @@ export class EncoreMapper {
         }
       });
 
-      // Validate required fields
-      const requiredFields = ['Song Title', 'Client Name', 'Gross Amount'];
+      // Validate required fields using ENCORE standard fields
+      const requiredFields = ['WORK TITLE', 'WORK WRITERS', 'GROSS'];
       requiredFields.forEach(field => {
         if (!mappedRow[field] || mappedRow[field] === '') {
           validationErrors.push(`Row ${index + 1}: Missing required field '${field}'`);
@@ -173,19 +210,21 @@ export class EncoreMapper {
     if (stringValue === '') return null;
 
     switch (encoreField) {
-      case 'Gross Amount':
+      case 'GROSS':
+      case 'NET':
         // Remove currency symbols and convert to number
         const cleanAmount = stringValue.replace(/[$,€£¥]/g, '');
         const numValue = parseFloat(cleanAmount);
         return isNaN(numValue) ? 0 : numValue;
 
-      case 'Share %':
-        // Handle percentage values
+      case 'SHARE':
+      case 'QUANTITY':
+        // Handle percentage and numeric values
         const cleanPercent = stringValue.replace(/%/g, '');
         const percentValue = parseFloat(cleanPercent);
         return isNaN(percentValue) ? 0 : percentValue;
 
-      case 'Period Start':
+      case 'QUARTER':
         // Special handling for BMI Period extraction
         if (detectedSource === 'BMI') {
           return this.extractBMIPeriodStart(stringValue);
@@ -193,15 +232,21 @@ export class EncoreMapper {
         // Fall through to date normalization for other sources
         return this.normalizeDate(stringValue);
 
-      case 'Period End':
-      case 'Payment Date':
-        // Normalize date formats
-        return this.normalizeDate(stringValue);
-
-      case 'Song Title':
-      case 'Client Name':
+      case 'WORK TITLE':
+      case 'WORK WRITERS':
+      case 'SOURCE':
+      case 'REVENUE SOURCE':
+      case 'MEDIA TYPE':
+      case 'MEDIA SUB-TYPE':
+      case 'COUNTRY':
         // Clean up text fields
         return stringValue.replace(/\s+/g, ' ').trim();
+
+      case 'WORK IDENTIFIER':
+      case 'ISWC':
+      case 'ISRC':
+        // Keep identifier fields as-is
+        return stringValue.trim();
 
       default:
         return stringValue;
