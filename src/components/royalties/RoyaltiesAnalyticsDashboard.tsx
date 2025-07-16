@@ -4,18 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
-import { Download, Brain, Calendar, Users, Globe, Radio, FileText } from "lucide-react";
+import { Download, Brain, CalendarIcon, Users, Globe, Radio, FileText } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))', 'hsl(var(--destructive))'];
 
 export function RoyaltiesAnalyticsDashboard() {
   const { allocations, loading } = useRoyaltyAllocations();
   const { toast } = useToast();
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined,
+  });
   const [selectedControlledWriter, setSelectedControlledWriter] = useState<string>("all");
   const [selectedTerritory, setSelectedTerritory] = useState<string>("all");
   const [selectedSource, setSelectedSource] = useState<string>("all");
@@ -45,26 +52,18 @@ export function RoyaltiesAnalyticsDashboard() {
   const analyticsData = useMemo(() => {
     let filtered = allocations;
 
-    // Apply filters
-    if (selectedPeriod !== "all") {
-      const periodStart = new Date();
-      switch (selectedPeriod) {
-        case "q1":
-          periodStart.setMonth(0, 1);
-          break;
-        case "q2":
-          periodStart.setMonth(3, 1);
-          break;
-        case "q3":
-          periodStart.setMonth(6, 1);
-          break;
-        case "q4":
-          periodStart.setMonth(9, 1);
-          break;
-      }
+    // Apply date range filter
+    if (dateRange.from || dateRange.to) {
       filtered = filtered.filter(allocation => {
         const createdDate = new Date(allocation.created_at);
-        return createdDate >= periodStart;
+        if (dateRange.from && dateRange.to) {
+          return createdDate >= dateRange.from && createdDate <= dateRange.to;
+        } else if (dateRange.from) {
+          return createdDate >= dateRange.from;
+        } else if (dateRange.to) {
+          return createdDate <= dateRange.to;
+        }
+        return true;
       });
     }
 
@@ -114,7 +113,7 @@ export function RoyaltiesAnalyticsDashboard() {
       total: filtered.reduce((sum, a) => sum + a.gross_royalty_amount, 0),
       count: filtered.length
     };
-  }, [allocations, selectedPeriod, selectedControlledWriter, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType]);
+  }, [allocations, dateRange, selectedControlledWriter, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType]);
 
   const generateAIInsights = async () => {
     setLoadingInsights(true);
@@ -122,7 +121,7 @@ export function RoyaltiesAnalyticsDashboard() {
       const { data, error } = await supabase.functions.invoke('royalties-ai-insights', {
         body: { 
           analyticsData,
-          filters: { selectedPeriod, selectedControlledWriter, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
+          filters: { dateRange, selectedControlledWriter, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
         }
       });
 
@@ -145,7 +144,7 @@ export function RoyaltiesAnalyticsDashboard() {
       summary: {
         totalAmount: analyticsData.total,
         totalCount: analyticsData.count,
-        filters: { selectedPeriod, selectedControlledWriter, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
+        filters: { dateRange, selectedControlledWriter, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
       },
       quarterly: analyticsData.quarterly,
       controlled: analyticsData.controlled,
@@ -182,19 +181,42 @@ export function RoyaltiesAnalyticsDashboard() {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-36">
-              <Calendar className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Periods</SelectItem>
-              <SelectItem value="q1">Q1 2024</SelectItem>
-              <SelectItem value="q2">Q2 2024</SelectItem>
-              <SelectItem value="q3">Q3 2024</SelectItem>
-              <SelectItem value="q4">Q4 2024</SelectItem>
-            </SelectContent>
-          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-48 justify-start text-left font-normal",
+                  !dateRange.from && !dateRange.to && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange.from ? (
+                  dateRange.to ? (
+                    <>
+                      {format(dateRange.from, "LLL dd, y")} -{" "}
+                      {format(dateRange.to, "LLL dd, y")}
+                    </>
+                  ) : (
+                    format(dateRange.from, "LLL dd, y")
+                  )
+                ) : (
+                  <span>Pick a date range</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange.from}
+                selected={dateRange}
+                onSelect={(range) => setDateRange({ from: range?.from, to: range?.to })}
+                numberOfMonths={2}
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
 
           <Select value={selectedControlledWriter} onValueChange={setSelectedControlledWriter}>
             <SelectTrigger className="w-40">
@@ -314,13 +336,23 @@ export function RoyaltiesAnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-1">
-              {selectedPeriod !== "all" && <Badge variant="secondary">{selectedPeriod}</Badge>}
+              {(dateRange.from || dateRange.to) && (
+                <Badge variant="secondary">
+                  {dateRange.from && dateRange.to
+                    ? `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d")}`
+                    : dateRange.from
+                    ? `From ${format(dateRange.from, "MMM d")}`
+                    : dateRange.to
+                    ? `To ${format(dateRange.to, "MMM d")}`
+                    : ""}
+                </Badge>
+              )}
               {selectedControlledWriter !== "all" && <Badge variant="secondary">{selectedControlledWriter}</Badge>}
               {selectedTerritory !== "all" && <Badge variant="secondary">{selectedTerritory}</Badge>}
               {selectedSource !== "all" && <Badge variant="secondary">{selectedSource}</Badge>}
               {selectedWorkTitle !== "all" && <Badge variant="secondary">{selectedWorkTitle.length > 20 ? selectedWorkTitle.substring(0, 20) + '...' : selectedWorkTitle}</Badge>}
               {selectedMediaType !== "all" && <Badge variant="secondary">{selectedMediaType}</Badge>}
-              {selectedPeriod === "all" && selectedControlledWriter === "all" && selectedTerritory === "all" && selectedSource === "all" && selectedWorkTitle === "all" && selectedMediaType === "all" && (
+              {!dateRange.from && !dateRange.to && selectedControlledWriter === "all" && selectedTerritory === "all" && selectedSource === "all" && selectedWorkTitle === "all" && selectedMediaType === "all" && (
                 <Badge variant="outline">No filters</Badge>
               )}
             </div>
