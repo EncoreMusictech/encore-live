@@ -26,7 +26,7 @@ export function RoyaltiesAnalyticsDashboard() {
     from: undefined,
     to: undefined,
   });
-  const [selectedControlledWriter, setSelectedControlledWriter] = useState<string>("all");
+  
   const [selectedWriterName, setSelectedWriterName] = useState<string>("all");
   const [writerSearchOpen, setWriterSearchOpen] = useState(false);
   const [selectedTerritory, setSelectedTerritory] = useState<string>("all");
@@ -72,9 +72,6 @@ export function RoyaltiesAnalyticsDashboard() {
       });
     }
 
-    if (selectedControlledWriter !== "all") {
-      filtered = filtered.filter(allocation => allocation.controlled_status === selectedControlledWriter);
-    }
 
     if (selectedWorkTitle !== "all") {
       filtered = filtered.filter(allocation => allocation.song_title === selectedWorkTitle);
@@ -138,7 +135,7 @@ export function RoyaltiesAnalyticsDashboard() {
       total: filtered.reduce((sum, a) => sum + a.gross_royalty_amount, 0),
       count: filtered.length
     };
-  }, [allocations, dateRange, selectedControlledWriter, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType, controlledWriters]);
+  }, [allocations, dateRange, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType, controlledWriters]);
 
   const generateAIInsights = async () => {
     setLoadingInsights(true);
@@ -146,7 +143,7 @@ export function RoyaltiesAnalyticsDashboard() {
       const { data, error } = await supabase.functions.invoke('royalties-ai-insights', {
         body: { 
           analyticsData,
-          filters: { dateRange, selectedControlledWriter, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
+          filters: { dateRange, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
         }
       });
 
@@ -169,7 +166,7 @@ export function RoyaltiesAnalyticsDashboard() {
       summary: {
         totalAmount: analyticsData.total,
         totalCount: analyticsData.count,
-        filters: { dateRange, selectedControlledWriter, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
+        filters: { dateRange, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
       },
       quarterly: analyticsData.quarterly,
       controlled: analyticsData.controlled,
@@ -243,18 +240,6 @@ export function RoyaltiesAnalyticsDashboard() {
             </PopoverContent>
           </Popover>
 
-          <Select value={selectedControlledWriter} onValueChange={setSelectedControlledWriter}>
-            <SelectTrigger className="w-40">
-              <Users className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Writer Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {filterOptions.controlledWriters.map((status) => (
-                <SelectItem key={status} value={status}>{status}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
           <Select value={selectedTerritory} onValueChange={setSelectedTerritory}>
             <SelectTrigger className="w-36">
@@ -432,13 +417,13 @@ export function RoyaltiesAnalyticsDashboard() {
                     : ""}
                 </Badge>
               )}
-              {selectedControlledWriter !== "all" && <Badge variant="secondary">{selectedControlledWriter}</Badge>}
+              
               {selectedWriterName !== "all" && <Badge variant="secondary">{selectedWriterName}</Badge>}
               {selectedTerritory !== "all" && <Badge variant="secondary">{selectedTerritory}</Badge>}
               {selectedSource !== "all" && <Badge variant="secondary">{selectedSource}</Badge>}
               {selectedWorkTitle !== "all" && <Badge variant="secondary">{selectedWorkTitle.length > 20 ? selectedWorkTitle.substring(0, 20) + '...' : selectedWorkTitle}</Badge>}
               {selectedMediaType !== "all" && <Badge variant="secondary">{selectedMediaType}</Badge>}
-              {!dateRange.from && !dateRange.to && selectedControlledWriter === "all" && selectedWriterName === "all" && selectedTerritory === "all" && selectedSource === "all" && selectedWorkTitle === "all" && selectedMediaType === "all" && (
+              {!dateRange.from && !dateRange.to && selectedWriterName === "all" && selectedTerritory === "all" && selectedSource === "all" && selectedWorkTitle === "all" && selectedMediaType === "all" && (
                 <Badge variant="outline">No filters</Badge>
               )}
             </div>
