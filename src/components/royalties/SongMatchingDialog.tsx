@@ -297,19 +297,33 @@ export function SongMatchingDialog({
                   {songMatches.map((match, index) => (
                     <div 
                       key={index}
-                      className={`p-3 rounded border ${
-                        match.isMatched ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
+                      className={`p-3 rounded-lg border transition-colors ${
+                        match.isMatched 
+                          ? 'bg-emerald-50 border-emerald-300 shadow-sm' 
+                          : 'bg-slate-50 border-slate-300 hover:bg-slate-100'
                       }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="font-medium text-sm">{match.songTitle}</div>
-                          <div className="text-xs text-muted-foreground">{match.artist}</div>
-                          <div className="text-xs font-medium">${match.grossAmount.toFixed(2)}</div>
+                          <div className={`font-semibold text-sm ${
+                            match.isMatched ? 'text-emerald-900' : 'text-slate-900'
+                          }`}>
+                            {match.songTitle}
+                          </div>
+                          <div className={`text-sm ${
+                            match.isMatched ? 'text-emerald-700' : 'text-slate-600'
+                          }`}>
+                            {match.artist}
+                          </div>
+                          <div className={`text-sm font-medium ${
+                            match.isMatched ? 'text-emerald-800' : 'text-slate-800'
+                          }`}>
+                            ${match.grossAmount.toFixed(2)}
+                          </div>
                           {match.isMatched && match.matchedCopyright && (
-                            <div className="mt-1 flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3 text-green-600" />
-                              <span className="text-xs text-green-600">
+                            <div className="mt-2 flex items-center gap-1">
+                              <CheckCircle className="h-4 w-4 text-emerald-600" />
+                              <span className="text-sm text-emerald-700 font-medium">
                                 Matched: {match.matchedCopyright.work_title}
                               </span>
                             </div>
@@ -321,12 +335,12 @@ export function SongMatchingDialog({
                               size="sm"
                               variant="outline"
                               onClick={() => handleUnmatch(index)}
-                              className="h-6 px-2 text-xs"
+                              className="h-7 px-3 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-100"
                             >
                               Unmatch
                             </Button>
                           ) : (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs border-amber-300 text-amber-700 bg-amber-50">
                               <AlertCircle className="h-3 w-3 mr-1" />
                               Unmatched
                             </Badge>
