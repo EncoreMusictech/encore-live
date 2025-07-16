@@ -9,7 +9,7 @@ import { ArrowLeft, AlertTriangle, CheckCircle, FileText, Users, Wrench, Setting
 import { RoyaltiesImportStaging, useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { FieldMappingDialog } from "./FieldMappingDialog";
 import { SongMatchingDialog } from "./SongMatchingDialog";
-import { EncoreMapper, DEFAULT_ENCORE_MAPPING } from "@/lib/encore-mapper";
+import { EncoreMapper, DEFAULT_ENCORE_MAPPING, ENCORE_STANDARD_FIELDS } from "@/lib/encore-mapper";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -133,6 +133,31 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
   
   // Remove duplicate errors
   const uniqueErrors = Array.from(new Set(errors));
+  
+  // Get ordered column headers for mapped data display
+  const getOrderedHeaders = () => {
+    if (mappedData.length === 0) return [];
+    const availableFields = Object.keys(mappedData[0]).filter(key => !key.startsWith('_'));
+    
+    // Start with Statement Source, then ENCORE fields in order, then any remaining fields
+    const orderedHeaders = ['Statement Source'];
+    
+    // Add ENCORE standard fields that exist in the data
+    ENCORE_STANDARD_FIELDS.forEach(field => {
+      if (availableFields.includes(field)) {
+        orderedHeaders.push(field);
+      }
+    });
+    
+    // Add any remaining fields not in the standard order
+    availableFields.forEach(field => {
+      if (!orderedHeaders.includes(field)) {
+        orderedHeaders.push(field);
+      }
+    });
+    
+    return orderedHeaders;
+  };
   
   // Common required fields for royalty statements
   const requiredFields = ['Song Title', 'Client Name', 'Gross Amount', 'Period Start'];
@@ -367,27 +392,23 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        {/* Dynamically show all mapped fields that have data */}
-                        {Object.keys(mappedData[0])
-                          .filter(key => !key.startsWith('_'))
-                          .map((header) => (
-                            <TableHead key={header}>{header}</TableHead>
-                          ))}
+                        {/* Show headers in ENCORE standard order */}
+                        {getOrderedHeaders().map((header) => (
+                          <TableHead key={header}>{header}</TableHead>
+                        ))}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {mappedData.slice(0, 100).map((row: any, index) => (
                         <TableRow key={index}>
-                          {Object.entries(row)
-                            .filter(([key]) => !key.startsWith('_'))
-                            .map(([key, value], cellIndex) => (
-                              <TableCell key={cellIndex} className={key === 'WORK TITLE' ? 'font-medium' : ''}>
-                                {key === 'GROSS' || key === 'NET' 
-                                  ? (typeof value === 'number' ? `$${value.toFixed(2)}` : String(value || '-'))
-                                  : String(value || '-')
-                                }
-                              </TableCell>
-                            ))}
+                          {getOrderedHeaders().map((header, cellIndex) => (
+                            <TableCell key={cellIndex} className={header === 'WORK TITLE' ? 'font-medium' : ''}>
+                              {header === 'GROSS' || header === 'NET' 
+                                ? (typeof row[header] === 'number' ? `$${row[header].toFixed(2)}` : String(row[header] || '-'))
+                                : String(row[header] || '-')
+                              }
+                            </TableCell>
+                          ))}
                         </TableRow>
                       ))}
                     </TableBody>
