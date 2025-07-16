@@ -78,7 +78,7 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
                   <TableHead>Source</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Records</TableHead>
-                  <TableHead>Unmapped Fields</TableHead>
+                  
                   <TableHead>Created</TableHead>
                   <TableHead>Song Matching</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -106,11 +106,7 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
                     <TableCell>
                       {Array.isArray(record.mapped_data) ? record.mapped_data.length : 0}
                     </TableCell>
-                    <TableCell>
-                      {record.unmapped_fields.length > 0 ? <Badge variant="destructive">
-                          {record.unmapped_fields.length} unmapped
-                        </Badge> : <Badge variant="default">All mapped</Badge>}
-                    </TableCell>
+                    
                     <TableCell>
                       {new Date(record.created_at).toLocaleDateString()}
                     </TableCell>
