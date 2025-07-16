@@ -11,18 +11,17 @@ import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationL
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportStaging";
 import { RoyaltiesDiscrepancyReport } from "@/components/royalties/RoyaltiesDiscrepancyReport";
-
 export default function RoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState("allocations");
-  const { allocations, loading } = useRoyaltyAllocations();
-
+  const {
+    allocations,
+    loading
+  } = useRoyaltyAllocations();
   const totalRoyalties = allocations.reduce((sum, allocation) => sum + allocation.gross_royalty_amount, 0);
   const controlledWorks = allocations.filter(allocation => allocation.controlled_status === 'Controlled').length;
   const recoupableWorks = allocations.filter(allocation => allocation.recoupable_expenses).length;
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto py-8 px-4">
         <RoyaltiesModuleNav />
@@ -55,7 +54,7 @@ export default function RoyaltiesPage() {
           <TabsContent value="statements" className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-semibold">Statement Management</h2>
+                <h2 className="text-xl font-semibold">Statements</h2>
                 <p className="text-muted-foreground">
                   Import statements, map sources for auto-detection, and review data for approval and allocation
                 </p>
@@ -124,8 +123,7 @@ export default function RoyaltiesPage() {
 
             {/* Main Content */}
             <div className="space-y-6">
-              {showForm && (
-                <Card>
+              {showForm && <Card>
                   <CardHeader>
                     <CardTitle>Create New Royalty Allocation</CardTitle>
                     <CardDescription>
@@ -135,8 +133,7 @@ export default function RoyaltiesPage() {
                   <CardContent>
                     <RoyaltyAllocationForm onCancel={() => setShowForm(false)} />
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
 
               <Card>
                 <CardHeader>
@@ -166,6 +163,5 @@ export default function RoyaltiesPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-  );
+    </div>;
 }

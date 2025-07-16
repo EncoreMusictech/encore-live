@@ -57,7 +57,7 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
       <CardHeader>
         <div className="flex justify-between items-center">
           <div>
-            <CardTitle>Import Staging</CardTitle>
+            <CardTitle>Statement Import</CardTitle>
             <CardDescription>
               Manage imported royalty statements and review mapping results
             </CardDescription>
