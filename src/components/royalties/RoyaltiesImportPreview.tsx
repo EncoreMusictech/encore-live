@@ -201,7 +201,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
           hasUnmapped: result.unmappedFields.length > 0,
           last_validated: new Date().toISOString(),
         },
-        processing_status: result.validationErrors.length > 0 ? 'needs_review' : 'processed',
+        processing_status: result.validationErrors.length > 0 ? 'needs_review' : 'pending', // Still needs approval
       });
 
       toast({
@@ -220,7 +220,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
           hasUnmapped: result.unmappedFields.length > 0,
           last_validated: new Date().toISOString(),
         },
-        processing_status: (result.validationErrors.length > 0 ? 'needs_review' : 'processed') as 'pending' | 'processed' | 'failed' | 'needs_review',
+        processing_status: (result.validationErrors.length > 0 ? 'needs_review' : 'pending') as 'pending' | 'processed' | 'failed' | 'needs_review',
       };
       setLocalRecord(updatedRecord);
 

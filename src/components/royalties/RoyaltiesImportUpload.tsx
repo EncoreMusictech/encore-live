@@ -101,13 +101,14 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
       const hasErrors = mappingResult.validationErrors.length > 0;
       const hasUnmapped = mappingResult.unmappedFields.length > 0;
       
-      let processingStatus: 'processed' | 'needs_review' = 'processed';
+      // All imported statements need user approval - never auto-mark as 'processed'
+      let processingStatus: 'pending' | 'needs_review' = 'pending';
       if (hasErrors || hasUnmapped) {
         processingStatus = 'needs_review';
       }
 
       updateStep(3, hasErrors ? 'error' : 'completed', 
-        hasErrors ? `${mappingResult.validationErrors.length} validation errors` : 'Validation passed');
+        hasErrors ? `${mappingResult.validationErrors.length} validation errors - needs review` : 'Validation passed - ready for approval');
 
       // Step 5: Save to Staging
       updateStep(4, 'processing');
@@ -138,7 +139,7 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
         processing_status: processingStatus,
         work_matches: {},
         payee_matches: {},
-        import_tags: hasErrors || hasUnmapped ? ['Needs Review'] : [],
+        import_tags: hasErrors || hasUnmapped ? ['Needs Review'] : ['Ready for Approval'],
       });
 
       console.log('Staging record result:', stagingRecord);
