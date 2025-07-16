@@ -19,8 +19,6 @@ import { AllocationSongMatchDialog } from "./AllocationSongMatchDialog";
 
 export function RoyaltyAllocationList() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [sourceFilter, setSourceFilter] = useState<string>("all");
-  const [territoryFilter, setTerritoryFilter] = useState<string>("all");
   const [writerFilter, setWriterFilter] = useState("");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
@@ -36,12 +34,6 @@ export function RoyaltyAllocationList() {
                          (allocation.artist && allocation.artist.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (allocation.isrc && allocation.isrc.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesSource = sourceFilter === "all" ||
-                         (allocation.contract_terms?.source && allocation.contract_terms.source === sourceFilter);
-    
-    const matchesTerritory = territoryFilter === "all" || 
-                            (allocation.contract_terms?.territory && allocation.contract_terms.territory === territoryFilter);
-    
     const matchesWriter = !writerFilter || 
                          (allocation.ownership_splits && 
                           JSON.stringify(allocation.ownership_splits).toLowerCase().includes(writerFilter.toLowerCase()));
@@ -50,7 +42,7 @@ export function RoyaltyAllocationList() {
     const matchesDateFrom = !dateFrom || allocationDate >= dateFrom;
     const matchesDateTo = !dateTo || allocationDate <= dateTo;
     
-    return matchesSearch && matchesSource && matchesTerritory && matchesWriter && matchesDateFrom && matchesDateTo;
+    return matchesSearch && matchesWriter && matchesDateFrom && matchesDateTo;
   });
 
   const getControlledStatusColor = (status: string) => {
@@ -66,14 +58,10 @@ export function RoyaltyAllocationList() {
     setMatchingAllocation(null);
   };
 
-  // Get unique values for filter dropdowns
-  const uniqueSources = [...new Set(allocations.map(a => a.contract_terms?.source).filter(Boolean))];
-  const uniqueTerritories = [...new Set(allocations.map(a => a.contract_terms?.territory).filter(Boolean))];
+  // Removed contract-related filters
 
   const clearFilters = () => {
     setSearchTerm("");
-    setSourceFilter("all");
-    setTerritoryFilter("all");
     setWriterFilter("");
     setDateFrom(undefined);
     setDateTo(undefined);
@@ -147,37 +135,7 @@ export function RoyaltyAllocationList() {
 
       {/* Advanced Filters */}
       {showFilters && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/30">
-          <div>
-            <Label htmlFor="source-filter" className="text-sm font-medium">Source</Label>
-            <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Sources" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sources</SelectItem>
-                {uniqueSources.map(source => (
-                  <SelectItem key={source} value={source}>{source}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="territory-filter" className="text-sm font-medium">Territory</Label>
-            <Select value={territoryFilter} onValueChange={setTerritoryFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Territories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Territories</SelectItem>
-                {uniqueTerritories.map(territory => (
-                  <SelectItem key={territory} value={territory}>{territory}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/30">
           <div>
             <Label htmlFor="writer-filter" className="text-sm font-medium">Writer</Label>
             <Input
@@ -301,19 +259,12 @@ export function RoyaltyAllocationList() {
                 />
               </TableHead>
               <TableHead>Royalty ID</TableHead>
-              <TableHead>Statement ID</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead>Revenue Source</TableHead>
-              <TableHead>Quarter</TableHead>
               <TableHead>Work ID</TableHead>
               <TableHead>Work Title</TableHead>
-              <TableHead>Work Writers</TableHead>
-              <TableHead>Share</TableHead>
-              <TableHead>Media Type</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>Country</TableHead>
-              <TableHead>Gross</TableHead>
-              <TableHead>Net</TableHead>
+              <TableHead>Artist</TableHead>
+              <TableHead>ISRC</TableHead>
+              <TableHead>Controlled Status</TableHead>
+              <TableHead>Gross Amount</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -332,22 +283,6 @@ export function RoyaltyAllocationList() {
                     {allocation.royalty_id}
                   </code>
                 </TableCell>
-                <TableCell className="font-mono text-sm">
-                  {allocation.contract_terms?.statement_id ? (
-                    <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
-                      {allocation.contract_terms.statement_id}
-                    </code>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">N/A</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {allocation.contract_terms?.source ? (
-                    <Badge variant="outline">{allocation.contract_terms.source}</Badge>
-                  ) : 'N/A'}
-                </TableCell>
-                <TableCell>{allocation.contract_terms?.revenue_source || allocation.contract_terms?.performance_type || 'N/A'}</TableCell>
-                <TableCell>{allocation.contract_terms?.quarter || allocation.contract_terms?.period || 'N/A'}</TableCell>
                 <TableCell className="font-medium">
                   <code className="text-xs bg-muted px-1 py-0.5 rounded">
                     {allocation.work_id || 'N/A'}
@@ -369,16 +304,17 @@ export function RoyaltyAllocationList() {
                     )}
                   </div>
                 </TableCell>
-                <TableCell>{allocation.artist || allocation.contract_terms?.writers || 'N/A'}</TableCell>
-                <TableCell>{allocation.contract_terms?.share || allocation.ownership_splits?.writer_share || 'N/A'}</TableCell>
-                <TableCell>{allocation.contract_terms?.media_type || 'N/A'}</TableCell>
-                <TableCell>{allocation.contract_terms?.quantity || allocation.contract_terms?.units || 'N/A'}</TableCell>
-                <TableCell>{allocation.contract_terms?.territory || allocation.contract_terms?.country || 'N/A'}</TableCell>
+                <TableCell>{allocation.artist || 'N/A'}</TableCell>
+                <TableCell>{allocation.isrc || 'N/A'}</TableCell>
+                <TableCell>
+                  <Badge 
+                    variant={allocation.controlled_status === 'Controlled' ? 'default' : 'secondary'}
+                  >
+                    {allocation.controlled_status}
+                  </Badge>
+                </TableCell>
                 <TableCell className="font-medium">
                   ${allocation.gross_royalty_amount?.toFixed(2) || '0.00'}
-                </TableCell>
-                <TableCell>
-                  ${allocation.contract_terms?.net_amount?.toFixed(2) || allocation.gross_royalty_amount?.toFixed(2) || '0.00'}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
@@ -441,7 +377,7 @@ export function RoyaltyAllocationList() {
 
       {filteredAllocations.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          {searchTerm || sourceFilter !== "all" || territoryFilter !== "all" || writerFilter || dateFrom || dateTo
+          {searchTerm || writerFilter || dateFrom || dateTo
             ? "No royalties found matching your filters."
             : "No royalties found. Create your first royalty to get started."}
         </div>

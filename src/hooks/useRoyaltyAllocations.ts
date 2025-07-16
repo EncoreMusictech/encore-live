@@ -16,7 +16,6 @@ export interface RoyaltyAllocation {
   gross_royalty_amount: number;
   controlled_status: 'Controlled' | 'Non-Controlled';
   recoupable_expenses: boolean;
-  contract_terms: any;
   ownership_splits: any;
   comments?: string;
   created_at: string;

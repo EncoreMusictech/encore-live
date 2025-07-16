@@ -52,23 +52,6 @@ export function useImportToAllocations() {
         gross_royalty_amount: parseFloat(row.gross_amount || row.amount || 0),
         controlled_status: row.controlled_status || 'Non-Controlled',
         recoupable_expenses: Boolean(row.recoupable || false),
-        contract_terms: {
-          source: stagingRecord.detected_source,
-          revenue_source: row.revenue_source || row.performance_type || row.media_type || null,
-          quarter: row.quarter || row.period || row.statement_period || null,
-          territory: row.territory || row.country || null,
-          country: row.country || row.territory || null,
-          media_type: row.media_type || row.platform || null,
-          net_amount: parseFloat(row.net_amount || row.net_royalty || 0),
-          share: row.share || row.ownership_percentage || null,
-          quantity: row.quantity || row.units || row.streams || null,
-          period_start: row.period_start || null,
-          period_end: row.period_end || null,
-          writers: row.writers || row.composer || null,
-          statement_id: stagingRecord.statement_id || null,
-          staging_record_id: stagingRecordId,
-          original_data: row
-        },
         ownership_splits: row.ownership_splits || {},
         comments: `Imported from ${stagingRecord.detected_source} statement: ${stagingRecord.original_filename}`
       } as RoyaltyAllocationInsert));

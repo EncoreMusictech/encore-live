@@ -211,15 +211,6 @@ export function SongMatchingDialog({
           `${match.songTitle}-${match.artist}`.toLowerCase() === matchKey
         );
 
-        // Store all row data in contract_terms for later reference
-        const contractTerms = {
-          source: row['SOURCE'] || '',
-          territory: row['TERRITORY'] || '',
-          period: row['PERIOD'] || '',
-          statement_id: row['STATEMENT_ID'] || '',
-          original_row_data: row
-        };
-
         const baseAllocation = {
           user_id: user.id,
           batch_id: batchId || null, // Allow null batch_id for standalone allocations
@@ -227,7 +218,6 @@ export function SongMatchingDialog({
           artist: artist,
           gross_royalty_amount: grossAmount,
           work_id: null, // Explicitly set to null so trigger can generate it
-          contract_terms: contractTerms,
         };
 
         // Create allocations based on whether the song was matched
