@@ -42,6 +42,31 @@ export function useImportToAllocations() {
         return null;
       }
 
+      console.log('Creating allocations:', rowsToImport.map((row: any) => ({
+        user_id: user.id,
+        batch_id: stagingRecord.batch_id,
+        song_title: row['WORK TITLE'] || row['Song Title'] || 'Unknown Title',
+        artist: row['WORK WRITERS'] || row.artist || row.performer || null,
+        gross_royalty_amount: parseFloat(row.GROSS || row['Gross Amount'] || '0'),
+        work_id: null,
+        quarter: row.QUARTER || null,
+        source: row.SOURCE || stagingRecord.detected_source,
+        revenue_source: row['REVENUE SOURCE'] || null,
+        work_identifier: row['WORK IDENTIFIER'] || null,
+        work_writers: row['WORK WRITERS'] || null,
+        share: row.SHARE || null,
+        media_type: row['MEDIA TYPE'] || null,
+        media_sub_type: row['MEDIA SUB-TYPE'] || null,
+        country: row.COUNTRY || null,
+        quantity: row.QUANTITY || null,
+        gross_amount: parseFloat(row.GROSS || '0'),
+        net_amount: parseFloat(row.NET || '0'),
+        iswc: row.ISWC || null,
+        copyright_id: row.copyright_id || null,
+        controlled_status: row.controlled_status || 'Controlled',
+        statement_id: stagingRecord.statement_id
+      })));
+
       // Transform mapped data to royalty allocations
       const allocations: RoyaltyAllocationInsert[] = rowsToImport.map((row: any) => ({
         user_id: user.id,
@@ -50,7 +75,7 @@ export function useImportToAllocations() {
         artist: row['WORK WRITERS'] || row.artist || row.performer || null,
         isrc: row.ISRC || row.isrc || null,
         gross_royalty_amount: parseFloat(row.GROSS || row['Gross Amount'] || '0'),
-        controlled_status: row.controlled_status || 'Non-Controlled',
+        controlled_status: row.controlled_status || 'Controlled',
         recoupable_expenses: Boolean(row.recoupable || false),
         // ENCORE Standard Fields from mapped data
         quarter: row.QUARTER || null,
@@ -66,7 +91,7 @@ export function useImportToAllocations() {
         gross_amount: parseFloat(row.GROSS || '0'),
         net_amount: parseFloat(row.NET || '0'),
         iswc: row.ISWC || null,
-        statement_id: stagingRecord.statement_id || null,
+        statement_id: stagingRecord.statement_id,
         staging_record_id: stagingRecordId,
         ownership_splits: row.ownership_splits || {},
         comments: `Imported from ${stagingRecord.detected_source} statement: ${stagingRecord.original_filename}`
