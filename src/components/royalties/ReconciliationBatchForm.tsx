@@ -87,10 +87,22 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
 
   const onSubmit = async (data: any) => {
     try {
+      // Clean up the data before submitting
+      const cleanedData = {
+        ...data,
+        // Convert empty strings to null for optional date fields
+        statement_period_start: data.statement_period_start || null,
+        statement_period_end: data.statement_period_end || null,
+        // Convert empty string to null for linked_statement_id
+        linked_statement_id: data.linked_statement_id || null,
+        // Ensure numeric values are properly handled
+        total_gross_amount: Number(data.total_gross_amount) || 0,
+      };
+
       if (batch) {
-        await updateBatch(batch.id, data);
+        await updateBatch(batch.id, cleanedData);
       } else {
-        await createBatch(data);
+        await createBatch(cleanedData);
       }
       onCancel();
     } catch (error) {
