@@ -9,8 +9,8 @@ export type ContractInterestedParty = Tables<'contract_interested_parties'>;
 export type ContractScheduleWork = Tables<'contract_schedule_works'>;
 
 export interface ContractWithRelations extends Contract {
-  interested_parties?: ContractInterestedParty[];
-  schedule_works?: ContractScheduleWork[];
+  contract_interested_parties?: ContractInterestedParty[];
+  contract_schedule_works?: ContractScheduleWork[];
 }
 
 export const useContracts = () => {

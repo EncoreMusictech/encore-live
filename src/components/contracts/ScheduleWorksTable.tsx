@@ -21,7 +21,7 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   const { copyrights } = useCopyright();
 
   const contract = contracts.find(c => c.id === contractId);
-  const scheduleWorks = contract?.schedule_works || [];
+  const scheduleWorks = contract?.contract_schedule_works || [];
 
   const [formData, setFormData] = useState({
     copyright_id: "",

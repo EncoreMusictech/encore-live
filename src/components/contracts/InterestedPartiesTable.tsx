@@ -24,7 +24,7 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
   const { toast } = useToast();
 
   const contract = contracts.find(c => c.id === contractId);
-  const interestedParties = contract?.interested_parties || [];
+  const interestedParties = contract?.contract_interested_parties || [];
 
   const [formData, setFormData] = useState({
     name: "",
