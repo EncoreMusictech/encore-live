@@ -184,6 +184,21 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         description: `Field mapping saved and data re-validated. Mappings will be remembered for future ${localRecord.detected_source} imports.`,
       });
 
+      // Update the local record state with the new mapped data
+      const updatedRecord = {
+        ...localRecord,
+        mapped_data: result.mappedData,
+        unmapped_fields: result.unmappedFields,
+        validation_status: {
+          errors: result.validationErrors,
+          hasErrors: result.validationErrors.length > 0,
+          hasUnmapped: result.unmappedFields.length > 0,
+          last_validated: new Date().toISOString(),
+        },
+        processing_status: (result.validationErrors.length > 0 ? 'needs_review' : 'processed') as 'pending' | 'processed' | 'failed' | 'needs_review',
+      };
+      setLocalRecord(updatedRecord);
+
       setShowMappingDialog(false);
     } catch (error) {
       console.error('Error saving field mapping:', error);
