@@ -1530,34 +1530,6 @@ ${result.industry_benchmarks ? `• Genre: ${result.industry_benchmarks.genre}
             </TabsContent>
           </Tabs>
 
-          {/* Enhanced Analysis Link */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-primary" />
-                Advanced Deal Analysis
-              </CardTitle>
-              <CardDescription>
-                Deep-dive into catalog acquisition scenarios with custom deal structures
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Professional Deal Simulator</p>
-                  <p className="text-sm text-muted-foreground">
-                    Model complex acquisition scenarios with track-level selection and custom terms
-                  </p>
-                </div>
-                <Button 
-                  onClick={() => window.location.href = `/deal-simulator?artist=${encodeURIComponent(result.artist_name)}&id=${encodeURIComponent(result.spotify_data.artist_id)}`}
-                  className="bg-gradient-primary text-primary-foreground"
-                >
-                  Launch Deal Simulator
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Download Enhanced Report */}
           <Card>
