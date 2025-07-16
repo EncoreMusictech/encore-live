@@ -118,7 +118,7 @@ const Index = () => {
               <Card 
                 key={tier.name}
                 className={`relative transition-all duration-300 hover:shadow-elegant ${
-                  tier.popular ? 'ring-2 ring-music-purple shadow-glow scale-105' : ''
+                  tier.popular ? 'ring-2 ring-encore-blue shadow-glow scale-105' : ''
                 }`}
               >
                 {tier.popular && (
@@ -151,7 +151,7 @@ const Index = () => {
                   <ul className="space-y-3">
                     {tier.features.map((feature, index) => (
                       <li key={index} className="flex items-center space-x-3">
-                        <Check className="h-4 w-4 text-music-purple flex-shrink-0" />
+                        <Check className="h-4 w-4 text-encore-blue flex-shrink-0" />
                         <span className="text-sm">{feature}</span>
                       </li>
                     ))}
@@ -175,7 +175,7 @@ const Index = () => {
               asChild
               variant="outline" 
               size="lg"
-              className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground"
+              className="border-encore-blue text-encore-blue hover:bg-encore-blue hover:text-primary-foreground"
             >
               <a href="/pricing">View All Pricing Options</a>
             </Button>
@@ -197,7 +197,7 @@ const Index = () => {
               <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow">
                 Start Your Free Trial
               </Button>
-              <Button variant="outline" size="lg" className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground" asChild>
+              <Button variant="outline" size="lg" className="border-encore-blue text-encore-blue hover:bg-encore-blue hover:text-primary-foreground" asChild>
                 <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
                   Schedule a Demo
                 </a>
