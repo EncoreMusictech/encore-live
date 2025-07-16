@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, Edit, Trash2, AlertTriangle, CheckCircle, Link2, ExternalLink, CalendarIcon, Filter } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Edit, Trash2, AlertTriangle, CheckCircle, Link2, ExternalLink, CalendarIcon, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
@@ -26,6 +27,7 @@ export function RoyaltyAllocationList() {
   const [editingAllocation, setEditingAllocation] = useState<any>(null);
   const [matchingAllocation, setMatchingAllocation] = useState<any>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedAllocations, setSelectedAllocations] = useState<Set<string>>(new Set());
   const { allocations, loading, deleteAllocation, refreshAllocations } = useRoyaltyAllocations();
 
   const filteredAllocations = allocations.filter(allocation => {
@@ -77,11 +79,44 @@ export function RoyaltyAllocationList() {
     setDateTo(undefined);
   };
 
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedAllocations(new Set(filteredAllocations.map(a => a.id)));
+    } else {
+      setSelectedAllocations(new Set());
+    }
+  };
+
+  const handleSelectOne = (allocationId: string, checked: boolean) => {
+    const newSelected = new Set(selectedAllocations);
+    if (checked) {
+      newSelected.add(allocationId);
+    } else {
+      newSelected.delete(allocationId);
+    }
+    setSelectedAllocations(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    for (const id of selectedAllocations) {
+      await deleteAllocation(id);
+    }
+    setSelectedAllocations(new Set());
+  };
+
+  const clearSelection = () => {
+    setSelectedAllocations(new Set());
+  };
+
   const validateSplits = (allocation: any) => {
     // This would validate that splits total 100%
     // For now, return true
     return true;
   };
+
+  const isAllSelected = filteredAllocations.length > 0 && selectedAllocations.size === filteredAllocations.length;
+  const isPartiallySelected = selectedAllocations.size > 0 && selectedAllocations.size < filteredAllocations.length;
 
   if (loading) {
     return <div className="p-8 text-center">Loading royalties...</div>;
@@ -214,11 +249,57 @@ export function RoyaltyAllocationList() {
         </div>
       )}
 
+      {/* Bulk Actions Bar */}
+      {selectedAllocations.size > 0 && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-sm text-blue-800">
+            <CheckCircle className="h-4 w-4" />
+            {selectedAllocations.size} royalties selected
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={clearSelection}>
+              <X className="h-4 w-4 mr-1" />
+              Clear Selection
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete Selected
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Selected Royalties</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete {selectedAllocations.size} selected royalties and all associated data. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete {selectedAllocations.size} Royalties
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="border rounded-md">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all royalties"
+                  {...(isPartiallySelected && { 'data-state': 'indeterminate' })}
+                />
+              </TableHead>
               <TableHead>Royalty ID</TableHead>
               <TableHead>Statement ID</TableHead>
               <TableHead>Source</TableHead>
@@ -239,6 +320,13 @@ export function RoyaltyAllocationList() {
           <TableBody>
             {filteredAllocations.map((allocation) => (
               <TableRow key={allocation.id}>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedAllocations.has(allocation.id)}
+                    onCheckedChange={(checked) => handleSelectOne(allocation.id, checked as boolean)}
+                    aria-label={`Select royalty ${allocation.royalty_id}`}
+                  />
+                </TableCell>
                 <TableCell className="font-medium">
                   <code className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
                     {allocation.royalty_id}
