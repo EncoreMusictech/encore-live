@@ -11,6 +11,7 @@ import { FieldMappingDialog } from "./FieldMappingDialog";
 import { SongMatchingDialog } from "./SongMatchingDialog";
 import { EncoreMapper, DEFAULT_ENCORE_MAPPING } from "@/lib/encore-mapper";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RoyaltiesImportPreviewProps {
   record: RoyaltiesImportStaging;
@@ -87,6 +88,56 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
       },
     };
     setLocalRecord(updatedRecord);
+  };
+
+  const handleSongMatching = async () => {
+    // Ensure we have a batch_id before opening the dialog
+    let batchId = localRecord.batch_id;
+    
+    if (!batchId) {
+      try {
+        // Create a reconciliation batch for this staging record
+        const { data: batchData, error: batchError } = await supabase
+          .from('reconciliation_batches')
+          .insert({
+            user_id: localRecord.user_id,
+            source: localRecord.detected_source as any,
+            date_received: new Date().toISOString().split('T')[0],
+            statement_period_start: new Date().toISOString().split('T')[0],
+            statement_period_end: new Date().toISOString().split('T')[0],
+            linked_statement_id: localRecord.id,
+            notes: `Auto-created batch for ${localRecord.original_filename}`,
+          })
+          .select()
+          .single();
+
+        if (batchError) throw batchError;
+
+        batchId = batchData.id;
+
+        // Update the staging record with the batch_id
+        await updateStagingRecord(localRecord.id, { batch_id: batchId });
+        
+        // Update local record
+        const updatedRecord = { ...localRecord, batch_id: batchId };
+        setLocalRecord(updatedRecord);
+
+        toast({
+          title: "Batch Created",
+          description: "Created reconciliation batch for song matching",
+        });
+      } catch (error) {
+        console.error('Error creating batch:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create reconciliation batch",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    setShowSongMatchingDialog(true);
   };
 
   const handleApproveAndProcess = async () => {
@@ -476,7 +527,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
               <Users className="h-4 w-4 mr-2" />
               Match Payees
             </Button>
-            <Button variant="outline" onClick={() => setShowSongMatchingDialog(true)}>
+            <Button variant="outline" onClick={handleSongMatching}>
               <Music className="h-4 w-4 mr-2" />
               Song Matching
             </Button>
