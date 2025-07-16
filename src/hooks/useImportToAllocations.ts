@@ -94,7 +94,15 @@ export function useImportToAllocations() {
         statement_id: stagingRecord.statement_id,
         staging_record_id: stagingRecordId,
         ownership_splits: row.ownership_splits || {},
-        comments: `Imported from ${stagingRecord.detected_source} statement: ${stagingRecord.original_filename}`
+        comments: `Imported from ${stagingRecord.detected_source} statement: ${stagingRecord.original_filename}`,
+        // Store ALL mapped data fields for complete replication
+        mapped_data: {
+          ...row,
+          // Add Statement ID to the mapped data so it appears in the table
+          'Statement ID': stagingRecord.statement_id,
+          // Ensure we preserve the original source
+          'Statement Source': row['Statement Source'] || stagingRecord.detected_source
+        }
       } as RoyaltyAllocationInsert));
 
       // Insert allocations (cast to any to bypass TypeScript issue with auto-generated fields)

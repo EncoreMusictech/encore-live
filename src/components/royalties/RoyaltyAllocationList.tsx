@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { RoyaltyAllocationForm } from "./RoyaltyAllocationForm";
 import { AllocationSongMatchDialog } from "./AllocationSongMatchDialog";
+import { ENCORE_STANDARD_FIELDS } from "@/lib/encore-mapper";
 
 export function RoyaltyAllocationList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -103,6 +104,73 @@ export function RoyaltyAllocationList() {
     return true;
   };
 
+  // Get all available columns from mapped data across all allocations
+  const getAllAvailableColumns = () => {
+    if (filteredAllocations.length === 0) return [];
+    
+    const allFields = new Set<string>();
+    
+    // First, add the fixed columns we always want to show
+    allFields.add('Checkbox');
+    allFields.add('Royalty ID');
+    allFields.add('Statement ID');
+    
+    // Add all fields from mapped_data across all allocations
+    filteredAllocations.forEach(allocation => {
+      if ((allocation as any).mapped_data && typeof (allocation as any).mapped_data === 'object') {
+        Object.keys((allocation as any).mapped_data).forEach(key => {
+          if (!key.startsWith('_')) { // Exclude internal fields
+            allFields.add(key);
+          }
+        });
+      }
+    });
+    
+    allFields.add('Actions');
+    
+    // Convert to array and sort to match ENCORE standard order
+    const fieldsArray = Array.from(allFields);
+    const orderedFields = ['Checkbox', 'Royalty ID', 'Statement ID'];
+    
+    // Add ENCORE standard fields in order if they exist
+    ENCORE_STANDARD_FIELDS.forEach(field => {
+      if (fieldsArray.includes(field)) {
+        orderedFields.push(field);
+      }
+    });
+    
+    // Add any remaining fields
+    fieldsArray.forEach(field => {
+      if (!orderedFields.includes(field)) {
+        orderedFields.push(field);
+      }
+    });
+    
+    return orderedFields;
+  };
+
+  const getFieldValue = (allocation: any, fieldName: string) => {
+    switch (fieldName) {
+      case 'Royalty ID':
+        return allocation.royalty_id;
+      case 'Statement ID':
+        return allocation.statement_id;
+      case 'Actions':
+      case 'Checkbox':
+        return null; // These are handled specially
+      default:
+        // Check if it's in mapped_data first, then fall back to direct properties
+        if ((allocation as any).mapped_data && (allocation as any).mapped_data[fieldName] !== undefined) {
+          return (allocation as any).mapped_data[fieldName];
+        }
+        // Fallback to direct properties for backward compatibility
+        return allocation[fieldName.toLowerCase().replace(/\s+/g, '_')] || 
+               allocation[fieldName] || 
+               'N/A';
+    }
+  };
+
+  const allAvailableColumns = getAllAvailableColumns();
   const isAllSelected = filteredAllocations.length > 0 && selectedAllocations.size === filteredAllocations.length;
   const isPartiallySelected = selectedAllocations.size > 0 && selectedAllocations.size < filteredAllocations.length;
 
@@ -250,153 +318,145 @@ export function RoyaltyAllocationList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={isAllSelected}
-                  onCheckedChange={handleSelectAll}
-                  aria-label="Select all royalties"
-                  {...(isPartiallySelected && { 'data-state': 'indeterminate' })}
-                />
-              </TableHead>
-              <TableHead>Royalty ID</TableHead>
-              <TableHead>Statement ID</TableHead>
-              <TableHead>Quarter</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead>Revenue Source</TableHead>
-              <TableHead>Work Identifier</TableHead>
-              <TableHead>Work Title</TableHead>
-              <TableHead>Work Writers</TableHead>
-              <TableHead>Share</TableHead>
-              <TableHead>Media Type</TableHead>
-              <TableHead>Media Sub-Type</TableHead>
-              <TableHead>Country</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>Gross</TableHead>
-              <TableHead>Net</TableHead>
-              <TableHead>ISWC</TableHead>
-              <TableHead>ISRC</TableHead>
-              <TableHead>Actions</TableHead>
+              {allAvailableColumns.map((columnName) => (
+                <TableHead key={columnName} className={columnName === 'Checkbox' ? 'w-12' : ''}>
+                  {columnName === 'Checkbox' ? (
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all royalties"
+                      {...(isPartiallySelected && { 'data-state': 'indeterminate' })}
+                    />
+                  ) : (
+                    columnName
+                  )}
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredAllocations.map((allocation) => (
               <TableRow key={allocation.id}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedAllocations.has(allocation.id)}
-                    onCheckedChange={(checked) => handleSelectOne(allocation.id, checked as boolean)}
-                    aria-label={`Select royalty ${allocation.royalty_id}`}
-                  />
-                </TableCell>
-                <TableCell className="font-medium">
-                  <code className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
-                    {allocation.royalty_id}
-                  </code>
-                </TableCell>
-                <TableCell className="font-mono text-sm">
-                  {allocation.statement_id ? (
-                    <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
-                      {allocation.statement_id}
-                    </code>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">N/A</span>
-                  )}
-                </TableCell>
-                <TableCell>{allocation.quarter || 'N/A'}</TableCell>
-                <TableCell>
-                  {allocation.source ? (
-                    <Badge variant="outline">{allocation.source}</Badge>
-                  ) : 'N/A'}
-                </TableCell>
-                <TableCell>{allocation.revenue_source || 'N/A'}</TableCell>
-                <TableCell>
-                  <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                    {allocation.work_identifier || 'N/A'}
-                  </code>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {allocation.song_title}
-                    {!allocation.copyright_id && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setMatchingAllocation(allocation)}
-                        className="text-orange-600 hover:text-orange-700"
-                        title="Song not matched - click to match"
-                      >
-                        <Link2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>{allocation.work_writers || 'N/A'}</TableCell>
-                <TableCell>{allocation.share || 'N/A'}</TableCell>
-                <TableCell>{allocation.media_type || 'N/A'}</TableCell>
-                <TableCell>{allocation.media_sub_type || 'N/A'}</TableCell>
-                <TableCell>{allocation.country || 'N/A'}</TableCell>
-                <TableCell>{allocation.quantity || 'N/A'}</TableCell>
-                <TableCell className="font-medium">
-                  ${allocation.gross_amount?.toFixed(2) || allocation.gross_royalty_amount?.toFixed(2) || '0.00'}
-                </TableCell>
-                <TableCell className="font-medium">
-                  ${allocation.net_amount?.toFixed(2) || '0.00'}
-                </TableCell>
-                <TableCell>{allocation.iswc || 'N/A'}</TableCell>
-                <TableCell>{allocation.isrc || 'N/A'}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" onClick={() => setEditingAllocation(allocation)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>Edit Royalty</DialogTitle>
-                        </DialogHeader>
-                        <RoyaltyAllocationForm
-                          allocation={editingAllocation}
-                          onCancel={() => setEditingAllocation(null)}
+                {allAvailableColumns.map((columnName) => {
+                  if (columnName === 'Checkbox') {
+                    return (
+                      <TableCell key={columnName}>
+                        <Checkbox
+                          checked={selectedAllocations.has(allocation.id)}
+                          onCheckedChange={(checked) => handleSelectOne(allocation.id, checked as boolean)}
+                          aria-label={`Select royalty ${allocation.royalty_id}`}
                         />
-                      </DialogContent>
-                    </Dialog>
-                    
-                    {!allocation.copyright_id && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setMatchingAllocation(allocation)}
-                        title="Match to copyright"
-                      >
-                        <Link2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete the royalty "{allocation.royalty_id}" and all associated data.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(allocation.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
+                      </TableCell>
+                    );
+                  }
+
+                  if (columnName === 'Actions') {
+                    return (
+                      <TableCell key={columnName}>
+                        <div className="flex items-center gap-1">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="sm" onClick={() => setEditingAllocation(allocation)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>Edit Royalty</DialogTitle>
+                              </DialogHeader>
+                              <RoyaltyAllocationForm
+                                allocation={editingAllocation}
+                                onCancel={() => setEditingAllocation(null)}
+                              />
+                            </DialogContent>
+                          </Dialog>
+                          
+                          {!allocation.copyright_id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setMatchingAllocation(allocation)}
+                              title="Match to copyright"
+                            >
+                              <Link2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete the royalty "{allocation.royalty_id}" and all associated data.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(allocation.id)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    );
+                  }
+
+                  const value = getFieldValue(allocation, columnName);
+                  
+                  return (
+                    <TableCell key={columnName} className={columnName === 'WORK TITLE' ? 'font-medium' : ''}>
+                      {columnName === 'Royalty ID' ? (
+                        <code className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
+                          {value}
+                        </code>
+                      ) : columnName === 'Statement ID' ? (
+                        value ? (
+                          <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                            {value}
+                          </code>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">N/A</span>
+                        )
+                      ) : columnName === 'WORK TITLE' ? (
+                        <div className="flex items-center gap-2">
+                          {value}
+                          {!allocation.copyright_id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setMatchingAllocation(allocation)}
+                              className="text-orange-600 hover:text-orange-700"
+                              title="Song not matched - click to match"
+                            >
+                              <Link2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      ) : columnName === 'GROSS' || columnName === 'NET' ? (
+                        <span className="font-medium">
+                          ${typeof value === 'number' ? value.toFixed(2) : parseFloat(value || '0').toFixed(2)}
+                        </span>
+                      ) : columnName === 'WORK IDENTIFIER' ? (
+                        <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                          {value || 'N/A'}
+                        </code>
+                      ) : columnName === 'SOURCE' ? (
+                        value ? (
+                          <Badge variant="outline">{value}</Badge>
+                        ) : 'N/A'
+                      ) : (
+                        String(value || 'N/A')
+                      )}
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             ))}
           </TableBody>

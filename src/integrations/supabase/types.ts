@@ -1417,6 +1417,7 @@ export type Database = {
           id: string
           isrc: string | null
           iswc: string | null
+          mapped_data: Json | null
           media_sub_type: string | null
           media_type: string | null
           net_amount: number | null
@@ -1452,6 +1453,7 @@ export type Database = {
           id?: string
           isrc?: string | null
           iswc?: string | null
+          mapped_data?: Json | null
           media_sub_type?: string | null
           media_type?: string | null
           net_amount?: number | null
@@ -1487,6 +1489,7 @@ export type Database = {
           id?: string
           isrc?: string | null
           iswc?: string | null
+          mapped_data?: Json | null
           media_sub_type?: string | null
           media_type?: string | null
           net_amount?: number | null
