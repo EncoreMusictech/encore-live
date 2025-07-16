@@ -211,6 +211,7 @@ export function SongMatchingDialog({
           song_title: match.songTitle,
           artist: match.artist,
           gross_royalty_amount: match.grossAmount,
+          work_id: null, // Explicitly set to null so trigger can generate it
         };
 
         // Create allocations for matched songs
