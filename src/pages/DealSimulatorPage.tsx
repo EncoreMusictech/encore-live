@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Calculator, Music, BarChart3 } from "lucide-react";
+import { Loader2, Search, Calculator, Music, BarChart3, ArrowLeft } from "lucide-react";
 
 interface Artist {
   id: string;
@@ -179,6 +179,19 @@ const DealSimulatorPage = () => {
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
+          {/* Back Navigation */}
+          <div className="flex items-center gap-2 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => window.location.href = '/catalog-valuation'}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Catalog Valuation
+            </Button>
+          </div>
+          
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">
               Deal Simulator
