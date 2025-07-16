@@ -122,3 +122,113 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* React DatePicker Custom Styling to match site theme */
+@layer components {
+  .react-datepicker-wrapper {
+    @apply w-full;
+  }
+
+  .react-datepicker__input-container input {
+    @apply w-full;
+  }
+
+  .react-datepicker {
+    @apply bg-popover border border-border rounded-md shadow-lg font-sans;
+    font-family: inherit;
+  }
+
+  .react-datepicker__header {
+    @apply bg-muted border-b border-border rounded-t-md;
+  }
+
+  .react-datepicker__current-month {
+    @apply text-foreground font-semibold text-sm mb-2;
+  }
+
+  .react-datepicker__day-name {
+    @apply text-muted-foreground text-xs font-medium;
+  }
+
+  .react-datepicker__day {
+    @apply text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm text-sm;
+    width: 2rem;
+    height: 2rem;
+    line-height: 2rem;
+  }
+
+  .react-datepicker__day--today {
+    @apply bg-primary text-primary-foreground font-semibold;
+  }
+
+  .react-datepicker__day--selected {
+    @apply bg-primary text-primary-foreground font-semibold;
+  }
+
+  .react-datepicker__day--keyboard-selected {
+    @apply bg-accent text-accent-foreground;
+  }
+
+  .react-datepicker__day--outside-month {
+    @apply text-muted-foreground;
+  }
+
+  .react-datepicker__day--disabled {
+    @apply text-muted-foreground opacity-50 cursor-not-allowed;
+  }
+
+  .react-datepicker__navigation {
+    @apply top-3;
+  }
+
+  .react-datepicker__navigation-icon::before {
+    @apply border-foreground;
+  }
+
+  .react-datepicker__month-dropdown,
+  .react-datepicker__year-dropdown {
+    @apply bg-popover border border-border rounded-md shadow-lg;
+  }
+
+  .react-datepicker__month-option,
+  .react-datepicker__year-option {
+    @apply text-foreground hover:bg-accent hover:text-accent-foreground px-3 py-1;
+  }
+
+  .react-datepicker__month-option--selected,
+  .react-datepicker__year-option--selected {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .react-datepicker__dropdown-container {
+    @apply bg-popover;
+  }
+
+  .react-datepicker__triangle {
+    display: none;
+  }
+
+  .react-datepicker-popper {
+    @apply z-50;
+  }
+
+  .react-datepicker__month-dropdown-container--scroll,
+  .react-datepicker__year-dropdown-container--scroll {
+    @apply max-h-48 overflow-y-auto;
+  }
+
+  .react-datepicker__month-dropdown-container--scroll::-webkit-scrollbar,
+  .react-datepicker__year-dropdown-container--scroll::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  .react-datepicker__month-dropdown-container--scroll::-webkit-scrollbar-track,
+  .react-datepicker__year-dropdown-container--scroll::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  .react-datepicker__month-dropdown-container--scroll::-webkit-scrollbar-thumb,
+  .react-datepicker__year-dropdown-container--scroll::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground rounded;
+  }
+}
