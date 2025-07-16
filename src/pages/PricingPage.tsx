@@ -228,53 +228,6 @@ const bundledPlans = [
   }
 ];
 
-// Add-ons Data
-const addOns = [
-  {
-    id: "cwr-toolkit",
-    name: "CWR Legal Toolkit",
-    price: 29,
-    description: "Add-on to Copyright",
-    features: [
-      "Legal templates",
-      "Compliance checks",
-      "Filing assistance"
-    ]
-  },
-  {
-    id: "dashboard-standalone",
-    name: "Client Dashboard (a la carte)",
-    price: 99, 
-    description: "If not bundled",
-    features: [
-      "Standalone client portal",
-      "Basic reporting",
-      "Mobile access"
-    ]
-  },
-  {
-    id: "api-access",
-    name: "API Access",
-    price: 149,
-    description: "Add-on (or included in Enterprise)",
-    features: [
-      "REST API endpoints",
-      "Developer documentation",
-      "Rate limiting"
-    ]
-  },
-  {
-    id: "white-label",
-    name: "White-labeled Portals",
-    price: 49,
-    description: "Enterprise only",
-    features: [
-      "Custom branding",
-      "Domain mapping",
-      "Logo customization"
-    ]
-  }
-];
 
 // Comparison table data
 const comparisonFeatures = [
@@ -362,7 +315,7 @@ const PricingPage = () => {
 
       <div className="container mx-auto px-4 pb-20">
         <Tabs defaultValue="modules" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto mb-12">
+          <TabsList className="grid w-full grid-cols-3 max-w-xl mx-auto mb-12">
             <TabsTrigger value="modules" className="flex items-center gap-2">
               <Package className="w-4 h-4" />
               Modules
@@ -370,10 +323,6 @@ const PricingPage = () => {
             <TabsTrigger value="bundles" className="flex items-center gap-2">
               <Crown className="w-4 h-4" />
               Bundles
-            </TabsTrigger>
-            <TabsTrigger value="addons" className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Add-ons
             </TabsTrigger>
             <TabsTrigger value="compare" className="flex items-center gap-2">
               <Calculator className="w-4 h-4" />
@@ -566,45 +515,6 @@ const PricingPage = () => {
             </div>
           </TabsContent>
 
-          {/* Add-ons */}
-          <TabsContent value="addons">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold mb-4">Optional Add-ons</h2>
-              <p className="text-muted-foreground">Enhance your plan with additional features and tools</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              {addOns.map((addon) => (
-                <Card key={addon.id} className="transition-all duration-300 hover:shadow-elegant">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{addon.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{addon.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold">${addon.price}</div>
-                        <div className="text-sm text-muted-foreground">/month</div>
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-2">
-                    {addon.features.map((feature, index) => (
-                      <div key={index} className="flex items-center space-x-2 text-sm">
-                        <Check className="h-3 w-3 text-primary flex-shrink-0" />
-                        <span className="text-muted-foreground">{feature}</span>
-                      </div>
-                    ))}
-                    
-                    <Button className="w-full mt-4" variant="outline">
-                      Add to Plan
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
 
           {/* Comparison Table */}
           <TabsContent value="compare">
