@@ -561,6 +561,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         onOpenChange={setShowSongMatchingDialog}
         mappedData={mappedData}
         batchId={localRecord.batch_id} // Can be null/undefined for standalone royalties
+        statementId={localRecord.statement_id} // Pass the statement ID
         onMatchingComplete={handleSongMatchingComplete}
       />
     </div>

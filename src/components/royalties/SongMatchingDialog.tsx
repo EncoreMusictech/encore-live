@@ -29,6 +29,7 @@ interface SongMatchingDialogProps {
   onOpenChange: (open: boolean) => void;
   mappedData: any[];
   batchId?: string; // Made optional since allocations can be created without batches
+  statementId?: string; // Add statement ID prop
   onMatchingComplete: (results: { matched: number; unmatched: number }) => void;
 }
 
@@ -37,6 +38,7 @@ export function SongMatchingDialog({
   onOpenChange,
   mappedData,
   batchId,
+  statementId,
   onMatchingComplete,
 }: SongMatchingDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -218,6 +220,7 @@ export function SongMatchingDialog({
           artist: artist,
           gross_royalty_amount: grossAmount,
           work_id: null, // Explicitly set to null so trigger can generate it
+          statement_id: statementId || null, // Add statement ID
           // ENCORE Standard Fields from mapped data
           quarter: row['QUARTER'] || null,
           source: row['SOURCE'] || null,
@@ -235,6 +238,8 @@ export function SongMatchingDialog({
           // Store ALL mapped data fields for complete replication
           mapped_data: {
             ...row,
+            // Add Statement ID to the mapped data so it appears in the table
+            'Statement ID': statementId,
             // Ensure batch ID is available in mapped data
             'Batch ID': batchId,
             // Add original detected source
