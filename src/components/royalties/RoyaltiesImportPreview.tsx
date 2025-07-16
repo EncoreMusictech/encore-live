@@ -97,81 +97,16 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
   };
 
   const handleSongMatching = async () => {
-    // Ensure we have a batch_id before opening the dialog
-    let batchId = localRecord.batch_id;
-    
-    if (!batchId) {
-      try {
-        // Map detected source to valid royalty_source enum values
-        const mapSourceToEnum = (detectedSource: string): 'DSP' | 'PRO' | 'YouTube' | 'Other' => {
-          const source = detectedSource?.toUpperCase();
-          switch (source) {
-            case 'DSP':
-            case 'SPOTIFY':
-            case 'APPLE MUSIC':
-            case 'STREAMING':
-              return 'DSP';
-            case 'PRO':
-            case 'ASCAP':
-            case 'BMI':
-            case 'SESAC':
-            case 'SOCAN':
-              return 'PRO';
-            case 'YOUTUBE':
-            case 'YT':
-              return 'YouTube';
-            default:
-              return 'Other';
-          }
-        };
-
-        // Create a reconciliation batch for this staging record
-        const { data: batchData, error: batchError } = await supabase
-          .from('reconciliation_batches')
-          .insert({
-            user_id: localRecord.user_id,
-            source: mapSourceToEnum(localRecord.detected_source),
-            date_received: new Date().toISOString().split('T')[0],
-            statement_period_start: null, // Set to null instead of empty dates
-            statement_period_end: null,   // Set to null instead of empty dates
-            linked_statement_id: localRecord.id,
-            notes: `Auto-created batch for ${localRecord.original_filename}`,
-            total_gross_amount: 0,
-          })
-          .select()
-          .single();
-
-        if (batchError) throw batchError;
-
-        batchId = batchData.id;
-
-        // Update the staging record with the batch_id
-        await updateStagingRecord(localRecord.id, { batch_id: batchId });
-        
-        // Update local record - this ensures the dialog gets the correct batch_id
-        const updatedRecord = { ...localRecord, batch_id: batchId };
-        setLocalRecord(updatedRecord);
-
-        toast({
-          title: "Batch Created",
-          description: "Created reconciliation batch for song matching",
-        });
-
-        // Open dialog only after successful batch creation and state update
-        setShowSongMatchingDialog(true);
-      } catch (error) {
-        console.error('Error creating batch:', error);
-        toast({
-          title: "Error",
-          description: "Failed to create reconciliation batch",
-          variant: "destructive",
-        });
-        return;
-      }
-    } else {
-      // If batch already exists, open dialog immediately
-      setShowSongMatchingDialog(true);
+    if (!localRecord.batch_id) {
+      toast({
+        title: "No Batch Linked",
+        description: "This statement must be linked to a reconciliation batch before song matching. Please create or link a batch first.",
+        variant: "destructive",
+      });
+      return;
     }
+    
+    setShowSongMatchingDialog(true);
   };
 
   const handleApproveAndProcess = async () => {
@@ -307,7 +242,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
               <div className="text-sm font-medium text-muted-foreground">Source</div>
               <div className="text-lg font-semibold">{localRecord.detected_source}</div>
@@ -315,6 +250,16 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
             <div>
               <div className="text-sm font-medium text-muted-foreground">Records</div>
               <div className="text-lg font-semibold">{mappedData.length}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">Batch Status</div>
+              <div className="text-lg font-semibold">
+                {localRecord.batch_id ? (
+                  <Badge className="bg-green-100 text-green-800">Linked</Badge>
+                ) : (
+                  <Badge className="bg-gray-100 text-gray-800">Not Linked</Badge>
+                )}
+              </div>
             </div>
             <div>
               <div className="text-sm font-medium text-muted-foreground">Unmapped Fields</div>
@@ -556,13 +501,21 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
               <Users className="h-4 w-4 mr-2" />
               Match Payees
             </Button>
-            <Button variant="outline" onClick={handleSongMatching}>
+            <Button 
+              variant="outline" 
+              onClick={handleSongMatching}
+              disabled={!localRecord.batch_id}
+            >
               <Music className="h-4 w-4 mr-2" />
               Song Matching
             </Button>
           </div>
           <div className="mt-2 text-sm text-muted-foreground">
-            Use "Edit Mappings" to configure field mappings with drag and drop
+            {!localRecord.batch_id ? (
+              <span className="text-orange-600">Song Matching requires this statement to be linked to a reconciliation batch first.</span>
+            ) : (
+              "Use Song Matching to create royalty allocations from matched works."
+            )}
           </div>
         </CardContent>
       </Card>
