@@ -139,8 +139,8 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
     if (mappedData.length === 0) return [];
     const availableFields = Object.keys(mappedData[0]).filter(key => !key.startsWith('_'));
     
-    // Start with Statement Source, then ENCORE fields in order, then any remaining fields
-    const orderedHeaders = ['Statement Source'];
+    // Start with Statement ID, then Statement Source, then ENCORE fields in order, then any remaining fields
+    const orderedHeaders = ['Statement ID', 'Statement Source'];
     
     // Add ENCORE standard fields that exist in the data
     ENCORE_STANDARD_FIELDS.forEach(field => {
@@ -403,7 +403,11 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
                         <TableRow key={index}>
                           {getOrderedHeaders().map((header, cellIndex) => (
                             <TableCell key={cellIndex} className={header === 'WORK TITLE' ? 'font-medium' : ''}>
-                              {header === 'GROSS' || header === 'NET' 
+                              {header === 'Statement ID' ? (
+                                <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                                  {localRecord.statement_id || 'N/A'}
+                                </code>
+                              ) : header === 'GROSS' || header === 'NET' 
                                 ? (typeof row[header] === 'number' ? `$${row[header].toFixed(2)}` : String(row[header] || '-'))
                                 : String(row[header] || '-')
                               }
