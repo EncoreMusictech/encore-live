@@ -259,12 +259,22 @@ export function RoyaltyAllocationList() {
                 />
               </TableHead>
               <TableHead>Royalty ID</TableHead>
-              <TableHead>Work ID</TableHead>
+              <TableHead>Statement ID</TableHead>
+              <TableHead>Quarter</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>Revenue Source</TableHead>
+              <TableHead>Work Identifier</TableHead>
               <TableHead>Work Title</TableHead>
-              <TableHead>Artist</TableHead>
+              <TableHead>Work Writers</TableHead>
+              <TableHead>Share</TableHead>
+              <TableHead>Media Type</TableHead>
+              <TableHead>Media Sub-Type</TableHead>
+              <TableHead>Country</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead>Gross</TableHead>
+              <TableHead>Net</TableHead>
+              <TableHead>ISWC</TableHead>
               <TableHead>ISRC</TableHead>
-              <TableHead>Controlled Status</TableHead>
-              <TableHead>Gross Amount</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -283,9 +293,25 @@ export function RoyaltyAllocationList() {
                     {allocation.royalty_id}
                   </code>
                 </TableCell>
-                <TableCell className="font-medium">
+                <TableCell className="font-mono text-sm">
+                  {allocation.statement_id ? (
+                    <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                      {allocation.statement_id}
+                    </code>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">N/A</span>
+                  )}
+                </TableCell>
+                <TableCell>{allocation.quarter || 'N/A'}</TableCell>
+                <TableCell>
+                  {allocation.source ? (
+                    <Badge variant="outline">{allocation.source}</Badge>
+                  ) : 'N/A'}
+                </TableCell>
+                <TableCell>{allocation.revenue_source || 'N/A'}</TableCell>
+                <TableCell>
                   <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                    {allocation.work_id || 'N/A'}
+                    {allocation.work_identifier || 'N/A'}
                   </code>
                 </TableCell>
                 <TableCell>
@@ -304,18 +330,20 @@ export function RoyaltyAllocationList() {
                     )}
                   </div>
                 </TableCell>
-                <TableCell>{allocation.artist || 'N/A'}</TableCell>
-                <TableCell>{allocation.isrc || 'N/A'}</TableCell>
-                <TableCell>
-                  <Badge 
-                    variant={allocation.controlled_status === 'Controlled' ? 'default' : 'secondary'}
-                  >
-                    {allocation.controlled_status}
-                  </Badge>
+                <TableCell>{allocation.work_writers || 'N/A'}</TableCell>
+                <TableCell>{allocation.share || 'N/A'}</TableCell>
+                <TableCell>{allocation.media_type || 'N/A'}</TableCell>
+                <TableCell>{allocation.media_sub_type || 'N/A'}</TableCell>
+                <TableCell>{allocation.country || 'N/A'}</TableCell>
+                <TableCell>{allocation.quantity || 'N/A'}</TableCell>
+                <TableCell className="font-medium">
+                  ${allocation.gross_amount?.toFixed(2) || allocation.gross_royalty_amount?.toFixed(2) || '0.00'}
                 </TableCell>
                 <TableCell className="font-medium">
-                  ${allocation.gross_royalty_amount?.toFixed(2) || '0.00'}
+                  ${allocation.net_amount?.toFixed(2) || '0.00'}
                 </TableCell>
+                <TableCell>{allocation.iswc || 'N/A'}</TableCell>
+                <TableCell>{allocation.isrc || 'N/A'}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <Dialog>

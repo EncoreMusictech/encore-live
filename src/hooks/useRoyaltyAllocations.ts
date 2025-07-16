@@ -18,6 +18,22 @@ export interface RoyaltyAllocation {
   recoupable_expenses: boolean;
   ownership_splits: any;
   comments?: string;
+  // ENCORE Standard Fields
+  quarter?: string;
+  source?: string;
+  revenue_source?: string;
+  work_identifier?: string;
+  work_writers?: string;
+  share?: string;
+  media_type?: string;
+  media_sub_type?: string;
+  country?: string;
+  quantity?: string;
+  gross_amount?: number;
+  net_amount?: number;
+  iswc?: string;
+  statement_id?: string;
+  staging_record_id?: string;
   created_at: string;
   updated_at: string;
 }

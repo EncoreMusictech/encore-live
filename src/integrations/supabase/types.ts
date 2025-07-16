@@ -1410,17 +1410,32 @@ export type Database = {
             | Database["public"]["Enums"]["controlled_status"]
             | null
           copyright_id: string | null
+          country: string | null
           created_at: string
+          gross_amount: number | null
           gross_royalty_amount: number
           id: string
           isrc: string | null
+          iswc: string | null
+          media_sub_type: string | null
+          media_type: string | null
+          net_amount: number | null
           ownership_splits: Json | null
+          quantity: string | null
+          quarter: string | null
           recoupable_expenses: boolean | null
+          revenue_source: string | null
           royalty_id: string
+          share: string | null
           song_title: string
+          source: string | null
+          staging_record_id: string | null
+          statement_id: string | null
           updated_at: string
           user_id: string
           work_id: string | null
+          work_identifier: string | null
+          work_writers: string | null
         }
         Insert: {
           artist?: string | null
@@ -1430,17 +1445,32 @@ export type Database = {
             | Database["public"]["Enums"]["controlled_status"]
             | null
           copyright_id?: string | null
+          country?: string | null
           created_at?: string
+          gross_amount?: number | null
           gross_royalty_amount?: number
           id?: string
           isrc?: string | null
+          iswc?: string | null
+          media_sub_type?: string | null
+          media_type?: string | null
+          net_amount?: number | null
           ownership_splits?: Json | null
+          quantity?: string | null
+          quarter?: string | null
           recoupable_expenses?: boolean | null
+          revenue_source?: string | null
           royalty_id: string
+          share?: string | null
           song_title: string
+          source?: string | null
+          staging_record_id?: string | null
+          statement_id?: string | null
           updated_at?: string
           user_id: string
           work_id?: string | null
+          work_identifier?: string | null
+          work_writers?: string | null
         }
         Update: {
           artist?: string | null
@@ -1450,17 +1480,32 @@ export type Database = {
             | Database["public"]["Enums"]["controlled_status"]
             | null
           copyright_id?: string | null
+          country?: string | null
           created_at?: string
+          gross_amount?: number | null
           gross_royalty_amount?: number
           id?: string
           isrc?: string | null
+          iswc?: string | null
+          media_sub_type?: string | null
+          media_type?: string | null
+          net_amount?: number | null
           ownership_splits?: Json | null
+          quantity?: string | null
+          quarter?: string | null
           recoupable_expenses?: boolean | null
+          revenue_source?: string | null
           royalty_id?: string
+          share?: string | null
           song_title?: string
+          source?: string | null
+          staging_record_id?: string | null
+          statement_id?: string | null
           updated_at?: string
           user_id?: string
           work_id?: string | null
+          work_identifier?: string | null
+          work_writers?: string | null
         }
         Relationships: [
           {

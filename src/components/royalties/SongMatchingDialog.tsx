@@ -218,6 +218,20 @@ export function SongMatchingDialog({
           artist: artist,
           gross_royalty_amount: grossAmount,
           work_id: null, // Explicitly set to null so trigger can generate it
+          // ENCORE Standard Fields from mapped data
+          quarter: row['QUARTER'] || null,
+          source: row['SOURCE'] || null,
+          revenue_source: row['REVENUE SOURCE'] || null,
+          work_identifier: row['WORK IDENTIFIER'] || null,
+          work_writers: row['WORK WRITERS'] || null,
+          share: row['SHARE'] || null,
+          media_type: row['MEDIA TYPE'] || null,
+          media_sub_type: row['MEDIA SUB-TYPE'] || null,
+          country: row['COUNTRY'] || null,
+          quantity: row['QUANTITY'] || null,
+          gross_amount: parseFloat(row['GROSS'] || '0'),
+          net_amount: parseFloat(row['NET'] || '0'),
+          iswc: row['ISWC'] || null,
         };
 
         // Create allocations based on whether the song was matched
