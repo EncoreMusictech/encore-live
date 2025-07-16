@@ -23,7 +23,13 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
   const [showMappingDialog, setShowMappingDialog] = useState(false);
   const [showSongMatchingDialog, setShowSongMatchingDialog] = useState(false);
   const [localRecord, setLocalRecord] = useState(record);
-  const { updateStagingRecord } = useRoyaltiesImport();
+  const { updateStagingRecord, updateMappingConfig, mappingConfigs } = useRoyaltiesImport();
+  
+  // Get existing mapping for this source
+  const getExistingMapping = () => {
+    const savedConfig = mappingConfigs.find(config => config.source_name === localRecord.detected_source);
+    return savedConfig?.mapping_rules || {};
+  };
   
   const handleMatchPayees = async () => {
     try {
@@ -206,47 +212,42 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
   const requiredFields = ['Song Title', 'Client Name', 'Gross Amount', 'Period Start'];
 
   const handleSaveMapping = async (mapping: { [key: string]: string }) => {
-    console.log('Saving field mapping:', mapping);
-    
     try {
-      // Create a new mapping configuration based on saved mappings
-      const customMapping = { ...DEFAULT_ENCORE_MAPPING };
+      console.log('Applying field mapping:', mapping);
       
-      // Apply user-defined mappings
-      Object.entries(mapping).forEach(([targetField, sourceField]) => {
-        // Remove 'required-' or 'validation-' prefix from target field
-        const cleanTargetField = targetField.replace(/^(required-|validation-)/, '');
-        
-        // Update the mapping for the detected source
-        if (customMapping[cleanTargetField]) {
-          customMapping[cleanTargetField][localRecord.detected_source] = sourceField;
-        }
-      });
+      // Get the current raw data
+      const rawData = localRecord.raw_data;
+      console.log('Raw data for re-mapping:', rawData);
+      
+      if (!Array.isArray(rawData) || rawData.length === 0) {
+        console.error('No raw data available for re-mapping');
+        return;
+      }
 
-      // Re-run the mapping and validation with the new configuration
-      const mapper = new EncoreMapper(customMapping);
-      const result = mapper.mapData(rawData, localRecord.detected_source);
+      // Find saved mapping configuration for this source
+      const savedConfig = mappingConfigs.find(config => config.source_name === localRecord.detected_source);
+      const mapper = new EncoreMapper(undefined, savedConfig ? [savedConfig] : []);
+      
+      // Apply the user's field mappings to the data
+      const result = mapper.mapData(rawData, localRecord.detected_source, mapping);
+      console.log('Re-mapping result:', result);
 
-      // Update the local record state
-      const updatedRecord = {
-        ...localRecord,
-        mapped_data: result.mappedData,
-        unmapped_fields: result.unmappedFields,
-        validation_status: {
-          errors: result.validationErrors,
-          last_validated: new Date().toISOString(),
-        },
-        processing_status: result.validationErrors.length > 0 ? 'needs_review' as const : 'processed' as const,
-      };
+      // Save the mapping to database for future use
+      const sourceHeaders = rawData.length > 0 ? Object.keys(rawData[0]) : [];
+      await updateMappingConfig(
+        localRecord.detected_source,
+        mapping,
+        sourceHeaders
+      );
 
-      setLocalRecord(updatedRecord);
-
-      // Update the record in the database
+      // Update the staging record with the new mapped data and field mappings
       await updateStagingRecord(localRecord.id, {
         mapped_data: result.mappedData,
         unmapped_fields: result.unmappedFields,
         validation_status: {
           errors: result.validationErrors,
+          hasErrors: result.validationErrors.length > 0,
+          hasUnmapped: result.unmappedFields.length > 0,
           last_validated: new Date().toISOString(),
         },
         processing_status: result.validationErrors.length > 0 ? 'needs_review' : 'processed',
@@ -254,7 +255,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
 
       toast({
         title: "Success",
-        description: `Field mapping saved and data re-validated. ${result.validationErrors.length === 0 ? 'No validation errors found!' : `${result.validationErrors.length} validation errors remaining.`}`,
+        description: `Field mapping saved and data re-validated. Mappings will be remembered for future ${localRecord.detected_source} imports.`,
       });
 
       setShowMappingDialog(false);
@@ -573,6 +574,8 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         unmappedFields={localRecord.unmapped_fields}
         validationErrors={errors}
         requiredFields={requiredFields}
+        detectedSource={localRecord.detected_source}
+        existingMapping={getExistingMapping()}
         onSaveMapping={handleSaveMapping}
       />
 

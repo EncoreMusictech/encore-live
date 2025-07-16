@@ -125,12 +125,22 @@ export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
 
 export class EncoreMapper {
   private mapping: EncoreMapping;
+  private customMappings: Record<string, any> = {};
 
-  constructor(customMapping?: EncoreMapping) {
+  constructor(customMapping?: EncoreMapping, savedMappings?: any[]) {
     this.mapping = customMapping || DEFAULT_ENCORE_MAPPING;
+    
+    // Apply saved mappings from database
+    if (savedMappings) {
+      savedMappings.forEach(config => {
+        if (config.mapping_rules) {
+          this.customMappings[config.source_name] = config.mapping_rules;
+        }
+      });
+    }
   }
 
-  mapData(sourceData: Record<string, any>[], detectedSource: string): MappedResult {
+  mapData(sourceData: Record<string, any>[], detectedSource: string, userFieldMappings?: { [key: string]: string }): MappedResult {
     const mappedData: Record<string, any>[] = [];
     const unmappedFields = new Set<string>();
     const validationErrors: string[] = [];
@@ -138,17 +148,22 @@ export class EncoreMapper {
     // Get source headers from first row
     const sourceHeaders = sourceData.length > 0 ? Object.keys(sourceData[0]) : [];
 
+    // Apply custom mappings if available
+    const effectiveMapping = this.getEffectiveMapping(detectedSource, userFieldMappings);
+
     // Find unmapped fields
     sourceHeaders.forEach(header => {
-      const isMapped = Object.values(this.mapping).some(sourceMap => {
-        const sourceField = sourceMap[detectedSource];
+      const isMapped = Object.values(effectiveMapping).some(sourceField => {
         if (Array.isArray(sourceField)) {
           return sourceField.includes(header);
         }
         return sourceField === header;
       });
 
-      if (!isMapped) {
+      // Also check if it's mapped in user field mappings
+      const isUserMapped = userFieldMappings && Object.values(userFieldMappings).includes(header);
+
+      if (!isMapped && !isUserMapped) {
         unmappedFields.add(header);
       }
     });
@@ -160,10 +175,8 @@ export class EncoreMapper {
       // Add standard fields
       mappedRow['Statement Source'] = detectedSource;
 
-      // Map each ENCORE field
-      Object.entries(this.mapping).forEach(([encoreField, sourceMap]) => {
-        const sourceField = sourceMap[detectedSource];
-        
+      // Map each ENCORE field using effective mapping
+      Object.entries(effectiveMapping).forEach(([encoreField, sourceField]) => {
         if (sourceField) {
           if (Array.isArray(sourceField)) {
             // Handle multiple possible source fields
@@ -181,6 +194,15 @@ export class EncoreMapper {
           }
         }
       });
+
+      // Apply user field mappings (these override default mappings)
+      if (userFieldMappings) {
+        Object.entries(userFieldMappings).forEach(([encoreField, sourceField]) => {
+          if (row[sourceField] !== undefined) {
+            mappedRow[encoreField] = this.normalizeValue(row[sourceField], encoreField, detectedSource);
+          }
+        });
+      }
 
       // Validate required fields using ENCORE standard fields
       const requiredFields = ['WORK TITLE', 'WORK WRITERS', 'GROSS'];
@@ -339,5 +361,42 @@ export class EncoreMapper {
       }
     });
     return result;
+  }
+
+  getEffectiveMapping(detectedSource: string, userFieldMappings?: { [key: string]: string }): Record<string, string | string[]> {
+    // Start with custom mappings from database if available
+    const customMapping = this.customMappings[detectedSource] || {};
+    
+    // Apply default mappings
+    const effectiveMapping: Record<string, string | string[]> = {};
+    Object.entries(this.mapping).forEach(([encoreField, sourceMap]) => {
+      if (sourceMap[detectedSource]) {
+        effectiveMapping[encoreField] = sourceMap[detectedSource];
+      }
+    });
+
+    // Override with custom mappings from database
+    Object.entries(customMapping).forEach(([encoreField, sourceField]) => {
+      if (sourceField && (typeof sourceField === 'string' || Array.isArray(sourceField))) {
+        effectiveMapping[encoreField] = sourceField;
+      }
+    });
+
+    // Override with user field mappings (highest priority)
+    if (userFieldMappings) {
+      Object.entries(userFieldMappings).forEach(([encoreField, sourceField]) => {
+        if (sourceField) {
+          effectiveMapping[encoreField] = sourceField;
+        }
+      });
+    }
+
+    return effectiveMapping;
+  }
+
+  saveMapping(detectedSource: string, userFieldMappings: { [key: string]: string }) {
+    // Store in local custom mappings
+    this.customMappings[detectedSource] = { ...this.customMappings[detectedSource], ...userFieldMappings };
+    return this.customMappings[detectedSource];
   }
 }

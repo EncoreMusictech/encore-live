@@ -136,6 +136,76 @@ export function useRoyaltiesImport(batchId?: string) {
     }
   };
 
+  const updateMappingConfig = async (sourceName: string, mappingRules: any, headerPatterns: string[]) => {
+    if (!user) return null;
+
+    try {
+      // Check if mapping config exists for this source
+      const { data: existingConfig } = await supabase
+        .from('source_mapping_config')
+        .select('*')
+        .eq('source_name', sourceName)
+        .eq('is_active', true)
+        .single();
+
+      if (existingConfig) {
+        // Update existing mapping
+        const { data, error } = await supabase
+          .from('source_mapping_config')
+          .update({
+            mapping_rules: mappingRules,
+            header_patterns: headerPatterns,
+            version: '1.1', // Increment version for user customizations
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingConfig.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        await fetchMappingConfigs();
+        toast({
+          title: "Mapping Updated",
+          description: `Updated mapping configuration for ${sourceName}`,
+        });
+        
+        return data;
+      } else {
+        // Create new mapping config
+        const { data, error } = await supabase
+          .from('source_mapping_config')
+          .insert({
+            source_name: sourceName,
+            mapping_rules: mappingRules,
+            header_patterns: headerPatterns,
+            version: '1.1',
+            is_active: true,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        await fetchMappingConfigs();
+        toast({
+          title: "Mapping Saved",
+          description: `Created new mapping configuration for ${sourceName}`,
+        });
+        
+        return data;
+      }
+    } catch (error) {
+      console.error('Error updating mapping config:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save mapping configuration",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   const deleteStagingRecord = async (id: string) => {
     try {
       const { error } = await supabase
@@ -179,6 +249,7 @@ export function useRoyaltiesImport(batchId?: string) {
     createStagingRecord,
     updateStagingRecord,
     deleteStagingRecord,
+    updateMappingConfig,
     refreshRecords: fetchStagingRecords,
   };
 }

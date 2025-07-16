@@ -34,7 +34,7 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
     { name: "Save to Staging", status: 'pending' },
   ]);
 
-  const { createStagingRecord, mappingConfigs } = useRoyaltiesImport();
+  const { createStagingRecord, mappingConfigs, updateMappingConfig } = useRoyaltiesImport();
 
   const updateStep = (stepIndex: number, status: ProcessingStep['status'], message?: string) => {
     setSteps(prev => prev.map((step, index) => 
@@ -80,10 +80,15 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
       }
       updateStep(1, 'completed', `Detected: ${detectedSource} (${Math.round(parsedData.confidence * 100)}% confidence)`);
 
-      // Step 3: Map Fields
+      // Step 3: Map Fields with saved mappings
       updateStep(2, 'processing');
-      const mappingResult = mapper.mapData(parsedData.data, detectedSource);
-      updateStep(2, 'completed', `Mapped ${mappingResult.mappedData.length} records`);
+      
+      // Find saved mapping configuration for this source
+      const savedConfig = mappingConfigs.find(config => config.source_name === detectedSource);
+      const mapperWithConfig = new EncoreMapper(undefined, savedConfig ? [savedConfig] : []);
+      
+      const mappingResult = mapperWithConfig.mapData(parsedData.data, detectedSource);
+      updateStep(2, 'completed', `Mapped ${mappingResult.mappedData.length} records using ${savedConfig ? 'saved' : 'default'} mappings`);
 
       // Step 4: Validate Data
       updateStep(3, 'processing');

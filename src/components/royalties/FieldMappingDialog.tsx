@@ -15,6 +15,8 @@ interface FieldMappingDialogProps {
   unmappedFields: string[];
   validationErrors: string[];
   requiredFields: string[];
+  detectedSource?: string;
+  existingMapping?: { [key: string]: string };
   onSaveMapping: (mapping: { [key: string]: string }) => void;
 }
 
@@ -31,6 +33,8 @@ export function FieldMappingDialog({
   unmappedFields, 
   validationErrors,
   requiredFields,
+  detectedSource,
+  existingMapping = {},
   onSaveMapping 
 }: FieldMappingDialogProps) {
   // Required ENCORE fields
@@ -46,8 +50,12 @@ export function FieldMappingDialog({
       : 'Optional ENCORE standard field'
   }));
 
-  const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({});
-  const [availableFields, setAvailableFields] = useState(unmappedFields);
+  const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>(existingMapping);
+  const [availableFields, setAvailableFields] = useState(() => {
+    // Remove already mapped fields from available fields
+    const mappedValues = Object.values(existingMapping);
+    return unmappedFields.filter(field => !mappedValues.includes(field));
+  });
 
   const handleDragEnd = (result: DropResult) => {
     const { source, destination } = result;
@@ -131,6 +139,7 @@ export function FieldMappingDialog({
           <DialogDescription>
             Drag and drop fields from the left to map them to ENCORE standard fields. 
             Required fields must be mapped for successful processing.
+            {detectedSource && ` Current source: ${detectedSource} - Your mappings will be remembered for future imports.`}
           </DialogDescription>
         </DialogHeader>
 
