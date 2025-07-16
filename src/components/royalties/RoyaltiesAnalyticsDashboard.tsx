@@ -16,10 +16,30 @@ export function RoyaltiesAnalyticsDashboard() {
   const { allocations, loading } = useRoyaltyAllocations();
   const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
+  const [selectedControlledWriter, setSelectedControlledWriter] = useState<string>("all");
   const [selectedTerritory, setSelectedTerritory] = useState<string>("all");
   const [selectedSource, setSelectedSource] = useState<string>("all");
+  const [selectedWorkTitle, setSelectedWorkTitle] = useState<string>("all");
+  const [selectedMediaType, setSelectedMediaType] = useState<string>("all");
   const [aiInsights, setAiInsights] = useState<string>("");
   const [loadingInsights, setLoadingInsights] = useState(false);
+
+  // Get unique filter values
+  const filterOptions = useMemo(() => {
+    const controlledWriters = [...new Set(allocations.map(a => a.controlled_status).filter(Boolean))];
+    const workTitles = [...new Set(allocations.map(a => a.song_title).filter(Boolean))];
+    const artists = [...new Set(allocations.map(a => a.artist).filter(Boolean))];
+    
+    return {
+      controlledWriters,
+      workTitles,
+      artists,
+      // Mock data for territory, source, and media type since they're not in the current schema
+      territories: ['US', 'UK', 'Canada', 'Australia', 'Germany', 'France'],
+      sources: ['Spotify', 'Apple Music', 'YouTube', 'Amazon Music', 'ASCAP', 'BMI'],
+      mediaTypes: ['Streaming', 'Radio', 'TV', 'Film', 'Commercial', 'Digital Download']
+    };
+  }, [allocations]);
 
   // Process data for analytics
   const analyticsData = useMemo(() => {
@@ -47,6 +67,17 @@ export function RoyaltiesAnalyticsDashboard() {
         return createdDate >= periodStart;
       });
     }
+
+    if (selectedControlledWriter !== "all") {
+      filtered = filtered.filter(allocation => allocation.controlled_status === selectedControlledWriter);
+    }
+
+    if (selectedWorkTitle !== "all") {
+      filtered = filtered.filter(allocation => allocation.song_title === selectedWorkTitle);
+    }
+
+    // Note: Territory, Source, and Media Type filters would require additional data
+    // For now, these are placeholders that could be implemented when the data model includes these fields
 
     // Generate quarterly data
     const quarterlyData = [
@@ -83,7 +114,7 @@ export function RoyaltiesAnalyticsDashboard() {
       total: filtered.reduce((sum, a) => sum + a.gross_royalty_amount, 0),
       count: filtered.length
     };
-  }, [allocations, selectedPeriod, selectedTerritory, selectedSource]);
+  }, [allocations, selectedPeriod, selectedControlledWriter, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType]);
 
   const generateAIInsights = async () => {
     setLoadingInsights(true);
@@ -91,7 +122,7 @@ export function RoyaltiesAnalyticsDashboard() {
       const { data, error } = await supabase.functions.invoke('royalties-ai-insights', {
         body: { 
           analyticsData,
-          filters: { selectedPeriod, selectedTerritory, selectedSource }
+          filters: { selectedPeriod, selectedControlledWriter, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
         }
       });
 
@@ -114,7 +145,7 @@ export function RoyaltiesAnalyticsDashboard() {
       summary: {
         totalAmount: analyticsData.total,
         totalCount: analyticsData.count,
-        filters: { selectedPeriod, selectedTerritory, selectedSource }
+        filters: { selectedPeriod, selectedControlledWriter, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
       },
       quarterly: analyticsData.quarterly,
       controlled: analyticsData.controlled,
@@ -152,7 +183,7 @@ export function RoyaltiesAnalyticsDashboard() {
         
         <div className="flex flex-wrap gap-2">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-36">
               <Calendar className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Period" />
             </SelectTrigger>
@@ -162,6 +193,71 @@ export function RoyaltiesAnalyticsDashboard() {
               <SelectItem value="q2">Q2 2024</SelectItem>
               <SelectItem value="q3">Q3 2024</SelectItem>
               <SelectItem value="q4">Q4 2024</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedControlledWriter} onValueChange={setSelectedControlledWriter}>
+            <SelectTrigger className="w-40">
+              <Users className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Writer Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              {filterOptions.controlledWriters.map((status) => (
+                <SelectItem key={status} value={status}>{status}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedTerritory} onValueChange={setSelectedTerritory}>
+            <SelectTrigger className="w-36">
+              <Globe className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Territory" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Territories</SelectItem>
+              {filterOptions.territories.map((territory) => (
+                <SelectItem key={territory} value={territory}>{territory}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedSource} onValueChange={setSelectedSource}>
+            <SelectTrigger className="w-36">
+              <Radio className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Source" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sources</SelectItem>
+              {filterOptions.sources.map((source) => (
+                <SelectItem key={source} value={source}>{source}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedWorkTitle} onValueChange={setSelectedWorkTitle}>
+            <SelectTrigger className="w-48">
+              <FileText className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Work Title" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Works</SelectItem>
+              {filterOptions.workTitles.slice(0, 20).map((title) => (
+                <SelectItem key={title} value={title}>{title.length > 30 ? title.substring(0, 30) + '...' : title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedMediaType} onValueChange={setSelectedMediaType}>
+            <SelectTrigger className="w-36">
+              <Radio className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Media Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Media</SelectItem>
+              {filterOptions.mediaTypes.map((type) => (
+                <SelectItem key={type} value={type}>{type}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
@@ -219,9 +315,12 @@ export function RoyaltiesAnalyticsDashboard() {
           <CardContent>
             <div className="flex flex-wrap gap-1">
               {selectedPeriod !== "all" && <Badge variant="secondary">{selectedPeriod}</Badge>}
+              {selectedControlledWriter !== "all" && <Badge variant="secondary">{selectedControlledWriter}</Badge>}
               {selectedTerritory !== "all" && <Badge variant="secondary">{selectedTerritory}</Badge>}
               {selectedSource !== "all" && <Badge variant="secondary">{selectedSource}</Badge>}
-              {selectedPeriod === "all" && selectedTerritory === "all" && selectedSource === "all" && (
+              {selectedWorkTitle !== "all" && <Badge variant="secondary">{selectedWorkTitle.length > 20 ? selectedWorkTitle.substring(0, 20) + '...' : selectedWorkTitle}</Badge>}
+              {selectedMediaType !== "all" && <Badge variant="secondary">{selectedMediaType}</Badge>}
+              {selectedPeriod === "all" && selectedControlledWriter === "all" && selectedTerritory === "all" && selectedSource === "all" && selectedWorkTitle === "all" && selectedMediaType === "all" && (
                 <Badge variant="outline">No filters</Badge>
               )}
             </div>
