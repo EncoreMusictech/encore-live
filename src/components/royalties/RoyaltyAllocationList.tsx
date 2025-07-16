@@ -251,7 +251,6 @@ export function RoyaltyAllocationList() {
               <TableHead>Net</TableHead>
               <TableHead>Share</TableHead>
               <TableHead>Quantity</TableHead>
-              <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -297,23 +296,6 @@ export function RoyaltyAllocationList() {
                 </TableCell>
                 <TableCell>{allocation.contract_terms?.share || allocation.ownership_splits?.writer_share || 'N/A'}</TableCell>
                 <TableCell>{allocation.contract_terms?.quantity || allocation.contract_terms?.units || 'N/A'}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1 flex-wrap">
-                    <Badge className={getControlledStatusColor(allocation.controlled_status)}>
-                      {allocation.controlled_status}
-                    </Badge>
-                    {allocation.recoupable_expenses && (
-                      <Badge className="bg-orange-100 text-orange-800">
-                        Recoupable
-                      </Badge>
-                    )}
-                    {allocation.copyright_id && (
-                      <Badge className="bg-green-100 text-green-800">
-                        Matched
-                      </Badge>
-                    )}
-                  </div>
-                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <Dialog>
