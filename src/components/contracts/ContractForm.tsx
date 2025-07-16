@@ -178,56 +178,78 @@ export function ContractForm({ contractType, onCancel, onSuccess }: ContractForm
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !startDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, "PPP") : "Select start date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <div className="flex gap-2">
+                  <Input
+                    type="date"
+                    value={startDate ? startDate.toISOString().split('T')[0] : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setStartDate(new Date(e.target.value));
+                      } else {
+                        setStartDate(undefined);
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="icon">
+                        <CalendarIcon className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                        showOutsideDays={false}
+                        captionLayout="dropdown-buttons"
+                        fromYear={1900}
+                        toYear={2100}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label>End Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !endDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, "PPP") : "Select end date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <div className="flex gap-2">
+                  <Input
+                    type="date"
+                    value={endDate ? endDate.toISOString().split('T')[0] : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setEndDate(new Date(e.target.value));
+                      } else {
+                        setEndDate(undefined);
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="icon">
+                        <CalendarIcon className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                        showOutsideDays={false}
+                        captionLayout="dropdown-buttons"
+                        fromYear={1900}
+                        toYear={2100}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
             </div>
 
