@@ -2,16 +2,15 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, ArrowLeft, Save } from "lucide-react";
-import { format } from "date-fns";
+import { ArrowLeft, Save, CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -178,78 +177,46 @@ export function ContractForm({ contractType, onCancel, onSuccess }: ContractForm
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Start Date</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="date"
-                    value={startDate ? startDate.toISOString().split('T')[0] : ''}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        setStartDate(new Date(e.target.value));
-                      } else {
-                        setStartDate(undefined);
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="icon">
-                        <CalendarIcon className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={setStartDate}
-                        initialFocus
-                        className="pointer-events-auto"
-                        showOutsideDays={false}
-                        captionLayout="dropdown-buttons"
-                        fromYear={1900}
-                        toYear={2100}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                <DatePicker
+                  selected={startDate}
+                  onChange={(date: Date | null) => setStartDate(date || undefined)}
+                  dateFormat="MMM d, yyyy"
+                  placeholderText="Select start date"
+                  showYearDropdown
+                  showMonthDropdown
+                  dropdownMode="select"
+                  yearDropdownItemNumber={100}
+                  scrollableYearDropdown
+                  maxDate={endDate || undefined}
+                  className={cn(
+                    "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  )}
+                  wrapperClassName="w-full"
+                  popperClassName="z-50"
+                  isClearable
+                />
               </div>
 
               <div className="space-y-2">
                 <Label>End Date</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="date"
-                    value={endDate ? endDate.toISOString().split('T')[0] : ''}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        setEndDate(new Date(e.target.value));
-                      } else {
-                        setEndDate(undefined);
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="icon">
-                        <CalendarIcon className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={setEndDate}
-                        initialFocus
-                        className="pointer-events-auto"
-                        showOutsideDays={false}
-                        captionLayout="dropdown-buttons"
-                        fromYear={1900}
-                        toYear={2100}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                <DatePicker
+                  selected={endDate}
+                  onChange={(date: Date | null) => setEndDate(date || undefined)}
+                  dateFormat="MMM d, yyyy"
+                  placeholderText="Select end date"
+                  showYearDropdown
+                  showMonthDropdown
+                  dropdownMode="select"
+                  yearDropdownItemNumber={100}
+                  scrollableYearDropdown
+                  minDate={startDate || undefined}
+                  className={cn(
+                    "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  )}
+                  wrapperClassName="w-full"
+                  popperClassName="z-50"
+                  isClearable
+                />
               </div>
             </div>
 
