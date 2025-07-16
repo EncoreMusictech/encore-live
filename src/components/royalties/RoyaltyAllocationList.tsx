@@ -30,8 +30,8 @@ export function RoyaltyAllocationList() {
   const { allocations, loading, deleteAllocation, refreshAllocations } = useRoyaltyAllocations();
 
   const filteredAllocations = allocations.filter(allocation => {
-    const matchesSearch = allocation.song_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         allocation.work_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = allocation.song_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (allocation.work_id && allocation.work_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (allocation.artist && allocation.artist.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (allocation.isrc && allocation.isrc.toLowerCase().includes(searchTerm.toLowerCase()));
     
