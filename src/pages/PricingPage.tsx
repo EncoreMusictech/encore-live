@@ -1,162 +1,296 @@
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Check, Star, Package, Zap, Crown, Building, Users, Plus, Infinity } from "lucide-react";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { 
+  Check, 
+  X, 
+  Music, 
+  Copyright, 
+  FileText, 
+  Zap, 
+  TrendingUp, 
+  Users, 
+  Package, 
+  Star,
+  Crown,
+  Building,
+  Sparkles,
+  Calculator,
+  Shield,
+  Code,
+  Palette,
+  Plus
+} from "lucide-react";
 
-interface SubscriptionTier {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  monthly_price: number;
-  annual_price: number;
-  tier_level: number;
-  included_modules: string[];
-  max_valuations_per_month: number | null;
-  max_deal_simulations_per_month: number | null;
-  max_contracts_per_month: number | null;
-  api_access_enabled: boolean;
-  priority_support: boolean;
-  custom_branding: boolean;
-  features: string[];
-  is_popular: boolean;
-}
+// Module Data
+const moduleData = [
+  {
+    id: "royalties",
+    name: "Royalties Module",
+    icon: Music,
+    price: 199,
+    description: "Royalty splits, statements, recoupment",
+    features: [
+      "Automated royalty calculations",
+      "Multi-format statement imports",
+      "Recoupment tracking",
+      "Writer split management",
+      "Payment reconciliation"
+    ]
+  },
+  {
+    id: "copyright",
+    name: "Copyright Module", 
+    icon: Copyright,
+    price: 99,
+    description: "Metadata + registration + CWR export",
+    features: [
+      "Work registration forms",
+      "PRO submission tools",
+      "CWR file generation",
+      "Metadata validation",
+      "Rights tracking"
+    ]
+  },
+  {
+    id: "contracts",
+    name: "Contract Manager",
+    icon: FileText,
+    price: 59,
+    description: "Build, store, and track music agreements",
+    features: [
+      "Template library",
+      "Digital signature workflows",
+      "Contract lifecycle tracking",
+      "Automated reminders",
+      "Version control"
+    ]
+  },
+  {
+    id: "sync",
+    name: "Sync Licensing Tracker",
+    icon: Zap,
+    price: 149,
+    description: "Manage pitches, licenses, approvals",
+    features: [
+      "Pitch opportunity tracking",
+      "License status management",
+      "Usage confirmation tools",
+      "Fee calculation",
+      "Territory management"
+    ]
+  },
+  {
+    id: "valuation",
+    name: "Catalog Valuation Tool",
+    icon: TrendingUp,
+    price: 99,
+    description: "Forecast IP value, growth, benchmarks",
+    features: [
+      "DCF modeling",
+      "Market comparables",
+      "Growth projections",
+      "Risk analysis",
+      "Portfolio optimization"
+    ]
+  },
+  {
+    id: "dashboard",
+    name: "Client Dashboard",
+    icon: Users,
+    price: 149,
+    description: "View-only artist/manager portal",
+    features: [
+      "Real-time reporting",
+      "Statement access",
+      "Performance analytics",
+      "Custom branding",
+      "Mobile-optimized"
+    ]
+  }
+];
 
-interface SubscriptionAddon {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  monthly_price: number;
-  addon_type: string;
-  features: string[];
-}
+// Bundled Plans Data
+const bundledPlans = [
+  {
+    id: "starter",
+    name: "Starter Creator",
+    audience: "Indie songwriters",
+    price: 79,
+    regularPrice: 158,
+    savings: 50,
+    modules: ["copyright", "contracts"],
+    features: [
+      "Basic copyright management",
+      "Simple contract templates",
+      "Up to 50 works per month",
+      "Email support"
+    ],
+    icon: Sparkles
+  },
+  {
+    id: "essentials",
+    name: "Essentials",
+    audience: "Small rights holders", 
+    price: 149,
+    regularPrice: 257,
+    savings: 42,
+    modules: ["copyright", "contracts", "valuation"],
+    features: [
+      "Full copyright suite",
+      "Contract management",
+      "Basic catalog valuation",
+      "Up to 200 works per month",
+      "Priority email support"
+    ],
+    icon: Package
+  },
+  {
+    id: "publishing-pro",
+    name: "Publishing Pro",
+    audience: "Indie publishers",
+    price: 299,
+    regularPrice: 357,
+    savings: 16,
+    modules: ["royalties", "copyright", "contracts"],
+    features: [
+      "Advanced royalty management",
+      "Bulk copyright processing",
+      "Contract automation",
+      "Multi-writer splits",
+      "Phone support"
+    ],
+    icon: Crown,
+    popular: true
+  },
+  {
+    id: "licensing-pro", 
+    name: "Licensing Pro",
+    audience: "Sync agents, labels",
+    price: 349,
+    regularPrice: 497,
+    savings: 30,
+    modules: ["sync", "royalties", "dashboard"],
+    features: [
+      "Complete sync workflow",
+      "Royalty distribution",
+      "Client portals",
+      "Usage tracking",
+      "Dedicated support"
+    ],
+    icon: Zap
+  },
+  {
+    id: "growth",
+    name: "Growth Bundle", 
+    audience: "Scaling admins",
+    price: 449,
+    regularPrice: 556,
+    savings: 19,
+    modules: ["royalties", "copyright", "contracts", "valuation"],
+    features: [
+      "Multi-catalog management",
+      "Advanced analytics",
+      "Bulk operations",
+      "Custom workflows",
+      "Priority support"
+    ],
+    icon: TrendingUp
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise Suite",
+    audience: "Enterprise users", 
+    price: 849,
+    regularPrice: 1145,
+    savings: 26,
+    modules: ["royalties", "copyright", "contracts", "sync", "valuation", "dashboard"],
+    features: [
+      "All modules included",
+      "API access",
+      "Priority support", 
+      "Custom integrations",
+      "Dedicated account manager",
+      "White-label options"
+    ],
+    icon: Building
+  }
+];
 
-interface ModuleProduct {
-  id: string;
-  module_id: string;
-  name: string;
-  description: string;
-  monthly_price: number;
-  annual_price: number;
-  features: string[];
-}
+// Add-ons Data
+const addOns = [
+  {
+    id: "cwr-toolkit",
+    name: "CWR Legal Toolkit",
+    price: 29,
+    description: "Add-on to Copyright",
+    features: [
+      "Legal templates",
+      "Compliance checks",
+      "Filing assistance"
+    ]
+  },
+  {
+    id: "dashboard-standalone",
+    name: "Client Dashboard (a la carte)",
+    price: 99, 
+    description: "If not bundled",
+    features: [
+      "Standalone client portal",
+      "Basic reporting",
+      "Mobile access"
+    ]
+  },
+  {
+    id: "api-access",
+    name: "API Access",
+    price: 149,
+    description: "Add-on (or included in Enterprise)",
+    features: [
+      "REST API endpoints",
+      "Developer documentation",
+      "Rate limiting"
+    ]
+  },
+  {
+    id: "white-label",
+    name: "White-labeled Portals",
+    price: 49,
+    description: "Enterprise only",
+    features: [
+      "Custom branding",
+      "Domain mapping",
+      "Logo customization"
+    ]
+  }
+];
+
+// Comparison table data
+const comparisonFeatures = [
+  { name: "Royalties Module", modules: ["royalties"] },
+  { name: "Copyright Module", modules: ["copyright"] },
+  { name: "Contract Manager", modules: ["contracts"] },
+  { name: "Sync Licensing", modules: ["sync"] },
+  { name: "Catalog Valuation", modules: ["valuation"] },
+  { name: "Client Dashboard", modules: ["dashboard"] },
+  { name: "API Access", modules: [] },
+  { name: "Priority Support", modules: [] },
+  { name: "White Label", modules: [] }
+];
 
 const PricingPage = () => {
-  const { toast } = useToast();
-  const [tiers, setTiers] = useState<SubscriptionTier[]>([]);
-  const [addons, setAddons] = useState<SubscriptionAddon[]>([]);
-  const [modules, setModules] = useState<ModuleProduct[]>([]);
-  const [isAnnual, setIsAnnual] = useState(false);
-  const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
   const [selectedModules, setSelectedModules] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadPricingData();
-  }, []);
-
-  const loadPricingData = async () => {
-    try {
-      setLoading(true);
-      
-      // Load subscription tiers
-      const { data: tiersData, error: tiersError } = await supabase
-        .from('subscription_tiers')
-        .select('*')
-        .eq('is_active', true)
-        .order('tier_level');
-
-      if (tiersError) throw tiersError;
-
-      // Load add-ons
-      const { data: addonsData, error: addonsError } = await supabase
-        .from('subscription_addons')
-        .select('*')
-        .eq('is_active', true)
-        .order('monthly_price');
-
-      if (addonsError) throw addonsError;
-
-      // Load individual modules (for a la carte)
-      const { data: moduleData, error: moduleError } = await supabase
-        .from('module_products')
-        .select('*')
-        .eq('is_active', true)
-        .order('monthly_price');
-
-      if (moduleError) throw moduleError;
-
-      // Transform the data
-      const transformedTiers = (tiersData || []).map(item => ({
-        id: item.id,
-        name: item.name,
-        slug: item.slug,
-        description: item.description || '',
-        monthly_price: item.monthly_price,
-        annual_price: item.annual_price || 0,
-        tier_level: item.tier_level,
-        included_modules: item.included_modules || [],
-        max_valuations_per_month: item.max_valuations_per_month,
-        max_deal_simulations_per_month: item.max_deal_simulations_per_month,
-        max_contracts_per_month: item.max_contracts_per_month,
-        api_access_enabled: item.api_access_enabled || false,
-        priority_support: item.priority_support || false,
-        custom_branding: item.custom_branding || false,
-        features: Array.isArray(item.features) ? item.features.map(f => String(f)) : [],
-        is_popular: item.is_popular || false
-      }));
-
-      const transformedAddons = (addonsData || []).map(item => ({
-        id: item.id,
-        name: item.name,
-        slug: item.slug,
-        description: item.description || '',
-        monthly_price: item.monthly_price,
-        addon_type: item.addon_type,
-        features: Array.isArray(item.features) ? item.features.map(f => String(f)) : []
-      }));
-
-      const transformedModules = (moduleData || []).map(item => ({
-        id: item.id,
-        module_id: item.module_id,
-        name: item.name,
-        description: item.description || '',
-        monthly_price: item.monthly_price,
-        annual_price: item.annual_price || 0,
-        features: Array.isArray(item.features) ? item.features.map(f => String(f)) : []
-      }));
-
-      setTiers(transformedTiers);
-      setAddons(transformedAddons);
-      setModules(transformedModules);
-    } catch (error) {
-      console.error('Error loading pricing data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load pricing information.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddonToggle = (addonId: string) => {
-    const newSelected = new Set(selectedAddons);
-    if (newSelected.has(addonId)) {
-      newSelected.delete(addonId);
-    } else {
-      newSelected.add(addonId);
-    }
-    setSelectedAddons(newSelected);
-  };
 
   const handleModuleToggle = (moduleId: string) => {
     const newSelected = new Set(selectedModules);
@@ -168,198 +302,303 @@ const PricingPage = () => {
     setSelectedModules(newSelected);
   };
 
-  const calculateSelectedAddonsPrice = () => {
-    const selectedAddonProducts = addons.filter(a => selectedAddons.has(a.id));
-    return selectedAddonProducts.reduce((total, addon) => total + addon.monthly_price, 0);
-  };
-
-  const calculateSelectedModulesPrice = () => {
-    const selectedModuleProducts = modules.filter(m => selectedModules.has(m.module_id));
-    return selectedModuleProducts.reduce((total, module) => {
-      return total + (isAnnual ? module.annual_price : module.monthly_price);
+  const calculateModulesTotal = () => {
+    return Array.from(selectedModules).reduce((total, moduleId) => {
+      const module = moduleData.find(m => m.id === moduleId);
+      return total + (module?.price || 0);
     }, 0);
   };
 
-  const handlePurchase = (type: 'tier' | 'addon' | 'module', productId: string) => {
-    toast({
-      title: "Coming Soon",
-      description: "Payment integration will be available soon!",
-    });
-  };
-
-  const getTierIcon = (tierLevel: number) => {
-    switch (tierLevel) {
-      case 1: return <Zap className="w-5 h-5" />;
-      case 2: return <Star className="w-5 h-5" />;
-      case 3: return <Crown className="w-5 h-5" />;
-      case 4: return <Building className="w-5 h-5" />;
-      case 5: return <Users className="w-5 h-5" />;
-      case 6: return <Package className="w-5 h-5" />;
-      default: return <Zap className="w-5 h-5" />;
+  const calculateSavings = () => {
+    if (selectedModules.size >= 3) {
+      return calculateModulesTotal() * 0.25;
     }
+    return 0;
   };
 
-  const formatUsageLimit = (value: number | null) => {
-    if (value === null) return <Infinity className="w-4 h-4 inline" />;
-    return value;
+  const getModuleIcon = (moduleId: string) => {
+    const module = moduleData.find(m => m.id === moduleId);
+    return module?.icon || Package;
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-20">
-          <div className="text-center">Loading pricing information...</div>
-        </div>
-      </div>
-    );
-  }
+  const hasFeature = (planId: string, featureName: string) => {
+    const plan = bundledPlans.find(p => p.id === planId);
+    if (!plan) return false;
+
+    const feature = comparisonFeatures.find(f => f.name === featureName);
+    if (!feature) return false;
+
+    if (featureName === "API Access") {
+      return planId === "enterprise";
+    }
+    if (featureName === "Priority Support") {
+      return ["publishing-pro", "licensing-pro", "growth", "enterprise"].includes(planId);
+    }
+    if (featureName === "White Label") {
+      return planId === "enterprise";
+    }
+
+    return feature.modules.some(moduleId => plan.modules.includes(moduleId));
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Hero Section with improved styling */}
+      {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-music-purple/10 via-transparent to-music-blue/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-primary/5 pointer-events-none" />
         <div className="container mx-auto px-4 py-20 relative">
           <div className="text-center mb-16 animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Flexible <span className="bg-gradient-accent bg-clip-text text-transparent">Pricing</span> for Every Creator
+              Flexible <span className="bg-gradient-primary bg-clip-text text-transparent">Pricing</span> for Every Creator
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Choose from our comprehensive subscription tiers, add-ons, or build your own plan with individual modules.
+              Choose modular tools, bundled savings, or enterprise solutions. Only pay for what you use.
             </p>
-            
-            {/* Enhanced Billing Toggle */}
-            <div className="flex items-center justify-center gap-4 mb-8 p-1 bg-secondary/50 backdrop-blur-sm rounded-full w-fit mx-auto">
-              <span className={`text-sm px-4 py-2 rounded-full transition-all ${!isAnnual ? 'text-foreground font-medium bg-background shadow-sm' : 'text-muted-foreground'}`}>
-                Monthly
-              </span>
-              <Switch 
-                checked={isAnnual} 
-                onCheckedChange={setIsAnnual}
-                className="data-[state=checked]:bg-music-purple"
-              />
-              <span className={`text-sm px-4 py-2 rounded-full transition-all ${isAnnual ? 'text-foreground font-medium bg-background shadow-sm' : 'text-muted-foreground'}`}>
-                Annual
-              </span>
-              {isAnnual && (
-                <Badge variant="secondary" className="bg-gradient-accent text-accent-foreground ml-2 animate-slide-up">
-                  Save up to 17%
-                </Badge>
-              )}
-            </div>
-
-            {/* Trust indicators */}
-            <div className="flex items-center justify-center gap-8 mt-8 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-music-purple" />
-                <span>No setup fees</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-music-purple" />
-                <span>Cancel anytime</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-music-purple" />
-                <span>14-day free trial</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 pb-20">
-        <Tabs defaultValue="tiers" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-12">
-            <TabsTrigger value="tiers" className="flex items-center gap-2">
+        <Tabs defaultValue="modules" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto mb-12">
+            <TabsTrigger value="modules" className="flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Modules
+            </TabsTrigger>
+            <TabsTrigger value="bundles" className="flex items-center gap-2">
               <Crown className="w-4 h-4" />
-              Subscription Tiers
+              Bundles
             </TabsTrigger>
             <TabsTrigger value="addons" className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Add-ons
             </TabsTrigger>
-            <TabsTrigger value="modules" className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              À la Carte
+            <TabsTrigger value="compare" className="flex items-center gap-2">
+              <Calculator className="w-4 h-4" />
+              Compare
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="tiers">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-              {tiers.map((tier) => (
-                <Card 
-                  key={tier.id}
-                  className={`relative transition-all duration-300 hover:shadow-elegant ${
-                    tier.is_popular ? 'ring-2 ring-music-purple shadow-glow scale-105' : ''
-                  } ${tier.tier_level >= 5 ? 'bg-gradient-to-br from-music-purple/5 to-music-blue/5 border-music-purple/20' : ''}`}
-                >
-                  {tier.is_popular && (
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                      <Badge className="bg-gradient-accent text-accent-foreground">
-                        <Star className="w-3 h-3 mr-1" />
-                        Most Popular
-                      </Badge>
-                    </div>
-                  )}
-                  
-                  <CardHeader className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      {getTierIcon(tier.tier_level)}
-                    </div>
-                    <CardTitle className="text-2xl">{tier.name}</CardTitle>
-                    <div className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                      {tier.monthly_price === 0 ? 'Free' : `$${isAnnual ? tier.annual_price : tier.monthly_price}`}
-                      {tier.monthly_price > 0 && (
-                        <span className="text-lg text-muted-foreground">
-                          /{isAnnual ? 'year' : 'month'}
-                        </span>
+          {/* Modular Pricing */}
+          <TabsContent value="modules">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-4">Pick Your Tools</h2>
+              <p className="text-muted-foreground mb-2">Choose individual modules that fit your workflow</p>
+              <Badge variant="secondary" className="bg-gradient-primary/10">
+                Save 25% when bundling 3 or more modules
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {moduleData.map((module) => {
+                const IconComponent = module.icon;
+                const isSelected = selectedModules.has(module.id);
+                
+                return (
+                  <Card 
+                    key={module.id}
+                    className={`transition-all duration-300 cursor-pointer hover:shadow-elegant ${
+                      isSelected ? 'ring-2 ring-primary shadow-glow' : ''
+                    }`}
+                    onClick={() => handleModuleToggle(module.id)}
+                  >
+                    <CardHeader>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="bg-gradient-primary rounded-lg p-3">
+                          <IconComponent className="h-6 w-6 text-primary-foreground" />
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold">${module.price}</div>
+                          <div className="text-sm text-muted-foreground">/month</div>
+                        </div>
+                      </div>
+                      <CardTitle className="text-xl">{module.name}</CardTitle>
+                      <CardDescription>{module.description}</CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="space-y-4">
+                      <ul className="space-y-2">
+                        {module.features.map((feature, index) => (
+                          <li key={index} className="flex items-start space-x-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                            <span className="text-muted-foreground">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <Button 
+                        className={`w-full transition-all ${
+                          isSelected 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-gradient-primary text-primary-foreground hover:opacity-90'
+                        }`}
+                      >
+                        {isSelected ? 'Added to Plan' : 'Add to Plan'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Selected modules summary */}
+            {selectedModules.size > 0 && (
+              <Card className="bg-secondary/30 border-dashed max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Your Custom Plan ({selectedModules.size} modules)</span>
+                    <div className="text-right">
+                      {calculateSavings() > 0 && (
+                        <div className="text-sm text-muted-foreground line-through">
+                          ${calculateModulesTotal()}
+                        </div>
+                      )}
+                      <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                        ${(calculateModulesTotal() - calculateSavings()).toFixed(0)}
+                        <span className="text-sm text-muted-foreground">/month</span>
+                      </div>
+                      {calculateSavings() > 0 && (
+                        <Badge className="bg-gradient-primary text-primary-foreground">
+                          Save ${calculateSavings().toFixed(0)}/mo
+                        </Badge>
                       )}
                     </div>
-                    <CardDescription>{tier.description}</CardDescription>
-                  </CardHeader>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-center">
+                    <Button size="lg" className="bg-gradient-primary text-primary-foreground">
+                      Start Custom Plan
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
-                  <CardContent className="space-y-4">
-                    {/* Usage Limits */}
-                    {(tier.max_valuations_per_month || tier.max_deal_simulations_per_month || tier.max_contracts_per_month) && (
-                      <div className="border-b pb-4 space-y-2">
-                        {tier.max_valuations_per_month && (
-                          <div className="text-sm flex justify-between">
-                            <span>Valuations/month:</span>
-                            <span className="font-medium">{formatUsageLimit(tier.max_valuations_per_month)}</span>
-                          </div>
-                        )}
-                        {tier.max_deal_simulations_per_month && (
-                          <div className="text-sm flex justify-between">
-                            <span>Deal simulations/month:</span>
-                            <span className="font-medium">{formatUsageLimit(tier.max_deal_simulations_per_month)}</span>
-                          </div>
-                        )}
-                        {tier.max_contracts_per_month && (
-                          <div className="text-sm flex justify-between">
-                            <span>Contracts/month:</span>
-                            <span className="font-medium">{formatUsageLimit(tier.max_contracts_per_month)}</span>
-                          </div>
-                        )}
+          {/* Bundled Plans */}
+          <TabsContent value="bundles">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-4">Bundled Plans</h2>
+              <p className="text-muted-foreground">Pre-configured packages optimized for different user types</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {bundledPlans.map((plan) => {
+                const IconComponent = plan.icon;
+                
+                return (
+                  <Card 
+                    key={plan.id}
+                    className={`relative transition-all duration-300 hover:shadow-elegant ${
+                      plan.popular ? 'ring-2 ring-primary shadow-glow scale-105' : ''
+                    }`}
+                  >
+                    {plan.popular && (
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                        <Badge className="bg-gradient-primary text-primary-foreground">
+                          <Star className="w-3 h-3 mr-1" />
+                          Most Popular
+                        </Badge>
                       </div>
                     )}
 
-                    <ul className="space-y-3">
-                      {tier.features.map((feature, index) => (
-                        <li key={index} className="flex items-center space-x-3">
-                          <Check className="h-4 w-4 text-music-purple flex-shrink-0" />
-                          <span className="text-sm">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <CardHeader>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="bg-gradient-primary rounded-lg p-3">
+                          <IconComponent className="h-6 w-6 text-primary-foreground" />
+                        </div>
+                        <Badge variant="secondary" className="bg-gradient-primary/10">
+                          Save {plan.savings}%
+                        </Badge>
+                      </div>
+                      
+                      <CardTitle className="text-xl">{plan.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground mb-4">Ideal for {plan.audience}</p>
+                      
+                      <div className="text-center">
+                        <div className="text-sm text-muted-foreground line-through">
+                          ${plan.regularPrice}/mo
+                        </div>
+                        <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                          ${plan.price}
+                          <span className="text-lg text-muted-foreground">/month</span>
+                        </div>
+                      </div>
+                    </CardHeader>
 
-                    <Button 
-                      className="w-full mt-6 bg-gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
-                      onClick={() => handlePurchase('tier', tier.id)}
-                    >
-                      {tier.monthly_price === 0 ? 'Get Started Free' : `Choose ${tier.name}`}
+                    <CardContent className="space-y-4">
+                      {/* Included modules */}
+                      <div className="border-b pb-4">
+                        <p className="text-sm font-medium mb-2">Includes:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {plan.modules.map((moduleId) => {
+                            const ModuleIcon = getModuleIcon(moduleId);
+                            const moduleName = moduleData.find(m => m.id === moduleId)?.name || moduleId;
+                            return (
+                              <div key={moduleId} className="flex items-center gap-1 text-xs bg-secondary/50 rounded px-2 py-1">
+                                <ModuleIcon className="w-3 h-3" />
+                                <span className="truncate">{moduleName.replace(' Module', '').replace(' Manager', '').replace(' Tool', '').replace(' Tracker', '')}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <ul className="space-y-2">
+                        {plan.features.map((feature, index) => (
+                          <li key={index} className="flex items-start space-x-2 text-sm">
+                            <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                            <span className="text-muted-foreground">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <Button className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90">
+                        Try This Plan
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+
+          {/* Add-ons */}
+          <TabsContent value="addons">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-4">Optional Add-ons</h2>
+              <p className="text-muted-foreground">Enhance your plan with additional features and tools</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {addOns.map((addon) => (
+                <Card key={addon.id} className="transition-all duration-300 hover:shadow-elegant">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{addon.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">{addon.description}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold">${addon.price}</div>
+                        <div className="text-sm text-muted-foreground">/month</div>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-2">
+                    {addon.features.map((feature, index) => (
+                      <div key={index} className="flex items-center space-x-2 text-sm">
+                        <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                        <span className="text-muted-foreground">{feature}</span>
+                      </div>
+                    ))}
+                    
+                    <Button className="w-full mt-4" variant="outline">
+                      Add to Plan
                     </Button>
                   </CardContent>
                 </Card>
@@ -367,244 +606,80 @@ const PricingPage = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="addons">
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold mb-2">Boost Your Plan</h2>
-                <p className="text-muted-foreground">Add extra features and increased limits to any subscription tier.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {addons.map((addon) => (
-                  <Card 
-                    key={addon.id}
-                    className={`transition-all duration-300 cursor-pointer ${
-                      selectedAddons.has(addon.id) 
-                        ? 'ring-2 ring-music-purple shadow-glow' 
-                        : 'hover:shadow-elegant'
-                    }`}
-                    onClick={() => handleAddonToggle(addon.id)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{addon.name}</CardTitle>
-                        <div className="text-right">
-                          <div className="text-xl font-bold">
-                            ${addon.monthly_price}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            /month
-                          </div>
-                        </div>
-                      </div>
-                      <CardDescription>{addon.description}</CardDescription>
-                    </CardHeader>
-
-                    <CardContent className="space-y-2">
-                      {addon.features.map((feature, index) => (
-                        <div key={index} className="flex items-center space-x-2 text-sm">
-                          <Check className="h-3 w-3 text-music-purple flex-shrink-0" />
-                          <span className="text-muted-foreground">{feature}</span>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Selected add-ons summary */}
-              {selectedAddons.size > 0 && (
-                <Card className="bg-secondary/30 border-dashed">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>Selected Add-ons ({selectedAddons.size})</span>
-                      <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                        ${calculateSelectedAddonsPrice().toFixed(2)}
-                        <span className="text-sm text-muted-foreground">/month</span>
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {Array.from(selectedAddons).map(addonId => {
-                        const addon = addons.find(a => a.id === addonId);
-                        return addon ? (
-                          <Badge key={addonId} variant="secondary">
-                            {addon.name}
-                          </Badge>
-                        ) : null;
-                      })}
-                    </div>
-                    <Button 
-                      className="w-full bg-gradient-primary text-primary-foreground"
-                      onClick={() => handlePurchase('addon', Array.from(selectedAddons).join(','))}
-                    >
-                      Add Selected Add-ons
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
+          {/* Comparison Table */}
+          <TabsContent value="compare">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-4">Compare Plans</h2>
+              <p className="text-muted-foreground">Find the perfect plan for your needs</p>
             </div>
-          </TabsContent>
 
-          <TabsContent value="modules">
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold mb-2">Build Your Own Plan</h2>
-                <p className="text-muted-foreground">Pick and choose individual modules to create a custom solution.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {modules.map((module) => (
-                  <Card 
-                    key={module.id}
-                    className={`transition-all duration-300 cursor-pointer ${
-                      selectedModules.has(module.module_id) 
-                        ? 'ring-2 ring-music-purple shadow-glow' 
-                        : 'hover:shadow-elegant'
-                    }`}
-                    onClick={() => handleModuleToggle(module.module_id)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{module.name}</CardTitle>
-                        <div className="text-right">
-                          <div className="text-xl font-bold">
-                            ${isAnnual ? module.annual_price : module.monthly_price}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            /{isAnnual ? 'year' : 'month'}
-                          </div>
+            <div className="overflow-x-auto">
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-48">Feature</TableHead>
+                    {bundledPlans.map((plan) => (
+                      <TableHead key={plan.id} className="text-center min-w-32">
+                        <div className="space-y-1">
+                          <div className="font-bold">{plan.name}</div>
+                          <div className="text-lg font-bold text-primary">${plan.price}/mo</div>
                         </div>
-                      </div>
-                      <CardDescription>{module.description}</CardDescription>
-                    </CardHeader>
-
-                    <CardContent className="space-y-2">
-                      {module.features.slice(0, 3).map((feature, index) => (
-                        <div key={index} className="flex items-center space-x-2 text-sm">
-                          <Check className="h-3 w-3 text-music-purple flex-shrink-0" />
-                          <span className="text-muted-foreground">{feature}</span>
-                        </div>
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {comparisonFeatures.map((feature) => (
+                    <TableRow key={feature.name}>
+                      <TableCell className="font-medium">{feature.name}</TableCell>
+                      {bundledPlans.map((plan) => (
+                        <TableCell key={plan.id} className="text-center">
+                          {hasFeature(plan.id, feature.name) ? (
+                            <Check className="h-5 w-5 text-primary mx-auto" />
+                          ) : (
+                            <X className="h-5 w-5 text-muted-foreground mx-auto" />
+                          )}
+                        </TableCell>
                       ))}
-                      {module.features.length > 3 && (
-                        <div className="text-xs text-muted-foreground">
-                          +{module.features.length - 3} more features
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Selected modules summary */}
-              {selectedModules.size > 0 && (
-                <Card className="bg-secondary/30 border-dashed">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>Selected Modules ({selectedModules.size})</span>
-                      <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                        ${calculateSelectedModulesPrice().toFixed(2)}
-                        <span className="text-sm text-muted-foreground">
-                          /{isAnnual ? 'year' : 'month'}
-                        </span>
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {Array.from(selectedModules).map(moduleId => {
-                        const module = modules.find(m => m.module_id === moduleId);
-                        return module ? (
-                          <Badge key={moduleId} variant="secondary">
-                            {module.name}
-                          </Badge>
-                        ) : null;
-                      })}
-                    </div>
-                    <Button 
-                      className="w-full bg-gradient-primary text-primary-foreground"
-                      onClick={() => handlePurchase('module', Array.from(selectedModules).join(','))}
-                    >
-                      Purchase Selected Modules
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </TabsContent>
         </Tabs>
 
-        {/* FAQ Section */}
-        <div className="max-w-4xl mx-auto mt-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
-            <p className="text-muted-foreground">Everything you need to know about our pricing</p>
-          </div>
-
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Can I switch between plans?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate the billing accordingly.</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">What happens if I exceed my usage limits?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">We'll notify you when you're approaching your limits. You can either upgrade your plan or purchase add-ons to increase your limits for the current month.</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Do you offer refunds?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">We offer a 14-day money-back guarantee on all paid plans. If you're not satisfied, contact our support team for a full refund.</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Can I cancel anytime?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Absolutely. You can cancel your subscription at any time from your account settings. Your access will continue until the end of your current billing period.</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">What payment methods do you accept?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">We accept all major credit cards (Visa, MasterCard, American Express) and PayPal. Enterprise customers can also pay via bank transfer.</p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
         {/* CTA Section */}
-        <div className="text-center mt-20 py-16 bg-gradient-to-r from-music-purple/10 to-music-blue/10 rounded-3xl">
-          <h2 className="text-3xl font-bold mb-4">Ready to get started?</h2>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join thousands of music creators who trust ENCORE to manage their rights and maximize their revenue.
-          </p>
+        <div className="text-center mt-20 space-y-8">
+          <div className="space-y-4">
+            <h2 className="text-3xl font-bold">Ready to Get Started?</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Only pay for what you use. Bundle and save.
+            </p>
+          </div>
+          
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-gradient-primary text-primary-foreground px-8">
-              Start Free Trial
+            <Button size="lg" className="bg-gradient-primary text-primary-foreground">
+              Customize My Plan
             </Button>
-            <Button size="lg" variant="outline" className="px-8" asChild>
-              <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
-                Schedule Demo
-              </a>
+            <Button size="lg" variant="outline">
+              Try a Starter Plan
             </Button>
+          </div>
+
+          <div className="flex items-center justify-center gap-8 mt-8 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-primary" />
+              <span>14-day free trial</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-primary" />
+              <span>No setup fees</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-primary" />
+              <span>Cancel anytime</span>
+            </div>
           </div>
         </div>
       </div>
