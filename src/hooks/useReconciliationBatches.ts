@@ -93,6 +93,30 @@ export function useReconciliationBatches() {
 
       if (error) throw error;
 
+      // If the batch status is being updated to 'Processed', also update the linked import staging record
+      if (batchData.status === 'Processed' && data.linked_statement_id) {
+        console.log('Updating linked import staging record status to processed');
+        
+        const { error: stagingUpdateError } = await supabase
+          .from('royalties_import_staging')
+          .update({ 
+            processing_status: 'processed'
+          })
+          .eq('id', data.linked_statement_id);
+
+        if (stagingUpdateError) {
+          console.error('Error updating staging record status:', stagingUpdateError);
+          // Don't fail the whole operation, just log the error
+          toast({
+            title: "Warning",
+            description: "Batch updated but failed to sync import staging status",
+            variant: "destructive",
+          });
+        } else {
+          console.log('Successfully updated linked import staging record status');
+        }
+      }
+
       toast({
         title: "Success",
         description: "Reconciliation batch updated successfully",
