@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, AlertTriangle, CheckCircle, FileText, Users, Wrench, Settings, Music } from "lucide-react";
 import { RoyaltiesImportStaging, useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { FieldMappingDialog } from "./FieldMappingDialog";
-import { SongMatchingDialog } from "./SongMatchingDialog";
+// import { SongMatchingDialog } from "./SongMatchingDialog";
 import { EncoreMapper, DEFAULT_ENCORE_MAPPING } from "@/lib/encore-mapper";
 import { toast } from "@/hooks/use-toast";
 
@@ -487,14 +487,14 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         onSaveMapping={handleSaveMapping}
       />
 
-      {/* Song Matching Dialog */}
-      <SongMatchingDialog
+      {/* Song Matching Dialog - temporarily disabled */}
+      {/* <SongMatchingDialog
         open={showSongMatchingDialog}
         onOpenChange={setShowSongMatchingDialog}
         mappedData={mappedData}
         batchId={localRecord.batch_id || ''}
         onMatchingComplete={handleSongMatchingComplete}
-      />
+      /> */}
     </div>
   );
 }

@@ -46,7 +46,7 @@ export function useRoyaltyAllocations() {
         .from('royalty_allocations')
         .select(`
           *,
-          reconciliation_batches(batch_id, source),
+          reconciliation_batches!royalty_allocations_batch_id_fkey(batch_id, source),
           copyrights(work_title)
         `)
         .order('created_at', { ascending: false });

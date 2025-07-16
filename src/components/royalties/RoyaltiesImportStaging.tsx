@@ -7,13 +7,14 @@ import { FileText, Eye, Trash2, AlertTriangle, CheckCircle } from "lucide-react"
 import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { RoyaltiesImportUpload } from "./RoyaltiesImportUpload";
 import { RoyaltiesImportPreview } from "./RoyaltiesImportPreview";
+import { ImportToAllocationsButton } from "./ImportToAllocationsButton";
 
 interface RoyaltiesImportStagingProps {
   batchId?: string;
 }
 
 export function RoyaltiesImportStaging({ batchId }: RoyaltiesImportStagingProps) {
-  const { stagingRecords, loading, deleteStagingRecord } = useRoyaltiesImport(batchId);
+  const { stagingRecords, loading, deleteStagingRecord, refreshRecords } = useRoyaltiesImport(batchId);
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
 
@@ -98,6 +99,7 @@ export function RoyaltiesImportStaging({ batchId }: RoyaltiesImportStagingProps)
                   <TableHead>Records</TableHead>
                   <TableHead>Unmapped Fields</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead>Import</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -135,6 +137,12 @@ export function RoyaltiesImportStaging({ batchId }: RoyaltiesImportStagingProps)
                     </TableCell>
                     <TableCell>
                       {new Date(record.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <ImportToAllocationsButton
+                        stagingRecord={record}
+                        onComplete={refreshRecords}
+                      />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
