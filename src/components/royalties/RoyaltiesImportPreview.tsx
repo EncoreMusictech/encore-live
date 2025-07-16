@@ -118,7 +118,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         // Update the staging record with the batch_id
         await updateStagingRecord(localRecord.id, { batch_id: batchId });
         
-        // Update local record
+        // Update local record - this ensures the dialog gets the correct batch_id
         const updatedRecord = { ...localRecord, batch_id: batchId };
         setLocalRecord(updatedRecord);
 
@@ -126,6 +126,9 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
           title: "Batch Created",
           description: "Created reconciliation batch for song matching",
         });
+
+        // Open dialog only after successful batch creation and state update
+        setShowSongMatchingDialog(true);
       } catch (error) {
         console.error('Error creating batch:', error);
         toast({
@@ -135,9 +138,10 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         });
         return;
       }
+    } else {
+      // If batch already exists, open dialog immediately
+      setShowSongMatchingDialog(true);
     }
-
-    setShowSongMatchingDialog(true);
   };
 
   const handleApproveAndProcess = async () => {
