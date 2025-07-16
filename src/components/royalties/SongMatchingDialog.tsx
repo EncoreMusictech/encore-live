@@ -327,7 +327,7 @@ export function SongMatchingDialog({
               onClick={handleCreateRoyaltyAllocations} 
               disabled={processing || songMatches.length === 0}
             >
-              {processing ? "Creating..." : "Create Allocations"}
+              {processing ? "Creating..." : "Create Royalties"}
             </Button>
           </div>
         </div>
