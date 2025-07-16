@@ -43,7 +43,7 @@ export default function RoyaltiesPage() {
             </TabsTrigger>
             <TabsTrigger value="allocations" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              Allocations
+              Royalties
             </TabsTrigger>
             <TabsTrigger value="discrepancies" className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
@@ -74,7 +74,7 @@ export default function RoyaltiesPage() {
               </div>
               <Button onClick={() => setShowForm(true)} className="gap-2">
                 <Plus className="h-4 w-4" />
-                New Allocation
+                New Royalty
               </Button>
             </div>
 
@@ -125,7 +125,7 @@ export default function RoyaltiesPage() {
             <div className="space-y-6">
               {showForm && <Card>
                   <CardHeader>
-                    <CardTitle>Create New Royalty Allocation</CardTitle>
+                    <CardTitle>Create New Royalty</CardTitle>
                     <CardDescription>
                       Map a work to its rightsholders and reconciled revenue
                     </CardDescription>
@@ -137,9 +137,9 @@ export default function RoyaltiesPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Royalty Allocations</CardTitle>
+                  <CardTitle>Royalties</CardTitle>
                   <CardDescription>
-                    Manage work-to-rightholder mappings and revenue allocation
+                    Manage work-to-rightholder mappings and revenue distribution
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

@@ -90,7 +90,7 @@ export function RoyaltyAllocationList() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center">Loading royalty allocations...</div>;
+    return <div className="p-8 text-center">Loading royalties...</div>;
   }
 
   return (
@@ -126,7 +126,7 @@ export function RoyaltyAllocationList() {
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Allocations</SelectItem>
+                <SelectItem value="all">All Royalties</SelectItem>
                 <SelectItem value="controlled">Controlled Only</SelectItem>
                 <SelectItem value="recoupable">Recoupable Only</SelectItem>
               </SelectContent>
@@ -337,7 +337,7 @@ export function RoyaltyAllocationList() {
                       </DialogTrigger>
                       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Edit Royalty Allocation</DialogTitle>
+                          <DialogTitle>Edit Royalty</DialogTitle>
                         </DialogHeader>
                         <RoyaltyAllocationForm
                           allocation={editingAllocation}
@@ -367,7 +367,7 @@ export function RoyaltyAllocationList() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will permanently delete the royalty allocation "{allocation.work_id}" and all associated data.
+                            This will permanently delete the royalty "{allocation.work_id}" and all associated data.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -389,8 +389,8 @@ export function RoyaltyAllocationList() {
       {filteredAllocations.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
           {searchTerm || statusFilter !== "all" || sourceFilter !== "all" || territoryFilter !== "all" || writerFilter || dateFrom || dateTo
-            ? "No royalty allocations found matching your filters."
-            : "No royalty allocations found. Create your first allocation to get started."}
+            ? "No royalties found matching your filters."
+            : "No royalties found. Create your first royalty to get started."}
         </div>
       )}
 

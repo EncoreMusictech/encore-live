@@ -57,7 +57,7 @@ export function useRoyaltyAllocations() {
       console.error('Error fetching allocations:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch royalty allocations",
+        description: "Failed to fetch royalties",
         variant: "destructive",
       });
     } finally {
@@ -82,7 +82,7 @@ export function useRoyaltyAllocations() {
 
       toast({
         title: "Success",
-        description: `Royalty allocation ${data.work_id} created successfully`,
+        description: `Royalty ${data.work_id} created successfully`,
       });
 
       await fetchAllocations();
@@ -91,7 +91,7 @@ export function useRoyaltyAllocations() {
       console.error('Error creating allocation:', error);
       toast({
         title: "Error",
-        description: "Failed to create royalty allocation",
+        description: "Failed to create royalty",
         variant: "destructive",
       });
       return null;
@@ -111,7 +111,7 @@ export function useRoyaltyAllocations() {
 
       toast({
         title: "Success",
-        description: "Royalty allocation updated successfully",
+        description: "Royalty updated successfully",
       });
 
       await fetchAllocations();
@@ -120,7 +120,7 @@ export function useRoyaltyAllocations() {
       console.error('Error updating allocation:', error);
       toast({
         title: "Error",
-        description: "Failed to update royalty allocation",
+        description: "Failed to update royalty",
         variant: "destructive",
       });
       return null;
@@ -138,7 +138,7 @@ export function useRoyaltyAllocations() {
 
       toast({
         title: "Success",
-        description: "Royalty allocation deleted successfully",
+        description: "Royalty deleted successfully",
       });
 
       await fetchAllocations();
@@ -146,7 +146,7 @@ export function useRoyaltyAllocations() {
       console.error('Error deleting allocation:', error);
       toast({
         title: "Error",
-        description: "Failed to delete royalty allocation",
+        description: "Failed to delete royalty",
         variant: "destructive",
       });
     }
@@ -167,7 +167,7 @@ export function useRoyaltyAllocations() {
 
       toast({
         title: "Success",
-        description: "Writer added to royalty allocation",
+        description: "Writer added to royalty",
       });
 
       return data;
@@ -175,7 +175,7 @@ export function useRoyaltyAllocations() {
       console.error('Error adding writer:', error);
       toast({
         title: "Error",
-        description: "Failed to add writer to royalty allocation",
+        description: "Failed to add writer to royalty",
         variant: "destructive",
       });
       return null;
@@ -193,13 +193,13 @@ export function useRoyaltyAllocations() {
 
       toast({
         title: "Success",
-        description: "Writer removed from royalty allocation",
+        description: "Writer removed from royalty",
       });
     } catch (error: any) {
       console.error('Error removing writer:', error);
       toast({
         title: "Error",
-        description: "Failed to remove writer from royalty allocation",
+        description: "Failed to remove writer from royalty",
         variant: "destructive",
       });
     }

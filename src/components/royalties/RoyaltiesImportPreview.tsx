@@ -81,7 +81,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
   const handleSongMatchingComplete = (results: { matched: number; unmatched: number }) => {
     toast({
       title: "Song Matching Complete",
-      description: `${results.matched} songs matched, ${results.unmatched} unmatched and added to allocations`,
+      description: `${results.matched} songs matched, ${results.unmatched} unmatched and added to royalties`,
     });
 
     // Update the work_matches in the record
@@ -534,7 +534,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
             </Button>
           </div>
           <div className="mt-2 text-sm text-muted-foreground">
-            Use Song Matching to create royalty allocations from matched works.
+            Use Song Matching to create royalties from matched works.
           </div>
         </CardContent>
       </Card>
@@ -556,7 +556,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         open={showSongMatchingDialog}
         onOpenChange={setShowSongMatchingDialog}
         mappedData={mappedData}
-        batchId={localRecord.batch_id} // Can be null/undefined for standalone allocations
+        batchId={localRecord.batch_id} // Can be null/undefined for standalone royalties
         onMatchingComplete={handleSongMatchingComplete}
       />
     </div>

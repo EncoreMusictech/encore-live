@@ -428,7 +428,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
           Cancel
         </Button>
         <Button type="submit">
-          {allocation ? 'Update Allocation' : 'Create Allocation'}
+          {allocation ? 'Update Royalty' : 'Create Royalty'}
         </Button>
       </div>
     </form>

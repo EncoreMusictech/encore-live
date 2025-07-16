@@ -15,7 +15,7 @@ const modules = [
     title: "Royalties",
     path: "/royalties", 
     icon: DollarSign,
-    description: "Allocation & tracking"
+    description: "Royalties & tracking"
   },
   {
     title: "Payouts",
