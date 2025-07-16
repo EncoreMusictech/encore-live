@@ -15,6 +15,7 @@ interface SongMatch {
   songTitle: string;
   artist: string;
   grossAmount: number;
+  share?: string;
   matchedCopyright?: {
     id: string;
     work_title: string;
@@ -54,6 +55,7 @@ export function SongMatchingDialog({
         const songTitle = row['WORK TITLE'] || row['Song Title'] || '';
         const artist = row['WORK WRITERS'] || row['Artist'] || '';
         const grossAmount = parseFloat(row['GROSS'] || row['Gross Amount'] || '0');
+        const share = row['SHARE'] || '';
         
         if (songTitle.trim()) {
           const key = `${songTitle}-${artist}`.toLowerCase();
@@ -62,6 +64,7 @@ export function SongMatchingDialog({
               songTitle,
               artist,
               grossAmount,
+              share,
               isMatched: false,
             });
           } else {
@@ -84,7 +87,17 @@ export function SongMatchingDialog({
     try {
       const { data, error } = await supabase
         .from('copyrights')
-        .select('id, work_title, internal_id, akas')
+        .select(`
+          id, 
+          work_title, 
+          internal_id, 
+          akas,
+          copyright_writers (
+            writer_name,
+            ownership_percentage,
+            writer_role
+          )
+        `)
         .eq('user_id', user.id)
         .order('work_title');
 
@@ -313,8 +326,15 @@ export function SongMatchingDialog({
                           <div className={`text-sm ${
                             match.isMatched ? 'text-emerald-700' : 'text-slate-600'
                           }`}>
-                            {match.artist}
+                            Writers: {match.artist}
                           </div>
+                          {match.share && (
+                            <div className={`text-sm ${
+                              match.isMatched ? 'text-emerald-700' : 'text-slate-600'
+                            }`}>
+                              Share: {match.share}%
+                            </div>
+                          )}
                           <div className={`text-sm font-medium ${
                             match.isMatched ? 'text-emerald-800' : 'text-slate-800'
                           }`}>
@@ -390,6 +410,26 @@ export function SongMatchingDialog({
                       >
                         <div className="font-medium text-base leading-tight">{copyright.work_title}</div>
                         <div className="text-sm text-muted-foreground mt-1">{copyright.internal_id}</div>
+                        {copyright.copyright_writers && copyright.copyright_writers.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <div className="text-sm font-medium text-slate-700">Writers:</div>
+                            {copyright.copyright_writers.slice(0, 3).map((writer: any, idx: number) => (
+                              <div key={idx} className="text-sm text-slate-600">
+                                {writer.writer_name} ({writer.ownership_percentage}%)
+                                {writer.writer_role && (
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    - {writer.writer_role}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                            {copyright.copyright_writers.length > 3 && (
+                              <div className="text-xs text-muted-foreground">
+                                +{copyright.copyright_writers.length - 3} more writers
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : (
