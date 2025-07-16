@@ -3,13 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, ExternalLink } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { useCopyright } from "@/hooks/useCopyright";
+import { EnhancedScheduleWorkForm } from "./EnhancedScheduleWorkForm";
 
 interface ScheduleWorksTableProps {
   contractId: string;
@@ -17,49 +14,10 @@ interface ScheduleWorksTableProps {
 
 export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const { contracts, addScheduleWork, removeScheduleWork } = useContracts();
-  const { copyrights } = useCopyright();
+  const { contracts, removeScheduleWork, refetch } = useContracts();
 
   const contract = contracts.find(c => c.id === contractId);
   const scheduleWorks = contract?.contract_schedule_works || [];
-
-  const [formData, setFormData] = useState({
-    copyright_id: "",
-    work_id: "",
-    song_title: "",
-    artist_name: "",
-    album_title: "",
-    isrc: "",
-    iswc: "",
-    inherits_royalty_splits: true,
-    inherits_recoupment_status: true,
-    inherits_controlled_status: true,
-    work_specific_advance: 0,
-    work_specific_rate_reduction: 0,
-  });
-
-  const handleAddWork = async () => {
-    try {
-      await addScheduleWork(contractId, formData);
-      setIsAddDialogOpen(false);
-      setFormData({
-        copyright_id: "",
-        work_id: "",
-        song_title: "",
-        artist_name: "",
-        album_title: "",
-        isrc: "",
-        iswc: "",
-        inherits_royalty_splits: true,
-        inherits_recoupment_status: true,
-        inherits_controlled_status: true,
-        work_specific_advance: 0,
-        work_specific_rate_reduction: 0,
-      });
-    } catch (error) {
-      console.error('Error adding work:', error);
-    }
-  };
 
   const handleRemoveWork = async (workId: string) => {
     try {
@@ -69,18 +27,9 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
     }
   };
 
-  const handleCopyrightSelect = (copyrightId: string) => {
-    const copyright = copyrights.find(c => c.id === copyrightId);
-    if (copyright) {
-      setFormData({
-        ...formData,
-        copyright_id: copyrightId,
-        song_title: copyright.work_title,
-        work_id: copyright.work_id || "",
-        iswc: copyright.iswc || "",
-        album_title: copyright.album_title || "",
-      });
-    }
+  const handleWorkAdded = () => {
+    setIsAddDialogOpen(false);
+    refetch(); // Refresh the contracts data
   };
 
   return (
@@ -96,170 +45,19 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
                   Add Work
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add Work to Schedule</DialogTitle>
                   <DialogDescription>
-                    Link a work to this contract and configure inheritance settings
+                    Create a new work with full copyright registration and link it to this contract
                   </DialogDescription>
                 </DialogHeader>
                 
-                <div className="grid gap-6">
-                  {/* Copyright Selection */}
-                  <div className="space-y-2">
-                    <Label htmlFor="copyright_select">Link to Existing Copyright (Optional)</Label>
-                    <Select onValueChange={handleCopyrightSelect}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select from copyright catalog" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {copyrights.map(copyright => (
-                          <SelectItem key={copyright.id} value={copyright.id}>
-                            {copyright.work_title} {copyright.work_id && `(${copyright.work_id})`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Work Details */}
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="song_title">Song Title *</Label>
-                      <Input
-                        id="song_title"
-                        value={formData.song_title}
-                        onChange={(e) => setFormData({...formData, song_title: e.target.value})}
-                        placeholder="Song title"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="artist_name">Artist Name</Label>
-                      <Input
-                        id="artist_name"
-                        value={formData.artist_name}
-                        onChange={(e) => setFormData({...formData, artist_name: e.target.value})}
-                        placeholder="Recording artist"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="album_title">Album Title</Label>
-                      <Input
-                        id="album_title"
-                        value={formData.album_title}
-                        onChange={(e) => setFormData({...formData, album_title: e.target.value})}
-                        placeholder="Album or release title"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="work_id">Work ID</Label>
-                      <Input
-                        id="work_id"
-                        value={formData.work_id}
-                        onChange={(e) => setFormData({...formData, work_id: e.target.value})}
-                        placeholder="Internal work identifier"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="isrc">ISRC</Label>
-                      <Input
-                        id="isrc"
-                        value={formData.isrc}
-                        onChange={(e) => setFormData({...formData, isrc: e.target.value})}
-                        placeholder="International Standard Recording Code"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="iswc">ISWC</Label>
-                      <Input
-                        id="iswc"
-                        value={formData.iswc}
-                        onChange={(e) => setFormData({...formData, iswc: e.target.value})}
-                        placeholder="International Standard Work Code"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Inheritance Settings */}
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Inheritance Settings</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="inherits_royalty_splits">Inherit Royalty Splits from Contract</Label>
-                        <Switch
-                          id="inherits_royalty_splits"
-                          checked={formData.inherits_royalty_splits}
-                          onCheckedChange={(checked) => setFormData({...formData, inherits_royalty_splits: checked})}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="inherits_recoupment_status">Inherit Recoupment Status</Label>
-                        <Switch
-                          id="inherits_recoupment_status"
-                          checked={formData.inherits_recoupment_status}
-                          onCheckedChange={(checked) => setFormData({...formData, inherits_recoupment_status: checked})}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="inherits_controlled_status">Inherit Controlled Status</Label>
-                        <Switch
-                          id="inherits_controlled_status"
-                          checked={formData.inherits_controlled_status}
-                          onCheckedChange={(checked) => setFormData({...formData, inherits_controlled_status: checked})}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Work-Specific Overrides */}
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Work-Specific Overrides</h4>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="work_specific_advance">Work-Specific Advance ($)</Label>
-                        <Input
-                          id="work_specific_advance"
-                          type="number"
-                          min="0"
-                          value={formData.work_specific_advance}
-                          onChange={(e) => setFormData({...formData, work_specific_advance: parseFloat(e.target.value) || 0})}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="work_specific_rate_reduction">Work-Specific Rate Reduction (%)</Label>
-                        <Input
-                          id="work_specific_rate_reduction"
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={formData.work_specific_rate_reduction}
-                          onChange={(e) => setFormData({...formData, work_specific_rate_reduction: parseFloat(e.target.value) || 0})}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-3">
-                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleAddWork} disabled={!formData.song_title}>
-                      Add Work
-                    </Button>
-                  </div>
-                </div>
+                <EnhancedScheduleWorkForm 
+                  contractId={contractId}
+                  onSuccess={handleWorkAdded}
+                  onCancel={() => setIsAddDialogOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           </CardTitle>
