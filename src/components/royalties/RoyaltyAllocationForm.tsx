@@ -121,10 +121,18 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         console.log('Mapped writers:', copyrightWriters);
         setWriters(copyrightWriters);
         
-        toast({
-          title: "Writers Loaded",
-          description: `Loaded ${copyrightWriters.length} writers from copyright`,
-        });
+        if (copyrightWriters.length > 0) {
+          toast({
+            title: "Writers Loaded",
+            description: `Loaded ${copyrightWriters.length} writers from copyright`,
+          });
+        } else {
+          toast({
+            title: "No Writers Found",
+            description: "This copyright doesn't have any writers. Add writers in the Copyright Management module first.",
+            variant: "destructive",
+          });
+        }
       } else {
         console.log('No writers found for this copyright');
         toast({
