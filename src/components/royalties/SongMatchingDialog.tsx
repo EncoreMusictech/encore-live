@@ -232,6 +232,14 @@ export function SongMatchingDialog({
           gross_amount: parseFloat(row['GROSS'] || '0'),
           net_amount: parseFloat(row['NET'] || '0'),
           iswc: row['ISWC'] || null,
+          // Store ALL mapped data fields for complete replication
+          mapped_data: {
+            ...row,
+            // Ensure batch ID is available in mapped data
+            'Batch ID': batchId,
+            // Add original detected source
+            'Statement Source': row['Statement Source'] || 'Unknown'
+          }
         };
 
         // Create allocations based on whether the song was matched
