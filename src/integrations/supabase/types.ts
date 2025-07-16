@@ -1406,7 +1406,6 @@ export type Database = {
           artist: string | null
           batch_id: string | null
           comments: string | null
-          contract_terms: Json | null
           controlled_status:
             | Database["public"]["Enums"]["controlled_status"]
             | null
@@ -1427,7 +1426,6 @@ export type Database = {
           artist?: string | null
           batch_id?: string | null
           comments?: string | null
-          contract_terms?: Json | null
           controlled_status?:
             | Database["public"]["Enums"]["controlled_status"]
             | null
@@ -1448,7 +1446,6 @@ export type Database = {
           artist?: string | null
           batch_id?: string | null
           comments?: string | null
-          contract_terms?: Json | null
           controlled_status?:
             | Database["public"]["Enums"]["controlled_status"]
             | null
