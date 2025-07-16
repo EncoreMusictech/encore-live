@@ -77,6 +77,10 @@ export default function RoyaltiesPage() {
                   Map works and their rightsholders to reconciled revenue
                 </p>
               </div>
+              <Button onClick={() => setShowForm(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                New Royalty
+              </Button>
             </div>
 
             {/* Stats Cards */}
