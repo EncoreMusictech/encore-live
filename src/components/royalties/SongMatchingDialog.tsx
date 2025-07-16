@@ -182,42 +182,66 @@ export function SongMatchingDialog({
   };
 
   const handleCreateRoyaltyAllocations = async () => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "User not authenticated",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!batchId) {
+      toast({
+        title: "Error", 
+        description: "No batch ID provided",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setProcessing(true);
     try {
       const allocationsToCreate = [];
 
       for (const match of songMatches) {
+        const baseAllocation = {
+          user_id: user.id,
+          batch_id: batchId,
+          song_title: match.songTitle,
+          artist: match.artist,
+          gross_royalty_amount: match.grossAmount,
+        };
+
         // Create allocations for matched songs
         if (match.isMatched && match.matchedCopyright) {
           allocationsToCreate.push({
-            user_id: user.id,
-            batch_id: batchId,
+            ...baseAllocation,
             copyright_id: match.matchedCopyright.id,
-            song_title: match.songTitle,
-            artist: match.artist,
-            gross_royalty_amount: match.grossAmount,
-            controlled_status: 'Controlled',
+            controlled_status: 'Controlled' as const,
           });
         } else {
           // Create allocations for unmatched songs (new works)
           allocationsToCreate.push({
-            user_id: user.id,
-            batch_id: batchId,
-            song_title: match.songTitle,
-            artist: match.artist,
-            gross_royalty_amount: match.grossAmount,
-            controlled_status: 'Non-Controlled',
+            ...baseAllocation,
+            controlled_status: 'Non-Controlled' as const,
           });
         }
       }
 
-      const { error } = await supabase
-        .from('royalty_allocations')
-        .insert(allocationsToCreate);
+      console.log('Creating allocations:', allocationsToCreate);
 
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('royalty_allocations')
+        .insert(allocationsToCreate)
+        .select();
+
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
+
+      console.log('Successfully created allocations:', data);
 
       const matchedCount = songMatches.filter(m => m.isMatched).length;
       const unmatchedCount = songMatches.length - matchedCount;
@@ -231,9 +255,25 @@ export function SongMatchingDialog({
       });
     } catch (error) {
       console.error('Error creating allocations:', error);
+      
+      // More detailed error handling
+      let errorMessage = "Failed to create royalty allocations";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('violates row-level security')) {
+          errorMessage = "Permission denied: Cannot create royalty allocations";
+        } else if (error.message.includes('violates foreign key')) {
+          errorMessage = "Invalid batch ID or copyright ID";
+        } else if (error.message.includes('violates check constraint')) {
+          errorMessage = "Invalid data format for royalty allocation";
+        } else {
+          errorMessage = `Database error: ${error.message}`;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to create royalty allocations",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
