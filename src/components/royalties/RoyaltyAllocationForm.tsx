@@ -91,9 +91,9 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
 
   // Handle copyright selection and auto-populate writers
   const handleCopyrightChange = (copyrightId: string) => {
-    setValue('copyright_id', copyrightId);
+    setValue('copyright_id', copyrightId === 'none' ? '' : copyrightId);
     
-    if (copyrightId) {
+    if (copyrightId && copyrightId !== 'none') {
       const selectedCopyright = availableCopyrights.find(c => c.id === copyrightId);
       if (selectedCopyright && selectedCopyright.copyright_writers) {
         // Auto-populate writers from the selected copyright
@@ -247,7 +247,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
               <SelectValue placeholder={loadingCopyrights ? "Loading copyrights..." : "Select a copyright"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No copyright linked</SelectItem>
+              <SelectItem value="none">No copyright linked</SelectItem>
               {availableCopyrights.map((copyright) => (
                 <SelectItem key={copyright.id} value={copyright.id}>
                   <div className="flex items-center gap-2">
