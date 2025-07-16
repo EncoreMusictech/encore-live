@@ -55,7 +55,7 @@ export const modules = [
     description: "AI-powered catalog assessment with 3-5 year forecasting and deal simulation tools",
     icon: TrendingUp,
     tier: "Pro" as const,
-    isPopular: true,
+    isPopular: false,
     subModules: [
       {
         id: "valuation",
