@@ -3,18 +3,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { useControlledWriters } from "@/hooks/useControlledWriters";
-import { Download, Brain, CalendarIcon, Users, Globe, Radio, FileText, Check, ChevronsUpDown, PenTool } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from "recharts";
+import { Download, Brain, CalendarIcon, TrendingUp, DollarSign, FileText, Check, ChevronsUpDown, PenTool, Filter, X } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))', 'hsl(var(--destructive))'];
 
@@ -26,7 +26,6 @@ export function RoyaltiesAnalyticsDashboard() {
     from: undefined,
     to: undefined,
   });
-  
   const [selectedWriterName, setSelectedWriterName] = useState<string>("all");
   const [writerSearchOpen, setWriterSearchOpen] = useState(false);
   const [selectedTerritory, setSelectedTerritory] = useState<string>("all");
@@ -35,15 +34,19 @@ export function RoyaltiesAnalyticsDashboard() {
   const [selectedMediaType, setSelectedMediaType] = useState<string>("all");
   const [aiInsights, setAiInsights] = useState<string>("");
   const [loadingInsights, setLoadingInsights] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Get unique filter values
+  // Get unique filter values from processed royalties only
   const filterOptions = useMemo(() => {
-    const controlledWriters = [...new Set(allocations.map(a => a.controlled_status).filter(Boolean))];
-    const workTitles = [...new Set(allocations.map(a => a.song_title).filter(Boolean))];
-    const artists = [...new Set(allocations.map(a => a.artist).filter(Boolean))];
+    // Filter to show only processed royalties
+    const processedAllocations = allocations.filter(allocation => 
+      allocation.batch_id // Only include allocations that have been processed through batches
+    );
+    
+    const workTitles = [...new Set(processedAllocations.map(a => a.song_title).filter(Boolean))];
+    const artists = [...new Set(processedAllocations.map(a => a.artist).filter(Boolean))];
     
     return {
-      controlledWriters,
       workTitles,
       artists,
       // Mock data for territory, source, and media type since they're not in the current schema
@@ -53,9 +56,10 @@ export function RoyaltiesAnalyticsDashboard() {
     };
   }, [allocations]);
 
-  // Process data for analytics
+  // Process data for analytics - only processed royalties
   const analyticsData = useMemo(() => {
-    let filtered = allocations;
+    // Start with only processed royalties (those with batch_id)
+    let filtered = allocations.filter(allocation => allocation.batch_id);
 
     // Apply date range filter
     if (dateRange.from || dateRange.to) {
@@ -71,7 +75,6 @@ export function RoyaltiesAnalyticsDashboard() {
         return true;
       });
     }
-
 
     if (selectedWorkTitle !== "all") {
       filtered = filtered.filter(allocation => allocation.song_title === selectedWorkTitle);
@@ -96,9 +99,6 @@ export function RoyaltiesAnalyticsDashboard() {
         filtered = [];
       }
     }
-
-    // Note: Territory, Source, and Media Type filters would require additional data
-    // For now, these are placeholders that could be implemented when the data model includes these fields
 
     // Generate quarterly data
     const quarterlyData = [
@@ -133,7 +133,8 @@ export function RoyaltiesAnalyticsDashboard() {
       controlled: controlledPieData,
       topSongs,
       total: filtered.reduce((sum, a) => sum + a.gross_royalty_amount, 0),
-      count: filtered.length
+      count: filtered.length,
+      averagePerRoyalty: filtered.length > 0 ? filtered.reduce((sum, a) => sum + a.gross_royalty_amount, 0) / filtered.length : 0
     };
   }, [allocations, dateRange, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType, controlledWriters]);
 
@@ -166,6 +167,7 @@ export function RoyaltiesAnalyticsDashboard() {
       summary: {
         totalAmount: analyticsData.total,
         totalCount: analyticsData.count,
+        averagePerRoyalty: analyticsData.averagePerRoyalty,
         filters: { dateRange, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
       },
       quarterly: analyticsData.quarterly,
@@ -177,7 +179,7 @@ export function RoyaltiesAnalyticsDashboard() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `royalties-analytics-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `processed-royalties-analytics-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -185,248 +187,291 @@ export function RoyaltiesAnalyticsDashboard() {
 
     toast({
       title: "Export successful",
-      description: "Analytics data has been exported successfully."
+      description: "Processed royalties analytics data has been exported successfully."
     });
   };
 
+  const clearAllFilters = () => {
+    setDateRange({ from: undefined, to: undefined });
+    setSelectedWriterName("all");
+    setSelectedTerritory("all");
+    setSelectedSource("all");
+    setSelectedWorkTitle("all");
+    setSelectedMediaType("all");
+  };
+
+  const hasActiveFilters = !!(
+    dateRange.from || dateRange.to ||
+    selectedWriterName !== "all" ||
+    selectedTerritory !== "all" ||
+    selectedSource !== "all" ||
+    selectedWorkTitle !== "all" ||
+    selectedMediaType !== "all"
+  );
+
   if (loading) {
-    return <div className="flex items-center justify-center h-64">Loading analytics...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center space-y-2">
+          <div className="animate-pulse">Loading processed royalties analytics...</div>
+          <p className="text-sm text-muted-foreground">Analyzing your royalty data</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with filters and actions */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Royalties Analytics</h2>
-          <p className="text-muted-foreground">Comprehensive analysis of your royalty performance</p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold">Processed Royalties Analytics</h2>
+            <p className="text-muted-foreground">Comprehensive insights from your processed royalty data</p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filters
+              {hasActiveFilters && <Badge variant="secondary" className="ml-1">{
+                [dateRange.from || dateRange.to, selectedWriterName !== "all", selectedTerritory !== "all", selectedSource !== "all", selectedWorkTitle !== "all", selectedMediaType !== "all"].filter(Boolean).length
+              }</Badge>}
+            </Button>
+            <Button onClick={generateAIInsights} disabled={loadingInsights} variant="outline" size="sm">
+              <Brain className="h-4 w-4 mr-2" />
+              {loadingInsights ? "Generating..." : "AI Insights"}
+            </Button>
+            <Button onClick={exportData} variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
         </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-48 justify-start text-left font-normal",
-                  !dateRange.from && !dateRange.to && "text-muted-foreground"
+
+        {/* Filters Section */}
+        {showFilters && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Filters</CardTitle>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                    <X className="h-4 w-4 mr-1" />
+                    Clear All
+                  </Button>
                 )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange.from ? (
-                  dateRange.to ? (
-                    <>
-                      {format(dateRange.from, "LLL dd, y")} -{" "}
-                      {format(dateRange.to, "LLL dd, y")}
-                    </>
-                  ) : (
-                    format(dateRange.from, "LLL dd, y")
-                  )
-                ) : (
-                  <span>Pick a date range</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={dateRange.from}
-                selected={dateRange}
-                onSelect={(range) => setDateRange({ from: range?.from, to: range?.to })}
-                numberOfMonths={2}
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
-
-
-          <Select value={selectedTerritory} onValueChange={setSelectedTerritory}>
-            <SelectTrigger className="w-36">
-              <Globe className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Territory" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Territories</SelectItem>
-              {filterOptions.territories.map((territory) => (
-                <SelectItem key={territory} value={territory}>{territory}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Popover open={writerSearchOpen} onOpenChange={setWriterSearchOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={writerSearchOpen}
-                className="w-48 justify-between"
-              >
-                <PenTool className="h-4 w-4 mr-2" />
-                {selectedWriterName === "all"
-                  ? "All Writers"
-                  : controlledWriters.find((writer) => writer.name === selectedWriterName)?.name || selectedWriterName}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-48 p-0">
-              <Command>
-                <CommandInput placeholder="Search writers..." />
-                <CommandList>
-                  <CommandEmpty>No controlled writers found.</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem
-                      value="all"
-                      onSelect={() => {
-                        setSelectedWriterName("all");
-                        setWriterSearchOpen(false);
-                      }}
-                    >
-                      <Check
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Date Range</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
                         className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedWriterName === "all" ? "opacity-100" : "opacity-0"
+                          "w-full justify-start text-left font-normal",
+                          !dateRange.from && !dateRange.to && "text-muted-foreground"
                         )}
-                      />
-                      All Writers
-                    </CommandItem>
-                    {controlledWriters.map((writer) => (
-                      <CommandItem
-                        key={writer.contact_id}
-                        value={writer.name}
-                        onSelect={(currentValue) => {
-                          setSelectedWriterName(currentValue === selectedWriterName ? "all" : currentValue);
-                          setWriterSearchOpen(false);
-                        }}
                       >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedWriterName === writer.name ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {writer.name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateRange.from ? (
+                          dateRange.to ? (
+                            <>
+                              {format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd")}
+                            </>
+                          ) : (
+                            format(dateRange.from, "MMM dd, y")
+                          )
+                        ) : (
+                          <span>Pick dates</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={dateRange.from}
+                        selected={dateRange}
+                        onSelect={(range) => setDateRange({ from: range?.from, to: range?.to })}
+                        numberOfMonths={2}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-          <Select value={selectedSource} onValueChange={setSelectedSource}>
-            <SelectTrigger className="w-36">
-              <Radio className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Source" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sources</SelectItem>
-              {filterOptions.sources.map((source) => (
-                <SelectItem key={source} value={source}>{source}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Writer</label>
+                  <Popover open={writerSearchOpen} onOpenChange={setWriterSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={writerSearchOpen}
+                        className="w-full justify-between"
+                      >
+                        <PenTool className="h-4 w-4 mr-2" />
+                        <span className="truncate">
+                          {selectedWriterName === "all"
+                            ? "All Writers"
+                            : controlledWriters.find((writer) => writer.name === selectedWriterName)?.name || selectedWriterName}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search writers..." />
+                        <CommandList>
+                          <CommandEmpty>No controlled writers found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="all"
+                              onSelect={() => {
+                                setSelectedWriterName("all");
+                                setWriterSearchOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedWriterName === "all" ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              All Writers
+                            </CommandItem>
+                            {controlledWriters.map((writer) => (
+                              <CommandItem
+                                key={writer.contact_id}
+                                value={writer.name}
+                                onSelect={(currentValue) => {
+                                  setSelectedWriterName(currentValue === selectedWriterName ? "all" : currentValue);
+                                  setWriterSearchOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedWriterName === writer.name ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {writer.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-          <Select value={selectedWorkTitle} onValueChange={setSelectedWorkTitle}>
-            <SelectTrigger className="w-48">
-              <FileText className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Work Title" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Works</SelectItem>
-              {filterOptions.workTitles.slice(0, 20).map((title) => (
-                <SelectItem key={title} value={title}>{title.length > 30 ? title.substring(0, 30) + '...' : title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Territory</label>
+                  <Select value={selectedTerritory} onValueChange={setSelectedTerritory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Territory" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Territories</SelectItem>
+                      {filterOptions.territories.map((territory) => (
+                        <SelectItem key={territory} value={territory}>{territory}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <Select value={selectedMediaType} onValueChange={setSelectedMediaType}>
-            <SelectTrigger className="w-36">
-              <Radio className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Media Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Media</SelectItem>
-              {filterOptions.mediaTypes.map((type) => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Source</label>
+                  <Select value={selectedSource} onValueChange={setSelectedSource}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sources</SelectItem>
+                      {filterOptions.sources.map((source) => (
+                        <SelectItem key={source} value={source}>{source}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <Button onClick={generateAIInsights} disabled={loadingInsights} variant="outline">
-            <Brain className="h-4 w-4 mr-2" />
-            {loadingInsights ? "Generating..." : "AI Insights"}
-          </Button>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Work Title</label>
+                  <Select value={selectedWorkTitle} onValueChange={setSelectedWorkTitle}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Work Title" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Works</SelectItem>
+                      {filterOptions.workTitles.slice(0, 20).map((title) => (
+                        <SelectItem key={title} value={title}>
+                          {title.length > 30 ? title.substring(0, 30) + '...' : title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <Button onClick={exportData} variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-        </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Media Type</label>
+                  <Select value={selectedMediaType} onValueChange={setSelectedMediaType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Media Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Media</SelectItem>
+                      {filterOptions.mediaTypes.map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${analyticsData.total.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">From processed royalties</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Royalties</CardTitle>
-            <Radio className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analyticsData.count}</div>
+            <div className="text-2xl font-bold">{analyticsData.count.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Processed transactions</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Per Royalty</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Average Transaction</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ${analyticsData.count > 0 ? (analyticsData.total / analyticsData.count).toFixed(2) : "0"}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Filters</CardTitle>
-            <Globe className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-1">
-              {(dateRange.from || dateRange.to) && (
-                <Badge variant="secondary">
-                  {dateRange.from && dateRange.to
-                    ? `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d")}`
-                    : dateRange.from
-                    ? `From ${format(dateRange.from, "MMM d")}`
-                    : dateRange.to
-                    ? `To ${format(dateRange.to, "MMM d")}`
-                    : ""}
-                </Badge>
-              )}
-              
-              {selectedWriterName !== "all" && <Badge variant="secondary">{selectedWriterName}</Badge>}
-              {selectedTerritory !== "all" && <Badge variant="secondary">{selectedTerritory}</Badge>}
-              {selectedSource !== "all" && <Badge variant="secondary">{selectedSource}</Badge>}
-              {selectedWorkTitle !== "all" && <Badge variant="secondary">{selectedWorkTitle.length > 20 ? selectedWorkTitle.substring(0, 20) + '...' : selectedWorkTitle}</Badge>}
-              {selectedMediaType !== "all" && <Badge variant="secondary">{selectedMediaType}</Badge>}
-              {!dateRange.from && !dateRange.to && selectedWriterName === "all" && selectedTerritory === "all" && selectedSource === "all" && selectedWorkTitle === "all" && selectedMediaType === "all" && (
-                <Badge variant="outline">No filters</Badge>
-              )}
-            </div>
+            <div className="text-2xl font-bold">${analyticsData.averagePerRoyalty.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+            <p className="text-xs text-muted-foreground">Per royalty payment</p>
           </CardContent>
         </Card>
       </div>
@@ -435,97 +480,146 @@ export function RoyaltiesAnalyticsDashboard() {
       {aiInsights && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5" />
-              AI-Powered Insights
+            <CardTitle className="flex items-center">
+              <Brain className="h-5 w-5 mr-2 text-primary" />
+              AI-Generated Insights
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none">
-              <p className="whitespace-pre-wrap">{aiInsights}</p>
+            <div className="prose max-w-none text-sm leading-relaxed">
+              {aiInsights}
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Charts */}
-      <Tabs defaultValue="quarterly" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="quarterly">Quarterly Trends</TabsTrigger>
-          <TabsTrigger value="controlled">Controlled Status</TabsTrigger>
-          <TabsTrigger value="topsongs">Top Songs</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="quarterly">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quarterly Revenue Trends</CardTitle>
-              <CardDescription>Revenue performance across quarters</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Quarterly Trend */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quarterly Revenue Trend</CardTitle>
+            <CardDescription>Processed royalty revenue over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={analyticsData.quarterly}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="quarter" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Revenue']} />
-                  <Area type="monotone" dataKey="amount" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
+                  <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
+                  <Tooltip 
+                    formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="amount" 
+                    stroke="hsl(var(--primary))" 
+                    fill="hsl(var(--primary))" 
+                    fillOpacity={0.1}
+                    strokeWidth={2}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="controlled">
-          <Card>
-            <CardHeader>
-              <CardTitle>Revenue by Controlled Status</CardTitle>
-              <CardDescription>Distribution of revenue by writer control status</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
+        {/* Controlled Status Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue Distribution</CardTitle>
+            <CardDescription>By controlled status</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={analyticsData.controlled}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    innerRadius={60}
                     outerRadius={120}
-                    fill="#8884d8"
+                    paddingAngle={2}
                     dataKey="value"
                   >
                     {analyticsData.controlled.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Revenue']} />
+                  <Tooltip 
+                    formatter={(value) => `$${value.toLocaleString()}`}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <div className="flex justify-center mt-4 space-x-4">
+                {analyticsData.controlled.map((entry, index) => (
+                  <div key={entry.name} className="flex items-center text-sm">
+                    <div 
+                      className="w-3 h-3 rounded-full mr-2" 
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                    {entry.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        <TabsContent value="topsongs">
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Performing Songs</CardTitle>
-              <CardDescription>Songs generating the highest royalties</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={analyticsData.topSongs} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="song" type="category" width={150} />
-                  <Tooltip formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Revenue']} />
-                  <Bar dataKey="amount" fill="hsl(var(--primary))" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Top Performing Songs */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Top Performing Songs</CardTitle>
+          <CardDescription>Highest revenue generating tracks from processed royalties</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analyticsData.topSongs} margin={{ left: 120 }}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis 
+                  type="number" 
+                  tickFormatter={(value) => `$${value.toLocaleString()}`}
+                />
+                <YAxis 
+                  type="category" 
+                  dataKey="song" 
+                  width={150}
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => value.length > 20 ? value.substring(0, 20) + '...' : value}
+                />
+                <Tooltip 
+                  formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px'
+                  }}
+                />
+                <Bar 
+                  dataKey="amount" 
+                  fill="hsl(var(--primary))" 
+                  radius={[0, 4, 4, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
