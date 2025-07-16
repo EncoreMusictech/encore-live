@@ -329,7 +329,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Contact</Label>
+                  <Label>Writer</Label>
                   <Select
                     value={writer.contact_id}
                     onValueChange={(value) => updateWriter(index, 'contact_id', value)}
