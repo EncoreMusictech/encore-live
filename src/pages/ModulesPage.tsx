@@ -10,18 +10,14 @@ const ModulesPage = () => {
     {
       id: "catalog-valuation",
       title: "Catalog Valuation",
-      description: "AI-powered catalog valuation using advanced analytics",
-      icon: BarChart3,
+      description: "AI-powered catalog assessment with 3-5 year forecasting and deal simulation tools",
+      icon: TrendingUp,
       status: "Active",
-      path: "/catalog-valuation"
-    },
-    {
-      id: "deal-simulator",
-      title: "Deal Simulator",
-      description: "Simulate different deal structures and outcomes",
-      icon: Calculator,
-      status: "Active", 
-      path: "/deal-simulator"
+      path: "/catalog-valuation",
+      subModules: [
+        { title: "Catalog Valuation", path: "/catalog-valuation" },
+        { title: "Deal Simulator", path: "/deal-simulator" }
+      ]
     },
     {
       id: "contract-management",

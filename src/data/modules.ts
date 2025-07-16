@@ -52,14 +52,31 @@ export const modules = [
   {
     id: "catalog-valuation",
     title: "Catalog Valuation",
-    description: "AI-powered catalog assessment with 3-5 year forecasting and fair market value analysis",
+    description: "AI-powered catalog assessment with 3-5 year forecasting and deal simulation tools",
     icon: TrendingUp,
     tier: "Pro" as const,
     isPopular: true,
+    subModules: [
+      {
+        id: "valuation",
+        title: "Catalog Valuation",
+        description: "AI-powered catalog assessment with 3-5 year forecasting and fair market value analysis",
+        icon: TrendingUp,
+        path: "/catalog-valuation"
+      },
+      {
+        id: "deal-simulator",
+        title: "Deal Simulator",
+        description: "Simulate different deal structures and outcomes with advanced modeling",
+        icon: TrendingUp,
+        path: "/deal-simulator"
+      }
+    ],
     features: [
       "Revenue history analysis",
       "Growth modeling (CAGR)",
       "Scenario-based estimates",
+      "Deal structure simulation",
       "Downloadable investor reports",
       "Comp-based valuation range"
     ]
