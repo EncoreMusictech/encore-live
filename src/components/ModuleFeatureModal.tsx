@@ -19,16 +19,12 @@ interface ModuleFeatureModalProps {
 const moduleScreenshots: Record<string, { image: string; caption: string }[]> = {
   "royalties-processing": [
     {
-      image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=600&fit=crop",
-      caption: "Automated royalty statement reconciliation dashboard with real-time processing"
+      image: "/lovable-uploads/df93d50a-c213-4852-ba45-07700634740f.png",
+      caption: "Complete royalties management dashboard with reconciliation, allocation, and payout modules"
     },
     {
-      image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=600&fit=crop", 
-      caption: "Advanced work-to-rightsholder mapping with AI-powered matching algorithms"
-    },
-    {
-      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=800&h=600&fit=crop",
-      caption: "Comprehensive client payout statements with detailed earnings breakdowns"
+      image: "/lovable-uploads/dc0df084-a407-4ecb-ba14-98ff89d28851.png", 
+      caption: "Advanced statement import system with automatic source detection and processing status tracking"
     }
   ],
   "catalog-valuation": [
