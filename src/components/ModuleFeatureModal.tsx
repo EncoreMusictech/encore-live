@@ -1,0 +1,181 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { LucideIcon } from "lucide-react";
+
+interface ModuleFeatureModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  module: {
+    id: string;
+    title: string;
+    description: string;
+    icon: LucideIcon;
+    features: string[];
+    tier: "Free" | "Pro" | "Enterprise";
+  } | null;
+}
+
+const moduleScreenshots: Record<string, { image: string; caption: string }[]> = {
+  "royalties-processing": [
+    {
+      image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=600&fit=crop",
+      caption: "Automated royalty statement reconciliation dashboard with real-time processing"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=600&fit=crop", 
+      caption: "Advanced work-to-rightsholder mapping with AI-powered matching algorithms"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=800&h=600&fit=crop",
+      caption: "Comprehensive client payout statements with detailed earnings breakdowns"
+    }
+  ],
+  "catalog-valuation": [
+    {
+      image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800&h=600&fit=crop",
+      caption: "AI-powered catalog valuation with 3-5 year revenue forecasting models"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=800&h=600&fit=crop",
+      caption: "Interactive deal simulator with scenario modeling and risk analysis"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=800&h=600&fit=crop",
+      caption: "Professional valuation reports ready for investors and stakeholders"
+    }
+  ],
+  "contract-management": [
+    {
+      image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=600&fit=crop",
+      caption: "Centralized contract repository with smart tagging and organization"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=600&fit=crop",
+      caption: "Automated deadline tracking with renewal alerts and notifications"
+    }
+  ],
+  "copyright-management": [
+    {
+      image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800&h=600&fit=crop",
+      caption: "Complete metadata management with ISRC/ISWC tracking and PRO registration"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=800&h=600&fit=crop",
+      caption: "Advanced split management with writer and publisher royalty allocation"
+    }
+  ],
+  "sync-licensing": [
+    {
+      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=800&h=600&fit=crop",
+      caption: "Comprehensive sync deal pipeline with pitch tracking and status management"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=600&fit=crop",
+      caption: "Automated deal memo generation with territory and term management"
+    }
+  ],
+  "client-portal": [
+    {
+      image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800&h=600&fit=crop",
+      caption: "Secure artist dashboard with earnings analytics and performance insights"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=600&fit=crop",
+      caption: "Manager oversight portal with comprehensive deal and royalty visibility"
+    }
+  ]
+};
+
+const ModuleFeatureModal = ({ isOpen, onClose, module }: ModuleFeatureModalProps) => {
+  if (!module) return null;
+
+  const screenshots = moduleScreenshots[module.id] || [];
+  const Icon = module.icon;
+
+  const tierColors = {
+    Free: "bg-secondary text-secondary-foreground",
+    Pro: "bg-music-purple text-primary-foreground", 
+    Enterprise: "bg-music-gold text-accent-foreground"
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="bg-gradient-primary rounded-lg p-3">
+              <Icon className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div className="flex-1">
+              <DialogTitle className="text-2xl mb-2">{module.title}</DialogTitle>
+              <div className="flex items-center gap-2">
+                <Badge className={tierColors[module.tier]}>
+                  {module.tier}
+                </Badge>
+                <p className="text-muted-foreground">{module.description}</p>
+              </div>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Screenshots */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Powerful Features in Action</h3>
+            <div className="grid gap-6">
+              {screenshots.map((screenshot, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="relative overflow-hidden rounded-lg border bg-muted">
+                    <img 
+                      src={screenshot.image}
+                      alt={screenshot.caption}
+                      className="w-full h-64 object-cover"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    {screenshot.caption}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Features List */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Key Features</h3>
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {module.features.map((feature, index) => (
+                <li key={index} className="flex items-start space-x-2 text-sm">
+                  <div className="w-1.5 h-1.5 rounded-full bg-music-purple mt-2 flex-shrink-0" />
+                  <span className="text-muted-foreground">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* CTA */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+            <Button 
+              onClick={() => {
+                if (module.title === "Catalog Valuation") {
+                  window.location.href = "/catalog-valuation";
+                } else {
+                  window.location.href = "/pricing";
+                }
+              }}
+              className="bg-gradient-primary text-primary-foreground hover:opacity-90"
+            >
+              Get Started
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default ModuleFeatureModal;

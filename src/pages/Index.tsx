@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import ModuleCard from "@/components/ModuleCard";
+import ModuleFeatureModal from "@/components/ModuleFeatureModal";
 import { modules } from "@/data/modules";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,12 +13,15 @@ import { Check, Star } from "lucide-react";
 const Index = () => {
   const { toast } = useToast();
   const [selectedTier, setSelectedTier] = useState<"Free" | "Pro" | "Enterprise">("Pro");
+  const [selectedModule, setSelectedModule] = useState<typeof modules[0] | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleGetStarted = (moduleId: string) => {
-    toast({
-      title: "Module Access",
-      description: "This module is coming soon! Sign up for early access.",
-    });
+    const module = modules.find(m => m.id === moduleId);
+    if (module) {
+      setSelectedModule(module);
+      setIsModalOpen(true);
+    }
   };
 
   const pricingTiers = [
@@ -206,6 +210,12 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      <ModuleFeatureModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        module={selectedModule}
+      />
     </div>
   );
 };
