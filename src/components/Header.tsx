@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Music, Menu, User, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -59,9 +60,35 @@ const Header = () => {
               </Link>
             </>
           )}
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="h-5 w-5" />
-          </Button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px]">
+              <nav className="flex flex-col space-y-4 mt-6">
+                <Link 
+                  to="/modules" 
+                  className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
+                >
+                  Modules
+                </Link>
+                <Link 
+                  to="/pricing" 
+                  className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
+                >
+                  Pricing
+                </Link>
+                <a 
+                  href="#contact" 
+                  className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
+                >
+                  Contact
+                </a>
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
