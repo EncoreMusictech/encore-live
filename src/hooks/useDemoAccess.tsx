@@ -31,6 +31,7 @@ interface DemoAccessContextType {
   showUpgradeModal: boolean;
   setShowUpgradeModal: (show: boolean) => void;
   upgradeMessage: string;
+  showUpgradeModalForModule: (module: string) => void;
 }
 
 const DemoAccessContext = createContext<DemoAccessContextType | undefined>(undefined);
@@ -131,36 +132,40 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
       switch (module) {
         case 'catalogValuation':
           newLimits.catalogValuation.searches += 1;
-          if (newLimits.catalogValuation.searches >= newLimits.catalogValuation.maxSearches) {
-            setUpgradeMessage('Demo complete! You\'ve used your free catalog valuation. Sign up to unlock unlimited valuations and deal simulations.');
-            setShowUpgradeModal(true);
-          }
           break;
         case 'contractManagement':
           newLimits.contractManagement.contracts += 1;
-          if (newLimits.contractManagement.contracts >= newLimits.contractManagement.maxContracts) {
-            setUpgradeMessage('Demo complete. Sign up to manage more contracts and unlock advanced features.');
-            setShowUpgradeModal(true);
-          }
           break;
         case 'copyrightManagement':
           newLimits.copyrightManagement.registrations += 1;
-          if (newLimits.copyrightManagement.registrations >= newLimits.copyrightManagement.maxRegistrations) {
-            setUpgradeMessage('Demo complete! You\'ve registered your first copyright. Sign up to manage unlimited copyrights and access bulk registration.');
-            setShowUpgradeModal(true);
-          }
           break;
         case 'royaltiesProcessing':
           newLimits.royaltiesProcessing.imports += 1;
-          if (newLimits.royaltiesProcessing.imports >= newLimits.royaltiesProcessing.maxImports) {
-            setUpgradeMessage('You\'ve completed the royalties demo. Sign up to unlock full reconciliation tools and unlimited statement processing.');
-            setShowUpgradeModal(true);
-          }
           break;
       }
       
       return newLimits;
     });
+  };
+
+  const showUpgradeModalForModule = (module: string): void => {
+    if (isAdmin || !isDemo) return;
+    
+    switch (module) {
+      case 'catalogValuation':
+        setUpgradeMessage('Demo complete! You\'ve used your free catalog valuation. Sign up to unlock unlimited valuations and deal simulations.');
+        break;
+      case 'contractManagement':
+        setUpgradeMessage('Demo complete. Sign up to manage more contracts and unlock advanced features.');
+        break;
+      case 'copyrightManagement':
+        setUpgradeMessage('Demo complete! You\'ve registered your first copyright. Sign up to manage unlimited copyrights and access bulk registration.');
+        break;
+      case 'royaltiesProcessing':
+        setUpgradeMessage('You\'ve completed the royalties demo. Sign up to unlock full reconciliation tools and unlimited statement processing.');
+        break;
+    }
+    setShowUpgradeModal(true);
   };
 
   const getRemainingUsage = (module: string): number => {
@@ -199,6 +204,7 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
       showUpgradeModal,
       setShowUpgradeModal,
       upgradeMessage,
+      showUpgradeModalForModule,
     }}>
       {children}
     </DemoAccessContext.Provider>

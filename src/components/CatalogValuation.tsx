@@ -120,16 +120,12 @@ const CatalogValuation = () => {
     methodology: 'advanced'
   });
   const { toast } = useToast();
-  const { canAccess, incrementUsage } = useDemoAccess();
+  const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
 
   const handleSearch = async () => {
     // Check demo access before proceeding
     if (!canAccess('catalogValuation')) {
-      toast({
-        title: "Demo Limit Reached",
-        description: "You've completed your free catalog valuation. Sign up to unlock unlimited access.",
-        variant: "destructive",
-      });
+      showUpgradeModalForModule('catalogValuation');
       return;
     }
     if (!artistName.trim()) {
