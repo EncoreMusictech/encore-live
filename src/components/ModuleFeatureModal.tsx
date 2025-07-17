@@ -71,12 +71,16 @@ const moduleScreenshots: Record<string, { image: string; caption: string }[]> = 
   ],
   "sync-licensing": [
     {
-      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=800&h=600&fit=crop",
-      caption: "Comprehensive sync deal pipeline with pitch tracking and status management"
+      image: "/lovable-uploads/cceb73e7-dbf5-4458-a105-44e022585506.png",
+      caption: "Comprehensive sync request creation with project details, media type, source tracking, and sync agent management"
     },
     {
-      image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=600&fit=crop",
-      caption: "Automated deal memo generation with territory and term management"
+      image: "/lovable-uploads/6cc3f248-6a49-4430-843e-d85eaae4d355.png",
+      caption: "Advanced terms management with territory licensing, music usage rights, time codes, and licensing period tracking"
+    },
+    {
+      image: "/lovable-uploads/46335fc7-00f3-45fd-97cb-21f2b426bffd.png",
+      caption: "Complete status workflow tracking from inquiry to licensed with payment and invoice status management"
     }
   ],
   "client-portal": [
