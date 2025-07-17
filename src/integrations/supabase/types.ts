@@ -167,6 +167,111 @@ export type Database = {
         }
         Relationships: []
       }
+      client_data_associations: {
+        Row: {
+          client_user_id: string
+          created_at: string
+          data_id: string
+          data_type: string
+          id: string
+          subscriber_user_id: string
+        }
+        Insert: {
+          client_user_id: string
+          created_at?: string
+          data_id: string
+          data_type: string
+          id?: string
+          subscriber_user_id: string
+        }
+        Update: {
+          client_user_id?: string
+          created_at?: string
+          data_id?: string
+          data_type?: string
+          id?: string
+          subscriber_user_id?: string
+        }
+        Relationships: []
+      }
+      client_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by_user_id: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invitation_token: string
+          permissions: Json
+          role: Database["public"]["Enums"]["client_role"]
+          status: string
+          subscriber_user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invitation_token: string
+          permissions?: Json
+          role?: Database["public"]["Enums"]["client_role"]
+          status?: string
+          subscriber_user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invitation_token?: string
+          permissions?: Json
+          role?: Database["public"]["Enums"]["client_role"]
+          status?: string
+          subscriber_user_id?: string
+        }
+        Relationships: []
+      }
+      client_portal_access: {
+        Row: {
+          client_user_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          permissions: Json
+          role: Database["public"]["Enums"]["client_role"]
+          status: string
+          subscriber_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_user_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          permissions?: Json
+          role?: Database["public"]["Enums"]["client_role"]
+          status?: string
+          subscriber_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_user_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          permissions?: Json
+          role?: Database["public"]["Enums"]["client_role"]
+          status?: string
+          subscriber_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           address: string | null
@@ -2192,6 +2297,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_invitation_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_royalty_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -2211,6 +2320,14 @@ export type Database = {
       generate_work_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_client_subscriber: {
+        Args: { _client_user_id: string }
+        Returns: string
+      }
+      has_client_portal_access: {
+        Args: { _user_id: string; _module?: string }
+        Returns: boolean
       }
       log_copyright_activity: {
         Args: {
@@ -2254,6 +2371,7 @@ export type Database = {
     Enums: {
       artist_type: "indie" | "label" | "360" | "distribution_only"
       batch_status: "Pending" | "Imported" | "Processed"
+      client_role: "admin" | "client"
       contract_status: "draft" | "signed" | "active" | "expired" | "terminated"
       contract_type:
         | "publishing"
@@ -2396,6 +2514,7 @@ export const Constants = {
     Enums: {
       artist_type: ["indie", "label", "360", "distribution_only"],
       batch_status: ["Pending", "Imported", "Processed"],
+      client_role: ["admin", "client"],
       contract_status: ["draft", "signed", "active", "expired", "terminated"],
       contract_type: [
         "publishing",
