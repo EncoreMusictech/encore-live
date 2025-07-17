@@ -289,6 +289,51 @@ export const useClientPortal = () => {
     }
   };
 
+  // Function to trigger invitation lifecycle maintenance
+  const triggerInvitationMaintenance = async (action: 'expire_invitations' | 'cleanup_expired' | 'send_reminders' | 'expire_access' | 'full_maintenance' = 'full_maintenance') => {
+    try {
+      const { data, error } = await supabase.functions.invoke('client-invitation-lifecycle', {
+        body: { action }
+      });
+      
+      if (error) {
+        console.error('Error triggering invitation maintenance:', error);
+        return { success: false, error: error.message };
+      }
+      
+      // Refresh data after maintenance
+      await fetchClientAccess();
+      await fetchInvitations();
+      
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('Error triggering invitation maintenance:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Function to get invitation status with expiry information
+  const getInvitationStatus = (invitation: ClientInvitation) => {
+    const now = new Date();
+    const expiresAt = new Date(invitation.expires_at);
+    const daysUntilExpiry = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (invitation.status === 'expired' || expiresAt < now) {
+      return { status: 'expired', daysUntilExpiry: 0, isUrgent: false };
+    }
+    
+    if (invitation.status === 'accepted') {
+      return { status: 'accepted', daysUntilExpiry, isUrgent: false };
+    }
+    
+    const isUrgent = daysUntilExpiry <= 3;
+    return { 
+      status: 'pending', 
+      daysUntilExpiry: Math.max(0, daysUntilExpiry), 
+      isUrgent 
+    };
+  };
+
   useEffect(() => {
     if (user) {
       fetchClientAccess();
@@ -307,6 +352,8 @@ export const useClientPortal = () => {
     createDataAssociation,
     isClient,
     getClientPermissions,
+    triggerInvitationMaintenance,
+    getInvitationStatus,
     refreshData: () => {
       fetchClientAccess();
       fetchInvitations();

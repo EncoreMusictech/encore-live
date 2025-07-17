@@ -5,16 +5,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useClientPortal } from "@/hooks/useClientPortal";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Mail, Users, Database } from "lucide-react";
+import { ArrowLeft, Plus, Mail, Users, Database, Clock, AlertTriangle, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ClientPortalTestHelper } from "@/components/ClientPortalTestHelper";
 
 export default function ClientAdminPage() {
   const { toast } = useToast();
-  const { clientAccess, invitations, createInvitation, revokeClientAccess, createDataAssociation, refreshData } = useClientPortal();
+  const { 
+    clientAccess, 
+    invitations, 
+    createInvitation, 
+    revokeClientAccess, 
+    createDataAssociation, 
+    triggerInvitationMaintenance,
+    getInvitationStatus,
+    refreshData 
+  } = useClientPortal();
   
   const [inviteEmail, setInviteEmail] = useState("");
   const [selectedRole, setSelectedRole] = useState<"admin" | "client">("client");
@@ -118,6 +128,41 @@ export default function ClientAdminPage() {
       title: "Copied",
       description: "Invitation link copied to clipboard",
     });
+  };
+
+  const handleManualMaintenance = async (action: 'expire_invitations' | 'cleanup_expired' | 'send_reminders' | 'expire_access' | 'full_maintenance') => {
+    const result = await triggerInvitationMaintenance(action);
+    
+    if (result.success) {
+      toast({
+        title: "Success",
+        description: "Maintenance task completed successfully",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to run maintenance task",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getStatusBadge = (invitation: any) => {
+    const status = getInvitationStatus(invitation);
+    
+    if (status.status === 'expired') {
+      return <Badge variant="destructive" className="flex items-center gap-1"><XCircle className="h-3 w-3" />Expired</Badge>;
+    }
+    
+    if (status.status === 'accepted') {
+      return <Badge variant="default" className="flex items-center gap-1"><CheckCircle className="h-3 w-3" />Accepted</Badge>;
+    }
+    
+    if (status.isUrgent) {
+      return <Badge variant="destructive" className="flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Urgent ({status.daysUntilExpiry}d)</Badge>;
+    }
+    
+    return <Badge variant="secondary" className="flex items-center gap-1"><Clock className="h-3 w-3" />Pending ({status.daysUntilExpiry}d)</Badge>;
   };
 
   return (
@@ -262,29 +307,78 @@ export default function ClientAdminPage() {
             </CardContent>
           </Card>
 
-          {/* Active Invitations */}
+          {/* Invitation Lifecycle Management */}
           <Card>
             <CardHeader>
-              <CardTitle>Pending Invitations</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5" />
+                Invitation Lifecycle Management
+              </CardTitle>
               <CardDescription>
-                Invitations that haven't been accepted yet
+                Automate and manage invitation expiry, cleanup, and reminders
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleManualMaintenance('send_reminders')}
+                >
+                  Send Reminders
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleManualMaintenance('expire_invitations')}
+                >
+                  Expire Old
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleManualMaintenance('cleanup_expired')}
+                >
+                  Cleanup Expired
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleManualMaintenance('full_maintenance')}
+                >
+                  Full Maintenance
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* All Invitations */}
+          <Card>
+            <CardHeader>
+              <CardTitle>All Invitations</CardTitle>
+              <CardDescription>
+                Complete list of invitations with status tracking
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {invitations.filter(inv => inv.status === 'pending').length === 0 ? (
-                <p className="text-muted-foreground">No pending invitations</p>
+              {invitations.length === 0 ? (
+                <p className="text-muted-foreground">No invitations yet</p>
               ) : (
                 <div className="space-y-2">
-                  {invitations
-                    .filter(inv => inv.status === 'pending')
-                    .map((invitation) => (
-                      <div key={invitation.id} className="flex items-center justify-between p-3 border rounded">
-                        <div>
+                  {invitations.map((invitation) => (
+                    <div key={invitation.id} className="flex items-center justify-between p-3 border rounded">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
                           <p className="font-medium">{invitation.email}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Role: {invitation.role} • Created: {new Date(invitation.created_at).toLocaleDateString()}
-                          </p>
+                          {getStatusBadge(invitation)}
                         </div>
+                        <p className="text-sm text-muted-foreground">
+                          Role: {invitation.role} • Created: {new Date(invitation.created_at).toLocaleDateString()}
+                          {invitation.expires_at && ` • Expires: ${new Date(invitation.expires_at).toLocaleDateString()}`}
+                          {invitation.reminder_count > 0 && ` • Reminders sent: ${invitation.reminder_count}`}
+                        </p>
+                      </div>
+                      {invitation.status === 'pending' && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -292,8 +386,9 @@ export default function ClientAdminPage() {
                         >
                           Copy Link
                         </Button>
-                      </div>
-                    ))}
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>

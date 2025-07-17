@@ -198,12 +198,15 @@ export type Database = {
         Row: {
           accepted_at: string | null
           accepted_by_user_id: string | null
+          auto_cleanup_scheduled_at: string | null
           created_at: string
           email: string
           expires_at: string
           id: string
           invitation_token: string
           permissions: Json
+          reminder_count: number | null
+          reminder_sent_at: string | null
           role: Database["public"]["Enums"]["client_role"]
           status: string
           subscriber_user_id: string
@@ -211,12 +214,15 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           accepted_by_user_id?: string | null
+          auto_cleanup_scheduled_at?: string | null
           created_at?: string
           email: string
           expires_at: string
           id?: string
           invitation_token: string
           permissions?: Json
+          reminder_count?: number | null
+          reminder_sent_at?: string | null
           role?: Database["public"]["Enums"]["client_role"]
           status?: string
           subscriber_user_id: string
@@ -224,12 +230,15 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           accepted_by_user_id?: string | null
+          auto_cleanup_scheduled_at?: string | null
           created_at?: string
           email?: string
           expires_at?: string
           id?: string
           invitation_token?: string
           permissions?: Json
+          reminder_count?: number | null
+          reminder_sent_at?: string | null
           role?: Database["public"]["Enums"]["client_role"]
           status?: string
           subscriber_user_id?: string
@@ -2285,7 +2294,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_expired_invitations: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       cleanup_old_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      expire_client_access: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      expire_old_invitations: {
         Args: Record<PropertyKey, never>
         Returns: number
       }
@@ -2325,6 +2346,17 @@ export type Database = {
         Args: { _client_user_id: string }
         Returns: string
       }
+      get_invitations_needing_reminders: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          email: string
+          subscriber_user_id: string
+          expires_at: string
+          reminder_count: number
+          days_until_expiry: number
+        }[]
+      }
       has_client_portal_access: {
         Args: { _user_id: string; _module?: string }
         Returns: boolean
@@ -2354,6 +2386,10 @@ export type Database = {
           p_severity?: string
         }
         Returns: string
+      }
+      mark_invitation_reminder_sent: {
+        Args: { invitation_id: string }
+        Returns: undefined
       }
       setup_demo_user: {
         Args: Record<PropertyKey, never>
