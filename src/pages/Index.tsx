@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Star } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const { toast } = useToast();
@@ -206,6 +207,9 @@ const Index = () => {
                   Schedule a Demo
                 </a>
               </Button>
+              <Link to="/client-admin">
+                <Button variant="ghost" size="lg">Client Admin</Button>
+              </Link>
             </div>
           </div>
         </div>

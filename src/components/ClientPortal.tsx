@@ -13,7 +13,7 @@ import { ClientSyncDeals } from './client-portal/ClientSyncDeals';
 import { ClientRoyalties } from './client-portal/ClientRoyalties';
 import { ClientNotifications } from './client-portal/ClientNotifications';
 
-export const ClientPortal = () => {
+const ClientPortal = () => {
   const { user } = useAuth();
   const { isClient, getClientPermissions } = useClientPortal();
   const [clientAccess, setClientAccess] = useState(false);
@@ -139,3 +139,5 @@ export const ClientPortal = () => {
     </div>
   );
 };
+
+export default ClientPortal;

@@ -21,6 +21,8 @@ import PricingPage from "./pages/PricingPage";
 import ReconciliationPage from "./pages/ReconciliationPage";
 import RoyaltiesPage from "./pages/RoyaltiesPage";
 import PayoutsPage from "./pages/PayoutsPage";
+import ClientPortal from "./components/ClientPortal";
+import ClientAdminPage from "./pages/ClientAdminPage";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,16 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/client-portal" element={
+              <ProtectedRoute>
+                <ClientPortal />
+              </ProtectedRoute>
+            } />
+            <Route path="/client-admin" element={
+              <ProtectedRoute>
+                <ClientAdminPage />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
