@@ -29,16 +29,16 @@ const moduleScreenshots: Record<string, { image: string; caption: string }[]> = 
   ],
   "catalog-valuation": [
     {
-      image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800&h=600&fit=crop",
-      caption: "AI-powered catalog valuation with 3-5 year revenue forecasting models"
+      image: "/lovable-uploads/25790dd9-ce17-4e16-8c7a-cdc320f3985c.png",
+      caption: "Advanced catalog valuation dashboard with DCF modeling, risk adjustment, and comprehensive analytics"
     },
     {
-      image: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=800&h=600&fit=crop",
-      caption: "Interactive deal simulator with scenario modeling and risk analysis"
+      image: "/lovable-uploads/3fdbaaf3-a629-4a56-b1c8-0edc554d9f7b.png",
+      caption: "Detailed discounted cash flow analysis with 5-year projections and present value calculations"
     },
     {
-      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=800&h=600&fit=crop",
-      caption: "Professional valuation reports ready for investors and stakeholders"
+      image: "/lovable-uploads/40512a6b-8881-4f09-bc65-cf98759d37e2.png",
+      caption: "Professional valuation forecasts with scenario modeling (Pessimistic, Base Case, Optimistic)"
     }
   ],
   "contract-management": [
