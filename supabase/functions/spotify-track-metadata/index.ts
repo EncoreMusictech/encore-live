@@ -4,6 +4,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Content-Security-Policy': "default-src 'none'; script-src 'none'",
 };
 
 interface SpotifyTrackMetadata {
@@ -25,11 +30,27 @@ serve(async (req) => {
   }
 
   try {
-    const { workTitle } = await req.json();
+    // Parse and validate request body
+    const body = await req.json();
+    const { workTitle } = body;
 
-    if (!workTitle || typeof workTitle !== 'string') {
+    // Input validation and sanitization
+    if (!workTitle || typeof workTitle !== 'string' || workTitle.trim().length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Work title is required' }),
+        JSON.stringify({ error: 'Valid work title is required' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Sanitize work title - limit length and prevent malicious input
+    const sanitizedWorkTitle = workTitle.trim().substring(0, 200);
+    
+    if (sanitizedWorkTitle.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Work title cannot be empty' }),
         { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

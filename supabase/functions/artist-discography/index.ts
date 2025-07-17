@@ -4,6 +4,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Content-Security-Policy': "default-src 'none'; script-src 'none'",
 };
 
 const supabaseUrl = "https://plxsenykjisqutxcvjeg.supabase.co";
@@ -47,10 +52,34 @@ serve(async (req) => {
   }
 
   try {
-    const { artistId, artistName } = await req.json();
+    // Parse and validate request body
+    const body = await req.json();
+    const { artistId, artistName } = body;
 
-    if (!artistId || !artistName) {
-      throw new Error('Artist ID and name are required');
+    // Input validation and sanitization
+    if (!artistId || typeof artistId !== 'string' || artistId.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Valid Artist ID is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!artistName || typeof artistName !== 'string' || artistName.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Valid Artist name is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Sanitize inputs - prevent injection attacks
+    const sanitizedArtistId = artistId.trim().replace(/[^a-zA-Z0-9]/g, '');
+    const sanitizedArtistName = artistName.trim().substring(0, 200); // Limit length
+
+    if (sanitizedArtistId.length === 0 || sanitizedArtistId.length > 50) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid Artist ID format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log(`Fetching discography for artist: ${artistName} (${artistId})`);

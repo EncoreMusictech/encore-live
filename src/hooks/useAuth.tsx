@@ -41,10 +41,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string) => {
+    // Input validation
+    if (!email?.trim() || !password?.trim()) {
+      const validationError = { message: "Email and password are required" };
+      toast({
+        title: "Sign up failed",
+        description: validationError.message,
+        variant: "destructive",
+      });
+      return { error: validationError };
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      const validationError = { message: "Please enter a valid email address" };
+      toast({
+        title: "Sign up failed",
+        description: validationError.message,
+        variant: "destructive",
+      });
+      return { error: validationError };
+    }
+
+    // Password strength validation
+    if (password.length < 8) {
+      const validationError = { message: "Password must be at least 8 characters long" };
+      toast({
+        title: "Sign up failed",
+        description: validationError.message,
+        variant: "destructive",
+      });
+      return { error: validationError };
+    }
+
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
-      email,
+      email: email.trim().toLowerCase(), // Normalize email
       password,
       options: {
         emailRedirectTo: redirectUrl
@@ -52,9 +86,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     if (error) {
+      // Enhanced error handling
+      let errorMessage = error.message;
+      if (error.message.includes('already registered')) {
+        errorMessage = "An account with this email already exists. Please sign in instead.";
+      } else if (error.message.includes('invalid')) {
+        errorMessage = "Please check your email and password and try again.";
+      }
+      
       toast({
         title: "Sign up failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } else {
@@ -68,15 +110,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    // Input validation
+    if (!email?.trim() || !password?.trim()) {
+      const validationError = { message: "Email and password are required" };
+      toast({
+        title: "Sign in failed",
+        description: validationError.message,
+        variant: "destructive",
+      });
+      return { error: validationError };
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim().toLowerCase(), // Normalize email
       password,
     });
 
     if (error) {
+      // Enhanced error handling - don't expose specific error details
+      let errorMessage = "Invalid email or password";
+      if (error.message.includes('Email not confirmed')) {
+        errorMessage = "Please check your email and click the confirmation link before signing in.";
+      } else if (error.message.includes('Too many requests')) {
+        errorMessage = "Too many failed attempts. Please try again later.";
+      }
+      
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
