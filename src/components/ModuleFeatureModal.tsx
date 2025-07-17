@@ -57,12 +57,16 @@ const moduleScreenshots: Record<string, { image: string; caption: string }[]> = 
   ],
   "copyright-management": [
     {
-      image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800&h=600&fit=crop",
-      caption: "Complete metadata management with ISRC/ISWC tracking and PRO registration"
+      image: "/lovable-uploads/a5f76abb-e694-45da-ba43-2c6aed105518.png",
+      caption: "Comprehensive copyright catalog with work ID tracking, writer splits, and registration status management"
     },
     {
-      image: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=800&h=600&fit=crop",
-      caption: "Advanced split management with writer and publisher royalty allocation"
+      image: "/lovable-uploads/bfbe3709-de43-4782-828e-dcc1265b4aa1.png",
+      caption: "Streamlined bulk upload system with CSV/Excel import and downloadable templates for efficient data entry"
+    },
+    {
+      image: "/lovable-uploads/18afcfb2-776d-4595-9d91-c2da988e2bb3.png",
+      caption: "Advanced metadata management with ISRC/ISWC tracking, writer agreements, and multi-PRO registration"
     }
   ],
   "sync-licensing": [
