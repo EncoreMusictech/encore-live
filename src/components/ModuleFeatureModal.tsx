@@ -156,16 +156,21 @@ const ModuleFeatureModal = ({ isOpen, onClose, module }: ModuleFeatureModalProps
               Close
             </Button>
             <Button 
+              variant="outline"
               onClick={() => {
-                if (module.title === "Catalog Valuation") {
-                  window.location.href = "/catalog-valuation";
-                } else {
-                  window.location.href = "/pricing";
-                }
+                window.location.href = "/auth";
+              }}
+              className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground"
+            >
+              Demo
+            </Button>
+            <Button 
+              onClick={() => {
+                window.location.href = "/pricing";
               }}
               className="bg-gradient-primary text-primary-foreground hover:opacity-90"
             >
-              Get Started
+              Get Free Trial
             </Button>
           </div>
         </div>
