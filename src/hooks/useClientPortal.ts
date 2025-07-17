@@ -128,9 +128,14 @@ export const useClientPortal = () => {
         .select('*')
         .eq('invitation_token', token)
         .eq('status', 'pending')
-        .single();
+        .maybeSingle();
 
-      if (inviteError || !invitation) {
+      if (inviteError) {
+        console.error('Database error:', inviteError);
+        throw new Error('Database error occurred');
+      }
+
+      if (!invitation) {
         throw new Error('Invalid or expired invitation');
       }
 
