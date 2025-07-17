@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientPortal } from '@/hooks/useClientPortal';
+import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Users, FileText, Music, DollarSign, Bell, Download } from 'lucide-react';
+import { Loader2, Users, FileText, Music, DollarSign, Bell, Download, CheckCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { ClientDashboardOverview } from './client-portal/ClientDashboardOverview';
 import { ClientContracts } from './client-portal/ClientContracts';
 import { ClientWorks } from './client-portal/ClientWorks';
@@ -15,32 +17,73 @@ import { ClientNotifications } from './client-portal/ClientNotifications';
 
 const ClientPortal = () => {
   const { user } = useAuth();
-  const { isClient, getClientPermissions } = useClientPortal();
+  const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const { isClient, getClientPermissions, acceptInvitation } = useClientPortal();
   const [clientAccess, setClientAccess] = useState(false);
   const [permissions, setPermissions] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [invitationAccepted, setInvitationAccepted] = useState(false);
 
   useEffect(() => {
-    const checkClientAccess = async () => {
+    const handleInvitationAndAccess = async () => {
       if (!user) return;
       
       try {
-        const isClientUser = await isClient();
-        setClientAccess(isClientUser);
+        // Check if there's an invitation token in the URL
+        const token = searchParams.get('token');
         
-        if (isClientUser) {
-          const clientPermissions = await getClientPermissions();
-          setPermissions((clientPermissions as Record<string, any>) || {});
+        if (token) {
+          console.log('Processing invitation token:', token);
+          
+          // Try to accept the invitation
+          const access = await acceptInvitation(token);
+          
+          if (access) {
+            setInvitationAccepted(true);
+            toast({
+              title: "Welcome!",
+              description: "Invitation accepted successfully. Welcome to the client portal!",
+            });
+            
+            // Remove token from URL
+            window.history.replaceState({}, '', '/client-portal');
+            
+            // Set client access and permissions from the accepted invitation
+            setClientAccess(true);
+            const clientPermissions = await getClientPermissions();
+            setPermissions((clientPermissions as Record<string, any>) || {});
+          } else {
+            toast({
+              title: "Invalid Invitation",
+              description: "The invitation link is invalid or has expired.",
+              variant: "destructive"
+            });
+          }
+        } else {
+          // No token, check existing client access
+          const isClientUser = await isClient();
+          setClientAccess(isClientUser);
+          
+          if (isClientUser) {
+            const clientPermissions = await getClientPermissions();
+            setPermissions((clientPermissions as Record<string, any>) || {});
+          }
         }
       } catch (error) {
-        console.error('Error checking client access:', error);
+        console.error('Error handling invitation or checking client access:', error);
+        toast({
+          title: "Error",
+          description: "An error occurred while processing your request.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    checkClientAccess();
-  }, [user, isClient, getClientPermissions]);
+    handleInvitationAndAccess();
+  }, [user, searchParams, isClient, getClientPermissions, acceptInvitation, toast]);
 
   if (loading) {
     return (
@@ -83,6 +126,16 @@ const ClientPortal = () => {
 
   return (
     <div className="container mx-auto py-6">
+      {invitationAccepted && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2 text-green-800">
+            <CheckCircle className="h-5 w-5" />
+            <span className="font-medium">Welcome to the Client Portal!</span>
+          </div>
+          <p className="text-green-700 mt-1">Your invitation has been accepted successfully.</p>
+        </div>
+      )}
+      
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Client Portal</h1>
         <p className="text-muted-foreground mt-2">
