@@ -1271,6 +1271,36 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          action_type: string
+          attempt_count: number | null
+          blocked_until: string | null
+          first_attempt: string | null
+          id: string
+          identifier: string
+          last_attempt: string | null
+        }
+        Insert: {
+          action_type: string
+          attempt_count?: number | null
+          blocked_until?: string | null
+          first_attempt?: string | null
+          id?: string
+          identifier: string
+          last_attempt?: string | null
+        }
+        Update: {
+          action_type?: string
+          attempt_count?: number | null
+          blocked_until?: string | null
+          first_attempt?: string | null
+          id?: string
+          identifier?: string
+          last_attempt?: string | null
+        }
+        Relationships: []
+      }
       reconciliation_batches: {
         Row: {
           batch_id: string | null
@@ -1574,6 +1604,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_events: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          notes: string | null
+          resolved_at: string | null
+          severity: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          notes?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          notes?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       source_mapping_config: {
         Row: {
@@ -2101,6 +2170,20 @@ export type Database = {
         Args: { copyright_id_param: string }
         Returns: number
       }
+      check_rate_limit: {
+        Args: {
+          p_identifier: string
+          p_action_type: string
+          p_max_attempts?: number
+          p_window_minutes?: number
+          p_block_minutes?: number
+        }
+        Returns: boolean
+      }
+      cleanup_old_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       generate_batch_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -2141,6 +2224,17 @@ export type Database = {
           p_batch_id?: string
           p_ip_address?: string
           p_user_agent?: string
+        }
+        Returns: string
+      }
+      log_security_event: {
+        Args: {
+          p_user_id?: string
+          p_event_type?: string
+          p_event_data?: Json
+          p_ip_address?: string
+          p_user_agent?: string
+          p_severity?: string
         }
         Returns: string
       }
