@@ -61,7 +61,7 @@ const moduleScreenshots: Record<string, { image: string; caption: string }[]> = 
       caption: "Comprehensive copyright catalog with work ID tracking, writer splits, and registration status management"
     },
     {
-      image: "/lovable-uploads/bfbe3709-de43-4782-828e-dcc1265b4aa1.png",
+      image: "/lovable-uploads/5721d322-d79d-43bc-a219-8d605cfe826f.png",
       caption: "Streamlined bulk upload system with CSV/Excel import and downloadable templates for efficient data entry"
     },
     {
