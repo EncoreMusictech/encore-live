@@ -122,7 +122,19 @@ export const useClientPortal = () => {
     try {
       setLoading(true);
       
-      // First get the invitation
+      console.log('Looking for invitation with token:', token);
+      
+      // First, check if any invitation exists with this token (without status filter)
+      const { data: anyInvitation, error: anyError } = await supabase
+        .from('client_invitations')
+        .select('*')
+        .eq('invitation_token', token)
+        .maybeSingle();
+
+      console.log('Any invitation found:', anyInvitation);
+      console.log('Any error:', anyError);
+      
+      // Now get the invitation with status filter
       const { data: invitation, error: inviteError } = await supabase
         .from('client_invitations')
         .select('*')
@@ -130,12 +142,18 @@ export const useClientPortal = () => {
         .eq('status', 'pending')
         .maybeSingle();
 
+      console.log('Pending invitation found:', invitation);
+      console.log('Invite error:', inviteError);
+
       if (inviteError) {
         console.error('Database error:', inviteError);
         throw new Error('Database error occurred');
       }
 
       if (!invitation) {
+        if (anyInvitation) {
+          throw new Error(`Invitation found but status is: ${anyInvitation.status}`);
+        }
         throw new Error('Invalid or expired invitation');
       }
 
