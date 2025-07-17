@@ -1,12 +1,15 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import CatalogValuation from "@/components/CatalogValuation";
+import DemoLimitBanner from "@/components/DemoLimitBanner";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calculator, TrendingUp, ArrowRight, Brain, Target } from "lucide-react";
 
 const CatalogValuationPage = () => {
   const [selectedModule, setSelectedModule] = useState<'selection' | 'valuation' | 'deals'>('selection');
+  const { canAccess } = useDemoAccess();
 
   const renderModuleSelection = () => (
     <div className="space-y-6">
@@ -60,8 +63,9 @@ const CatalogValuationPage = () => {
             <Button 
               className="w-full bg-gradient-primary text-primary-foreground group-hover:shadow-lg transition-shadow"
               onClick={() => setSelectedModule('valuation')}
+              disabled={!canAccess('catalogValuation')}
             >
-              Launch Catalog Valuation
+              {canAccess('catalogValuation') ? 'Launch Catalog Valuation' : 'Demo Limit Reached'}
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </CardContent>
@@ -162,6 +166,9 @@ const CatalogValuationPage = () => {
                   Back to Module Selection
                 </Button>
               </div>
+
+              {/* Demo Limit Banner */}
+              <DemoLimitBanner module="catalogValuation" className="mb-6" />
 
               <div className="mb-8">
                 <h1 className="text-3xl font-bold mb-2">

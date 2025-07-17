@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Header from "@/components/Header";
+import DemoLimitBanner from "@/components/DemoLimitBanner";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +17,7 @@ import { DocuSignImport } from "@/components/contracts/DocuSignImport";
 
 const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
+  const { canAccess } = useDemoAccess();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<any>(null);
@@ -77,6 +80,9 @@ const ContractManagement = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
+        {/* Demo Limit Banner */}
+        <DemoLimitBanner module="contractManagement" className="mb-6" />
+
         {/* Header Section */}
         <div className="flex justify-between items-start mb-8">
           <div>
@@ -88,9 +94,12 @@ const ContractManagement = () => {
           
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button 
+                className="gap-2" 
+                disabled={!canAccess('contractManagement')}
+              >
                 <Plus className="h-4 w-4" />
-                New Contract
+                {canAccess('contractManagement') ? 'New Contract' : 'Demo Limit Reached'}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">

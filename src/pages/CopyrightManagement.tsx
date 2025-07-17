@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Plus, Search, Music, FileText, Users, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCopyright } from "@/hooks/useCopyright";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
+import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { EnhancedCopyrightForm } from "@/components/copyright/EnhancedCopyrightForm";
 import { AudioPlayer } from "@/components/copyright/AudioPlayer";
 import { CopyrightTable } from "@/components/copyright/CopyrightTable";
@@ -20,6 +22,7 @@ import { ActivityLog } from "@/components/copyright/ActivityLog";
 const CopyrightManagement = () => {
   const { toast } = useToast();
   const { copyrights, loading, getWritersForCopyright, deleteCopyright, refetch } = useCopyright();
+  const { canAccess } = useDemoAccess();
   const [writers, setWriters] = useState<{[key: string]: any[]}>({});
   const [editingCopyright, setEditingCopyright] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -130,6 +133,9 @@ const CopyrightManagement = () => {
       <Header />
       
       <main className="container mx-auto px-4 py-8">
+        {/* Demo Limit Banner */}
+        <DemoLimitBanner module="copyrightManagement" className="mb-6" />
+
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Copyright Management</h1>
           <p className="text-muted-foreground">
@@ -140,7 +146,9 @@ const CopyrightManagement = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="copyrights">My Copyrights</TabsTrigger>
-            <TabsTrigger value="register">Register New</TabsTrigger>
+            <TabsTrigger value="register" disabled={!canAccess('copyrightManagement')}>
+              {canAccess('copyrightManagement') ? 'Register New' : 'Demo Limit Reached'}
+            </TabsTrigger>
             <TabsTrigger value="bulk-upload">Bulk Upload</TabsTrigger>
             <TabsTrigger value="activity">Activity Log</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>

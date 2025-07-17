@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useContracts } from "@/hooks/useContracts";
 import { useToast } from "@/hooks/use-toast";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { InterestedPartiesTable } from "./InterestedPartiesTable";
 import { ScheduleWorksTable } from "./ScheduleWorksTable";
 
@@ -51,6 +52,7 @@ export function EnhancedContractForm({ contractType, onCancel, onSuccess }: Enha
   const [contractId, setContractId] = useState<string | null>(null);
   const { createContract } = useContracts();
   const { toast } = useToast();
+  const { incrementUsage } = useDemoAccess();
 
   const form = useForm<z.infer<typeof enhancedContractSchema>>({
     resolver: zodResolver(enhancedContractSchema),
@@ -111,6 +113,9 @@ export function EnhancedContractForm({ contractType, onCancel, onSuccess }: Enha
   };
 
   const handleFinalize = () => {
+    // Increment demo usage when contract is finalized
+    incrementUsage('contractManagement');
+    
     toast({
       title: "Contract Setup Complete",
       description: "Your contract has been created with all parties and works",

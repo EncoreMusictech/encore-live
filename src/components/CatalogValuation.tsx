@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -119,8 +120,18 @@ const CatalogValuation = () => {
     methodology: 'advanced'
   });
   const { toast } = useToast();
+  const { canAccess, incrementUsage } = useDemoAccess();
 
   const handleSearch = async () => {
+    // Check demo access before proceeding
+    if (!canAccess('catalogValuation')) {
+      toast({
+        title: "Demo Limit Reached",
+        description: "You've completed your free catalog valuation. Sign up to unlock unlimited access.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!artistName.trim()) {
       toast({
         title: "Error",
@@ -155,7 +166,10 @@ const CatalogValuation = () => {
       console.log("Valuation result:", data);
       setResult(data);
 
-      // Save enhanced data to database
+      // Increment demo usage AFTER successful search
+      incrementUsage('catalogValuation');
+
+      // Save enhanced data to database (only for authenticated users)
       const { data: user } = await supabase.auth.getUser();
       if (user.user) {
         const { error: saveError } = await supabase
