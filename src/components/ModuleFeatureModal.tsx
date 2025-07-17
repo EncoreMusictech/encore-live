@@ -43,12 +43,16 @@ const moduleScreenshots: Record<string, { image: string; caption: string }[]> = 
   ],
   "contract-management": [
     {
-      image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=600&fit=crop",
-      caption: "Centralized contract repository with smart tagging and organization"
+      image: "/lovable-uploads/f4301905-51b8-4306-a9aa-59df345eeb10.png",
+      caption: "Flexible contract creation options: build from scratch, use templates, or upload existing contracts"
     },
     {
-      image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=600&fit=crop",
-      caption: "Automated deadline tracking with renewal alerts and notifications"
+      image: "/lovable-uploads/c6f80b04-ccf2-47b3-ac01-558e77b82c72.png",
+      caption: "Comprehensive template library with industry-standard agreements for all deal types"
+    },
+    {
+      image: "/lovable-uploads/a2796f57-7c02-41c6-9c14-4d5fe11bf140.png",
+      caption: "Advanced import capabilities with DocuSign integration and intelligent PDF extraction"
     }
   ],
   "copyright-management": [
