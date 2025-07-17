@@ -27,6 +27,18 @@ const ClientPortal = () => {
 
   useEffect(() => {
     const handleInvitationAndAccess = async () => {
+      // For demo purposes, set mock permissions to show all tabs
+      setPermissions({
+        contracts: { enabled: true },
+        copyright: { enabled: true },
+        'sync-licensing': { enabled: true },
+        royalties: { enabled: true }
+      });
+      setLoading(false);
+      return;
+      
+      // Original authentication logic (commented out for demo)
+      /*
       if (!user) return;
       
       try {
@@ -80,6 +92,7 @@ const ClientPortal = () => {
       } finally {
         setLoading(false);
       }
+      */
     };
 
     handleInvitationAndAccess();
@@ -93,7 +106,10 @@ const ClientPortal = () => {
     );
   }
 
-  if (!clientAccess) {
+  // Temporarily bypass authentication for UI demo
+  const showDemo = true; // Set to false to re-enable authentication
+  
+  if (!showDemo && !clientAccess) {
     return (
       <div className="container mx-auto py-8">
         <Card className="max-w-md mx-auto">
