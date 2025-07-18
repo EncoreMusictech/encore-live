@@ -86,10 +86,11 @@ export const SyncLicenseTable = ({ licenses, isLoading }: SyncLicenseTableProps)
     <>
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
+           <TableHeader>
             <TableRow>
               <TableHead>Sync ID</TableHead>
               <TableHead>Project Title</TableHead>
+              <TableHead>Agent</TableHead>
               <TableHead>Media Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Total Fee</TableHead>
@@ -103,14 +104,10 @@ export const SyncLicenseTable = ({ licenses, isLoading }: SyncLicenseTableProps)
               <TableRow key={license.id}>
                 <TableCell className="font-medium">{license.synch_id}</TableCell>
                 <TableCell>
-                  <div>
-                    <div className="font-medium">{license.project_title}</div>
-                    {license.synch_agent && (
-                      <div className="text-sm text-muted-foreground">
-                        Agent: {license.synch_agent}
-                      </div>
-                    )}
-                  </div>
+                  <div className="font-medium">{license.project_title}</div>
+                </TableCell>
+                <TableCell>
+                  {license.synch_agent || "-"}
                 </TableCell>
                 <TableCell>
                   {license.media_type && (
