@@ -103,6 +103,18 @@ export const SyncRightsManager: React.FC<SyncRightsManagerProps> = ({
     );
   }
 
+  // Get controlled writers from selected copyrights
+  const getControlledWritersSummary = () => {
+    const controlledWriters = new Set<string>();
+    selectedCopyrightsData.forEach(copyright => {
+      const copyrightWriters = writers[copyright.id] || [];
+      copyrightWriters
+        .filter(writer => writer.controlled_status === 'C')
+        .forEach(writer => controlledWriters.add(writer.writer_name));
+    });
+    return Array.from(controlledWriters);
+  };
+
   return (
     <div className="space-y-4">
       {/* Selected Copyrights Display */}
@@ -115,6 +127,20 @@ export const SyncRightsManager: React.FC<SyncRightsManagerProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
+            {/* Controlled Writers Summary */}
+            {getControlledWritersSummary().length > 0 && (
+              <div className="mb-4 p-3 bg-background rounded-lg border">
+                <div className="text-sm font-medium mb-2">Controlled Writers Summary:</div>
+                <div className="flex flex-wrap gap-1">
+                  {getControlledWritersSummary().map((writerName, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {writerName}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-3">
               {selectedCopyrightsData.map((copyright) => (
                 <div key={copyright.id} className="flex items-center justify-between p-3 bg-background rounded-lg border">
