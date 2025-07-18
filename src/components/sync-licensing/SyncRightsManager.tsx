@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,27 +31,30 @@ export const SyncRightsManager: React.FC<SyncRightsManagerProps> = ({
   const [selectedCopyrights, setSelectedCopyrights] = useState<Copyright[]>([]);
 
   // Load writers for each copyright
-  React.useEffect(() => {
-    const loadWriters = async () => {
-      const writersData: { [key: string]: any[] } = {};
-      
-      for (const copyright of copyrights) {
-        try {
-          const copyrightWriters = await getWritersForCopyright(copyright.id);
-          writersData[copyright.id] = copyrightWriters;
-        } catch (error) {
-          console.error(`Error loading writers for copyright ${copyright.id}:`, error);
-          writersData[copyright.id] = [];
-        }
-      }
-      
-      setWriters(writersData);
-    };
-
-    if (copyrights.length > 0) {
-      loadWriters();
+  const loadWriters = useCallback(async () => {
+    if (copyrights.length === 0) {
+      setWriters({});
+      return;
     }
+
+    const writersData: { [key: string]: any[] } = {};
+    
+    for (const copyright of copyrights) {
+      try {
+        const copyrightWriters = await getWritersForCopyright(copyright.id);
+        writersData[copyright.id] = copyrightWriters;
+      } catch (error) {
+        console.error(`Error loading writers for copyright ${copyright.id}:`, error);
+        writersData[copyright.id] = [];
+      }
+    }
+    
+    setWriters(writersData);
   }, [copyrights, getWritersForCopyright]);
+
+  React.useEffect(() => {
+    loadWriters();
+  }, [loadWriters]);
 
   // Find selected copyrights
   const selectedCopyrightsData = copyrights.filter(c => selectedCopyrightIds.includes(c.id));
