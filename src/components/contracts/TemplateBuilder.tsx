@@ -1,0 +1,476 @@
+import React, { useState, useCallback } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, Eye, Send, Save, Plus, Trash2, GripVertical, Edit3 } from 'lucide-react';
+import { toast } from "sonner";
+
+interface ContractField {
+  id: string;
+  type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox';
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: string[];
+  category: string;
+}
+
+interface TemplateBuilderProps {
+  onBack: () => void;
+  contractType?: string;
+}
+
+const FIELD_TEMPLATES: Record<string, ContractField[]> = {
+  'artist_recording': [
+    { id: 'artist_name', type: 'text', label: 'Artist Name', required: true, category: 'parties' },
+    { id: 'label_name', type: 'text', label: 'Record Label', required: true, category: 'parties' },
+    { id: 'album_title', type: 'text', label: 'Album/EP Title', required: true, category: 'work' },
+    { id: 'advance_amount', type: 'number', label: 'Advance Amount ($)', required: false, category: 'financial' },
+    { id: 'royalty_rate', type: 'select', label: 'Royalty Rate', required: true, options: ['10%', '12%', '15%', '18%', '20%'], category: 'financial' },
+    { id: 'term_duration', type: 'select', label: 'Contract Term', required: true, options: ['1 Year', '2 Years', '3 Years', '5 Years'], category: 'terms' },
+    { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'North America', 'Europe', 'Specific Territories'], category: 'terms' },
+    { id: 'delivery_date', type: 'date', label: 'Delivery Date', required: true, category: 'schedule' },
+  ],
+  'publishing': [
+    { id: 'songwriter_name', type: 'text', label: 'Songwriter Name', required: true, category: 'parties' },
+    { id: 'publisher_name', type: 'text', label: 'Publisher Name', required: true, category: 'parties' },
+    { id: 'composition_title', type: 'text', label: 'Composition Title', required: true, category: 'work' },
+    { id: 'publishing_split', type: 'select', label: 'Publishing Split', required: true, options: ['50/50', '60/40', '70/30', '80/20', '90/10'], category: 'financial' },
+    { id: 'mechanical_rate', type: 'text', label: 'Mechanical Rate', placeholder: 'e.g., Statutory Rate', required: true, category: 'financial' },
+    { id: 'performance_split', type: 'select', label: 'Performance Split', required: true, options: ['50/50', '60/40', '70/30', '80/20'], category: 'financial' },
+    { id: 'sync_approval', type: 'select', label: 'Sync Approval Rights', required: true, options: ['Mutual Approval', 'Publisher Approval', 'Writer Approval'], category: 'terms' },
+    { id: 'term_length', type: 'select', label: 'Term Length', required: true, options: ['Life of Copyright', '10 Years', '15 Years', '20 Years'], category: 'terms' },
+  ],
+  'distribution': [
+    { id: 'artist_label', type: 'text', label: 'Artist/Label Name', required: true, category: 'parties' },
+    { id: 'distributor_name', type: 'text', label: 'Distributor Name', required: true, category: 'parties' },
+    { id: 'product_title', type: 'text', label: 'Product Title', required: true, category: 'work' },
+    { id: 'distribution_fee', type: 'select', label: 'Distribution Fee', required: true, options: ['15%', '20%', '25%', '30%'], category: 'financial' },
+    { id: 'platforms', type: 'select', label: 'Distribution Platforms', required: true, options: ['All Digital', 'Spotify/Apple Only', 'Physical Only', 'Custom Selection'], category: 'terms' },
+    { id: 'territory_dist', type: 'select', label: 'Distribution Territory', required: true, options: ['Worldwide', 'Digital Worldwide', 'North America Only'], category: 'terms' },
+    { id: 'term_years', type: 'select', label: 'Agreement Term', required: true, options: ['2 Years', '3 Years', '5 Years', 'Indefinite'], category: 'terms' },
+  ],
+  'licensing': [
+    { id: 'licensor_name', type: 'text', label: 'Licensor Name', required: true, category: 'parties' },
+    { id: 'licensee_name', type: 'text', label: 'Licensee Name', required: true, category: 'parties' },
+    { id: 'track_title', type: 'text', label: 'Track Title', required: true, category: 'work' },
+    { id: 'license_type', type: 'select', label: 'License Type', required: true, options: ['Synchronization', 'Mechanical', 'Performance', 'Master Use'], category: 'terms' },
+    { id: 'usage_description', type: 'textarea', label: 'Usage Description', required: true, category: 'terms' },
+    { id: 'license_fee', type: 'number', label: 'License Fee ($)', required: true, category: 'financial' },
+    { id: 'territory_license', type: 'select', label: 'Licensed Territory', required: true, options: ['Worldwide', 'North America', 'Europe', 'Specific Country'], category: 'terms' },
+    { id: 'duration', type: 'select', label: 'License Duration', required: true, options: ['1 Year', '2 Years', '3 Years', 'Perpetual'], category: 'terms' },
+  ]
+};
+
+export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contractType = 'artist_recording' }) => {
+  const [templateName, setTemplateName] = useState('');
+  const [selectedContractType, setSelectedContractType] = useState(contractType);
+  const [selectedFields, setSelectedFields] = useState<ContractField[]>([]);
+  const [availableFields] = useState<ContractField[]>(FIELD_TEMPLATES[contractType] || []);
+  const [currentView, setCurrentView] = useState<'builder' | 'preview' | 'edits'>('builder');
+  const [previewData, setPreviewData] = useState<Record<string, any>>({});
+  const [edits, setEdits] = useState<Array<{ field: string; oldValue: string; newValue: string; timestamp: Date }>>([]);
+
+  const handleContractTypeChange = (newType: string) => {
+    setSelectedContractType(newType);
+    setSelectedFields([]);
+    setPreviewData({});
+  };
+
+  const onDragEnd = useCallback((result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+
+    if (destination.droppableId === 'selected-fields' && source.droppableId === 'available-fields') {
+      const field = availableFields.find(f => f.id === draggableId);
+      if (field && !selectedFields.find(f => f.id === field.id)) {
+        setSelectedFields(prev => [...prev, field]);
+      }
+    } else if (destination.droppableId === 'selected-fields' && source.droppableId === 'selected-fields') {
+      const newFields = Array.from(selectedFields);
+      const [removed] = newFields.splice(source.index, 1);
+      newFields.splice(destination.index, 0, removed);
+      setSelectedFields(newFields);
+    }
+  }, [availableFields, selectedFields]);
+
+  const removeField = (fieldId: string) => {
+    setSelectedFields(prev => prev.filter(f => f.id !== fieldId));
+  };
+
+  const handlePreviewDataChange = (fieldId: string, value: any) => {
+    const oldValue = previewData[fieldId] || '';
+    if (oldValue !== value) {
+      setEdits(prev => [...prev, {
+        field: fieldId,
+        oldValue: oldValue,
+        newValue: value,
+        timestamp: new Date()
+      }]);
+    }
+    setPreviewData(prev => ({ ...prev, [fieldId]: value }));
+  };
+
+  const saveTemplate = async () => {
+    if (!templateName.trim()) {
+      toast.error("Please enter a template name");
+      return;
+    }
+    
+    if (selectedFields.length === 0) {
+      toast.error("Please add at least one field to the template");
+      return;
+    }
+
+    const template = {
+      template_name: templateName,
+      contract_type: selectedContractType,
+      template_data: {
+        fields: selectedFields,
+        layout: 'standard'
+      }
+    };
+
+    // Here you would save to your backend
+    console.log('Saving template:', template);
+    toast.success("Template saved successfully!");
+  };
+
+  const sendContract = (method: 'docusign' | 'email') => {
+    toast.success(`Contract sent via ${method === 'docusign' ? 'DocuSign' : 'email'}!`);
+  };
+
+  const renderFieldInput = (field: ContractField) => {
+    const value = previewData[field.id] || '';
+    
+    switch (field.type) {
+      case 'select':
+        return (
+          <Select value={value} onValueChange={(v) => handlePreviewDataChange(field.id, v)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select..." />
+            </SelectTrigger>
+            <SelectContent>
+              {field.options?.map(option => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case 'textarea':
+        return (
+          <Textarea
+            value={value}
+            onChange={(e) => handlePreviewDataChange(field.id, e.target.value)}
+            placeholder={field.placeholder}
+            rows={3}
+          />
+        );
+      case 'number':
+        return (
+          <Input
+            type="number"
+            value={value}
+            onChange={(e) => handlePreviewDataChange(field.id, e.target.value)}
+            placeholder={field.placeholder}
+          />
+        );
+      case 'date':
+        return (
+          <Input
+            type="date"
+            value={value}
+            onChange={(e) => handlePreviewDataChange(field.id, e.target.value)}
+          />
+        );
+      default:
+        return (
+          <Input
+            value={value}
+            onChange={(e) => handlePreviewDataChange(field.id, e.target.value)}
+            placeholder={field.placeholder}
+          />
+        );
+    }
+  };
+
+  const groupedFields = selectedFields.reduce((acc, field) => {
+    if (!acc[field.category]) acc[field.category] = [];
+    acc[field.category].push(field);
+    return acc;
+  }, {} as Record<string, ContractField[]>);
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={onBack} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Templates
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Template Builder</h1>
+            <p className="text-muted-foreground">Create a custom contract template</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={saveTemplate} className="gap-2">
+            <Save className="h-4 w-4" />
+            Save Template
+          </Button>
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as any)} className="flex-1 flex flex-col">
+        <TabsList className="grid w-full grid-cols-3 mx-6 mt-4">
+          <TabsTrigger value="builder">Builder</TabsTrigger>
+          <TabsTrigger value="preview">Preview</TabsTrigger>
+          <TabsTrigger value="edits">Review Edits</TabsTrigger>
+        </TabsList>
+
+        {/* Builder Tab */}
+        <TabsContent value="builder" className="flex-1 p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+            {/* Template Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Template Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="templateName">Template Name</Label>
+                  <Input
+                    id="templateName"
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    placeholder="e.g., Standard Recording Agreement"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contractType">Contract Type</Label>
+                  <Select value={selectedContractType} onValueChange={handleContractTypeChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="artist_recording">Artist Recording Contract</SelectItem>
+                      <SelectItem value="publishing">Publishing Agreement</SelectItem>
+                      <SelectItem value="distribution">Distribution Agreement</SelectItem>
+                      <SelectItem value="licensing">Licensing Agreement</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Available Fields */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Available Fields</CardTitle>
+                <p className="text-sm text-muted-foreground">Drag fields to build your template</p>
+              </CardHeader>
+              <CardContent>
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="available-fields">
+                    {(provided) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                        {(FIELD_TEMPLATES[selectedContractType] || []).map((field, index) => (
+                          <Draggable key={field.id} draggableId={field.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`p-3 border rounded-lg cursor-move hover:bg-accent ${
+                                  snapshot.isDragging ? 'bg-accent' : ''
+                                } ${selectedFields.find(f => f.id === field.id) ? 'opacity-50' : ''}`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium">{field.label}</div>
+                                    <div className="text-xs text-muted-foreground capitalize">{field.category}</div>
+                                  </div>
+                                  <Badge variant="outline" className="text-xs">
+                                    {field.type}
+                                  </Badge>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              </CardContent>
+            </Card>
+
+            {/* Selected Fields */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Template Fields</CardTitle>
+                <p className="text-sm text-muted-foreground">Fields in your template</p>
+              </CardHeader>
+              <CardContent>
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="selected-fields">
+                    {(provided) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                        {selectedFields.map((field, index) => (
+                          <Draggable key={field.id} draggableId={field.id} index={index}>
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className="p-3 border rounded-lg bg-primary/5"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div {...provided.dragHandleProps}>
+                                      <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                    <div>
+                                      <div className="font-medium">{field.label}</div>
+                                      <div className="text-xs text-muted-foreground">{field.type}</div>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeField(field.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Preview Tab */}
+        <TabsContent value="preview" className="flex-1 p-6">
+          <div className="max-w-4xl mx-auto">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>{templateName || 'Contract Template'}</CardTitle>
+                    <p className="text-muted-foreground capitalize">
+                      {selectedContractType.replace('_', ' ')} Agreement
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={() => sendContract('email')} className="gap-2">
+                      <Send className="h-4 w-4" />
+                      Send via Email
+                    </Button>
+                    <Button onClick={() => sendContract('docusign')} className="gap-2">
+                      <Send className="h-4 w-4" />
+                      Send via DocuSign
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {Object.entries(groupedFields).map(([category, fields]) => (
+                  <div key={category}>
+                    <h3 className="text-lg font-semibold mb-4 capitalize">{category.replace('_', ' ')}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {fields.map(field => (
+                        <div key={field.id}>
+                          <Label htmlFor={field.id}>
+                            {field.label}
+                            {field.required && <span className="text-destructive ml-1">*</span>}
+                          </Label>
+                          {renderFieldInput(field)}
+                        </div>
+                      ))}
+                    </div>
+                    <Separator className="mt-6" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Edits Tab */}
+        <TabsContent value="edits" className="flex-1 p-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Contract Edits Review</CardTitle>
+              <p className="text-muted-foreground">Review all changes made to the contract</p>
+            </CardHeader>
+            <CardContent>
+              {edits.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Edit3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No edits have been made yet</p>
+                  <p className="text-sm">Changes made in the preview will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {edits.map((edit, index) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium">
+                          {selectedFields.find(f => f.id === edit.field)?.label || edit.field}
+                        </h4>
+                        <span className="text-xs text-muted-foreground">
+                          {edit.timestamp.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Old Value:</span>
+                          <div className="p-2 bg-destructive/10 rounded mt-1">
+                            {edit.oldValue || <em>Empty</em>}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">New Value:</span>
+                          <div className="p-2 bg-primary/10 rounded mt-1">
+                            {edit.newValue || <em>Empty</em>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={() => setEdits([])}>
+                      Clear All Edits
+                    </Button>
+                    <Button onClick={() => toast.success("All edits approved!")}>
+                      Approve All Changes
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};

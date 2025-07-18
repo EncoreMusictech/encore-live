@@ -8,6 +8,7 @@ import { FileText, Search, Star, Download, Eye, Plus, FileDown } from "lucide-re
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { TemplatePreview } from "./TemplatePreview";
+import { TemplateBuilder } from "./TemplateBuilder";
 import { downloadSamplePDF, samplePDFs } from "./SamplePDFData";
 import { ContractCustomization } from "./ContractCustomization";
 
@@ -31,6 +32,7 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
   const [searchQuery, setSearchQuery] = useState("");
   const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
   const [customizeTemplate, setCustomizeTemplate] = useState<any | null>(null);
+  const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -153,6 +155,12 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
     }
   ];
 
+  if (showTemplateBuilder) {
+    return (
+      <TemplateBuilder onBack={() => setShowTemplateBuilder(false)} />
+    );
+  }
+
   if (customizeTemplate) {
     return (
       <ContractCustomization
@@ -192,7 +200,7 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setShowTemplateBuilder(true)}>
           <Plus className="h-4 w-4" />
           Create Template
         </Button>
