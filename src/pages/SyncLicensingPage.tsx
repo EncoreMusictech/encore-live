@@ -39,15 +39,14 @@ const SyncLicensingPage = () => {
     const activeDeals = syncLicenses.filter(
       license => !["Declined"].includes(license.synch_status)
     ).length;
-    const totalRevenue = syncLicenses.reduce(
-      (sum, license) => sum + (license.invoiced_amount || 0), 
-      0
-    );
+    const outstandingInvoices = syncLicenses
+      .filter(license => license.invoice_status === "Issued" && license.payment_status === "Pending")
+      .reduce((sum, license) => sum + (license.invoiced_amount || 0), 0);
     const paidDealsAmount = syncLicenses
       .filter(license => license.payment_status === "Paid in Full")
       .reduce((sum, license) => sum + (license.invoiced_amount || 0), 0);
 
-    return { totalDeals, activeDeals, totalRevenue, paidDeals: paidDealsAmount };
+    return { totalDeals, activeDeals, totalRevenue: outstandingInvoices, paidDeals: paidDealsAmount };
   };
 
   const stats = getStatsFromLicenses();
