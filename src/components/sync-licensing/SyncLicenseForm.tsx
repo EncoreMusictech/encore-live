@@ -131,7 +131,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
     }
     
     setControlledWriters(allControlledWriters);
-  }, [memoizedSelectedCopyrights, getWritersForCopyright]);
+  }, [memoizedSelectedCopyrights]);
 
   useEffect(() => {
     loadControlledWriters();
@@ -222,7 +222,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
     }
 
     return allocations;
-  }, [selectedCopyrights, form, songFeeAllocations, getWritersForCopyright]);
+  }, [selectedCopyrights, form, songFeeAllocations]);
 
   // Memoize fee allocations to prevent excessive recalculation
   const [feeAllocations, setFeeAllocations] = useState<SongFeeAllocation[]>([]);
