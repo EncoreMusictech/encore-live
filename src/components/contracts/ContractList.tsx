@@ -4,11 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { FileText, MoreHorizontal, Edit, Eye, Download, Trash2, AlertCircle } from "lucide-react";
+import { FileText, MoreHorizontal, Edit, Eye, Download, Trash2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ContractViewDialog } from "./ContractViewDialog";
+import { usePDFGeneration } from "@/hooks/usePDFGeneration";
 
 interface Contract {
   id: string;
@@ -31,7 +32,9 @@ export function ContractList({ onEdit }: ContractListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [viewContract, setViewContract] = useState<Contract | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [downloadingContractId, setDownloadingContractId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { generatePDF, downloadPDF, isGenerating } = usePDFGeneration();
 
   useEffect(() => {
     fetchContracts();
@@ -59,6 +62,25 @@ export function ContractList({ onEdit }: ContractListProps) {
       console.error('Error:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async (contract: Contract) => {
+    setDownloadingContractId(contract.id);
+    
+    try {
+      console.log('Starting PDF download for contract:', contract.title);
+      
+      const result = await generatePDF(contract.id);
+      
+      if (result && result.success && result.pdfData) {
+        const fileName = `${contract.title.replace(/[^a-zA-Z0-9]/g, '_')}_Agreement`;
+        downloadPDF(result.pdfData, fileName);
+      }
+    } catch (error) {
+      console.error('PDF download failed:', error);
+    } finally {
+      setDownloadingContractId(null);
     }
   };
 
@@ -211,8 +233,15 @@ export function ContractList({ onEdit }: ContractListProps) {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Download className="h-4 w-4 mr-2" />
+                      <DropdownMenuItem 
+                        onClick={() => handleDownloadPDF(contract)}
+                        disabled={downloadingContractId === contract.id || isGenerating}
+                      >
+                        {downloadingContractId === contract.id ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4 mr-2" />
+                        )}
                         Download PDF
                       </DropdownMenuItem>
                       <DropdownMenuItem 
