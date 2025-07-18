@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search, Music, Plus, Link2, CheckCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, Music, Plus, Link2, CheckCircle, X } from 'lucide-react';
 import { CopyrightTable } from '@/components/copyright/CopyrightTable';
 import { EnhancedCopyrightForm } from '@/components/copyright/EnhancedCopyrightForm';
 import { useCopyright } from '@/hooks/useCopyright';
@@ -12,13 +13,13 @@ import { Copyright } from '@/hooks/useCopyright';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface SyncRightsManagerProps {
-  selectedCopyrightId?: string;
-  onCopyrightSelect?: (copyright: Copyright) => void;
+  selectedCopyrightIds?: string[];
+  onCopyrightSelect?: (copyrights: Copyright[]) => void;
   onCopyrightCreate?: (copyright: Copyright) => void;
 }
 
 export const SyncRightsManager: React.FC<SyncRightsManagerProps> = ({
-  selectedCopyrightId,
+  selectedCopyrightIds = [],
   onCopyrightSelect,
   onCopyrightCreate
 }) => {
@@ -27,7 +28,7 @@ export const SyncRightsManager: React.FC<SyncRightsManagerProps> = ({
   const [activeTab, setActiveTab] = useState('existing');
   const [writers, setWriters] = useState<{ [key: string]: any[] }>({});
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedCopyright, setSelectedCopyright] = useState<Copyright | null>(null);
+  const [selectedCopyrights, setSelectedCopyrights] = useState<Copyright[]>([]);
 
   // Load writers for each copyright
   React.useEffect(() => {
@@ -52,10 +53,8 @@ export const SyncRightsManager: React.FC<SyncRightsManagerProps> = ({
     }
   }, [copyrights, getWritersForCopyright]);
 
-  // Find selected copyright
-  const selectedCopyrightData = selectedCopyrightId 
-    ? copyrights.find(c => c.id === selectedCopyrightId)
-    : null;
+  // Find selected copyrights
+  const selectedCopyrightsData = copyrights.filter(c => selectedCopyrightIds.includes(c.id));
 
   const filteredCopyrights = copyrights.filter(copyright =>
     copyright.work_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -72,9 +71,21 @@ export const SyncRightsManager: React.FC<SyncRightsManagerProps> = ({
       .reduce((sum, w) => sum + w.ownership_percentage, 0);
   };
 
-  const handleCopyrightSelect = (copyright: Copyright) => {
-    setSelectedCopyright(copyright);
-    onCopyrightSelect?.(copyright);
+  const handleCopyrightToggle = (copyright: Copyright, checked: boolean) => {
+    let newSelectedCopyrights;
+    if (checked) {
+      newSelectedCopyrights = [...selectedCopyrights, copyright];
+    } else {
+      newSelectedCopyrights = selectedCopyrights.filter(c => c.id !== copyright.id);
+    }
+    setSelectedCopyrights(newSelectedCopyrights);
+    onCopyrightSelect?.(newSelectedCopyrights);
+  };
+
+  const handleRemoveSelected = (copyrightId: string) => {
+    const newSelectedCopyrights = selectedCopyrights.filter(c => c.id !== copyrightId);
+    setSelectedCopyrights(newSelectedCopyrights);
+    onCopyrightSelect?.(newSelectedCopyrights);
   };
 
   const handleCreateSuccess = () => {
@@ -94,48 +105,54 @@ export const SyncRightsManager: React.FC<SyncRightsManagerProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Selected Copyright Display */}
-      {selectedCopyrightData && (
+      {/* Selected Copyrights Display */}
+      {selectedCopyrightsData.length > 0 && (
         <Card className="border-primary bg-primary/5">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm">
               <CheckCircle className="w-4 h-4 text-primary" />
-              Selected Work
+              Selected Works ({selectedCopyrightsData.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <div className="font-medium">{selectedCopyrightData.work_title}</div>
-                <div className="text-sm text-muted-foreground">
-                  Work ID: {selectedCopyrightData.work_id}
+            <div className="space-y-3">
+              {selectedCopyrightsData.map((copyright) => (
+                <div key={copyright.id} className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <div className="font-medium">{copyright.work_title}</div>
+                      <div className="text-sm text-muted-foreground">
+                        Work ID: {copyright.work_id}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm">
+                        <strong>Writers:</strong>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {writers[copyright.id]?.map(w => w.writer_name).join(', ') || 'Loading...'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm">
+                        <strong>Controlled Share:</strong>
+                      </div>
+                      <div className="text-sm font-medium">
+                        {calculateControlledShare(writers[copyright.id] || [])}%
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveSelected(copyright.id)}
+                    className="ml-2"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
-              </div>
-              <div>
-                <div className="text-sm">
-                  <strong>Writers:</strong>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {writers[selectedCopyrightData.id]?.map(w => w.writer_name).join(', ') || 'Loading...'}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm">
-                  <strong>Controlled Share:</strong>
-                </div>
-                <div className="text-sm font-medium">
-                  {calculateControlledShare(writers[selectedCopyrightData.id] || [])}%
-                </div>
-              </div>
+              ))}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedCopyright(null)}
-              className="mt-3"
-            >
-              Change Selection
-            </Button>
           </CardContent>
         </Card>
       )}
@@ -182,57 +199,55 @@ export const SyncRightsManager: React.FC<SyncRightsManagerProps> = ({
                     {filteredCopyrights.map((copyright) => {
                       const copyrightWriters = writers[copyright.id] || [];
                       const controlledShare = calculateControlledShare(copyrightWriters);
-                      const isSelected = selectedCopyright?.id === copyright.id;
+                      const isSelected = selectedCopyrightIds.includes(copyright.id);
                       
                       return (
                         <Card 
                           key={copyright.id} 
-                          className={`cursor-pointer transition-colors hover:bg-muted/50 ${
+                          className={`transition-colors hover:bg-muted/50 ${
                             isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
                           }`}
-                          onClick={() => handleCopyrightSelect(copyright)}
                         >
                           <CardContent className="p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                              <div>
-                                <div className="font-medium truncate" title={copyright.work_title}>
-                                  {copyright.work_title}
+                            <div className="flex items-start gap-3">
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => handleCopyrightToggle(copyright, checked as boolean)}
+                                className="mt-1"
+                              />
+                              <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                  <div className="font-medium truncate" title={copyright.work_title}>
+                                    {copyright.work_title}
+                                  </div>
+                                  <Badge variant="outline" className="text-xs mt-1">
+                                    {copyright.work_id}
+                                  </Badge>
                                 </div>
-                                <Badge variant="outline" className="text-xs mt-1">
-                                  {copyright.work_id}
-                                </Badge>
-                              </div>
-                              <div>
-                                <div className="text-sm text-muted-foreground">Album</div>
-                                <div className="text-sm truncate" title={copyright.album_title || ''}>
-                                  {copyright.album_title || '-'}
+                                <div>
+                                  <div className="text-sm text-muted-foreground">Album</div>
+                                  <div className="text-sm truncate" title={copyright.album_title || ''}>
+                                    {copyright.album_title || '-'}
+                                  </div>
                                 </div>
-                              </div>
-                              <div>
-                                <div className="text-sm text-muted-foreground">Writers</div>
-                                <div className="text-sm">
-                                  {copyrightWriters.length > 0 
-                                    ? copyrightWriters.slice(0, 2).map(w => w.writer_name).join(', ')
-                                    : 'Loading...'
-                                  }
-                                  {copyrightWriters.length > 2 && ` +${copyrightWriters.length - 2}`}
+                                <div>
+                                  <div className="text-sm text-muted-foreground">Writers</div>
+                                  <div className="text-sm">
+                                    {copyrightWriters.length > 0 
+                                      ? copyrightWriters.slice(0, 2).map(w => w.writer_name).join(', ')
+                                      : 'Loading...'
+                                    }
+                                    {copyrightWriters.length > 2 && ` +${copyrightWriters.length - 2}`}
+                                  </div>
                                 </div>
-                              </div>
-                              <div>
-                                <div className="text-sm text-muted-foreground">Controlled</div>
-                                <div className="text-sm font-medium">
-                                  {controlledShare}%
+                                <div>
+                                  <div className="text-sm text-muted-foreground">Controlled</div>
+                                  <div className="text-sm font-medium">
+                                    {controlledShare}%
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                            {isSelected && (
-                              <div className="mt-2 pt-2 border-t">
-                                <Badge className="bg-primary text-primary-foreground">
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  Selected
-                                </Badge>
-                              </div>
-                            )}
                           </CardContent>
                         </Card>
                       );

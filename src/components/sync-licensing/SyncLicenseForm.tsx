@@ -81,7 +81,7 @@ const territories = [
 export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseFormProps) => {
   const [agentOpen, setAgentOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
-  const [selectedCopyright, setSelectedCopyright] = useState<Copyright | null>(null);
+  const [selectedCopyrights, setSelectedCopyrights] = useState<Copyright[]>([]);
   const { user } = useAuth();
   const createMutation = useCreateSyncLicense();
   const updateMutation = useUpdateSyncLicense();
@@ -604,9 +604,9 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
 
               <TabsContent value="rights" className="space-y-4">
                 <SyncRightsManager 
-                  selectedCopyrightId={selectedCopyright?.id}
-                  onCopyrightSelect={setSelectedCopyright}
-                  onCopyrightCreate={setSelectedCopyright}
+                  selectedCopyrightIds={selectedCopyrights.map(c => c.id)}
+                  onCopyrightSelect={setSelectedCopyrights}
+                  onCopyrightCreate={(copyright) => setSelectedCopyrights([...selectedCopyrights, copyright])}
                 />
               </TabsContent>
 
