@@ -45,6 +45,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { SyncLicense, useCreateSyncLicense, useUpdateSyncLicense } from "@/hooks/useSyncLicenses";
 import { useSyncAgents, useSyncSources } from "@/hooks/useSyncAgents";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SyncLicenseFormProps {
   open: boolean;
@@ -78,6 +79,7 @@ const territories = [
 export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseFormProps) => {
   const [agentOpen, setAgentOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
+  const { user } = useAuth();
   const createMutation = useCreateSyncLicense();
   const updateMutation = useUpdateSyncLicense();
   const { data: existingAgents = [] } = useSyncAgents();
@@ -156,6 +158,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
   const onSubmit = (data: any) => {
     const submitData = {
       ...data,
+      user_id: user?.id,
       pub_fee: data.pub_fee ? parseFloat(data.pub_fee) : undefined,
       master_fee: data.master_fee ? parseFloat(data.master_fee) : undefined,
       request_received: data.request_received ? format(data.request_received, "yyyy-MM-dd") : undefined,
