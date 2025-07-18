@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { CalendarIcon, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
@@ -93,29 +93,30 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
   const { data: existingSources = [] } = useSyncSources();
   
   // Load controlled writers when selected copyrights change
-  useEffect(() => {
-    const loadControlledWriters = async () => {
-      const allControlledWriters: CopyrightWriter[] = [];
-      
-      for (const copyright of selectedCopyrights) {
-        try {
-          const writers = await getWritersForCopyright(copyright.id);
-          const controlled = writers.filter(writer => writer.controlled_status === 'C');
-          allControlledWriters.push(...controlled);
-        } catch (error) {
-          console.error(`Error loading writers for copyright ${copyright.id}:`, error);
-        }
-      }
-      
-      setControlledWriters(allControlledWriters);
-    };
-
-    if (selectedCopyrights.length > 0) {
-      loadControlledWriters();
-    } else {
+  const loadControlledWriters = useCallback(async () => {
+    if (selectedCopyrights.length === 0) {
       setControlledWriters([]);
+      return;
     }
+
+    const allControlledWriters: CopyrightWriter[] = [];
+    
+    for (const copyright of selectedCopyrights) {
+      try {
+        const writers = await getWritersForCopyright(copyright.id);
+        const controlled = writers.filter(writer => writer.controlled_status === 'C');
+        allControlledWriters.push(...controlled);
+      } catch (error) {
+        console.error(`Error loading writers for copyright ${copyright.id}:`, error);
+      }
+    }
+    
+    setControlledWriters(allControlledWriters);
   }, [selectedCopyrights, getWritersForCopyright]);
+
+  useEffect(() => {
+    loadControlledWriters();
+  }, [loadControlledWriters]);
 
   const isEditing = !!license;
 
