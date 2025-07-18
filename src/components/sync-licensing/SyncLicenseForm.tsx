@@ -42,12 +42,14 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { SyncLicense, useCreateSyncLicense, useUpdateSyncLicense } from "@/hooks/useSyncLicenses";
 import { useSyncAgents, useSyncSources } from "@/hooks/useSyncAgents";
 import { useAuth } from "@/hooks/useAuth";
 import { SyncRightsManager } from "./SyncRightsManager";
-import { Copyright } from "@/hooks/useCopyright";
+import { Copyright, useCopyright, CopyrightWriter } from "@/hooks/useCopyright";
 
 interface SyncLicenseFormProps {
   open: boolean;
@@ -82,11 +84,39 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
   const [agentOpen, setAgentOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
   const [selectedCopyrights, setSelectedCopyrights] = useState<Copyright[]>([]);
+  const [controlledWriters, setControlledWriters] = useState<CopyrightWriter[]>([]);
   const { user } = useAuth();
+  const { getWritersForCopyright } = useCopyright();
   const createMutation = useCreateSyncLicense();
   const updateMutation = useUpdateSyncLicense();
   const { data: existingAgents = [] } = useSyncAgents();
   const { data: existingSources = [] } = useSyncSources();
+  
+  // Load controlled writers when selected copyrights change
+  useEffect(() => {
+    const loadControlledWriters = async () => {
+      const allControlledWriters: CopyrightWriter[] = [];
+      
+      for (const copyright of selectedCopyrights) {
+        try {
+          const writers = await getWritersForCopyright(copyright.id);
+          const controlled = writers.filter(writer => writer.controlled_status === 'C');
+          allControlledWriters.push(...controlled);
+        } catch (error) {
+          console.error(`Error loading writers for copyright ${copyright.id}:`, error);
+        }
+      }
+      
+      setControlledWriters(allControlledWriters);
+    };
+
+    if (selectedCopyrights.length > 0) {
+      loadControlledWriters();
+    } else {
+      setControlledWriters([]);
+    }
+  }, [selectedCopyrights, getWritersForCopyright]);
+
   const isEditing = !!license;
 
   const form = useForm({
@@ -665,6 +695,57 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     )}
                   />
                 </div>
+
+                {/* Fee Allocation Table */}
+                {controlledWriters.length > 0 && form.watch('pub_fee') && (
+                  <Card className="mt-6">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Publishing Fee Allocation</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Writer Name</TableHead>
+                            <TableHead>Ownership %</TableHead>
+                            <TableHead>Allocated Amount</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {controlledWriters.map((writer, index) => {
+                            const pubFee = parseFloat(form.watch('pub_fee') || '0');
+                            const allocatedAmount = (pubFee * (writer.ownership_percentage || 0)) / 100;
+                            
+                            return (
+                              <TableRow key={`${writer.id}-${index}`}>
+                                <TableCell className="font-medium">{writer.writer_name}</TableCell>
+                                <TableCell>{writer.ownership_percentage}%</TableCell>
+                                <TableCell>
+                                  {new Intl.NumberFormat('en-US', {
+                                    style: 'currency',
+                                    currency: form.watch('currency') || 'USD'
+                                  }).format(allocatedAmount)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                          <TableRow className="border-t-2 font-semibold">
+                            <TableCell>Total</TableCell>
+                            <TableCell>
+                              {controlledWriters.reduce((sum, writer) => sum + (writer.ownership_percentage || 0), 0)}%
+                            </TableCell>
+                            <TableCell>
+                              {new Intl.NumberFormat('en-US', {
+                                style: 'currency',
+                                currency: form.watch('currency') || 'USD'
+                              }).format(parseFloat(form.watch('pub_fee') || '0'))}
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="status" className="space-y-4">
