@@ -8,6 +8,7 @@ import { FileText, MoreHorizontal, Edit, Eye, Download, Trash2, AlertCircle } fr
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { ContractViewDialog } from "./ContractViewDialog";
 
 interface Contract {
   id: string;
@@ -28,6 +29,8 @@ interface ContractListProps {
 export function ContractList({ onEdit }: ContractListProps) {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewContract, setViewContract] = useState<Contract | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -197,7 +200,10 @@ export function ContractList({ onEdit }: ContractListProps) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setViewContract(contract);
+                        setIsViewDialogOpen(true);
+                      }}>
                         <Eye className="h-4 w-4 mr-2" />
                         View
                       </DropdownMenuItem>
@@ -224,6 +230,12 @@ export function ContractList({ onEdit }: ContractListProps) {
           </TableBody>
         </Table>
       </CardContent>
+      
+      <ContractViewDialog
+        contract={viewContract}
+        open={isViewDialogOpen}
+        onOpenChange={setIsViewDialogOpen}
+      />
     </Card>
   );
 }
