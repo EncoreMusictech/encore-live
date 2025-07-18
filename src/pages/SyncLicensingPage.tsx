@@ -43,11 +43,11 @@ const SyncLicensingPage = () => {
       (sum, license) => sum + (license.invoiced_amount || 0), 
       0
     );
-    const paidDeals = syncLicenses.filter(
-      license => license.payment_status === "Paid in Full"
-    ).length;
+    const paidDealsAmount = syncLicenses
+      .filter(license => license.payment_status === "Paid in Full")
+      .reduce((sum, license) => sum + (license.invoiced_amount || 0), 0);
 
-    return { totalDeals, activeDeals, totalRevenue, paidDeals };
+    return { totalDeals, activeDeals, totalRevenue, paidDeals: paidDealsAmount };
   };
 
   const stats = getStatsFromLicenses();
