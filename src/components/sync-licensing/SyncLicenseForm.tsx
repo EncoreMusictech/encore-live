@@ -162,12 +162,21 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
     const submitData = {
       ...data,
       user_id: user?.id,
+      // Only include media_type if it has a valid value
+      media_type: data.media_type && mediaTypes.includes(data.media_type) ? data.media_type : null,
       pub_fee: data.pub_fee ? parseFloat(data.pub_fee) : undefined,
       master_fee: data.master_fee ? parseFloat(data.master_fee) : undefined,
       request_received: data.request_received ? format(data.request_received, "yyyy-MM-dd") : undefined,
       term_start: data.term_start ? format(data.term_start, "yyyy-MM-dd") : undefined,
       term_end: data.term_end ? format(data.term_end, "yyyy-MM-dd") : undefined,
     };
+
+    // Remove undefined/null values to prevent database issues
+    Object.keys(submitData).forEach(key => {
+      if (submitData[key] === undefined || submitData[key] === null || submitData[key] === '') {
+        delete submitData[key];
+      }
+    });
 
     if (isEditing && license) {
       updateMutation.mutate(
