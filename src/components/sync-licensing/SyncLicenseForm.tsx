@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { CalendarIcon, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
@@ -80,11 +80,27 @@ const territories = [
   "Latin America", "Asia Pacific", "Specific Territory"
 ];
 
+interface SongFeeAllocation {
+  copyrightId: string;
+  workTitle: string;
+  customAmount?: number;
+  allocatedAmount: number;
+  controlledShare: number;
+  controlledAmount: number;
+  controlledWriters: Array<{
+    id: string;
+    name: string;
+    ownershipPercentage: number;
+    allocatedAmount: number;
+  }>;
+}
+
 export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseFormProps) => {
   const [agentOpen, setAgentOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
   const [selectedCopyrights, setSelectedCopyrights] = useState<Copyright[]>([]);
   const [controlledWriters, setControlledWriters] = useState<CopyrightWriter[]>([]);
+  const [songFeeAllocations, setSongFeeAllocations] = useState<{ [key: string]: number }>({});
   const { user } = useAuth();
   const { getWritersForCopyright } = useCopyright();
   const createMutation = useCreateSyncLicense();
@@ -92,16 +108,19 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
   const { data: existingAgents = [] } = useSyncAgents();
   const { data: existingSources = [] } = useSyncSources();
   
+  // Memoize controlled writers to prevent infinite loops
+  const memoizedSelectedCopyrights = useMemo(() => selectedCopyrights, [selectedCopyrights]);
+
   // Load controlled writers when selected copyrights change
   const loadControlledWriters = useCallback(async () => {
-    if (selectedCopyrights.length === 0) {
+    if (memoizedSelectedCopyrights.length === 0) {
       setControlledWriters([]);
       return;
     }
 
     const allControlledWriters: CopyrightWriter[] = [];
     
-    for (const copyright of selectedCopyrights) {
+    for (const copyright of memoizedSelectedCopyrights) {
       try {
         const writers = await getWritersForCopyright(copyright.id);
         const controlled = writers.filter(writer => writer.controlled_status === 'C');
@@ -112,7 +131,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
     }
     
     setControlledWriters(allControlledWriters);
-  }, [selectedCopyrights, getWritersForCopyright]);
+  }, [memoizedSelectedCopyrights, getWritersForCopyright]);
 
   useEffect(() => {
     loadControlledWriters();
@@ -142,6 +161,92 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       invoice_status: "Not Issued",
     },
   });
+
+  // Calculate fee allocations with proration logic
+  const calculateFeeAllocations = useCallback(async (): Promise<SongFeeAllocation[]> => {
+    if (selectedCopyrights.length === 0) return [];
+
+    const pubFee = parseFloat(form.watch('pub_fee') || '0');
+    if (pubFee === 0) return [];
+
+    const allocations: SongFeeAllocation[] = [];
+
+    for (const copyright of selectedCopyrights) {
+      try {
+        const writers = await getWritersForCopyright(copyright.id);
+        const controlledWritersForSong = writers.filter(writer => writer.controlled_status === 'C');
+        
+        // 1. Calculate allocated amount per song (equal division unless custom amount)
+        const customAmount = songFeeAllocations[copyright.id];
+        const allocatedAmount = customAmount !== undefined 
+          ? customAmount 
+          : pubFee / selectedCopyrights.length;
+
+        // 2. Calculate controlled share (sum of controlled writers' percentages)
+        const controlledShare = controlledWritersForSong.reduce(
+          (sum, writer) => sum + (writer.ownership_percentage || 0), 
+          0
+        ) / 100; // Convert to decimal
+
+        // 3. Calculate controlled amount (allocated amount * controlled share)
+        const controlledAmount = allocatedAmount * controlledShare;
+
+        // 4. Calculate individual writer allocations
+        const totalControlledPercentage = controlledWritersForSong.reduce(
+          (sum, writer) => sum + (writer.ownership_percentage || 0), 
+          0
+        );
+
+        const controlledWriterAllocations = controlledWritersForSong.map(writer => ({
+          id: writer.id,
+          name: writer.writer_name,
+          ownershipPercentage: writer.ownership_percentage || 0,
+          allocatedAmount: totalControlledPercentage > 0 
+            ? (controlledAmount * (writer.ownership_percentage || 0)) / totalControlledPercentage
+            : 0
+        }));
+
+        allocations.push({
+          copyrightId: copyright.id,
+          workTitle: copyright.work_title,
+          customAmount,
+          allocatedAmount,
+          controlledShare,
+          controlledAmount,
+          controlledWriters: controlledWriterAllocations
+        });
+
+      } catch (error) {
+        console.error(`Error calculating allocation for copyright ${copyright.id}:`, error);
+      }
+    }
+
+    return allocations;
+  }, [selectedCopyrights, form, songFeeAllocations, getWritersForCopyright]);
+
+  // Memoize fee allocations to prevent excessive recalculation
+  const [feeAllocations, setFeeAllocations] = useState<SongFeeAllocation[]>([]);
+
+  useEffect(() => {
+    calculateFeeAllocations().then(setFeeAllocations);
+  }, [calculateFeeAllocations]);
+
+  const handleCustomAmountChange = (copyrightId: string, amount: string) => {
+    const numericAmount = amount === '' ? undefined : parseFloat(amount);
+    setSongFeeAllocations(prev => ({
+      ...prev,
+      [copyrightId]: numericAmount
+    }));
+  };
+
+  // Calculate totals for validation
+  const totalCustomAllocated = Object.values(songFeeAllocations)
+    .filter(amount => amount !== undefined)
+    .reduce((sum, amount) => sum + (amount || 0), 0);
+
+  const totalPubFee = parseFloat(form.watch('pub_fee') || '0');
+  const remainingAmount = totalPubFee - totalCustomAllocated;
+  const songsWithoutCustomAmount = selectedCopyrights.length - Object.keys(songFeeAllocations).filter(key => songFeeAllocations[key] !== undefined).length;
 
   useEffect(() => {
     if (license) {
@@ -697,53 +802,118 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                   />
                 </div>
 
-                {/* Fee Allocation Table */}
-                {controlledWriters.length > 0 && form.watch('pub_fee') && (
+                {/* Enhanced Fee Allocation with Proration Logic */}
+                {feeAllocations.length > 0 && totalPubFee > 0 && (
                   <Card className="mt-6">
                     <CardHeader>
-                      <CardTitle className="text-lg">Publishing Fee Allocation</CardTitle>
+                      <CardTitle className="text-lg">Publishing Fee Allocation & Proration</CardTitle>
+                      <div className="text-sm text-muted-foreground">
+                        Total Publishing Fee: {new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: form.watch('currency') || 'USD'
+                        }).format(totalPubFee)}
+                        {songsWithoutCustomAmount > 0 && (
+                          <span className="ml-2">
+                            | Remaining for {songsWithoutCustomAmount} songs: {new Intl.NumberFormat('en-US', {
+                              style: 'currency',
+                              currency: form.watch('currency') || 'USD'
+                            }).format(remainingAmount)}
+                          </span>
+                        )}
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Writer Name</TableHead>
-                            <TableHead>Ownership %</TableHead>
-                            <TableHead>Allocated Amount</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {controlledWriters.map((writer, index) => {
-                            const pubFee = parseFloat(form.watch('pub_fee') || '0');
-                            const allocatedAmount = (pubFee * (writer.ownership_percentage || 0)) / 100;
-                            
-                            return (
-                              <TableRow key={`${writer.id}-${index}`}>
-                                <TableCell className="font-medium">{writer.writer_name}</TableCell>
-                                <TableCell>{writer.ownership_percentage}%</TableCell>
-                                <TableCell>
-                                  {new Intl.NumberFormat('en-US', {
-                                    style: 'currency',
-                                    currency: form.watch('currency') || 'USD'
-                                  }).format(allocatedAmount)}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                          <TableRow className="border-t-2 font-semibold">
-                            <TableCell>Total</TableCell>
-                            <TableCell>
-                              {controlledWriters.reduce((sum, writer) => sum + (writer.ownership_percentage || 0), 0)}%
-                            </TableCell>
-                            <TableCell>
-                              {new Intl.NumberFormat('en-US', {
-                                style: 'currency',
-                                currency: form.watch('currency') || 'USD'
-                              }).format(parseFloat(form.watch('pub_fee') || '0'))}
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
+                    <CardContent className="space-y-6">
+                      {feeAllocations.map((allocation) => (
+                        <div key={allocation.copyrightId} className="border rounded-lg p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium">{allocation.workTitle}</h4>
+                              <div className="text-sm text-muted-foreground">
+                                Controlled Share: {(allocation.controlledShare * 100).toFixed(1)}%
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">Custom Amount:</span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="Auto"
+                                value={songFeeAllocations[allocation.copyrightId] ?? ''}
+                                onChange={(e) => handleCustomAmountChange(allocation.copyrightId, e.target.value)}
+                                className="w-24"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Allocated Amount:</span>
+                              <div className="font-medium">
+                                {new Intl.NumberFormat('en-US', {
+                                  style: 'currency',
+                                  currency: form.watch('currency') || 'USD'
+                                }).format(allocation.allocatedAmount)}
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Controlled Amount:</span>
+                              <div className="font-medium">
+                                {new Intl.NumberFormat('en-US', {
+                                  style: 'currency',
+                                  currency: form.watch('currency') || 'USD'
+                                }).format(allocation.controlledAmount)}
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Writers:</span>
+                              <div className="font-medium">{allocation.controlledWriters.length}</div>
+                            </div>
+                          </div>
+
+                          {allocation.controlledWriters.length > 0 && (
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Writer Name</TableHead>
+                                  <TableHead>Ownership %</TableHead>
+                                  <TableHead>Allocated Amount</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {allocation.controlledWriters.map((writer) => (
+                                  <TableRow key={writer.id}>
+                                    <TableCell className="font-medium">{writer.name}</TableCell>
+                                    <TableCell>{writer.ownershipPercentage}%</TableCell>
+                                    <TableCell>
+                                      {new Intl.NumberFormat('en-US', {
+                                        style: 'currency',
+                                        currency: form.watch('currency') || 'USD'
+                                      }).format(writer.allocatedAmount)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          )}
+                        </div>
+                      ))}
+
+                      <div className="border-t pt-4">
+                        <div className="grid grid-cols-2 gap-4 text-sm font-semibold">
+                          <div>
+                            Total Allocated: {new Intl.NumberFormat('en-US', {
+                              style: 'currency',
+                              currency: form.watch('currency') || 'USD'
+                            }).format(feeAllocations.reduce((sum, allocation) => sum + allocation.allocatedAmount, 0))}
+                          </div>
+                          <div>
+                            Total to Controlled Writers: {new Intl.NumberFormat('en-US', {
+                              style: 'currency',
+                              currency: form.watch('currency') || 'USD'
+                            }).format(feeAllocations.reduce((sum, allocation) => sum + allocation.controlledAmount, 0))}
+                          </div>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
