@@ -46,6 +46,8 @@ import { cn } from "@/lib/utils";
 import { SyncLicense, useCreateSyncLicense, useUpdateSyncLicense } from "@/hooks/useSyncLicenses";
 import { useSyncAgents, useSyncSources } from "@/hooks/useSyncAgents";
 import { useAuth } from "@/hooks/useAuth";
+import { SyncRightsManager } from "./SyncRightsManager";
+import { Copyright } from "@/hooks/useCopyright";
 
 interface SyncLicenseFormProps {
   open: boolean;
@@ -79,6 +81,7 @@ const territories = [
 export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseFormProps) => {
   const [agentOpen, setAgentOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
+  const [selectedCopyright, setSelectedCopyright] = useState<Copyright | null>(null);
   const { user } = useAuth();
   const createMutation = useCreateSyncLicense();
   const updateMutation = useUpdateSyncLicense();
@@ -591,9 +594,11 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
               </TabsContent>
 
               <TabsContent value="rights" className="space-y-4">
-                <div className="text-sm text-muted-foreground mb-4">
-                  Rights and splits management - Link to Copyright Module integration coming soon.
-                </div>
+                <SyncRightsManager 
+                  selectedCopyrightId={selectedCopyright?.id}
+                  onCopyrightSelect={setSelectedCopyright}
+                  onCopyrightCreate={setSelectedCopyright}
+                />
               </TabsContent>
 
               <TabsContent value="fees" className="space-y-4">
