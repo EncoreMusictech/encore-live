@@ -165,6 +165,7 @@ export interface CreateSyncLicenseData {
   music_type?: string;
   music_use?: string;
   smpte?: string;
+  linked_copyright_ids?: string[];
   pub_fee?: number;
   master_fee?: number;
   currency?: string;

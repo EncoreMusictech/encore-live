@@ -580,6 +580,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log('=== PDF GENERATION STARTED ===');
   try {
     const { licenseId } = await req.json();
     console.log('Received request for license ID:', licenseId);
