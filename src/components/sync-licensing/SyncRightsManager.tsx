@@ -54,7 +54,7 @@ export const SyncRightsManager: React.FC<SyncRightsManagerProps> = ({
 
   React.useEffect(() => {
     loadWriters();
-  }, [loadWriters]);
+  }, [copyrights, getWritersForCopyright]);
 
   // Find selected copyrights
   const selectedCopyrightsData = copyrights.filter(c => selectedCopyrightIds.includes(c.id));

@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { CalendarIcon, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,12 +32,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -45,7 +42,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import { SyncLicense, useCreateSyncLicense, useUpdateSyncLicense } from "@/hooks/useSyncLicenses";
 import { useSyncAgents, useSyncSources } from "@/hooks/useSyncAgents";
 import { useAuth } from "@/hooks/useAuth";
@@ -1270,16 +1266,37 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     control={form.control}
                     name="approval_issued"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex flex-col">
                         <FormLabel>Approval Issued</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            placeholder="Select date"
-                            value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
-                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
-                          />
-                        </FormControl>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1289,16 +1306,37 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     control={form.control}
                     name="license_issued"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex flex-col">
                         <FormLabel>License Issued</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            placeholder="Select date"
-                            value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
-                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
-                          />
-                        </FormControl>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1308,16 +1346,37 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     control={form.control}
                     name="payment_received"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex flex-col">
                         <FormLabel>Payment Received</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            placeholder="Select date"
-                            value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
-                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
-                          />
-                        </FormControl>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
