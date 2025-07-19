@@ -103,18 +103,33 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
   const { user } = useAuth();
   const createMutation = useCreateSyncLicense();
   const updateMutation = useUpdateSyncLicense();
-  const { agents } = useSyncAgents();
-  const { sources } = useSyncSources();
-  const { copyrights } = useCopyright();
+  const { data: agents } = useSyncAgents();
+  const { data: sources } = useSyncSources();
+  const { copyrights, getWritersForCopyright } = useCopyright();
 
   const [agentOpen, setAgentOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
   const [selectedCopyrights, setSelectedCopyrights] = useState<Copyright[]>([]);
   const [controlledWriters, setControlledWriters] = useState<CopyrightWriter[]>([]);
-  const [songFeeAllocations, setSongFeeAllocations] = useState<{[key: string]: string}>({});
+  const mediaTypes = [
+    "Film", "Television", "Documentary", "Commercial", "Video Game", 
+    "Web Series", "Podcast", "Audio Book", "Streaming"
+  ];
+  
+  const musicTypes = ["Original Score", "Existing Song", "Cover Version", "Instrumental"];
+  const musicUses = ["Background", "Featured", "Theme Song", "End Credits"];
 
-  const existingAgents = agents?.data || [];
-  const existingSources = sources?.data || [];
+  const existingAgents = agents || [];
+  const existingSources = sources || [];
+
+  // Calculate fee allocation variables
+  const totalPubFee = parseFloat(form.watch('pub_fee') || '0');
+  const totalCustomAllocated = Object.values(songFeeAllocations)
+    .reduce((sum, amount) => sum + parseFloat(amount || '0'), 0);
+  const remainingAmount = Math.max(0, totalPubFee - totalCustomAllocated);
+  const songsWithoutCustomAmount = selectedCopyrights.filter(
+    c => !songFeeAllocations[c.id] || parseFloat(songFeeAllocations[c.id]) === 0
+  ).length;
 
   const loadControlledWriters = useCallback(async () => {
     if (selectedCopyrights.length === 0) {
