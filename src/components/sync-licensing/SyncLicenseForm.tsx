@@ -468,108 +468,6 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="platforms"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Platforms</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select platform" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="all-media">All Media</SelectItem>
-                            <SelectItem value="online">Online</SelectItem>
-                            <SelectItem value="television">Television</SelectItem>
-                            <SelectItem value="theatrical">Theatrical</SelectItem>
-                            <SelectItem value="streaming">Streaming</SelectItem>
-                            <SelectItem value="digital">Digital</SelectItem>
-                            <SelectItem value="broadcast">Broadcast</SelectItem>
-                            <SelectItem value="cable">Cable</SelectItem>
-                            <SelectItem value="social-media">Social Media</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="territory"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Territory</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select territory" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="worldwide">Worldwide</SelectItem>
-                            <SelectItem value="us-only">US Only</SelectItem>
-                            <SelectItem value="north-america">North America</SelectItem>
-                            <SelectItem value="europe">Europe</SelectItem>
-                            <SelectItem value="uk-ireland">UK & Ireland</SelectItem>
-                            <SelectItem value="asia-pacific">Asia Pacific</SelectItem>
-                            <SelectItem value="latin-america">Latin America</SelectItem>
-                            <SelectItem value="custom">Custom Territory</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="term_duration"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Term Duration</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select term duration" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="perpetuity">Perpetuity</SelectItem>
-                            <SelectItem value="1-year">1 Year</SelectItem>
-                            <SelectItem value="2-years">2 Years</SelectItem>
-                            <SelectItem value="3-years">3 Years</SelectItem>
-                            <SelectItem value="5-years">5 Years</SelectItem>
-                            <SelectItem value="7-years">7 Years</SelectItem>
-                            <SelectItem value="10-years">10 Years</SelectItem>
-                            <SelectItem value="15-years">15 Years</SelectItem>
-                            <SelectItem value="custom">Custom Term</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="episode_season"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Episode/Season</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="e.g., Season 1 Episode 5, Episode 12, Season 2" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
 
                   <FormField
                     control={form.control}
@@ -731,10 +629,115 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     form.setValue('audio_mix_level', data.audio_mix_level);
                   }}
                 />
+
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                  <FormField
+                    control={form.control}
+                    name="platforms"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Platforms</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select platform" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="all-media">All Media</SelectItem>
+                            <SelectItem value="online">Online</SelectItem>
+                            <SelectItem value="television">Television</SelectItem>
+                            <SelectItem value="theatrical">Theatrical</SelectItem>
+                            <SelectItem value="streaming">Streaming</SelectItem>
+                            <SelectItem value="digital">Digital</SelectItem>
+                            <SelectItem value="broadcast">Broadcast</SelectItem>
+                            <SelectItem value="cable">Cable</SelectItem>
+                            <SelectItem value="social-media">Social Media</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="episode_season"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Episode/Season</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="e.g., Season 1 Episode 5, Episode 12, Season 2" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="terms" className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="territory"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Territory</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select territory" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="worldwide">Worldwide</SelectItem>
+                            <SelectItem value="us-only">US Only</SelectItem>
+                            <SelectItem value="north-america">North America</SelectItem>
+                            <SelectItem value="europe">Europe</SelectItem>
+                            <SelectItem value="uk-ireland">UK & Ireland</SelectItem>
+                            <SelectItem value="asia-pacific">Asia Pacific</SelectItem>
+                            <SelectItem value="latin-america">Latin America</SelectItem>
+                            <SelectItem value="custom">Custom Territory</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="term_duration"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Term Duration</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select term duration" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="perpetuity">Perpetuity</SelectItem>
+                            <SelectItem value="1-year">1 Year</SelectItem>
+                            <SelectItem value="2-years">2 Years</SelectItem>
+                            <SelectItem value="3-years">3 Years</SelectItem>
+                            <SelectItem value="5-years">5 Years</SelectItem>
+                            <SelectItem value="7-years">7 Years</SelectItem>
+                            <SelectItem value="10-years">10 Years</SelectItem>
+                            <SelectItem value="15-years">15 Years</SelectItem>
+                            <SelectItem value="custom">Custom Term</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name="territory_of_licensee"
