@@ -910,67 +910,6 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     form.setValue('mechanical_rights_cleared', data.mechanical_rights_cleared);
                   }}
                 />
-                
-                <SyncRightsManager />
-              </TabsContent>
-
-              <TabsContent value="fees" className="space-y-4">
-                <PaymentTermsForm
-                  paymentData={{
-                    payment_due_date: form.watch('payment_due_date'),
-                    payment_method: form.watch('payment_method'),
-                    banking_instructions: form.watch('banking_instructions'),
-                    payment_reference: form.watch('payment_reference'),
-                    advance_amount: form.watch('advance_amount'),
-                    backend_percentage: form.watch('backend_percentage'),
-                  }}
-                  onPaymentChange={(data) => {
-                    form.setValue('payment_due_date', data.payment_due_date);
-                    form.setValue('payment_method', data.payment_method);
-                    form.setValue('banking_instructions', data.banking_instructions);
-                    form.setValue('payment_reference', data.payment_reference);
-                    form.setValue('advance_amount', data.advance_amount);
-                    form.setValue('backend_percentage', data.backend_percentage);
-                  }}
-                />
-                
-                {/* Existing fee allocation section */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Fee Allocation</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Existing fee allocation content from original form */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="pub_fee"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Publishing Fee ($)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="0.00" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="master_fee"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Master Fee ($)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="0.00" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
               </TabsContent>
 
               <TabsContent value="rights" className="space-y-4">
