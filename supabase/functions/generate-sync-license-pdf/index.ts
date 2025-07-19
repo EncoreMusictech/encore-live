@@ -346,7 +346,7 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
           <td>Writer Name(s)</td>
           <td>Controlled Share</td>
           <td>Master Cleared</td>
-          <td>Allocated Fee</td>
+          <td>Controlled Amount</td>
         </tr>
       `;
     }
@@ -360,7 +360,7 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
       
       // Find the fee allocation for this copyright
       const feeAllocation = license.fee_allocations?.find((allocation: any) => allocation.copyrightId === copyright.id);
-      const allocatedFee = feeAllocation ? formatCurrency(feeAllocation.allocatedAmount) : 'Allocated Fee';
+      const controlledAmount = feeAllocation ? formatCurrency(feeAllocation.controlledAmount) : 'Controlled Amount';
       
       return `
         <tr>
@@ -370,7 +370,7 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
           <td>${writers}</td>
           <td>${controlledShare > 0 ? `${controlledShare}%` : 'Controlled Share'}</td>
           <td>Master Cleared</td>
-          <td>${allocatedFee}</td>
+          <td>${controlledAmount}</td>
         </tr>
       `;
     }).join('');
@@ -691,7 +691,7 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
                     <th>Writers</th>
                     <th>Controlled Share</th>
                     <th>Master Cleared</th>
-                    <th>Allocated Fee</th>
+                    <th>Controlled Amount</th>
                 </tr>
             </thead>
             <tbody>
