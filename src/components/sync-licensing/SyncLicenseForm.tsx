@@ -229,23 +229,33 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
 
     const pubFee = parseFloat(form.watch('pub_fee') || '0');
     const allocations: SongFeeAllocation[] = [];
+    
+    // Default Fee Allocation: Divide the sync fee equally across all selected songs
+    const defaultAllocationPerSong = pubFee / selectedCopyrights.length;
 
     for (const copyright of selectedCopyrights) {
       const writersInCopyright = controlledWriters.filter(w => w.copyright_id === copyright.id);
+      
+      // Calculate Controlled Share: Sum the % shares of writers marked as "Controlled by Us"
       const controlledShare = writersInCopyright
         .filter(w => w.controlled_status === 'C')
         .reduce((sum, w) => sum + w.ownership_percentage, 0);
 
+      // Use custom amount if entered, otherwise use default equal allocation
       const customAmount = parseFloat(songFeeAllocations[copyright.id] || '0');
-      const allocatedAmount = customAmount > 0 ? customAmount : (pubFee * controlledShare) / 100;
-      const controlledAmount = allocatedAmount;
+      const allocatedAmount = customAmount > 0 ? customAmount : defaultAllocationPerSong;
+      
+      // Multiply the allocated song fee by controlled share to get the Controlled Amount
+      const controlledAmount = (allocatedAmount * controlledShare) / 100;
 
+      // Split Controlled Amount: Distribute proportionally to each controlled writer
       const controlledWritersWithAmounts = writersInCopyright
         .filter(w => w.controlled_status === 'C')
         .map(writer => ({
           name: writer.writer_name,
           share: writer.ownership_percentage,
-          amount: (allocatedAmount * writer.ownership_percentage) / controlledShare || 0
+          // Distribute the controlled amount proportionally based on their ownership % of the song
+          amount: controlledShare > 0 ? (controlledAmount * writer.ownership_percentage) / controlledShare : 0
         }));
 
       allocations.push({
@@ -1101,8 +1111,10 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                               .reduce((sum, w) => sum + w.ownership_percentage, 0);
                             
                             const pubFee = parseFloat(form.watch('pub_fee') || '0');
+                            const defaultAllocationPerSong = pubFee / selectedCopyrights.length;
                             const customAmount = parseFloat(songFeeAllocations[copyright.id] || '0');
-                            const allocatedAmount = customAmount > 0 ? customAmount : (pubFee * controlledShare) / 100;
+                            const allocatedAmount = customAmount > 0 ? customAmount : defaultAllocationPerSong;
+                            const controlledAmount = (allocatedAmount * controlledShare) / 100;
 
                             if (controlledShare === 0) return null;
 
@@ -1120,7 +1132,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                                     <Input
                                       type="number"
                                       step="0.01"
-                                      placeholder="0.00"
+                                      placeholder={defaultAllocationPerSong.toFixed(2)}
                                       value={songFeeAllocations[copyright.id] || ''}
                                       onChange={(e) => handleCustomAmountChange(copyright.id, e.target.value)}
                                       className="w-20 h-8 text-sm"
@@ -1128,10 +1140,14 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                                   </div>
                                 </div>
                                 
-                                <div className="text-sm">
+                                <div className="text-sm space-y-1">
                                   <div className="flex justify-between">
                                     <span>Allocated Amount:</span>
                                     <span className="font-medium">${allocatedAmount.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Controlled Amount:</span>
+                                    <span className="font-medium">${controlledAmount.toFixed(2)}</span>
                                   </div>
                                 </div>
 
@@ -1142,7 +1158,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                                       {writersInCopyright
                                         .filter(w => w.controlled_status === 'C')
                                         .map((writer, idx) => {
-                                          const writerAmount = (allocatedAmount * writer.ownership_percentage) / controlledShare || 0;
+                                          const writerAmount = controlledShare > 0 ? (controlledAmount * writer.ownership_percentage) / controlledShare : 0;
                                           return (
                                             <div key={idx} className="flex justify-between text-xs">
                                               <span>{writer.writer_name} ({writer.ownership_percentage}%)</span>
