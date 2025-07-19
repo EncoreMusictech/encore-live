@@ -170,8 +170,14 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
   };
 
   const getTotalSyncFee = () => {
-    const total = (license.pub_fee || 0) + (license.master_fee || 0);
-    return total > 0 ? formatCurrency(total) : "-";
+    // Calculate total controlled amount from fee allocations
+    if (license.fee_allocations && Array.isArray(license.fee_allocations)) {
+      const totalControlledAmount = license.fee_allocations.reduce((total: number, allocation: any) => {
+        return total + (allocation.controlledAmount || 0);
+      }, 0);
+      return totalControlledAmount > 0 ? formatCurrency(totalControlledAmount) : "-";
+    }
+    return "-";
   };
 
   const getStateName = (abbreviation: string): string => {
