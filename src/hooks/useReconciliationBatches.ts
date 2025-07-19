@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -160,6 +161,42 @@ export function useReconciliationBatches() {
     }
   };
 
+  const linkBatchToAllocations = async (batchId: string, allocationIds: string[]) => {
+    try {
+      // Update all specified allocations to link them to this batch
+      const updatePromises = allocationIds.map(allocationId =>
+        supabase
+          .from('royalty_allocations')
+          .update({ batch_id: batchId })
+          .eq('id', allocationId)
+      );
+
+      const results = await Promise.all(updatePromises);
+      
+      // Check for any errors
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        throw new Error(`Failed to link ${errors.length} allocations`);
+      }
+
+      toast({
+        title: "Success",
+        description: `Successfully linked ${allocationIds.length} allocation${allocationIds.length !== 1 ? 's' : ''} to batch`,
+      });
+
+      await fetchBatches();
+      return true;
+    } catch (error: any) {
+      console.error('Error linking batch to allocations:', error);
+      toast({
+        title: "Error",
+        description: "Failed to link allocations to batch",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchBatches();
   }, [user]);
@@ -170,6 +207,7 @@ export function useReconciliationBatches() {
     createBatch,
     updateBatch,
     deleteBatch,
+    linkBatchToAllocations,
     refreshBatches: fetchBatches,
   };
 }

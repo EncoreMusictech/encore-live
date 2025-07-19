@@ -1,27 +1,37 @@
+
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Upload, FileText, DollarSign } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, BarChart3, Workflow, Link2 } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
 import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
-
+import { ReconciliationDashboard } from "@/components/royalties/ReconciliationDashboard";
+import { BatchAllocationLinker } from "@/components/royalties/BatchAllocationLinker";
+import { ReconciliationAnalytics } from "@/components/royalties/ReconciliationAnalytics";
+import { ReconciliationWorkflow } from "@/components/royalties/ReconciliationWorkflow";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 
 export default function ReconciliationPage() {
   const [showForm, setShowForm] = useState(false);
-  const { batches, loading } = useReconciliationBatches();
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const { refreshBatches } = useReconciliationBatches();
 
   useEffect(() => {
     updatePageMetadata('reconciliation');
   }, []);
 
-  const totalGrossAmount = batches.reduce((sum, batch) => sum + batch.total_gross_amount, 0);
-  const pendingBatches = batches.filter(batch => batch.status === 'Pending').length;
-  const processedBatches = batches.filter(batch => batch.status === 'Processed').length;
+  const handleBatchCreated = () => {
+    setShowForm(false);
+    refreshBatches();
+  };
+
+  const handleLinkComplete = () => {
+    refreshBatches();
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -31,88 +41,135 @@ export default function ReconciliationPage() {
         
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Reconciliation - Batches</h1>
+            <h1 className="text-3xl font-bold text-foreground">Reconciliation Management</h1>
             <p className="text-muted-foreground mt-2">
-              Track incoming royalty payments from DSPs, PROs, YouTube, and other sources
+              Track and reconcile incoming royalty payments with your allocation records
             </p>
           </div>
-          <Button onClick={() => setShowForm(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Batch
-          </Button>
+          <div className="flex gap-2">
+            <BatchAllocationLinker onLinkComplete={handleLinkComplete} />
+            <Button onClick={() => setShowForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Batch
+            </Button>
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Batches</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{batches.length}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
-              <Upload className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{pendingBatches}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Processed</CardTitle>
-              <FileText className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{processedBatches}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${totalGrossAmount.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        <div className="space-y-6">
-          {showForm && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Create New Reconciliation Batch</CardTitle>
-                <CardDescription>
-                  Add a new batch to track incoming royalty payments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ReconciliationBatchForm onCancel={() => setShowForm(false)} />
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
+        {showForm && (
+          <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Reconciliation Batches</CardTitle>
+              <CardTitle>Create New Reconciliation Batch</CardTitle>
               <CardDescription>
-                Manage your incoming royalty payment batches
+                Add a new batch to track incoming royalty payments
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ReconciliationBatchList />
+              <ReconciliationBatchForm onCancel={() => setShowForm(false)} />
             </CardContent>
           </Card>
-        </div>
+        )}
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="dashboard" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="workflow" className="gap-2">
+              <Workflow className="h-4 w-4" />
+              Workflow
+            </TabsTrigger>
+            <TabsTrigger value="batches" className="gap-2">
+              <Link2 className="h-4 w-4" />
+              Batches
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Reports
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dashboard">
+            <ReconciliationDashboard />
+          </TabsContent>
+
+          <TabsContent value="workflow">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <ReconciliationWorkflow />
+              </div>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button className="w-full justify-start" onClick={() => setShowForm(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Batch
+                    </Button>
+                    <BatchAllocationLinker onLinkComplete={handleLinkComplete} />
+                    <Button variant="outline" className="w-full justify-start" onClick={() => setActiveTab("analytics")}>
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      View Analytics
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Activity</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-muted-foreground">
+                      Recent reconciliation activities will appear here
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="batches">
+            <Card>
+              <CardHeader>
+                <CardTitle>Reconciliation Batches</CardTitle>
+                <CardDescription>
+                  Manage your incoming royalty payment batches and track reconciliation progress
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ReconciliationBatchList />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <ReconciliationAnalytics />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <Card>
+              <CardHeader>
+                <CardTitle>Reconciliation Reports</CardTitle>
+                <CardDescription>
+                  Generate detailed reports on your reconciliation performance
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12 text-muted-foreground">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">Reports Coming Soon</p>
+                  <p>Comprehensive reconciliation reports will be available here</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
