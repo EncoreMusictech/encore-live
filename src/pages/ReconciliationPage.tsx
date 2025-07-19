@@ -9,14 +9,13 @@ import { Plus, BarChart3, Link2 } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
 import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
-import { ReconciliationDashboard } from "@/components/royalties/ReconciliationDashboard";
 import { BatchAllocationLinker } from "@/components/royalties/BatchAllocationLinker";
 import { ReconciliationAnalytics } from "@/components/royalties/ReconciliationAnalytics";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 
 export default function ReconciliationPage() {
   const [showForm, setShowForm] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("batches");
   const { refreshBatches } = useReconciliationBatches();
 
   useEffect(() => {
@@ -69,11 +68,7 @@ export default function ReconciliationPage() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="batches" className="gap-2">
               <Link2 className="h-4 w-4" />
               Batches
@@ -87,11 +82,6 @@ export default function ReconciliationPage() {
               Reports
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="dashboard">
-            <ReconciliationDashboard />
-          </TabsContent>
-
 
           <TabsContent value="batches">
             <Card>
