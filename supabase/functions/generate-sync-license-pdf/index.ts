@@ -174,6 +174,36 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
     return total > 0 ? formatCurrency(total) : "Total Sync Fee";
   };
 
+  const getLicensorStateCountry = () => {
+    // Extract state/country from licensor address
+    const address = license.licensor_address;
+    if (address) {
+      // Try to extract state/country from address (basic parsing)
+      const parts = address.split(',').map(part => part.trim());
+      if (parts.length >= 2) {
+        // Return the last two parts (typically state and country)
+        return parts.slice(-2).join(', ');
+      }
+      return address;
+    }
+    return "State/Country";
+  };
+
+  const getLicensorState = () => {
+    // Extract just the state from licensor address
+    const address = license.licensor_address;
+    if (address) {
+      // Try to extract state from address (basic parsing)
+      const parts = address.split(',').map(part => part.trim());
+      if (parts.length >= 2) {
+        // Return the second to last part (typically state)
+        return parts[parts.length - 2];
+      }
+      return address.split(',')[0]?.trim() || address;
+    }
+    return "State";
+  };
+
   const getPaymentDueDate = () => {
     // Calculate 30 days from term start or use a placeholder
     if (license.term_start) {
@@ -368,9 +398,9 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
 
     <div class="agreement-intro">
         This Synchronization License Agreement ("Agreement") is made and entered into on 
-        <strong>[${formatDate(license.term_start)}]</strong>, by and between <strong>[${getLicensorInfo()}]</strong>, 
-        located at <strong>[${getLicensorAddress()}]</strong> ("Licensor"), and <strong>[${getLicenseeInfo()}]</strong>, 
-        located at <strong>[${getLicenseeAddress()}]</strong> ("Licensee").
+        <strong>${formatDate(license.term_start)}</strong>, by and between <strong>${getLicensorInfo()}</strong>, 
+        located at <strong>${getLicensorAddress()}</strong> ("Licensor"), and <strong>${getLicenseeInfo()}</strong>, 
+        located at <strong>${getLicenseeAddress()}</strong> ("Licensee").
     </div>
 
     <div class="horizontal-rule"></div>
@@ -383,16 +413,16 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
             with the audiovisual production entitled:
         </div>
         <div class="indented-section">
-            <strong>Project Title:</strong> [${license.project_title || "{Project Title}"}]<br>
-            <strong>Production Type:</strong> [${getProjectInfo().mediaType}]<br>
-            <strong>Episode/Season:</strong> [${getProjectInfo().episode}]
+            <strong>Project Title:</strong> ${license.project_title || "Project Title"}<br>
+            <strong>Production Type:</strong> ${getProjectInfo().mediaType}<br>
+            <strong>Episode/Season:</strong> ${getProjectInfo().episode}
         </div>
         <div class="section-content">
             This license is strictly limited to the following:
         </div>
-        <div class="bullet-point">• <strong>Media:</strong> [${license.media_type || "{Media Types: e.g., All Media, Online, Theatrical, etc.}"}]</div>
-        <div class="bullet-point">• <strong>Territory:</strong> [${getTerritory()}]</div>
-        <div class="bullet-point">• <strong>Term:</strong> [${getTerm()}]</div>
+        <div class="bullet-point">• <strong>Media:</strong> ${license.media_type || "Media Types: e.g., All Media, Online, Theatrical, etc."}</div>
+        <div class="bullet-point">• <strong>Territory:</strong> ${getTerritory()}</div>
+        <div class="bullet-point">• <strong>Term:</strong> ${getTerm()}</div>
         <div class="section-content">
             All rights not expressly granted herein are reserved by Licensor. Any additional use, including 
             promotional use, requires separate written authorization and may be subject to additional fees.
@@ -409,7 +439,7 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
         </div>
         <div class="indented-section">
             <strong>Total License Fee:</strong> ${getTotalSyncFee()} USD<br>
-            <strong>Due On or Before:</strong> [${getPaymentDueDate()}]
+            <strong>Due On or Before:</strong> ${getPaymentDueDate()}
         </div>
         <div class="bullet-point">• Payment must be made via wire to the account designated by Licensor.</div>
         <div class="bullet-point">• Failure to remit payment by the due date shall result in immediate revocation of the 
@@ -424,15 +454,15 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
         <table class="usage-table">
             <tr>
                 <td class="label">Use Type</td>
-                <td>[${getUsageType()}]</td>
+                <td>${getUsageType()}</td>
             </tr>
             <tr>
                 <td class="label">Duration</td>
-                <td>[${getDuration()}]</td>
+                <td>${getDuration()}</td>
             </tr>
             <tr>
                 <td class="label">Scene Context</td>
-                <td>[${getSceneContext()}]</td>
+                <td>${getSceneContext()}</td>
             </tr>
         </table>
         <div class="section-content">
@@ -520,8 +550,8 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
 
     <div class="section">
         <div class="section-title">9. MISCELLANEOUS</div>
-        <div class="bullet-point">• This Agreement shall be governed by the laws of <strong>[{State/Country}]</strong>.</div>
-        <div class="bullet-point">• Any legal action shall be brought in the courts of <strong>[{Jurisdiction}]</strong>.</div>
+        <div class="bullet-point">• This Agreement shall be governed by the laws of <strong>${getLicensorStateCountry()}</strong>.</div>
+        <div class="bullet-point">• Any legal action shall be brought in the courts of <strong>${getLicensorState()}</strong>.</div>
         <div class="bullet-point">• This Agreement is the full and complete understanding between the parties and 
             supersedes any prior communications.</div>
         <div class="bullet-point">• Any changes must be in writing and signed by both parties.</div>
@@ -537,7 +567,7 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
         
         <div class="signature-block">
             <strong>LICENSOR</strong><br><br>
-            <strong>[${getLicensorInfo()}]</strong><br>
+            <strong>${getLicensorInfo()}</strong><br>
             By: <span class="signature-line"></span><br>
             Name: <strong>${license.signatory_name || "Authorized Rep Name"}</strong><br>
             Title: <strong>${license.signatory_title || "Title"}</strong><br>
@@ -546,7 +576,7 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
         
         <div class="signature-block">
             <strong>LICENSEE</strong><br><br>
-            <strong>[${getLicenseeInfo()}]</strong><br>
+            <strong>${getLicenseeInfo()}</strong><br>
             By: <span class="signature-line"></span><br>
             Name: <strong>${license.licensee_name || "Authorized Rep Name"}</strong><br>
             Title: <strong></strong><br>
