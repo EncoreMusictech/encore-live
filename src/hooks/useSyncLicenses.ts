@@ -9,6 +9,10 @@ export interface SyncLicense {
   project_title: string;
   synch_agent?: string;
   media_type?: string;
+  platforms?: string;
+  territory?: string;
+  term_duration?: string;
+  episode_season?: string;
   request_received?: string;
   request_attachment_url?: string;
   source?: string;

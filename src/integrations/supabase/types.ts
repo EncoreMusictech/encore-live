@@ -1959,6 +1959,7 @@ export type Database = {
           credit_requirements: Json | null
           credit_size: string | null
           currency: string | null
+          episode_season: string | null
           executed_agreement_url: string | null
           fe_license_returned: boolean | null
           fe_license_url: string | null
@@ -2002,6 +2003,7 @@ export type Database = {
           payment_status: string | null
           pe_license_received: string | null
           performance_rights_cleared: boolean | null
+          platforms: string | null
           project_title: string
           pub_fee: number | null
           pub_fee_all_in: number | null
@@ -2025,9 +2027,11 @@ export type Database = {
           synch_id: string
           synch_status: string | null
           synchronization_rights_cleared: boolean | null
+          term_duration: string | null
           term_end: string | null
           term_start: string | null
           territories: string[] | null
+          territory: string | null
           territory_of_licensee: string | null
           updated_at: string
           user_id: string
@@ -2054,6 +2058,7 @@ export type Database = {
           credit_requirements?: Json | null
           credit_size?: string | null
           currency?: string | null
+          episode_season?: string | null
           executed_agreement_url?: string | null
           fe_license_returned?: boolean | null
           fe_license_url?: string | null
@@ -2097,6 +2102,7 @@ export type Database = {
           payment_status?: string | null
           pe_license_received?: string | null
           performance_rights_cleared?: boolean | null
+          platforms?: string | null
           project_title: string
           pub_fee?: number | null
           pub_fee_all_in?: number | null
@@ -2120,9 +2126,11 @@ export type Database = {
           synch_id: string
           synch_status?: string | null
           synchronization_rights_cleared?: boolean | null
+          term_duration?: string | null
           term_end?: string | null
           term_start?: string | null
           territories?: string[] | null
+          territory?: string | null
           territory_of_licensee?: string | null
           updated_at?: string
           user_id: string
@@ -2149,6 +2157,7 @@ export type Database = {
           credit_requirements?: Json | null
           credit_size?: string | null
           currency?: string | null
+          episode_season?: string | null
           executed_agreement_url?: string | null
           fe_license_returned?: boolean | null
           fe_license_url?: string | null
@@ -2192,6 +2201,7 @@ export type Database = {
           payment_status?: string | null
           pe_license_received?: string | null
           performance_rights_cleared?: boolean | null
+          platforms?: string | null
           project_title?: string
           pub_fee?: number | null
           pub_fee_all_in?: number | null
@@ -2215,9 +2225,11 @@ export type Database = {
           synch_id?: string
           synch_status?: string | null
           synchronization_rights_cleared?: boolean | null
+          term_duration?: string | null
           term_end?: string | null
           term_start?: string | null
           territories?: string[] | null
+          territory?: string | null
           territory_of_licensee?: string | null
           updated_at?: string
           user_id?: string
