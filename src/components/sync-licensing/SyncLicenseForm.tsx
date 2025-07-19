@@ -220,6 +220,9 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       synchronization_rights_cleared: false,
       performance_rights_cleared: false,
       mechanical_rights_cleared: false,
+      approval_issued: undefined as Date | undefined,
+      license_issued: undefined as Date | undefined,
+      payment_received: undefined as Date | undefined,
     },
     mode: "onChange",
   });
@@ -363,6 +366,11 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         contract_expiry_date: license.contract_expiry_date ? new Date(license.contract_expiry_date) : undefined,
         signatory_name: license.signatory_name || "",
         signatory_title: license.signatory_title || "",
+        
+        // Key dates fields
+        approval_issued: license.approval_issued ? new Date(license.approval_issued) : undefined,
+        license_issued: license.license_issued ? new Date(license.license_issued) : undefined,
+        payment_received: license.payment_received ? new Date(license.payment_received) : undefined,
       });
     }
   }, [license, open, form, copyrights]);
@@ -1251,6 +1259,65 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                             ))}
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="approval_issued"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Approval Issued</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            placeholder="Select date"
+                            value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
+                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="license_issued"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>License Issued</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            placeholder="Select date"
+                            value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
+                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="payment_received"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Payment Received</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            placeholder="Select date"
+                            value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
+                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
