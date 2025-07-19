@@ -157,7 +157,8 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
     // Build ordered headers array using display names for fields that exist
     const orderedHeaders: string[] = [];
     orderedMapping.forEach(({ original, display }) => {
-      if (availableFields.includes(original)) {
+      // Always include STATEMENT ID column, even if not in data
+      if (original === 'Statement ID' || availableFields.includes(original)) {
         orderedHeaders.push(display);
       }
     });
