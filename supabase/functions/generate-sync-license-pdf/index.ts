@@ -93,7 +93,7 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return "[License Date]";
+    if (!dateString) return "License Date";
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
@@ -131,29 +131,29 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
   }
 
   const getLicensorInfo = () => {
-    return license.licensor_name || license.publishing_administrator || "[Licensor Name]";
+    return license.licensor_name || license.publishing_administrator || "Licensor Name";
   };
 
   const getLicensorAddress = () => {
-    return license.licensor_address || "[Licensor Address]";
+    return license.licensor_address || "Licensor Address";
   };
 
   const getLicenseeInfo = () => {
-    return license.licensee_name || license.production_company || "[Licensee Name]";
+    return license.licensee_name || license.production_company || "Licensee Name";
   };
 
   const getLicenseeAddress = () => {
-    return license.licensee_address || "[Licensee Address]";
+    return license.licensee_address || "Licensee Address";
   };
 
   const getProjectInfo = () => {
-    const mediaType = license.media_type || "[Production Type: Film, Series, Advertisement, etc.]";
-    const episode = license.context_description ? `[Episode/Season]` : "";
+    const mediaType = license.media_type || "Production Type: Film, Series, Advertisement, etc.";
+    const episode = license.context_description ? "Episode/Season" : "";
     return { mediaType, episode };
   };
 
   const getUsageType = () => {
-    return license.music_use || "[Background / Featured / Title Sequence / Promo / etc.]";
+    return license.music_use || "Background / Featured / Title Sequence / Promo / etc.";
   };
 
   const getDuration = () => {
@@ -161,17 +161,17 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
     if (license.scene_duration_seconds) {
       return license.scene_duration_seconds.toString();
     }
-    return "[Total or Per Song if Known]";
+    return "Total or Per Song if Known";
   };
 
   const getSceneContext = () => {
     // Map to Scene Description field from the form
-    return license.scene_description || "[Scene Description]";
+    return license.scene_description || "Scene Description";
   };
 
   const getTotalSyncFee = () => {
     const total = (license.pub_fee || 0) + (license.master_fee || 0);
-    return total > 0 ? formatCurrency(total) : "[Total Sync Fee]";
+    return total > 0 ? formatCurrency(total) : "Total Sync Fee";
   };
 
   const getPaymentDueDate = () => {
@@ -185,26 +185,26 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
         day: 'numeric' 
       });
     }
-    return "[Payment Due Date]";
+    return "Payment Due Date";
   };
 
   const getTerritory = () => {
-    return license.territory_of_licensee || "[Territory]";
+    return license.territory_of_licensee || "Territory";
   };
 
   const getTerm = () => {
-    return license.term_duration || "[Term: e.g., In Perpetuity, 5 Years, etc.]";
+    return license.term_duration || "Term: e.g., In Perpetuity, 5 Years, etc.";
   };
 
   const generateCreditLine = () => {
     if (copyrightData.length === 0) {
-      return `"[Song Title] written by [Writer Name(s)'], published by [Publisher Name(s)]"`;
+      return `"Song Title written by Writer Name(s), published by Publisher Name(s)"`;
     }
     
     // Generate credit lines for each song
     const creditLines = copyrightData.map(copyright => {
-      const writers = copyright.copyright_writers?.map((w: any) => w.writer_name).join(', ') || '[Writer Name(s)]';
-      const publishers = copyright.copyright_publishers?.map((p: any) => p.publisher_name).join(', ') || '[Publisher Name(s)]';
+      const writers = copyright.copyright_writers?.map((w: any) => w.writer_name).join(', ') || 'Writer Name(s)';
+      const publishers = copyright.copyright_publishers?.map((p: any) => p.publisher_name).join(', ') || 'Publisher Name(s)';
       return `"${copyright.work_title}" written by ${writers}, published by ${publishers}`;
     });
     
@@ -216,36 +216,36 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
       // Default placeholder row
       return `
         <tr>
-          <td>[Song Title]</td>
-          <td>[ISWC]</td>
-          <td>[Duration]</td>
-          <td>[Writer Name(s)]</td>
-          <td>[Controlled Share]</td>
-          <td>[Master Cleared]</td>
-          <td>[Allocated Fee]</td>
+          <td>Song Title</td>
+          <td>ISWC</td>
+          <td>Duration</td>
+          <td>Writer Name(s)</td>
+          <td>Controlled Share</td>
+          <td>Master Cleared</td>
+          <td>Allocated Fee</td>
         </tr>
       `;
     }
     
     // Generate rows for each copyright
     return copyrightData.map(copyright => {
-      const writers = copyright.copyright_writers?.map((w: any) => w.writer_name).join(', ') || '[Writer Name(s)]';
-      const publishers = copyright.copyright_publishers?.map((p: any) => p.publisher_name).join(', ') || '[Publisher Name(s)]';
+      const writers = copyright.copyright_writers?.map((w: any) => w.writer_name).join(', ') || 'Writer Name(s)';
+      const publishers = copyright.copyright_publishers?.map((p: any) => p.publisher_name).join(', ') || 'Publisher Name(s)';
       const controlledWriters = copyright.copyright_writers?.filter((w: any) => w.controlled_status === 'C') || [];
       const controlledShare = controlledWriters.reduce((sum: number, w: any) => sum + (w.ownership_percentage || 0), 0);
       
       // Find the fee allocation for this copyright
       const feeAllocation = license.fee_allocations?.find((allocation: any) => allocation.copyrightId === copyright.id);
-      const allocatedFee = feeAllocation ? formatCurrency(feeAllocation.allocatedAmount) : '[Allocated Fee]';
+      const allocatedFee = feeAllocation ? formatCurrency(feeAllocation.allocatedAmount) : 'Allocated Fee';
       
       return `
         <tr>
           <td>${copyright.work_title}</td>
-          <td>${copyright.iswc || '[ISWC]'}</td>
-          <td>${license.scene_duration_seconds ? `${license.scene_duration_seconds}s` : '[Duration]'}</td>
+          <td>${copyright.iswc || 'ISWC'}</td>
+          <td>${license.scene_duration_seconds ? `${license.scene_duration_seconds}s` : 'Duration'}</td>
           <td>${writers}</td>
-          <td>${controlledShare > 0 ? `${controlledShare}%` : '[Controlled Share]'}</td>
-          <td>[Master Cleared]</td>
+          <td>${controlledShare > 0 ? `${controlledShare}%` : 'Controlled Share'}</td>
+          <td>Master Cleared</td>
           <td>${allocatedFee}</td>
         </tr>
       `;
@@ -539,8 +539,8 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
             <strong>LICENSOR</strong><br><br>
             <strong>[${getLicensorInfo()}]</strong><br>
             By: <span class="signature-line"></span><br>
-            Name: <strong>${license.signatory_name || "[Authorized Rep Name]"}</strong><br>
-            Title: <strong>${license.signatory_title || "[Title]"}</strong><br>
+            Name: <strong>${license.signatory_name || "Authorized Rep Name"}</strong><br>
+            Title: <strong>${license.signatory_title || "Title"}</strong><br>
             Date: <span class="signature-line"></span>
         </div>
         
@@ -548,7 +548,7 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
             <strong>LICENSEE</strong><br><br>
             <strong>[${getLicenseeInfo()}]</strong><br>
             By: <span class="signature-line"></span><br>
-            Name: <strong>${license.licensee_name || "[Authorized Rep Name]"}</strong><br>
+            Name: <strong>${license.licensee_name || "Authorized Rep Name"}</strong><br>
             Title: <strong></strong><br>
             Date: <span class="signature-line"></span>
         </div>
