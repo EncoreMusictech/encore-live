@@ -5,14 +5,13 @@ import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, BarChart3, Workflow, Link2 } from "lucide-react";
+import { Plus, BarChart3, Link2 } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
 import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
 import { ReconciliationDashboard } from "@/components/royalties/ReconciliationDashboard";
 import { BatchAllocationLinker } from "@/components/royalties/BatchAllocationLinker";
 import { ReconciliationAnalytics } from "@/components/royalties/ReconciliationAnalytics";
-import { ReconciliationWorkflow } from "@/components/royalties/ReconciliationWorkflow";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 
 export default function ReconciliationPage() {
@@ -70,14 +69,10 @@ export default function ReconciliationPage() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dashboard" className="gap-2">
               <BarChart3 className="h-4 w-4" />
               Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="workflow" className="gap-2">
-              <Workflow className="h-4 w-4" />
-              Workflow
             </TabsTrigger>
             <TabsTrigger value="batches" className="gap-2">
               <Link2 className="h-4 w-4" />
@@ -97,42 +92,6 @@ export default function ReconciliationPage() {
             <ReconciliationDashboard />
           </TabsContent>
 
-          <TabsContent value="workflow">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <ReconciliationWorkflow />
-              </div>
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button className="w-full justify-start" onClick={() => setShowForm(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Batch
-                    </Button>
-                    <BatchAllocationLinker onLinkComplete={handleLinkComplete} />
-                    <Button variant="outline" className="w-full justify-start" onClick={() => setActiveTab("analytics")}>
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      View Analytics
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm text-muted-foreground">
-                      Recent reconciliation activities will appear here
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
 
           <TabsContent value="batches">
             <Card>
