@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
@@ -13,7 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link2, ExternalLink } from "lucide-react";
+import { Link2, ExternalLink, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ReconciliationBatchFormProps {
   onCancel: () => void;
@@ -23,12 +26,14 @@ interface ReconciliationBatchFormProps {
 export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatchFormProps) {
   const [availableStatements, setAvailableStatements] = useState<any[]>([]);
   const [loadingStatements, setLoadingStatements] = useState(false);
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [sourceValue, setSourceValue] = useState(batch?.source || "");
   const { createBatch, updateBatch } = useReconciliationBatches();
   const { allocations } = useRoyaltyAllocations();
   const { user } = useAuth();
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
-      source: batch?.source || 'DSP',
+      source: batch?.source || '',
       statement_period_start: batch?.statement_period_start || '',
       statement_period_end: batch?.statement_period_end || '',
       date_received: batch?.date_received || new Date().toISOString().split('T')[0],
@@ -38,6 +43,17 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       notes: batch?.notes || '',
     }
   });
+
+  // Predefined source options
+  const sourceOptions = [
+    { value: "DSP", label: "DSP" },
+    { value: "PRO", label: "PRO" },
+    { value: "YouTube", label: "YouTube" },
+    { value: "Spotify", label: "Spotify" },
+    { value: "Apple Music", label: "Apple Music" },
+    { value: "Amazon Music", label: "Amazon Music" },
+    { value: "Other", label: "Other" },
+  ];
 
   // Fetch available statements that aren't already linked to other batches
   const fetchAvailableStatements = async () => {
@@ -115,6 +131,11 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
     }
   };
 
+  // Update source value when it changes
+  useEffect(() => {
+    setValue('source', sourceValue);
+  }, [sourceValue, setValue]);
+
   // Get linked royalties for the current batch
   const linkedRoyalties = batch ? allocations.filter(allocation => allocation.batch_id === batch.id) : [];
 
@@ -123,17 +144,65 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="source">Source *</Label>
-          <Select onValueChange={(value) => setValue('source', value)} defaultValue={watch('source')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select source" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="DSP">DSP</SelectItem>
-              <SelectItem value="PRO">PRO</SelectItem>
-              <SelectItem value="YouTube">YouTube</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
-            </SelectContent>
-          </Select>
+          <Popover open={sourceOpen} onOpenChange={setSourceOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={sourceOpen}
+                className="w-full justify-between"
+              >
+                {sourceValue || "Select or enter source..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0">
+              <Command>
+                <CommandInput 
+                  placeholder="Search or enter source..." 
+                  value={sourceValue}
+                  onValueChange={setSourceValue}
+                />
+                <CommandList>
+                  <CommandEmpty>
+                    <div className="text-center py-2">
+                      <p className="text-sm text-muted-foreground mb-2">No predefined source found.</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSourceOpen(false);
+                        }}
+                        className="text-xs"
+                      >
+                        Use "{sourceValue}" as custom source
+                      </Button>
+                    </div>
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {sourceOptions.map((source) => (
+                      <CommandItem
+                        key={source.value}
+                        value={source.value}
+                        onSelect={(currentValue) => {
+                          setSourceValue(currentValue);
+                          setSourceOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            sourceValue === source.value ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {source.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="space-y-2">
