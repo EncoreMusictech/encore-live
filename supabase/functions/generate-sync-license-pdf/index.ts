@@ -484,13 +484,18 @@ serve(async (req) => {
     // Generate HTML content
     const htmlContent = generateLicenseAgreementHTML(license);
 
-    // For now, return the HTML directly
-    // In production, you would convert this to PDF using a library like Puppeteer
-    return new Response(htmlContent, {
+    // Return a blob URL for download
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      htmlContent,
+      filename: `sync-license-${license.synch_id}.html`
+    }), {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'text/html',
-        'Content-Disposition': `inline; filename="sync-license-${license.synch_id}.html"`
+        'Content-Type': 'application/json'
       }
     });
 

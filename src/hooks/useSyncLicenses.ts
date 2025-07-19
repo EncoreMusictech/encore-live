@@ -281,12 +281,21 @@ export const useGenerateSyncLicensePDF = () => {
       return data;
     },
     onSuccess: (data) => {
-      if (data?.pdfUrl) {
-        // Open PDF in new tab
-        window.open(data.pdfUrl, '_blank');
+      if (data?.htmlContent && data?.filename) {
+        // Create a blob from the HTML content and trigger download
+        const blob = new Blob([data.htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = data.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
         toast({
           title: "Success",
-          description: "License agreement PDF generated successfully",
+          description: "License agreement generated and downloaded successfully",
         });
       }
     },
