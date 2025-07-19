@@ -152,41 +152,6 @@ export const RightsClearanceForm = ({ rightsData, onRightsChange }: RightsCleara
               />
             </div>
 
-            {/* Individual Rights */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-foreground border-b pb-2">Individual Rights Clearance</h4>
-              
-              <div className="space-y-3">
-                {rightsItems.map((item) => (
-                  <FormField
-                    key={item.key}
-                    control={form.control}
-                    name={item.key as keyof RightsClearanceData}
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start justify-between rounded-lg border p-4">
-                        <div className="space-y-1 flex-1">
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(field.value as boolean)}
-                            <FormLabel className="text-sm font-medium">
-                              {item.label}
-                            </FormLabel>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {item.description}
-                          </div>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value as boolean}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
 
             {/* Clearance Notes */}
             <div className="space-y-4">
