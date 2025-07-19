@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Filter, LayoutGrid, Calendar, List } from "lucide-react";
+import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +17,10 @@ const SyncLicensingPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "kanban" | "calendar">("table");
   const { data: syncLicenses = [], isLoading } = useSyncLicenses();
+
+  useEffect(() => {
+    updatePageMetadata('syncLicensing');
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

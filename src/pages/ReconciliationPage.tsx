@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
+import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,10 @@ import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 export default function ReconciliationPage() {
   const [showForm, setShowForm] = useState(false);
   const { batches, loading } = useReconciliationBatches();
+
+  useEffect(() => {
+    updatePageMetadata('reconciliation');
+  }, []);
 
   const totalGrossAmount = batches.reduce((sum, batch) => sum + batch.total_gross_amount, 0);
   const pendingBatches = batches.filter(batch => batch.status === 'Pending').length;

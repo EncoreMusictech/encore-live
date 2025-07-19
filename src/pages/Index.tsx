@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { updatePageMetadata } from "@/utils/seo";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import ModuleCard from "@/components/ModuleCard";
@@ -16,6 +17,10 @@ const Index = () => {
   const [selectedTier, setSelectedTier] = useState<"Free" | "Pro" | "Enterprise">("Pro");
   const [selectedModule, setSelectedModule] = useState<typeof modules[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    updatePageMetadata('home');
+  }, []);
 
   const handleGetStarted = (moduleId: string) => {
     const module = modules.find(m => m.id === moduleId);

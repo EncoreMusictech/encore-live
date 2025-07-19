@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import Header from "@/components/Header";
+import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,10 @@ const CopyrightManagement = () => {
   const [editingCopyright, setEditingCopyright] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("copyrights");
+
+  useEffect(() => {
+    updatePageMetadata('copyrightManagement');
+  }, []);
 
   // Load writers for each copyright
   useEffect(() => {

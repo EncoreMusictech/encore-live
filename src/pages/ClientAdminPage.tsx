@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { updatePageMetadata } from "@/utils/seo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,9 +16,14 @@ import { ClientPortalTestHelper } from "@/components/ClientPortalTestHelper";
 
 export default function ClientAdminPage() {
   const { toast } = useToast();
+
+  useEffect(() => {
+    updatePageMetadata('clientPortal');
+  }, []);
+
   const { 
     clientAccess, 
-    invitations, 
+    invitations,
     createInvitation, 
     revokeClientAccess, 
     createDataAssociation, 

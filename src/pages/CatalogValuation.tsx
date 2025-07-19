@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
+import { updatePageMetadata } from "@/utils/seo";
 import CatalogValuation from "@/components/CatalogValuation";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
@@ -10,6 +11,10 @@ import { Calculator, TrendingUp, ArrowRight, Brain, Target } from "lucide-react"
 const CatalogValuationPage = () => {
   const [selectedModule, setSelectedModule] = useState<'selection' | 'valuation' | 'deals'>('selection');
   const { canAccess } = useDemoAccess();
+
+  useEffect(() => {
+    updatePageMetadata('catalogValuation');
+  }, []);
 
   const renderModuleSelection = () => (
     <div className="space-y-6">

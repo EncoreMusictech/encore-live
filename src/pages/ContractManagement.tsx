@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
+import { updatePageMetadata } from "@/utils/seo";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,10 @@ import { DocuSignImport } from "@/components/contracts/DocuSignImport";
 const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
   const { canAccess } = useDemoAccess();
+
+  useEffect(() => {
+    updatePageMetadata('contractManagement');
+  }, []);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<any>(null);

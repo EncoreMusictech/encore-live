@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { updatePageMetadata } from "@/utils/seo";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import TrackSelector from "@/components/TrackSelector";
@@ -35,6 +36,10 @@ const DealSimulatorPage = () => {
   const [currentArtist, setCurrentArtist] = useState<Artist | null>(null);
   const [artistName, setArtistName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    updatePageMetadata('dealSimulator');
+  }, []);
   const [discographyData, setDiscographyData] = useState<{
     albums: Album[];
     singles: Album[];

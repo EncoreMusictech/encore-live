@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
+import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,10 @@ import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 export default function PayoutsPage() {
   const [showForm, setShowForm] = useState(false);
   const { payouts, loading } = usePayouts();
+
+  useEffect(() => {
+    updatePageMetadata('payouts');
+  }, []);
 
   const totalPayouts = payouts.reduce((sum, payout) => sum + payout.net_payable, 0);
   const pendingPayouts = payouts.filter(payout => payout.status === 'pending').length;
