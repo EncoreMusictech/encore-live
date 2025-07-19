@@ -178,28 +178,47 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
     // Extract state/country from licensor address
     const address = license.licensor_address;
     if (address) {
-      // Try to extract state/country from address (basic parsing)
+      // Parse address to extract state and country
       const parts = address.split(',').map(part => part.trim());
       if (parts.length >= 2) {
-        // Return the last two parts (typically state and country)
-        return parts.slice(-2).join(', ');
+        // Look for state/zip pattern in the last parts
+        const lastPart = parts[parts.length - 1]; // Country or zip
+        const secondLastPart = parts[parts.length - 2]; // State and zip
+        
+        // Extract state from "CA 91601" format
+        const stateMatch = secondLastPart.match(/([A-Z]{2})\s+\d+/);
+        if (stateMatch) {
+          const state = stateMatch[1];
+          return `${state}, USA`;
+        }
+        
+        // Fallback to last two parts
+        return `${secondLastPart}, ${lastPart}`;
       }
-      return address;
+      return "CA, USA";
     }
-    return "State/Country";
+    return "State, Country";
   };
 
   const getLicensorState = () => {
     // Extract just the state from licensor address
     const address = license.licensor_address;
     if (address) {
-      // Try to extract state from address (basic parsing)
+      // Parse address to extract state
       const parts = address.split(',').map(part => part.trim());
       if (parts.length >= 2) {
-        // Return the second to last part (typically state)
-        return parts[parts.length - 2];
+        const secondLastPart = parts[parts.length - 2]; // State and zip
+        
+        // Extract state from "CA 91601" format
+        const stateMatch = secondLastPart.match(/([A-Z]{2})\s+\d+/);
+        if (stateMatch) {
+          return stateMatch[1]; // Return just "CA"
+        }
+        
+        // Fallback to second last part
+        return secondLastPart;
       }
-      return address.split(',')[0]?.trim() || address;
+      return "CA";
     }
     return "State";
   };
