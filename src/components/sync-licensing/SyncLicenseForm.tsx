@@ -208,9 +208,6 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       contract_expiry_date: undefined as Date | undefined,
       signatory_name: "",
       signatory_title: "",
-      witness_name: "",
-      notarization_required: false,
-      notarization_date: undefined as Date | undefined,
       credit_language: "",
       credit_placement: "end_credits" as 'end_credits' | 'opening_credits' | 'none' | 'on_screen' | 'package_only',
       credit_size: "standard" as 'standard' | 'large' | 'small' | 'equal',
@@ -1140,9 +1137,6 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     contract_expiry_date: form.watch('contract_expiry_date'),
                     signatory_name: form.watch('signatory_name'),
                     signatory_title: form.watch('signatory_title'),
-                    witness_name: form.watch('witness_name'),
-                    notarization_required: form.watch('notarization_required'),
-                    notarization_date: form.watch('notarization_date'),
                   }}
                   onContractChange={(data) => {
                     form.setValue('contract_execution_status', data.contract_execution_status);
@@ -1152,9 +1146,6 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     form.setValue('contract_expiry_date', data.contract_expiry_date);
                     form.setValue('signatory_name', data.signatory_name);
                     form.setValue('signatory_title', data.signatory_title);
-                    form.setValue('witness_name', data.witness_name);
-                    form.setValue('notarization_required', data.notarization_required);
-                    form.setValue('notarization_date', data.notarization_date);
                   }}
                 />
               </TabsContent>

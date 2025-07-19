@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { CalendarIcon, FileText, Users, Stamp } from "lucide-react";
+import { CalendarIcon, FileText, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -37,9 +37,6 @@ interface ContractExecutionData {
   contract_expiry_date?: Date;
   signatory_name?: string;
   signatory_title?: string;
-  witness_name?: string;
-  notarization_required?: boolean;
-  notarization_date?: Date;
 }
 
 interface ContractExecutionFormProps {
@@ -65,9 +62,6 @@ export const ContractExecutionForm = ({ contractData, onContractChange }: Contra
       contract_expiry_date: contractData?.contract_expiry_date || undefined,
       signatory_name: contractData?.signatory_name || "",
       signatory_title: contractData?.signatory_title || "",
-      witness_name: contractData?.witness_name || "",
-      notarization_required: contractData?.notarization_required || false,
-      notarization_date: contractData?.notarization_date || undefined,
     },
     mode: "onChange"
   });
@@ -79,7 +73,6 @@ export const ContractExecutionForm = ({ contractData, onContractChange }: Contra
       contract_signed_date: data.contract_signed_date,
       contract_executed_date: data.contract_executed_date,
       contract_expiry_date: data.contract_expiry_date,
-      notarization_date: data.notarization_date,
     });
   };
 
@@ -225,54 +218,6 @@ export const ContractExecutionForm = ({ contractData, onContractChange }: Contra
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="witness_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Witness Name (if applicable)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Witness full name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Notarization */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-foreground border-b pb-2 flex items-center gap-2">
-                <Stamp className="h-4 w-4" />
-                Notarization
-              </h4>
-
-              <FormField
-                control={form.control}
-                name="notarization_required"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base font-medium">
-                        Notarization Required
-                      </FormLabel>
-                      <div className="text-sm text-muted-foreground">
-                        Check if this contract requires notarization
-                      </div>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {form.watch('notarization_required') && (
-                <DateField name="notarization_date" label="Notarization Date" />
-              )}
             </div>
 
           </form>
