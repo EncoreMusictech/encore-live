@@ -441,9 +441,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
                             return (
                               <TableCell key={cellIndex} className={header === 'WORK TITLE' ? 'font-medium' : ''}>
                                 {header === 'STATEMENT ID' ? (
-                                  <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
-                                    {localRecord.statement_id || 'N/A'}
-                                  </code>
+                                  String(localRecord.statement_id || '-')
                                 ) : header === 'GROSS' || header === 'NET' 
                                   ? (typeof row[originalFieldName] === 'number' ? `$${row[originalFieldName].toFixed(2)}` : String(row[originalFieldName] || '-'))
                                   : String(row[originalFieldName] || '-')
