@@ -63,6 +63,8 @@ interface SyncLicense {
   // Contact information
   licensor_name?: string;
   licensee_name?: string;
+  licensor_address?: string;
+  licensee_address?: string;
   
   // Contract execution
   signatory_name?: string;
@@ -96,7 +98,7 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
   };
 
   const getLicensorAddress = () => {
-    return "[Licensor Address]";
+    return license.licensor_address || "[Licensor Address]";
   };
 
   const getLicenseeInfo = () => {
@@ -104,7 +106,7 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
   };
 
   const getLicenseeAddress = () => {
-    return "[Licensee Address]";
+    return license.licensee_address || "[Licensee Address]";
   };
 
   const getProjectInfo = () => {
@@ -123,7 +125,7 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
       const seconds = license.usage_duration_seconds % 60;
       return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
-    return "[Total or Per Song if Known]";
+    return license.usage_duration_seconds?.toString() || "[Total or Per Song if Known]";
   };
 
   const getSceneContext = () => {
