@@ -99,9 +99,13 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
     });
   };
 
+  console.log('License data:', JSON.stringify(license, null, 2));
+  console.log('Linked copyright IDs:', license.linked_copyright_ids);
+
   // Fetch copyright data if linked_copyright_ids exist
   let copyrightData: any[] = [];
   if (license.linked_copyright_ids && license.linked_copyright_ids.length > 0) {
+    console.log('Fetching copyrights for IDs:', license.linked_copyright_ids);
     const { data: copyrights, error: copyrightError } = await supabase
       .from('copyrights')
       .select(`
@@ -111,9 +115,16 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
       `)
       .in('id', license.linked_copyright_ids);
     
+    console.log('Copyright fetch result:', { copyrights, copyrightError });
+    
     if (!copyrightError && copyrights) {
       copyrightData = copyrights;
+      console.log('Copyright data loaded:', copyrightData.length, 'copyrights');
+    } else {
+      console.error('Error fetching copyrights:', copyrightError);
     }
+  } else {
+    console.log('No linked copyright IDs found');
   }
 
   const getLicensorInfo = () => {
@@ -571,6 +582,7 @@ serve(async (req) => {
 
   try {
     const { licenseId } = await req.json();
+    console.log('Received request for license ID:', licenseId);
 
     if (!licenseId) {
       return new Response(
@@ -604,6 +616,13 @@ serve(async (req) => {
         }
       );
     }
+
+    console.log('Fetched license:', {
+      id: license.id,
+      project_title: license.project_title,
+      linked_copyright_ids: license.linked_copyright_ids,
+      hasLinkedCopyrights: !!(license.linked_copyright_ids && license.linked_copyright_ids.length > 0)
+    });
 
     // Generate HTML content
     const htmlContent = await generateLicenseAgreementHTML(license, supabase);
