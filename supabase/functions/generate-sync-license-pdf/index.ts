@@ -9,6 +9,8 @@ const corsHeaders = {
 interface SyncLicense {
   id: string;
   synch_id: string;
+  user_id?: string;
+  linked_copyright_ids?: string[];
   project_title: string;
   synch_agent?: string;
   media_type?: string;
@@ -78,7 +80,7 @@ interface SyncLicense {
   updated_at: string;
 }
 
-function generateLicenseAgreementHTML(license: SyncLicense): string {
+async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any): Promise<string> {
   const formatCurrency = (amount?: number) => {
     if (!amount) return "$0.00";
     return new Intl.NumberFormat('en-US', {
@@ -96,6 +98,23 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
       day: 'numeric' 
     });
   };
+
+  // Fetch copyright data if linked_copyright_ids exist
+  let copyrightData: any[] = [];
+  if (license.linked_copyright_ids && license.linked_copyright_ids.length > 0) {
+    const { data: copyrights, error: copyrightError } = await supabase
+      .from('copyrights')
+      .select(`
+        *,
+        copyright_writers(*),
+        copyright_publishers(*)
+      `)
+      .in('id', license.linked_copyright_ids);
+    
+    if (!copyrightError && copyrights) {
+      copyrightData = copyrights;
+    }
+  }
 
   const getLicensorInfo = () => {
     return license.licensor_name || license.publishing_administrator || "[Licensor Name]";
@@ -163,30 +182,56 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
     return license.term_duration || "[Term: e.g., In Perpetuity, 5 Years, etc.]";
   };
 
-  const getSongTitle = () => {
-    // This would ideally come from related works/songs data
-    return "[Song Title]";
+  const generateCreditLine = () => {
+    if (copyrightData.length === 0) {
+      return `"[Song Title] written by [Writer Name(s)'], published by [Publisher Name(s)]"`;
+    }
+    
+    // Generate credit lines for each song
+    const creditLines = copyrightData.map(copyright => {
+      const writers = copyright.copyright_writers?.map((w: any) => w.writer_name).join(', ') || '[Writer Name(s)]';
+      const publishers = copyright.copyright_publishers?.map((p: any) => p.publisher_name).join(', ') || '[Publisher Name(s)]';
+      return `"${copyright.work_title}" written by ${writers}, published by ${publishers}`;
+    });
+    
+    return creditLines.join('<br>');
   };
 
-  const getWriterNames = () => {
-    // This would ideally come from related copyright data
-    return "[Writer Name(s)]";
-  };
-
-  const getPublisherNames = () => {
-    return license.publishing_administrator || "[Publisher Name(s)]";
-  };
-
-  const getControlledShare = () => {
-    return "x%"; // Placeholder for controlled share
-  };
-
-  const getMasterCleared = () => {
-    return license.master_owner ? "Yes" : "No";
-  };
-
-  const getAllocatedFee = () => {
-    return "$xx,xxx"; // Placeholder for allocated fee
+  const generateExhibitTable = () => {
+    if (copyrightData.length === 0) {
+      // Default placeholder row
+      return `
+        <tr>
+          <td>[Song Title]</td>
+          <td>[ISWC]</td>
+          <td>[Duration]</td>
+          <td>[Writer Name(s)]</td>
+          <td>[Controlled Share]</td>
+          <td>[Master Cleared]</td>
+          <td>[Allocated Fee]</td>
+        </tr>
+      `;
+    }
+    
+    // Generate rows for each copyright
+    return copyrightData.map(copyright => {
+      const writers = copyright.copyright_writers?.map((w: any) => w.writer_name).join(', ') || '[Writer Name(s)]';
+      const publishers = copyright.copyright_publishers?.map((p: any) => p.publisher_name).join(', ') || '[Publisher Name(s)]';
+      const controlledWriters = copyright.copyright_writers?.filter((w: any) => w.controlled_status === 'C') || [];
+      const controlledShare = controlledWriters.reduce((sum: number, w: any) => sum + (w.ownership_percentage || 0), 0);
+      
+      return `
+        <tr>
+          <td>${copyright.work_title}</td>
+          <td>${copyright.iswc || '[ISWC]'}</td>
+          <td>${license.scene_duration_seconds ? `${license.scene_duration_seconds}s` : '[Duration]'}</td>
+          <td>${writers}</td>
+          <td>${controlledShare > 0 ? `${controlledShare}%` : '[Controlled Share]'}</td>
+          <td>[Master Cleared]</td>
+          <td>[Allocated Fee]</td>
+        </tr>
+      `;
+    }).join('');
   };
 
   return `
@@ -402,7 +447,7 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
             Wherever credits are customarily provided, Licensee agrees to credit the song(s) as follows:
         </div>
         <div class="indented-section">
-            "<strong>[${getSongTitle()}]</strong> written by <strong>[${getWriterNames()}]</strong>, published by <strong>[${getPublisherNames()}]</strong>"
+            ${generateCreditLine()}
         </div>
         <div class="section-content">
             Omission of credit will constitute a breach unless due to space constraints or format limitations.
@@ -508,24 +553,7 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>{Song 1}</td>
-                    <td>{ISWC 1}</td>
-                    <td>{0:45}</td>
-                    <td>{Writer A, Writer B}</td>
-                    <td>x%</td>
-                    <td>Yes / No</td>
-                    <td>$xx,xxx</td>
-                </tr>
-                <tr>
-                    <td>{Song 2}</td>
-                    <td>{ISWC 2}</td>
-                    <td>{1:00}</td>
-                    <td>{Writer C, D, E}</td>
-                    <td>x%</td>
-                    <td>Yes / No</td>
-                    <td>$xx,xxx</td>
-                </tr>
+                ${generateExhibitTable()}
             </tbody>
         </table>
     </div>
@@ -578,7 +606,7 @@ serve(async (req) => {
     }
 
     // Generate HTML content
-    const htmlContent = generateLicenseAgreementHTML(license);
+    const htmlContent = await generateLicenseAgreementHTML(license, supabase);
 
     // Return a blob URL for download
     const blob = new Blob([htmlContent], { type: 'text/html' });
