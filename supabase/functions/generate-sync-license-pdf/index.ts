@@ -178,23 +178,21 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
     // Extract state/country from licensor address
     const address = license.licensor_address;
     if (address) {
-      // Parse address to extract state and country
+      // Parse address like "123 ENCORE Lane, CA 91601"
       const parts = address.split(',').map(part => part.trim());
+      
       if (parts.length >= 2) {
-        // Look for state/zip pattern in the last parts
-        const lastPart = parts[parts.length - 1]; // Country or zip
-        const secondLastPart = parts[parts.length - 2]; // State and zip
+        const lastPart = parts[parts.length - 1]; // "CA 91601"
         
         // Extract state from "CA 91601" format
-        const stateMatch = secondLastPart.match(/([A-Z]{2})\s+\d+/);
+        const stateMatch = lastPart.match(/^([A-Z]{2})\s+\d+/);
         if (stateMatch) {
-          const state = stateMatch[1];
+          const state = stateMatch[1]; // "CA"
           return `${state}, USA`;
         }
-        
-        // Fallback to last two parts
-        return `${secondLastPart}, ${lastPart}`;
       }
+      
+      // Fallback
       return "CA, USA";
     }
     return "State, Country";
@@ -204,20 +202,20 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
     // Extract just the state from licensor address
     const address = license.licensor_address;
     if (address) {
-      // Parse address to extract state
+      // Parse address like "123 ENCORE Lane, CA 91601"
       const parts = address.split(',').map(part => part.trim());
+      
       if (parts.length >= 2) {
-        const secondLastPart = parts[parts.length - 2]; // State and zip
+        const lastPart = parts[parts.length - 1]; // "CA 91601"
         
         // Extract state from "CA 91601" format
-        const stateMatch = secondLastPart.match(/([A-Z]{2})\s+\d+/);
+        const stateMatch = lastPart.match(/^([A-Z]{2})\s+\d+/);
         if (stateMatch) {
           return stateMatch[1]; // Return just "CA"
         }
-        
-        // Fallback to second last part
-        return secondLastPart;
       }
+      
+      // Fallback
       return "CA";
     }
     return "State";
