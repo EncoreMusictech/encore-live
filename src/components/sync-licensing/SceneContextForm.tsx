@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { Music, Clock, Volume2, Eye } from "lucide-react";
+import { Music, Clock, FileAudio, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
+import { FileUpload } from "@/components/ui/file-upload";
 
 interface SceneContextData {
   scene_description?: string;
@@ -27,7 +27,7 @@ interface SceneContextData {
   music_timing_notes?: string;
   instrumental_vocal?: 'instrumental' | 'vocal' | 'both';
   music_prominence?: 'background' | 'featured' | 'theme';
-  audio_mix_level?: number;
+  audio_file_url?: string;
 }
 
 interface SceneContextFormProps {
@@ -44,7 +44,7 @@ export const SceneContextForm = ({ sceneData, onSceneChange }: SceneContextFormP
       music_timing_notes: sceneData?.music_timing_notes || "",
       instrumental_vocal: sceneData?.instrumental_vocal || "both",
       music_prominence: sceneData?.music_prominence || "background",
-      audio_mix_level: sceneData?.audio_mix_level || 5,
+      audio_file_url: sceneData?.audio_file_url || "",
     },
     mode: "onChange"
   });
@@ -53,7 +53,6 @@ export const SceneContextForm = ({ sceneData, onSceneChange }: SceneContextFormP
     onSceneChange({
       ...data,
       scene_duration_seconds: parseInt(data.scene_duration_seconds) || 0,
-      audio_mix_level: data.audio_mix_level,
     });
   };
 
@@ -201,27 +200,23 @@ export const SceneContextForm = ({ sceneData, onSceneChange }: SceneContextFormP
 
               <FormField
                 control={form.control}
-                name="audio_mix_level"
+                name="audio_file_url"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                      <Volume2 className="h-4 w-4" />
-                      Audio Mix Level: {field.value}/10
+                      <FileAudio className="h-4 w-4" />
+                      Audio Reference File
                     </FormLabel>
                     <FormControl>
-                      <Slider
-                        min={0}
-                        max={10}
-                        step={0.5}
-                        value={[field.value]}
-                        onValueChange={(value) => field.onChange(value[0])}
-                        className="w-full"
+                      <FileUpload
+                        value={field.value}
+                        onChange={field.onChange}
+                        accept=".mp3,.wav,.m4a"
+                        maxSize={10}
                       />
                     </FormControl>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Background</span>
-                      <span>Medium</span>
-                      <span>Prominent</span>
+                    <div className="text-xs text-muted-foreground">
+                      Upload an MP3, WAV, or M4A file as reference for the scene
                     </div>
                     <FormMessage />
                   </FormItem>

@@ -200,7 +200,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       music_timing_notes: "",
       instrumental_vocal: "both" as 'instrumental' | 'vocal' | 'both',
       music_prominence: "background" as 'background' | 'featured' | 'theme',
-      audio_mix_level: 5,
+      audio_file_url: "",
       contract_execution_status: "draft" as 'draft' | 'sent' | 'signed' | 'executed' | 'expired',
       contract_sent_date: undefined as Date | undefined,
       contract_signed_date: undefined as Date | undefined,
@@ -614,7 +614,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     music_timing_notes: form.watch('music_timing_notes'),
                     instrumental_vocal: form.watch('instrumental_vocal'),
                     music_prominence: form.watch('music_prominence'),
-                    audio_mix_level: form.watch('audio_mix_level'),
+                    audio_file_url: form.watch('audio_file_url'),
                   }}
                   onSceneChange={(data) => {
                     form.setValue('scene_description', data.scene_description);
@@ -623,7 +623,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     form.setValue('music_timing_notes', data.music_timing_notes);
                     form.setValue('instrumental_vocal', data.instrumental_vocal);
                     form.setValue('music_prominence', data.music_prominence);
-                    form.setValue('audio_mix_level', data.audio_mix_level);
+                    form.setValue('audio_file_url', data.audio_file_url);
                   }}
                 />
 
