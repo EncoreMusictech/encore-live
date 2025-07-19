@@ -120,12 +120,11 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
   };
 
   const getDuration = () => {
+    // Map to Scene Duration (Seconds)
     if (license.usage_duration_seconds) {
-      const minutes = Math.floor(license.usage_duration_seconds / 60);
-      const seconds = license.usage_duration_seconds % 60;
-      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      return license.usage_duration_seconds.toString();
     }
-    return license.usage_duration_seconds?.toString() || "[Total or Per Song if Known]";
+    return "[Total or Per Song if Known]";
   };
 
   const getSceneContext = () => {
