@@ -42,7 +42,6 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       date_received: batch?.date_received || new Date().toISOString().split('T')[0],
       total_gross_amount: batch?.total_gross_amount || 0,
       linked_statement_id: batch?.linked_statement_id || '',
-      status: batch?.status || 'Pending',
       notes: batch?.notes || '',
     }
   });
@@ -243,7 +242,7 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="total_gross_amount">Total Gross Amount</Label>
+          <Label htmlFor="total_gross_amount">Batch Amount ($)</Label>
           <Input
             id="total_gross_amount"
             type="number"
@@ -276,20 +275,6 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
           <p className="text-xs text-muted-foreground">
             Only statements not linked to other batches are shown
           </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select onValueChange={(value) => setValue('status', value)} defaultValue={watch('status')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="Imported">Imported</SelectItem>
-              <SelectItem value="Processed">Processed</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
