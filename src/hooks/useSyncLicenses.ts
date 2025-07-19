@@ -49,7 +49,7 @@ export interface SyncLicense {
   created_at: string;
   updated_at: string;
   
-  // New fields from database migration
+  // Existing enhanced fields
   exclusive_license?: boolean;
   promotional_usage?: boolean;
   festival_usage?: boolean;
@@ -84,6 +84,66 @@ export interface SyncLicense {
   legal_reviewer?: string;
   legal_review_date?: string;
   approval_expiry_date?: string;
+
+  // Phase 1: New contact information fields
+  licensor_name?: string;
+  licensor_email?: string;
+  licensor_phone?: string;
+  licensor_address?: string;
+  licensor_company?: string;
+  licensee_name?: string;
+  licensee_email?: string;
+  licensee_phone?: string;
+  licensee_address?: string;
+  licensee_company?: string;
+
+  // Phase 1: Payment terms fields
+  payment_due_date?: string;
+  payment_method?: string;
+  banking_instructions?: any;
+  payment_reference?: string;
+  advance_amount?: number;
+  backend_percentage?: number;
+
+  // Phase 1: Scene context and usage tracking
+  scene_description?: string;
+  scene_duration_seconds?: number;
+  scene_timestamp?: string;
+  music_timing_notes?: string;
+  instrumental_vocal?: 'instrumental' | 'vocal' | 'both';
+  music_prominence?: 'background' | 'featured' | 'theme';
+  audio_mix_level?: number;
+
+  // Phase 1: Contract execution tracking
+  contract_execution_status?: 'draft' | 'sent' | 'signed' | 'executed' | 'expired';
+  contract_sent_date?: string;
+  contract_signed_date?: string;
+  contract_executed_date?: string;
+  contract_expiry_date?: string;
+  signatory_name?: string;
+  signatory_title?: string;
+  witness_name?: string;
+  notarization_required?: boolean;
+  notarization_date?: string;
+
+  // Phase 1: Credit language and rights clearance
+  credit_language?: string;
+  credit_placement?: 'end_credits' | 'opening_credits' | 'none' | 'on_screen' | 'package_only';
+  credit_size?: 'standard' | 'large' | 'small' | 'equal';
+  credit_requirements?: any;
+  rights_cleared?: boolean;
+  clearance_notes?: string;
+  master_rights_cleared?: boolean;
+  publishing_rights_cleared?: boolean;
+  synchronization_rights_cleared?: boolean;
+  performance_rights_cleared?: boolean;
+  mechanical_rights_cleared?: boolean;
+
+  // Phase 1: Document management
+  signed_agreement_url?: string;
+  executed_agreement_url?: string;
+  amendment_urls?: string[];
+  supporting_documents?: any[];
 }
 
 export interface CreateSyncLicenseData {

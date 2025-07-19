@@ -50,6 +50,11 @@ import { SyncLicense, useCreateSyncLicense, useUpdateSyncLicense } from "@/hooks
 import { useSyncAgents, useSyncSources } from "@/hooks/useSyncAgents";
 import { useAuth } from "@/hooks/useAuth";
 import { SyncRightsManager } from "./SyncRightsManager";
+import { ContactManagement } from "./ContactManagement";
+import { PaymentTermsForm } from "./PaymentTermsForm";
+import { SceneContextForm } from "./SceneContextForm";
+import { RightsClearanceForm } from "./RightsClearanceForm";
+import { ContractExecutionForm } from "./ContractExecutionForm";
 import { Copyright, useCopyright, CopyrightWriter } from "@/hooks/useCopyright";
 
 interface SyncLicenseFormProps {
@@ -102,6 +107,13 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
   const [selectedCopyrights, setSelectedCopyrights] = useState<Copyright[]>([]);
   const [controlledWriters, setControlledWriters] = useState<CopyrightWriter[]>([]);
   const [songFeeAllocations, setSongFeeAllocations] = useState<{ [key: string]: number }>({});
+  
+  // New state for enhanced forms
+  const [contactData, setContactData] = useState<any>({});
+  const [paymentData, setPaymentData] = useState<any>({});
+  const [sceneData, setSceneData] = useState<any>({});
+  const [rightsData, setRightsData] = useState<any>({});
+  const [contractData, setContractData] = useState<any>({});
   const { user } = useAuth();
   const { getWritersForCopyright } = useCopyright();
   const createMutation = useCreateSyncLicense();
@@ -161,6 +173,52 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       payment_status: "Pending",
       invoice_status: "Not Issued",
       mfn: false,
+      
+      // Phase 1: New fields
+      licensor_name: "",
+      licensor_email: "",
+      licensor_phone: "",
+      licensor_address: "",
+      licensor_company: "",
+      licensee_name: "",
+      licensee_email: "",
+      licensee_phone: "",
+      licensee_address: "",
+      licensee_company: "",
+      payment_due_date: undefined as Date | undefined,
+      payment_method: "",
+      banking_instructions: {},
+      payment_reference: "",
+      advance_amount: 0,
+      backend_percentage: 0,
+      scene_description: "",
+      scene_duration_seconds: 0,
+      scene_timestamp: "",
+      music_timing_notes: "",
+      instrumental_vocal: "both" as 'instrumental' | 'vocal' | 'both',
+      music_prominence: "background" as 'background' | 'featured' | 'theme',
+      audio_mix_level: 5,
+      contract_execution_status: "draft" as 'draft' | 'sent' | 'signed' | 'executed' | 'expired',
+      contract_sent_date: undefined as Date | undefined,
+      contract_signed_date: undefined as Date | undefined,
+      contract_executed_date: undefined as Date | undefined,
+      contract_expiry_date: undefined as Date | undefined,
+      signatory_name: "",
+      signatory_title: "",
+      witness_name: "",
+      notarization_required: false,
+      notarization_date: undefined as Date | undefined,
+      credit_language: "",
+      credit_placement: "end_credits" as 'end_credits' | 'opening_credits' | 'none' | 'on_screen' | 'package_only',
+      credit_size: "standard" as 'standard' | 'large' | 'small' | 'equal',
+      credit_requirements: {},
+      rights_cleared: false,
+      clearance_notes: "",
+      master_rights_cleared: false,
+      publishing_rights_cleared: false,
+      synchronization_rights_cleared: false,
+      performance_rights_cleared: false,
+      mechanical_rights_cleared: false,
     },
     mode: "onChange",
   });
@@ -354,11 +412,14 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs defaultValue="request" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-8">
                 <TabsTrigger value="request">Request</TabsTrigger>
+                <TabsTrigger value="contacts">Contacts</TabsTrigger>
+                <TabsTrigger value="scene">Scene</TabsTrigger>
                 <TabsTrigger value="terms">Terms</TabsTrigger>
                 <TabsTrigger value="rights">Rights</TabsTrigger>
                 <TabsTrigger value="fees">Fees</TabsTrigger>
+                <TabsTrigger value="contract">Contract</TabsTrigger>
                 <TabsTrigger value="status">Status</TabsTrigger>
               </TabsList>
 
@@ -576,6 +637,62 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                 </div>
               </TabsContent>
 
+              <TabsContent value="contacts" className="space-y-4">
+                <ContactManagement
+                  licensorData={{
+                    name: form.watch('licensor_name'),
+                    email: form.watch('licensor_email'),
+                    phone: form.watch('licensor_phone'),
+                    address: form.watch('licensor_address'),
+                    company: form.watch('licensor_company'),
+                  }}
+                  licenseeData={{
+                    name: form.watch('licensee_name'),
+                    email: form.watch('licensee_email'),
+                    phone: form.watch('licensee_phone'),
+                    address: form.watch('licensee_address'),
+                    company: form.watch('licensee_company'),
+                  }}
+                  onLicensorChange={(data) => {
+                    form.setValue('licensor_name', data.name);
+                    form.setValue('licensor_email', data.email);
+                    form.setValue('licensor_phone', data.phone);
+                    form.setValue('licensor_address', data.address);
+                    form.setValue('licensor_company', data.company);
+                  }}
+                  onLicenseeChange={(data) => {
+                    form.setValue('licensee_name', data.name);
+                    form.setValue('licensee_email', data.email);
+                    form.setValue('licensee_phone', data.phone);
+                    form.setValue('licensee_address', data.address);
+                    form.setValue('licensee_company', data.company);
+                  }}
+                />
+              </TabsContent>
+
+              <TabsContent value="scene" className="space-y-4">
+                <SceneContextForm
+                  sceneData={{
+                    scene_description: form.watch('scene_description'),
+                    scene_duration_seconds: form.watch('scene_duration_seconds'),
+                    scene_timestamp: form.watch('scene_timestamp'),
+                    music_timing_notes: form.watch('music_timing_notes'),
+                    instrumental_vocal: form.watch('instrumental_vocal'),
+                    music_prominence: form.watch('music_prominence'),
+                    audio_mix_level: form.watch('audio_mix_level'),
+                  }}
+                  onSceneChange={(data) => {
+                    form.setValue('scene_description', data.scene_description);
+                    form.setValue('scene_duration_seconds', data.scene_duration_seconds);
+                    form.setValue('scene_timestamp', data.scene_timestamp);
+                    form.setValue('music_timing_notes', data.music_timing_notes);
+                    form.setValue('instrumental_vocal', data.instrumental_vocal);
+                    form.setValue('music_prominence', data.music_prominence);
+                    form.setValue('audio_mix_level', data.audio_mix_level);
+                  }}
+                />
+              </TabsContent>
+
               <TabsContent value="terms" className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -770,6 +887,90 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     )}
                   />
                 </div>
+              </TabsContent>
+
+              <TabsContent value="rights" className="space-y-4">
+                <RightsClearanceForm
+                  rightsData={{
+                    rights_cleared: form.watch('rights_cleared'),
+                    clearance_notes: form.watch('clearance_notes'),
+                    master_rights_cleared: form.watch('master_rights_cleared'),
+                    publishing_rights_cleared: form.watch('publishing_rights_cleared'),
+                    synchronization_rights_cleared: form.watch('synchronization_rights_cleared'),
+                    performance_rights_cleared: form.watch('performance_rights_cleared'),
+                    mechanical_rights_cleared: form.watch('mechanical_rights_cleared'),
+                  }}
+                  onRightsChange={(data) => {
+                    form.setValue('rights_cleared', data.rights_cleared);
+                    form.setValue('clearance_notes', data.clearance_notes);
+                    form.setValue('master_rights_cleared', data.master_rights_cleared);
+                    form.setValue('publishing_rights_cleared', data.publishing_rights_cleared);
+                    form.setValue('synchronization_rights_cleared', data.synchronization_rights_cleared);
+                    form.setValue('performance_rights_cleared', data.performance_rights_cleared);
+                    form.setValue('mechanical_rights_cleared', data.mechanical_rights_cleared);
+                  }}
+                />
+                
+                <SyncRightsManager />
+              </TabsContent>
+
+              <TabsContent value="fees" className="space-y-4">
+                <PaymentTermsForm
+                  paymentData={{
+                    payment_due_date: form.watch('payment_due_date'),
+                    payment_method: form.watch('payment_method'),
+                    banking_instructions: form.watch('banking_instructions'),
+                    payment_reference: form.watch('payment_reference'),
+                    advance_amount: form.watch('advance_amount'),
+                    backend_percentage: form.watch('backend_percentage'),
+                  }}
+                  onPaymentChange={(data) => {
+                    form.setValue('payment_due_date', data.payment_due_date);
+                    form.setValue('payment_method', data.payment_method);
+                    form.setValue('banking_instructions', data.banking_instructions);
+                    form.setValue('payment_reference', data.payment_reference);
+                    form.setValue('advance_amount', data.advance_amount);
+                    form.setValue('backend_percentage', data.backend_percentage);
+                  }}
+                />
+                
+                {/* Existing fee allocation section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Fee Allocation</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {/* Existing fee allocation content from original form */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="pub_fee"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Publishing Fee ($)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="0.00" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="master_fee"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Master Fee ($)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="0.00" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="rights" className="space-y-4">
@@ -1047,6 +1248,35 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+              </TabsContent>
+
+              <TabsContent value="contract" className="space-y-4">
+                <ContractExecutionForm
+                  contractData={{
+                    contract_execution_status: form.watch('contract_execution_status'),
+                    contract_sent_date: form.watch('contract_sent_date'),
+                    contract_signed_date: form.watch('contract_signed_date'),
+                    contract_executed_date: form.watch('contract_executed_date'),
+                    contract_expiry_date: form.watch('contract_expiry_date'),
+                    signatory_name: form.watch('signatory_name'),
+                    signatory_title: form.watch('signatory_title'),
+                    witness_name: form.watch('witness_name'),
+                    notarization_required: form.watch('notarization_required'),
+                    notarization_date: form.watch('notarization_date'),
+                  }}
+                  onContractChange={(data) => {
+                    form.setValue('contract_execution_status', data.contract_execution_status);
+                    form.setValue('contract_sent_date', data.contract_sent_date);
+                    form.setValue('contract_signed_date', data.contract_signed_date);
+                    form.setValue('contract_executed_date', data.contract_executed_date);
+                    form.setValue('contract_expiry_date', data.contract_expiry_date);
+                    form.setValue('signatory_name', data.signatory_name);
+                    form.setValue('signatory_title', data.signatory_title);
+                    form.setValue('witness_name', data.witness_name);
+                    form.setValue('notarization_required', data.notarization_required);
+                    form.setValue('notarization_date', data.notarization_date);
+                  }}
                 />
               </TabsContent>
             </Tabs>

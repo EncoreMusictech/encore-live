@@ -1939,145 +1939,289 @@ export type Database = {
       }
       sync_licenses: {
         Row: {
+          advance_amount: number | null
+          amendment_urls: string[] | null
           approval_documentation_url: string | null
           approval_issued: string | null
+          audio_mix_level: number | null
+          backend_percentage: number | null
+          banking_instructions: Json | null
           check_copy_remittance_url: string | null
+          clearance_notes: string | null
+          contract_executed_date: string | null
+          contract_execution_status: string | null
+          contract_expiry_date: string | null
+          contract_sent_date: string | null
+          contract_signed_date: string | null
           created_at: string
+          credit_language: string | null
+          credit_placement: string | null
+          credit_requirements: Json | null
+          credit_size: string | null
           currency: string | null
+          executed_agreement_url: string | null
           fe_license_returned: boolean | null
           fe_license_url: string | null
           first_confirmation_of_use: string | null
           id: string
+          instrumental_vocal: string | null
           invoice_issued: string | null
           invoice_status: string | null
           invoiced_amount: number | null
           license_issued: string | null
           license_status: string | null
+          licensee_address: string | null
+          licensee_company: string | null
+          licensee_email: string | null
+          licensee_name: string | null
+          licensee_phone: string | null
+          licensor_address: string | null
+          licensor_company: string | null
+          licensor_email: string | null
+          licensor_name: string | null
+          licensor_phone: string | null
           linked_copyright_ids: string[] | null
           master_fee: number | null
+          master_rights_cleared: boolean | null
           master_share_percentage: number | null
           master_splits: Json | null
+          mechanical_rights_cleared: boolean | null
           media_type: string | null
           mfn: boolean | null
+          music_prominence: string | null
+          music_timing_notes: string | null
           music_type: string | null
           music_use: string | null
+          notarization_date: string | null
+          notarization_required: boolean | null
           notes: string | null
+          payment_due_date: string | null
+          payment_method: string | null
           payment_received: string | null
+          payment_reference: string | null
           payment_status: string | null
           pe_license_received: string | null
+          performance_rights_cleared: boolean | null
           project_title: string
           pub_fee: number | null
           pub_fee_all_in: number | null
           pub_share_percentage: number | null
           publisher_splits: Json | null
+          publishing_rights_cleared: boolean | null
           request_attachment_url: string | null
           request_received: string | null
+          rights_cleared: boolean | null
           royalties: string | null
+          scene_description: string | null
+          scene_duration_seconds: number | null
+          scene_timestamp: string | null
+          signatory_name: string | null
+          signatory_title: string | null
+          signed_agreement_url: string | null
           smpte: string | null
           source: string | null
+          supporting_documents: Json | null
           synch_agent: string | null
           synch_id: string
           synch_status: string | null
+          synchronization_rights_cleared: boolean | null
           term_end: string | null
           term_start: string | null
           territories: string[] | null
           territory_of_licensee: string | null
           updated_at: string
           user_id: string
+          witness_name: string | null
         }
         Insert: {
+          advance_amount?: number | null
+          amendment_urls?: string[] | null
           approval_documentation_url?: string | null
           approval_issued?: string | null
+          audio_mix_level?: number | null
+          backend_percentage?: number | null
+          banking_instructions?: Json | null
           check_copy_remittance_url?: string | null
+          clearance_notes?: string | null
+          contract_executed_date?: string | null
+          contract_execution_status?: string | null
+          contract_expiry_date?: string | null
+          contract_sent_date?: string | null
+          contract_signed_date?: string | null
           created_at?: string
+          credit_language?: string | null
+          credit_placement?: string | null
+          credit_requirements?: Json | null
+          credit_size?: string | null
           currency?: string | null
+          executed_agreement_url?: string | null
           fe_license_returned?: boolean | null
           fe_license_url?: string | null
           first_confirmation_of_use?: string | null
           id?: string
+          instrumental_vocal?: string | null
           invoice_issued?: string | null
           invoice_status?: string | null
           invoiced_amount?: number | null
           license_issued?: string | null
           license_status?: string | null
+          licensee_address?: string | null
+          licensee_company?: string | null
+          licensee_email?: string | null
+          licensee_name?: string | null
+          licensee_phone?: string | null
+          licensor_address?: string | null
+          licensor_company?: string | null
+          licensor_email?: string | null
+          licensor_name?: string | null
+          licensor_phone?: string | null
           linked_copyright_ids?: string[] | null
           master_fee?: number | null
+          master_rights_cleared?: boolean | null
           master_share_percentage?: number | null
           master_splits?: Json | null
+          mechanical_rights_cleared?: boolean | null
           media_type?: string | null
           mfn?: boolean | null
+          music_prominence?: string | null
+          music_timing_notes?: string | null
           music_type?: string | null
           music_use?: string | null
+          notarization_date?: string | null
+          notarization_required?: boolean | null
           notes?: string | null
+          payment_due_date?: string | null
+          payment_method?: string | null
           payment_received?: string | null
+          payment_reference?: string | null
           payment_status?: string | null
           pe_license_received?: string | null
+          performance_rights_cleared?: boolean | null
           project_title: string
           pub_fee?: number | null
           pub_fee_all_in?: number | null
           pub_share_percentage?: number | null
           publisher_splits?: Json | null
+          publishing_rights_cleared?: boolean | null
           request_attachment_url?: string | null
           request_received?: string | null
+          rights_cleared?: boolean | null
           royalties?: string | null
+          scene_description?: string | null
+          scene_duration_seconds?: number | null
+          scene_timestamp?: string | null
+          signatory_name?: string | null
+          signatory_title?: string | null
+          signed_agreement_url?: string | null
           smpte?: string | null
           source?: string | null
+          supporting_documents?: Json | null
           synch_agent?: string | null
           synch_id: string
           synch_status?: string | null
+          synchronization_rights_cleared?: boolean | null
           term_end?: string | null
           term_start?: string | null
           territories?: string[] | null
           territory_of_licensee?: string | null
           updated_at?: string
           user_id: string
+          witness_name?: string | null
         }
         Update: {
+          advance_amount?: number | null
+          amendment_urls?: string[] | null
           approval_documentation_url?: string | null
           approval_issued?: string | null
+          audio_mix_level?: number | null
+          backend_percentage?: number | null
+          banking_instructions?: Json | null
           check_copy_remittance_url?: string | null
+          clearance_notes?: string | null
+          contract_executed_date?: string | null
+          contract_execution_status?: string | null
+          contract_expiry_date?: string | null
+          contract_sent_date?: string | null
+          contract_signed_date?: string | null
           created_at?: string
+          credit_language?: string | null
+          credit_placement?: string | null
+          credit_requirements?: Json | null
+          credit_size?: string | null
           currency?: string | null
+          executed_agreement_url?: string | null
           fe_license_returned?: boolean | null
           fe_license_url?: string | null
           first_confirmation_of_use?: string | null
           id?: string
+          instrumental_vocal?: string | null
           invoice_issued?: string | null
           invoice_status?: string | null
           invoiced_amount?: number | null
           license_issued?: string | null
           license_status?: string | null
+          licensee_address?: string | null
+          licensee_company?: string | null
+          licensee_email?: string | null
+          licensee_name?: string | null
+          licensee_phone?: string | null
+          licensor_address?: string | null
+          licensor_company?: string | null
+          licensor_email?: string | null
+          licensor_name?: string | null
+          licensor_phone?: string | null
           linked_copyright_ids?: string[] | null
           master_fee?: number | null
+          master_rights_cleared?: boolean | null
           master_share_percentage?: number | null
           master_splits?: Json | null
+          mechanical_rights_cleared?: boolean | null
           media_type?: string | null
           mfn?: boolean | null
+          music_prominence?: string | null
+          music_timing_notes?: string | null
           music_type?: string | null
           music_use?: string | null
+          notarization_date?: string | null
+          notarization_required?: boolean | null
           notes?: string | null
+          payment_due_date?: string | null
+          payment_method?: string | null
           payment_received?: string | null
+          payment_reference?: string | null
           payment_status?: string | null
           pe_license_received?: string | null
+          performance_rights_cleared?: boolean | null
           project_title?: string
           pub_fee?: number | null
           pub_fee_all_in?: number | null
           pub_share_percentage?: number | null
           publisher_splits?: Json | null
+          publishing_rights_cleared?: boolean | null
           request_attachment_url?: string | null
           request_received?: string | null
+          rights_cleared?: boolean | null
           royalties?: string | null
+          scene_description?: string | null
+          scene_duration_seconds?: number | null
+          scene_timestamp?: string | null
+          signatory_name?: string | null
+          signatory_title?: string | null
+          signed_agreement_url?: string | null
           smpte?: string | null
           source?: string | null
+          supporting_documents?: Json | null
           synch_agent?: string | null
           synch_id?: string
           synch_status?: string | null
+          synchronization_rights_cleared?: boolean | null
           term_end?: string | null
           term_start?: string | null
           territories?: string[] | null
           territory_of_licensee?: string | null
           updated_at?: string
           user_id?: string
+          witness_name?: string | null
         }
         Relationships: []
       }
