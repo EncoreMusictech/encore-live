@@ -212,7 +212,8 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       credit_placement: "end_credits" as 'end_credits' | 'opening_credits' | 'none' | 'on_screen' | 'package_only',
       credit_size: "standard" as 'standard' | 'large' | 'small' | 'equal',
       credit_requirements: {},
-      rights_cleared: "",
+      rights_cleared: false,
+      rights_clearance_type: "",
       clearance_notes: "",
       master_rights_cleared: false,
       publishing_rights_cleared: false,
@@ -323,6 +324,16 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         instrumental_vocal: license.instrumental_vocal || "instrumental",
         music_prominence: license.music_prominence || "background",
         audio_file_url: license.audio_file_url || "",
+        
+        // Rights clearance fields
+        rights_cleared: license.rights_cleared || false,
+        rights_clearance_type: license.rights_clearance_type || "",
+        clearance_notes: license.clearance_notes || "",
+        master_rights_cleared: license.master_rights_cleared || false,
+        publishing_rights_cleared: license.publishing_rights_cleared || false,
+        synchronization_rights_cleared: license.synchronization_rights_cleared || false,
+        performance_rights_cleared: license.performance_rights_cleared || false,
+        mechanical_rights_cleared: license.mechanical_rights_cleared || false,
       });
     }
   }, [license, open, form]);
@@ -961,7 +972,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
               <TabsContent value="rights" className="space-y-4">
                 <RightsClearanceForm
                   rightsData={{
-                    rights_cleared: form.watch('rights_cleared'),
+                    rights_clearance_type: form.watch('rights_clearance_type'),
                     clearance_notes: form.watch('clearance_notes'),
                     master_rights_cleared: form.watch('master_rights_cleared'),
                     publishing_rights_cleared: form.watch('publishing_rights_cleared'),
@@ -970,7 +981,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     mechanical_rights_cleared: form.watch('mechanical_rights_cleared'),
                   }}
                   onRightsChange={(data) => {
-                    form.setValue('rights_cleared', data.rights_cleared);
+                    form.setValue('rights_clearance_type', data.rights_clearance_type);
                     form.setValue('clearance_notes', data.clearance_notes);
                     form.setValue('master_rights_cleared', data.master_rights_cleared);
                     form.setValue('publishing_rights_cleared', data.publishing_rights_cleared);

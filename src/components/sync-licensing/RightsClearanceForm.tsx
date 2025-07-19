@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface RightsClearanceData {
-  rights_cleared?: string;
+  rights_clearance_type?: string;
   clearance_notes?: string;
   master_rights_cleared?: boolean;
   publishing_rights_cleared?: boolean;
@@ -32,7 +32,7 @@ interface RightsClearanceFormProps {
 export const RightsClearanceForm = ({ rightsData, onRightsChange }: RightsClearanceFormProps) => {
   const form = useForm<RightsClearanceData>({
     defaultValues: {
-      rights_cleared: rightsData?.rights_cleared || "",
+      rights_clearance_type: rightsData?.rights_clearance_type || "",
       clearance_notes: rightsData?.clearance_notes || "",
       master_rights_cleared: rightsData?.master_rights_cleared || false,
       publishing_rights_cleared: rightsData?.publishing_rights_cleared || false,
@@ -122,7 +122,7 @@ export const RightsClearanceForm = ({ rightsData, onRightsChange }: RightsCleara
             <div className="space-y-4">
               <FormField
                 control={form.control}
-                name="rights_cleared"
+                name="rights_clearance_type"
                 render={({ field }) => (
                   <FormItem className="rounded-lg border p-4">
                     <div className="space-y-2">

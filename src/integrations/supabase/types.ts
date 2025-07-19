@@ -2015,6 +2015,7 @@ export type Database = {
           publishing_rights_cleared: boolean | null
           request_attachment_url: string | null
           request_received: string | null
+          rights_clearance_type: string | null
           rights_cleared: boolean | null
           royalties: string | null
           scene_description: string | null
@@ -2117,6 +2118,7 @@ export type Database = {
           publishing_rights_cleared?: boolean | null
           request_attachment_url?: string | null
           request_received?: string | null
+          rights_clearance_type?: string | null
           rights_cleared?: boolean | null
           royalties?: string | null
           scene_description?: string | null
@@ -2219,6 +2221,7 @@ export type Database = {
           publishing_rights_cleared?: boolean | null
           request_attachment_url?: string | null
           request_received?: string | null
+          rights_clearance_type?: string | null
           rights_cleared?: boolean | null
           royalties?: string | null
           scene_description?: string | null

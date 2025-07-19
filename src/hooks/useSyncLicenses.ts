@@ -137,6 +137,7 @@ export interface SyncLicense {
   credit_size?: 'standard' | 'large' | 'small' | 'equal';
   credit_requirements?: any;
   rights_cleared?: boolean;
+  rights_clearance_type?: 'one-stop' | 'pre-cleared' | 'full-clearance' | 'all-in-deal';
   clearance_notes?: string;
   master_rights_cleared?: boolean;
   publishing_rights_cleared?: boolean;
