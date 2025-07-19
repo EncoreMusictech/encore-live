@@ -271,6 +271,16 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
 
   useEffect(() => {
     if (license && open) {
+      // Load linked copyrights if they exist
+      if (license.linked_copyright_ids && license.linked_copyright_ids.length > 0) {
+        const linkedCopyrights = copyrights?.filter(c => 
+          license.linked_copyright_ids?.includes(c.id)
+        ) || [];
+        setSelectedCopyrights(linkedCopyrights);
+      } else {
+        setSelectedCopyrights([]);
+      }
+
       form.reset({
         project_title: license.project_title || "",
         synch_agent: license.synch_agent || "",
@@ -345,7 +355,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         signatory_title: license.signatory_title || "",
       });
     }
-  }, [license, open, form]);
+  }, [license, open, form, copyrights]);
 
   const onSubmit = async (data: any) => {
     if (!user) return;
@@ -356,6 +366,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       const submissionData = {
         ...data,
         user_id: user.id,
+        linked_copyright_ids: selectedCopyrights.map(c => c.id),
         controlled_writers: controlledWriters,
         fee_allocations: feeAllocations,
         // Remove undefined values
