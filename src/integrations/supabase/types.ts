@@ -1954,6 +1954,7 @@ export type Database = {
           contract_expiry_date: string | null
           contract_sent_date: string | null
           contract_signed_date: string | null
+          controlled_writers: Json | null
           created_at: string
           credit_language: string | null
           credit_placement: string | null
@@ -2054,6 +2055,7 @@ export type Database = {
           contract_expiry_date?: string | null
           contract_sent_date?: string | null
           contract_signed_date?: string | null
+          controlled_writers?: Json | null
           created_at?: string
           credit_language?: string | null
           credit_placement?: string | null
@@ -2154,6 +2156,7 @@ export type Database = {
           contract_expiry_date?: string | null
           contract_sent_date?: string | null
           contract_signed_date?: string | null
+          controlled_writers?: Json | null
           created_at?: string
           credit_language?: string | null
           credit_placement?: string | null
