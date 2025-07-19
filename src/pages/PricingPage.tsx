@@ -38,44 +38,44 @@ import {
 const moduleData = [
   {
     id: "royalties",
-    name: "Royalties Module",
+    name: "Royalties Processing",
     icon: Music,
     price: 199,
-    description: "Royalty splits, statements, recoupment",
+    description: "Complete royalty management from reconciliation to payouts",
     features: [
+      "Bulk import royalty statements",
+      "Work-to-rightsholder mapping",
       "Automated royalty calculations",
-      "Multi-format statement imports",
-      "Recoupment tracking",
-      "Writer split management",
-      "Payment reconciliation"
+      "Periodic client statements",
+      "Payment tracking & history"
     ]
   },
   {
     id: "copyright",
-    name: "Copyright Module", 
+    name: "Copyright Management", 
     icon: Copyright,
     price: 99,
-    description: "Metadata + registration + CWR export",
+    description: "Register and track copyrights with split assignments",
     features: [
-      "Work registration forms",
-      "PRO submission tools",
-      "CWR file generation",
-      "Metadata validation",
-      "Rights tracking"
+      "ISRC/ISWC/IPI tracking",
+      "Writer/publisher splits",
+      "PRO registration status",
+      "Duplicate warnings",
+      "Metadata form builder"
     ]
   },
   {
     id: "contracts",
-    name: "Contract Manager",
+    name: "Contract Management",
     icon: FileText,
     price: 59,
-    description: "Build, store, and track music agreements",
+    description: "Centralized contract storage with smart tagging and alerts",
     features: [
-      "Template library",
-      "Digital signature workflows",
-      "Contract lifecycle tracking",
-      "Automated reminders",
-      "Version control"
+      "Upload & organize contracts",
+      "Auto-tag by deal type",
+      "Renewal deadline alerts",
+      "Template library access",
+      "Smart field extraction"
     ]
   },
   {
@@ -83,41 +83,41 @@ const moduleData = [
     name: "Sync Licensing Tracker",
     icon: Zap,
     price: 149,
-    description: "Manage pitches, licenses, approvals",
+    description: "Comprehensive sync deal pipeline with pitch tracking",
     features: [
-      "Pitch opportunity tracking",
-      "License status management",
-      "Usage confirmation tools",
-      "Fee calculation",
-      "Territory management"
+      "Pitch status tracking",
+      "Media type categorization",
+      "Territory & term management",
+      "Contract attachments",
+      "Auto-generated deal memos"
     ]
   },
   {
     id: "valuation",
-    name: "Catalog Valuation Tool",
+    name: "Catalog Valuation",
     icon: TrendingUp,
     price: 99,
-    description: "Forecast IP value, growth, benchmarks",
+    description: "AI-powered catalog assessment with deal simulation tools",
     features: [
-      "DCF modeling",
-      "Market comparables",
-      "Growth projections",
-      "Risk analysis",
-      "Portfolio optimization"
+      "Revenue history analysis",
+      "Growth modeling (CAGR)",
+      "Scenario-based estimates",
+      "Deal structure simulation",
+      "Downloadable investor reports"
     ]
   },
   {
     id: "dashboard",
-    name: "Client Dashboard",
+    name: "Client Portal",
     icon: Users,
     price: 149,
-    description: "View-only artist/manager portal",
+    description: "Secure tier-based access for artists, managers, and vendors",
     features: [
-      "Real-time reporting",
-      "Statement access",
-      "Performance analytics",
-      "Custom branding",
-      "Mobile-optimized"
+      "Artist earnings dashboard",
+      "Manager deal oversight",
+      "Vendor collaboration",
+      "Permission-based content",
+      "Custom reporting views"
     ]
   }
 ];
@@ -133,9 +133,10 @@ const bundledPlans = [
     savings: 50,
     modules: ["copyright", "contracts"],
     features: [
-      "Basic copyright management",
-      "Simple contract templates",
-      "Up to 50 works per month",
+      "ISRC/ISWC/IPI tracking",
+      "Writer/publisher splits",
+      "Upload & organize contracts",
+      "Auto-tag by deal type",
       "Email support"
     ],
     icon: Sparkles
@@ -149,10 +150,10 @@ const bundledPlans = [
     savings: 42,
     modules: ["copyright", "contracts", "valuation"],
     features: [
-      "Full copyright suite",
-      "Contract management",
-      "Basic catalog valuation",
-      "Up to 200 works per month",
+      "Full copyright management",
+      "Centralized contract storage",
+      "Catalog valuation & deal simulation",
+      "Revenue history analysis",
       "Priority email support"
     ],
     icon: Package
@@ -166,10 +167,10 @@ const bundledPlans = [
     savings: 16,
     modules: ["royalties", "copyright", "contracts"],
     features: [
-      "Advanced royalty management",
-      "Bulk copyright processing",
-      "Contract automation",
-      "Multi-writer splits",
+      "Complete royalty processing",
+      "Bulk import royalty statements",
+      "Writer/publisher split management",
+      "Smart contract organization",
       "Phone support"
     ],
     icon: Crown,
@@ -184,10 +185,10 @@ const bundledPlans = [
     savings: 30,
     modules: ["sync", "royalties", "dashboard"],
     features: [
-      "Complete sync workflow",
+      "Pitch status tracking",
+      "Deal memo generation",
       "Royalty distribution",
-      "Client portals",
-      "Usage tracking",
+      "Tier-based client access",
       "Dedicated support"
     ],
     icon: Zap
@@ -201,10 +202,10 @@ const bundledPlans = [
     savings: 19,
     modules: ["royalties", "copyright", "contracts", "valuation"],
     features: [
-      "Multi-catalog management",
-      "Advanced analytics",
-      "Bulk operations",
-      "Custom workflows",
+      "Full royalty management suite",
+      "Advanced copyright tracking",
+      "Contract automation",
+      "Catalog valuation tools",
       "Priority support"
     ],
     icon: TrendingUp
@@ -219,11 +220,11 @@ const bundledPlans = [
     modules: ["royalties", "copyright", "contracts", "sync", "valuation", "dashboard"],
     features: [
       "All modules included",
-      "API access",
-      "Priority support", 
-      "Custom integrations",
+      "Complete workflow automation",
+      "Multi-tier client portal access", 
+      "Advanced analytics & reporting",
       "Dedicated account manager",
-      "White-label options"
+      "Priority support"
     ],
     icon: Building
   }
