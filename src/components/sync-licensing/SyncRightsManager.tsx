@@ -50,7 +50,7 @@ export const SyncRightsManager: React.FC<SyncRightsManagerProps> = ({
     }
     
     setWriters(writersData);
-  }, [copyrights?.length, getWritersForCopyright]);
+  }, [copyrights, getWritersForCopyright]);
 
   React.useEffect(() => {
     loadWriters();
