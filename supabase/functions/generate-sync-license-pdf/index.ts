@@ -66,6 +66,10 @@ interface SyncLicense {
   licensor_address?: string;
   licensee_address?: string;
   
+  // Scene context
+  scene_description?: string;
+  scene_duration_seconds?: number;
+  
   // Contract execution
   signatory_name?: string;
   signatory_title?: string;
@@ -120,15 +124,16 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
   };
 
   const getDuration = () => {
-    // Map to Scene Duration (Seconds)
-    if (license.usage_duration_seconds) {
-      return license.usage_duration_seconds.toString();
+    // Map to Scene Duration (Seconds) field from the form
+    if (license.scene_duration_seconds) {
+      return license.scene_duration_seconds.toString();
     }
     return "[Total or Per Song if Known]";
   };
 
   const getSceneContext = () => {
-    return license.context_description || "[Scene Description]";
+    // Map to Scene Description field from the form
+    return license.scene_description || "[Scene Description]";
   };
 
   const getTotalSyncFee = () => {
