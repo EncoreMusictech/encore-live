@@ -1965,6 +1965,7 @@ export type Database = {
           executed_agreement_url: string | null
           fe_license_returned: boolean | null
           fe_license_url: string | null
+          fee_allocations: Json | null
           first_confirmation_of_use: string | null
           id: string
           instrumental_vocal: string | null
@@ -2066,6 +2067,7 @@ export type Database = {
           executed_agreement_url?: string | null
           fe_license_returned?: boolean | null
           fe_license_url?: string | null
+          fee_allocations?: Json | null
           first_confirmation_of_use?: string | null
           id?: string
           instrumental_vocal?: string | null
@@ -2167,6 +2169,7 @@ export type Database = {
           executed_agreement_url?: string | null
           fe_license_returned?: boolean | null
           fe_license_url?: string | null
+          fee_allocations?: Json | null
           first_confirmation_of_use?: string | null
           id?: string
           instrumental_vocal?: string | null
