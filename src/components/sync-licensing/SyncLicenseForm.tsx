@@ -1014,18 +1014,91 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                   />
                 </div>
 
-                {/* Fee allocation section temporarily disabled */}
+                {/* Fee Allocations Display */}
                 {selectedCopyrights.length > 0 && (
-                  <div className="mt-6 p-4 border rounded-lg bg-muted/50">
-                    <h4 className="text-sm font-medium mb-2">Selected Works for Sync License</h4>
-                    <div className="space-y-2">
-                      {selectedCopyrights.map((copyright) => (
-                        <div key={copyright.id} className="flex justify-between items-center text-sm">
-                          <span>{copyright.work_title}</span>
-                          <span className="text-muted-foreground">{copyright.work_id}</span>
-                        </div>
-                      ))}
+                  <div className="mt-6 space-y-4">
+                    <div className="p-4 border rounded-lg bg-muted/50">
+                      <h4 className="text-sm font-medium mb-2">Selected Works for Sync License</h4>
+                      <div className="space-y-2">
+                        {selectedCopyrights.map((copyright) => (
+                          <div key={copyright.id} className="flex justify-between items-center text-sm">
+                            <span>{copyright.work_title}</span>
+                            <span className="text-muted-foreground">{copyright.work_id}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
+
+                    {/* Fee Allocation Breakdown */}
+                    {form.watch('pub_fee') && parseFloat(form.watch('pub_fee') || '0') > 0 && (
+                      <div className="p-4 border rounded-lg">
+                        <h4 className="text-sm font-medium mb-4">Fee Allocation Breakdown</h4>
+                        <div className="space-y-4">
+                          {selectedCopyrights.map((copyright) => {
+                            const writersInCopyright = controlledWriters.filter(w => w.copyright_id === copyright.id);
+                            const controlledShare = writersInCopyright
+                              .filter(w => w.controlled_status === 'C')
+                              .reduce((sum, w) => sum + w.ownership_percentage, 0);
+                            
+                            const pubFee = parseFloat(form.watch('pub_fee') || '0');
+                            const customAmount = parseFloat(songFeeAllocations[copyright.id] || '0');
+                            const allocatedAmount = customAmount > 0 ? customAmount : (pubFee * controlledShare) / 100;
+
+                            if (controlledShare === 0) return null;
+
+                            return (
+                              <div key={copyright.id} className="border rounded p-3 space-y-3">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <div className="font-medium">{copyright.work_title}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                      Controlled Share: {controlledShare}%
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm text-muted-foreground">Custom Amount</div>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      value={songFeeAllocations[copyright.id] || ''}
+                                      onChange={(e) => handleCustomAmountChange(copyright.id, e.target.value)}
+                                      className="w-20 h-8 text-sm"
+                                    />
+                                  </div>
+                                </div>
+                                
+                                <div className="text-sm">
+                                  <div className="flex justify-between">
+                                    <span>Allocated Amount:</span>
+                                    <span className="font-medium">${allocatedAmount.toFixed(2)}</span>
+                                  </div>
+                                </div>
+
+                                {writersInCopyright.filter(w => w.controlled_status === 'C').length > 0 && (
+                                  <div className="border-t pt-2">
+                                    <div className="text-xs text-muted-foreground mb-2">Controlled Writers:</div>
+                                    <div className="space-y-1">
+                                      {writersInCopyright
+                                        .filter(w => w.controlled_status === 'C')
+                                        .map((writer, idx) => {
+                                          const writerAmount = (allocatedAmount * writer.ownership_percentage) / controlledShare || 0;
+                                          return (
+                                            <div key={idx} className="flex justify-between text-xs">
+                                              <span>{writer.writer_name} ({writer.ownership_percentage}%)</span>
+                                              <span>${writerAmount.toFixed(2)}</span>
+                                            </div>
+                                          );
+                                        })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </TabsContent>
