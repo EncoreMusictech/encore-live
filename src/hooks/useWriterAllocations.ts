@@ -41,7 +41,7 @@ export const useWriterAllocations = (syncLicenseId?: string) => {
       if (!syncLicenseId) return [];
       
       const { data, error } = await supabase
-        .from('writer_allocations')
+        .from('writer_allocations' as any)
         .select(`
           *,
           copyright:copyrights(work_title),
@@ -151,13 +151,13 @@ export const useWriterAllocations = (syncLicenseId?: string) => {
     mutationFn: async (allocations: Omit<WriterAllocation, 'id' | 'created_at' | 'updated_at'>[]) => {
       // First, delete existing allocations for this sync license
       await supabase
-        .from('writer_allocations')
+        .from('writer_allocations' as any)
         .delete()
         .eq('sync_license_id', allocations[0]?.sync_license_id);
 
       // Insert new allocations
       const { data, error } = await supabase
-        .from('writer_allocations')
+        .from('writer_allocations' as any)
         .insert(allocations)
         .select();
 

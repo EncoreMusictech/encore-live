@@ -2415,6 +2415,73 @@ export type Database = {
         }
         Relationships: []
       }
+      writer_allocations: {
+        Row: {
+          allocated_amount: number
+          allocation_type: string
+          copyright_id: string
+          created_at: string
+          id: string
+          ownership_percentage: number
+          payment_priority: number
+          recoupment_applicable: boolean
+          sync_license_id: string
+          updated_at: string
+          writer_id: string
+          writer_name: string
+        }
+        Insert: {
+          allocated_amount?: number
+          allocation_type?: string
+          copyright_id: string
+          created_at?: string
+          id?: string
+          ownership_percentage?: number
+          payment_priority?: number
+          recoupment_applicable?: boolean
+          sync_license_id: string
+          updated_at?: string
+          writer_id: string
+          writer_name: string
+        }
+        Update: {
+          allocated_amount?: number
+          allocation_type?: string
+          copyright_id?: string
+          created_at?: string
+          id?: string
+          ownership_percentage?: number
+          payment_priority?: number
+          recoupment_applicable?: boolean
+          sync_license_id?: string
+          updated_at?: string
+          writer_id?: string
+          writer_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_writer_allocations_copyright"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_writer_allocations_sync_license"
+            columns: ["sync_license_id"]
+            isOneToOne: false
+            referencedRelation: "sync_licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_writer_allocations_writer"
+            columns: ["writer_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

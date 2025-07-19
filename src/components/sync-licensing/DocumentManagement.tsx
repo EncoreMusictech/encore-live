@@ -222,10 +222,10 @@ export const DocumentManagement = ({
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = document.url;
-                            link.download = document.filename;
-                            link.click();
+                            const linkElement = globalThis.document.createElement('a');
+                            linkElement.href = document.url;
+                            linkElement.download = document.filename;
+                            linkElement.click();
                           }}
                         >
                           <Download className="h-4 w-4" />
