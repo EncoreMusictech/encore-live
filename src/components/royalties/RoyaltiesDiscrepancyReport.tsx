@@ -44,7 +44,7 @@ export function RoyaltiesDiscrepancyReport() {
               workTitle: allocation.song_title,
               source: allocation.source || '',
               writers: allocation.work_writers || allocation.artist || 'Unknown',
-              gross: allocation.gross_royalty_amount,
+              gross: allocation.gross_royalty_amount || 0,
               sourceInfo: allocation.batch_id || '',
               type: 'unmatched',
               comments: allocation.comments || '',
@@ -65,7 +65,7 @@ export function RoyaltiesDiscrepancyReport() {
                 workTitle: allocation.song_title,
                 source: allocation.source || '',
                 writers: allocation.work_writers || allocation.artist || 'Unknown',
-                gross: allocation.gross_royalty_amount,
+                gross: allocation.gross_royalty_amount || 0,
                 sourceInfo: allocation.batch_id || '',
                 type: 'low_confidence',
                 comments: allocation.comments || '',
@@ -88,7 +88,7 @@ export function RoyaltiesDiscrepancyReport() {
             workTitle: allocation.song_title,
             source: allocation.source || '',
             writers: allocation.work_writers || allocation.artist || 'Unknown',
-            gross: allocation.gross_royalty_amount,
+            gross: allocation.gross_royalty_amount || 0,
             sourceInfo: allocation.batch_id || '',
             type: 'duplicate',
             comments: allocation.comments || '',
@@ -136,7 +136,7 @@ export function RoyaltiesDiscrepancyReport() {
           `"${item.workTitle}"`,
           `"${item.source}"`,
           `"${item.writers}"`,
-          item.gross,
+          item.gross || 0,
           `"${item.sourceInfo}"`,
           item.type,
           `"${item.comments}"`,
@@ -188,7 +188,7 @@ export function RoyaltiesDiscrepancyReport() {
   const totalUnmatched = discrepancies.filter(d => d.type === 'unmatched').length;
   const totalLowConfidence = discrepancies.filter(d => d.type === 'low_confidence').length;
   const totalDuplicates = discrepancies.filter(d => d.type === 'duplicate').length;
-  const totalAmount = filteredDiscrepancies.reduce((sum, item) => sum + item.gross, 0);
+  const totalAmount = filteredDiscrepancies.reduce((sum, item) => sum + (item.gross || 0), 0);
 
   if (loading) {
     return (
@@ -290,7 +290,7 @@ export function RoyaltiesDiscrepancyReport() {
                           <TableCell>{item.workTitle}</TableCell>
                           <TableCell>{item.source}</TableCell>
                           <TableCell>{item.writers}</TableCell>
-                          <TableCell>${item.gross.toFixed(2)}</TableCell>
+                          <TableCell>${(item.gross || 0).toFixed(2)}</TableCell>
                           <TableCell>{item.sourceInfo}</TableCell>
                           <TableCell>
                             <Badge className={getTypeColor(item.type)}>
