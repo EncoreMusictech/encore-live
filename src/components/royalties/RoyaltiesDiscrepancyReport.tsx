@@ -11,13 +11,15 @@ import { toast } from "@/hooks/use-toast";
 
 interface DiscrepancyItem {
   id: string;
-  songTitle: string;
-  artist: string;
-  grossAmount: number;
-  batchId: string;
-  comments: string;
-  createdAt: string;
+  statementId: string;
+  workTitle: string;
+  source: string;
+  writers: string;
+  gross: number;
+  sourceInfo: string;
   type: 'unmatched' | 'low_confidence' | 'duplicate';
+  comments: string;
+  date: string;
 }
 
 export function RoyaltiesDiscrepancyReport() {
@@ -38,13 +40,15 @@ export function RoyaltiesDiscrepancyReport() {
               allocation.comments?.includes('Unmatched')) {
             discrepancyItems.push({
               id: allocation.id,
-              songTitle: allocation.song_title,
-              artist: allocation.artist || 'Unknown',
-              grossAmount: allocation.gross_royalty_amount,
-              batchId: allocation.batch_id || '',
-              comments: allocation.comments || '',
-              createdAt: allocation.created_at,
+              statementId: allocation.statement_id || '',
+              workTitle: allocation.song_title,
+              source: allocation.source || '',
+              writers: allocation.work_writers || allocation.artist || 'Unknown',
+              gross: allocation.gross_royalty_amount,
+              sourceInfo: allocation.batch_id || '',
               type: 'unmatched',
+              comments: allocation.comments || '',
+              date: allocation.created_at,
             });
           }
 
@@ -57,13 +61,15 @@ export function RoyaltiesDiscrepancyReport() {
             if (confidence < 80) {
               discrepancyItems.push({
                 id: allocation.id,
-                songTitle: allocation.song_title,
-                artist: allocation.artist || 'Unknown',
-                grossAmount: allocation.gross_royalty_amount,
-                batchId: allocation.batch_id || '',
-                comments: allocation.comments || '',
-                createdAt: allocation.created_at,
+                statementId: allocation.statement_id || '',
+                workTitle: allocation.song_title,
+                source: allocation.source || '',
+                writers: allocation.work_writers || allocation.artist || 'Unknown',
+                gross: allocation.gross_royalty_amount,
+                sourceInfo: allocation.batch_id || '',
                 type: 'low_confidence',
+                comments: allocation.comments || '',
+                date: allocation.created_at,
               });
             }
           }
@@ -78,13 +84,15 @@ export function RoyaltiesDiscrepancyReport() {
           }
           songTitleMap.get(key)!.push({
             id: allocation.id,
-            songTitle: allocation.song_title,
-            artist: allocation.artist || 'Unknown',
-            grossAmount: allocation.gross_royalty_amount,
-            batchId: allocation.batch_id || '',
-            comments: allocation.comments || '',
-            createdAt: allocation.created_at,
+            statementId: allocation.statement_id || '',
+            workTitle: allocation.song_title,
+            source: allocation.source || '',
+            writers: allocation.work_writers || allocation.artist || 'Unknown',
+            gross: allocation.gross_royalty_amount,
+            sourceInfo: allocation.batch_id || '',
             type: 'duplicate',
+            comments: allocation.comments || '',
+            date: allocation.created_at,
           });
         });
 
@@ -122,15 +130,17 @@ export function RoyaltiesDiscrepancyReport() {
         : discrepancies.filter(d => d.type === selectedTab);
 
       const csvContent = [
-        ['Song Title', 'Artist', 'Gross Amount', 'Batch ID', 'Type', 'Comments', 'Created At'].join(','),
+        ['STATEMENT ID', 'WORK TITLE', 'SOURCE', 'WRITERS', 'GROSS', 'SOURCE', 'TYPE', 'COMMENTS', 'DATE'].join(','),
         ...filteredDiscrepancies.map(item => [
-          `"${item.songTitle}"`,
-          `"${item.artist}"`,
-          item.grossAmount,
-          `"${item.batchId}"`,
+          `"${item.statementId}"`,
+          `"${item.workTitle}"`,
+          `"${item.source}"`,
+          `"${item.writers}"`,
+          item.gross,
+          `"${item.sourceInfo}"`,
           item.type,
           `"${item.comments}"`,
-          new Date(item.createdAt).toLocaleDateString()
+          new Date(item.date).toLocaleDateString()
         ].join(','))
       ].join('\n');
 
@@ -178,7 +188,7 @@ export function RoyaltiesDiscrepancyReport() {
   const totalUnmatched = discrepancies.filter(d => d.type === 'unmatched').length;
   const totalLowConfidence = discrepancies.filter(d => d.type === 'low_confidence').length;
   const totalDuplicates = discrepancies.filter(d => d.type === 'duplicate').length;
-  const totalAmount = filteredDiscrepancies.reduce((sum, item) => sum + item.grossAmount, 0);
+  const totalAmount = filteredDiscrepancies.reduce((sum, item) => sum + item.gross, 0);
 
   if (loading) {
     return (
@@ -262,29 +272,33 @@ export function RoyaltiesDiscrepancyReport() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Song Title</TableHead>
-                        <TableHead>Artist</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Batch</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Comments</TableHead>
-                        <TableHead>Date</TableHead>
+                        <TableHead>STATEMENT ID</TableHead>
+                        <TableHead>WORK TITLE</TableHead>
+                        <TableHead>SOURCE</TableHead>
+                        <TableHead>WRITERS</TableHead>
+                        <TableHead>GROSS</TableHead>
+                        <TableHead>SOURCE</TableHead>
+                        <TableHead>TYPE</TableHead>
+                        <TableHead>COMMENTS</TableHead>
+                        <TableHead>DATE</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredDiscrepancies.map((item) => (
                         <TableRow key={`${item.id}-${item.type}`}>
-                          <TableCell className="font-medium">{item.songTitle}</TableCell>
-                          <TableCell>{item.artist}</TableCell>
-                          <TableCell>${item.grossAmount.toFixed(2)}</TableCell>
-                          <TableCell>{item.batchId}</TableCell>
+                          <TableCell className="font-medium">{item.statementId}</TableCell>
+                          <TableCell>{item.workTitle}</TableCell>
+                          <TableCell>{item.source}</TableCell>
+                          <TableCell>{item.writers}</TableCell>
+                          <TableCell>${item.gross.toFixed(2)}</TableCell>
+                          <TableCell>{item.sourceInfo}</TableCell>
                           <TableCell>
                             <Badge className={getTypeColor(item.type)}>
                               {item.type.replace('_', ' ')}
                             </Badge>
                           </TableCell>
                           <TableCell className="max-w-xs truncate">{item.comments}</TableCell>
-                          <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
