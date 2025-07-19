@@ -334,6 +334,15 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         synchronization_rights_cleared: license.synchronization_rights_cleared || false,
         performance_rights_cleared: license.performance_rights_cleared || false,
         mechanical_rights_cleared: license.mechanical_rights_cleared || false,
+        
+        // Contract execution fields
+        contract_execution_status: license.contract_execution_status || "draft",
+        contract_sent_date: license.contract_sent_date ? new Date(license.contract_sent_date) : undefined,
+        contract_signed_date: license.contract_signed_date ? new Date(license.contract_signed_date) : undefined,
+        contract_executed_date: license.contract_executed_date ? new Date(license.contract_executed_date) : undefined,
+        contract_expiry_date: license.contract_expiry_date ? new Date(license.contract_expiry_date) : undefined,
+        signatory_name: license.signatory_name || "",
+        signatory_title: license.signatory_title || "",
       });
     }
   }, [license, open, form]);
