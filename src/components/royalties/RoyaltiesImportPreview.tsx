@@ -598,6 +598,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
         mappedData={mappedData}
         batchId={localRecord.batch_id} // Can be null/undefined for standalone royalties
         statementId={localRecord.statement_id} // Pass the statement ID
+        detectedSource={localRecord.detected_source} // Pass detected source for match history
         onMatchingComplete={handleSongMatchingComplete}
       />
     </div>

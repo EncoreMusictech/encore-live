@@ -10,6 +10,7 @@ import { Search, Music, CheckCircle, AlertCircle, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useSongMatchHistory } from "@/hooks/useSongMatchHistory";
 
 interface SongMatch {
   songTitle: string;
@@ -30,6 +31,7 @@ interface SongMatchingDialogProps {
   mappedData: any[];
   batchId?: string; // Made optional since allocations can be created without batches
   statementId?: string; // Add statement ID prop
+  detectedSource?: string; // Add detected source for match history
   onMatchingComplete: (results: { matched: number; unmatched: number }) => void;
 }
 
@@ -39,6 +41,7 @@ export function SongMatchingDialog({
   mappedData,
   batchId,
   statementId,
+  detectedSource,
   onMatchingComplete,
 }: SongMatchingDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,40 +50,94 @@ export function SongMatchingDialog({
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const { user } = useAuth();
+  const { getSavedMatches, saveMultipleMatches } = useSongMatchHistory();
 
-  // Initialize song matches from mapped data
+  // Initialize song matches from mapped data and load saved matches
   useEffect(() => {
     if (open && mappedData.length > 0) {
-      const uniqueSongs = new Map<string, SongMatch>();
-      
-      mappedData.forEach((row) => {
-        const songTitle = row['WORK TITLE'] || row['Song Title'] || '';
-        const artist = row['WORK WRITERS'] || row['Artist'] || '';
-        const grossAmount = parseFloat(row['GROSS'] || row['Gross Amount'] || '0');
-        const share = row['SHARE'] || '';
-        
-        if (songTitle.trim()) {
-          const key = `${songTitle}-${artist}`.toLowerCase();
-          if (!uniqueSongs.has(key)) {
-            uniqueSongs.set(key, {
-              songTitle,
-              artist,
-              grossAmount,
-              share,
-              isMatched: false,
-            });
-          } else {
-            // Add to existing amount if duplicate
-            const existing = uniqueSongs.get(key)!;
-            existing.grossAmount += grossAmount;
-          }
-        }
-      });
-
-      setSongMatches(Array.from(uniqueSongs.values()));
-      loadAvailableCopyrights();
+      initializeSongMatches();
     }
   }, [open, mappedData]);
+
+  const initializeSongMatches = async () => {
+    const uniqueSongs = new Map<string, SongMatch>();
+    
+    mappedData.forEach((row) => {
+      const songTitle = row['WORK TITLE'] || row['Song Title'] || '';
+      const artist = row['WORK WRITERS'] || row['Artist'] || '';
+      const grossAmount = parseFloat(row['GROSS'] || row['Gross Amount'] || '0');
+      const share = row['SHARE'] || '';
+      
+      if (songTitle.trim()) {
+        const key = `${songTitle}-${artist}`.toLowerCase();
+        if (!uniqueSongs.has(key)) {
+          uniqueSongs.set(key, {
+            songTitle,
+            artist,
+            grossAmount,
+            share,
+            isMatched: false,
+          });
+        } else {
+          // Add to existing amount if duplicate
+          const existing = uniqueSongs.get(key)!;
+          existing.grossAmount += grossAmount;
+        }
+      }
+    });
+
+    // First load the available copyrights
+    await loadAvailableCopyrights();
+
+    // Then load saved matches if we have a detected source
+    if (detectedSource && uniqueSongs.size > 0 && user) {
+      try {
+        const savedMatches = await getSavedMatches(detectedSource);
+        
+        // Apply saved matches to the song list
+        savedMatches.forEach((savedMatch) => {
+          const key = `${savedMatch.song_title}-${savedMatch.artist_name || ''}`.toLowerCase();
+          const song = uniqueSongs.get(key);
+          
+          if (song && savedMatch.copyright_id) {
+            // We need to fetch the copyright details since availableCopyrights might not be ready yet
+            // This will be handled after availableCopyrights is loaded
+            song.isMatched = true;
+            song.matchedCopyright = {
+              id: savedMatch.copyright_id,
+              work_title: 'Loading...',
+              internal_id: 'Loading...'
+            };
+          }
+        });
+        
+        // Update the matches with actual copyright details
+        const songsArray = Array.from(uniqueSongs.values());
+        setSongMatches(songsArray);
+        
+        // Now populate the actual copyright details
+        const updatedMatches = songsArray.map((match) => {
+          if (match.isMatched && match.matchedCopyright) {
+            const fullCopyright = availableCopyrights.find(c => c.id === match.matchedCopyright!.id);
+            if (fullCopyright) {
+              return {
+                ...match,
+                matchedCopyright: fullCopyright
+              };
+            }
+          }
+          return match;
+        });
+        
+        setSongMatches(updatedMatches);
+      } catch (error) {
+        console.error('Error loading saved matches:', error);
+        setSongMatches(Array.from(uniqueSongs.values()));
+      }
+    } else {
+      setSongMatches(Array.from(uniqueSongs.values()));
+    }
+  };
 
   const loadAvailableCopyrights = async () => {
     if (!user) return;
@@ -277,6 +334,28 @@ export function SongMatchingDialog({
       }
 
       console.log('Successfully created allocations:', data);
+
+      // Save the match history for future use
+      if (detectedSource) {
+        try {
+          const matchesToSave = songMatches
+            .filter(match => match.isMatched && match.matchedCopyright)
+            .map(match => ({
+              song_title: match.songTitle,
+              artist_name: match.artist,
+              copyright_id: match.matchedCopyright!.id,
+              match_confidence: 1.0,
+              match_type: 'manual'
+            }));
+
+          if (matchesToSave.length > 0) {
+            await saveMultipleMatches(detectedSource, matchesToSave);
+          }
+        } catch (error) {
+          console.error('Error saving match history:', error);
+          // Don't show this error to the user as the main operation succeeded
+        }
+      }
 
       const matchedCount = songMatches.filter(m => m.isMatched).length;
       const unmatchedCount = songMatches.length - matchedCount;

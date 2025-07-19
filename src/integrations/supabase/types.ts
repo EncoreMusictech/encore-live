@@ -1758,6 +1758,53 @@ export type Database = {
         }
         Relationships: []
       }
+      song_match_history: {
+        Row: {
+          artist_name: string | null
+          copyright_id: string | null
+          created_at: string
+          id: string
+          match_confidence: number | null
+          match_type: string
+          song_title: string
+          source_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          artist_name?: string | null
+          copyright_id?: string | null
+          created_at?: string
+          id?: string
+          match_confidence?: number | null
+          match_type?: string
+          song_title: string
+          source_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          artist_name?: string | null
+          copyright_id?: string | null
+          created_at?: string
+          id?: string
+          match_confidence?: number | null
+          match_type?: string
+          song_title?: string
+          source_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_match_history_copyright_id_fkey"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       source_mapping_config: {
         Row: {
           created_at: string
