@@ -7,7 +7,7 @@ export interface PageMetadata {
 
 export const pageMetadata: Record<string, PageMetadata> = {
   home: {
-    title: "Encore Music Tech Solutions - Complete Rights Management Suite",
+    title: "ENCORE Music Tech Solutions",
     description: "Professional music rights management software for publishers, labels, and creators. Manage copyrights, contracts, royalties, sync licensing, and catalog valuation in one platform.",
     keywords: ["music rights management", "music publishing software", "royalty management", "copyright management", "sync licensing", "catalog valuation", "music contracts"],
     canonical: "/"

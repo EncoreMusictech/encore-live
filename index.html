@@ -8,11 +8,11 @@
     <meta name="author" content="Encore Music Tech Solutions" />
     <meta name="keywords" content="music rights management, music publishing software, royalty management, copyright management, sync licensing, catalog valuation, music contracts" />
     
-    <!-- Favicon -->
-    <link rel="icon" href="/lovable-uploads/84a4da75-ce7f-4386-8716-0059cbcfac37.png?v=2" type="image/png" />
-    <link rel="shortcut icon" href="/lovable-uploads/84a4da75-ce7f-4386-8716-0059cbcfac37.png?v=2" type="image/png" />
-    <link rel="apple-touch-icon" href="/lovable-uploads/84a4da75-ce7f-4386-8716-0059cbcfac37.png?v=2" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/lovable-uploads/84a4da75-ce7f-4386-8716-0059cbcfac37.png?v=2" />
+    <!-- Favicon with timestamp cache buster -->
+    <link rel="icon" href="/lovable-uploads/84a4da75-ce7f-4386-8716-0059cbcfac37.png?t=1737296800" type="image/png" />
+    <link rel="shortcut icon" href="/lovable-uploads/84a4da75-ce7f-4386-8716-0059cbcfac37.png?t=1737296800" type="image/png" />
+    <link rel="apple-touch-icon" href="/lovable-uploads/84a4da75-ce7f-4386-8716-0059cbcfac37.png?t=1737296800" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/lovable-uploads/84a4da75-ce7f-4386-8716-0059cbcfac37.png?t=1737296800" />
 
     <!-- Open Graph -->
     <meta property="og:title" content="Encore Music Tech Solutions - Complete Rights Management Suite" />
@@ -32,6 +32,17 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      // Force update title immediately
+      document.title = 'ENCORE Music Tech Solutions';
+      
+      // Force favicon refresh
+      var link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+      link.type = 'image/png';
+      link.rel = 'shortcut icon';
+      link.href = '/lovable-uploads/84a4da75-ce7f-4386-8716-0059cbcfac37.png?t=' + Date.now();
+      document.getElementsByTagName('head')[0].appendChild(link);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
