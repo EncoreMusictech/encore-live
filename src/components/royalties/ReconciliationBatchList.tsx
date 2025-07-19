@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Search, MoreHorizontal, Edit, Trash2, Download, FileText, Upload, RefreshCw, Unlink } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
-import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { ReconciliationBatchForm } from "./ReconciliationBatchForm";
 
 interface ReconciliationBatchListProps {
@@ -23,7 +22,6 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [editingBatch, setEditingBatch] = useState<any>(null);
   const { batches, loading, deleteBatch, unlinkStatement, refreshBatches } = useReconciliationBatches();
-  const { allocations } = useRoyaltyAllocations();
 
   const filteredBatches = batches.filter(batch => {
     const batchId = batch.batch_id || '';
@@ -51,10 +49,6 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
       case 'Other': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  };
-
-  const getLinkedRoyalties = (batchId: string) => {
-    return allocations.filter(allocation => allocation.batch_id === batchId);
   };
 
   const handleDelete = async (id: string) => {
@@ -128,7 +122,6 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                 <TableHead>Date Received</TableHead>
                 <TableHead>Gross Amount</TableHead>
                 <TableHead>Linked Statement</TableHead>
-                <TableHead>Linked Royalties</TableHead>
                 <TableHead>Progress</TableHead>
                 <TableHead>Actions</TableHead>
              </TableRow>
@@ -183,39 +176,6 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                   ) : (
                     <span className="text-muted-foreground text-sm">No statement linked</span>
                   )}
-                 </TableCell>
-                 <TableCell>
-                   {(() => {
-                     const linkedRoyalties = getLinkedRoyalties(batch.id);
-                     const totalLinkedAmount = linkedRoyalties.reduce((sum, royalty) => sum + royalty.gross_royalty_amount, 0);
-                     
-                     return linkedRoyalties.length > 0 ? (
-                       <div className="space-y-1">
-                         <div className="flex items-center gap-2">
-                           <Badge variant="outline" className="text-xs">
-                             {linkedRoyalties.length} royalties
-                           </Badge>
-                         </div>
-                         <div className="text-xs text-muted-foreground">
-                           ${totalLinkedAmount.toLocaleString()}
-                         </div>
-                         <div className="space-y-1 max-h-20 overflow-y-auto">
-                           {linkedRoyalties.slice(0, 3).map((royalty) => (
-                             <div key={royalty.id} className="text-xs text-muted-foreground truncate">
-                               {royalty.song_title} - ${royalty.gross_royalty_amount.toLocaleString()}
-                             </div>
-                           ))}
-                           {linkedRoyalties.length > 3 && (
-                             <div className="text-xs text-muted-foreground">
-                               +{linkedRoyalties.length - 3} more...
-                             </div>
-                           )}
-                         </div>
-                       </div>
-                     ) : (
-                       <span className="text-muted-foreground text-sm">No royalties linked</span>
-                     );
-                   })()}
                  </TableCell>
                  <TableCell>
                    <div className="space-y-1 min-w-[120px]">

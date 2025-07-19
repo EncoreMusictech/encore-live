@@ -6,10 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
+import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link2, ExternalLink } from "lucide-react";
 
 interface ReconciliationBatchFormProps {
   onCancel: () => void;
@@ -20,6 +24,7 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
   const [availableStatements, setAvailableStatements] = useState<any[]>([]);
   const [loadingStatements, setLoadingStatements] = useState(false);
   const { createBatch, updateBatch } = useReconciliationBatches();
+  const { allocations } = useRoyaltyAllocations();
   const { user } = useAuth();
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
@@ -109,6 +114,9 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       console.error('Error saving batch:', error);
     }
   };
+
+  // Get linked royalties for the current batch
+  const linkedRoyalties = batch ? allocations.filter(allocation => allocation.batch_id === batch.id) : [];
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -217,6 +225,63 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
           {...register('notes')}
         />
       </div>
+
+      {/* Linked Royalties Section - only show when editing existing batch */}
+      {batch && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Link2 className="h-5 w-5" />
+              Linked Royalties ({linkedRoyalties.length})
+            </CardTitle>
+            <CardDescription>
+              Royalty allocations linked to this reconciliation batch
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {linkedRoyalties.length > 0 ? (
+              <div className="space-y-3">
+                {linkedRoyalties.map((royalty) => (
+                  <div key={royalty.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {royalty.royalty_id}
+                        </Badge>
+                        <span className="font-medium">{royalty.song_title}</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {royalty.artist && `${royalty.artist} • `}
+                        ${royalty.gross_royalty_amount.toLocaleString()}
+                        {royalty.source && ` • ${royalty.source}`}
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => {
+                        // Navigate to royalties page with this royalty highlighted
+                        // This could be implemented as needed
+                        console.log('Navigate to royalty:', royalty.royalty_id);
+                      }}
+                      className="flex items-center gap-1"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      View
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                <Link2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No royalties linked to this batch yet</p>
+                <p className="text-sm">Use the Batch Royalty Manager to link royalties</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
