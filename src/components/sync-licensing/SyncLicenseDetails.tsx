@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { SyncLicense } from "@/hooks/useSyncLicenses";
+import { FileText } from "lucide-react";
+import { SyncLicense, useGenerateSyncLicensePDF } from "@/hooks/useSyncLicenses";
 
 interface SyncLicenseDetailsProps {
   license: SyncLicense | null;
@@ -16,7 +19,19 @@ interface SyncLicenseDetailsProps {
 }
 
 export const SyncLicenseDetails = ({ license, open, onOpenChange }: SyncLicenseDetailsProps) => {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const generatePDF = useGenerateSyncLicensePDF();
+  
   if (!license) return null;
+
+  const handleGeneratePDF = async () => {
+    setIsGenerating(true);
+    try {
+      await generatePDF.mutateAsync(license.id);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const formatCurrency = (amount?: number) => {
     if (!amount) return "-";
@@ -52,15 +67,36 @@ export const SyncLicenseDetails = ({ license, open, onOpenChange }: SyncLicenseD
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {license.synch_id} - {license.project_title}
-            <Badge className={getStatusColor(license.synch_status)}>
-              {license.synch_status}
-            </Badge>
-          </DialogTitle>
-          <DialogDescription>
-            Sync licensing details and current status
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="flex items-center gap-2">
+                {license.synch_id} - {license.project_title}
+                <Badge className={getStatusColor(license.synch_status)}>
+                  {license.synch_status}
+                </Badge>
+              </DialogTitle>
+              <DialogDescription>
+                Sync licensing details and current status
+              </DialogDescription>
+            </div>
+            <Button
+              onClick={handleGeneratePDF}
+              disabled={isGenerating}
+              className="flex items-center gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4" />
+                  Generate Agreement
+                </>
+              )}
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

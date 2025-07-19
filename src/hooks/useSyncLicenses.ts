@@ -48,6 +48,42 @@ export interface SyncLicense {
   mfn: boolean;
   created_at: string;
   updated_at: string;
+  
+  // New fields from database migration
+  exclusive_license?: boolean;
+  promotional_usage?: boolean;
+  festival_usage?: boolean;
+  trailer_usage?: boolean;
+  advertising_usage?: boolean;
+  usage_duration_seconds?: number;
+  usage_description?: string;
+  context_description?: string;
+  production_company?: string;
+  production_budget?: number;
+  distribution_channels?: string[];
+  expected_audience_size?: number;
+  master_owner?: string;
+  master_owner_contact?: string;
+  publishing_administrator?: string;
+  publishing_admin_contact?: string;
+  backend_royalty_rate?: number;
+  performance_bonus?: number;
+  sales_threshold_bonus?: number;
+  sales_threshold_amount?: number;
+  union_restrictions?: string;
+  content_rating?: string;
+  territory_restrictions?: string[];
+  embargo_territories?: string[];
+  delivery_format?: string;
+  technical_specs?: any;
+  delivery_deadline?: string;
+  internal_project_code?: string;
+  priority_level?: string;
+  client_contact_info?: any;
+  legal_review_status?: string;
+  legal_reviewer?: string;
+  legal_review_date?: string;
+  approval_expiry_date?: string;
 }
 
 export interface CreateSyncLicenseData {
@@ -70,6 +106,42 @@ export interface CreateSyncLicenseData {
   payment_status?: string;
   invoice_status?: string;
   notes?: string;
+  
+  // New fields
+  exclusive_license?: boolean;
+  promotional_usage?: boolean;
+  festival_usage?: boolean;
+  trailer_usage?: boolean;
+  advertising_usage?: boolean;
+  usage_duration_seconds?: number;
+  usage_description?: string;
+  context_description?: string;
+  production_company?: string;
+  production_budget?: number;
+  distribution_channels?: string[];
+  expected_audience_size?: number;
+  master_owner?: string;
+  master_owner_contact?: string;
+  publishing_administrator?: string;
+  publishing_admin_contact?: string;
+  backend_royalty_rate?: number;
+  performance_bonus?: number;
+  sales_threshold_bonus?: number;
+  sales_threshold_amount?: number;
+  union_restrictions?: string;
+  content_rating?: string;
+  territory_restrictions?: string[];
+  embargo_territories?: string[];
+  delivery_format?: string;
+  technical_specs?: any;
+  delivery_deadline?: string;
+  internal_project_code?: string;
+  priority_level?: string;
+  client_contact_info?: any;
+  legal_review_status?: string;
+  legal_reviewer?: string;
+  legal_review_date?: string;
+  approval_expiry_date?: string;
 }
 
 export const useSyncLicenses = () => {
@@ -192,3 +264,40 @@ export const useDeleteSyncLicense = () => {
     },
   });
 };
+
+export const useGenerateSyncLicensePDF = () => {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (licenseId: string) => {
+      const { data, error } = await supabase.functions.invoke('generate-sync-license-pdf', {
+        body: { licenseId }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.pdfUrl) {
+        // Open PDF in new tab
+        window.open(data.pdfUrl, '_blank');
+        toast({
+          title: "Success",
+          description: "License agreement PDF generated successfully",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate PDF",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Note: Template functionality will be added once Supabase types are regenerated
