@@ -285,11 +285,11 @@ export function BatchRoyaltyManager({ batchId, onLinkComplete }: BatchRoyaltyMan
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="link" className="gap-2">
                 <Link className="h-4 w-4" />
-                Link Allocations ({unlinkedAllocations.length})
+                Link Royalties ({unlinkedAllocations.length})
               </TabsTrigger>
               <TabsTrigger value="unlink" className="gap-2" disabled={!selectedBatch}>
                 <Unlink className="h-4 w-4" />
-                Linked Allocations ({linkedAllocations.length})
+                Linked Royalties ({linkedAllocations.length})
               </TabsTrigger>
             </TabsList>
 
