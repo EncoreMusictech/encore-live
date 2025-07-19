@@ -193,60 +193,109 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
   const getLicensorStateCountry = () => {
     // Extract state/country from licensor address
     const address = license.licensor_address;
+    console.log('=== PARSING ADDRESS FOR STATE/COUNTRY ===');
+    console.log('Raw address:', JSON.stringify(address));
+    
     if (address) {
-      console.log('Raw address:', JSON.stringify(address));
-      
       // Clean up the address and split by comma
       const cleanAddress = address.replace(/\n/g, '').trim();
       const parts = cleanAddress.split(',').map(part => part.trim());
       
       console.log('Address parts:', parts);
       
+      // Try multiple approaches to find state
+      let stateAbbr = null;
+      
+      // Approach 1: Look for state in last part
       if (parts.length >= 2) {
         const lastPart = parts[parts.length - 1]; // Should be "CA 91601"
         console.log('Last part:', JSON.stringify(lastPart));
         
-        // Extract state from "CA 91601" format
         const stateMatch = lastPart.match(/([A-Z]{2})\s*\d+/);
-        console.log('State match:', stateMatch);
-        
         if (stateMatch) {
-          const stateAbbr = stateMatch[1]; // "CA"
-          const stateName = getStateName(stateAbbr); // "California"
-          return `${stateName}, USA`;
+          stateAbbr = stateMatch[1];
+          console.log('Found state from last part:', stateAbbr);
         }
       }
       
-      // Fallback
-      return "California, USA";
+      // Approach 2: Look for any 2-letter state code
+      if (!stateAbbr) {
+        const fullText = cleanAddress.toUpperCase();
+        const allStateMatches = fullText.match(/\b([A-Z]{2})\b/g);
+        console.log('All potential state matches:', allStateMatches);
+        
+        if (allStateMatches) {
+          // Check if any match is a valid state
+          for (const match of allStateMatches) {
+            if (getStateName(match) !== match) { // If it converts to a different name, it's a valid state
+              stateAbbr = match;
+              console.log('Found valid state code:', stateAbbr);
+              break;
+            }
+          }
+        }
+      }
+      
+      if (stateAbbr) {
+        const stateName = getStateName(stateAbbr);
+        console.log('Final state mapping:', stateAbbr, '->', stateName);
+        return `${stateName}, USA`;
+      }
     }
-    return "State, Country";
+    
+    console.log('No state found, using fallback: California, USA');
+    return "California, USA";
   };
 
   const getLicensorState = () => {
     // Extract just the state from licensor address
     const address = license.licensor_address;
+    console.log('=== PARSING ADDRESS FOR STATE ONLY ===');
+    console.log('Raw address:', JSON.stringify(address));
+    
     if (address) {
       // Clean up the address and split by comma
       const cleanAddress = address.replace(/\n/g, '').trim();
       const parts = cleanAddress.split(',').map(part => part.trim());
       
+      console.log('Address parts:', parts);
+      
+      // Try multiple approaches to find state
+      let stateAbbr = null;
+      
+      // Approach 1: Look for state in last part
       if (parts.length >= 2) {
-        const lastPart = parts[parts.length - 1]; // Should be "CA 91601"
-        
-        // Extract state from "CA 91601" format
+        const lastPart = parts[parts.length - 1];
         const stateMatch = lastPart.match(/([A-Z]{2})\s*\d+/);
-        
         if (stateMatch) {
-          const stateAbbr = stateMatch[1]; // "CA"
-          return getStateName(stateAbbr); // Return "California"
+          stateAbbr = stateMatch[1];
         }
       }
       
-      // Fallback
-      return "California";
+      // Approach 2: Look for any 2-letter state code
+      if (!stateAbbr) {
+        const fullText = cleanAddress.toUpperCase();
+        const allStateMatches = fullText.match(/\b([A-Z]{2})\b/g);
+        
+        if (allStateMatches) {
+          for (const match of allStateMatches) {
+            if (getStateName(match) !== match) {
+              stateAbbr = match;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (stateAbbr) {
+        const stateName = getStateName(stateAbbr);
+        console.log('Final state mapping:', stateAbbr, '->', stateName);
+        return stateName;
+      }
     }
-    return "State";
+    
+    console.log('No state found, using fallback: California');
+    return "California";
   };
 
   const getPaymentDueDate = () => {
