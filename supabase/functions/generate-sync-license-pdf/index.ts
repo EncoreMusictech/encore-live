@@ -72,7 +72,7 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return "____________";
+    if (!dateString) return "[License Date]";
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
@@ -81,13 +81,102 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
     });
   };
 
-  const formatUsageRights = () => {
-    const rights = [];
-    if (license.promotional_usage) rights.push("Promotional Usage");
-    if (license.festival_usage) rights.push("Festival Usage");
-    if (license.trailer_usage) rights.push("Trailer Usage");
-    if (license.advertising_usage) rights.push("Advertising Usage");
-    return rights.length > 0 ? rights.join(", ") : "Standard Usage";
+  const getLicensorInfo = () => {
+    return license.publishing_administrator || "[Licensor Name]";
+  };
+
+  const getLicensorAddress = () => {
+    return "[Licensor Address]";
+  };
+
+  const getLicenseeInfo = () => {
+    return license.production_company || "[Licensee Name]";
+  };
+
+  const getLicenseeAddress = () => {
+    return "[Licensee Address]";
+  };
+
+  const getProjectInfo = () => {
+    const mediaType = license.media_type || "[Production Type: Film, Series, Advertisement, etc.]";
+    const episode = license.context_description ? `[Episode/Season]` : "";
+    return { mediaType, episode };
+  };
+
+  const getUsageType = () => {
+    return license.music_use || "[Background / Featured / Title Sequence / Promo / etc.]";
+  };
+
+  const getDuration = () => {
+    if (license.usage_duration_seconds) {
+      const minutes = Math.floor(license.usage_duration_seconds / 60);
+      const seconds = license.usage_duration_seconds % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return "[Total or Per Song if Known]";
+  };
+
+  const getSceneContext = () => {
+    return license.context_description || "[Brief Description of Placement / Usage]";
+  };
+
+  const getTotalSyncFee = () => {
+    const total = (license.pub_fee || 0) + (license.master_fee || 0);
+    return total > 0 ? formatCurrency(total) : "[Total Sync Fee]";
+  };
+
+  const getPaymentDueDate = () => {
+    // Calculate 30 days from term start or use a placeholder
+    if (license.term_start) {
+      const termDate = new Date(license.term_start);
+      termDate.setDate(termDate.getDate() + 30);
+      return termDate.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    }
+    return "[Payment Due Date]";
+  };
+
+  const getTerritory = () => {
+    return license.territory_of_licensee || "[Territory]";
+  };
+
+  const getTerm = () => {
+    if (license.term_start && license.term_end) {
+      const start = new Date(license.term_start);
+      const end = new Date(license.term_end);
+      const years = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365));
+      return `${years} Years`;
+    }
+    return "[Term: e.g., In Perpetuity, 5 Years, etc.]";
+  };
+
+  const getSongTitle = () => {
+    // This would ideally come from related works/songs data
+    return "[Song Title]";
+  };
+
+  const getWriterNames = () => {
+    // This would ideally come from related copyright data
+    return "[Writer Name(s)]";
+  };
+
+  const getPublisherNames = () => {
+    return license.publishing_administrator || "[Publisher Name(s)]";
+  };
+
+  const getControlledShare = () => {
+    return "x%"; // Placeholder for controlled share
+  };
+
+  const getMasterCleared = () => {
+    return license.master_owner ? "Yes" : "No";
+  };
+
+  const getAllocatedFee = () => {
+    return "$xx,xxx"; // Placeholder for allocated fee
   };
 
   return `
@@ -95,345 +184,342 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Sync License Agreement - ${license.synch_id}</title>
+    <title>Synchronization License Agreement - ${license.synch_id}</title>
     <style>
         body {
             font-family: 'Times New Roman', serif;
-            line-height: 1.6;
+            line-height: 1.4;
             margin: 0;
-            padding: 40px;
-            font-size: 12pt;
+            padding: 30px 40px;
+            font-size: 11pt;
             color: #000;
+            max-width: 8.5in;
         }
         .header {
             text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 20px;
+            margin-bottom: 30px;
         }
         .title {
-            font-size: 18pt;
+            font-size: 16pt;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
         }
-        .subtitle {
-            font-size: 14pt;
-            margin-bottom: 5px;
+        .agreement-intro {
+            text-align: justify;
+            margin-bottom: 30px;
+            line-height: 1.5;
         }
         .section {
             margin-bottom: 25px;
+            page-break-inside: avoid;
         }
         .section-title {
             font-weight: bold;
-            font-size: 14pt;
-            margin-bottom: 10px;
-            text-decoration: underline;
-        }
-        .field-group {
+            font-size: 12pt;
             margin-bottom: 15px;
         }
-        .field-label {
-            font-weight: bold;
-            display: inline-block;
-            min-width: 180px;
-        }
-        .field-value {
-            border-bottom: 1px solid #000;
-            display: inline-block;
-            min-width: 200px;
-            padding-bottom: 2px;
-        }
-        .signature-section {
-            margin-top: 50px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .signature-block {
-            width: 45%;
-        }
-        .signature-line {
-            border-bottom: 1px solid #000;
-            margin-bottom: 5px;
-            height: 20px;
-        }
-        .terms-text {
+        .section-content {
             text-align: justify;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            line-height: 1.5;
         }
-        table {
+        .indented-section {
+            margin-left: 40px;
+            margin-bottom: 15px;
+        }
+        .bullet-point {
+            margin-bottom: 10px;
+        }
+        .usage-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin: 15px 0;
         }
-        th, td {
+        .usage-table td {
             border: 1px solid #000;
-            padding: 8px;
+            padding: 8px 12px;
             text-align: left;
         }
-        th {
+        .usage-table .label {
+            background-color: #f8f8f8;
+            font-weight: bold;
+            width: 20%;
+        }
+        .exhibit-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .exhibit-table th,
+        .exhibit-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+            font-size: 10pt;
+        }
+        .exhibit-table th {
             background-color: #f0f0f0;
             font-weight: bold;
         }
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
+        .signature-section {
+            margin-top: 50px;
+            page-break-inside: avoid;
+        }
+        .signature-block {
+            margin-bottom: 40px;
+        }
+        .signature-line {
+            border-bottom: 1px solid #000;
+            width: 300px;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+        .horizontal-rule {
             border-top: 1px solid #000;
-            font-size: 10pt;
-            text-align: center;
+            margin: 25px 0;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+        @media print {
+            body { margin: 0.5in; }
+            .page-break { page-break-before: always; }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="title">SYNCHRONIZATION LICENSE AGREEMENT</div>
-        <div class="subtitle">License No: ${license.synch_id}</div>
-        <div class="subtitle">Project: ${license.project_title}</div>
     </div>
 
-    <div class="section">
-        <div class="section-title">1. PARTIES</div>
-        <div class="field-group">
-            <span class="field-label">Licensor:</span>
-            <span class="field-value">${license.publishing_administrator || "________________________"}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Licensee:</span>
-            <span class="field-value">${license.production_company || "________________________"}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Representative:</span>
-            <span class="field-value">${license.synch_agent || "________________________"}</span>
-        </div>
+    <div class="agreement-intro">
+        This Synchronization License Agreement ("Agreement") is made and entered into on 
+        <strong>[${formatDate(license.term_start)}]</strong>, by and between <strong>[${getLicensorInfo()}]</strong>, 
+        located at <strong>[${getLicensorAddress()}]</strong> ("Licensor"), and <strong>[${getLicenseeInfo()}]</strong>, 
+        located at <strong>[${getLicenseeAddress()}]</strong> ("Licensee").
     </div>
 
-    <div class="section">
-        <div class="section-title">2. COMPOSITION DETAILS</div>
-        <table>
-            <tr>
-                <th>Field</th>
-                <th>Details</th>
-            </tr>
-            <tr>
-                <td>Music Type</td>
-                <td>${license.music_type || "N/A"}</td>
-            </tr>
-            <tr>
-                <td>Music Use</td>
-                <td>${license.music_use || "N/A"}</td>
-            </tr>
-            <tr>
-                <td>Usage Description</td>
-                <td>${license.usage_description || "N/A"}</td>
-            </tr>
-            <tr>
-                <td>Context Description</td>
-                <td>${license.context_description || "N/A"}</td>
-            </tr>
-            <tr>
-                <td>Duration</td>
-                <td>${license.usage_duration_seconds ? `${license.usage_duration_seconds} seconds` : "N/A"}</td>
-            </tr>
-        </table>
-    </div>
+    <div class="horizontal-rule"></div>
 
     <div class="section">
-        <div class="section-title">3. PRODUCTION DETAILS</div>
-        <div class="field-group">
-            <span class="field-label">Production Title:</span>
-            <span class="field-value">${license.project_title}</span>
+        <div class="section-title">1. GRANT OF RIGHTS</div>
+        <div class="section-content">
+            Licensor hereby grants to Licensee a limited, non-exclusive, non-transferable, and 
+            non-sublicensable right to synchronize the musical composition(s) listed in <strong>Exhibit A</strong> ("Works") 
+            with the audiovisual production entitled:
         </div>
-        <div class="field-group">
-            <span class="field-label">Media Type:</span>
-            <span class="field-value">${license.media_type || "________________________"}</span>
+        <div class="indented-section">
+            <strong>Project Title:</strong> [${license.project_title || "{Project Title}"}]<br>
+            <strong>Production Type:</strong> [${getProjectInfo().mediaType}]<br>
+            <strong>Episode/Season:</strong> [${getProjectInfo().episode}]
         </div>
-        <div class="field-group">
-            <span class="field-label">Production Company:</span>
-            <span class="field-value">${license.production_company || "________________________"}</span>
+        <div class="section-content">
+            This license is strictly limited to the following:
         </div>
-        <div class="field-group">
-            <span class="field-label">Production Budget:</span>
-            <span class="field-value">${license.production_budget ? formatCurrency(license.production_budget) : "________________________"}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Expected Audience Size:</span>
-            <span class="field-value">${license.expected_audience_size ? license.expected_audience_size.toLocaleString() : "________________________"}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Content Rating:</span>
-            <span class="field-value">${license.content_rating || "________________________"}</span>
+        <div class="bullet-point">• <strong>Media:</strong> [${license.media_type || "{Media Types: e.g., All Media, Online, Theatrical, etc.}"}]</div>
+        <div class="bullet-point">• <strong>Territory:</strong> [${getTerritory()}]</div>
+        <div class="bullet-point">• <strong>Term:</strong> [${getTerm()}]</div>
+        <div class="section-content">
+            All rights not expressly granted herein are reserved by Licensor. Any additional use, including 
+            promotional use, requires separate written authorization and may be subject to additional fees.
         </div>
     </div>
 
-    <div class="section">
-        <div class="section-title">4. TERRITORY AND TERM</div>
-        <div class="field-group">
-            <span class="field-label">Territory:</span>
-            <span class="field-value">${license.territory_of_licensee || "________________________"}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Term Start:</span>
-            <span class="field-value">${formatDate(license.term_start)}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Term End:</span>
-            <span class="field-value">${formatDate(license.term_end)}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Distribution Channels:</span>
-            <span class="field-value">${license.distribution_channels?.join(", ") || "________________________"}</span>
-        </div>
-    </div>
+    <div class="horizontal-rule"></div>
 
     <div class="section">
-        <div class="section-title">5. USAGE RIGHTS</div>
-        <div class="field-group">
-            <span class="field-label">Exclusive License:</span>
-            <span class="field-value">${license.exclusive_license ? "Yes" : "No"}</span>
+        <div class="section-title">2. LICENSE FEE AND PAYMENT TERMS</div>
+        <div class="section-content">
+            In consideration of the rights granted, Licensee shall pay Licensor a one-time, non-recoupable, 
+            non-refundable fee of:
         </div>
-        <div class="field-group">
-            <span class="field-label">Usage Rights:</span>
-            <span class="field-value">${formatUsageRights()}</span>
+        <div class="indented-section">
+            <strong>Total License Fee:</strong> ${getTotalSyncFee()} USD<br>
+            <strong>Due On or Before:</strong> [${getPaymentDueDate()}]
         </div>
-        <div class="field-group">
-            <span class="field-label">Territory Restrictions:</span>
-            <span class="field-value">${license.territory_restrictions?.join(", ") || "None"}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Embargo Territories:</span>
-            <span class="field-value">${license.embargo_territories?.join(", ") || "None"}</span>
-        </div>
+        <div class="bullet-point">• Payment must be made via wire to the account designated by Licensor.</div>
+        <div class="bullet-point">• Failure to remit payment by the due date shall result in immediate revocation of the 
+            license and shall constitute material breach.</div>
+        <div class="bullet-point">• Licensor reserves the right to withhold delivery of assets until full payment is received.</div>
     </div>
 
+    <div class="horizontal-rule"></div>
+
     <div class="section">
-        <div class="section-title">6. FINANCIAL TERMS</div>
-        <table>
+        <div class="section-title">3. MUSIC USAGE DETAILS</div>
+        <table class="usage-table">
             <tr>
-                <th>Fee Type</th>
-                <th>Amount</th>
-                <th>Currency</th>
+                <td class="label">Use Type</td>
+                <td>[${getUsageType()}]</td>
             </tr>
             <tr>
-                <td>Publishing Fee</td>
-                <td>${formatCurrency(license.pub_fee)}</td>
-                <td>${license.currency}</td>
+                <td class="label">Duration</td>
+                <td>[${getDuration()}]</td>
             </tr>
             <tr>
-                <td>Master Fee</td>
-                <td>${formatCurrency(license.master_fee)}</td>
-                <td>${license.currency}</td>
-            </tr>
-            <tr>
-                <td><strong>Total License Fee</strong></td>
-                <td><strong>${formatCurrency((license.pub_fee || 0) + (license.master_fee || 0))}</strong></td>
-                <td><strong>${license.currency}</strong></td>
+                <td class="label">Scene Context</td>
+                <td>[${getSceneContext()}]</td>
             </tr>
         </table>
-        
-        ${license.backend_royalty_rate ? `
-        <div class="field-group">
-            <span class="field-label">Backend Royalty Rate:</span>
-            <span class="field-value">${license.backend_royalty_rate}%</span>
-        </div>
-        ` : ''}
-        
-        ${license.performance_bonus ? `
-        <div class="field-group">
-            <span class="field-label">Performance Bonus:</span>
-            <span class="field-value">${formatCurrency(license.performance_bonus)}</span>
-        </div>
-        ` : ''}
-    </div>
-
-    <div class="section">
-        <div class="section-title">7. DELIVERY AND TECHNICAL SPECIFICATIONS</div>
-        <div class="field-group">
-            <span class="field-label">Delivery Format:</span>
-            <span class="field-value">${license.delivery_format || "________________________"}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Delivery Deadline:</span>
-            <span class="field-value">${formatDate(license.delivery_deadline)}</span>
-        </div>
-        ${license.technical_specs ? `
-        <div class="field-group">
-            <span class="field-label">Technical Specifications:</span>
-            <div class="terms-text">${JSON.stringify(license.technical_specs)}</div>
-        </div>
-        ` : ''}
-    </div>
-
-    <div class="section">
-        <div class="section-title">8. RIGHTS HOLDERS</div>
-        <div class="field-group">
-            <span class="field-label">Master Owner:</span>
-            <span class="field-value">${license.master_owner || "________________________"}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Master Owner Contact:</span>
-            <span class="field-value">${license.master_owner_contact || "________________________"}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Publishing Administrator:</span>
-            <span class="field-value">${license.publishing_administrator || "________________________"}</span>
-        </div>
-        <div class="field-group">
-            <span class="field-label">Publishing Admin Contact:</span>
-            <span class="field-value">${license.publishing_admin_contact || "________________________"}</span>
+        <div class="section-content">
+            License is strictly limited to the use(s) described above. Any new edit, trailer, derivative, or 
+            additional cut using the Works requires additional clearance and fee.
         </div>
     </div>
 
-    ${license.union_restrictions ? `
-    <div class="section">
-        <div class="section-title">9. UNION RESTRICTIONS</div>
-        <div class="terms-text">${license.union_restrictions}</div>
-    </div>
-    ` : ''}
+    <div class="horizontal-rule"></div>
 
     <div class="section">
-        <div class="section-title">10. GENERAL TERMS</div>
-        <div class="terms-text">
-            This agreement grants the Licensee the non-exclusive right to synchronize the above-mentioned musical composition with the visual elements of the Production, subject to the terms and conditions set forth herein.
+        <div class="section-title">4. RIGHTS REPRESENTATION & CLEARANCES</div>
+        <div class="section-content">
+            Licensor warrants that it controls the synchronization rights to the Works as listed in Exhibit A.
         </div>
-        <div class="terms-text">
-            The Licensee agrees to provide proper credit and acknowledgment as required by the Licensor. Any changes to the original composition must be approved in writing by the Licensor.
-        </div>
-        <div class="terms-text">
-            This license is contingent upon full payment of the license fee and compliance with all terms specified in this agreement.
+        <div class="bullet-point">• <strong>Master rights are not included</strong> unless explicitly noted in Exhibit A.</div>
+        <div class="bullet-point">• Licensee acknowledges that Licensor is not responsible for clearing any third-party 
+            rights, including sound recordings not controlled by Licensor.</div>
+        <div class="section-content">
+            If Licensee uses a work not fully controlled by Licensor or fails to obtain separate master 
+            clearance, <strong>Licensee bears full liability</strong>.
         </div>
     </div>
 
-    ${license.notes ? `
+    <div class="horizontal-rule"></div>
+
     <div class="section">
-        <div class="section-title">11. ADDITIONAL NOTES</div>
-        <div class="terms-text">${license.notes}</div>
+        <div class="section-title">5. CREDITS</div>
+        <div class="section-content">
+            Wherever credits are customarily provided, Licensee agrees to credit the song(s) as follows:
+        </div>
+        <div class="indented-section">
+            "<strong>[${getSongTitle()}]</strong> written by <strong>[${getWriterNames()}]</strong>, published by <strong>[${getPublisherNames()}]</strong>"
+        </div>
+        <div class="section-content">
+            Omission of credit will constitute a breach unless due to space constraints or format limitations.
+        </div>
     </div>
-    ` : ''}
+
+    <div class="horizontal-rule"></div>
+
+    <div class="section">
+        <div class="section-title">6. WARRANTIES, INDEMNIFICATION, AND LIMITATION OF LIABILITY</div>
+        <div class="bullet-point">• Each party represents and warrants it has full authority to enter into this Agreement.</div>
+        <div class="bullet-point">• Licensee shall indemnify, defend, and hold harmless Licensor (and its affiliated rights 
+            holders) from any claims, damages, or liabilities arising out of:</div>
+        <div class="indented-section">
+            ○ Use of the Works beyond the licensed scope<br>
+            ○ Failure to secure necessary clearances<br>
+            ○ Breach of this Agreement
+        </div>
+        <div class="section-content">
+            <strong>Licensor makes no warranties beyond those expressly stated herein.</strong> In no event shall 
+            Licensor's liability exceed the license fee paid.
+        </div>
+    </div>
+
+    <div class="horizontal-rule"></div>
+
+    <div class="section">
+        <div class="section-title">7. AUDIT RIGHTS</div>
+        <div class="section-content">
+            Licensor shall have the right to audit Licensee's use of the Works, royalty statements (if 
+            applicable), and documentation to verify compliance with this Agreement.
+        </div>
+    </div>
+
+    <div class="horizontal-rule"></div>
+
+    <div class="section">
+        <div class="section-title">8. TERMINATION & REVOCATION</div>
+        <div class="section-content">
+            Licensor may terminate this Agreement upon written notice if:
+        </div>
+        <div class="bullet-point">• Licensee fails to pay any amount due within 10 days of the payment deadline</div>
+        <div class="bullet-point">• Licensee uses the Works beyond the agreed scope</div>
+        <div class="bullet-point">• Licensee becomes insolvent or ceases operations</div>
+        <div class="section-content">
+            Upon termination, all rights granted revert to Licensor immediately and Licensee shall cease all 
+            further use of the Works.
+        </div>
+    </div>
+
+    <div class="horizontal-rule"></div>
+
+    <div class="section">
+        <div class="section-title">9. MISCELLANEOUS</div>
+        <div class="bullet-point">• This Agreement shall be governed by the laws of <strong>[{State/Country}]</strong>.</div>
+        <div class="bullet-point">• Any legal action shall be brought in the courts of <strong>[{Jurisdiction}]</strong>.</div>
+        <div class="bullet-point">• This Agreement is the full and complete understanding between the parties and 
+            supersedes any prior communications.</div>
+        <div class="bullet-point">• Any changes must be in writing and signed by both parties.</div>
+    </div>
+
+    <div class="horizontal-rule"></div>
 
     <div class="signature-section">
-        <div class="signature-block">
-            <p><strong>LICENSOR:</strong></p>
-            <div class="signature-line"></div>
-            <p>Signature</p>
-            <div class="signature-line"></div>
-            <p>Print Name</p>
-            <div class="signature-line"></div>
-            <p>Date</p>
+        <div class="section-content">
+            <strong>IN WITNESS WHEREOF</strong>, the parties have executed this Agreement as of the 
+            date first written above.
         </div>
+        
         <div class="signature-block">
-            <p><strong>LICENSEE:</strong></p>
-            <div class="signature-line"></div>
-            <p>Signature</p>
-            <div class="signature-line"></div>
-            <p>Print Name</p>
-            <div class="signature-line"></div>
-            <p>Date</p>
+            <strong>LICENSOR</strong><br><br>
+            <strong>[${getLicensorInfo()}]</strong><br>
+            By: <span class="signature-line"></span><br>
+            Name: <strong>[{Authorized Rep Name}]</strong><br>
+            Title: <strong>[{Title}]</strong><br>
+            Date: <span class="signature-line"></span>
+        </div>
+        
+        <div class="signature-block">
+            <strong>LICENSEE</strong><br><br>
+            <strong>[${getLicenseeInfo()}]</strong><br>
+            By: <span class="signature-line"></span><br>
+            Name: <strong>[{Authorized Rep Name}]</strong><br>
+            Title: <strong>[{Title}]</strong><br>
+            Date: <span class="signature-line"></span>
         </div>
     </div>
 
-    <div class="footer">
-        <p>License Agreement Generated on ${new Date().toLocaleDateString('en-US')}</p>
-        <p>License ID: ${license.synch_id} | Internal Project Code: ${license.internal_project_code || "N/A"}</p>
+    <div class="page-break"></div>
+
+    <div class="section">
+        <div class="section-title">EXHIBIT A – LICENSED WORKS</div>
+        <table class="exhibit-table">
+            <thead>
+                <tr>
+                    <th>Song Title</th>
+                    <th>ISWC</th>
+                    <th>Duration</th>
+                    <th>Writers</th>
+                    <th>Controlled Share</th>
+                    <th>Master Cleared</th>
+                    <th>Allocated Fee</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{Song 1}</td>
+                    <td>{ISWC 1}</td>
+                    <td>{0:45}</td>
+                    <td>{Writer A, Writer B}</td>
+                    <td>x%</td>
+                    <td>Yes / No</td>
+                    <td>$xx,xxx</td>
+                </tr>
+                <tr>
+                    <td>{Song 2}</td>
+                    <td>{ISWC 2}</td>
+                    <td>{1:00}</td>
+                    <td>{Writer C, D, E}</td>
+                    <td>x%</td>
+                    <td>Yes / No</td>
+                    <td>$xx,xxx</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
+
 </body>
 </html>
   `;
