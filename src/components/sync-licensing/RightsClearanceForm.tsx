@@ -12,9 +12,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface RightsClearanceData {
-  rights_cleared?: boolean;
+  rights_cleared?: string;
   clearance_notes?: string;
   master_rights_cleared?: boolean;
   publishing_rights_cleared?: boolean;
@@ -29,9 +30,9 @@ interface RightsClearanceFormProps {
 }
 
 export const RightsClearanceForm = ({ rightsData, onRightsChange }: RightsClearanceFormProps) => {
-  const form = useForm({
+  const form = useForm<RightsClearanceData>({
     defaultValues: {
-      rights_cleared: rightsData?.rights_cleared || false,
+      rights_cleared: rightsData?.rights_cleared || "",
       clearance_notes: rightsData?.clearance_notes || "",
       master_rights_cleared: rightsData?.master_rights_cleared || false,
       publishing_rights_cleared: rightsData?.publishing_rights_cleared || false,
@@ -41,6 +42,13 @@ export const RightsClearanceForm = ({ rightsData, onRightsChange }: RightsCleara
     },
     mode: "onChange"
   });
+
+  const rightsClearanceOptions = [
+    { value: "one-stop", label: "One-Stop" },
+    { value: "pre-cleared", label: "Pre-Cleared" },
+    { value: "full-clearance", label: "Full Clearance" },
+    { value: "all-in-deal", label: "All-in Deal" },
+  ];
 
   const handleFormChange = (data: RightsClearanceData) => {
     onRightsChange(data);
@@ -116,21 +124,29 @@ export const RightsClearanceForm = ({ rightsData, onRightsChange }: RightsCleara
                 control={form.control}
                 name="rights_cleared"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
+                  <FormItem className="rounded-lg border p-4">
+                    <div className="space-y-2">
                       <FormLabel className="text-base font-medium">
-                        Overall Rights Cleared
+                        Overall Rights Clearance Type
                       </FormLabel>
                       <div className="text-sm text-muted-foreground">
-                        Mark as cleared when all necessary rights have been obtained
+                        Select the type of rights clearance for this license
                       </div>
+                      <FormControl>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select clearance type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {rightsClearanceOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
                     </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
                   </FormItem>
                 )}
               />

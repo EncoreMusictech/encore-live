@@ -212,7 +212,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       credit_placement: "end_credits" as 'end_credits' | 'opening_credits' | 'none' | 'on_screen' | 'package_only',
       credit_size: "standard" as 'standard' | 'large' | 'small' | 'equal',
       credit_requirements: {},
-      rights_cleared: false,
+      rights_cleared: "",
       clearance_notes: "",
       master_rights_cleared: false,
       publishing_rights_cleared: false,
