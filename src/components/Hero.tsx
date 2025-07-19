@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Music, TrendingUp, Shield } from "lucide-react";
+import LaptopSlideshow from "./LaptopSlideshow";
 
 const Hero = () => {
   return (
@@ -36,6 +37,11 @@ const Hero = () => {
                 Schedule Demo
               </a>
             </Button>
+          </div>
+
+          {/* Platform Preview */}
+          <div className="mt-16 animate-slide-up">
+            <LaptopSlideshow />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 animate-slide-up">
