@@ -111,6 +111,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
   const [sourceOpen, setSourceOpen] = useState(false);
   const [selectedCopyrights, setSelectedCopyrights] = useState<Copyright[]>([]);
   const [controlledWriters, setControlledWriters] = useState<CopyrightWriter[]>([]);
+  const [songFeeAllocations, setSongFeeAllocations] = useState<{[key: string]: string}>({});
   const mediaTypes = [
     "Film", "Television", "Documentary", "Commercial", "Video Game", 
     "Web Series", "Podcast", "Audio Book", "Streaming"
@@ -122,14 +123,6 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
   const existingAgents = agents || [];
   const existingSources = sources || [];
 
-  // Calculate fee allocation variables
-  const totalPubFee = parseFloat(form.watch('pub_fee') || '0');
-  const totalCustomAllocated = Object.values(songFeeAllocations)
-    .reduce((sum, amount) => sum + parseFloat(amount || '0'), 0);
-  const remainingAmount = Math.max(0, totalPubFee - totalCustomAllocated);
-  const songsWithoutCustomAmount = selectedCopyrights.filter(
-    c => !songFeeAllocations[c.id] || parseFloat(songFeeAllocations[c.id]) === 0
-  ).length;
 
   const loadControlledWriters = useCallback(async () => {
     if (selectedCopyrights.length === 0) {
@@ -326,7 +319,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       if (isEditing && license) {
         await updateMutation.mutateAsync({
           id: license.id,
-          updates: submissionData
+          data: submissionData
         });
       } else {
         await createMutation.mutateAsync(submissionData);
@@ -1021,7 +1014,20 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                   />
                 </div>
 
-                {feeAllocations.length > 0 && totalPubFee > 0 && (
+                {/* Fee allocation section temporarily disabled */}
+                {selectedCopyrights.length > 0 && (
+                  <div className="mt-6 p-4 border rounded-lg bg-muted/50">
+                    <h4 className="text-sm font-medium mb-2">Selected Works for Sync License</h4>
+                    <div className="space-y-2">
+                      {selectedCopyrights.map((copyright) => (
+                        <div key={copyright.id} className="flex justify-between items-center text-sm">
+                          <span>{copyright.work_title}</span>
+                          <span className="text-muted-foreground">{copyright.work_id}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                   <Card className="mt-6">
                     <CardHeader>
                       <CardTitle className="text-lg">Publishing Fee Allocation & Proration</CardTitle>
