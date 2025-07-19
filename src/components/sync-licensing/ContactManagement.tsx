@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Plus, Trash2, User, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,22 +48,41 @@ export const ContactManagement = ({
     mode: "onChange"
   });
 
-  const handleLicensorSubmit = (data: ContactData) => {
-    onLicensorChange(data);
-  };
+  // Update form values when props change
+  useEffect(() => {
+    if (licensorData) {
+      licensorForm.reset(licensorData);
+    }
+  }, [licensorData, licensorForm]);
 
-  const handleLicenseeSubmit = (data: ContactData) => {
-    onLicenseeChange(data);
-  };
+  useEffect(() => {
+    if (licenseeData) {
+      licenseeForm.reset(licenseeData);
+    }
+  }, [licenseeData, licenseeForm]);
+
+  // Auto-update parent form when licensor data changes
+  useEffect(() => {
+    const subscription = licensorForm.watch((data) => {
+      onLicensorChange(data as ContactData);
+    });
+    return () => subscription.unsubscribe();
+  }, [licensorForm, onLicensorChange]);
+
+  // Auto-update parent form when licensee data changes
+  useEffect(() => {
+    const subscription = licenseeForm.watch((data) => {
+      onLicenseeChange(data as ContactData);
+    });
+    return () => subscription.unsubscribe();
+  }, [licenseeForm, onLicenseeChange]);
 
   const ContactForm = ({ 
     form, 
-    onSubmit, 
     title, 
     icon: Icon 
   }: { 
     form: any; 
-    onSubmit: (data: ContactData) => void; 
     title: string;
     icon: React.ComponentType<any>;
   }) => (
@@ -76,7 +95,7 @@ export const ContactManagement = ({
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -167,7 +186,7 @@ export const ContactManagement = ({
                 </FormItem>
               )}
             />
-          </form>
+          </div>
         </Form>
       </CardContent>
     </Card>
@@ -195,7 +214,6 @@ export const ContactManagement = ({
         <TabsContent value="licensor" className="space-y-4">
           <ContactForm
             form={licensorForm}
-            onSubmit={handleLicensorSubmit}
             title="Licensor"
             icon={Building2}
           />
@@ -204,7 +222,6 @@ export const ContactManagement = ({
         <TabsContent value="licensee" className="space-y-4">
           <ContactForm
             form={licenseeForm}
-            onSubmit={handleLicenseeSubmit}
             title="Licensee"
             icon={User}
           />
