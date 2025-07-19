@@ -17,6 +17,7 @@ interface SyncLicense {
   territory_of_licensee?: string;
   term_start?: string;
   term_end?: string;
+  term_duration?: string;
   music_type?: string;
   music_use?: string;
   pub_fee?: number;
@@ -58,6 +59,15 @@ interface SyncLicense {
   legal_reviewer?: string;
   legal_review_date?: string;
   approval_expiry_date?: string;
+  
+  // Contact information
+  licensor_name?: string;
+  licensee_name?: string;
+  
+  // Contract execution
+  signatory_name?: string;
+  signatory_title?: string;
+  
   created_at: string;
   updated_at: string;
 }
@@ -82,7 +92,7 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
   };
 
   const getLicensorInfo = () => {
-    return license.publishing_administrator || "[Licensor Name]";
+    return license.licensor_name || license.publishing_administrator || "[Licensor Name]";
   };
 
   const getLicensorAddress = () => {
@@ -90,7 +100,7 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
   };
 
   const getLicenseeInfo = () => {
-    return license.production_company || "[Licensee Name]";
+    return license.licensee_name || license.production_company || "[Licensee Name]";
   };
 
   const getLicenseeAddress = () => {
@@ -117,7 +127,7 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
   };
 
   const getSceneContext = () => {
-    return license.context_description || "[Brief Description of Placement / Usage]";
+    return license.context_description || "[Scene Description]";
   };
 
   const getTotalSyncFee = () => {
@@ -144,13 +154,7 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
   };
 
   const getTerm = () => {
-    if (license.term_start && license.term_end) {
-      const start = new Date(license.term_start);
-      const end = new Date(license.term_end);
-      const years = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365));
-      return `${years} Years`;
-    }
-    return "[Term: e.g., In Perpetuity, 5 Years, etc.]";
+    return license.term_duration || "[Term: e.g., In Perpetuity, 5 Years, etc.]";
   };
 
   const getSongTitle = () => {
@@ -466,8 +470,8 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
             <strong>LICENSOR</strong><br><br>
             <strong>[${getLicensorInfo()}]</strong><br>
             By: <span class="signature-line"></span><br>
-            Name: <strong>[{Authorized Rep Name}]</strong><br>
-            Title: <strong>[{Title}]</strong><br>
+            Name: <strong>${license.signatory_name || "[Authorized Rep Name]"}</strong><br>
+            Title: <strong>${license.signatory_title || "[Title]"}</strong><br>
             Date: <span class="signature-line"></span>
         </div>
         
@@ -475,8 +479,8 @@ function generateLicenseAgreementHTML(license: SyncLicense): string {
             <strong>LICENSEE</strong><br><br>
             <strong>[${getLicenseeInfo()}]</strong><br>
             By: <span class="signature-line"></span><br>
-            Name: <strong>[{Authorized Rep Name}]</strong><br>
-            Title: <strong>[{Title}]</strong><br>
+            Name: <strong>${license.licensee_name || "[Authorized Rep Name]"}</strong><br>
+            Title: <strong></strong><br>
             Date: <span class="signature-line"></span>
         </div>
     </div>
