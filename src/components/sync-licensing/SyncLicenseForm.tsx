@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -159,6 +160,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       notes: "",
       payment_status: "Pending",
       invoice_status: "Not Issued",
+      mfn: false,
     },
   });
 
@@ -269,6 +271,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         notes: license.notes || "",
         payment_status: license.payment_status || "Pending",
         invoice_status: license.invoice_status || "Not Issued",
+        mfn: license.mfn || false,
       });
     } else {
       form.reset({
@@ -290,6 +293,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         notes: "",
         payment_status: "Pending",
         invoice_status: "Not Issued",
+        mfn: false,
       });
     }
   }, [license, form]);
@@ -732,6 +736,29 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                           <Input placeholder="00:00:30:00" {...field} />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="mfn"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            Most Favored Nation (MFN)
+                          </FormLabel>
+                          <div className="text-sm text-muted-foreground">
+                            Apply most favored nation clause to this license
+                          </div>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
                       </FormItem>
                     )}
                   />
