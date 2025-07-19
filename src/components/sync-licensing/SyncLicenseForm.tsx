@@ -155,6 +155,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       smpte: "",
       pub_fee: "",
       master_fee: "",
+      invoiced_amount: "",
       currency: "USD",
       synch_status: "Inquiry",
       notes: "",
@@ -266,6 +267,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         smpte: license.smpte || "",
         pub_fee: license.pub_fee?.toString() || "",
         master_fee: license.master_fee?.toString() || "",
+        invoiced_amount: license.invoiced_amount?.toString() || "",
         currency: license.currency || "USD",
         synch_status: license.synch_status || "Inquiry",
         notes: license.notes || "",
@@ -288,6 +290,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         smpte: "",
         pub_fee: "",
         master_fee: "",
+        invoiced_amount: "",
         currency: "USD",
         synch_status: "Inquiry",
         notes: "",
@@ -298,6 +301,23 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
     }
   }, [license, form]);
 
+  // Watch for invoice status changes and auto-update invoiced amount
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'invoice_status' && value.invoice_status === 'Issued') {
+        const pubFee = parseFloat(value.pub_fee || '0');
+        const masterFee = parseFloat(value.master_fee || '0');
+        const totalFee = pubFee + masterFee;
+        
+        if (totalFee > 0) {
+          form.setValue('invoiced_amount', totalFee.toString());
+        }
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const onSubmit = (data: any) => {
     const submitData = {
       ...data,
@@ -306,6 +326,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       media_type: data.media_type && mediaTypes.includes(data.media_type) ? data.media_type : null,
       pub_fee: data.pub_fee ? parseFloat(data.pub_fee) : undefined,
       master_fee: data.master_fee ? parseFloat(data.master_fee) : undefined,
+      invoiced_amount: data.invoiced_amount ? parseFloat(data.invoiced_amount) : undefined,
       request_received: data.request_received ? format(data.request_received, "yyyy-MM-dd") : undefined,
       term_start: data.term_start ? format(data.term_start, "yyyy-MM-dd") : undefined,
       term_end: data.term_end ? format(data.term_end, "yyyy-MM-dd") : undefined,
@@ -823,6 +844,20 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                             ))}
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="invoiced_amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Invoiced Amount</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
