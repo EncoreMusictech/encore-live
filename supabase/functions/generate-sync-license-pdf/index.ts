@@ -178,14 +178,22 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
     // Extract state/country from licensor address
     const address = license.licensor_address;
     if (address) {
-      // Parse address like "123 ENCORE Lane, CA 91601"
-      const parts = address.split(',').map(part => part.trim());
+      console.log('Raw address:', JSON.stringify(address));
+      
+      // Clean up the address and split by comma
+      const cleanAddress = address.replace(/\n/g, '').trim();
+      const parts = cleanAddress.split(',').map(part => part.trim());
+      
+      console.log('Address parts:', parts);
       
       if (parts.length >= 2) {
-        const lastPart = parts[parts.length - 1]; // "CA 91601"
+        const lastPart = parts[parts.length - 1]; // Should be "CA 91601"
+        console.log('Last part:', JSON.stringify(lastPart));
         
         // Extract state from "CA 91601" format
-        const stateMatch = lastPart.match(/^([A-Z]{2})\s+\d+/);
+        const stateMatch = lastPart.match(/([A-Z]{2})\s*\d+/);
+        console.log('State match:', stateMatch);
+        
         if (stateMatch) {
           const state = stateMatch[1]; // "CA"
           return `${state}, USA`;
@@ -202,14 +210,16 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
     // Extract just the state from licensor address
     const address = license.licensor_address;
     if (address) {
-      // Parse address like "123 ENCORE Lane, CA 91601"
-      const parts = address.split(',').map(part => part.trim());
+      // Clean up the address and split by comma
+      const cleanAddress = address.replace(/\n/g, '').trim();
+      const parts = cleanAddress.split(',').map(part => part.trim());
       
       if (parts.length >= 2) {
-        const lastPart = parts[parts.length - 1]; // "CA 91601"
+        const lastPart = parts[parts.length - 1]; // Should be "CA 91601"
         
         // Extract state from "CA 91601" format
-        const stateMatch = lastPart.match(/^([A-Z]{2})\s+\d+/);
+        const stateMatch = lastPart.match(/([A-Z]{2})\s*\d+/);
+        
         if (stateMatch) {
           return stateMatch[1]; // Return just "CA"
         }
