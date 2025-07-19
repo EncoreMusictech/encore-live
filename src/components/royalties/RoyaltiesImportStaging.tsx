@@ -28,10 +28,10 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
       'MEDIA TYPE',
       'WORK IDENTIFIER',
       'WORK TITLE',
-      'WORK WRITERS',
-      'SHARE',
-      'COUNTRY',
+      'WRITERS',
+      'SHARES (%)',
       'QUANTITY',
+      'TERRITORY',
       'GROSS'
     ];
     
