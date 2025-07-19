@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -120,7 +121,7 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
               <TableHead>Period</TableHead>
               <TableHead>Date Received</TableHead>
               <TableHead>Gross Amount</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Progress</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -143,9 +144,24 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                 </TableCell>
                 <TableCell>${batch.total_gross_amount.toLocaleString()}</TableCell>
                 <TableCell>
-                  <Badge className={getStatusColor(batch.status)}>
-                    {batch.status}
-                  </Badge>
+                  <div className="space-y-1 min-w-[120px]">
+                    {(() => {
+                      const allocatedAmount = batch.allocated_amount || 0;
+                      const totalAmount = batch.total_gross_amount || 1; // Avoid division by zero
+                      const progressPercentage = totalAmount > 0 ? (allocatedAmount / totalAmount) * 100 : 0;
+                      const clampedProgress = Math.min(Math.max(progressPercentage, 0), 100);
+                      
+                      return (
+                        <>
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>${allocatedAmount.toLocaleString()}</span>
+                            <span>{clampedProgress.toFixed(1)}%</span>
+                          </div>
+                          <Progress value={clampedProgress} className="h-2" />
+                        </>
+                      );
+                    })()}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

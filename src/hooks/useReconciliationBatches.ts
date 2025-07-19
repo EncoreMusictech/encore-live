@@ -13,6 +13,7 @@ export interface ReconciliationBatch {
   statement_period_end?: string;
   date_received: string;
   total_gross_amount: number;
+  allocated_amount?: number; // Sum of allocated royalties
   linked_statement_id?: string;
   statement_file_url?: string;
   status: 'Pending' | 'Imported' | 'Processed';
@@ -30,13 +31,35 @@ export function useReconciliationBatches() {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      // First get the batches
+      const { data: batchData, error: batchError } = await supabase
         .from('reconciliation_batches')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setBatches(data || []);
+      if (batchError) throw batchError;
+
+      // Then get the allocated amounts for each batch
+      const batchesWithAllocations = await Promise.all(
+        (batchData || []).map(async (batch) => {
+          const { data: allocations, error: allocError } = await supabase
+            .from('royalty_allocations')
+            .select('gross_royalty_amount')
+            .eq('batch_id', batch.id);
+
+          if (allocError) {
+            console.warn(`Error fetching allocations for batch ${batch.id}:`, allocError);
+            return { ...batch, allocated_amount: 0 };
+          }
+
+          const allocated_amount = allocations?.reduce((sum, allocation) => 
+            sum + (allocation.gross_royalty_amount || 0), 0) || 0;
+
+          return { ...batch, allocated_amount };
+        })
+      );
+
+      setBatches(batchesWithAllocations);
     } catch (error: any) {
       console.error('Error fetching batches:', error);
       toast({
