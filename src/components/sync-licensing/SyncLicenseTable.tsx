@@ -61,6 +61,15 @@ export const SyncLicenseTable = ({ licenses, isLoading }: SyncLicenseTableProps)
     return format(new Date(dateString), "MMM dd, yyyy");
   };
 
+  const calculateTotalControlledAmount = (license: any) => {
+    if (!license.fee_allocations || !Array.isArray(license.fee_allocations)) {
+      return 0;
+    }
+    return license.fee_allocations.reduce((total: number, allocation: any) => {
+      return total + (allocation.controlledAmount || 0);
+    }, 0);
+  };
+
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this sync license?")) {
       deleteMutation.mutate(id);
@@ -120,9 +129,7 @@ export const SyncLicenseTable = ({ licenses, isLoading }: SyncLicenseTableProps)
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {formatCurrency(
-                    (license.pub_fee || 0) + (license.master_fee || 0)
-                  )}
+                  {formatCurrency(calculateTotalControlledAmount(license))}
                 </TableCell>
                 <TableCell>
                   <Badge 

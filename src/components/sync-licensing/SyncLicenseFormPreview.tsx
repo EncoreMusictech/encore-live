@@ -27,6 +27,15 @@ export const SyncLicenseFormPreview = ({ license }: SyncLicenseFormPreviewProps)
     return format(new Date(dateString), "MMM dd, yyyy");
   };
 
+  const calculateTotalControlledAmount = (license: any) => {
+    if (!license.fee_allocations || !Array.isArray(license.fee_allocations)) {
+      return 0;
+    }
+    return license.fee_allocations.reduce((total: number, allocation: any) => {
+      return total + (allocation.controlledAmount || 0);
+    }, 0);
+  };
+
   const handleGeneratePDF = async () => {
     setIsGenerating(true);
     try {
@@ -164,7 +173,7 @@ export const SyncLicenseFormPreview = ({ license }: SyncLicenseFormPreviewProps)
             <div>
               <span className="font-medium">Total Fee:</span>
               <div className="font-semibold text-lg">
-                {formatCurrency((license.pub_fee || 0) + (license.master_fee || 0))}
+                {formatCurrency(calculateTotalControlledAmount(license))}
               </div>
             </div>
             <div>
