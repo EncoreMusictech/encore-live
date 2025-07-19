@@ -139,24 +139,58 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
     if (mappedData.length === 0) return [];
     const availableFields = Object.keys(mappedData[0]).filter(key => !key.startsWith('_'));
     
-    // Start with Statement ID, then Statement Source, then ENCORE fields in order, then any remaining fields
-    const orderedHeaders = ['Statement ID', 'Statement Source'];
+    // Define the new column order with renamed headers
+    const orderedMapping = [
+      { original: 'Statement ID', display: 'STATEMENT ID' },
+      { original: 'Statement Source', display: 'SOURCE' },
+      { original: 'QUARTER', display: 'QUARTER' },
+      { original: 'WORK IDENTIFIER', display: 'WORK IDENTIFIER' },
+      { original: 'WORK TITLE', display: 'WORK TITLE' },
+      { original: 'WORK WRITERS', display: 'WRITERS' },
+      { original: 'SHARE', display: 'SHARES (%)' },
+      { original: 'QUANTITY', display: 'QUANTITY' },
+      { original: 'REVENUE SOURCE', display: 'MEDIA TYPE' },
+      { original: 'COUNTRY', display: 'TERRITORY' },
+      { original: 'GROSS', display: 'GROSS' }
+    ];
     
-    // Add ENCORE standard fields that exist in the data
-    ENCORE_STANDARD_FIELDS.forEach(field => {
-      if (availableFields.includes(field)) {
-        orderedHeaders.push(field);
+    // Build ordered headers array using display names for fields that exist
+    const orderedHeaders: string[] = [];
+    orderedMapping.forEach(({ original, display }) => {
+      if (availableFields.includes(original)) {
+        orderedHeaders.push(display);
       }
     });
     
-    // Add any remaining fields not in the standard order
+    // Add any remaining fields not in the mapping
     availableFields.forEach(field => {
-      if (!orderedHeaders.includes(field)) {
+      const isMapped = orderedMapping.some(({ original }) => original === field);
+      if (!isMapped) {
         orderedHeaders.push(field);
       }
     });
     
     return orderedHeaders;
+  };
+
+  // Helper function to get original field name from display header
+  const getOriginalFieldName = (displayHeader: string) => {
+    const mapping = [
+      { original: 'Statement ID', display: 'STATEMENT ID' },
+      { original: 'Statement Source', display: 'SOURCE' },
+      { original: 'QUARTER', display: 'QUARTER' },
+      { original: 'WORK IDENTIFIER', display: 'WORK IDENTIFIER' },
+      { original: 'WORK TITLE', display: 'WORK TITLE' },
+      { original: 'WORK WRITERS', display: 'WRITERS' },
+      { original: 'SHARE', display: 'SHARES (%)' },
+      { original: 'QUANTITY', display: 'QUANTITY' },
+      { original: 'REVENUE SOURCE', display: 'MEDIA TYPE' },
+      { original: 'COUNTRY', display: 'TERRITORY' },
+      { original: 'GROSS', display: 'GROSS' }
+    ];
+    
+    const found = mapping.find(({ display }) => display === displayHeader);
+    return found ? found.original : displayHeader;
   };
   
   // Common required fields for royalty statements
@@ -401,18 +435,21 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
                     <TableBody>
                       {mappedData.slice(0, 100).map((row: any, index) => (
                         <TableRow key={index}>
-                          {getOrderedHeaders().map((header, cellIndex) => (
-                            <TableCell key={cellIndex} className={header === 'WORK TITLE' ? 'font-medium' : ''}>
-                              {header === 'Statement ID' ? (
-                                <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
-                                  {localRecord.statement_id || 'N/A'}
-                                </code>
-                              ) : header === 'GROSS' || header === 'NET' 
-                                ? (typeof row[header] === 'number' ? `$${row[header].toFixed(2)}` : String(row[header] || '-'))
-                                : String(row[header] || '-')
-                              }
-                            </TableCell>
-                          ))}
+                          {getOrderedHeaders().map((header, cellIndex) => {
+                            const originalFieldName = getOriginalFieldName(header);
+                            return (
+                              <TableCell key={cellIndex} className={header === 'WORK TITLE' ? 'font-medium' : ''}>
+                                {header === 'STATEMENT ID' ? (
+                                  <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                                    {localRecord.statement_id || 'N/A'}
+                                  </code>
+                                ) : header === 'GROSS' || header === 'NET' 
+                                  ? (typeof row[originalFieldName] === 'number' ? `$${row[originalFieldName].toFixed(2)}` : String(row[originalFieldName] || '-'))
+                                  : String(row[originalFieldName] || '-')
+                                }
+                              </TableCell>
+                            );
+                          })}
                         </TableRow>
                       ))}
                     </TableBody>
