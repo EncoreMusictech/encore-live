@@ -220,6 +220,43 @@ export function useReconciliationBatches() {
     }
   };
 
+  const unlinkStatement = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('reconciliation_batches')
+        .update({ linked_statement_id: null })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update the local state
+      setBatches(prevBatches => 
+        prevBatches.map(batch => 
+          batch.id === id 
+            ? { ...batch, linked_statement_id: null }
+            : batch
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: "Statement unlinked from batch successfully",
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error unlinking statement:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unlink statement from batch",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   useEffect(() => {
     fetchBatches();
   }, [user]);
@@ -231,6 +268,7 @@ export function useReconciliationBatches() {
     updateBatch,
     deleteBatch,
     linkBatchToAllocations,
+    unlinkStatement,
     refreshBatches: fetchBatches,
   };
 }
