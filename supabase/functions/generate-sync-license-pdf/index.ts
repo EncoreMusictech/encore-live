@@ -76,6 +76,9 @@ interface SyncLicense {
   signatory_name?: string;
   signatory_title?: string;
   
+  // Fee allocations
+  fee_allocations?: any[];
+  
   created_at: string;
   updated_at: string;
 }
@@ -231,6 +234,10 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
       const controlledWriters = copyright.copyright_writers?.filter((w: any) => w.controlled_status === 'C') || [];
       const controlledShare = controlledWriters.reduce((sum: number, w: any) => sum + (w.ownership_percentage || 0), 0);
       
+      // Find the fee allocation for this copyright
+      const feeAllocation = license.fee_allocations?.find((allocation: any) => allocation.copyrightId === copyright.id);
+      const allocatedFee = feeAllocation ? formatCurrency(feeAllocation.allocatedAmount) : '[Allocated Fee]';
+      
       return `
         <tr>
           <td>${copyright.work_title}</td>
@@ -239,7 +246,7 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
           <td>${writers}</td>
           <td>${controlledShare > 0 ? `${controlledShare}%` : '[Controlled Share]'}</td>
           <td>[Master Cleared]</td>
-          <td>[Allocated Fee]</td>
+          <td>${allocatedFee}</td>
         </tr>
       `;
     }).join('');
