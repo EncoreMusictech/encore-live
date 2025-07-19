@@ -39,8 +39,6 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
       source: batch?.source || '',
-      statement_period_start: batch?.statement_period_start || '',
-      statement_period_end: batch?.statement_period_end || '',
       date_received: batch?.date_received || new Date().toISOString().split('T')[0],
       total_gross_amount: batch?.total_gross_amount || 0,
       linked_statement_id: batch?.linked_statement_id || '',
@@ -116,9 +114,6 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       // Clean up the data before submitting
       const cleanedData = {
         ...data,
-        // Convert empty strings to null for optional date fields
-        statement_period_start: data.statement_period_start || null,
-        statement_period_end: data.statement_period_end || null,
         // Convert empty string to null for linked_statement_id
         linked_statement_id: data.linked_statement_id || null,
         // Ensure numeric values are properly handled
@@ -245,24 +240,6 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
           {errors.date_received && (
             <p className="text-sm text-red-600">{String(errors.date_received.message)}</p>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="statement_period_start">Statement Period Start</Label>
-          <Input
-            id="statement_period_start"
-            type="date"
-            {...register('statement_period_start')}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="statement_period_end">Statement Period End</Label>
-          <Input
-            id="statement_period_end"
-            type="date"
-            {...register('statement_period_end')}
-          />
         </div>
 
         <div className="space-y-2">
