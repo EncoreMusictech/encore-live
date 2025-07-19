@@ -63,27 +63,26 @@ interface SyncLicenseFormProps {
   license?: SyncLicense | null;
 }
 
-const mediaTypes = ["Film", "TV", "Ad", "Social", "Game", "Other"];
+const mediaTypes = [
+  "Film",
+  "Television",
+  "Documentary",
+  "Commercial",
+  "Video Game",
+  "Web Series",
+  "Podcast",
+  "Audio Book",
+  "Streaming"
+];
+
 const statusOptions = ["Inquiry", "Negotiating", "Approved", "Declined", "Licensed"];
 const currencies = ["USD", "EUR", "GBP", "CAD", "AUD"];
 const paymentStatuses = ["Pending", "Partial", "Paid in Full"];
 const invoiceStatuses = ["Not Issued", "Issued", "Paid"];
 
-// Music industry specific options
-const musicTypes = [
-  "Featured", "Background", "Theme", "Bumper", "Jingle", "Score", 
-  "Source Music", "Underscore", "Main Title", "End Credits"
-];
-
-const musicUses = [
-  "Trailer", "Scene", "Credits", "Opening", "Montage", "Commercial", 
-  "Promo", "Background", "Main Theme", "End Credits", "Transition"
-];
-
 const territories = [
-  "Worldwide", "North America", "United States", "Canada", "Europe", 
-  "United Kingdom", "Germany", "France", "Australia", "Japan", 
-  "Latin America", "Asia Pacific", "Specific Territory"
+  "Worldwide", "US Only", "North America", "Europe", "UK & Ireland", 
+  "Asia Pacific", "Latin America", "Custom Territory"
 ];
 
 interface SongFeeAllocation {
@@ -94,46 +93,38 @@ interface SongFeeAllocation {
   controlledShare: number;
   controlledAmount: number;
   controlledWriters: Array<{
-    id: string;
     name: string;
-    ownershipPercentage: number;
-    allocatedAmount: number;
+    share: number;
+    amount: number;
   }>;
 }
 
 export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseFormProps) => {
+  const { user } = useAuth();
+  const createMutation = useCreateSyncLicense();
+  const updateMutation = useUpdateSyncLicense();
+  const { agents } = useSyncAgents();
+  const { sources } = useSyncSources();
+  const { copyrights } = useCopyright();
+
   const [agentOpen, setAgentOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
   const [selectedCopyrights, setSelectedCopyrights] = useState<Copyright[]>([]);
   const [controlledWriters, setControlledWriters] = useState<CopyrightWriter[]>([]);
-  const [songFeeAllocations, setSongFeeAllocations] = useState<{ [key: string]: number }>({});
-  
-  // New state for enhanced forms
-  const [contactData, setContactData] = useState<any>({});
-  const [paymentData, setPaymentData] = useState<any>({});
-  const [sceneData, setSceneData] = useState<any>({});
-  const [rightsData, setRightsData] = useState<any>({});
-  const [contractData, setContractData] = useState<any>({});
-  const { user } = useAuth();
-  const { getWritersForCopyright } = useCopyright();
-  const createMutation = useCreateSyncLicense();
-  const updateMutation = useUpdateSyncLicense();
-  const { data: existingAgents = [] } = useSyncAgents();
-  const { data: existingSources = [] } = useSyncSources();
-  
-  // Memoize controlled writers to prevent infinite loops
-  const memoizedSelectedCopyrights = useMemo(() => selectedCopyrights, [selectedCopyrights]);
+  const [songFeeAllocations, setSongFeeAllocations] = useState<{[key: string]: string}>({});
 
-  // Load controlled writers when selected copyrights change
+  const existingAgents = agents?.data || [];
+  const existingSources = sources?.data || [];
+
   const loadControlledWriters = useCallback(async () => {
-    if (memoizedSelectedCopyrights.length === 0) {
+    if (selectedCopyrights.length === 0) {
       setControlledWriters([]);
       return;
     }
 
     const allControlledWriters: CopyrightWriter[] = [];
     
-    for (const copyright of memoizedSelectedCopyrights) {
+    for (const copyright of selectedCopyrights) {
       try {
         const writers = await getWritersForCopyright(copyright.id);
         const controlled = writers.filter(writer => writer.controlled_status === 'C');
@@ -144,7 +135,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
     }
     
     setControlledWriters(allControlledWriters);
-  }, [memoizedSelectedCopyrights]);
+  }, [selectedCopyrights]);
 
   useEffect(() => {
     loadControlledWriters();
@@ -157,6 +148,10 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       project_title: "",
       synch_agent: "",
       media_type: "",
+      platforms: "",
+      territory: "",
+      term_duration: "",
+      episode_season: "",
       request_received: undefined as Date | undefined,
       source: "",
       territory_of_licensee: "",
@@ -223,98 +218,61 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
     mode: "onChange",
   });
 
-  // Calculate fee allocations with proration logic
   const calculateFeeAllocations = useCallback(async (): Promise<SongFeeAllocation[]> => {
     if (selectedCopyrights.length === 0) return [];
 
     const pubFee = parseFloat(form.watch('pub_fee') || '0');
-    if (pubFee === 0) return [];
-
     const allocations: SongFeeAllocation[] = [];
 
     for (const copyright of selectedCopyrights) {
-      try {
-        const writers = await getWritersForCopyright(copyright.id);
-        const controlledWritersForSong = writers.filter(writer => writer.controlled_status === 'C');
-        
-        // 1. Calculate allocated amount per song (equal division unless custom amount)
-        const customAmount = songFeeAllocations[copyright.id];
-        const allocatedAmount = customAmount !== undefined 
-          ? customAmount 
-          : pubFee / selectedCopyrights.length;
+      const writersInCopyright = controlledWriters.filter(w => w.copyright_id === copyright.id);
+      const controlledShare = writersInCopyright
+        .filter(w => w.controlled_status === 'C')
+        .reduce((sum, w) => sum + w.ownership_percentage, 0);
 
-        // 2. Calculate controlled share (sum of controlled writers' percentages)
-        const controlledShare = controlledWritersForSong.reduce(
-          (sum, writer) => sum + (writer.ownership_percentage || 0), 
-          0
-        ) / 100; // Convert to decimal
+      const customAmount = parseFloat(songFeeAllocations[copyright.id] || '0');
+      const allocatedAmount = customAmount > 0 ? customAmount : (pubFee * controlledShare) / 100;
+      const controlledAmount = allocatedAmount;
 
-        // 3. Calculate controlled amount (allocated amount * controlled share)
-        const controlledAmount = allocatedAmount * controlledShare;
-
-        // 4. Calculate individual writer allocations
-        const totalControlledPercentage = controlledWritersForSong.reduce(
-          (sum, writer) => sum + (writer.ownership_percentage || 0), 
-          0
-        );
-
-        const controlledWriterAllocations = controlledWritersForSong.map(writer => ({
-          id: writer.id,
+      const controlledWritersWithAmounts = writersInCopyright
+        .filter(w => w.controlled_status === 'C')
+        .map(writer => ({
           name: writer.writer_name,
-          ownershipPercentage: writer.ownership_percentage || 0,
-          allocatedAmount: totalControlledPercentage > 0 
-            ? (controlledAmount * (writer.ownership_percentage || 0)) / totalControlledPercentage
-            : 0
+          share: writer.ownership_percentage,
+          amount: (allocatedAmount * writer.ownership_percentage) / controlledShare || 0
         }));
 
-        allocations.push({
-          copyrightId: copyright.id,
-          workTitle: copyright.work_title,
-          customAmount,
-          allocatedAmount,
-          controlledShare,
-          controlledAmount,
-          controlledWriters: controlledWriterAllocations
-        });
-
-      } catch (error) {
-        console.error(`Error calculating allocation for copyright ${copyright.id}:`, error);
-      }
+      allocations.push({
+        copyrightId: copyright.id,
+        workTitle: copyright.work_title,
+        customAmount: customAmount > 0 ? customAmount : undefined,
+        allocatedAmount,
+        controlledShare,
+        controlledAmount,
+        controlledWriters: controlledWritersWithAmounts
+      });
     }
 
     return allocations;
-  }, [selectedCopyrights, form, songFeeAllocations]);
-
-  // Memoize fee allocations to prevent excessive recalculation
-  const [feeAllocations, setFeeAllocations] = useState<SongFeeAllocation[]>([]);
-
-  useEffect(() => {
-    calculateFeeAllocations().then(setFeeAllocations);
-  }, [calculateFeeAllocations]);
+  }, [selectedCopyrights, controlledWriters, form.watch('pub_fee'), songFeeAllocations]);
 
   const handleCustomAmountChange = (copyrightId: string, amount: string) => {
-    const numericAmount = amount === '' ? undefined : parseFloat(amount);
     setSongFeeAllocations(prev => ({
       ...prev,
-      [copyrightId]: numericAmount
+      [copyrightId]: amount
     }));
   };
 
-  // Calculate totals for validation
-  const totalCustomAllocated = Object.values(songFeeAllocations)
-    .filter(amount => amount !== undefined)
-    .reduce((sum, amount) => sum + (amount || 0), 0);
-
-  const totalPubFee = parseFloat(form.watch('pub_fee') || '0');
-  const remainingAmount = totalPubFee - totalCustomAllocated;
-  const songsWithoutCustomAmount = selectedCopyrights.length - Object.keys(songFeeAllocations).filter(key => songFeeAllocations[key] !== undefined).length;
-
   useEffect(() => {
-    if (license) {
+    if (license && open) {
       form.reset({
         project_title: license.project_title || "",
         synch_agent: license.synch_agent || "",
         media_type: license.media_type || "",
+        platforms: license.platforms || "",
+        territory: license.territory || "",
+        term_duration: license.term_duration || "",
+        episode_season: license.episode_season || "",
         request_received: license.request_received ? new Date(license.request_received) : undefined,
         source: license.source || "",
         territory_of_licensee: license.territory_of_licensee || "",
@@ -332,66 +290,37 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         invoice_status: license.invoice_status || "Not Issued",
         mfn: license.mfn || false,
       });
-    } else {
-      form.reset({
-        project_title: "",
-        synch_agent: "",
-        media_type: "",
-        request_received: undefined,
-        source: "",
-        territory_of_licensee: "",
-        term_start: undefined,
-        term_end: undefined,
-        music_type: "",
-        music_use: "",
-        smpte: "",
-        pub_fee: "",
-        master_fee: "",
-        currency: "USD",
-        synch_status: "Inquiry",
-        notes: "",
-        payment_status: "Pending",
-        invoice_status: "Not Issued",
-        mfn: false,
-      });
     }
-  }, [license, form]);
+  }, [license, open, form]);
 
-  const onSubmit = (data: any) => {
-    const submitData = {
-      ...data,
-      user_id: user?.id,
-      // Only include media_type if it has a valid value
-      media_type: data.media_type && mediaTypes.includes(data.media_type) ? data.media_type : null,
-      pub_fee: data.pub_fee ? parseFloat(data.pub_fee) : undefined,
-      master_fee: data.master_fee ? parseFloat(data.master_fee) : undefined,
-      request_received: data.request_received ? format(data.request_received, "yyyy-MM-dd") : undefined,
-      term_start: data.term_start ? format(data.term_start, "yyyy-MM-dd") : undefined,
-      term_end: data.term_end ? format(data.term_end, "yyyy-MM-dd") : undefined,
-    };
+  const onSubmit = async (data: any) => {
+    if (!user) return;
 
-    // Remove undefined/null values to prevent database issues
-    Object.keys(submitData).forEach(key => {
-      if (submitData[key] === undefined || submitData[key] === null || submitData[key] === '') {
-        delete submitData[key];
+    try {
+      const feeAllocations = await calculateFeeAllocations();
+      
+      const submissionData = {
+        ...data,
+        user_id: user.id,
+        controlled_writers: controlledWriters,
+        fee_allocations: feeAllocations,
+        // Remove undefined values
+        ...Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined))
+      };
+
+      if (isEditing && license) {
+        await updateMutation.mutateAsync({
+          id: license.id,
+          updates: submissionData
+        });
+      } else {
+        await createMutation.mutateAsync(submissionData);
       }
-    });
-
-    if (isEditing && license) {
-      updateMutation.mutate(
-        { id: license.id, data: submitData },
-        {
-          onSuccess: () => {
-            onOpenChange(false);
-          },
-        }
-      );
-    } else {
-      createMutation.mutate(submitData, {
-        onSuccess: () => {
-          onOpenChange(false);
-        },
-      });
+      
+      onOpenChange(false);
+      form.reset();
+    } catch (error) {
+      console.error('Error submitting sync license:', error);
     }
   };
 
@@ -526,6 +455,109 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                             ))}
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="platforms"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Platforms</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select platform" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="all-media">All Media</SelectItem>
+                            <SelectItem value="online">Online</SelectItem>
+                            <SelectItem value="television">Television</SelectItem>
+                            <SelectItem value="theatrical">Theatrical</SelectItem>
+                            <SelectItem value="streaming">Streaming</SelectItem>
+                            <SelectItem value="digital">Digital</SelectItem>
+                            <SelectItem value="broadcast">Broadcast</SelectItem>
+                            <SelectItem value="cable">Cable</SelectItem>
+                            <SelectItem value="social-media">Social Media</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="territory"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Territory</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select territory" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="worldwide">Worldwide</SelectItem>
+                            <SelectItem value="us-only">US Only</SelectItem>
+                            <SelectItem value="north-america">North America</SelectItem>
+                            <SelectItem value="europe">Europe</SelectItem>
+                            <SelectItem value="uk-ireland">UK & Ireland</SelectItem>
+                            <SelectItem value="asia-pacific">Asia Pacific</SelectItem>
+                            <SelectItem value="latin-america">Latin America</SelectItem>
+                            <SelectItem value="custom">Custom Territory</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="term_duration"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Term Duration</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select term duration" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="perpetuity">Perpetuity</SelectItem>
+                            <SelectItem value="1-year">1 Year</SelectItem>
+                            <SelectItem value="2-years">2 Years</SelectItem>
+                            <SelectItem value="3-years">3 Years</SelectItem>
+                            <SelectItem value="5-years">5 Years</SelectItem>
+                            <SelectItem value="7-years">7 Years</SelectItem>
+                            <SelectItem value="10-years">10 Years</SelectItem>
+                            <SelectItem value="15-years">15 Years</SelectItem>
+                            <SelectItem value="custom">Custom Term</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="episode_season"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Episode/Season</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="e.g., Season 1 Episode 5, Episode 12, Season 2" 
+                            {...field} 
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -910,9 +942,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                     form.setValue('mechanical_rights_cleared', data.mechanical_rights_cleared);
                   }}
                 />
-              </TabsContent>
-
-              <TabsContent value="rights" className="space-y-4">
+                
                 <SyncRightsManager 
                   selectedCopyrightIds={selectedCopyrights.map(c => c.id)}
                   onCopyrightSelect={setSelectedCopyrights}
@@ -976,7 +1006,6 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                   />
                 </div>
 
-                {/* Enhanced Fee Allocation with Proration Logic */}
                 {feeAllocations.length > 0 && totalPubFee > 0 && (
                   <Card className="mt-6">
                     <CardHeader>
