@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Calendar } from "@/components/ui/calendar";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
@@ -15,8 +16,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link2, ExternalLink, Check, ChevronsUpDown } from "lucide-react";
+import { Link2, ExternalLink, Check, ChevronsUpDown, CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface ReconciliationBatchFormProps {
   onCancel: () => void;
@@ -28,6 +30,9 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
   const [loadingStatements, setLoadingStatements] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
   const [sourceValue, setSourceValue] = useState(batch?.source || "");
+  const [dateReceived, setDateReceived] = useState<Date | undefined>(
+    batch?.date_received ? new Date(batch.date_received) : new Date()
+  );
   const { createBatch, updateBatch } = useReconciliationBatches();
   const { allocations } = useRoyaltyAllocations();
   const { user } = useAuth();
@@ -136,6 +141,13 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
     setValue('source', sourceValue);
   }, [sourceValue, setValue]);
 
+  // Update date received when it changes
+  useEffect(() => {
+    if (dateReceived) {
+      setValue('date_received', format(dateReceived, 'yyyy-MM-dd'));
+    }
+  }, [dateReceived, setValue]);
+
   // Get linked royalties for the current batch
   const linkedRoyalties = batch ? allocations.filter(allocation => allocation.batch_id === batch.id) : [];
 
@@ -207,11 +219,29 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
 
         <div className="space-y-2">
           <Label htmlFor="date_received">Date Received *</Label>
-          <Input
-            id="date_received"
-            type="date"
-            {...register('date_received', { required: 'Date received is required' })}
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !dateReceived && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateReceived ? format(dateReceived, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateReceived}
+                onSelect={setDateReceived}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
           {errors.date_received && (
             <p className="text-sm text-red-600">{String(errors.date_received.message)}</p>
           )}
