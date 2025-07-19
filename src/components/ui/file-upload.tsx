@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { TrackTagsDisplay } from "@/components/audio/TrackTagsDisplay";
 
 interface FileUploadProps {
   value?: string;
@@ -75,10 +76,28 @@ export const FileUpload = ({
 
       onChange(publicUrl);
       
-      toast({
-        title: "Success",
-        description: "Audio file uploaded successfully",
-      });
+      // Trigger audio analysis in the background
+      try {
+        await supabase.functions.invoke('analyze-audio', {
+          body: {
+            fileUrl: publicUrl,
+            filename: file.name,
+            userId: user.id
+          }
+        });
+        
+        toast({
+          title: "Success",
+          description: "Audio file uploaded and analysis started",
+        });
+      } catch (analysisError) {
+        console.error('Analysis error:', analysisError);
+        toast({
+          title: "Upload successful",
+          description: "File uploaded but analysis failed - you can add tags manually",
+          variant: "default",
+        });
+      }
     } catch (error: any) {
       console.error('Upload error:', error);
       toast({
@@ -204,6 +223,11 @@ export const FileUpload = ({
             Uploading... {uploadProgress}%
           </p>
         </div>
+      )}
+      
+      {/* Show track analysis for uploaded files */}
+      {value && !uploading && (
+        <TrackTagsDisplay fileUrl={value} />
       )}
     </div>
   );

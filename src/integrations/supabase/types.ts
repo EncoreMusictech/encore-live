@@ -2237,6 +2237,84 @@ export type Database = {
         }
         Relationships: []
       }
+      track_tags: {
+        Row: {
+          album: string | null
+          analysis_confidence: number | null
+          analysis_status: string | null
+          artist: string | null
+          created_at: string
+          duration_seconds: number | null
+          energy_level: string | null
+          file_url: string
+          filename: string
+          genre: string | null
+          genre_subgenre: string[] | null
+          id: string
+          instrumentation: string[] | null
+          lyrical_themes: string[] | null
+          manual_overrides: Json | null
+          mood_emotion: string[] | null
+          scene_use_case: string[] | null
+          structure_tags: string[] | null
+          title: string | null
+          updated_at: string
+          user_id: string
+          vocal_type: string | null
+          year: number | null
+        }
+        Insert: {
+          album?: string | null
+          analysis_confidence?: number | null
+          analysis_status?: string | null
+          artist?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          energy_level?: string | null
+          file_url: string
+          filename: string
+          genre?: string | null
+          genre_subgenre?: string[] | null
+          id?: string
+          instrumentation?: string[] | null
+          lyrical_themes?: string[] | null
+          manual_overrides?: Json | null
+          mood_emotion?: string[] | null
+          scene_use_case?: string[] | null
+          structure_tags?: string[] | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          vocal_type?: string | null
+          year?: number | null
+        }
+        Update: {
+          album?: string | null
+          analysis_confidence?: number | null
+          analysis_status?: string | null
+          artist?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          energy_level?: string | null
+          file_url?: string
+          filename?: string
+          genre?: string | null
+          genre_subgenre?: string[] | null
+          id?: string
+          instrumentation?: string[] | null
+          lyrical_themes?: string[] | null
+          manual_overrides?: Json | null
+          mood_emotion?: string[] | null
+          scene_use_case?: string[] | null
+          structure_tags?: string[] | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          vocal_type?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
       user_addon_subscriptions: {
         Row: {
           addon_id: string | null
