@@ -1943,6 +1943,7 @@ export type Database = {
           amendment_urls: string[] | null
           approval_documentation_url: string | null
           approval_issued: string | null
+          audio_file_url: string | null
           audio_mix_level: number | null
           backend_percentage: number | null
           banking_instructions: Json | null
@@ -2042,6 +2043,7 @@ export type Database = {
           amendment_urls?: string[] | null
           approval_documentation_url?: string | null
           approval_issued?: string | null
+          audio_file_url?: string | null
           audio_mix_level?: number | null
           backend_percentage?: number | null
           banking_instructions?: Json | null
@@ -2141,6 +2143,7 @@ export type Database = {
           amendment_urls?: string[] | null
           approval_documentation_url?: string | null
           approval_issued?: string | null
+          audio_file_url?: string | null
           audio_mix_level?: number | null
           backend_percentage?: number | null
           banking_instructions?: Json | null
