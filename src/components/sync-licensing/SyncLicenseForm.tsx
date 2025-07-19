@@ -162,6 +162,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
       invoice_status: "Not Issued",
       mfn: false,
     },
+    mode: "onChange",
   });
 
   // Calculate fee allocations with proration logic
@@ -366,9 +367,15 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
                   <FormField
                     control={form.control}
                     name="project_title"
+                    rules={{ 
+                      required: "Project title is required",
+                      minLength: { value: 2, message: "Project title must be at least 2 characters" }
+                    }}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Project Title *</FormLabel>
+                        <FormLabel className="text-foreground after:content-['*'] after:ml-0.5 after:text-destructive">
+                          Project Title
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="Project name" {...field} />
                         </FormControl>
