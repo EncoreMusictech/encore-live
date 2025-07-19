@@ -174,6 +174,22 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
     return total > 0 ? formatCurrency(total) : "Total Sync Fee";
   };
 
+  const getStateName = (abbreviation: string): string => {
+    const stateMap: { [key: string]: string } = {
+      'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
+      'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'FL': 'Florida', 'GA': 'Georgia',
+      'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa',
+      'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+      'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri',
+      'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey',
+      'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
+      'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+      'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont',
+      'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
+    };
+    return stateMap[abbreviation] || abbreviation;
+  };
+
   const getLicensorStateCountry = () => {
     // Extract state/country from licensor address
     const address = license.licensor_address;
@@ -195,13 +211,14 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
         console.log('State match:', stateMatch);
         
         if (stateMatch) {
-          const state = stateMatch[1]; // "CA"
-          return `${state}, USA`;
+          const stateAbbr = stateMatch[1]; // "CA"
+          const stateName = getStateName(stateAbbr); // "California"
+          return `${stateName}, USA`;
         }
       }
       
       // Fallback
-      return "CA, USA";
+      return "California, USA";
     }
     return "State, Country";
   };
@@ -221,12 +238,13 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
         const stateMatch = lastPart.match(/([A-Z]{2})\s*\d+/);
         
         if (stateMatch) {
-          return stateMatch[1]; // Return just "CA"
+          const stateAbbr = stateMatch[1]; // "CA"
+          return getStateName(stateAbbr); // Return "California"
         }
       }
       
       // Fallback
-      return "CA";
+      return "California";
     }
     return "State";
   };
