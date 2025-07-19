@@ -294,6 +294,34 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         payment_status: license.payment_status || "Pending",
         invoice_status: license.invoice_status || "Not Issued",
         mfn: license.mfn || false,
+        
+        // Contact information fields
+        licensor_name: license.licensor_name || "",
+        licensor_email: license.licensor_email || "",
+        licensor_phone: license.licensor_phone || "",
+        licensor_address: license.licensor_address || "",
+        licensor_company: license.licensor_company || "",
+        licensee_name: license.licensee_name || "",
+        licensee_email: license.licensee_email || "",
+        licensee_phone: license.licensee_phone || "",
+        licensee_address: license.licensee_address || "",
+        licensee_company: license.licensee_company || "",
+        
+        // Payment terms fields
+        payment_due_date: license.payment_due_date ? new Date(license.payment_due_date) : undefined,
+        payment_method: license.payment_method || "",
+        banking_instructions: license.banking_instructions || {},
+        payment_reference: license.payment_reference || "",
+        advance_amount: license.advance_amount || 0,
+        backend_percentage: license.backend_percentage || 0,
+        
+        // Scene context fields
+        scene_description: license.scene_description || "",
+        scene_duration_seconds: license.scene_duration_seconds || 0,
+        scene_timestamp: license.scene_timestamp || "",
+        music_timing_notes: license.music_timing_notes || "",
+        instrumental_vocal: license.instrumental_vocal || "instrumental",
+        music_prominence: license.music_prominence || "background",
       });
     }
   }, [license, open, form]);
