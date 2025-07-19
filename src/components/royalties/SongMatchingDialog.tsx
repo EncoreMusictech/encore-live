@@ -255,10 +255,11 @@ export function SongMatchingDialog({
             controlled_status: 'Controlled' as const,
           });
         } else {
-          // Create allocations for unmatched songs (new works)
+          // Create allocations for unmatched songs (new works) and add to discrepancies
           allocationsToCreate.push({
             ...baseAllocation,
             controlled_status: 'Non-Controlled' as const,
+            comments: 'Unmatched - No corresponding copyright found during song matching',
           });
         }
       }
