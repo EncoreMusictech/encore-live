@@ -24,13 +24,13 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
   const downloadEncoreTemplate = () => {
     const headers = [
       'SOURCE',
-      'QUARTER', 
-      'MEDIA TYPE',
+      'QUARTER',
       'WORK IDENTIFIER',
       'WORK TITLE',
       'WRITERS',
       'SHARES (%)',
       'QUANTITY',
+      'MEDIA TYPE',
       'TERRITORY',
       'GROSS'
     ];
