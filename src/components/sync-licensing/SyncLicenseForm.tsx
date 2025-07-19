@@ -322,6 +322,7 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         music_timing_notes: license.music_timing_notes || "",
         instrumental_vocal: license.instrumental_vocal || "instrumental",
         music_prominence: license.music_prominence || "background",
+        audio_file_url: license.audio_file_url || "",
       });
     }
   }, [license, open, form]);

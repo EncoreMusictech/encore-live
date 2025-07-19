@@ -117,6 +117,7 @@ export interface SyncLicense {
   instrumental_vocal?: 'instrumental' | 'vocal' | 'both';
   music_prominence?: 'background' | 'featured' | 'theme';
   audio_mix_level?: number;
+  audio_file_url?: string;
 
   // Phase 1: Contract execution tracking
   contract_execution_status?: 'draft' | 'sent' | 'signed' | 'executed' | 'expired';
