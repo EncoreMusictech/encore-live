@@ -130,14 +130,13 @@ export function RoyaltiesDiscrepancyReport() {
         : discrepancies.filter(d => d.type === selectedTab);
 
       const csvContent = [
-        ['STATEMENT ID', 'WORK TITLE', 'SOURCE', 'WRITERS', 'GROSS', 'SOURCE', 'TYPE', 'COMMENTS', 'DATE'].join(','),
+        ['STATEMENT ID', 'WORK TITLE', 'SOURCE', 'WRITERS', 'GROSS', 'TYPE', 'COMMENTS', 'DATE'].join(','),
         ...filteredDiscrepancies.map(item => [
           `"${item.statementId}"`,
           `"${item.workTitle}"`,
           `"${item.source}"`,
           `"${item.writers}"`,
           item.gross || 0,
-          `"${item.sourceInfo}"`,
           item.type,
           `"${item.comments}"`,
           new Date(item.date).toLocaleDateString()
@@ -277,7 +276,6 @@ export function RoyaltiesDiscrepancyReport() {
                         <TableHead>SOURCE</TableHead>
                         <TableHead>WRITERS</TableHead>
                         <TableHead>GROSS</TableHead>
-                        <TableHead>SOURCE</TableHead>
                         <TableHead>TYPE</TableHead>
                         <TableHead>COMMENTS</TableHead>
                         <TableHead>DATE</TableHead>
@@ -291,7 +289,6 @@ export function RoyaltiesDiscrepancyReport() {
                           <TableCell>{item.source}</TableCell>
                           <TableCell>{item.writers}</TableCell>
                           <TableCell>${(item.gross || 0).toFixed(2)}</TableCell>
-                          <TableCell>{item.sourceInfo}</TableCell>
                           <TableCell>
                             <Badge className={getTypeColor(item.type)}>
                               {item.type.replace('_', ' ')}
