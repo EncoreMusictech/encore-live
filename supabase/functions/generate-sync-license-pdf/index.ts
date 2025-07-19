@@ -171,12 +171,20 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
 
   const getTotalSyncFee = () => {
     // Calculate total controlled amount from fee allocations
+    console.log('=== CALCULATING TOTAL SYNC FEE ===');
+    console.log('License fee_allocations:', JSON.stringify(license.fee_allocations, null, 2));
+    
     if (license.fee_allocations && Array.isArray(license.fee_allocations)) {
       const totalControlledAmount = license.fee_allocations.reduce((total: number, allocation: any) => {
+        console.log('Processing allocation:', allocation);
+        console.log('Adding controlledAmount:', allocation.controlledAmount);
         return total + (allocation.controlledAmount || 0);
       }, 0);
+      console.log('Final totalControlledAmount:', totalControlledAmount);
       return totalControlledAmount > 0 ? formatCurrency(totalControlledAmount) : "-";
     }
+    
+    console.log('No fee_allocations found, returning fallback');
     return "-";
   };
 
