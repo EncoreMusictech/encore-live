@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Eye, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
+import { FileText, Eye, Trash2, AlertTriangle, CheckCircle, Download } from "lucide-react";
 import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { RoyaltiesImportUpload } from "./RoyaltiesImportUpload";
 import { RoyaltiesImportPreview } from "./RoyaltiesImportPreview";
@@ -20,6 +20,33 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
   } = useRoyaltiesImport();
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+
+  const downloadEncoreTemplate = () => {
+    const headers = [
+      'SOURCE',
+      'QUARTER', 
+      'MEDIA TYPE',
+      'WORK IDENTIFIER',
+      'WORK TITLE',
+      'WORK WRITERS',
+      'SHARE',
+      'COUNTRY',
+      'QUANTITY',
+      'GROSS'
+    ];
+    
+    const csvContent = headers.join(',') + '\n';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'encore-statement-template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'processed':
@@ -62,9 +89,19 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
               Manage imported royalty statements and review mapping results
             </CardDescription>
           </div>
-          <Button onClick={() => setShowUpload(true)}>
-            Import Statement
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={downloadEncoreTemplate}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download Template
+            </Button>
+            <Button onClick={() => setShowUpload(true)}>
+              Import Statement
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
