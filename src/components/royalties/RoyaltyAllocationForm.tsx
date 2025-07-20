@@ -558,32 +558,11 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
           </div>
          )}
 
-         {/* Warning for non-controlled writers */}
-         {writers.some(writer => writer.controlled_status === 'NC') && (
-           <div className="p-3 bg-orange-50 border border-orange-200 rounded-md">
-             <p className="text-sm text-orange-800">
-               <strong>Note:</strong> Only controlled writers (marked as 'C') will have royalties calculated. 
-               Non-controlled writers will not generate royalty allocations.
-             </p>
-           </div>
-         )}
-
         {writers.map((writer, index) => (
           <Card key={writer.id || index}>
              <CardHeader className="pb-3">
                <div className="flex items-center justify-between">
-                 <div className="flex items-center gap-2">
-                   <CardTitle className="text-sm">Writer {index + 1}</CardTitle>
-                   {writer.controlled_status === 'C' ? (
-                     <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-200">
-                       Controlled
-                     </Badge>
-                   ) : (
-                     <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800 border-orange-200">
-                       Non-Controlled
-                     </Badge>
-                   )}
-                 </div>
+                 <CardTitle className="text-sm">Writer {index + 1}</CardTitle>
                 <Button
                   type="button"
                   variant="ghost"
