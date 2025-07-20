@@ -163,9 +163,12 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
 
   const onSubmit = async (data: any) => {
     try {
+      // Filter writers that have contact_id and create ownership splits
+      const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none');
+      
       const allocationData = {
         ...data,
-        ownership_splits: writers.reduce((acc, writer) => {
+        ownership_splits: validWriters.reduce((acc, writer) => {
           acc[writer.contact_id] = {
             writer_share: writer.writer_share_percentage,
             performance_share: writer.performance_share,
