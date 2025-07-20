@@ -260,19 +260,6 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="controlled_status">Controlled Status</Label>
-          <Select onValueChange={(value) => setValue('controlled_status', value)} defaultValue={watch('controlled_status')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent className="bg-background border shadow-md z-50">
-              <SelectItem value="Controlled">Controlled</SelectItem>
-              <SelectItem value="Non-Controlled">Non-Controlled</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
           <Label htmlFor="batch_id">Source Batch</Label>
           <Select onValueChange={(value) => setValue('batch_id', value)} defaultValue={watch('batch_id')}>
             <SelectTrigger>
