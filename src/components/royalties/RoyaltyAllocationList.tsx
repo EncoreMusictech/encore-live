@@ -178,18 +178,12 @@ export function RoyaltyAllocationList() {
       case 'QUARTER':
         return allocation.mapped_data?.['QUARTER'] || allocation.quarter;
       case 'WORK IDENTIFIER':
-        // For manual royalties with linked copyright, use the copyright work_id
-        if (!allocation.staging_record_id && allocation.copyright_id) {
-          // We need to get the work_id from the linked copyright
-          // For now, we'll check if copyrights data is available in the allocation
-          if (allocation.copyrights?.work_id) {
-            return allocation.copyrights.work_id;
-          }
-          // If work_id is not available in the nested data, we might need to fetch it
-          return allocation.work_id || allocation.mapped_data?.['WORK IDENTIFIER'] || allocation.work_identifier;
+        // ALWAYS use the copyright work_id if there's a linked copyright
+        if (allocation.copyright_id && allocation.copyrights?.work_id) {
+          return allocation.copyrights.work_id;
         }
-        // For imported royalties, use the normal logic
-        return allocation.mapped_data?.['WORK IDENTIFIER'] || allocation.work_identifier;
+        // Fallback to imported/mapped data if no linked copyright
+        return allocation.work_id || allocation.mapped_data?.['WORK IDENTIFIER'] || allocation.work_identifier;
       case 'WORK TITLE':
         return allocation.mapped_data?.['WORK TITLE'] || allocation.song_title;
       case 'WRITERS':
