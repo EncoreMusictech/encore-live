@@ -282,8 +282,8 @@ export class EncoreMapper {
         }
       });
 
-      // Special case: BMI always has PERF as media type
-      if (detectedSource === 'BMI' && !mappedRow['MEDIA TYPE']) {
+      // Special case: BMI always has PERF as media type (regardless of mapped value)
+      if (detectedSource === 'BMI') {
         mappedRow['MEDIA TYPE'] = 'PERF';
       }
 
@@ -294,6 +294,11 @@ export class EncoreMapper {
             mappedRow[encoreField] = this.normalizeValue(row[sourceField], encoreField, detectedSource);
           }
         });
+      }
+
+      // Ensure BMI always has PERF as media type after all mappings are applied
+      if (detectedSource === 'BMI') {
+        mappedRow['MEDIA TYPE'] = 'PERF';
       }
 
       // Validate required fields using ENCORE standard fields
