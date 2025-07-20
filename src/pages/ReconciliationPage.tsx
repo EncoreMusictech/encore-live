@@ -62,7 +62,7 @@ export default function ReconciliationPage() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="batches" className="gap-2">
               <Link2 className="h-4 w-4" />
               Batches
@@ -70,10 +70,6 @@ export default function ReconciliationPage() {
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="h-4 w-4" />
               Analytics
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Reports
             </TabsTrigger>
           </TabsList>
 
@@ -93,24 +89,6 @@ export default function ReconciliationPage() {
 
           <TabsContent value="analytics">
             <ReconciliationAnalytics />
-          </TabsContent>
-
-          <TabsContent value="reports">
-            <Card>
-              <CardHeader>
-                <CardTitle>Reconciliation Reports</CardTitle>
-                <CardDescription>
-                  Generate detailed reports on your reconciliation performance
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">Reports Coming Soon</p>
-                  <p>Comprehensive reconciliation reports will be available here</p>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
