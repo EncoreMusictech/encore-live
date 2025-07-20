@@ -480,7 +480,7 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Dialog>
+                      <Dialog open={!!viewingRoyalty} onOpenChange={(open) => !open && setViewingRoyalty(null)}>
                         <DialogTrigger asChild>
                           <Button 
                             variant="ghost" 
@@ -497,7 +497,7 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
                             <DialogTitle>View Royalty Allocation</DialogTitle>
                           </DialogHeader>
                           <RoyaltyAllocationForm
-                            allocation={royalty}
+                            allocation={viewingRoyalty}
                             onCancel={() => setViewingRoyalty(null)}
                           />
                         </DialogContent>
