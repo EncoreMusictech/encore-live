@@ -160,7 +160,6 @@ export function BatchRoyaltyManager({ batchId, onLinkComplete, embedded = false 
             <TableHead>WRITERS</TableHead>
             <TableHead>SOURCE</TableHead>
             <TableHead>AMOUNT</TableHead>
-            <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -192,11 +191,6 @@ export function BatchRoyaltyManager({ batchId, onLinkComplete, embedded = false 
                   <DollarSign className="h-3 w-3" />
                   {allocation.gross_royalty_amount.toLocaleString()}
                 </div>
-              </TableCell>
-              <TableCell>
-                <Badge variant={showUnlinkAction ? "default" : "secondary"}>
-                  {showUnlinkAction ? "Linked" : "Unlinked"}
-                </Badge>
               </TableCell>
             </TableRow>
           ))}
