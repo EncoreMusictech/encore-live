@@ -174,14 +174,18 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
     }
   };
 
+  // Watch the linked_statement_id form field for changes
+  const watchedStatementId = watch('linked_statement_id');
+
   // Fetch statement royalties when batch changes or linked statement changes
   useEffect(() => {
-    if (batch?.linked_statement_id) {
-      fetchStatementRoyalties(batch.linked_statement_id);
+    const statementId = batch?.linked_statement_id || watchedStatementId;
+    if (statementId) {
+      fetchStatementRoyalties(statementId);
     } else {
       setStatementRoyalties([]);
     }
-  }, [batch?.linked_statement_id, user]);
+  }, [batch?.linked_statement_id, watchedStatementId, user]);
 
   const onSubmit = async (data: any) => {
     try {
