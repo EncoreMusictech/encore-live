@@ -14,6 +14,7 @@ import { Search, Edit, Trash2, AlertTriangle, CheckCircle, Link2, ExternalLink, 
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
+import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { RoyaltyAllocationForm } from "./RoyaltyAllocationForm";
 import { AllocationSongMatchDialog } from "./AllocationSongMatchDialog";
 import { ENCORE_STANDARD_FIELDS } from "@/lib/encore-mapper";
@@ -28,6 +29,7 @@ export function RoyaltyAllocationList() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedAllocations, setSelectedAllocations] = useState<Set<string>>(new Set());
   const { allocations, loading, deleteAllocation, refreshAllocations } = useRoyaltyAllocations();
+  const { batches } = useReconciliationBatches();
 
   const filteredAllocations = allocations.filter(allocation => {
     const matchesSearch = allocation.song_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -156,7 +158,13 @@ export function RoyaltyAllocationList() {
       case 'STATEMENT ID':
         return allocation.statement_id;
       case 'BATCH ID':
-        return allocation.batch_id;
+        // Match the Reconciliation Batches table by getting batch_id from the linked batch
+        if (allocation.batch_id) {
+          // Find the batch that matches this allocation's batch_id
+          const linkedBatch = batches?.find(batch => batch.id === allocation.batch_id);
+          return linkedBatch?.batch_id || allocation.batch_id;
+        }
+        return null;
       case 'Statement Source':
         return allocation.mapped_data?.['Statement Source'] || allocation.source;
       case 'QUARTER':
