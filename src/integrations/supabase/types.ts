@@ -2779,7 +2779,21 @@ export type Database = {
       payment_method: "ACH" | "Wire" | "PayPal" | "Check"
       producer_type: "flat_fee" | "points" | "hybrid"
       publishing_type: "admin" | "copub" | "full_pub" | "jv"
-      royalty_source: "DSP" | "PRO" | "YouTube" | "Other"
+      royalty_source:
+        | "DSP"
+        | "PRO"
+        | "YouTube"
+        | "Other"
+        | "BMI"
+        | "ASCAP"
+        | "SESAC"
+        | "SOCAN"
+        | "Spotify"
+        | "Apple Music"
+        | "Amazon Music"
+        | "Tidal"
+        | "Pandora"
+        | "SiriusXM"
       sync_type: "one_time" | "mfn" | "perpetual" | "term_limited"
     }
     CompositeTypes: {
@@ -2923,7 +2937,22 @@ export const Constants = {
       payment_method: ["ACH", "Wire", "PayPal", "Check"],
       producer_type: ["flat_fee", "points", "hybrid"],
       publishing_type: ["admin", "copub", "full_pub", "jv"],
-      royalty_source: ["DSP", "PRO", "YouTube", "Other"],
+      royalty_source: [
+        "DSP",
+        "PRO",
+        "YouTube",
+        "Other",
+        "BMI",
+        "ASCAP",
+        "SESAC",
+        "SOCAN",
+        "Spotify",
+        "Apple Music",
+        "Amazon Music",
+        "Tidal",
+        "Pandora",
+        "SiriusXM",
+      ],
       sync_type: ["one_time", "mfn", "perpetual", "term_limited"],
     },
   },

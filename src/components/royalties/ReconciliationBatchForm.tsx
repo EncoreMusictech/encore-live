@@ -59,9 +59,16 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
     { value: "DSP", label: "DSP" },
     { value: "PRO", label: "PRO" },
     { value: "YouTube", label: "YouTube" },
+    { value: "BMI", label: "BMI" },
+    { value: "ASCAP", label: "ASCAP" },
+    { value: "SESAC", label: "SESAC" },
+    { value: "SOCAN", label: "SOCAN" },
     { value: "Spotify", label: "Spotify" },
     { value: "Apple Music", label: "Apple Music" },
     { value: "Amazon Music", label: "Amazon Music" },
+    { value: "Tidal", label: "Tidal" },
+    { value: "Pandora", label: "Pandora" },
+    { value: "SiriusXM", label: "SiriusXM" },
     { value: "Other", label: "Other" },
   ];
 

@@ -106,6 +106,16 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
             <SelectItem value="DSP">DSP</SelectItem>
             <SelectItem value="PRO">PRO</SelectItem>
             <SelectItem value="YouTube">YouTube</SelectItem>
+            <SelectItem value="BMI">BMI</SelectItem>
+            <SelectItem value="ASCAP">ASCAP</SelectItem>
+            <SelectItem value="SESAC">SESAC</SelectItem>
+            <SelectItem value="SOCAN">SOCAN</SelectItem>
+            <SelectItem value="Spotify">Spotify</SelectItem>
+            <SelectItem value="Apple Music">Apple Music</SelectItem>
+            <SelectItem value="Amazon Music">Amazon Music</SelectItem>
+            <SelectItem value="Tidal">Tidal</SelectItem>
+            <SelectItem value="Pandora">Pandora</SelectItem>
+            <SelectItem value="SiriusXM">SiriusXM</SelectItem>
             <SelectItem value="Other">Other</SelectItem>
           </SelectContent>
         </Select>
