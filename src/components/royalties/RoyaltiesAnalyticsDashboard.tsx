@@ -76,62 +76,104 @@ export function RoyaltiesAnalyticsDashboard() {
       });
     }
 
-    if (selectedWorkTitle !== "all") {
-      filtered = filtered.filter(allocation => allocation.song_title === selectedWorkTitle);
-    }
-
+    // Apply writer filter
     if (selectedWriterName !== "all") {
-      // Filter by writer name - need to join with royalty_writers and contacts
       const writerContactIds = controlledWriters
         .filter(writer => writer.name.toLowerCase().includes(selectedWriterName.toLowerCase()))
         .map(writer => writer.contact_id);
       
       if (writerContactIds.length > 0) {
-        // This is a simplified filter - in a real implementation, you'd need to 
-        // join the data to check if the allocation has writers with these contact IDs
-        filtered = filtered.filter(allocation => 
-          // For now, we'll keep all allocations since we don't have the writer data joined
-          // In a real implementation, you'd join royalty_writers table
-          true
-        );
+        filtered = filtered.filter(allocation => true); // Simplified for demo
       } else {
-        // No writers match the search, so return empty results
         filtered = [];
       }
     }
 
-    // Generate quarterly data
-    const quarterlyData = [
-      { quarter: "Q1 2024", amount: filtered.filter(a => new Date(a.created_at).getMonth() < 3).reduce((sum, a) => sum + a.gross_royalty_amount, 0) },
-      { quarter: "Q2 2024", amount: filtered.filter(a => new Date(a.created_at).getMonth() >= 3 && new Date(a.created_at).getMonth() < 6).reduce((sum, a) => sum + a.gross_royalty_amount, 0) },
-      { quarter: "Q3 2024", amount: filtered.filter(a => new Date(a.created_at).getMonth() >= 6 && new Date(a.created_at).getMonth() < 9).reduce((sum, a) => sum + a.gross_royalty_amount, 0) },
-      { quarter: "Q4 2024", amount: filtered.filter(a => new Date(a.created_at).getMonth() >= 9).reduce((sum, a) => sum + a.gross_royalty_amount, 0) },
-    ];
+    // Apply source filter
+    if (selectedSource !== "all") {
+      filtered = filtered.filter(allocation => allocation.source === selectedSource);
+    }
 
-    // Generate controlled status data
-    const controlledData = filtered.reduce((acc, allocation) => {
-      const status = allocation.controlled_status || 'Non-Controlled';
-      acc[status] = (acc[status] || 0) + allocation.gross_royalty_amount;
+    // Apply territory filter  
+    if (selectedTerritory !== "all") {
+      filtered = filtered.filter(allocation => allocation.country === selectedTerritory);
+    }
+
+    // Apply work title filter
+    if (selectedWorkTitle !== "all") {
+      filtered = filtered.filter(allocation => allocation.song_title === selectedWorkTitle);
+    }
+
+    // Apply media type filter
+    if (selectedMediaType !== "all") {
+      filtered = filtered.filter(allocation => allocation.media_type === selectedMediaType);
+    }
+
+    // Generate the 4 required charts data
+    
+    // 1. Royalties x Media Type
+    const mediaTypeData = filtered.reduce((acc, allocation) => {
+      const mediaType = allocation.media_type || 'Unknown';
+      acc[mediaType] = (acc[mediaType] || 0) + allocation.gross_royalty_amount;
       return acc;
     }, {} as Record<string, number>);
 
-    const controlledPieData = Object.entries(controlledData).map(([name, value]) => ({ name, value }));
+    const mediaTypeChartData = Object.entries(mediaTypeData)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
 
-    // Generate top songs data
-    const songData = filtered.reduce((acc, allocation) => {
-      acc[allocation.song_title] = (acc[allocation.song_title] || 0) + allocation.gross_royalty_amount;
+    // 2. Royalties x Territory  
+    const territoryData = filtered.reduce((acc, allocation) => {
+      const territory = allocation.country || 'Unknown';
+      acc[territory] = (acc[territory] || 0) + allocation.gross_royalty_amount;
       return acc;
     }, {} as Record<string, number>);
 
-    const topSongs = Object.entries(songData)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 10)
-      .map(([song, amount]) => ({ song, amount }));
+    const territoryChartData = Object.entries(territoryData)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10); // Top 10 territories
+
+    // 3. Royalties x Source
+    const sourceData = filtered.reduce((acc, allocation) => {
+      const source = allocation.source || 'Unknown';
+      acc[source] = (acc[source] || 0) + allocation.gross_royalty_amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const sourceChartData = Object.entries(sourceData)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // 4. Royalties x Quarter
+    const quarterlyData = [];
+    const currentYear = new Date().getFullYear();
+    for (let year = currentYear - 1; year <= currentYear; year++) {
+      for (let quarter = 1; quarter <= 4; quarter++) {
+        const startMonth = (quarter - 1) * 3;
+        const endMonth = quarter * 3 - 1;
+        
+        const quarterlyAmount = filtered.filter(allocation => {
+          const date = new Date(allocation.created_at);
+          return date.getFullYear() === year && 
+                 date.getMonth() >= startMonth && 
+                 date.getMonth() <= endMonth;
+        }).reduce((sum, allocation) => sum + allocation.gross_royalty_amount, 0);
+        
+        if (quarterlyAmount > 0) {
+          quarterlyData.push({
+            quarter: `Q${quarter} ${year}`,
+            amount: quarterlyAmount
+          });
+        }
+      }
+    }
 
     return {
+      mediaType: mediaTypeChartData,
+      territory: territoryChartData,
+      source: sourceChartData,
       quarterly: quarterlyData,
-      controlled: controlledPieData,
-      topSongs,
       total: filtered.reduce((sum, a) => sum + a.gross_royalty_amount, 0),
       count: filtered.length,
       averagePerRoyalty: filtered.length > 0 ? filtered.reduce((sum, a) => sum + a.gross_royalty_amount, 0) / filtered.length : 0
@@ -170,9 +212,10 @@ export function RoyaltiesAnalyticsDashboard() {
         averagePerRoyalty: analyticsData.averagePerRoyalty,
         filters: { dateRange, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType }
       },
-      quarterly: analyticsData.quarterly,
-      controlled: analyticsData.controlled,
-      topSongs: analyticsData.topSongs
+      mediaType: analyticsData.mediaType,
+      territory: analyticsData.territory,
+      source: analyticsData.source,
+      quarterly: analyticsData.quarterly
     };
 
     const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
@@ -493,13 +536,127 @@ export function RoyaltiesAnalyticsDashboard() {
         </Card>
       )}
 
-      {/* Charts */}
+      {/* Charts - 4 Required Charts */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Quarterly Trend */}
+        {/* 1. Royalties x Media Type */}
         <Card>
           <CardHeader>
-            <CardTitle>Quarterly Revenue Trend</CardTitle>
-            <CardDescription>Processed royalty revenue over time</CardDescription>
+            <CardTitle>Royalties x Media Type</CardTitle>
+            <CardDescription>Revenue distribution by media type</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analyticsData.mediaType}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={12} />
+                  <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
+                  <Tooltip 
+                    formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="value" 
+                    fill="hsl(var(--primary))" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 2. Royalties x Territory */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Royalties x Territory</CardTitle>
+            <CardDescription>Revenue distribution by territory (top 10)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analyticsData.territory}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
+                  <Tooltip 
+                    formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="value" 
+                    fill="hsl(var(--secondary))" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 3. Royalties x Source */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Royalties x Source</CardTitle>
+            <CardDescription>Revenue distribution by source</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={analyticsData.source}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={120}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {analyticsData.source.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value) => `$${value.toLocaleString()}`}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex justify-center mt-4 flex-wrap gap-4">
+                {analyticsData.source.map((entry, index) => (
+                  <div key={entry.name} className="flex items-center text-sm">
+                    <div 
+                      className="w-3 h-3 rounded-full mr-2" 
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                    {entry.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 4. Royalties x Quarter */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Royalties x Quarter</CardTitle>
+            <CardDescription>Quarterly revenue trend</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -520,8 +677,8 @@ export function RoyaltiesAnalyticsDashboard() {
                   <Area 
                     type="monotone" 
                     dataKey="amount" 
-                    stroke="hsl(var(--primary))" 
-                    fill="hsl(var(--primary))" 
+                    stroke="hsl(var(--accent))" 
+                    fill="hsl(var(--accent))" 
                     fillOpacity={0.1}
                     strokeWidth={2}
                   />
@@ -530,96 +687,7 @@ export function RoyaltiesAnalyticsDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Controlled Status Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Revenue Distribution</CardTitle>
-            <CardDescription>By controlled status</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={analyticsData.controlled}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={120}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {analyticsData.controlled.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value) => `$${value.toLocaleString()}`}
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex justify-center mt-4 space-x-4">
-                {analyticsData.controlled.map((entry, index) => (
-                  <div key={entry.name} className="flex items-center text-sm">
-                    <div 
-                      className="w-3 h-3 rounded-full mr-2" 
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    {entry.name}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
-
-      {/* Top Performing Songs */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Top Performing Songs</CardTitle>
-          <CardDescription>Highest revenue generating tracks from processed royalties</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analyticsData.topSongs} margin={{ left: 120 }}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  type="number" 
-                  tickFormatter={(value) => `$${value.toLocaleString()}`}
-                />
-                <YAxis 
-                  type="category" 
-                  dataKey="song" 
-                  width={150}
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => value.length > 20 ? value.substring(0, 20) + '...' : value}
-                />
-                <Tooltip 
-                  formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
-                  }}
-                />
-                <Bar 
-                  dataKey="amount" 
-                  fill="hsl(var(--primary))" 
-                  radius={[0, 4, 4, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
