@@ -22,6 +22,7 @@ import { format } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { BatchRoyaltyManager } from "./BatchRoyaltyManager";
+import { RoyaltyAllocationForm } from "./RoyaltyAllocationForm";
 
 interface ReconciliationBatchFormProps {
   onCancel: () => void;
@@ -34,6 +35,7 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
   const [loadingStatements, setLoadingStatements] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
   const [linkRoyaltiesOpen, setLinkRoyaltiesOpen] = useState(false);
+  const [viewingRoyalty, setViewingRoyalty] = useState<any>(null);
   const [sourceValue, setSourceValue] = useState(batch?.source || "");
   const [dateReceived, setDateReceived] = useState<Date | undefined>(
     batch?.date_received ? new Date(batch.date_received) : new Date()
@@ -478,19 +480,28 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => {
-                          // Navigate to royalties page with this royalty highlighted
-                          // This could be implemented as needed
-                          console.log("Navigate to royalty:", royalty.royalty_id);
-                        }}
-                        className="flex items-center gap-1"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        View
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setViewingRoyalty(royalty)}
+                            className="flex items-center gap-1"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            View
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>View Royalty Allocation</DialogTitle>
+                          </DialogHeader>
+                          <RoyaltyAllocationForm
+                            allocation={royalty}
+                            onCancel={() => setViewingRoyalty(null)}
+                          />
+                        </DialogContent>
+                      </Dialog>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button 
