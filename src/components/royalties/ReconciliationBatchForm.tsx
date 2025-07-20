@@ -16,9 +16,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link2, ExternalLink, Check, ChevronsUpDown, CalendarIcon } from "lucide-react";
+import { Link2, ExternalLink, Check, ChevronsUpDown, CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface ReconciliationBatchFormProps {
   onCancel: () => void;
@@ -35,7 +36,7 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
   );
   const [statementRoyalties, setStatementRoyalties] = useState<any[]>([]);
   const { createBatch, updateBatch } = useReconciliationBatches();
-  const { allocations } = useRoyaltyAllocations();
+  const { allocations, updateAllocation } = useRoyaltyAllocations();
   const { user } = useAuth();
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
@@ -217,6 +218,24 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
   const linkedRoyaltiesTotal = linkedRoyalties.reduce((sum, royalty) => sum + (royalty.gross_royalty_amount || 0), 0);
   const statementRoyaltiesTotal = statementRoyalties.reduce((sum, royalty) => sum + (royalty.gross_royalty_amount || 0), 0);
   const totalRoyaltyAmount = linkedRoyaltiesTotal + statementRoyaltiesTotal;
+
+  // Handle unlinking a royalty from the batch
+  const handleUnlinkRoyalty = async (royaltyId: string) => {
+    try {
+      await updateAllocation(royaltyId, { batch_id: null });
+      toast({
+        title: "Success",
+        description: "Royalty has been unlinked from the batch",
+      });
+    } catch (error) {
+      console.error("Error unlinking royalty:", error);
+      toast({
+        title: "Error",
+        description: "Failed to unlink royalty from batch",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -404,19 +423,50 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
                         {royalty.source && ` • ${royalty.source}`}
                       </div>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => {
-                        // Navigate to royalties page with this royalty highlighted
-                        // This could be implemented as needed
-                        console.log('Navigate to royalty:', royalty.royalty_id);
-                      }}
-                      className="flex items-center gap-1"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      View
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => {
+                          // Navigate to royalties page with this royalty highlighted
+                          // This could be implemented as needed
+                          console.log("Navigate to royalty:", royalty.royalty_id);
+                        }}
+                        className="flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        View
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="flex items-center gap-1 text-destructive hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                            Remove
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove Linked Royalty</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to remove "{royalty.song_title}" from this batch? This will unlink the royalty but won't delete it.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleUnlinkRoyalty(royalty.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 ))}
               </div>
