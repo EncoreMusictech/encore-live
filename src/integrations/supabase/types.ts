@@ -1316,6 +1316,94 @@ export type Database = {
         }
         Relationships: []
       }
+      original_publishers: {
+        Row: {
+          agreement_id: string
+          contact_info: Json | null
+          created_at: string
+          id: string
+          op_id: string
+          publisher_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agreement_id: string
+          contact_info?: Json | null
+          created_at?: string
+          id?: string
+          op_id: string
+          publisher_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agreement_id?: string
+          contact_info?: Json | null
+          created_at?: string
+          id?: string
+          op_id?: string
+          publisher_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_original_publishers_agreement"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payees: {
+        Row: {
+          contact_info: Json | null
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          payee_name: string
+          payee_type: string
+          payment_info: Json | null
+          updated_at: string
+          user_id: string
+          writer_id: string
+        }
+        Insert: {
+          contact_info?: Json | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          payee_name: string
+          payee_type: string
+          payment_info?: Json | null
+          updated_at?: string
+          user_id: string
+          writer_id: string
+        }
+        Update: {
+          contact_info?: Json | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          payee_name?: string
+          payee_type?: string
+          payment_info?: Json | null
+          updated_at?: string
+          user_id?: string
+          writer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_payees_writer"
+            columns: ["writer_id"]
+            isOneToOne: false
+            referencedRelation: "writers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payout_expenses: {
         Row: {
           amount: number
@@ -2746,6 +2834,47 @@ export type Database = {
           },
         ]
       }
+      writers: {
+        Row: {
+          contact_info: Json | null
+          created_at: string
+          id: string
+          original_publisher_id: string
+          updated_at: string
+          user_id: string
+          writer_id: string
+          writer_name: string
+        }
+        Insert: {
+          contact_info?: Json | null
+          created_at?: string
+          id?: string
+          original_publisher_id: string
+          updated_at?: string
+          user_id: string
+          writer_id: string
+          writer_name: string
+        }
+        Update: {
+          contact_info?: Json | null
+          created_at?: string
+          id?: string
+          original_publisher_id?: string
+          updated_at?: string
+          user_id?: string
+          writer_id?: string
+          writer_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_writers_original_publisher"
+            columns: ["original_publisher_id"]
+            isOneToOne: false
+            referencedRelation: "original_publishers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2797,6 +2926,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_op_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_royalty_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -2814,6 +2947,10 @@ export type Database = {
         Returns: string
       }
       generate_work_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_writer_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
