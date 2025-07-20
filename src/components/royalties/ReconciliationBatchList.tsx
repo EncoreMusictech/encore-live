@@ -216,7 +216,7 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                         </a>
                       </Button>
                     )}
-                    <Dialog>
+                    <Dialog open={!!editingBatch} onOpenChange={(open) => !open && setEditingBatch(null)}>
                       <DialogTrigger asChild>
                         <Button variant="ghost" size="sm" onClick={() => setEditingBatch(batch)}>
                           <Edit className="h-4 w-4" />
