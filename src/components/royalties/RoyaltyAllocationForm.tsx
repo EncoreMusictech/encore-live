@@ -98,6 +98,14 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
 
   // Load writers from existing allocation's ownership_splits when editing
   useEffect(() => {
+    console.log('Writer loading effect triggered:', { 
+      allocation: allocation?.id, 
+      hasOwnershipSplits: !!allocation?.ownership_splits,
+      copyrightId: allocation?.copyright_id,
+      availableCopyrightsCount: availableCopyrights.length,
+      availableCopyrights: availableCopyrights.map(c => ({ id: c.id, title: c.work_title, writers: c.copyright_writers?.length || 0 }))
+    });
+
     if (allocation && allocation.ownership_splits) {
       const extractedWriters = Object.entries(allocation.ownership_splits).map(([key, value]: [string, any]) => {
         // Check if this is a copyright writer (temporary identifier)
@@ -137,35 +145,49 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
       if (extractedWriters.length > 0) {
         setWriters(extractedWriters);
         console.log('Loaded writers from allocation:', extractedWriters);
+        return; // Don't try to load from copyright if we found writers in ownership_splits
       }
-    } else if (allocation && allocation.copyright_id && availableCopyrights.length > 0) {
-      // If allocation has copyright_id but no writers in ownership_splits, 
-      // try to load writers from the linked copyright
+    } 
+    
+    // Always try to load from copyright if we have a copyright_id and no writers were loaded yet
+    if (allocation && allocation.copyright_id && availableCopyrights.length > 0) {
+      console.log('Attempting to load writers from linked copyright...');
       const linkedCopyright = availableCopyrights.find(c => c.id === allocation.copyright_id);
-      if (linkedCopyright && linkedCopyright.copyright_writers && linkedCopyright.copyright_writers.length > 0) {
-        const copyrightWriters = linkedCopyright.copyright_writers.map((writer: any) => {
-          // Try to find a matching contact by name
-          const matchingContact = availableContacts.find(contact => 
-            contact.name.toLowerCase().trim() === writer.writer_name.toLowerCase().trim()
-          );
-          
-          return {
-            id: Date.now() + Math.random(), // Temporary ID for form
-            contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
-            writer_name: writer.writer_name,
-            writer_ipi: writer.ipi_number || '',
-            pro_affiliation: writer.pro_affiliation || '',
-            writer_role: writer.writer_role || '',
-            controlled_status: writer.controlled_status || '',
-            writer_share_percentage: writer.ownership_percentage || 0,
-            performance_share: writer.performance_share || 0,
-            mechanical_share: writer.mechanical_share || 0,
-            synchronization_share: writer.synchronization_share || 0,
-          };
-        });
+      console.log('Found linked copyright:', linkedCopyright);
+      
+      if (linkedCopyright) {
+        const copyrightWriters = (linkedCopyright as any).copyright_writers;
+        console.log('Copyright writers:', copyrightWriters);
         
-        setWriters(copyrightWriters);
-        console.log('Loaded writers from linked copyright for existing allocation:', copyrightWriters);
+        if (copyrightWriters && copyrightWriters.length > 0) {
+          const mappedWriters = copyrightWriters.map((writer: any) => {
+            // Try to find a matching contact by name
+            const matchingContact = availableContacts.find(contact => 
+              contact.name.toLowerCase().trim() === writer.writer_name.toLowerCase().trim()
+            );
+            
+            return {
+              id: Date.now() + Math.random(), // Temporary ID for form
+              contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
+              writer_name: writer.writer_name,
+              writer_ipi: writer.ipi_number || '',
+              pro_affiliation: writer.pro_affiliation || '',
+              writer_role: writer.writer_role || 'composer',
+              controlled_status: writer.controlled_status || 'NC',
+              writer_share_percentage: writer.ownership_percentage || 0,
+              performance_share: writer.performance_share || 0,
+              mechanical_share: writer.mechanical_share || 0,
+              synchronization_share: writer.synchronization_share || 0,
+            };
+          });
+          
+          setWriters(mappedWriters);
+          console.log('Loaded writers from linked copyright for existing allocation:', mappedWriters);
+        } else {
+          console.log('No writers found in linked copyright');
+        }
+      } else {
+        console.log('Linked copyright not found in available copyrights');
       }
     }
   }, [allocation, availableContacts, availableCopyrights]);
