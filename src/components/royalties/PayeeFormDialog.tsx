@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useContacts } from "@/hooks/useContacts";
+import { usePayeeHierarchy } from "@/hooks/usePayeeHierarchy";
 import { toast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface PayeeFormDialogProps {
   open: boolean;
@@ -15,17 +17,31 @@ interface PayeeFormDialogProps {
 }
 
 export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
-  const { createContact } = useContacts();
+  const {
+    agreements,
+    originalPublishers,
+    writers,
+    createPayee,
+    fetchOriginalPublishers,
+    fetchWriters,
+  } = usePayeeHierarchy();
+
   const [loading, setLoading] = useState(false);
   
+  // Hierarchy Selection State
+  const [selectedAgreement, setSelectedAgreement] = useState("");
+  const [selectedPublisher, setSelectedPublisher] = useState("");
+  const [selectedWriter, setSelectedWriter] = useState("");
+
   // Payee Setup Form State
-  const [formData, setFormData] = useState({
-    name: "",
+  const [payeeData, setPayeeData] = useState({
+    payee_name: "",
+    payee_type: "writer",
     email: "",
     phone: "",
     address: "",
-    contact_type: "writer",
     tax_id: "",
+    is_primary: false,
   });
 
   // Earnings Split Setup State
@@ -37,8 +53,24 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
     payment_frequency: "quarterly",
   });
 
-  const handlePayeeFormChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  // Handle hierarchy changes
+  useEffect(() => {
+    if (selectedAgreement) {
+      fetchOriginalPublishers(selectedAgreement);
+      setSelectedPublisher("");
+      setSelectedWriter("");
+    }
+  }, [selectedAgreement, fetchOriginalPublishers]);
+
+  useEffect(() => {
+    if (selectedPublisher) {
+      fetchWriters(selectedPublisher);
+      setSelectedWriter("");
+    }
+  }, [selectedPublisher, fetchWriters]);
+
+  const handlePayeeFormChange = (field: string, value: string | boolean) => {
+    setPayeeData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSplitFormChange = (field: string, value: string | number) => {
@@ -46,7 +78,7 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name.trim()) {
+    if (!payeeData.payee_name.trim()) {
       toast({
         title: "Error",
         description: "Payee name is required",
@@ -55,8 +87,24 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
       return;
     }
 
+    if (!selectedWriter) {
+      toast({
+        title: "Error",
+        description: "Please select a writer for this payee",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
+      const contactInfo = {
+        email: payeeData.email,
+        phone: payeeData.phone,
+        address: payeeData.address,
+        tax_id: payeeData.tax_id,
+      };
+
       const paymentInfo = {
         default_splits: {
           performance: splitData.default_performance_share,
@@ -69,24 +117,27 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
         },
       };
 
-      await createContact({
-        ...formData,
+      await createPayee({
+        payee_name: payeeData.payee_name,
+        payee_type: payeeData.payee_type,
+        contact_info: contactInfo,
         payment_info: paymentInfo,
-      });
-
-      toast({
-        title: "Success",
-        description: "Payee added successfully",
+        writer_id: selectedWriter,
+        is_primary: payeeData.is_primary,
       });
 
       // Reset form
-      setFormData({
-        name: "",
+      setSelectedAgreement("");
+      setSelectedPublisher("");
+      setSelectedWriter("");
+      setPayeeData({
+        payee_name: "",
+        payee_type: "writer",
         email: "",
         phone: "",
         address: "",
-        contact_type: "writer",
         tax_id: "",
+        is_primary: false,
       });
       setSplitData({
         default_performance_share: 0,
@@ -104,9 +155,14 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
     }
   };
 
+  // Get selected hierarchy items
+  const selectedAgreementData = agreements.find(a => a.id === selectedAgreement);
+  const selectedPublisherData = originalPublishers.find(p => p.id === selectedPublisher);
+  const selectedWriterData = writers.find(w => w.id === selectedWriter);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Payee</DialogTitle>
         </DialogHeader>
@@ -117,79 +173,190 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
             <TabsTrigger value="earnings-split">Earnings Split Setup</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="payee-setup" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handlePayeeFormChange("name", e.target.value)}
-                  placeholder="Enter payee name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contact_type">Type</Label>
-                <Select
-                  value={formData.contact_type}
-                  onValueChange={(value) => handlePayeeFormChange("contact_type", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="writer">Writer</SelectItem>
-                    <SelectItem value="publisher">Publisher</SelectItem>
-                    <SelectItem value="artist">Artist</SelectItem>
-                    <SelectItem value="agent">Agent</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+          <TabsContent value="payee-setup" className="space-y-6">
+            {/* Hierarchy Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Select Hierarchy</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Agreement → Original Publisher → Writer → Payee
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Agreement Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="agreement">Agreement (AGR#) *</Label>
+                  <Select value={selectedAgreement} onValueChange={setSelectedAgreement}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an agreement" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {agreements.map((agreement) => (
+                        <SelectItem key={agreement.id} value={agreement.id}>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{agreement.agreement_id}</Badge>
+                            <span>{agreement.title}</span>
+                            <span className="text-muted-foreground">({agreement.counterparty_name})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handlePayeeFormChange("email", e.target.value)}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handlePayeeFormChange("phone", e.target.value)}
-                  placeholder="Enter phone number"
-                />
-              </div>
-            </div>
+                {/* Original Publisher Selection */}
+                {selectedAgreement && (
+                  <div className="space-y-2">
+                    <Label htmlFor="publisher">Original Publisher (OP#) *</Label>
+                    <Select value={selectedPublisher} onValueChange={setSelectedPublisher}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select original publisher" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {originalPublishers.map((publisher) => (
+                          <SelectItem key={publisher.id} value={publisher.id}>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{publisher.op_id}</Badge>
+                              <span>{publisher.publisher_name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => handlePayeeFormChange("address", e.target.value)}
-                placeholder="Enter full address"
-                rows={3}
-              />
-            </div>
+                {/* Writer Selection */}
+                {selectedPublisher && (
+                  <div className="space-y-2">
+                    <Label htmlFor="writer">Writer (Writer ID) *</Label>
+                    <Select value={selectedWriter} onValueChange={setSelectedWriter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select writer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {writers.map((writer) => (
+                          <SelectItem key={writer.id} value={writer.id}>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{writer.writer_id}</Badge>
+                              <span>{writer.writer_name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-            <div className="space-y-2">
-              <Label htmlFor="tax_id">Tax ID / SSN</Label>
-              <Input
-                id="tax_id"
-                value={formData.tax_id}
-                onChange={(e) => handlePayeeFormChange("tax_id", e.target.value)}
-                placeholder="Enter tax identification number"
-              />
-            </div>
+                {/* Selected Hierarchy Display */}
+                {selectedWriter && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm font-medium mb-2">Selected Hierarchy:</p>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Badge>{selectedAgreementData?.agreement_id}</Badge>
+                      <span>→</span>
+                      <Badge>{selectedPublisherData?.op_id}</Badge>
+                      <span>→</span>
+                      <Badge>{selectedWriterData?.writer_id}</Badge>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Payee Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Payee Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="payee_name">Payee Name *</Label>
+                    <Input
+                      id="payee_name"
+                      value={payeeData.payee_name}
+                      onChange={(e) => handlePayeeFormChange("payee_name", e.target.value)}
+                      placeholder="Enter payee name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="payee_type">Payee Type</Label>
+                    <Select
+                      value={payeeData.payee_type}
+                      onValueChange={(value) => handlePayeeFormChange("payee_type", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="writer">Writer</SelectItem>
+                        <SelectItem value="attorney">Attorney</SelectItem>
+                        <SelectItem value="admin">Administrator</SelectItem>
+                        <SelectItem value="heir">Heir</SelectItem>
+                        <SelectItem value="agent">Agent</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={payeeData.email}
+                      onChange={(e) => handlePayeeFormChange("email", e.target.value)}
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      value={payeeData.phone}
+                      onChange={(e) => handlePayeeFormChange("phone", e.target.value)}
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea
+                    id="address"
+                    value={payeeData.address}
+                    onChange={(e) => handlePayeeFormChange("address", e.target.value)}
+                    placeholder="Enter full address"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tax_id">Tax ID / SSN</Label>
+                    <Input
+                      id="tax_id"
+                      value={payeeData.tax_id}
+                      onChange={(e) => handlePayeeFormChange("tax_id", e.target.value)}
+                      placeholder="Enter tax identification number"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 pt-6">
+                    <input
+                      type="checkbox"
+                      id="is_primary"
+                      checked={payeeData.is_primary}
+                      onChange={(e) => handlePayeeFormChange("is_primary", e.target.checked)}
+                      className="rounded"
+                    />
+                    <Label htmlFor="is_primary">Primary Payee for this Writer</Label>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="earnings-split" className="space-y-4">
@@ -284,7 +451,10 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={loading || !selectedWriter}
+          >
             {loading ? "Adding..." : "Add Payee"}
           </Button>
         </div>

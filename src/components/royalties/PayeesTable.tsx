@@ -8,40 +8,73 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { PayeeFormDialog } from "./PayeeFormDialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface Contact {
+interface PayeeWithHierarchy {
   id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  contact_type: string;
-  address?: string;
-  tax_id?: string;
-  payment_info?: any;
+  payee_name: string;
+  payee_type: string;
+  contact_info: any;
+  payment_info: any;
+  is_primary: boolean;
   created_at: string;
+  writer: {
+    writer_id: string;
+    writer_name: string;
+    original_publisher: {
+      op_id: string;
+      publisher_name: string;
+      agreement: {
+        agreement_id: string;
+        title: string;
+        counterparty_name: string;
+      };
+    };
+  };
 }
 
 export function PayeesTable() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [payees, setPayees] = useState<PayeeWithHierarchy[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const { user } = useAuth();
 
-  const fetchContacts = async () => {
+  const fetchPayees = async () => {
     if (!user) return;
     
     try {
       const { data, error } = await supabase
-        .from('contacts')
-        .select('*')
+        .from('payees')
+        .select(`
+          id,
+          payee_name,
+          payee_type,
+          contact_info,
+          payment_info,
+          is_primary,
+          created_at,
+          writer:writers(
+            writer_id,
+            writer_name,
+            original_publisher:original_publishers(
+              op_id,
+              publisher_name,
+              agreement:contracts(
+                agreement_id,
+                title,
+                counterparty_name
+              )
+            )
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setContacts(data || []);
+      setPayees(data || []);
     } catch (error: any) {
-      console.error('Error fetching contacts:', error);
+      console.error('Error fetching payees:', error);
       toast({
         title: "Error",
         description: "Failed to fetch payees",
@@ -52,22 +85,22 @@ export function PayeesTable() {
     }
   };
 
-  const deleteContact = async (id: string) => {
+  const deletePayee = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('contacts')
+        .from('payees')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
       
-      setContacts(contacts.filter(c => c.id !== id));
+      setPayees(payees.filter(p => p.id !== id));
       toast({
         title: "Success",
         description: "Payee deleted successfully",
       });
     } catch (error: any) {
-      console.error('Error deleting contact:', error);
+      console.error('Error deleting payee:', error);
       toast({
         title: "Error",
         description: "Failed to delete payee",
@@ -76,28 +109,44 @@ export function PayeesTable() {
     }
   };
 
-  const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.contact_type.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPayees = payees.filter(payee =>
+    payee.payee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    payee.payee_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    payee.writer?.writer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    payee.writer?.original_publisher?.publisher_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    payee.writer?.original_publisher?.agreement?.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getContactTypeColor = (type: string) => {
+  const getPayeeTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
       case 'writer': return 'bg-blue-100 text-blue-800';
-      case 'publisher': return 'bg-green-100 text-green-800';
-      case 'agent': return 'bg-purple-100 text-purple-800';
-      case 'artist': return 'bg-orange-100 text-orange-800';
+      case 'attorney': return 'bg-green-100 text-green-800';
+      case 'admin': return 'bg-purple-100 text-purple-800';
+      case 'heir': return 'bg-orange-100 text-orange-800';
+      case 'agent': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   useEffect(() => {
-    fetchContacts();
+    fetchPayees();
   }, [user]);
 
+  // Refresh when dialog closes
+  useEffect(() => {
+    if (!dialogOpen) {
+      fetchPayees();
+    }
+  }, [dialogOpen]);
+
   if (loading) {
-    return <div className="p-8 text-center">Loading payees...</div>;
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          Loading payees...
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -106,7 +155,7 @@ export function PayeesTable() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search payees..."
+            placeholder="Search payees, writers, publishers..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -118,57 +167,96 @@ export function PayeesTable() {
         </Button>
       </div>
 
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Tax ID</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredContacts.map((contact) => (
-              <TableRow key={contact.id}>
-                <TableCell className="font-medium">{contact.name}</TableCell>
-                <TableCell>{contact.email || '-'}</TableCell>
-                <TableCell>{contact.phone || '-'}</TableCell>
-                <TableCell>
-                  <Badge className={getContactTypeColor(contact.contact_type)}>
-                    {contact.contact_type}
-                  </Badge>
-                </TableCell>
-                <TableCell>{contact.tax_id || '-'}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteContact(contact.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Payees Hierarchy</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            View payees organized by Agreement → Original Publisher → Writer relationship
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Payee Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Hierarchy</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Primary</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredPayees.map((payee) => (
+                  <TableRow key={payee.id}>
+                    <TableCell className="font-medium">{payee.payee_name}</TableCell>
+                    <TableCell>
+                      <Badge className={getPayeeTypeColor(payee.payee_type)}>
+                        {payee.payee_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1 text-xs">
+                          <Badge variant="outline" className="text-xs px-1">
+                            {payee.writer?.original_publisher?.agreement?.agreement_id || 'N/A'}
+                          </Badge>
+                          <span className="text-muted-foreground">→</span>
+                          <Badge variant="outline" className="text-xs px-1">
+                            {payee.writer?.original_publisher?.op_id || 'N/A'}
+                          </Badge>
+                          <span className="text-muted-foreground">→</span>
+                          <Badge variant="outline" className="text-xs px-1">
+                            {payee.writer?.writer_id || 'N/A'}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          <div>{payee.writer?.original_publisher?.agreement?.title || 'Unknown Agreement'}</div>
+                          <div>{payee.writer?.original_publisher?.publisher_name || 'Unknown Publisher'} → {payee.writer?.writer_name || 'Unknown Writer'}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{payee.contact_info?.email || '-'}</div>
+                        <div className="text-xs text-muted-foreground">{payee.contact_info?.phone || '-'}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {payee.is_primary && (
+                        <Badge variant="secondary">Primary</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deletePayee(payee.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
-      {filteredContacts.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          {searchTerm
-            ? "No payees found matching your search."
-            : "No payees found. Add your first payee to get started."}
-        </div>
-      )}
+          {filteredPayees.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              {searchTerm
+                ? "No payees found matching your search."
+                : "No payees found. Add your first payee to get started."}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <PayeeFormDialog 
         open={dialogOpen} 
