@@ -117,7 +117,7 @@ export function RoyaltyAllocationList() {
     allFields.add('ROYALTY ID');
     allFields.add('STATEMENT ID');
     allFields.add('BATCH ID');
-    allFields.add('Statement Source');
+    allFields.add('SOURCE');
     allFields.add('QUARTER');
     allFields.add('WORK IDENTIFIER');
     allFields.add('WORK TITLE');
@@ -135,7 +135,7 @@ export function RoyaltyAllocationList() {
       'ROYALTY ID',
       'STATEMENT ID', 
       'BATCH ID',
-      'Statement Source',
+      'SOURCE',
       'QUARTER',
       'WORK IDENTIFIER',
       'WORK TITLE',
@@ -165,8 +165,8 @@ export function RoyaltyAllocationList() {
           return linkedBatch?.batch_id || allocation.batch_id;
         }
         return null;
-      case 'Statement Source':
-        return allocation.mapped_data?.['Statement Source'] || allocation.source;
+      case 'SOURCE':
+        return allocation.mapped_data?.['SOURCE'] || allocation.mapped_data?.['Statement Source'] || allocation.source;
       case 'QUARTER':
         return allocation.mapped_data?.['QUARTER'] || allocation.quarter;
       case 'WORK IDENTIFIER':
