@@ -119,27 +119,45 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
     console.log('Fetching statement royalties for statement ID:', statementId);
     
     try {
-      // First, let's check what's in the royalties_import_staging table for this statement
-      const { data: stagingData, error: stagingError } = await supabase
-        .from('royalties_import_staging')
-        .select('*')
-        .eq('id', statementId)
-        .single();
-      
-      if (stagingError) {
-        console.error('Error fetching staging data:', stagingError);
-      } else {
-        console.log('Staging data:', stagingData);
-      }
-
-      // Try to find royalty allocations that match this statement
-      const { data: royalties, error } = await supabase
+      // Check multiple possible relationships between statement and royalties
+      // 1. Direct statement_id match
+      let { data: royalties, error } = await supabase
         .from('royalty_allocations')
         .select('*')
         .eq('user_id', user.id)
         .eq('statement_id', statementId);
 
       if (error) throw error;
+      
+      // 2. If no direct match, try staging_record_id (this might be how they're linked)
+      if (!royalties || royalties.length === 0) {
+        const { data: stagingRoyalties, error: stagingError } = await supabase
+          .from('royalty_allocations')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('staging_record_id', statementId);
+          
+        if (!stagingError && stagingRoyalties) {
+          royalties = stagingRoyalties;
+        }
+      }
+      
+      // 3. If still no match, check if there are royalties that were created from this batch's statement
+      // by looking at the staging data and finding royalties created around the same time
+      if (!royalties || royalties.length === 0) {
+        const { data: allRoyalties, error: allError } = await supabase
+          .from('royalty_allocations')
+          .select('*')
+          .eq('user_id', user.id)
+          .is('batch_id', null); // Only get unlinked royalties
+          
+        if (!allError && allRoyalties) {
+          // Filter royalties that might be from this statement based on staging_record_id
+          royalties = allRoyalties.filter(royalty => 
+            royalty.staging_record_id === statementId
+          );
+        }
+      }
       
       console.log('Found statement royalties:', royalties);
       setStatementRoyalties(royalties || []);
