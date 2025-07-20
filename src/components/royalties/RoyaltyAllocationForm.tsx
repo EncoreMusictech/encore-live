@@ -103,54 +103,60 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
       console.log('Selected copyright:', selectedCopyright);
       console.log('Copyright writers:', selectedCopyright?.copyright_writers);
       
-      if (selectedCopyright && selectedCopyright.copyright_writers) {
-        // Auto-populate writers from the selected copyright
-        const copyrightWriters = selectedCopyright.copyright_writers.map((writer: any) => {
-          // Try to find a matching contact by name
-          const matchingContact = availableContacts.find(contact => 
-            contact.name.toLowerCase().trim() === writer.writer_name.toLowerCase().trim()
-          );
-          
-          return {
-            id: Date.now() + Math.random(), // Temporary ID for form
-            contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
-            writer_name: writer.writer_name,
-            writer_ipi: writer.ipi_number || '',
-            pro_affiliation: writer.pro_affiliation || '',
-            writer_role: writer.writer_role || '',
-            controlled_status: writer.controlled_status || '',
-            writer_share_percentage: writer.ownership_percentage || 0,
-            performance_share: writer.performance_share || 0,
-            mechanical_share: writer.mechanical_share || 0,
-            synchronization_share: writer.synchronization_share || 0,
-          };
-        });
+      if (selectedCopyright) {
+        // Auto-populate work title from copyright
+        setValue('song_title', selectedCopyright.work_title);
         
-        console.log('Mapped writers:', copyrightWriters);
-        setWriters(copyrightWriters);
-        
-        if (copyrightWriters.length > 0) {
-          toast({
-            title: "Writers Loaded",
-            description: `Loaded ${copyrightWriters.length} writers from copyright`,
+        if (selectedCopyright.copyright_writers) {
+          // Auto-populate writers from the selected copyright
+          const copyrightWriters = selectedCopyright.copyright_writers.map((writer: any) => {
+            // Try to find a matching contact by name
+            const matchingContact = availableContacts.find(contact => 
+              contact.name.toLowerCase().trim() === writer.writer_name.toLowerCase().trim()
+            );
+            
+            return {
+              id: Date.now() + Math.random(), // Temporary ID for form
+              contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
+              writer_name: writer.writer_name,
+              writer_ipi: writer.ipi_number || '',
+              pro_affiliation: writer.pro_affiliation || '',
+              writer_role: writer.writer_role || '',
+              controlled_status: writer.controlled_status || '',
+              writer_share_percentage: writer.ownership_percentage || 0,
+              performance_share: writer.performance_share || 0,
+              mechanical_share: writer.mechanical_share || 0,
+              synchronization_share: writer.synchronization_share || 0,
+            };
           });
+          
+          console.log('Mapped writers:', copyrightWriters);
+          setWriters(copyrightWriters);
+          
+          if (copyrightWriters.length > 0) {
+            toast({
+              title: "Copyright Linked",
+              description: `Work title and ${copyrightWriters.length} writers loaded from copyright`,
+            });
+          } else {
+            toast({
+              title: "Copyright Linked",
+              description: "Work title loaded. This copyright doesn't have any writers. Add writers in the Copyright Management module first.",
+              variant: "destructive",
+            });
+          }
         } else {
+          console.log('No writers found for this copyright');
           toast({
-            title: "No Writers Found",
-            description: "This copyright doesn't have any writers. Add writers in the Copyright Management module first.",
+            title: "Copyright Linked",
+            description: "Work title loaded. This copyright doesn't have any writers associated with it",
             variant: "destructive",
           });
         }
-      } else {
-        console.log('No writers found for this copyright');
-        toast({
-          title: "No Writers Found",
-          description: "This copyright doesn't have any writers associated with it",
-          variant: "destructive",
-        });
       }
     } else {
-      // Clear writers when no copyright is selected
+      // Clear work title and writers when no copyright is selected
+      setValue('song_title', '');
       setWriters([]);
     }
   };
@@ -208,13 +214,24 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="song_title">Work Title *</Label>
+          <Label htmlFor="song_title">
+            Work Title{!watch('copyright_id') && ' *'}
+          </Label>
           <Input
             id="song_title"
-            {...register('song_title', { required: 'Work title is required' })}
+            {...register('song_title', { 
+              required: !watch('copyright_id') ? 'Work title is required' : false 
+            })}
+            readOnly={!!watch('copyright_id')}
+            className={watch('copyright_id') ? 'bg-muted/50' : ''}
           />
           {errors.song_title && (
             <p className="text-sm text-red-600">{String(errors.song_title.message)}</p>
+          )}
+          {watch('copyright_id') && (
+            <p className="text-xs text-muted-foreground">
+              Work title auto-populated from linked copyright
+            </p>
           )}
         </div>
 
