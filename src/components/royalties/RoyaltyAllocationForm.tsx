@@ -240,17 +240,23 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
         const copyrightWriters = writers.filter(writer => !writer.contact_id || writer.contact_id === '' || writer.contact_id === 'none');
         
+        // IMPORTANT: Only process controlled writers (controlled_status = 'C')
+        const controlledValidWriters = validWriters.filter(writer => writer.controlled_status === 'C');
+        const controlledCopyrightWriters = copyrightWriters.filter(writer => writer.controlled_status === 'C');
+        
         console.log('All writers:', writers);
         console.log('Valid writers (with contact_id):', validWriters);
         console.log('Copyright writers (without contact_id):', copyrightWriters);
+        console.log('Controlled valid writers:', controlledValidWriters);
+        console.log('Controlled copyright writers:', controlledCopyrightWriters);
         console.log('Has copyright_id:', !!baseData.copyright_id);
         
-        if (baseData.copyright_id && (validWriters.length > 0 || copyrightWriters.length > 0)) {
-          // Create individual royalty allocations for each writer
+        if (baseData.copyright_id && (controlledValidWriters.length > 0 || controlledCopyrightWriters.length > 0)) {
+          // Create individual royalty allocations for each CONTROLLED writer only
           const grossAmount = parseFloat(data.gross_royalty_amount) || 0;
-          const allWritersToProcess = [...validWriters, ...copyrightWriters];
+          const allControlledWritersToProcess = [...controlledValidWriters, ...controlledCopyrightWriters];
           
-          for (const writer of allWritersToProcess) {
+          for (const writer of allControlledWritersToProcess) {
             const writerShare = writer.writer_share_percentage || 0;
             const writerAmount = (grossAmount * writerShare) / 100;
             
@@ -550,13 +556,34 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
               Warning: Total writer shares exceed 100% ({totalWriterShares}%)
             </p>
           </div>
-        )}
+         )}
+
+         {/* Warning for non-controlled writers */}
+         {writers.some(writer => writer.controlled_status === 'NC') && (
+           <div className="p-3 bg-orange-50 border border-orange-200 rounded-md">
+             <p className="text-sm text-orange-800">
+               <strong>Note:</strong> Only controlled writers (marked as 'C') will have royalties calculated. 
+               Non-controlled writers will not generate royalty allocations.
+             </p>
+           </div>
+         )}
 
         {writers.map((writer, index) => (
           <Card key={writer.id || index}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Writer {index + 1}</CardTitle>
+             <CardHeader className="pb-3">
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-2">
+                   <CardTitle className="text-sm">Writer {index + 1}</CardTitle>
+                   {writer.controlled_status === 'C' ? (
+                     <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-200">
+                       Controlled
+                     </Badge>
+                   ) : (
+                     <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800 border-orange-200">
+                       Non-Controlled
+                     </Badge>
+                   )}
+                 </div>
                 <Button
                   type="button"
                   variant="ghost"
