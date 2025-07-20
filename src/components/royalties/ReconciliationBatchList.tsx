@@ -230,6 +230,10 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                           <ReconciliationBatchForm
                             batch={editingBatch}
                             onCancel={() => setEditingBatch(null)}
+                            onSuccess={() => {
+                              setEditingBatch(null);
+                              refreshBatches();
+                            }}
                           />
                         </div>
                       </DialogContent>

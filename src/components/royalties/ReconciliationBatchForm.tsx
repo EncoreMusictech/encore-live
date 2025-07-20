@@ -25,10 +25,11 @@ import { BatchRoyaltyManager } from "./BatchRoyaltyManager";
 
 interface ReconciliationBatchFormProps {
   onCancel: () => void;
+  onSuccess?: () => void;
   batch?: any;
 }
 
-export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatchFormProps) {
+export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: ReconciliationBatchFormProps) {
   const [availableStatements, setAvailableStatements] = useState<any[]>([]);
   const [loadingStatements, setLoadingStatements] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
@@ -192,12 +193,31 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
 
       if (batch) {
         await updateBatch(batch.id, cleanedData);
+        toast({
+          title: "Success",
+          description: "Batch updated successfully",
+        });
       } else {
         await createBatch(cleanedData);
+        toast({
+          title: "Success", 
+          description: "Batch created successfully",
+        });
       }
-      onCancel();
+      
+      // Call onSuccess if provided, otherwise onCancel
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        onCancel();
+      }
     } catch (error) {
-      console.error('Error saving batch:', error);
+      console.error("Error saving batch:", error);
+      toast({
+        title: "Error",
+        description: `Failed to ${batch ? 'update' : 'create'} batch`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -424,8 +444,10 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
                     <BatchRoyaltyManager 
                       batchId={batch.id} 
                       onLinkComplete={() => {
-                        // Force a refresh of the allocations
-                        window.location.reload();
+                        // Refresh the allocations data without full page reload
+                        if (onSuccess) {
+                          onSuccess();
+                        }
                       }} 
                     />
                   </div>
