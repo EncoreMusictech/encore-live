@@ -211,6 +211,9 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
 
   const onSubmit = async (data: any) => {
     try {
+      console.log('Form submission data:', data);
+      console.log('Media type from form:', data.media_type);
+      
       // Clean up the data - convert empty strings to null for UUID fields
       const baseData = {
         ...data,
@@ -218,6 +221,9 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         copyright_id: data.copyright_id && data.copyright_id !== '' ? data.copyright_id : null,
         controlled_status: undefined, // This field was removed from the form
       };
+      
+      console.log('Base data after cleanup:', baseData);
+      console.log('Media type in baseData:', baseData.media_type);
 
       if (allocation) {
         // For updates, keep the original behavior
