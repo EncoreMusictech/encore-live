@@ -116,7 +116,23 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       return;
     }
     
+    console.log('Fetching statement royalties for statement ID:', statementId);
+    
     try {
+      // First, let's check what's in the royalties_import_staging table for this statement
+      const { data: stagingData, error: stagingError } = await supabase
+        .from('royalties_import_staging')
+        .select('*')
+        .eq('id', statementId)
+        .single();
+      
+      if (stagingError) {
+        console.error('Error fetching staging data:', stagingError);
+      } else {
+        console.log('Staging data:', stagingData);
+      }
+
+      // Try to find royalty allocations that match this statement
       const { data: royalties, error } = await supabase
         .from('royalty_allocations')
         .select('*')
@@ -124,6 +140,8 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
         .eq('statement_id', statementId);
 
       if (error) throw error;
+      
+      console.log('Found statement royalties:', royalties);
       setStatementRoyalties(royalties || []);
     } catch (error) {
       console.error('Error fetching statement royalties:', error);
