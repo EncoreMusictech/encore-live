@@ -93,6 +93,51 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
     loadCopyrights();
   }, [user]);
 
+  // Load writers from existing allocation's ownership_splits when editing
+  useEffect(() => {
+    if (allocation && allocation.ownership_splits) {
+      const extractedWriters = Object.entries(allocation.ownership_splits).map(([key, value]: [string, any]) => {
+        // Check if this is a copyright writer (temporary identifier)
+        if (key.startsWith('copyright_writer_')) {
+          return {
+            id: Date.now() + Math.random(),
+            contact_id: '', // No contact for copyright writers
+            writer_name: value.writer_name || 'Unknown Writer',
+            writer_ipi: '',
+            pro_affiliation: '',
+            writer_role: 'composer',
+            controlled_status: 'NC',
+            writer_share_percentage: value.writer_share || 0,
+            performance_share: value.performance_share || 0,
+            mechanical_share: value.mechanical_share || 0,
+            synchronization_share: value.synchronization_share || 0,
+          };
+        } else {
+          // This is a contact-based writer
+          const contact = availableContacts.find(c => c.id === key);
+          return {
+            id: Date.now() + Math.random(),
+            contact_id: key,
+            writer_name: contact?.name || 'Unknown Writer',
+            writer_ipi: '',
+            pro_affiliation: '',
+            writer_role: 'composer',
+            controlled_status: 'NC',
+            writer_share_percentage: value.writer_share || 0,
+            performance_share: value.performance_share || 0,
+            mechanical_share: value.mechanical_share || 0,
+            synchronization_share: value.synchronization_share || 0,
+          };
+        }
+      });
+      
+      if (extractedWriters.length > 0) {
+        setWriters(extractedWriters);
+        console.log('Loaded writers from allocation:', extractedWriters);
+      }
+    }
+  }, [allocation, availableContacts]);
+
   // Handle copyright selection and auto-populate writers
   const handleCopyrightChange = (copyrightId: string) => {
     console.log('Copyright selected:', copyrightId);
