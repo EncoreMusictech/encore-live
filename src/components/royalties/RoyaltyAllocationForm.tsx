@@ -482,9 +482,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
 
       {/* Manual Royalty Fields - only show for manual royalties (no statement_id) */}
       {!allocation?.statement_id && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Additional Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label htmlFor="media_type">Media Type</Label>
               <Select onValueChange={(value) => setValue('media_type', value)} defaultValue={watch('media_type')}>
@@ -533,7 +531,6 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
                 </SelectContent>
               </Select>
             </div>
-          </div>
         </div>
       )}
 
