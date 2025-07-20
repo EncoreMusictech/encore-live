@@ -200,10 +200,10 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="song_title">Song Title *</Label>
+          <Label htmlFor="song_title">Work Title *</Label>
           <Input
             id="song_title"
-            {...register('song_title', { required: 'Song title is required' })}
+            {...register('song_title', { required: 'Work title is required' })}
           />
           {errors.song_title && (
             <p className="text-sm text-red-600">{String(errors.song_title.message)}</p>
@@ -220,15 +220,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="artist">Artist</Label>
-          <Input
-            id="artist"
-            {...register('artist')}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="gross_royalty_amount">Gross Royalty Amount</Label>
+          <Label htmlFor="gross_royalty_amount">Royalty Amount</Label>
           <Input
             id="gross_royalty_amount"
             type="number"
