@@ -191,6 +191,11 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
     setWriters([...writers, {
       id: Date.now(),
       contact_id: '',
+      writer_name: '',
+      writer_ipi: '',
+      pro_affiliation: '',
+      writer_role: 'composer',
+      controlled_status: 'NC',
       writer_share_percentage: 0,
       performance_share: 0,
       mechanical_share: 0,
@@ -492,58 +497,124 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
                   </div>
                 </div>
               ) : (
-                // Fallback for manually added writers (when no copyright is linked)
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Contact</Label>
-                    <Select
-                      value={writer.contact_id}
-                      onValueChange={(value) => updateWriter(index, 'contact_id', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select contact" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border shadow-md z-50">
-                        {availableContacts.map((contact) => (
-                          <SelectItem key={contact.id} value={contact.id}>
-                            {contact.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                // Copyright Registration form layout for manually added writers
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Writer Name *</Label>
+                      <Input
+                        value={writer.writer_name || ''}
+                        onChange={(e) => updateWriter(index, 'writer_name', e.target.value)}
+                        placeholder="Enter writer name"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Writer IPI</Label>
+                      <Input
+                        value={writer.writer_ipi || ''}
+                        onChange={(e) => updateWriter(index, 'writer_ipi', e.target.value)}
+                        placeholder="IPI Number"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Writer Share %</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        max="100"
+                        value={writer.writer_share_percentage}
+                        onChange={(e) => updateWriter(index, 'writer_share_percentage', parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">PRO Affiliation</Label>
+                      <Select
+                        value={writer.pro_affiliation || ""}
+                        onValueChange={(value) => updateWriter(index, 'pro_affiliation', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select PRO" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-md z-50">
+                          <SelectItem value="ASCAP">ASCAP</SelectItem>
+                          <SelectItem value="BMI">BMI</SelectItem>
+                          <SelectItem value="SESAC">SESAC</SelectItem>
+                          <SelectItem value="SOCAN">SOCAN</SelectItem>
+                          <SelectItem value="PRS">PRS</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Writer Share %</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      max="100"
-                      value={writer.writer_share_percentage}
-                      onChange={(e) => updateWriter(index, 'writer_share_percentage', parseFloat(e.target.value) || 0)}
-                    />
+                  {/* Additional Writer Details */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Performance Share %</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        max="100"
+                        value={writer.performance_share}
+                        onChange={(e) => updateWriter(index, 'performance_share', parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Mechanical Share %</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        max="100"
+                        value={writer.mechanical_share}
+                        onChange={(e) => updateWriter(index, 'mechanical_share', parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Controlled?</Label>
+                      <Select
+                        value={writer.controlled_status || "NC"}
+                        onValueChange={(value) => updateWriter(index, 'controlled_status', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-md z-50">
+                          <SelectItem value="C">C (Controlled)</SelectItem>
+                          <SelectItem value="NC">NC (Non-Controlled)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Performance Share %</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      max="100"
-                      value={writer.performance_share}
-                      onChange={(e) => updateWriter(index, 'performance_share', parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Mechanical Share %</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      max="100"
-                      value={writer.mechanical_share}
-                      onChange={(e) => updateWriter(index, 'mechanical_share', parseFloat(e.target.value) || 0)}
-                    />
+                  {/* Contact Assignment */}
+                  <div className="pt-4 border-t">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Link to Contact (for payments)</Label>
+                      <Select
+                        value={writer.contact_id || "none"}
+                        onValueChange={(value) => updateWriter(index, 'contact_id', value === "none" ? "" : value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select contact for payments" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-md z-50">
+                          <SelectItem value="none">No contact linked</SelectItem>
+                          {availableContacts.map((contact) => (
+                            <SelectItem key={contact.id} value={contact.id}>
+                              {contact.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Link this writer to an existing contact for royalty payments
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
