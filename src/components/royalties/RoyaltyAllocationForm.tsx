@@ -453,14 +453,14 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Link to Contact (for payments)</Label>
                       <Select
-                        value={writer.contact_id}
-                        onValueChange={(value) => updateWriter(index, 'contact_id', value)}
+                        value={writer.contact_id || "none"}
+                        onValueChange={(value) => updateWriter(index, 'contact_id', value === "none" ? "" : value)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select contact for payments" />
                         </SelectTrigger>
                         <SelectContent className="bg-background border shadow-md z-50">
-                          <SelectItem value="">No contact linked</SelectItem>
+                          <SelectItem value="none">No contact linked</SelectItem>
                           {availableContacts.map((contact) => (
                             <SelectItem key={contact.id} value={contact.id}>
                               {contact.name}
