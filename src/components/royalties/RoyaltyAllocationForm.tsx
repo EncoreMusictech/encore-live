@@ -291,6 +291,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
               }
             };
             
+            console.log('Writer allocation data for:', writer.writer_name, writerAllocationData);
             await createAllocation(writerAllocationData);
           }
         } else {
@@ -308,6 +309,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
               return acc;
             }, {}) : {},
           };
+          console.log('Single allocation data:', cleanedData);
           await createAllocation(cleanedData);
         }
       }

@@ -219,7 +219,7 @@ export function RoyaltyAllocationList() {
         }
         return allocation.mapped_data?.['SHARE'] || allocation.share;
       case 'MEDIA TYPE':
-        return allocation.mapped_data?.['REVENUE SOURCE'] || allocation.revenue_source;
+        return allocation.mapped_data?.['MEDIA TYPE'] || allocation.media_type;
       case 'QUANTITY':
         return allocation.mapped_data?.['QUANTITY'] || allocation.quantity;
       case 'TERRITORY':
