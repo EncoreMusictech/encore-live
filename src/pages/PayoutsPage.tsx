@@ -4,10 +4,14 @@ import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, CreditCard, DollarSign, Users, TrendingUp } from "lucide-react";
 import { usePayouts } from "@/hooks/usePayouts";
 import { EnhancedPayoutForm } from "@/components/royalties/EnhancedPayoutForm";
 import { PayoutList } from "@/components/royalties/PayoutList";
+import { PayeesTable } from "@/components/royalties/PayeesTable";
+import { ExpensesTable } from "@/components/royalties/ExpensesTable";
+import { AccountBalancesTable } from "@/components/royalties/AccountBalancesTable";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 
 export default function PayoutsPage() {
@@ -103,13 +107,36 @@ export default function PayoutsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Client Payouts</CardTitle>
+              <CardTitle>Payouts Management</CardTitle>
               <CardDescription>
-                Manage periodic statements and payments for clients
+                Comprehensive oversight of payees, expenses, account balances, and payouts
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <PayoutList />
+              <Tabs defaultValue="payouts" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="payees">Payees</TabsTrigger>
+                  <TabsTrigger value="expenses">Expenses</TabsTrigger>
+                  <TabsTrigger value="balances">Account Balances</TabsTrigger>
+                  <TabsTrigger value="payouts">Payouts</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="payees" className="mt-6">
+                  <PayeesTable />
+                </TabsContent>
+                
+                <TabsContent value="expenses" className="mt-6">
+                  <ExpensesTable />
+                </TabsContent>
+                
+                <TabsContent value="balances" className="mt-6">
+                  <AccountBalancesTable />
+                </TabsContent>
+                
+                <TabsContent value="payouts" className="mt-6">
+                  <PayoutList />
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
