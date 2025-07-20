@@ -366,10 +366,9 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
           <Label htmlFor="total_gross_amount">Batch Amount ($)</Label>
           <Input
             id="total_gross_amount"
-            type="text"
-            value={`$${(watch('total_gross_amount') || 0).toLocaleString()}`}
-            readOnly
-            className="bg-muted text-muted-foreground"
+            type="number"
+            step="0.01"
+            {...register('total_gross_amount', { valueAsNumber: true })}
           />
         </div>
 
