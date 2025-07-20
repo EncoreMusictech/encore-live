@@ -156,10 +156,10 @@ export function BatchRoyaltyManager({ batchId, onLinkComplete, embedded = false 
                 onCheckedChange={(checked) => handleSelectAll(checked as boolean, allocationsList)}
               />
             </TableHead>
-            <TableHead>Song</TableHead>
-            <TableHead>Artist</TableHead>
-            <TableHead>Source</TableHead>
-            <TableHead>Amount</TableHead>
+            <TableHead>WORK TITLE</TableHead>
+            <TableHead>WRITERS</TableHead>
+            <TableHead>SOURCE</TableHead>
+            <TableHead>AMOUNT</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
@@ -178,7 +178,7 @@ export function BatchRoyaltyManager({ batchId, onLinkComplete, embedded = false 
                   {allocation.song_title}
                 </div>
               </TableCell>
-              <TableCell>{allocation.artist || 'N/A'}</TableCell>
+              <TableCell>{allocation.work_writers || allocation.artist || 'N/A'}</TableCell>
               <TableCell>
                 <Badge variant="outline">{allocation.source || 'Unknown'}</Badge>
               </TableCell>
