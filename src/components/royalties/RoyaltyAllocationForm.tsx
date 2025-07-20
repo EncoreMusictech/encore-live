@@ -211,8 +211,11 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
 
   const onSubmit = async (data: any) => {
     try {
+      console.log('🚀 FORM SUBMISSION STARTED');
       console.log('Form submission data:', data);
       console.log('Media type from form:', data.media_type);
+      console.log('Allocation statement_id:', allocation?.statement_id);
+      console.log('Should show manual fields:', !allocation?.statement_id);
       
       // Clean up the data - convert empty strings to null for UUID fields
       const baseData = {
@@ -494,8 +497,8 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         </div>
       </div>
 
-      {/* Manual Royalty Fields - only show for manual royalties (no statement_id) */}
-      {!allocation?.statement_id && (
+      {/* Manual Royalty Fields - show for new allocations and manual royalties (no statement_id) */}
+      {(!allocation || !allocation?.statement_id) && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label htmlFor="media_type">Media Type</Label>

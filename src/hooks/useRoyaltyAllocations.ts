@@ -93,12 +93,18 @@ export function useRoyaltyAllocations() {
     if (!user) return null;
 
     try {
+      console.log('createAllocation called with data:', allocationData);
+      
+      const insertData = {
+        ...allocationData,
+        user_id: user.id,
+      };
+      
+      console.log('Final insert data:', insertData);
+      
       const { data, error } = await supabase
         .from('royalty_allocations')
-        .insert({
-          ...allocationData,
-          user_id: user.id,
-        } as any)
+        .insert(insertData as any)
         .select()
         .single();
 
