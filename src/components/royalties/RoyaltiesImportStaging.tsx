@@ -45,11 +45,16 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
   };
 
   const handleConfirmDelete = async () => {
+    console.log('handleConfirmDelete called with:', deleteConfirmation);
     if (deleteConfirmation) {
       try {
+        console.log('Starting deletion process...');
         await deleteConfirmation.proceedWithDeletion();
+        console.log('Deletion completed successfully');
         setDeleteConfirmation(null);
+        refreshRecords(); // Force refresh the records list
       } catch (error) {
+        console.error('Error in handleConfirmDelete:', error);
         // Error is already handled in the hook
       }
     }

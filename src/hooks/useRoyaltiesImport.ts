@@ -221,25 +221,41 @@ export function useRoyaltiesImport(batchId?: string) {
 
       // Return the count for the UI to show confirmation dialog
       return { royaltyCount, proceedWithDeletion: async () => {
+        console.log('proceedWithDeletion called for staging record:', id);
+        console.log('Related royalty count:', royaltyCount);
+        
         // Delete related royalty allocations first
         if (royaltyCount > 0) {
+          console.log('Deleting related royalty allocations...');
           const { error: royaltyDeleteError } = await supabase
             .from('royalty_allocations')
             .delete()
             .or(`statement_id.eq.${id},staging_record_id.eq.${id}`);
 
-          if (royaltyDeleteError) throw royaltyDeleteError;
+          if (royaltyDeleteError) {
+            console.error('Error deleting related royalties:', royaltyDeleteError);
+            throw royaltyDeleteError;
+          }
+          console.log('Related royalties deleted successfully');
         }
 
         // Then delete the staging record
+        console.log('Deleting staging record...');
         const { error } = await supabase
           .from('royalties_import_staging')
           .delete()
           .eq('id', id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error deleting staging record:', error);
+          throw error;
+        }
+        console.log('Staging record deleted successfully');
 
+        console.log('Refreshing staging records...');
         await fetchStagingRecords();
+        console.log('Staging records refreshed');
+        
         toast({
           title: "Success",
           description: `Statement deleted successfully${royaltyCount > 0 ? ` along with ${royaltyCount} related royalties` : ''}`,
