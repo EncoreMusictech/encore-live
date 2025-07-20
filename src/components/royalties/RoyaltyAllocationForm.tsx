@@ -191,6 +191,10 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         // For new allocations, if copyright is linked and has writers, create individual entries
         const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
         
+        console.log('All writers:', writers);
+        console.log('Valid writers:', validWriters);
+        console.log('Has copyright_id:', !!baseData.copyright_id);
+        
         if (baseData.copyright_id && validWriters.length > 0) {
           // Create individual royalty allocations for each writer
           const grossAmount = parseFloat(data.gross_royalty_amount) || 0;
