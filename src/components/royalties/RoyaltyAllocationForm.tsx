@@ -385,76 +385,151 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Writer Name from Copyright */}
-              {writer.writer_name && (
-                <div className="p-3 bg-muted/50 rounded-md">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">From Copyright:</div>
-                  <div className="font-medium">{writer.writer_name}</div>
-                  {writer.writer_ipi && (
-                    <div className="text-sm text-muted-foreground">IPI: {writer.writer_ipi}</div>
-                  )}
-                  {writer.pro_affiliation && (
-                    <div className="text-sm text-muted-foreground">PRO: {writer.pro_affiliation}</div>
-                  )}
+              {/* Read-only Writer Details from Copyright */}
+              {writer.writer_name ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Writer Name *</Label>
+                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
+                        <span className="text-sm">{writer.writer_name}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Writer IPI</Label>
+                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
+                        <span className="text-sm text-muted-foreground">
+                          {writer.writer_ipi || 'Not provided'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Writer Share %</Label>
+                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
+                        <span className="text-sm font-medium">{writer.writer_share_percentage}%</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">PRO Affiliation</Label>
+                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
+                        <span className="text-sm">
+                          {writer.pro_affiliation || 'Not provided'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Writer Details */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Performance Share %</Label>
+                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
+                        <span className="text-sm">{writer.performance_share}%</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Mechanical Share %</Label>
+                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
+                        <span className="text-sm">{writer.mechanical_share}%</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Controlled?</Label>
+                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
+                        <span className="text-sm">
+                          {writer.controlled_status === 'C' ? 'C (Controlled)' : 'NC (Non-Controlled)'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact Assignment */}
+                  <div className="pt-4 border-t">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Link to Contact (for payments)</Label>
+                      <Select
+                        value={writer.contact_id}
+                        onValueChange={(value) => updateWriter(index, 'contact_id', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select contact for payments" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-md z-50">
+                          <SelectItem value="">No contact linked</SelectItem>
+                          {availableContacts.map((contact) => (
+                            <SelectItem key={contact.id} value={contact.id}>
+                              {contact.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Link this writer to an existing contact for royalty payments
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Fallback for manually added writers (when no copyright is linked)
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Contact</Label>
+                    <Select
+                      value={writer.contact_id}
+                      onValueChange={(value) => updateWriter(index, 'contact_id', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select contact" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border shadow-md z-50">
+                        {availableContacts.map((contact) => (
+                          <SelectItem key={contact.id} value={contact.id}>
+                            {contact.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Writer Share %</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      max="100"
+                      value={writer.writer_share_percentage}
+                      onChange={(e) => updateWriter(index, 'writer_share_percentage', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Performance Share %</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      max="100"
+                      value={writer.performance_share}
+                      onChange={(e) => updateWriter(index, 'performance_share', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Mechanical Share %</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      max="100"
+                      value={writer.mechanical_share}
+                      onChange={(e) => updateWriter(index, 'mechanical_share', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
                 </div>
               )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Contact</Label>
-                  <Select
-                    value={writer.contact_id}
-                    onValueChange={(value) => updateWriter(index, 'contact_id', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select contact" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-md z-50">
-                      {availableContacts.map((contact) => (
-                        <SelectItem key={contact.id} value={contact.id}>
-                          {contact.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Link to an existing contact for payments
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Writer Share %</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    max="100"
-                    value={writer.writer_share_percentage}
-                    onChange={(e) => updateWriter(index, 'writer_share_percentage', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Performance Share %</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    max="100"
-                    value={writer.performance_share}
-                    onChange={(e) => updateWriter(index, 'performance_share', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Mechanical Share %</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    max="100"
-                    value={writer.mechanical_share}
-                    onChange={(e) => updateWriter(index, 'mechanical_share', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-              </div>
             </CardContent>
           </Card>
         ))}
