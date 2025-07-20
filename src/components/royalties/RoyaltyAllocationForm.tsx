@@ -163,33 +163,74 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
 
   const onSubmit = async (data: any) => {
     try {
-      // Filter writers that have contact_id and create ownership splits
-      const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
-      
       // Clean up the data - convert empty strings to null for UUID fields
-      const cleanedData = {
+      const baseData = {
         ...data,
         batch_id: data.batch_id && data.batch_id !== '' ? data.batch_id : null,
         copyright_id: data.copyright_id && data.copyright_id !== '' ? data.copyright_id : null,
-        // Remove fields we don't want to send
         controlled_status: undefined, // This field was removed from the form
-        ownership_splits: validWriters.length > 0 ? validWriters.reduce((acc, writer) => {
-          acc[writer.contact_id] = {
-            writer_share: writer.writer_share_percentage || 0,
-            performance_share: writer.performance_share || 0,
-            mechanical_share: writer.mechanical_share || 0,
-            synchronization_share: writer.synchronization_share || 0,
-          };
-          return acc;
-        }, {}) : {},
       };
 
-      console.log('Submitting cleaned data:', cleanedData);
-
       if (allocation) {
+        // For updates, keep the original behavior
+        const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
+        const cleanedData = {
+          ...baseData,
+          ownership_splits: validWriters.length > 0 ? validWriters.reduce((acc, writer) => {
+            acc[writer.contact_id] = {
+              writer_share: writer.writer_share_percentage || 0,
+              performance_share: writer.performance_share || 0,
+              mechanical_share: writer.mechanical_share || 0,
+              synchronization_share: writer.synchronization_share || 0,
+            };
+            return acc;
+          }, {}) : {},
+        };
         await updateAllocation(allocation.id, cleanedData);
       } else {
-        await createAllocation(cleanedData);
+        // For new allocations, if copyright is linked and has writers, create individual entries
+        const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
+        
+        if (baseData.copyright_id && validWriters.length > 0) {
+          // Create individual royalty allocations for each writer
+          const grossAmount = parseFloat(data.gross_royalty_amount) || 0;
+          
+          for (const writer of validWriters) {
+            const writerShare = writer.writer_share_percentage || 0;
+            const writerAmount = (grossAmount * writerShare) / 100;
+            
+            const writerAllocationData = {
+              ...baseData,
+              gross_royalty_amount: writerAmount,
+              ownership_splits: {
+                [writer.contact_id]: {
+                  writer_share: writerShare,
+                  performance_share: writer.performance_share || 0,
+                  mechanical_share: writer.mechanical_share || 0,
+                  synchronization_share: writer.synchronization_share || 0,
+                }
+              }
+            };
+            
+            await createAllocation(writerAllocationData);
+          }
+        } else {
+          // Create single allocation if no copyright linked or no writers
+          const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
+          const cleanedData = {
+            ...baseData,
+            ownership_splits: validWriters.length > 0 ? validWriters.reduce((acc, writer) => {
+              acc[writer.contact_id] = {
+                writer_share: writer.writer_share_percentage || 0,
+                performance_share: writer.performance_share || 0,
+                mechanical_share: writer.mechanical_share || 0,
+                synchronization_share: writer.synchronization_share || 0,
+              };
+              return acc;
+            }, {}) : {},
+          };
+          await createAllocation(cleanedData);
+        }
       }
       onCancel();
     } catch (error) {
