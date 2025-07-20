@@ -41,6 +41,9 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
       batch_id: allocation?.batch_id || '',
       copyright_id: allocation?.copyright_id || '',
       comments: allocation?.comments || '',
+      media_type: allocation?.media_type || '',
+      quantity: allocation?.quantity || '',
+      country: allocation?.country || '',
     }
   });
 
@@ -477,6 +480,62 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         </div>
       </div>
 
+      {/* Manual Royalty Fields - only show for manual royalties (no statement_id) */}
+      {!allocation?.statement_id && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Additional Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="media_type">Media Type</Label>
+              <Select onValueChange={(value) => setValue('media_type', value)} defaultValue={watch('media_type')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select media type" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-md z-50">
+                  <SelectItem value="Physical">Physical</SelectItem>
+                  <SelectItem value="Digital">Digital</SelectItem>
+                  <SelectItem value="Streaming">Streaming</SelectItem>
+                  <SelectItem value="Broadcast">Broadcast</SelectItem>
+                  <SelectItem value="Performance">Performance</SelectItem>
+                  <SelectItem value="Synchronization">Synchronization</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <Input
+                id="quantity"
+                placeholder="e.g., 1000 units, 50,000 streams"
+                {...register('quantity')}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="country">Territory</Label>
+              <Select onValueChange={(value) => setValue('country', value)} defaultValue={watch('country')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select territory" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-md z-50">
+                  <SelectItem value="US">United States</SelectItem>
+                  <SelectItem value="CA">Canada</SelectItem>
+                  <SelectItem value="GB">United Kingdom</SelectItem>
+                  <SelectItem value="AU">Australia</SelectItem>
+                  <SelectItem value="DE">Germany</SelectItem>
+                  <SelectItem value="FR">France</SelectItem>
+                  <SelectItem value="JP">Japan</SelectItem>
+                  <SelectItem value="BR">Brazil</SelectItem>
+                  <SelectItem value="MX">Mexico</SelectItem>
+                  <SelectItem value="Worldwide">Worldwide</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Writers Section */}
       <div className="space-y-4">
