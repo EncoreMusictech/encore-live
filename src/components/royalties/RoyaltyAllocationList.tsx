@@ -168,10 +168,27 @@ export function RoyaltyAllocationList() {
         }
         return null;
       case 'SOURCE':
+        // For manual royalties (no staging_record_id), get source from linked batch
+        if (!allocation.staging_record_id && allocation.batch_id) {
+          const linkedBatch = batches?.find(batch => batch.id === allocation.batch_id);
+          return linkedBatch?.source || null;
+        }
+        // For imported royalties, use the normal logic
         return allocation.mapped_data?.['SOURCE'] || allocation.mapped_data?.['Statement Source'] || allocation.source;
       case 'QUARTER':
         return allocation.mapped_data?.['QUARTER'] || allocation.quarter;
       case 'WORK IDENTIFIER':
+        // For manual royalties with linked copyright, use the copyright work_id
+        if (!allocation.staging_record_id && allocation.copyright_id) {
+          // We need to get the work_id from the linked copyright
+          // For now, we'll check if copyrights data is available in the allocation
+          if (allocation.copyrights?.work_id) {
+            return allocation.copyrights.work_id;
+          }
+          // If work_id is not available in the nested data, we might need to fetch it
+          return allocation.work_id || allocation.mapped_data?.['WORK IDENTIFIER'] || allocation.work_identifier;
+        }
+        // For imported royalties, use the normal logic
         return allocation.mapped_data?.['WORK IDENTIFIER'] || allocation.work_identifier;
       case 'WORK TITLE':
         return allocation.mapped_data?.['WORK TITLE'] || allocation.song_title;
