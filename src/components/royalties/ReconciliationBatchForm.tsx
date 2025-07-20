@@ -442,7 +442,8 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
                   </DialogHeader>
                   <div className="max-h-[calc(90vh-120px)] overflow-y-auto">
                     <BatchRoyaltyManager 
-                      batchId={batch.id} 
+                      batchId={batch.id}
+                      embedded={true}
                       onLinkComplete={() => {
                         // Refresh the allocations data without full page reload
                         if (onSuccess) {

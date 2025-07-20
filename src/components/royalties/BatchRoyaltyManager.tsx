@@ -18,9 +18,10 @@ import { toast } from "@/hooks/use-toast";
 interface BatchRoyaltyManagerProps {
   batchId?: string;
   onLinkComplete?: () => void;
+  embedded?: boolean; // Whether this is embedded in another dialog
 }
 
-export function BatchRoyaltyManager({ batchId, onLinkComplete }: BatchRoyaltyManagerProps) {
+export function BatchRoyaltyManager({ batchId, onLinkComplete, embedded = false }: BatchRoyaltyManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("link");
   const [selectedBatch, setSelectedBatch] = useState<string>(batchId || "");
@@ -202,6 +203,223 @@ export function BatchRoyaltyManager({ batchId, onLinkComplete }: BatchRoyaltyMan
   const currentAllocations = activeTab === "link" ? filteredUnlinkedAllocations : filteredLinkedAllocations;
   const totalAllocations = activeTab === "link" ? unlinkedAllocations : linkedAllocations;
 
+  // Render the main content
+  const renderContent = () => (
+    <div className="space-y-6">
+      {/* Batch Selection - only show if not embedded with a specific batchId */}
+      {!embedded && (
+        <div className="space-y-2">
+          <Label htmlFor="batch-select">Select Reconciliation Batch</Label>
+          <Select value={selectedBatch} onValueChange={setSelectedBatch}>
+            <SelectTrigger>
+              <SelectValue placeholder="Choose a batch to manage allocations" />
+            </SelectTrigger>
+            <SelectContent>
+              {batches.map((batch) => (
+                <SelectItem key={batch.id} value={batch.id}>
+                  {batch.batch_id} - {batch.source} (${batch.total_gross_amount.toLocaleString()})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Selected Batch Info */}
+      {selectedBatchData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Selected Batch Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <Label className="text-sm text-muted-foreground">Batch ID</Label>
+                <div className="font-medium">{selectedBatchData.batch_id}</div>
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground">Source</Label>
+                <Badge variant="outline">{selectedBatchData.source}</Badge>
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground">Total Amount</Label>
+                <div className="font-medium">${selectedBatchData.total_gross_amount.toLocaleString()}</div>
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground">Linked Allocations</Label>
+                <div className="font-medium">{linkedAllocations.length}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Selection Summary */}
+      {selectedAllocations.length > 0 && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">
+                  {selectedAllocations.length} allocation{selectedAllocations.length !== 1 ? 's' : ''} selected
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Total: ${totalSelectedAmount.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tabs for Link/Unlink */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="link" className="gap-2">
+            <Link className="h-4 w-4" />
+            Link Royalties ({unlinkedAllocations.length})
+          </TabsTrigger>
+          <TabsTrigger value="unlink" className="gap-2" disabled={!selectedBatch}>
+            <Unlink className="h-4 w-4" />
+            Linked Royalties ({linkedAllocations.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="link" className="space-y-4">
+          <CardDescription>
+            Link unlinked royalty allocations to the selected batch. Only allocations not already linked to another batch are shown.
+          </CardDescription>
+          
+          {/* Search and Filters */}
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search allocations..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources</SelectItem>
+                <SelectItem value="DSP">DSP</SelectItem>
+                <SelectItem value="PRO">PRO</SelectItem>
+                <SelectItem value="YouTube">YouTube</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {renderAllocationTable(filteredUnlinkedAllocations)}
+
+          {filteredUnlinkedAllocations.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              {unlinkedAllocations.length === 0 
+                ? "All allocations are already linked to batches"
+                : "No allocations match your search criteria"
+              }
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="unlink" className="space-y-4">
+          <CardDescription>
+            View and unlink royalty allocations from the selected batch.
+          </CardDescription>
+          
+          {/* Search and Filters */}
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search linked allocations..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources</SelectItem>
+                <SelectItem value="DSP">DSP</SelectItem>
+                <SelectItem value="PRO">PRO</SelectItem>
+                <SelectItem value="YouTube">YouTube</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {renderAllocationTable(filteredLinkedAllocations, true)}
+
+          {filteredLinkedAllocations.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              {linkedAllocations.length === 0 
+                ? "No allocations are linked to this batch"
+                : "No linked allocations match your search criteria"
+              }
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Actions - only show in embedded mode */}
+      {embedded && (
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          {activeTab === "link" ? (
+            <Button 
+              onClick={handleLinkAllocations}
+              disabled={!selectedBatch || selectedAllocations.length === 0}
+            >
+              <Link className="h-4 w-4 mr-2" />
+              Link {selectedAllocations.length} Allocation{selectedAllocations.length !== 1 ? 's' : ''}
+            </Button>
+          ) : (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="destructive"
+                  disabled={selectedAllocations.length === 0}
+                >
+                  <Unlink className="h-4 w-4 mr-2" />
+                  Unlink {selectedAllocations.length} Allocation{selectedAllocations.length !== 1 ? 's' : ''}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Unlink Allocations</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to unlink {selectedAllocations.length} allocation{selectedAllocations.length !== 1 ? 's' : ''} from this batch? 
+                    This will make them available for linking to other batches.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleUnlinkAllocations}>
+                    Unlink
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  // If embedded, just return the content
+  if (embedded) {
+    return renderContent();
+  }
+
+  // If not embedded, wrap in dialog
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -215,171 +433,11 @@ export function BatchRoyaltyManager({ batchId, onLinkComplete }: BatchRoyaltyMan
           <DialogTitle>Manage Royalty Allocations & Batch Links</DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto space-y-6">
-          {/* Batch Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="batch-select">Select Reconciliation Batch</Label>
-            <Select value={selectedBatch} onValueChange={setSelectedBatch}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a batch to manage allocations" />
-              </SelectTrigger>
-              <SelectContent>
-                {batches.map((batch) => (
-                  <SelectItem key={batch.id} value={batch.id}>
-                    {batch.batch_id} - {batch.source} (${batch.total_gross_amount.toLocaleString()})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Selected Batch Info */}
-          {selectedBatchData && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Selected Batch Details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Batch ID</Label>
-                    <div className="font-medium">{selectedBatchData.batch_id}</div>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Source</Label>
-                    <Badge variant="outline">{selectedBatchData.source}</Badge>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Total Amount</Label>
-                    <div className="font-medium">${selectedBatchData.total_gross_amount.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Linked Allocations</Label>
-                    <div className="font-medium">{linkedAllocations.length}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Selection Summary */}
-          {selectedAllocations.length > 0 && (
-            <Card className="border-blue-200 bg-blue-50">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">
-                      {selectedAllocations.length} allocation{selectedAllocations.length !== 1 ? 's' : ''} selected
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Total: ${totalSelectedAmount.toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Tabs for Link/Unlink */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="link" className="gap-2">
-                <Link className="h-4 w-4" />
-                Link Royalties ({unlinkedAllocations.length})
-              </TabsTrigger>
-              <TabsTrigger value="unlink" className="gap-2" disabled={!selectedBatch}>
-                <Unlink className="h-4 w-4" />
-                Linked Royalties ({linkedAllocations.length})
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="link" className="space-y-4">
-              <CardDescription>
-                Link unlinked royalty allocations to the selected batch. Only allocations not already linked to another batch are shown.
-              </CardDescription>
-              
-              {/* Search and Filters */}
-              <div className="flex gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search allocations..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by source" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sources</SelectItem>
-                    <SelectItem value="DSP">DSP</SelectItem>
-                    <SelectItem value="PRO">PRO</SelectItem>
-                    <SelectItem value="YouTube">YouTube</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {renderAllocationTable(filteredUnlinkedAllocations)}
-
-              {filteredUnlinkedAllocations.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  {unlinkedAllocations.length === 0 
-                    ? "All allocations are already linked to batches"
-                    : "No allocations match your search criteria"
-                  }
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="unlink" className="space-y-4">
-              <CardDescription>
-                View and unlink royalty allocations from the selected batch.
-              </CardDescription>
-              
-              {/* Search and Filters */}
-              <div className="flex gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search linked allocations..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by source" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sources</SelectItem>
-                    <SelectItem value="DSP">DSP</SelectItem>
-                    <SelectItem value="PRO">PRO</SelectItem>
-                    <SelectItem value="YouTube">YouTube</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {renderAllocationTable(filteredLinkedAllocations, true)}
-
-              {filteredLinkedAllocations.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  {linkedAllocations.length === 0 
-                    ? "No allocations are linked to this batch"
-                    : "No linked allocations match your search criteria"
-                  }
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+        <div className="flex-1 overflow-y-auto">
+          {renderContent()}
         </div>
 
-        {/* Actions */}
+        {/* Actions - only show in standalone mode */}
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             Cancel
