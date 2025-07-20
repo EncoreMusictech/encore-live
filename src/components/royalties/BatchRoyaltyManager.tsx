@@ -180,7 +180,12 @@ export function BatchRoyaltyManager({ batchId, onLinkComplete, embedded = false 
               </TableCell>
               <TableCell>{allocation.work_writers || allocation.artist || 'N/A'}</TableCell>
               <TableCell>
-                <Badge variant="outline">{allocation.source || 'Unknown'}</Badge>
+                <Badge variant="outline">
+                  {(allocation as any).mapped_data?.['Statement Source'] || 
+                   allocation.source || 
+                   allocation.revenue_source || 
+                   'Unknown'}
+                </Badge>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1">
