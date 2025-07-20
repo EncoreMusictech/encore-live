@@ -138,8 +138,37 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         setWriters(extractedWriters);
         console.log('Loaded writers from allocation:', extractedWriters);
       }
+    } else if (allocation && allocation.copyright_id && availableCopyrights.length > 0) {
+      // If allocation has copyright_id but no writers in ownership_splits, 
+      // try to load writers from the linked copyright
+      const linkedCopyright = availableCopyrights.find(c => c.id === allocation.copyright_id);
+      if (linkedCopyright && linkedCopyright.copyright_writers && linkedCopyright.copyright_writers.length > 0) {
+        const copyrightWriters = linkedCopyright.copyright_writers.map((writer: any) => {
+          // Try to find a matching contact by name
+          const matchingContact = availableContacts.find(contact => 
+            contact.name.toLowerCase().trim() === writer.writer_name.toLowerCase().trim()
+          );
+          
+          return {
+            id: Date.now() + Math.random(), // Temporary ID for form
+            contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
+            writer_name: writer.writer_name,
+            writer_ipi: writer.ipi_number || '',
+            pro_affiliation: writer.pro_affiliation || '',
+            writer_role: writer.writer_role || '',
+            controlled_status: writer.controlled_status || '',
+            writer_share_percentage: writer.ownership_percentage || 0,
+            performance_share: writer.performance_share || 0,
+            mechanical_share: writer.mechanical_share || 0,
+            synchronization_share: writer.synchronization_share || 0,
+          };
+        });
+        
+        setWriters(copyrightWriters);
+        console.log('Loaded writers from linked copyright for existing allocation:', copyrightWriters);
+      }
     }
-  }, [allocation, availableContacts]);
+  }, [allocation, availableContacts, availableCopyrights]);
 
   // Handle copyright selection and auto-populate writers
   const handleCopyrightChange = (copyrightId: string) => {
