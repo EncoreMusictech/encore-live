@@ -425,22 +425,24 @@ export function RoyaltyAllocationList() {
                     return (
                       <TableCell key={columnName}>
                         <div className="flex items-center gap-1">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="ghost" size="sm" onClick={() => setEditingAllocation(allocation)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-                              <DialogHeader>
-                                <DialogTitle>Edit Royalty</DialogTitle>
-                              </DialogHeader>
-                              <RoyaltyAllocationForm
-                                allocation={editingAllocation}
-                                onCancel={() => setEditingAllocation(null)}
-                              />
-                            </DialogContent>
-                          </Dialog>
+                           <Dialog open={!!editingAllocation} onOpenChange={(open) => !open && setEditingAllocation(null)}>
+                             <DialogTrigger asChild>
+                               <Button variant="ghost" size="sm" onClick={() => setEditingAllocation(allocation)}>
+                                 <Edit className="h-4 w-4" />
+                               </Button>
+                             </DialogTrigger>
+                             <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                               <DialogHeader>
+                                 <DialogTitle>Edit Royalty</DialogTitle>
+                               </DialogHeader>
+                               {editingAllocation && (
+                                 <RoyaltyAllocationForm
+                                   allocation={editingAllocation}
+                                   onCancel={() => setEditingAllocation(null)}
+                                 />
+                               )}
+                             </DialogContent>
+                           </Dialog>
                           
                           {!allocation.copyright_id && (
                             <Button
