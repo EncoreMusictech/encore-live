@@ -167,6 +167,53 @@ export type Database = {
         }
         Relationships: []
       }
+      client_account_balances: {
+        Row: {
+          client_id: string
+          created_at: string
+          current_balance: number
+          id: string
+          last_statement_date: string | null
+          next_statement_due: string | null
+          total_earned: number
+          total_paid: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          current_balance?: number
+          id?: string
+          last_statement_date?: string | null
+          next_statement_due?: string | null
+          total_earned?: number
+          total_paid?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          current_balance?: number
+          id?: string
+          last_statement_date?: string | null
+          next_statement_due?: string | null
+          total_earned?: number
+          total_paid?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_account_balances_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_data_associations: {
         Row: {
           client_user_id: string
@@ -1269,6 +1316,53 @@ export type Database = {
         }
         Relationships: []
       }
+      payout_expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          expense_type: string
+          id: string
+          is_percentage: boolean | null
+          payout_id: string | null
+          percentage_rate: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description: string
+          expense_type: string
+          id?: string
+          is_percentage?: boolean | null
+          payout_id?: string | null
+          percentage_rate?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          expense_type?: string
+          id?: string
+          is_percentage?: boolean | null
+          payout_id?: string | null
+          percentage_rate?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_expenses_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "payouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payout_royalties: {
         Row: {
           allocated_amount: number
@@ -1310,7 +1404,12 @@ export type Database = {
       }
       payouts: {
         Row: {
+          admin_fee_amount: number | null
+          admin_fee_percentage: number | null
           amount_due: number
+          approval_status: string | null
+          approved_at: string | null
+          approved_by_user_id: string | null
           client_id: string
           created_at: string
           gross_royalties: number
@@ -1324,7 +1423,9 @@ export type Database = {
           period: string
           period_end: string | null
           period_start: string | null
+          processing_fee_amount: number | null
           royalties_to_date: number
+          statement_notes: string | null
           statement_pdf_url: string | null
           status: string | null
           total_expenses: number
@@ -1332,7 +1433,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_fee_amount?: number | null
+          admin_fee_percentage?: number | null
           amount_due?: number
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by_user_id?: string | null
           client_id: string
           created_at?: string
           gross_royalties?: number
@@ -1346,7 +1452,9 @@ export type Database = {
           period: string
           period_end?: string | null
           period_start?: string | null
+          processing_fee_amount?: number | null
           royalties_to_date?: number
+          statement_notes?: string | null
           statement_pdf_url?: string | null
           status?: string | null
           total_expenses?: number
@@ -1354,7 +1462,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          admin_fee_amount?: number | null
+          admin_fee_percentage?: number | null
           amount_due?: number
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by_user_id?: string | null
           client_id?: string
           created_at?: string
           gross_royalties?: number
@@ -1368,7 +1481,9 @@ export type Database = {
           period?: string
           period_end?: string | null
           period_start?: string | null
+          processing_fee_amount?: number | null
           royalties_to_date?: number
+          statement_notes?: string | null
           statement_pdf_url?: string | null
           status?: string | null
           total_expenses?: number

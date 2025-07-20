@@ -20,8 +20,41 @@ export interface Payout {
   payment_method?: 'ACH' | 'Wire' | 'PayPal' | 'Check';
   payment_reference?: string;
   notes?: string;
+  statement_notes?: string;
   statement_pdf_url?: string;
   status: string;
+  approval_status?: string;
+  approved_by_user_id?: string;
+  approved_at?: string;
+  admin_fee_percentage?: number;
+  admin_fee_amount?: number;
+  processing_fee_amount?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayoutExpense {
+  id: string;
+  user_id: string;
+  payout_id?: string;
+  expense_type: string;
+  description: string;
+  amount: number;
+  is_percentage: boolean;
+  percentage_rate: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientAccountBalance {
+  id: string;
+  user_id: string;
+  client_id: string;
+  current_balance: number;
+  total_earned: number;
+  total_paid: number;
+  last_statement_date?: string;
+  next_statement_due?: string;
   created_at: string;
   updated_at: string;
 }
@@ -70,20 +103,40 @@ export function usePayouts() {
     }
   };
 
-  const createPayout = async (payoutData: Omit<Payout, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+  const createPayout = async (payoutData: any) => {
     if (!user) return null;
 
     try {
+      const { expenses, ...payout } = payoutData;
+      
       const { data, error } = await supabase
         .from('payouts')
         .insert({
-          ...payoutData,
+          ...payout,
           user_id: user.id,
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Create expense records if any
+      if (expenses && expenses.length > 0) {
+        const expenseRecords = expenses.map((expense: any) => ({
+          ...expense,
+          user_id: user.id,
+          payout_id: data.id,
+        }));
+
+        const { error: expenseError } = await supabase
+          .from('payout_expenses')
+          .insert(expenseRecords);
+
+        if (expenseError) {
+          console.error('Error creating expenses:', expenseError);
+          // Continue anyway, don't fail the payout creation
+        }
+      }
 
       toast({
         title: "Success",
@@ -212,21 +265,81 @@ export function usePayouts() {
 
   const calculatePayoutTotals = async (clientId: string, periodStart: string, periodEnd: string) => {
     try {
-      // This would calculate totals based on royalty allocations for the client
-      // For now, returning mock data - this would be replaced with actual calculation logic
+      // Calculate gross royalties from royalty allocations for the client and period
+      const { data: royalties, error: royaltyError } = await supabase
+        .from('royalty_allocations')
+        .select('gross_royalty_amount, net_amount')
+        .eq('user_id', user?.id)
+        .gte('created_at', periodStart)
+        .lte('created_at', periodEnd + 'T23:59:59');
+
+      if (royaltyError) throw royaltyError;
+
+      const grossRoyalties = royalties?.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0) || 0;
+      
+      // Calculate previous payments to this client
+      const { data: previousPayouts, error: payoutError } = await supabase
+        .from('payouts')
+        .select('amount_due, gross_royalties')
+        .eq('user_id', user?.id)
+        .eq('client_id', clientId)
+        .eq('status', 'paid');
+
+      if (payoutError) throw payoutError;
+
+      const paymentsToDate = previousPayouts?.reduce((sum, p) => sum + (p.amount_due || 0), 0) || 0;
+      const royaltiesToDate = previousPayouts?.reduce((sum, p) => sum + (p.gross_royalties || 0), 0) || 0;
+
       const totals = {
-        gross_royalties: 0,
-        total_expenses: 0,
-        net_payable: 0,
-        royalties_to_date: 0,
-        payments_to_date: 0,
-        amount_due: 0,
+        gross_royalties: grossRoyalties,
+        total_expenses: 0, // Will be calculated by the form
+        net_payable: grossRoyalties, // Will be adjusted for expenses
+        royalties_to_date: royaltiesToDate + grossRoyalties,
+        payments_to_date: paymentsToDate,
+        amount_due: grossRoyalties, // Will be adjusted for expenses
       };
 
       return totals;
     } catch (error: any) {
       console.error('Error calculating payout totals:', error);
       return null;
+    }
+  };
+
+  const getClientAccountBalance = async (clientId: string) => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('client_account_balances')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('client_id', clientId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    } catch (error: any) {
+      console.error('Error fetching client balance:', error);
+      return null;
+    }
+  };
+
+  const getPayoutExpenses = async (payoutId: string) => {
+    if (!user) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('payout_expenses')
+        .select('*')
+        .eq('payout_id', payoutId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error: any) {
+      console.error('Error fetching payout expenses:', error);
+      return [];
     }
   };
 
@@ -243,6 +356,8 @@ export function usePayouts() {
     addRoyaltyToPayout,
     removeRoyaltyFromPayout,
     calculatePayoutTotals,
+    getClientAccountBalance,
+    getPayoutExpenses,
     refreshPayouts: fetchPayouts,
   };
 }

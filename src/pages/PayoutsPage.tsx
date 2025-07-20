@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Plus, CreditCard, DollarSign, Users, TrendingUp } from "lucide-react";
 import { usePayouts } from "@/hooks/usePayouts";
-import { PayoutForm } from "@/components/royalties/PayoutForm";
+import { EnhancedPayoutForm } from "@/components/royalties/EnhancedPayoutForm";
 import { PayoutList } from "@/components/royalties/PayoutList";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 
@@ -96,7 +96,7 @@ export default function PayoutsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PayoutForm onCancel={() => setShowForm(false)} />
+                <EnhancedPayoutForm onCancel={() => setShowForm(false)} />
               </CardContent>
             </Card>
           )}
