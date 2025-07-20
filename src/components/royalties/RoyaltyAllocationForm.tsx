@@ -496,13 +496,11 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
                   <SelectValue placeholder="Select media type" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border shadow-md z-50">
-                  <SelectItem value="Physical">Physical</SelectItem>
-                  <SelectItem value="Digital">Digital</SelectItem>
-                  <SelectItem value="Streaming">Streaming</SelectItem>
-                  <SelectItem value="Broadcast">Broadcast</SelectItem>
-                  <SelectItem value="Performance">Performance</SelectItem>
-                  <SelectItem value="Synchronization">Synchronization</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
+                  <SelectItem value="PERF">PERF - Performance Rights</SelectItem>
+                  <SelectItem value="MECH">MECH - Mechanical Rights</SelectItem>
+                  <SelectItem value="SYNCH">SYNCH - Synchronization Rights</SelectItem>
+                  <SelectItem value="PRINT">PRINT - Print Rights</SelectItem>
+                  <SelectItem value="OTHER">OTHER - Other Rights</SelectItem>
                 </SelectContent>
               </Select>
             </div>

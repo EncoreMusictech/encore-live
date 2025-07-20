@@ -29,55 +29,142 @@ export const ENCORE_STANDARD_FIELDS = [
   'ISRC'
 ] as const;
 
+// Media Type Standardization Mapping
+export const MEDIA_TYPE_STANDARDIZATION: Record<string, string> = {
+  // Performance types
+  'PR': 'PERF',
+  'Performance': 'PERF',
+  'Digital - Performance': 'PERF',
+  'Streaming - Performance': 'PERF',
+  'Digital Download - Performance': 'PERF',
+  'Writer Performance': 'PERF',
+  'YouTube': 'PERF',
+  'Terrestrial Radio': 'PERF',
+  'Television': 'PERF',
+  
+  // Mechanical types
+  'N/A': 'MECH',
+  'Streaming': 'MECH',
+  'MECH': 'MECH',
+  'Download': 'MECH',
+  'Streaming - Mechanical': 'MECH',
+  'Mechanical': 'MECH',
+  'Digital Download - Mechanical': 'MECH',
+  'Digital - Mechanical': 'MECH',
+  
+  // Synchronization types
+  'SYNCH': 'SYNCH',
+  'Synchronization': 'SYNCH',
+  
+  // Print types
+  'PRINT': 'PRINT',
+  
+  // Other types
+  'OTHER': 'OTHER',
+  
+  // Performance variations (PERF is default for performance)
+  'PERF': 'PERF',
+};
+
+// Source-specific media type column mappings
+export const SOURCE_MEDIA_TYPE_COLUMNS: Record<string, string> = {
+  'BMI': 'N/A', // BMI doesn't have a media type column
+  'ASCAP (International)': 'Type Of Right',
+  'ASCAP (Domestic)': 'Type Of Right', 
+  'HFA (Harry Fox Agency)': 'CONFIGURATION GROUP',
+  'Kobalt Music Publishing': 'RIGHT_TYPE_GROUP',
+  'The Mechanical Licensing Collective (The MLC)': 'Use Type',
+};
+
 // Default ENCORE mapping configuration
 export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
   'QUARTER': {
     BMI: 'Period',
     ASCAP: 'Quarter',
+    'ASCAP (International)': 'Quarter',
+    'ASCAP (Domestic)': 'Quarter',
     YouTube: 'Period',
     SoundExchange: 'Quarter',
+    'HFA (Harry Fox Agency)': 'Period',
+    'Kobalt Music Publishing': 'Period',
+    'The Mechanical Licensing Collective (The MLC)': 'Period',
   },
   'SOURCE': {
     BMI: 'Source',
-    ASCAP: 'Source', 
+    ASCAP: 'Source',
+    'ASCAP (International)': 'Source',
+    'ASCAP (Domestic)': 'Source', 
     YouTube: 'Platform',
     SoundExchange: 'Service',
+    'HFA (Harry Fox Agency)': 'Source',
+    'Kobalt Music Publishing': 'Source',
+    'The Mechanical Licensing Collective (The MLC)': 'Source',
   },
   'REVENUE SOURCE': {
     BMI: 'Performance Type',
     ASCAP: 'Survey',
+    'ASCAP (International)': 'Survey',
+    'ASCAP (Domestic)': 'Survey',
     YouTube: 'Revenue Type',
     SoundExchange: 'Royalty Type',
+    'HFA (Harry Fox Agency)': 'License Type',
+    'Kobalt Music Publishing': 'Revenue Source',
+    'The Mechanical Licensing Collective (The MLC)': 'Revenue Type',
   },
   'WORK IDENTIFIER': {
     BMI: 'Work ID',
     ASCAP: 'Work Number',
+    'ASCAP (International)': 'Work Number',
+    'ASCAP (Domestic)': 'Work Number',
     YouTube: '',
     SoundExchange: '',
+    'HFA (Harry Fox Agency)': 'Work ID',
+    'Kobalt Music Publishing': 'Work ID',
+    'The Mechanical Licensing Collective (The MLC)': 'Work ID',
   },
   'WORK TITLE': {
     BMI: 'Work Title',
     ASCAP: 'Title',
+    'ASCAP (International)': 'Title',
+    'ASCAP (Domestic)': 'Title',
     YouTube: 'Asset Title',
     SoundExchange: 'Sound Recording Title',
+    'HFA (Harry Fox Agency)': 'Song Title',
+    'Kobalt Music Publishing': 'Work Title',
+    'The Mechanical Licensing Collective (The MLC)': 'Musical Work Title',
   },
   'WORK WRITERS': {
     BMI: 'IP Name',
     ASCAP: 'Writer Name',
+    'ASCAP (International)': 'Writer Name',
+    'ASCAP (Domestic)': 'Writer Name',
     YouTube: 'Channel Name',
     SoundExchange: 'Featured Artist',
+    'HFA (Harry Fox Agency)': 'Writer',
+    'Kobalt Music Publishing': 'Writer Name',
+    'The Mechanical Licensing Collective (The MLC)': 'Writer Name',
   },
   'SHARE': {
     BMI: 'Share %',
     ASCAP: 'Writer Share',
+    'ASCAP (International)': 'Writer Share',
+    'ASCAP (Domestic)': 'Writer Share',
     YouTube: 'Share',
     SoundExchange: 'Share Percentage',
+    'HFA (Harry Fox Agency)': 'Share',
+    'Kobalt Music Publishing': 'Share Percentage',
+    'The Mechanical Licensing Collective (The MLC)': 'Share Percentage',
   },
   'MEDIA TYPE': {
-    BMI: 'Media Type',
-    ASCAP: 'Media Type',
+    BMI: '',
+    ASCAP: 'Type Of Right',
+    'ASCAP (International)': 'Type Of Right',
+    'ASCAP (Domestic)': 'Type Of Right',
     YouTube: 'Content Type',
     SoundExchange: 'Service Type',
+    'HFA (Harry Fox Agency)': 'CONFIGURATION GROUP',
+    'Kobalt Music Publishing': 'RIGHT_TYPE_GROUP',
+    'The Mechanical Licensing Collective (The MLC)': 'Use Type',
   },
   'MEDIA SUB-TYPE': {
     BMI: 'Media Sub-Type',
@@ -259,6 +346,10 @@ export class EncoreMapper {
       case 'SOURCE':
       case 'REVENUE SOURCE':
       case 'MEDIA TYPE':
+        // Apply media type standardization
+        const cleanMediaType = stringValue.replace(/\s+/g, ' ').trim();
+        return this.standardizeMediaType(cleanMediaType, detectedSource);
+        
       case 'MEDIA SUB-TYPE':
       case 'COUNTRY':
         // Clean up text fields
@@ -392,6 +483,31 @@ export class EncoreMapper {
     }
 
     return effectiveMapping;
+  }
+
+  private standardizeMediaType(mediaType: string, detectedSource?: string): string {
+    // First check direct mapping
+    if (MEDIA_TYPE_STANDARDIZATION[mediaType]) {
+      return MEDIA_TYPE_STANDARDIZATION[mediaType];
+    }
+    
+    // For BMI, since they don't have a media type column, default to PERF
+    if (detectedSource === 'BMI') {
+      return 'PERF';
+    }
+    
+    // Case-insensitive matching for edge cases
+    const upperMediaType = mediaType.toUpperCase();
+    const standardKeys = Object.keys(MEDIA_TYPE_STANDARDIZATION).map(k => k.toUpperCase());
+    const matchingKey = standardKeys.find(key => key === upperMediaType);
+    
+    if (matchingKey) {
+      const originalKey = Object.keys(MEDIA_TYPE_STANDARDIZATION)[standardKeys.indexOf(matchingKey)];
+      return MEDIA_TYPE_STANDARDIZATION[originalKey];
+    }
+    
+    // Default to OTHER for unrecognized types
+    return 'OTHER';
   }
 
   saveMapping(detectedSource: string, userFieldMappings: { [key: string]: string }) {
