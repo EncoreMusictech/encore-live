@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Search, MoreHorizontal, Edit, Trash2, Download, FileText, Upload, RefreshCw, Unlink } from "lucide-react";
+import { Search, MoreHorizontal, Edit, Trash2, Download, FileText, Upload, RefreshCw } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { ReconciliationBatchForm } from "./ReconciliationBatchForm";
 
@@ -21,7 +21,7 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [editingBatch, setEditingBatch] = useState<any>(null);
-  const { batches, loading, deleteBatch, unlinkStatement, refreshBatches } = useReconciliationBatches();
+  const { batches, loading, deleteBatch, refreshBatches } = useReconciliationBatches();
 
   const filteredBatches = batches.filter(batch => {
     const batchId = batch.batch_id || '';
@@ -121,82 +121,48 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                 <TableHead>Period</TableHead>
                 <TableHead>Date Received</TableHead>
                 <TableHead>Gross Amount</TableHead>
-                <TableHead>Linked Statement</TableHead>
                 <TableHead>Progress</TableHead>
                 <TableHead>Actions</TableHead>
              </TableRow>
            </TableHeader>
-          <TableBody>
-            {filteredBatches.map((batch) => (
-              <TableRow key={batch.id}>
-                <TableCell className="font-medium">{batch.batch_id || 'Generating...'}</TableCell>
-                <TableCell>
-                  <Badge className={getSourceColor(batch.source)}>
-                    {batch.source}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {batch.statement_period_start && batch.statement_period_end
-                    ? `${batch.statement_period_start} - ${batch.statement_period_end}`
-                    : 'N/A'}
-                </TableCell>
-                <TableCell>
-                  {new Date(batch.date_received).toLocaleDateString()}
-                </TableCell>
-                <TableCell>${batch.total_gross_amount.toLocaleString()}</TableCell>
-                <TableCell>
-                  {batch.linked_statement_id ? (
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        <FileText className="h-3 w-3 mr-1" />
-                        {batch.linked_statement_id.slice(0, 8)}...
-                      </Badge>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" title="Unlink Statement">
-                            <Unlink className="h-3 w-3" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Unlink Statement</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to unlink this statement from the batch? This action can be reversed by editing the batch.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => unlinkStatement(batch.id)}>
-                              Unlink
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground text-sm">No statement linked</span>
-                  )}
+           <TableBody>
+             {filteredBatches.map((batch) => (
+               <TableRow key={batch.id}>
+                 <TableCell className="font-medium">{batch.batch_id || 'Generating...'}</TableCell>
+                 <TableCell>
+                   <Badge className={getSourceColor(batch.source)}>
+                     {batch.source}
+                   </Badge>
                  </TableCell>
                  <TableCell>
-                   <div className="space-y-1 min-w-[120px]">
-                     {(() => {
-                       const allocatedAmount = batch.allocated_amount || 0;
-                       const totalAmount = batch.total_gross_amount || 1; // Avoid division by zero
-                       const progressPercentage = totalAmount > 0 ? (allocatedAmount / totalAmount) * 100 : 0;
-                       const clampedProgress = Math.min(Math.max(progressPercentage, 0), 100);
-                       
-                       return (
-                         <>
-                           <div className="flex justify-between text-xs text-muted-foreground">
-                             <span>${allocatedAmount.toLocaleString()}</span>
-                             <span>{clampedProgress.toFixed(1)}%</span>
-                           </div>
-                           <Progress value={clampedProgress} className="h-2" />
-                         </>
-                       );
-                     })()}
-                   </div>
-                </TableCell>
+                   {batch.statement_period_start && batch.statement_period_end
+                     ? `${batch.statement_period_start} - ${batch.statement_period_end}`
+                     : 'N/A'}
+                 </TableCell>
+                 <TableCell>
+                   {new Date(batch.date_received).toLocaleDateString()}
+                 </TableCell>
+                 <TableCell>${batch.total_gross_amount.toLocaleString()}</TableCell>
+                  <TableCell>
+                    <div className="space-y-1 min-w-[120px]">
+                      {(() => {
+                        const allocatedAmount = batch.allocated_amount || 0;
+                        const totalAmount = batch.total_gross_amount || 1; // Avoid division by zero
+                        const progressPercentage = totalAmount > 0 ? (allocatedAmount / totalAmount) * 100 : 0;
+                        const clampedProgress = Math.min(Math.max(progressPercentage, 0), 100);
+                        
+                        return (
+                          <>
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>${allocatedAmount.toLocaleString()}</span>
+                              <span>{clampedProgress.toFixed(1)}%</span>
+                            </div>
+                            <Progress value={clampedProgress} className="h-2" />
+                          </>
+                        );
+                      })()}
+                    </div>
+                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {onSelectBatch && (

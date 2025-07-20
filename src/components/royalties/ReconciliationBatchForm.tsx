@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link2, ExternalLink, Check, ChevronsUpDown, CalendarIcon, X, Plus } from "lucide-react";
+import { Link2, ExternalLink, Check, ChevronsUpDown, CalendarIcon, X, Plus, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -388,28 +388,80 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
 
         <div className="space-y-2">
           <Label htmlFor="linked_statement_id">Link Statement</Label>
-          <Select 
-            onValueChange={(value) => setValue('linked_statement_id', value)} 
-            defaultValue={watch('linked_statement_id')}
-            disabled={loadingStatements}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={loadingStatements ? "Loading statements..." : "Select a statement to link"} />
-            </SelectTrigger>
-            <SelectContent>
-              {availableStatements.map((statement) => (
-                <SelectItem key={statement.id} value={statement.id}>
-                  {statement.original_filename} ({statement.detected_source})
-                </SelectItem>
-              ))}
-              {availableStatements.length === 0 && !loadingStatements && (
-                <SelectItem value="no-statements" disabled>No available statements</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            Only statements not linked to other batches are shown
-          </p>
+          {watch('linked_statement_id') ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">
+                    {availableStatements.find(s => s.id === watch('linked_statement_id'))?.original_filename || 'Linked Statement'}
+                  </span>
+                  <Badge variant="secondary" className="text-xs">
+                    {availableStatements.find(s => s.id === watch('linked_statement_id'))?.detected_source || 'Unknown'}
+                  </Badge>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                      <X className="h-4 w-4 mr-1" />
+                      Remove
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remove Linked Statement</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to remove the linked statement from this batch? This will unlink the statement but won't delete it.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => setValue('linked_statement_id', '')}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Remove
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setValue('linked_statement_id', '')}
+                className="w-full"
+              >
+                Change Statement
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Select 
+                onValueChange={(value) => setValue('linked_statement_id', value)} 
+                defaultValue={watch('linked_statement_id')}
+                disabled={loadingStatements}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingStatements ? "Loading statements..." : "Select a statement to link"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableStatements.map((statement) => (
+                    <SelectItem key={statement.id} value={statement.id}>
+                      {statement.original_filename} ({statement.detected_source})
+                    </SelectItem>
+                  ))}
+                  {availableStatements.length === 0 && !loadingStatements && (
+                    <SelectItem value="no-statements" disabled>No available statements</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Only statements not linked to other batches are shown
+              </p>
+            </>
+          )}
         </div>
       </div>
 
