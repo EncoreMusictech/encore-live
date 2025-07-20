@@ -190,25 +190,40 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
       } else {
         // For new allocations, if copyright is linked and has writers, create individual entries
         const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
+        const copyrightWriters = writers.filter(writer => !writer.contact_id || writer.contact_id === '' || writer.contact_id === 'none');
         
         console.log('All writers:', writers);
-        console.log('Valid writers:', validWriters);
+        console.log('Valid writers (with contact_id):', validWriters);
+        console.log('Copyright writers (without contact_id):', copyrightWriters);
         console.log('Has copyright_id:', !!baseData.copyright_id);
         
-        if (baseData.copyright_id && validWriters.length > 0) {
+        if (baseData.copyright_id && (validWriters.length > 0 || copyrightWriters.length > 0)) {
           // Create individual royalty allocations for each writer
           const grossAmount = parseFloat(data.gross_royalty_amount) || 0;
+          const allWritersToProcess = [...validWriters, ...copyrightWriters];
           
-          for (const writer of validWriters) {
+          for (const writer of allWritersToProcess) {
             const writerShare = writer.writer_share_percentage || 0;
             const writerAmount = (grossAmount * writerShare) / 100;
             
             const writerAllocationData = {
               ...baseData,
               gross_royalty_amount: writerAmount,
-              ownership_splits: {
+              // Store writer information directly in the allocation fields
+              work_writers: writer.writer_name,
+              share: `${writerShare}%`,
+              ownership_splits: writer.contact_id ? {
                 [writer.contact_id]: {
                   writer_share: writerShare,
+                  performance_share: writer.performance_share || 0,
+                  mechanical_share: writer.mechanical_share || 0,
+                  synchronization_share: writer.synchronization_share || 0,
+                }
+              } : {
+                // For writers without contact_id, use a temporary identifier
+                [`copyright_writer_${writer.id}`]: {
+                  writer_share: writerShare,
+                  writer_name: writer.writer_name,
                   performance_share: writer.performance_share || 0,
                   mechanical_share: writer.mechanical_share || 0,
                   synchronization_share: writer.synchronization_share || 0,
