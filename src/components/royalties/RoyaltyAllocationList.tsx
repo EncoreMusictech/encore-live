@@ -176,16 +176,30 @@ export function RoyaltyAllocationList() {
       case 'WORK TITLE':
         return allocation.mapped_data?.['WORK TITLE'] || allocation.song_title;
       case 'WRITERS':
+        // First check if we have work_writers field (used for copyright writers)
+        if (allocation.work_writers) {
+          return allocation.work_writers;
+        }
+        // Then check mapped data
+        if (allocation.mapped_data?.['WORK WRITERS']) {
+          return allocation.mapped_data['WORK WRITERS'];
+        }
+        // Finally try to extract from ownership_splits for contact-based writers
         if (allocation.ownership_splits && typeof allocation.ownership_splits === 'object') {
-          // Get writer names from the ownership_splits object keys (contact_ids)
           const contactIds = Object.keys(allocation.ownership_splits);
           const writerNames = contactIds.map(contactId => {
+            // Check if this is a copyright writer (starts with "copyright_writer_")
+            if (contactId.startsWith('copyright_writer_')) {
+              const writerData = allocation.ownership_splits[contactId];
+              return writerData.writer_name || contactId;
+            }
+            // Otherwise, try to find the contact
             const contact = contacts.find(c => c.id === contactId);
             return contact ? contact.name : contactId;
           });
-          return writerNames.length > 0 ? writerNames.join(', ') : allocation.mapped_data?.['WORK WRITERS'] || allocation.work_writers;
+          return writerNames.length > 0 ? writerNames.join(', ') : 'N/A';
         }
-        return allocation.mapped_data?.['WORK WRITERS'] || allocation.work_writers;
+        return 'N/A';
       case 'WRITERS SHARES (%)':
         if (allocation.ownership_splits && typeof allocation.ownership_splits === 'object') {
           // Get writer shares from the ownership_splits object
