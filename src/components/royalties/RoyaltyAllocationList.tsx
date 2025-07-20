@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
+import { useContacts } from "@/hooks/useContacts";
 import { RoyaltyAllocationForm } from "./RoyaltyAllocationForm";
 import { AllocationSongMatchDialog } from "./AllocationSongMatchDialog";
 import { ENCORE_STANDARD_FIELDS } from "@/lib/encore-mapper";
@@ -30,6 +31,7 @@ export function RoyaltyAllocationList() {
   const [selectedAllocations, setSelectedAllocations] = useState<Set<string>>(new Set());
   const { allocations, loading, deleteAllocation, refreshAllocations } = useRoyaltyAllocations();
   const { batches } = useReconciliationBatches();
+  const { contacts } = useContacts();
 
   const filteredAllocations = allocations.filter(allocation => {
     const matchesSearch = allocation.song_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -174,8 +176,22 @@ export function RoyaltyAllocationList() {
       case 'WORK TITLE':
         return allocation.mapped_data?.['WORK TITLE'] || allocation.song_title;
       case 'WRITERS':
+        if (allocation.ownership_splits && typeof allocation.ownership_splits === 'object') {
+          // Get writer names from the ownership_splits object keys (contact_ids)
+          const contactIds = Object.keys(allocation.ownership_splits);
+          const writerNames = contactIds.map(contactId => {
+            const contact = contacts.find(c => c.id === contactId);
+            return contact ? contact.name : contactId;
+          });
+          return writerNames.length > 0 ? writerNames.join(', ') : allocation.mapped_data?.['WORK WRITERS'] || allocation.work_writers;
+        }
         return allocation.mapped_data?.['WORK WRITERS'] || allocation.work_writers;
       case 'WRITERS SHARES (%)':
+        if (allocation.ownership_splits && typeof allocation.ownership_splits === 'object') {
+          // Get writer shares from the ownership_splits object
+          const shares = Object.values(allocation.ownership_splits).map((split: any) => `${split.writer_share || 0}%`);
+          return shares.length > 0 ? shares.join(', ') : allocation.mapped_data?.['SHARE'] || allocation.share;
+        }
         return allocation.mapped_data?.['SHARE'] || allocation.share;
       case 'MEDIA TYPE':
         return allocation.mapped_data?.['REVENUE SOURCE'] || allocation.revenue_source;
