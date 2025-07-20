@@ -66,7 +66,11 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
               ownership_percentage,
               performance_share,
               mechanical_share,
-              synchronization_share
+              synchronization_share,
+              ipi_number,
+              pro_affiliation,
+              writer_role,
+              controlled_status
             )
           `)
           .eq('user_id', user.id)
@@ -111,6 +115,10 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             id: Date.now() + Math.random(), // Temporary ID for form
             contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
             writer_name: writer.writer_name,
+            writer_ipi: writer.ipi_number || '',
+            pro_affiliation: writer.pro_affiliation || '',
+            writer_role: writer.writer_role || '',
+            controlled_status: writer.controlled_status || '',
             writer_share_percentage: writer.ownership_percentage || 0,
             performance_share: writer.performance_share || 0,
             mechanical_share: writer.mechanical_share || 0,
@@ -235,7 +243,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             <SelectTrigger>
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border shadow-md z-50">
               <SelectItem value="Controlled">Controlled</SelectItem>
               <SelectItem value="Non-Controlled">Non-Controlled</SelectItem>
             </SelectContent>
@@ -248,7 +256,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             <SelectTrigger>
               <SelectValue placeholder="Select batch" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border shadow-md z-50">
               {processedBatches.map((batch) => (
                 <SelectItem key={batch.id} value={batch.id}>
                   {batch.batch_id} - {batch.source}
@@ -319,7 +327,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             <SelectTrigger>
               <SelectValue placeholder={loadingCopyrights ? "Loading copyrights..." : "Select a copyright"} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border shadow-md z-50">
               <SelectItem value="none">No copyright linked</SelectItem>
               {availableCopyrights.map((copyright) => (
                 <SelectItem key={copyright.id} value={copyright.id}>
@@ -377,17 +385,31 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Writer Name from Copyright */}
+              {writer.writer_name && (
+                <div className="p-3 bg-muted/50 rounded-md">
+                  <div className="text-sm font-medium text-muted-foreground mb-1">From Copyright:</div>
+                  <div className="font-medium">{writer.writer_name}</div>
+                  {writer.writer_ipi && (
+                    <div className="text-sm text-muted-foreground">IPI: {writer.writer_ipi}</div>
+                  )}
+                  {writer.pro_affiliation && (
+                    <div className="text-sm text-muted-foreground">PRO: {writer.pro_affiliation}</div>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Writer</Label>
+                  <Label>Contact</Label>
                   <Select
                     value={writer.contact_id}
                     onValueChange={(value) => updateWriter(index, 'contact_id', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select writer" />
+                      <SelectValue placeholder="Select contact" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border shadow-md z-50">
                       {availableContacts.map((contact) => (
                         <SelectItem key={contact.id} value={contact.id}>
                           {contact.name}
@@ -395,11 +417,9 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
                       ))}
                     </SelectContent>
                   </Select>
-                  {writer.writer_name && (
-                    <p className="text-xs text-muted-foreground">
-                      From copyright: {writer.writer_name}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Link to an existing contact for payments
+                  </p>
                 </div>
 
                 <div className="space-y-2">
