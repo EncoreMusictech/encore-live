@@ -33,6 +33,7 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
   const [dateReceived, setDateReceived] = useState<Date | undefined>(
     batch?.date_received ? new Date(batch.date_received) : new Date()
   );
+  const [statementRoyalties, setStatementRoyalties] = useState<any[]>([]);
   const { createBatch, updateBatch } = useReconciliationBatches();
   const { allocations } = useRoyaltyAllocations();
   const { user } = useAuth();
@@ -108,6 +109,37 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
     fetchAvailableStatements();
   }, [user]);
 
+  // Fetch royalties from linked statement
+  const fetchStatementRoyalties = async (statementId: string) => {
+    if (!user || !statementId) {
+      setStatementRoyalties([]);
+      return;
+    }
+    
+    try {
+      const { data: royalties, error } = await supabase
+        .from('royalty_allocations')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('statement_id', statementId);
+
+      if (error) throw error;
+      setStatementRoyalties(royalties || []);
+    } catch (error) {
+      console.error('Error fetching statement royalties:', error);
+      setStatementRoyalties([]);
+    }
+  };
+
+  // Fetch statement royalties when batch changes or linked statement changes
+  useEffect(() => {
+    if (batch?.linked_statement_id) {
+      fetchStatementRoyalties(batch.linked_statement_id);
+    } else {
+      setStatementRoyalties([]);
+    }
+  }, [batch?.linked_statement_id, user]);
+
   const onSubmit = async (data: any) => {
     try {
       // Clean up the data before submitting
@@ -144,6 +176,11 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
 
   // Get linked royalties for the current batch
   const linkedRoyalties = batch ? allocations.filter(allocation => allocation.batch_id === batch.id) : [];
+
+  // Calculate total royalty amount (linked royalties + statement royalties)
+  const linkedRoyaltiesTotal = linkedRoyalties.reduce((sum, royalty) => sum + (royalty.gross_royalty_amount || 0), 0);
+  const statementRoyaltiesTotal = statementRoyalties.reduce((sum, royalty) => sum + (royalty.gross_royalty_amount || 0), 0);
+  const totalRoyaltyAmount = linkedRoyaltiesTotal + statementRoyaltiesTotal;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -249,6 +286,20 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
             step="0.01"
             {...register('total_gross_amount', { valueAsNumber: true })}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="royalty_amount">Royalty Amount ($)</Label>
+          <Input
+            id="royalty_amount"
+            type="text"
+            value={`$${totalRoyaltyAmount.toLocaleString()}`}
+            readOnly
+            className="bg-muted text-muted-foreground"
+          />
+          <p className="text-xs text-muted-foreground">
+            Total from linked royalties ({linkedRoyalties.length}) + statement royalties ({statementRoyalties.length})
+          </p>
         </div>
 
         <div className="space-y-2">
