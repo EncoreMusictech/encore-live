@@ -259,72 +259,75 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="batch_id">Source Batch</Label>
-          <Select onValueChange={(value) => setValue('batch_id', value)} defaultValue={watch('batch_id')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select batch" />
-            </SelectTrigger>
-            <SelectContent className="bg-background border shadow-md z-50">
-              {processedBatches.map((batch) => (
-                <SelectItem key={batch.id} value={batch.id}>
-                  {batch.batch_id} - {batch.source}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {/* Display selected batch details (view-only) */}
-          {watch('batch_id') && (() => {
-            const selectedBatch = processedBatches.find(b => b.id === watch('batch_id'));
-            if (!selectedBatch) return null;
+        {/* Source Batch - only show if there are processed batches or if already assigned */}
+        {(processedBatches.length > 0 || watch('batch_id')) && (
+          <div className="space-y-2">
+            <Label htmlFor="batch_id">Source Batch</Label>
+            <Select onValueChange={(value) => setValue('batch_id', value)} defaultValue={watch('batch_id')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select batch" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border shadow-md z-50">
+                {processedBatches.map((batch) => (
+                  <SelectItem key={batch.id} value={batch.id}>
+                    {batch.batch_id} - {batch.source}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
-            return (
-              <Card className="mt-3 bg-muted/50">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Badge variant="outline">View Only</Badge>
-                    Reconciliation Batch Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="font-medium">Batch ID:</span> {selectedBatch.batch_id}
-                    </div>
-                    <div>
-                      <span className="font-medium">Source:</span> {selectedBatch.source}
-                    </div>
-                    <div>
-                      <span className="font-medium">Status:</span> 
-                      <Badge variant="secondary" className="ml-2">{selectedBatch.status}</Badge>
-                    </div>
-                    <div>
-                      <span className="font-medium">Date Received:</span> {new Date(selectedBatch.date_received).toLocaleDateString()}
-                    </div>
-                    {selectedBatch.statement_period_start && selectedBatch.statement_period_end && (
-                      <div className="col-span-2">
-                        <span className="font-medium">Statement Period:</span> {new Date(selectedBatch.statement_period_start).toLocaleDateString()} - {new Date(selectedBatch.statement_period_end).toLocaleDateString()}
+            {/* Display selected batch details (view-only) */}
+            {watch('batch_id') && (() => {
+              const selectedBatch = processedBatches.find(b => b.id === watch('batch_id'));
+              if (!selectedBatch) return null;
+              
+              return (
+                <Card className="mt-3 bg-muted/50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Badge variant="outline">View Only</Badge>
+                      Reconciliation Batch Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="font-medium">Batch ID:</span> {selectedBatch.batch_id}
                       </div>
-                    )}
-                    <div>
-                      <span className="font-medium">Total Gross Amount:</span> ${selectedBatch.total_gross_amount?.toLocaleString() || '0.00'}
-                    </div>
-                    <div>
-                      <span className="font-medium">Allocated Amount:</span> ${selectedBatch.allocated_amount?.toLocaleString() || '0.00'}
-                    </div>
-                    {selectedBatch.notes && (
-                      <div className="col-span-2">
-                        <span className="font-medium">Notes:</span> 
-                        <p className="text-muted-foreground mt-1">{selectedBatch.notes}</p>
+                      <div>
+                        <span className="font-medium">Source:</span> {selectedBatch.source}
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })()}
-        </div>
+                      <div>
+                        <span className="font-medium">Status:</span> 
+                        <Badge variant="secondary" className="ml-2">{selectedBatch.status}</Badge>
+                      </div>
+                      <div>
+                        <span className="font-medium">Date Received:</span> {new Date(selectedBatch.date_received).toLocaleDateString()}
+                      </div>
+                      {selectedBatch.statement_period_start && selectedBatch.statement_period_end && (
+                        <div className="col-span-2">
+                          <span className="font-medium">Statement Period:</span> {new Date(selectedBatch.statement_period_start).toLocaleDateString()} - {new Date(selectedBatch.statement_period_end).toLocaleDateString()}
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-medium">Total Gross Amount:</span> ${selectedBatch.total_gross_amount?.toLocaleString() || '0.00'}
+                      </div>
+                      <div>
+                        <span className="font-medium">Allocated Amount:</span> ${selectedBatch.allocated_amount?.toLocaleString() || '0.00'}
+                      </div>
+                      {selectedBatch.notes && (
+                        <div className="col-span-2">
+                          <span className="font-medium">Notes:</span> 
+                          <p className="text-muted-foreground mt-1">{selectedBatch.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="copyright_id">Linked Copyright</Label>
