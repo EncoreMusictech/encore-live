@@ -282,6 +282,11 @@ export class EncoreMapper {
         }
       });
 
+      // Special case: BMI always has PERF as media type
+      if (detectedSource === 'BMI' && !mappedRow['MEDIA TYPE']) {
+        mappedRow['MEDIA TYPE'] = 'PERF';
+      }
+
       // Apply user field mappings (these override default mappings)
       if (userFieldMappings) {
         Object.entries(userFieldMappings).forEach(([encoreField, sourceField]) => {
