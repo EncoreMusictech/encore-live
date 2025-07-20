@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { FileText, Eye, Trash2, AlertTriangle, CheckCircle, Download } from "lucide-react";
 import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { RoyaltiesImportUpload } from "./RoyaltiesImportUpload";
@@ -20,6 +21,39 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
   } = useRoyaltiesImport();
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    recordId: string;
+    filename: string;
+    royaltyCount: number;
+    proceedWithDeletion: () => Promise<void>;
+  } | null>(null);
+
+  const handleDeleteClick = async (record: any) => {
+    try {
+      const result = await deleteStagingRecord(record.id);
+      if (result) {
+        setDeleteConfirmation({
+          recordId: record.id,
+          filename: record.original_filename,
+          royaltyCount: result.royaltyCount,
+          proceedWithDeletion: result.proceedWithDeletion,
+        });
+      }
+    } catch (error) {
+      // Error is already handled in the hook
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirmation) {
+      try {
+        await deleteConfirmation.proceedWithDeletion();
+        setDeleteConfirmation(null);
+      } catch (error) {
+        // Error is already handled in the hook
+      }
+    }
+  };
 
   const downloadEncoreTemplate = () => {
     const headers = [
@@ -159,7 +193,7 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
                         <Button variant="outline" size="sm" onClick={() => setSelectedRecord(record.id)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => deleteStagingRecord(record.id)}>
+                        <Button variant="outline" size="sm" onClick={() => handleDeleteClick(record)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -169,5 +203,43 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
             </Table>
           </div>}
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmation} onOpenChange={(open) => !open && setDeleteConfirmation(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Statement</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteConfirmation && (
+                <>
+                  Are you sure you want to delete the statement "{deleteConfirmation.filename}"?
+                  {deleteConfirmation.royaltyCount > 0 && (
+                    <>
+                      <br /><br />
+                      <strong className="text-destructive">
+                        Warning: This will also delete {deleteConfirmation.royaltyCount} related royalty allocation{deleteConfirmation.royaltyCount !== 1 ? 's' : ''} from the allocation table.
+                      </strong>
+                    </>
+                  )}
+                  <br /><br />
+                  This action cannot be undone.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteConfirmation?.royaltyCount === 0 
+                ? 'Delete Statement' 
+                : `Delete Statement and ${deleteConfirmation?.royaltyCount} Royalties`
+              }
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>;
-}
+  }

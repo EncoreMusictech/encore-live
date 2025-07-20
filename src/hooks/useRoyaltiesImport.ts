@@ -209,18 +209,42 @@ export function useRoyaltiesImport(batchId?: string) {
 
   const deleteStagingRecord = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('royalties_import_staging')
-        .delete()
-        .eq('id', id);
+      // First, count the related royalty allocations
+      const { data: relatedRoyalties, error: countError } = await supabase
+        .from('royalty_allocations')
+        .select('id')
+        .or(`statement_id.eq.${id},staging_record_id.eq.${id}`);
 
-      if (error) throw error;
+      if (countError) throw countError;
 
-      await fetchStagingRecords();
-      toast({
-        title: "Success",
-        description: "Import record deleted successfully",
-      });
+      const royaltyCount = relatedRoyalties?.length || 0;
+
+      // Return the count for the UI to show confirmation dialog
+      return { royaltyCount, proceedWithDeletion: async () => {
+        // Delete related royalty allocations first
+        if (royaltyCount > 0) {
+          const { error: royaltyDeleteError } = await supabase
+            .from('royalty_allocations')
+            .delete()
+            .or(`statement_id.eq.${id},staging_record_id.eq.${id}`);
+
+          if (royaltyDeleteError) throw royaltyDeleteError;
+        }
+
+        // Then delete the staging record
+        const { error } = await supabase
+          .from('royalties_import_staging')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        await fetchStagingRecords();
+        toast({
+          title: "Success",
+          description: `Statement deleted successfully${royaltyCount > 0 ? ` along with ${royaltyCount} related royalties` : ''}`,
+        });
+      }};
     } catch (error) {
       console.error('Error deleting staging record:', error);
       toast({
@@ -228,6 +252,7 @@ export function useRoyaltiesImport(batchId?: string) {
         description: "Failed to delete import record",
         variant: "destructive",
       });
+      throw error;
     }
   };
 
