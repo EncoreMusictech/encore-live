@@ -106,7 +106,7 @@ export function useRoyaltyAllocations() {
 
       toast({
         title: "Success",
-        description: `Royalty ${data.work_id} created successfully`,
+        description: `Royalty for "${data.song_title}" created successfully`,
       });
 
       await fetchAllocations();
