@@ -342,14 +342,6 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         </div>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="recoupable_expenses"
-          checked={watch('recoupable_expenses')}
-          onCheckedChange={(checked) => setValue('recoupable_expenses', checked)}
-        />
-        <Label htmlFor="recoupable_expenses">Recoupable Expenses</Label>
-      </div>
 
       {/* Writers Section */}
       <div className="space-y-4">
