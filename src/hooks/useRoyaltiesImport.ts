@@ -209,7 +209,35 @@ export function useRoyaltiesImport(batchId?: string) {
 
   const deleteStagingRecord = async (id: string) => {
     try {
-      // First, count the related royalty allocations
+      // First, check if the statement is linked to a reconciliation batch
+      const { data: linkedBatch, error: batchError } = await supabase
+        .from('reconciliation_batches')
+        .select('id, batch_id')
+        .eq('linked_statement_id', id)
+        .maybeSingle();
+
+      if (batchError) throw batchError;
+
+      // Also check if the staging record has a batch_id
+      const { data: stagingRecord, error: stagingError } = await supabase
+        .from('royalties_import_staging')
+        .select('batch_id')
+        .eq('id', id)
+        .single();
+
+      if (stagingError) throw stagingError;
+
+      // If linked to a batch, prevent deletion
+      if (linkedBatch || stagingRecord.batch_id) {
+        toast({
+          title: "Cannot Delete Statement",
+          description: "This statement is linked to a reconciliation batch and cannot be deleted. Please unlink it from the batch first.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      // Count the related royalty allocations
       const { data: relatedRoyalties, error: countError } = await supabase
         .from('royalty_allocations')
         .select('id')
@@ -221,40 +249,29 @@ export function useRoyaltiesImport(batchId?: string) {
 
       // Return the count for the UI to show confirmation dialog
       return { royaltyCount, proceedWithDeletion: async () => {
-        console.log('proceedWithDeletion called for staging record:', id);
-        console.log('Related royalty count:', royaltyCount);
-        
         // Delete related royalty allocations first
         if (royaltyCount > 0) {
-          console.log('Deleting related royalty allocations...');
           const { error: royaltyDeleteError } = await supabase
             .from('royalty_allocations')
             .delete()
             .or(`statement_id.eq.${id},staging_record_id.eq.${id}`);
 
           if (royaltyDeleteError) {
-            console.error('Error deleting related royalties:', royaltyDeleteError);
             throw royaltyDeleteError;
           }
-          console.log('Related royalties deleted successfully');
         }
 
         // Then delete the staging record
-        console.log('Deleting staging record...');
         const { error } = await supabase
           .from('royalties_import_staging')
           .delete()
           .eq('id', id);
 
         if (error) {
-          console.error('Error deleting staging record:', error);
           throw error;
         }
-        console.log('Staging record deleted successfully');
 
-        console.log('Refreshing staging records...');
         await fetchStagingRecords();
-        console.log('Staging records refreshed');
         
         toast({
           title: "Success",

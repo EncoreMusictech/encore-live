@@ -31,6 +31,7 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
   const handleDeleteClick = async (record: any) => {
     try {
       const result = await deleteStagingRecord(record.id);
+      // Only show confirmation dialog if deletion is allowed (result is not null)
       if (result) {
         setDeleteConfirmation({
           recordId: record.id,
@@ -39,6 +40,7 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
           proceedWithDeletion: result.proceedWithDeletion,
         });
       }
+      // If result is null, the error message is already shown in the hook
     } catch (error) {
       // Error is already handled in the hook
     }
