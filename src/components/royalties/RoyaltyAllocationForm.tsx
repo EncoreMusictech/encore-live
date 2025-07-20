@@ -164,25 +164,32 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
   const onSubmit = async (data: any) => {
     try {
       // Filter writers that have contact_id and create ownership splits
-      const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none');
+      const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
       
-      const allocationData = {
+      // Clean up the data - convert empty strings to null for UUID fields
+      const cleanedData = {
         ...data,
-        ownership_splits: validWriters.reduce((acc, writer) => {
+        batch_id: data.batch_id && data.batch_id !== '' ? data.batch_id : null,
+        copyright_id: data.copyright_id && data.copyright_id !== '' ? data.copyright_id : null,
+        // Remove fields we don't want to send
+        controlled_status: undefined, // This field was removed from the form
+        ownership_splits: validWriters.length > 0 ? validWriters.reduce((acc, writer) => {
           acc[writer.contact_id] = {
-            writer_share: writer.writer_share_percentage,
-            performance_share: writer.performance_share,
-            mechanical_share: writer.mechanical_share,
-            synchronization_share: writer.synchronization_share,
+            writer_share: writer.writer_share_percentage || 0,
+            performance_share: writer.performance_share || 0,
+            mechanical_share: writer.mechanical_share || 0,
+            synchronization_share: writer.synchronization_share || 0,
           };
           return acc;
-        }, {}),
+        }, {}) : {},
       };
 
+      console.log('Submitting cleaned data:', cleanedData);
+
       if (allocation) {
-        await updateAllocation(allocation.id, allocationData);
+        await updateAllocation(allocation.id, cleanedData);
       } else {
-        await createAllocation(allocationData);
+        await createAllocation(cleanedData);
       }
       onCancel();
     } catch (error) {
