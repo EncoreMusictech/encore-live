@@ -408,7 +408,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Read-only Writer Details from Copyright */}
-              {writer.writer_name ? (
+              {watch('copyright_id') && writer.writer_name ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-2">
