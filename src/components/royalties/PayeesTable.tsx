@@ -7,6 +7,7 @@ import { Search, Edit, Trash2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { PayeeFormDialog } from "./PayeeFormDialog";
 
 interface Contact {
   id: string;
@@ -24,6 +25,7 @@ export function PayeesTable() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { user } = useAuth();
 
   const fetchContacts = async () => {
@@ -110,7 +112,7 @@ export function PayeesTable() {
             className="pl-10"
           />
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4" />
           Add Payee
         </Button>
@@ -167,6 +169,11 @@ export function PayeesTable() {
             : "No payees found. Add your first payee to get started."}
         </div>
       )}
+
+      <PayeeFormDialog 
+        open={dialogOpen} 
+        onOpenChange={setDialogOpen} 
+      />
     </div>
   );
 }
