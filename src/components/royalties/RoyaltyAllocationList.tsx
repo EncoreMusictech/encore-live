@@ -110,52 +110,74 @@ export function RoyaltyAllocationList() {
     
     const allFields = new Set<string>();
     
-    // First, add the fixed columns we always want to show
+    // First, add the fixed columns we always want to show in the specified order
     allFields.add('Checkbox');
-    allFields.add('Royalty ID');
-    allFields.add('Statement ID');
+    allFields.add('ROYALTY ID');
+    allFields.add('STATEMENT ID');
+    allFields.add('BATCH ID');
+    allFields.add('Statement Source');
+    allFields.add('QUARTER');
+    allFields.add('WORK IDENTIFIER');
+    allFields.add('WORK TITLE');
+    allFields.add('WRITERS');
+    allFields.add('WRITERS SHARES (%)');
+    allFields.add('MEDIA TYPE');
+    allFields.add('QUANTITY');
+    allFields.add('TERRITORY');
+    allFields.add('GROSS');
+    allFields.add('ACTIONS');
     
-    // Add all fields from mapped_data across all allocations
-    filteredAllocations.forEach(allocation => {
-      if ((allocation as any).mapped_data && typeof (allocation as any).mapped_data === 'object') {
-        Object.keys((allocation as any).mapped_data).forEach(key => {
-          if (!key.startsWith('_')) { // Exclude internal fields
-            allFields.add(key);
-          }
-        });
-      }
-    });
-    
-    allFields.add('Actions');
-    
-    // Convert to array and sort to match ENCORE standard order
-    const fieldsArray = Array.from(allFields);
-    const orderedFields = ['Checkbox', 'Royalty ID', 'Statement ID'];
-    
-    // Add ENCORE standard fields in order if they exist
-    ENCORE_STANDARD_FIELDS.forEach(field => {
-      if (fieldsArray.includes(field)) {
-        orderedFields.push(field);
-      }
-    });
-    
-    // Add any remaining fields
-    fieldsArray.forEach(field => {
-      if (!orderedFields.includes(field)) {
-        orderedFields.push(field);
-      }
-    });
+    // Convert to array in the exact order specified
+    const orderedFields = [
+      'Checkbox',
+      'ROYALTY ID',
+      'STATEMENT ID', 
+      'BATCH ID',
+      'Statement Source',
+      'QUARTER',
+      'WORK IDENTIFIER',
+      'WORK TITLE',
+      'WRITERS',
+      'WRITERS SHARES (%)',
+      'MEDIA TYPE',
+      'QUANTITY',
+      'TERRITORY',
+      'GROSS',
+      'ACTIONS'
+    ];
     
     return orderedFields;
   };
 
   const getFieldValue = (allocation: any, fieldName: string) => {
     switch (fieldName) {
-      case 'Royalty ID':
+      case 'ROYALTY ID':
         return allocation.royalty_id;
-      case 'Statement ID':
+      case 'STATEMENT ID':
         return allocation.statement_id;
-      case 'Actions':
+      case 'BATCH ID':
+        return allocation.batch_id;
+      case 'Statement Source':
+        return allocation.mapped_data?.['Statement Source'] || allocation.source;
+      case 'QUARTER':
+        return allocation.mapped_data?.['QUARTER'] || allocation.quarter;
+      case 'WORK IDENTIFIER':
+        return allocation.mapped_data?.['WORK IDENTIFIER'] || allocation.work_identifier;
+      case 'WORK TITLE':
+        return allocation.mapped_data?.['WORK TITLE'] || allocation.song_title;
+      case 'WRITERS':
+        return allocation.mapped_data?.['WORK WRITERS'] || allocation.work_writers;
+      case 'WRITERS SHARES (%)':
+        return allocation.mapped_data?.['SHARE'] || allocation.share;
+      case 'MEDIA TYPE':
+        return allocation.mapped_data?.['REVENUE SOURCE'] || allocation.revenue_source;
+      case 'QUANTITY':
+        return allocation.mapped_data?.['QUANTITY'] || allocation.quantity;
+      case 'TERRITORY':
+        return allocation.mapped_data?.['COUNTRY'] || allocation.country;
+      case 'GROSS':
+        return allocation.mapped_data?.['GROSS'] || allocation.gross_royalty_amount;
+      case 'ACTIONS':
       case 'Checkbox':
         return null; // These are handled specially
       default:
@@ -350,7 +372,7 @@ export function RoyaltyAllocationList() {
                     );
                   }
 
-                  if (columnName === 'Actions') {
+                  if (columnName === 'ACTIONS') {
                     return (
                       <TableCell key={columnName}>
                         <div className="flex items-center gap-1">
@@ -411,19 +433,27 @@ export function RoyaltyAllocationList() {
                   const value = getFieldValue(allocation, columnName);
                   
                   return (
-                    <TableCell key={columnName} className={columnName === 'WORK TITLE' ? 'font-medium' : ''}>
-                      {columnName === 'Royalty ID' ? (
-                        <code className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
-                          {value}
-                        </code>
-                      ) : columnName === 'Statement ID' ? (
-                        value ? (
-                          <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
-                            {value}
-                          </code>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">N/A</span>
-                        )
+                     <TableCell key={columnName} className={columnName === 'WORK TITLE' ? 'font-medium' : ''}>
+                       {columnName === 'ROYALTY ID' ? (
+                         <code className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
+                           {value}
+                         </code>
+                       ) : columnName === 'STATEMENT ID' ? (
+                         value ? (
+                           <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                             {value}
+                           </code>
+                         ) : (
+                           <span className="text-muted-foreground text-xs">N/A</span>
+                         )
+                       ) : columnName === 'BATCH ID' ? (
+                         value ? (
+                           <code className="bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs">
+                             {value}
+                           </code>
+                         ) : (
+                           <span className="text-muted-foreground text-xs">N/A</span>
+                         )
                       ) : columnName === 'WORK TITLE' ? (
                         <div className="flex items-center gap-2">
                           {value}
