@@ -33,6 +33,7 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
   const [availableStatements, setAvailableStatements] = useState<any[]>([]);
   const [loadingStatements, setLoadingStatements] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
+  const [linkRoyaltiesOpen, setLinkRoyaltiesOpen] = useState(false);
   const [sourceValue, setSourceValue] = useState(batch?.source || "");
   const [dateReceived, setDateReceived] = useState<Date | undefined>(
     batch?.date_received ? new Date(batch.date_received) : new Date()
@@ -429,7 +430,7 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
                   Royalty allocations linked to this reconciliation batch
                 </CardDescription>
               </div>
-              <Dialog>
+              <Dialog open={linkRoyaltiesOpen} onOpenChange={setLinkRoyaltiesOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
                     <Plus className="h-4 w-4" />
@@ -445,7 +446,9 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
                       batchId={batch.id}
                       embedded={true}
                       onLinkComplete={() => {
-                        // Refresh the allocations data without full page reload
+                        // Close the dialog first
+                        setLinkRoyaltiesOpen(false);
+                        // Then refresh the allocations data without full page reload
                         if (onSuccess) {
                           onSuccess();
                         }
