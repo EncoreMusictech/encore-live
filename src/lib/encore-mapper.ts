@@ -79,7 +79,7 @@ export const SOURCE_MEDIA_TYPE_COLUMNS: Record<string, string> = {
 // Default ENCORE mapping configuration
 export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
   'QUARTER': {
-    BMI: 'Period',
+    BMI: 'PERIOD',
     ASCAP: 'Quarter',
     'ASCAP (International)': 'Quarter',
     'ASCAP (Domestic)': 'Quarter',
@@ -101,7 +101,7 @@ export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
     'The Mechanical Licensing Collective (The MLC)': 'Source',
   },
   'REVENUE SOURCE': {
-    BMI: 'Performance Type',
+    BMI: 'PERF SOURCE',
     ASCAP: 'Survey',
     'ASCAP (International)': 'Survey',
     'ASCAP (Domestic)': 'Survey',
@@ -112,7 +112,7 @@ export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
     'The Mechanical Licensing Collective (The MLC)': 'Revenue Type',
   },
   'WORK IDENTIFIER': {
-    BMI: 'Work ID',
+    BMI: 'TITLE #',
     ASCAP: 'Work Number',
     'ASCAP (International)': 'Work Number',
     'ASCAP (Domestic)': 'Work Number',
@@ -123,7 +123,7 @@ export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
     'The Mechanical Licensing Collective (The MLC)': 'Work ID',
   },
   'WORK TITLE': {
-    BMI: 'Work Title',
+    BMI: 'TITLE NAME',
     ASCAP: 'Title',
     'ASCAP (International)': 'Title',
     'ASCAP (Domestic)': 'Title',
@@ -134,7 +134,7 @@ export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
     'The Mechanical Licensing Collective (The MLC)': 'Musical Work Title',
   },
   'WORK WRITERS': {
-    BMI: 'IP Name',
+    BMI: 'PARTICIPANT NAME',
     ASCAP: 'Writer Name',
     'ASCAP (International)': 'Writer Name',
     'ASCAP (Domestic)': 'Writer Name',
@@ -145,7 +145,7 @@ export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
     'The Mechanical Licensing Collective (The MLC)': 'Writer Name',
   },
   'SHARE': {
-    BMI: 'Share %',
+    BMI: 'PARTICIPANT %',
     ASCAP: 'Writer Share',
     'ASCAP (International)': 'Writer Share',
     'ASCAP (Domestic)': 'Writer Share',
@@ -173,19 +173,19 @@ export const DEFAULT_ENCORE_MAPPING: EncoreMapping = {
     SoundExchange: 'Service Sub-Type',
   },
   'COUNTRY': {
-    BMI: 'Country',
+    BMI: 'COUNTRY OF PERFORMANCE',
     ASCAP: 'Territory',
     YouTube: 'Country',
     SoundExchange: 'Country',
   },
   'QUANTITY': {
-    BMI: 'Performances',
+    BMI: 'PERF COUNT',
     ASCAP: 'Plays',
     YouTube: 'Views',
     SoundExchange: 'Plays',
   },
   'GROSS': {
-    BMI: ['Current Quarter Royalties', 'Amount', 'Royalty', 'Payment', 'Total Amount', 'Quarter Royalties'],
+    BMI: ['CURRENT ACTIVITY AMT', 'ROYALTY AMOUNT'],
     ASCAP: ['Amount Paid', 'Amount', 'Royalty', 'Payment', 'Total', 'Total Amount', 'Quarter Royalties'],
     YouTube: 'Earnings',
     SoundExchange: 'Royalty',
@@ -343,6 +343,9 @@ export class EncoreMapper {
 
       case 'WORK TITLE':
       case 'WORK WRITERS':
+        // Clean up text fields without standardization
+        return stringValue.replace(/\s+/g, ' ').trim();
+
       case 'SOURCE':
       case 'REVENUE SOURCE':
       case 'MEDIA TYPE':
