@@ -16,10 +16,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link2, ExternalLink, Check, ChevronsUpDown, CalendarIcon, X } from "lucide-react";
+import { Link2, ExternalLink, Check, ChevronsUpDown, CalendarIcon, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { BatchRoyaltyManager } from "./BatchRoyaltyManager";
 
 interface ReconciliationBatchFormProps {
   onCancel: () => void;
@@ -397,13 +399,39 @@ export function ReconciliationBatchForm({ onCancel, batch }: ReconciliationBatch
       {batch && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Link2 className="h-5 w-5" />
-              Linked Royalties ({linkedRoyalties.length})
-            </CardTitle>
-            <CardDescription>
-              Royalty allocations linked to this reconciliation batch
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Link2 className="h-5 w-5" />
+                  Linked Royalties ({linkedRoyalties.length})
+                </CardTitle>
+                <CardDescription>
+                  Royalty allocations linked to this reconciliation batch
+                </CardDescription>
+              </div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Link Royalties
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-6xl max-h-[90vh]">
+                  <DialogHeader>
+                    <DialogTitle>Link Royalties to Batch</DialogTitle>
+                  </DialogHeader>
+                  <div className="max-h-[calc(90vh-120px)] overflow-y-auto">
+                    <BatchRoyaltyManager 
+                      batchId={batch.id} 
+                      onLinkComplete={() => {
+                        // Force a refresh of the allocations
+                        window.location.reload();
+                      }} 
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardHeader>
           <CardContent>
             {linkedRoyalties.length > 0 ? (

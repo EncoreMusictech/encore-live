@@ -9,7 +9,6 @@ import { Plus, BarChart3, Link2 } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
 import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
-import { BatchRoyaltyManager } from "@/components/royalties/BatchRoyaltyManager";
 import { ReconciliationAnalytics } from "@/components/royalties/ReconciliationAnalytics";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 
@@ -27,10 +26,6 @@ export default function ReconciliationPage() {
     refreshBatches();
   };
 
-  const handleLinkComplete = () => {
-    refreshBatches();
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -45,7 +40,6 @@ export default function ReconciliationPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <BatchRoyaltyManager onLinkComplete={handleLinkComplete} />
             <Button onClick={() => setShowForm(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               New Batch
