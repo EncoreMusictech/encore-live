@@ -435,25 +435,11 @@ export function RoyaltyAllocationList() {
                   return (
                      <TableCell key={columnName} className={columnName === 'WORK TITLE' ? 'font-medium' : ''}>
                        {columnName === 'ROYALTY ID' ? (
-                         <code className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
-                           {value}
-                         </code>
+                         <span>{value || 'N/A'}</span>
                        ) : columnName === 'STATEMENT ID' ? (
-                         value ? (
-                           <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
-                             {value}
-                           </code>
-                         ) : (
-                           <span className="text-muted-foreground text-xs">N/A</span>
-                         )
+                         <span>{value || 'N/A'}</span>
                        ) : columnName === 'BATCH ID' ? (
-                         value ? (
-                           <code className="bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs">
-                             {value}
-                           </code>
-                         ) : (
-                           <span className="text-muted-foreground text-xs">N/A</span>
-                         )
+                         <span>{value || 'N/A'}</span>
                       ) : columnName === 'WORK TITLE' ? (
                         <div className="flex items-center gap-2">
                           {value}
