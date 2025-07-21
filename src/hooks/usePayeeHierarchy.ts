@@ -106,6 +106,21 @@ export function usePayeeHierarchy() {
 
       const publisherName = `${agreementData.counterparty_name} Publishing Designee`;
 
+      // Check if a publisher with this name already exists for this agreement
+      const { data: existingPublisher } = await supabase
+        .from('original_publishers')
+        .select('id')
+        .eq('agreement_id', agreementId)
+        .eq('publisher_name', publisherName)
+        .eq('user_id', user.id)
+        .single();
+
+      if (existingPublisher) {
+        // Publisher already exists, just refresh the list
+        await fetchOriginalPublishers(agreementId);
+        return existingPublisher;
+      }
+
       const { data, error } = await supabase
         .from('original_publishers')
         .insert({
@@ -117,7 +132,14 @@ export function usePayeeHierarchy() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // If it's a duplicate key error, just refresh and return
+        if (error.code === '23505') {
+          await fetchOriginalPublishers(agreementId);
+          return null;
+        }
+        throw error;
+      }
 
       // Refresh the original publishers list
       await fetchOriginalPublishers(agreementId);
