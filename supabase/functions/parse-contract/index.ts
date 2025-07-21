@@ -12,15 +12,37 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('=== Parse contract function called ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight');
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log('Parse contract function called');
-
   try {
-    const { fileContent, fileUrl, fileName, userId } = await req.json();
+    console.log('Reading request body...');
+    const requestBody = await req.text();
+    console.log('Raw request body:', requestBody);
+    
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(requestBody);
+      console.log('Parsed request body:', parsedBody);
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Invalid JSON in request body'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    const { fileContent, fileUrl, fileName, userId } = parsedBody;
     
     console.log('Request data:', { fileUrl: !!fileUrl, fileName, userId: !!userId });
 
