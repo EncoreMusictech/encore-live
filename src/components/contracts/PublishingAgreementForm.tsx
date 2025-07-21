@@ -507,7 +507,13 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
       )}
 
       {currentStep === "basic" && agreementType && (
-        <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <form onSubmit={(e) => {
+          console.log('Form submit event triggered');
+          console.log('Form state:', form.formState);
+          console.log('Form errors:', form.formState.errors);
+          console.log('Form values:', form.getValues());
+          return form.handleSubmit(handleSubmit)(e);
+        }}>
           <Card>
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
