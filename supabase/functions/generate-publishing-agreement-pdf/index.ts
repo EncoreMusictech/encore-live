@@ -1635,12 +1635,26 @@ function generateExhibitA(works: any[]): string {
 }
 
 function generateCatalogExhibitA(works: any[]): string {
-  if (works.length === 0) {
-    // If no works are defined, show a placeholder table
+  // Check if we have actual works added to this contract
+  const hasActualWorks = works.length > 0;
+  
+  if (!hasActualWorks) {
+    // No works have been added to this contract - show empty state
     return `
       <div style="page-break-before: always;">
         <div class="section">
           <div class="section-title">Exhibit A – Schedule of Works</div>
+          <div class="section-content">
+            <em>No works have been added to this contract's Schedule of Works yet.</em>
+          </div>
+          <div class="section-content">
+            To add works to this agreement:
+          </div>
+          <div class="bullet-point">1. Navigate to the "Schedule of Works" tab in the contract editor</div>
+          <div class="bullet-point">2. Click "Add Work" to select works from your catalog</div>
+          <div class="bullet-point">3. Configure inheritance settings for royalty splits and controlled status</div>
+          <div class="bullet-point">4. Regenerate the PDF to see the works listed in this exhibit</div>
+          
           <table class="exhibit-table">
             <thead>
               <tr>
@@ -1654,20 +1668,9 @@ function generateCatalogExhibitA(works: any[]): string {
             </thead>
             <tbody>
               <tr>
-                <td>Shake It Off</td>
-                <td>Taylor Swift (50%), Max Martin (25%), Shellback (25%)</td>
-                <td>Swift Music (50%), MXM Publishing (25%), Wolf Cousins (25%)</td>
-                <td>100%</td>
-                <td>T-034.524.680-1</td>
-                <td>Taylor Swift: 0073456789, Swift Music: 00345678912</td>
-              </tr>
-              <tr>
-                <td>Blank Space</td>
-                <td>Taylor Swift (50%), Max Martin (25%), Shellback (25%)</td>
-                <td>Swift Music (50%), MXM Publishing (25%), Wolf Cousins (25%)</td>
-                <td>100%</td>
-                <td>T-034.524.681-2</td>
-                <td>Max Martin: 0011223345, MXM: 00445566778</td>
+                <td colspan="6" style="text-align: center; font-style: italic; padding: 20px; background-color: #f9f9f9;">
+                  Works will appear here once added to the Schedule of Works
+                </td>
               </tr>
             </tbody>
           </table>
@@ -1742,18 +1745,19 @@ function generateCatalogExhibitA(works: any[]): string {
   const hasScheduledWorks = works.length > 0;
   const hasExternalWorkList = acquiredWorkListUrl && acquiredWorkListUrl !== '[Acquired Work List URL]';
   
+  // Only show external work list note if there's a URL and no works scheduled
   const workListNote = hasExternalWorkList && !hasScheduledWorks ? `
     <div class="section-content">
-      <strong>Note:</strong> Complete work listing available at: ${acquiredWorkListUrl}
+      <strong>Note:</strong> Complete work listing available at: <a href="${acquiredWorkListUrl}" target="_blank">${acquiredWorkListUrl}</a>
     </div>
   ` : '';
 
   const tableContent = hasScheduledWorks ? scheduleWorksRows : `
     <tr>
-      <td colspan="6" style="text-align: center; font-style: italic; padding: 20px;">
+      <td colspan="6" style="text-align: center; font-style: italic; padding: 20px; background-color: #f9f9f9;">
         ${hasExternalWorkList 
-          ? 'Works listed in separate catalog document referenced above' 
-          : 'No works have been scheduled for this contract yet. Use the Schedule of Works section to add specific works to this agreement.'}
+          ? `Works listed in external catalog: <a href="${acquiredWorkListUrl}" target="_blank">View Work List</a>` 
+          : 'No works have been scheduled for this contract yet'}
       </td>
     </tr>
   `;
