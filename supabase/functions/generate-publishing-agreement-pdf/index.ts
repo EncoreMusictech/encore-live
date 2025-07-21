@@ -1174,13 +1174,19 @@ function generateCatalogAcquisitionHTML(contract: any, contractData: any, partie
 
   // Extract financial terms
   const acquisitionPrice = contractData.acquisition_price ? `$${contractData.acquisition_price.toLocaleString()}` : '[Acquisition Price]';
-  const royaltyOverride = contractData.royalty_override_percentage || '[Royalty Override %]';
+  const royaltyOverride = contractData.royalty_override_to_seller || '[Royalty Override %]';
   const paymentMethod = contractData.payment_method || '[Payment Method]';
   const paymentTerms = contractData.payment_terms_days || '[Payment Terms in Days]';
   const minimumThreshold = contractData.minimum_payment_threshold ? `$${contractData.minimum_payment_threshold}` : '$[Minimum Payment Threshold]';
 
   // Extract rights and reversion terms
-  const rightsAcquired = Array.isArray(contractData.rights_acquired) ? contractData.rights_acquired.join(' / ') : '[Rights Acquired: Admin / Full Ownership / Sync / Master / Print]';
+  const rightsAcquiredMap = {
+    '100_percent': '100% Publishing',
+    'partial': 'Partial Publishing', 
+    'admin_only': 'Admin Only',
+    'masters_and_publishing': 'Masters & Publishing'
+  };
+  const rightsAcquired = rightsAcquiredMap[contractData.rights_acquired as keyof typeof rightsAcquiredMap] || '[Rights Acquired: Admin / Full Ownership / Sync / Master / Print]';
   const perpetualRights = contractData.perpetual_rights ? 'Yes' : 'No';
   const tailPeriod = contractData.tail_period_months || '[Tail Period]';
   const reversionClause = contractData.reversion_clause || '[Reversion Clause]';
@@ -1188,6 +1194,7 @@ function generateCatalogAcquisitionHTML(contract: any, contractData: any, partie
   // Extract participation terms
   const originalPublisherParticipation = contractData.original_publisher_participation || '[e.g. 10% override on royalties for 5 years]';
   const renewalOptions = contractData.renewal_options ? 'Yes' : 'No';
+  const acquiredWorkListUrl = contractData.acquired_work_list_url || '[Acquired Work List URL]';
 
   // Generate interested parties table
   const interestedPartiesRows = parties.map(party => `
@@ -1611,10 +1618,18 @@ function generateCatalogExhibitA(works: any[]): string {
     </tr>
   `).join('');
 
+  const hasAcquiredWorkList = works.length > 0;
+  const workListNote = hasAcquiredWorkList ? '' : `
+    <div class="section-content">
+      <strong>Note:</strong> Complete work listing available at: ${acquiredWorkListUrl}
+    </div>
+  `;
+
   return `
     <div style="page-break-before: always;">
       <div class="section">
         <div class="section-title">Exhibit A – Schedule of Works</div>
+        ${workListNote}
         <table class="exhibit-table">
           <thead>
             <tr>
@@ -1627,7 +1642,13 @@ function generateCatalogExhibitA(works: any[]): string {
             </tr>
           </thead>
           <tbody>
-            ${scheduleWorksRows}
+            ${hasAcquiredWorkList ? scheduleWorksRows : `
+              <tr>
+                <td colspan="6" style="text-align: center; font-style: italic;">
+                  Works listed in separate catalog document referenced above
+                </td>
+              </tr>
+            `}
           </tbody>
         </table>
       </div>
