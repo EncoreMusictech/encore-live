@@ -157,7 +157,7 @@ Please provide the analysis in the exact JSON format specified.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4-1106-preview',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
