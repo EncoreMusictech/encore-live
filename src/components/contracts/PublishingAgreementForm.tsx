@@ -27,7 +27,8 @@ import {
   AlertCircle,
   ArrowRight,
   Timer,
-  Briefcase
+  Briefcase,
+  Sparkles
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -132,35 +133,44 @@ const getSchemaForType = (type: AgreementType) => {
 interface PublishingAgreementFormProps {
   onCancel: () => void;
   onSuccess: () => void;
+  demoData?: any; // Demo contract data to pre-populate
 }
 
 type FormStep = "type" | "basic" | "terms" | "parties" | "works" | "review";
 
-export function PublishingAgreementForm({ onCancel, onSuccess }: PublishingAgreementFormProps) {
-  const [currentStep, setCurrentStep] = useState<FormStep>("type");
-  const [completedSteps, setCompletedSteps] = useState<Set<FormStep>>(new Set());
+export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: PublishingAgreementFormProps) {
+  const [currentStep, setCurrentStep] = useState<FormStep>(demoData ? "basic" : "type");
+  const [completedSteps, setCompletedSteps] = useState<Set<FormStep>>(
+    demoData ? new Set(["type"]) : new Set()
+  );
   const [isLoading, setIsLoading] = useState(false);
-  const [agreementType, setAgreementType] = useState<AgreementType | null>(null);
+  const [agreementType, setAgreementType] = useState<AgreementType | null>(
+    demoData?.agreementType || null
+  );
   const [contractId, setContractId] = useState<string | null>(null);
+  const [demoInterestedParties, setDemoInterestedParties] = useState(demoData?.interestedParties || []);
+  const [demoScheduleWorks, setDemoScheduleWorks] = useState(demoData?.scheduleWorks || []);
   const { createContract } = useContracts();
   const { toast } = useToast();
   const { incrementUsage } = useDemoAccess();
   const { validateAgreement, generateAgreementId, isValidating } = usePublishingAgreementValidation();
   const { generateAgreementPDF, sendForSignature, checkContractCompliance, isProcessing } = usePublishingAgreementWorkflow();
 
-  // State for form values
+  // State for form values - initialize with demo data if provided
   const [formData, setFormData] = useState({
-    title: "",
-    counterparty_name: "",
-    status: "draft",
-    effective_date: undefined as Date | undefined,
-    end_date: undefined as Date | undefined,
-    territory: [] as string[],
-    governing_law: "",
-    delivery_requirements: [] as string[],
-    approvals_required: false,
-    approval_conditions: "",
-    agreement_type: agreementType,
+    title: demoData?.formData?.title || "",
+    counterparty_name: demoData?.formData?.counterparty_name || "",
+    status: demoData?.formData?.status || "draft",
+    effective_date: demoData?.formData?.effective_date ? new Date(demoData.formData.effective_date) : undefined,
+    end_date: demoData?.formData?.end_date ? new Date(demoData.formData.end_date) : undefined,
+    territory: demoData?.formData?.territory || [],
+    governing_law: demoData?.formData?.governing_law || "",
+    delivery_requirements: demoData?.formData?.delivery_requirements || [],
+    approvals_required: demoData?.formData?.approvals_required || false,
+    approval_conditions: demoData?.formData?.approval_conditions || "",
+    agreement_type: demoData?.agreementType || agreementType,
+    // Spread all other demo form data
+    ...(demoData?.formData || {})
   });
 
   // Dynamic form based on agreement type
@@ -475,7 +485,7 @@ export function PublishingAgreementForm({ onCancel, onSuccess }: PublishingAgree
                     placeholder={`e.g., ${getAgreementTypeLabel(agreementType)} - Artist Name`}
                   />
                   {form.formState.errors.title && (
-                    <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
+                    <p className="text-sm text-destructive">{String(form.formState.errors.title.message)}</p>
                   )}
                 </div>
                 
@@ -487,7 +497,7 @@ export function PublishingAgreementForm({ onCancel, onSuccess }: PublishingAgree
                     placeholder="Publisher, Label, or Writer name"
                   />
                   {form.formState.errors.counterparty_name && (
-                    <p className="text-sm text-destructive">{form.formState.errors.counterparty_name.message}</p>
+                    <p className="text-sm text-destructive">{String(form.formState.errors.counterparty_name.message)}</p>
                   )}
                 </div>
               </div>
@@ -675,6 +685,35 @@ export function PublishingAgreementForm({ onCancel, onSuccess }: PublishingAgree
 
       {currentStep === "parties" && contractId && (
         <div className="space-y-6">
+          {demoData && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Demo Data Available
+                </CardTitle>
+                <CardDescription>
+                  This demo includes {demoInterestedParties.length} pre-configured interested parties. You can add them manually or modify as needed.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {demoInterestedParties.map((party: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between text-sm bg-background rounded p-2">
+                      <div>
+                        <span className="font-medium">{party.name}</span>
+                        <span className="text-muted-foreground ml-2">({party.party_type})</span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        {party.performance_percentage}% performance
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           <InterestedPartiesTable contractId={contractId} />
           
           <div className="flex justify-between">
@@ -691,6 +730,35 @@ export function PublishingAgreementForm({ onCancel, onSuccess }: PublishingAgree
 
       {currentStep === "works" && contractId && (
         <div className="space-y-6">
+          {demoData && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Demo Data Available
+                </CardTitle>
+                <CardDescription>
+                  This demo includes {demoScheduleWorks.length} pre-configured works. You can add them manually or modify as needed.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {demoScheduleWorks.map((work: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between text-sm bg-background rounded p-2">
+                      <div>
+                        <span className="font-medium">{work.song_title}</span>
+                        <span className="text-muted-foreground ml-2">by {work.artist_name}</span>
+                      </div>
+                      <div className="text-muted-foreground text-xs">
+                        {work.work_id}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           <ScheduleWorksTable contractId={contractId} />
           
           <div className="flex justify-between">

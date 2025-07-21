@@ -33,6 +33,7 @@ const ContractManagement = () => {
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
   const [creationMethod, setCreationMethod] = useState<string | null>(null);
   const [showDocuSignImport, setShowDocuSignImport] = useState(false);
+  const [selectedDemoData, setSelectedDemoData] = useState<DemoPublishingContract | null>(null);
 
   const handleEditContract = (contract: any) => {
     setEditingContract(contract);
@@ -287,33 +288,38 @@ const ContractManagement = () => {
                    }}
                  />
                   ) : (
-                    // Step 3: Contract form based on type
-                    selectedContractType === "publishing" ? (
-                      <PublishingAgreementForm 
-                        onCancel={() => {
-                          setSelectedContractType(null);
-                          setCreationMethod(null);
-                        }}
-                        onSuccess={() => {
-                          setIsCreateDialogOpen(false);
-                          setSelectedContractType(null);
-                          setCreationMethod(null);
-                        }}
-                      />
-                    ) : (
-                      <OrganizedContractForm 
-                        contractType={selectedContractType}
-                        onCancel={() => {
-                          setSelectedContractType(null);
-                          setCreationMethod(null);
-                        }}
-                        onSuccess={() => {
-                          setIsCreateDialogOpen(false);
-                          setSelectedContractType(null);
-                          setCreationMethod(null);
-                        }}
-                      />
-                    )
+                     // Step 3: Contract form based on type
+                     selectedContractType === "publishing" ? (
+                       <PublishingAgreementForm 
+                         onCancel={() => {
+                           setSelectedContractType(null);
+                           setCreationMethod(null);
+                           setSelectedDemoData(null);
+                         }}
+                         onSuccess={() => {
+                           setIsCreateDialogOpen(false);
+                           setSelectedContractType(null);
+                           setCreationMethod(null);
+                           setSelectedDemoData(null);
+                         }}
+                         demoData={selectedDemoData}
+                       />
+                     ) : (
+                       <OrganizedContractForm 
+                         contractType={selectedContractType}
+                         onCancel={() => {
+                           setSelectedContractType(null);
+                           setCreationMethod(null);
+                           setSelectedDemoData(null);
+                         }}
+                         onSuccess={() => {
+                           setIsCreateDialogOpen(false);
+                           setSelectedContractType(null);
+                           setCreationMethod(null);
+                           setSelectedDemoData(null);
+                         }}
+                       />
+                     )
                   )}
             </DialogContent>
           </Dialog>
@@ -397,13 +403,11 @@ const ContractManagement = () => {
           <TabsContent value="demos">
             <DemoPublishingContracts 
               onLoadDemo={(demoContract: DemoPublishingContract) => {
-                // Set the contract type and load the demo data
+                // Store the demo data and open the form
+                setSelectedDemoData(demoContract);
                 setSelectedContractType("publishing");
                 setCreationMethod("new");
                 setIsCreateDialogOpen(true);
-                
-                // You could pass the demo data to the form here
-                // For now, we'll let users see the structure and manually load it
               }}
             />
           </TabsContent>
