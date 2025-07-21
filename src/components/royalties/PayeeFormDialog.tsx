@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,28 +54,28 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
     payment_frequency: "quarterly",
   });
 
-  // Handle hierarchy changes
+  // Handle hierarchy changes with useCallback to prevent render loops
   useEffect(() => {
     if (selectedAgreement) {
       fetchOriginalPublishers(selectedAgreement);
       setSelectedPublisher("");
       setSelectedWriter("");
     }
-  }, [selectedAgreement, fetchOriginalPublishers]);
+  }, [selectedAgreement]); // Remove fetchOriginalPublishers from dependencies
 
   // Auto-select publisher when only one exists
   useEffect(() => {
-    if (originalPublishers.length === 1 && !selectedPublisher) {
+    if (originalPublishers.length === 1 && !selectedPublisher && selectedAgreement) {
       setSelectedPublisher(originalPublishers[0].id);
     }
-  }, [originalPublishers, selectedPublisher]);
+  }, [originalPublishers.length, selectedAgreement]); // Optimize dependencies
 
   useEffect(() => {
     if (selectedPublisher) {
       fetchWriters(selectedPublisher);
       setSelectedWriter("");
     }
-  }, [selectedPublisher, fetchWriters]);
+  }, [selectedPublisher]); // Remove fetchWriters from dependencies
 
   const handlePayeeFormChange = (field: string, value: string | boolean) => {
     setPayeeData(prev => ({ ...prev, [field]: value }));
@@ -173,6 +173,9 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Payee</DialogTitle>
+          <DialogDescription>
+            Set up a new payee by selecting the hierarchy path and configuring their information and earnings splits.
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="payee-setup" className="w-full">
