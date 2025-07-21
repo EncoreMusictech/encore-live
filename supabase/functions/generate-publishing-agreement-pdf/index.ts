@@ -575,7 +575,7 @@ function generateAdministrationAgreementHTML(contract: any, contractData: any, p
         </div>
       </div>
 
-      ${generateCatalogExhibitA(works, parties)}
+      ${generateCatalogExhibitA(works, parties, contract, contractData)}
     </body>
     </html>
   `;
@@ -789,7 +789,7 @@ function generateCoPublishingAgreementHTML(contract: any, contractData: any, par
         </div>
       </div>
 
-      ${generateCatalogExhibitA(works, parties)}
+      ${generateCatalogExhibitA(works, parties, contract, contractData)}
     </body>
     </html>
   `;
@@ -1168,7 +1168,7 @@ function generateSongwriterAgreementHTML(contract: any, contractData: any, parti
         </div>
       </div>
 
-      ${generateCatalogExhibitA(works, parties)}
+      ${generateCatalogExhibitA(works, parties, contract, contractData)}
     </body>
     </html>
   `;
@@ -1540,14 +1540,17 @@ function generateCatalogAcquisitionHTML(contract: any, contractData: any, partie
         </div>
       </div>
 
-      ${generateCatalogExhibitA(works, parties)}
+      ${generateCatalogExhibitA(works, parties, contract, contractData)}
     </body>
     </html>
   `;
 }
 
 
-function generateCatalogExhibitA(works: any[], parties: any[] = []): string {
+function generateCatalogExhibitA(works: any[], parties: any[] = [], contract: any = {}, contractData: any = {}): string {
+  // Extract contract data
+  const acquiredWorkListUrl = contractData.acquired_work_list_url || contract.contract_data?.acquired_work_list_url || '[Acquired Work List URL]';
+  
   // Check if we have actual works added to this contract
   const hasActualWorks = works.length > 0;
   
@@ -1604,38 +1607,52 @@ function generateCatalogExhibitA(works: any[], parties: any[] = []): string {
     );
     
     // For works that inherit royalty splits, use the contract's interested parties
-    const writersText = work.inherits_royalty_splits && contractWriters.length > 0
-      ? contractWriters.map(writer => {
-          const percentage = Math.max(
-            writer.performance_percentage || 0,
-            writer.mechanical_percentage || 0,
-            writer.synch_percentage || 0
-          );
-          return `${writer.name}${percentage > 0 ? ` (${percentage}%)` : ''}`;
-        }).join(', ')
-      : work.artist_name || '[Writer Name(s)]';
+    // Otherwise, check if the work has specific copyright data
+    let writersText = '[Writer Name(s)]';
+    if (work.inherits_royalty_splits && contractWriters.length > 0) {
+      writersText = contractWriters.map(writer => {
+        const percentage = Math.max(
+          writer.performance_percentage || 0,
+          writer.mechanical_percentage || 0,
+          writer.synch_percentage || 0
+        );
+        return `${writer.name}${percentage > 0 ? ` (${percentage}%)` : ''}`;
+      }).join(', ');
+    } else if (work.copyright_id) {
+      // If linked to copyright, we might have writer data from there
+      writersText = work.artist_name || work.work_writers || '[Writer Name(s)]';
+    } else if (work.artist_name) {
+      writersText = work.artist_name;
+    }
     
-    const publishersText = work.inherits_royalty_splits && contractPublishers.length > 0
-      ? contractPublishers.map(publisher => {
-          const percentage = Math.max(
-            publisher.performance_percentage || 0,
-            publisher.mechanical_percentage || 0,
-            publisher.synch_percentage || 0
-          );
-          return `${publisher.name}${percentage > 0 ? ` (${percentage}%)` : ''}`;
-        }).join(', ')
-      : '[Publisher Name(s)]';
+    let publishersText = '[Publisher Name(s)]';
+    if (work.inherits_royalty_splits && contractPublishers.length > 0) {
+      publishersText = contractPublishers.map(publisher => {
+        const percentage = Math.max(
+          publisher.performance_percentage || 0,
+          publisher.mechanical_percentage || 0,
+          publisher.synch_percentage || 0
+        );
+        return `${publisher.name}${percentage > 0 ? ` (${percentage}%)` : ''}`;
+      }).join(', ');
+    } else {
+      // Use counterparty name from contract as fallback
+      publishersText = contract.counterparty_name || '[Publisher Name(s)]';
+    }
     
     // Calculate controlled share - if inherits controlled status, use from contract parties
-    const controlledShare = work.inherits_controlled_status 
-      ? parties
-          .filter(party => party.controlled_status === 'C')
-          .reduce((total, party) => total + Math.max(
-            party.performance_percentage || 0,
-            party.mechanical_percentage || 0,
-            party.synch_percentage || 0
-          ), 0)
-      : 100; // Default to 100% if not inheriting
+    let controlledShare = 100; // Default to 100%
+    if (work.inherits_controlled_status) {
+      controlledShare = parties
+        .filter(party => party.controlled_status === 'C')
+        .reduce((total, party) => total + Math.max(
+          party.performance_percentage || 0,
+          party.mechanical_percentage || 0,
+          party.synch_percentage || 0
+        ), 0);
+    } else if (contract.controlled_percentage !== undefined) {
+      controlledShare = contract.controlled_percentage;
+    }
     
     // Get IPI numbers from interested parties
     const ipiNumbers = parties
