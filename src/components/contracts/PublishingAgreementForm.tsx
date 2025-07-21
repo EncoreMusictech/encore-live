@@ -37,6 +37,8 @@ import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { InterestedPartiesTable } from "./InterestedPartiesTable";
 import { ScheduleWorksTable } from "./ScheduleWorksTable";
 import { AgreementTypeTerms } from "./AgreementTypeTerms";
+import { usePublishingAgreementValidation } from "@/hooks/usePublishingAgreementValidation";
+import { usePublishingAgreementWorkflow } from "@/hooks/usePublishingAgreementWorkflow";
 
 // Agreement type enum
 export type AgreementType = 
@@ -143,6 +145,8 @@ export function PublishingAgreementForm({ onCancel, onSuccess }: PublishingAgree
   const { createContract } = useContracts();
   const { toast } = useToast();
   const { incrementUsage } = useDemoAccess();
+  const { validateAgreement, generateAgreementId, isValidating } = usePublishingAgreementValidation();
+  const { generateAgreementPDF, sendForSignature, checkContractCompliance, isProcessing } = usePublishingAgreementWorkflow();
 
   // State for form values
   const [formData, setFormData] = useState({
@@ -214,6 +218,30 @@ export function PublishingAgreementForm({ onCancel, onSuccess }: PublishingAgree
     setIsLoading(true);
     
     try {
+      // First validate the agreement
+      const validationResult = await validateAgreement(agreementType!, formData);
+      
+      if (!validationResult.isValid) {
+        toast({
+          title: "Validation Failed",
+          description: `${validationResult.errors.length} error(s) found. Please review the form.`,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Show warnings if any
+      if (validationResult.warnings.length > 0) {
+        toast({
+          title: "Validation Warnings",
+          description: `${validationResult.warnings.length} warning(s) found. Please review.`,
+          variant: "default",
+        });
+      }
+
+      // Generate agreement ID
+      const agreementId = await generateAgreementId();
       const contractData = {
         title: values.title,
         counterparty_name: values.counterparty_name,
@@ -222,14 +250,21 @@ export function PublishingAgreementForm({ onCancel, onSuccess }: PublishingAgree
         end_date: formData.end_date?.toISOString().split('T')[0] || null,
         contract_status: 'draft' as any,
         territories: values.territory || [],
+        agreement_id: agreementId,
         contract_data: {
           agreement_type: agreementType,
           governing_law: values.governing_law,
           delivery_requirements: values.delivery_requirements,
           approvals_required: values.approvals_required,
           approval_conditions: values.approval_conditions,
-          ...values, // Include all type-specific fields
-        }
+          effective_date: formData.effective_date?.toISOString(),
+          end_date: formData.end_date?.toISOString(),
+          ...Object.fromEntries(
+            Object.entries(formData).filter(([key, value]) => 
+              !['effective_date', 'end_date'].includes(key) && value !== undefined
+            )
+          )
+        } as any
       };
 
       const newContract = await createContract(contractData);
@@ -686,6 +721,31 @@ export function PublishingAgreementForm({ onCancel, onSuccess }: PublishingAgree
                 <p className="text-muted-foreground">
                   Your publishing agreement has been created with all necessary components
                 </p>
+                
+                {contractId && (
+                  <div className="flex flex-col gap-3 max-w-md mx-auto">
+                    <Button 
+                      onClick={() => generateAgreementPDF(contractId)}
+                      disabled={isProcessing}
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Generate PDF
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => sendForSignature(contractId, [
+                        { name: formData.counterparty_name, email: "", role: "Publisher" }
+                      ])}
+                      disabled={isProcessing}
+                      className="gap-2"
+                    >
+                      <Users className="h-4 w-4" />
+                      Send for Signature
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
