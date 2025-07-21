@@ -21,6 +21,8 @@ interface Contract {
   end_date?: string;
   created_at: string;
   version: number;
+  template_id?: string;
+  original_pdf_url?: string;
 }
 
 interface ContractListProps {
@@ -106,7 +108,40 @@ export function ContractList({ onEdit }: ContractListProps) {
   };
 
   const formatContractType = (type: string) => {
-    return type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ');
+    const typeMap: { [key: string]: string } = {
+      'publishing': 'Publishing Agreement',
+      'artist': 'Artist Agreement',
+      'distribution': 'Distribution Deal',
+      'producer': 'Producer Agreement',
+      'sync': 'TV Sync License',
+      'management': 'Management Agreement',
+      'label': 'Label Agreement',
+      'songwriter': 'Songwriter Agreement'
+    };
+    return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ');
+  };
+
+  const getCreationMethod = (contract: Contract) => {
+    if (contract.original_pdf_url) {
+      return 'Uploaded';
+    } else if (contract.template_id) {
+      return 'Template';
+    } else {
+      return 'Created';
+    }
+  };
+
+  const getCreationMethodColor = (method: string) => {
+    switch (method) {
+      case 'Uploaded':
+        return 'bg-blue-50 text-blue-700';
+      case 'Template':
+        return 'bg-purple-50 text-purple-700';
+      case 'Created':
+        return 'bg-green-50 text-green-700';
+      default:
+        return 'bg-gray-50 text-gray-700';
+    }
   };
 
   const handleDelete = async (contractId: string) => {
@@ -197,9 +232,19 @@ export function ContractList({ onEdit }: ContractListProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">
-                    {formatContractType(contract.contract_type)}
-                  </Badge>
+                  <div className="space-y-1">
+                    <Badge variant="outline">
+                      {formatContractType(contract.contract_type)}
+                    </Badge>
+                    <div>
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-xs ${getCreationMethodColor(getCreationMethod(contract))}`}
+                      >
+                        {getCreationMethod(contract)}
+                      </Badge>
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell>{contract.counterparty_name}</TableCell>
                 <TableCell>
