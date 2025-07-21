@@ -575,7 +575,7 @@ function generateAdministrationAgreementHTML(contract: any, contractData: any, p
         </div>
       </div>
 
-      ${generateExhibitA(works)}
+      ${generateCatalogExhibitA(works, parties)}
     </body>
     </html>
   `;
@@ -789,7 +789,7 @@ function generateCoPublishingAgreementHTML(contract: any, contractData: any, par
         </div>
       </div>
 
-      ${generateExhibitA(works)}
+      ${generateCatalogExhibitA(works, parties)}
     </body>
     </html>
   `;
@@ -1168,7 +1168,7 @@ function generateSongwriterAgreementHTML(contract: any, contractData: any, parti
         </div>
       </div>
 
-      ${generateExhibitA(works)}
+      ${generateCatalogExhibitA(works, parties)}
     </body>
     </html>
   `;
@@ -1546,93 +1546,6 @@ function generateCatalogAcquisitionHTML(contract: any, contractData: any, partie
   `;
 }
 
-function generateExhibitA(works: any[]): string {
-  // For demo purposes, we'll use sample data since the works parameter contains the schedule of works
-  
-  if (works.length === 0) {
-    // If no works are defined, show example data
-    return `
-      <div class="section">
-        <div class="section-title center">Exhibit A – Schedule of Works</div>
-        <table class="exhibit-table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Writers & Splits</th>
-              <th>Publishers & Splits</th>
-              <th>Controlled Share</th>
-              <th>ISWC</th>
-              <th>IPI Numbers (W/P)</th>
-              <th>Registration Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Shake It Off</td>
-              <td>Taylor Swift (100%)</td>
-              <td>Swift Music Publishing (100%)</td>
-              <td>100%</td>
-              <td>T-911.471.758-8</td>
-              <td>00014107338</td>
-              <td>Registered</td>
-            </tr>
-            <tr>
-              <td>Blank Space</td>
-              <td>Taylor Swift (80%), Max Martin (20%)</td>
-              <td>Swift Music Publishing (80%), MXM Publishing (20%)</td>
-              <td>80%</td>
-              <td>T-911.471.759-9</td>
-              <td>00014107338, 00014107945</td>
-              <td>Registered</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    `;
-  }
-
-  const worksRows = works.map((work: any) => {
-    // Use demo data for now since we don't have the parties context here
-    const writersText = 'Taylor Swift (50%), Max Martin (25%), Shellback (25%)';
-    const publishersText = 'Swift Music (50%), MXM Publishing (25%), Wolf Cousins (25%)';
-    const controlledShare = '100%';
-    const iswcNumber = work.iswc || 'T-034.524.680-1';
-    const ipiNumbers = 'Taylor Swift: 00734567891, Swift Music: 00345678912';
-
-    return `
-      <tr>
-        <td><strong>${work.song_title || 'Shake It Off'}</strong></td>
-        <td>${writersText}</td>
-        <td>${publishersText}</td>
-        <td>${controlledShare}</td>
-        <td>${iswcNumber}</td>
-        <td>${ipiNumbers}</td>
-      </tr>
-    `;
-  }).join('');
-
-  return `
-    <div class="section">
-      <div class="section-title center">Exhibit A – Schedule of Works</div>
-      <table class="exhibit-table">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Writers & Splits</th>
-            <th>Publishers & Splits</th>
-            <th>Controlled Share</th>
-            <th>ISWC</th>
-            <th>IPI Numbers (W/P)</th>
-            <th>Registration Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${worksRows}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
 
 function generateCatalogExhibitA(works: any[], parties: any[] = []): string {
   // Check if we have actual works added to this contract
