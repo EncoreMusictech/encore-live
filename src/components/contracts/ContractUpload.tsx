@@ -85,6 +85,73 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
     selectedFile: !!selectedFile 
   });
 
+  // Transform parsed data from edge function format to component format
+  const transformParsedData = (rawData: any): ParsedContractData => {
+    const parties = [];
+    
+    // Add administrator if available
+    if (rawData.administrator_name) {
+      parties.push({
+        name: rawData.administrator_name,
+        role: 'administrator',
+        contact_info: {
+          email: rawData.administrator_email || undefined,
+          address: rawData.administrator_address || undefined
+        }
+      });
+    }
+    
+    // Add counterparty if available
+    if (rawData.counterparty_name) {
+      parties.push({
+        name: rawData.counterparty_name,
+        role: 'counterparty',
+        contact_info: {
+          email: rawData.counterparty_email || undefined,
+          address: rawData.counterparty_address || undefined
+        }
+      });
+    }
+    
+    // Add any additional parties from the parties array
+    if (rawData.parties && Array.isArray(rawData.parties)) {
+      rawData.parties.forEach((party: any) => {
+        if (party.party_name && !parties.find(p => p.name === party.party_name)) {
+          parties.push({
+            name: party.party_name,
+            role: party.party_type || 'party',
+            contact_info: {}
+          });
+        }
+      });
+    }
+
+    return {
+      contract_type: rawData.contract_type || 'other',
+      parties,
+      financial_terms: {
+        advance_amount: rawData.advance_amount || 0,
+        commission_percentage: rawData.admin_fee_percentage || rawData.commission_percentage || 0,
+        royalty_rates: {
+          mechanical: rawData.mechanical_split_percentage || 0,
+          performance: rawData.performance_percentage || 0,
+          synchronization: rawData.sync_revenue_split_percentage || 0
+        }
+      },
+      key_dates: {
+        start_date: rawData.effective_date || undefined,
+        end_date: rawData.end_date || undefined,
+        renewal_terms: rawData.renewal_options ? 'Automatic renewal' : undefined
+      },
+      territory: rawData.territory || undefined,
+      works_covered: rawData.works || [],
+      payment_terms: rawData.payment_terms || `${rawData.payment_terms_days || 'Net'} ${rawData.royalty_frequency || 'quarterly'}`,
+      recoupment_status: rawData.recoupable ? 'Recoupable' : 'Non-recoupable',
+      termination_clauses: rawData.termination_notice_days ? `${rawData.termination_notice_days} days notice required` : undefined,
+      additional_terms: rawData.notes || undefined
+    };
+  };
+
   const extractTextFromPDF = async (fileUrl: string) => {
     if (!user) throw new Error('User not authenticated');
 
@@ -207,14 +274,17 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       
       // Set all the extracted data
       setExtractedText(result.extractedText);
-      setParsedData(result.parsed_data);
+      
+      // Transform the parsed data to match the expected format
+      const transformedData = transformParsedData(result.parsed_data);
+      setParsedData(transformedData);
       setParsingResultId(result.parsing_result_id);
       setConfidence(result.confidence);
       setUploadProgress(75);
 
       // Auto-fill form fields from parsed data
-      if (result.parsed_data.parties?.[1]?.name) {
-        setCounterpartyName(result.parsed_data.parties[1].name);
+      if (result.parsed_data.counterparty_name || result.parsed_data.parties?.[1]?.party_name) {
+        setCounterpartyName(result.parsed_data.counterparty_name || result.parsed_data.parties[1].party_name);
       }
 
       setUploadProgress(100);
