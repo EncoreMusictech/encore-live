@@ -115,6 +115,7 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
     { value: "administrator", label: "Administrator" },
     { value: "co_publisher", label: "Co-Publisher" },
     { value: "label", label: "Label" },
+    { value: "artist", label: "Artist" },
   ];
 
   const affiliations = [
