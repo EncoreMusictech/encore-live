@@ -14,14 +14,16 @@ import { Badge } from "@/components/ui/badge";
 interface PayeeFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  editingPayee?: any; // PayeeWithHierarchy from PayeesTable
 }
 
-export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
+export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormDialogProps) {
   const {
     agreements,
     originalPublishers,
     writers,
     createPayee,
+    updatePayee,
     fetchOriginalPublishers,
     fetchWriters,
     autoGenerateOriginalPublisher,
@@ -84,6 +86,65 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
     }
   }, [writers.length, selectedPublisher]); // Optimize dependencies
 
+  // Initialize form data when editing
+  useEffect(() => {
+    if (editingPayee && open) {
+      // Set hierarchy selections based on the editing payee
+      const writerId = editingPayee.writer?.id;
+      const publisherId = editingPayee.writer?.original_publisher?.id;
+      const agreementId = editingPayee.writer?.original_publisher?.agreement?.id;
+      
+      if (agreementId) setSelectedAgreement(agreementId);
+      if (publisherId) setSelectedPublisher(publisherId);
+      if (writerId) setSelectedWriter(writerId);
+      
+      // Set payee data
+      setPayeeData({
+        payee_name: editingPayee.payee_name || "",
+        payee_type: editingPayee.payee_type || "writer",
+        email: editingPayee.contact_info?.email || "",
+        phone: editingPayee.contact_info?.phone || "",
+        address: editingPayee.contact_info?.address || "",
+        tax_id: editingPayee.contact_info?.tax_id || "",
+        is_primary: editingPayee.is_primary || false,
+      });
+      
+      // Set split data
+      const paymentInfo = editingPayee.payment_info || {};
+      const defaultSplits = paymentInfo.default_splits || {};
+      const paymentSettings = paymentInfo.payment_settings || {};
+      
+      setSplitData({
+        default_performance_share: defaultSplits.performance || 0,
+        default_mechanical_share: defaultSplits.mechanical || 0,
+        default_sync_share: defaultSplits.synchronization || 0,
+        payment_threshold: paymentSettings.threshold || 100,
+        payment_frequency: paymentSettings.frequency || "quarterly",
+      });
+    } else if (!editingPayee && open) {
+      // Reset form for new payee
+      setSelectedAgreement("");
+      setSelectedPublisher("");
+      setSelectedWriter("");
+      setPayeeData({
+        payee_name: "",
+        payee_type: "writer",
+        email: "",
+        phone: "",
+        address: "",
+        tax_id: "",
+        is_primary: false,
+      });
+      setSplitData({
+        default_performance_share: 0,
+        default_mechanical_share: 0,
+        default_sync_share: 0,
+        payment_threshold: 100,
+        payment_frequency: "quarterly",
+      });
+    }
+  }, [editingPayee, open]);
+
   const handlePayeeFormChange = (field: string, value: string | boolean) => {
     setPayeeData(prev => ({ ...prev, [field]: value }));
   };
@@ -132,35 +193,27 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
         },
       };
 
-      await createPayee({
-        payee_name: payeeData.payee_name,
-        payee_type: payeeData.payee_type,
-        contact_info: contactInfo,
-        payment_info: paymentInfo,
-        writer_id: selectedWriter,
-        is_primary: payeeData.is_primary,
-      });
-
-      // Reset form
-      setSelectedAgreement("");
-      setSelectedPublisher("");
-      setSelectedWriter("");
-      setPayeeData({
-        payee_name: "",
-        payee_type: "writer",
-        email: "",
-        phone: "",
-        address: "",
-        tax_id: "",
-        is_primary: false,
-      });
-      setSplitData({
-        default_performance_share: 0,
-        default_mechanical_share: 0,
-        default_sync_share: 0,
-        payment_threshold: 100,
-        payment_frequency: "quarterly",
-      });
+      if (editingPayee) {
+        // Update existing payee
+        await updatePayee(editingPayee.id, {
+          payee_name: payeeData.payee_name,
+          payee_type: payeeData.payee_type,
+          contact_info: contactInfo,
+          payment_info: paymentInfo,
+          writer_id: selectedWriter,
+          is_primary: payeeData.is_primary,
+        });
+      } else {
+        // Create new payee
+        await createPayee({
+          payee_name: payeeData.payee_name,
+          payee_type: payeeData.payee_type,
+          contact_info: contactInfo,
+          payment_info: paymentInfo,
+          writer_id: selectedWriter,
+          is_primary: payeeData.is_primary,
+        });
+      }
 
       onOpenChange(false);
     } catch (error) {
@@ -179,9 +232,12 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Payee</DialogTitle>
+          <DialogTitle>{editingPayee ? "Edit Payee" : "Add New Payee"}</DialogTitle>
           <DialogDescription>
-            Set up a new payee by selecting the hierarchy path and configuring their information and earnings splits.
+            {editingPayee 
+              ? "Update the payee's information and earnings splits."
+              : "Set up a new payee by selecting the hierarchy path and configuring their information and earnings splits."
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -473,7 +529,7 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
             onClick={handleSubmit} 
             disabled={loading || !selectedWriter}
           >
-            {loading ? "Adding..." : "Add Payee"}
+            {loading ? (editingPayee ? "Updating..." : "Adding...") : (editingPayee ? "Update Payee" : "Add Payee")}
           </Button>
         </div>
       </DialogContent>

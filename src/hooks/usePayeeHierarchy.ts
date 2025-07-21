@@ -355,6 +355,41 @@ export function usePayeeHierarchy() {
     }
   };
 
+  // Update payee
+  const updatePayee = async (payeeId: string, payeeData: { payee_name: string; payee_type: string; contact_info: any; payment_info: any; writer_id: string; is_primary: boolean; }) => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('payees')
+        .update({
+          ...payeeData,
+          user_id: user.id,
+        })
+        .eq('id', payeeId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Payee updated successfully",
+      });
+
+      await fetchPayees();
+      return data;
+    } catch (error: any) {
+      console.error('Error updating payee:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update payee",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   // Create payee
   const createPayee = async (payeeData: { payee_name: string; payee_type: string; contact_info: any; payment_info: any; writer_id: string; is_primary: boolean; }) => {
     if (!user) return null;
@@ -409,6 +444,7 @@ export function usePayeeHierarchy() {
     createOriginalPublisher,
     createWriter,
     createPayee,
+    updatePayee,
     autoGenerateOriginalPublisher,
     autoGenerateWriter,
   };

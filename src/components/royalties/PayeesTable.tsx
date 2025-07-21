@@ -38,6 +38,7 @@ export function PayeesTable() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPayee, setEditingPayee] = useState<PayeeWithHierarchy | null>(null);
   const { user } = useAuth();
 
   const fetchPayees = async () => {
@@ -109,6 +110,23 @@ export function PayeesTable() {
     }
   };
 
+  const handleEditPayee = (payee: PayeeWithHierarchy) => {
+    setEditingPayee(payee);
+    setDialogOpen(true);
+  };
+
+  const handleAddPayee = () => {
+    setEditingPayee(null);
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setEditingPayee(null);
+    }
+  };
+
   const filteredPayees = payees.filter(payee =>
     payee.payee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     payee.payee_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -161,7 +179,7 @@ export function PayeesTable() {
             className="pl-10"
           />
         </div>
-        <Button className="gap-2" onClick={() => setDialogOpen(true)}>
+        <Button className="gap-2" onClick={handleAddPayee}>
           <Plus className="h-4 w-4" />
           Add Payee
         </Button>
@@ -230,7 +248,11 @@ export function PayeesTable() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditPayee(payee)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
@@ -260,7 +282,8 @@ export function PayeesTable() {
 
       <PayeeFormDialog 
         open={dialogOpen} 
-        onOpenChange={setDialogOpen} 
+        onOpenChange={handleDialogClose}
+        editingPayee={editingPayee}
       />
     </div>
   );
