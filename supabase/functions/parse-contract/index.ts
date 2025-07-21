@@ -17,15 +17,33 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log('Parse contract function called');
+
   try {
     const { fileContent, fileUrl, fileName, userId } = await req.json();
+    
+    console.log('Request data:', { fileUrl: !!fileUrl, fileName, userId: !!userId });
 
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      console.error('OpenAI API key not configured');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'OpenAI API key not configured'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (!fileUrl || !userId) {
-      throw new Error('Missing required parameters: fileUrl and userId');
+      console.error('Missing required parameters');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Missing required parameters: fileUrl and userId'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log(`Processing contract parsing for user: ${userId}, file: ${fileName}`);
@@ -61,7 +79,14 @@ Upload time: ${new Date().toISOString()}`;
     }
 
     if (!extractedText) {
-      throw new Error('No text could be extracted from the file');
+      console.error('No text could be extracted from the file');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'No text could be extracted from the file'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Create initial parsing result record
@@ -77,7 +102,13 @@ Upload time: ${new Date().toISOString()}`;
 
     if (insertError) {
       console.error('Error creating parsing result:', insertError);
-      throw new Error('Failed to create parsing result record');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Failed to create parsing result record'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('Created parsing result record:', parsingResult.id);
@@ -163,7 +194,14 @@ Provide confidence scores for each extracted field (0-1) and flag any uncertain 
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      console.error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: `OpenAI API error: ${response.status} ${response.statusText}`
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const aiData = await response.json();
@@ -209,7 +247,13 @@ Provide confidence scores for each extracted field (0-1) and flag any uncertain 
 
     if (updateError) {
       console.error('Error updating parsing result:', updateError);
-      throw new Error('Failed to update parsing result');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Failed to update parsing result'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('Contract parsing completed successfully');
@@ -230,7 +274,7 @@ Provide confidence scores for each extracted field (0-1) and flag any uncertain 
     
     return new Response(JSON.stringify({
       success: false,
-      error: error.message,
+      error: error.message || 'Unknown error occurred',
       message: 'Failed to parse contract'
     }), {
       status: 500,
