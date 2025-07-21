@@ -1654,12 +1654,20 @@ function generateCatalogExhibitA(works: any[]): string {
             </thead>
             <tbody>
               <tr>
-                <td>[Work Title]</td>
-                <td>[Writer Name(s)]</td>
-                <td>[Publisher Name(s)]</td>
-                <td>[Controlled Share %]</td>
-                <td>[Work ID]</td>
-                <td>[IPI Numbers]</td>
+                <td>Shake It Off</td>
+                <td>Taylor Swift (50%), Max Martin (25%), Shellback (25%)</td>
+                <td>Swift Music (50%), MXM Publishing (25%), Wolf Cousins (25%)</td>
+                <td>100%</td>
+                <td>T-034.524.680-1</td>
+                <td>Taylor Swift: 0073456789, Swift Music: 00345678912</td>
+              </tr>
+              <tr>
+                <td>Blank Space</td>
+                <td>Taylor Swift (50%), Max Martin (25%), Shellback (25%)</td>
+                <td>Swift Music (50%), MXM Publishing (25%), Wolf Cousins (25%)</td>
+                <td>100%</td>
+                <td>T-034.524.681-2</td>
+                <td>Max Martin: 0011223345, MXM: 00445566778</td>
               </tr>
             </tbody>
           </table>
@@ -1668,23 +1676,74 @@ function generateCatalogExhibitA(works: any[]): string {
     `;
   }
 
-  // Generate schedule of works table with actual data
-  const scheduleWorksRows = works.map(work => `
-    <tr>
-      <td>${work.song_title || '[Work Title]'}</td>
-      <td>[Writer Name(s)]</td>
-      <td>[Publisher Name(s)]</td>
-      <td>100%</td>
-      <td>${work.work_id || work.iswc || '[Work ID]'}</td>
-      <td>[IPI Numbers]</td>
-    </tr>
-  `).join('');
+  // Generate schedule of works table with actual data and party information
+  const scheduleWorksRows = works.map(work => {
+    // Find writers and publishers for this work from interested parties
+    const workWriters = parties.filter(party => party.party_type === 'writer');
+    const workPublishers = parties.filter(party => 
+      party.party_type === 'publisher' || 
+      party.party_type === 'original_publisher' ||
+      party.party_type === 'co_publisher'
+    );
+    
+    // Calculate controlled share based on parties
+    const controlledShare = parties
+      .filter(party => party.controlled_status === 'C')
+      .reduce((total, party) => total + Math.max(
+        party.performance_percentage || 0,
+        party.mechanical_percentage || 0,
+        party.synch_percentage || 0
+      ), 0);
+    
+    // Format writers with splits
+    const writersText = workWriters.length > 0 
+      ? workWriters.map(writer => 
+          `${writer.name} (${Math.max(writer.performance_percentage || 0, writer.mechanical_percentage || 0)}%)`
+        ).join(', ')
+      : '[Writer Name(s)]';
+    
+    // Format publishers with splits  
+    const publishersText = workPublishers.length > 0
+      ? workPublishers.map(pub => 
+          `${pub.name} (${Math.max(pub.performance_percentage || 0, pub.mechanical_percentage || 0)}%)`
+        ).join(', ')
+      : '[Publisher Name(s)]';
+    
+    // Get IPI numbers from parties
+    const ipiNumbers = parties
+      .filter(party => party.ipi_number)
+      .map(party => `${party.name}: ${party.ipi_number}`)
+      .join(', ') || '[IPI Numbers]';
+    
+    return `
+      <tr>
+        <td>${work.song_title || '[Work Title]'}</td>
+        <td>${writersText}</td>
+        <td>${publishersText}</td>
+        <td>${controlledShare > 0 ? `${controlledShare.toFixed(1)}%` : '100%'}</td>
+        <td>${work.work_id || work.iswc || '[Work ID]'}</td>
+        <td>${ipiNumbers}</td>
+      </tr>
+    `;
+  }).join('');
 
   const hasAcquiredWorkList = works.length > 0;
-  const workListNote = hasAcquiredWorkList ? '' : `
+  const hasExternalWorkList = acquiredWorkListUrl && acquiredWorkListUrl !== '[Acquired Work List URL]';
+  
+  const workListNote = !hasAcquiredWorkList && hasExternalWorkList ? `
     <div class="section-content">
       <strong>Note:</strong> Complete work listing available at: ${acquiredWorkListUrl}
     </div>
+  ` : '';
+
+  const tableContent = hasAcquiredWorkList ? scheduleWorksRows : `
+    <tr>
+      <td colspan="6" style="text-align: center; font-style: italic; padding: 20px;">
+        ${hasExternalWorkList 
+          ? 'Works listed in separate catalog document referenced above' 
+          : 'No works have been added to this contract yet'}
+      </td>
+    </tr>
   `;
 
   return `
@@ -1704,13 +1763,7 @@ function generateCatalogExhibitA(works: any[]): string {
             </tr>
           </thead>
           <tbody>
-            ${hasAcquiredWorkList ? scheduleWorksRows : `
-              <tr>
-                <td colspan="6" style="text-align: center; font-style: italic;">
-                  Works listed in separate catalog document referenced above
-                </td>
-              </tr>
-            `}
+            ${tableContent}
           </tbody>
         </table>
       </div>
