@@ -18,13 +18,19 @@ interface PayeeWithHierarchy {
   payment_info: any;
   is_primary: boolean;
   created_at: string;
+  writer_id: string;
   writer: {
+    id: string;
     writer_id: string;
     writer_name: string;
+    original_publisher_id: string;
     original_publisher: {
+      id: string;
       op_id: string;
       publisher_name: string;
+      agreement_id: string;
       agreement: {
+        id: string;
         agreement_id: string;
         title: string;
         counterparty_name: string;
@@ -55,13 +61,19 @@ export function PayeesTable() {
           payment_info,
           is_primary,
           created_at,
+          writer_id,
           writer:writers(
+            id,
             writer_id,
             writer_name,
+            original_publisher_id,
             original_publisher:original_publishers(
+              id,
               op_id,
               publisher_name,
+              agreement_id,
               agreement:contracts(
+                id,
                 agreement_id,
                 title,
                 counterparty_name

@@ -89,14 +89,27 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
   // Initialize form data when editing
   useEffect(() => {
     if (editingPayee && open) {
-      // Set hierarchy selections based on the editing payee
-      const writerId = editingPayee.writer?.id;
-      const publisherId = editingPayee.writer?.original_publisher?.id;
+      // Extract hierarchy IDs from the editing payee
       const agreementId = editingPayee.writer?.original_publisher?.agreement?.id;
+      const publisherId = editingPayee.writer?.original_publisher?.id;
+      const writerId = editingPayee.writer?.id;
       
-      if (agreementId) setSelectedAgreement(agreementId);
-      if (publisherId) setSelectedPublisher(publisherId);
-      if (writerId) setSelectedWriter(writerId);
+      console.log('Editing payee hierarchy:', { agreementId, publisherId, writerId });
+      
+      // Initialize hierarchy selections
+      if (agreementId) {
+        setSelectedAgreement(agreementId);
+        // Fetch original publishers for this agreement
+        fetchOriginalPublishers(agreementId);
+      }
+      if (publisherId) {
+        setSelectedPublisher(publisherId);
+        // Fetch writers for this publisher
+        fetchWriters(publisherId);
+      }
+      if (writerId) {
+        setSelectedWriter(writerId);
+      }
       
       // Set payee data
       setPayeeData({
