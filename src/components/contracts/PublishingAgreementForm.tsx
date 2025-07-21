@@ -139,10 +139,8 @@ interface PublishingAgreementFormProps {
 type FormStep = "type" | "basic" | "terms" | "parties" | "works" | "review";
 
 export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: PublishingAgreementFormProps) {
-  const [currentStep, setCurrentStep] = useState<FormStep>(demoData ? "basic" : "type");
-  const [completedSteps, setCompletedSteps] = useState<Set<FormStep>>(
-    demoData ? new Set(["type"]) : new Set()
-  );
+  const [currentStep, setCurrentStep] = useState<FormStep>("type");
+  const [completedSteps, setCompletedSteps] = useState<Set<FormStep>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [agreementType, setAgreementType] = useState<AgreementType | null>(
     demoData?.agreementType || null
@@ -419,7 +417,10 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
           <CardHeader>
             <CardTitle>Select Agreement Type</CardTitle>
             <CardDescription>
-              Choose the type of publishing agreement to configure the appropriate fields
+              {demoData 
+                ? "Demo data is pre-loaded. The recommended type is highlighted, but you can select any type."
+                : "Choose the type of publishing agreement to configure the appropriate fields"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -454,12 +455,21 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
                   key={option.type}
                   className={cn(
                     "cursor-pointer transition-colors hover:bg-accent",
-                    agreementType === option.type && "ring-2 ring-primary"
+                    agreementType === option.type && "ring-2 ring-primary",
+                    demoData && demoData.agreementType === option.type && "border-primary bg-primary/5"
                   )}
                   onClick={() => handleTypeSelection(option.type)}
                 >
                   <CardHeader>
-                    <CardTitle className="text-base">{option.title}</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      {option.title}
+                      {demoData && demoData.agreementType === option.type && (
+                        <Badge variant="secondary" className="gap-1 text-xs">
+                          <Sparkles className="h-3 w-3" />
+                          Demo
+                        </Badge>
+                      )}
+                    </CardTitle>
                     <CardDescription>{option.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
