@@ -153,8 +153,23 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
 
     try {
       setUploadStatus('uploading');
-      setUploadProgress(25);
+      setUploadProgress(10);
       setError(null);
+
+      // Upload PDF to Supabase Storage
+      const fileName = `${user.id}/${Date.now()}-${selectedFile.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('contract-documents')
+        .upload(fileName, selectedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      setUploadProgress(25);
 
       // Extract text from PDF
       const text = await extractTextFromPDF(selectedFile);
