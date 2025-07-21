@@ -246,6 +246,8 @@ async function saveParsingResult(userId: string, parsedData: any, extractedText:
 serve(async (req) => {
   console.log('=== Parse contract function called ===');
   console.log('Method:', req.method);
+  console.log('OpenAI API Key available:', !!openAIApiKey);
+  console.log('OpenAI API Key length:', openAIApiKey?.length || 0);
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
