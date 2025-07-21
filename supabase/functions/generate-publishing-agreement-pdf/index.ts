@@ -1116,16 +1116,92 @@ function generateSongwriterAgreementHTML(contract: any, contractData: any, parti
 function generateCatalogAcquisitionHTML(contract: any, contractData: any, parties: any[], works: any[]): string {
   // Extract buyer and seller data
   const buyer = parties.find((p: any) => p.party_type === 'buyer' || p.party_type === 'administrator') || {};
-  const seller = parties.find((p: any) => p.party_type === 'seller' || p.party_type === 'publisher') || {};
+  const seller = parties.find((p: any) => p.party_type === 'seller' || p.party_type === 'original_publisher' || p.party_type === 'publisher') || {};
   
-  const buyerName = buyer.name || '[Buyer Name]';
-  const sellerName = contract.counterparty_name || seller.name || '[Seller Name]';
-  
+  // Extract dates with fallbacks
   const effectiveDate = contractData.effective_date ? 
-    new Date(contractData.effective_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 
-    'January 1, 2024';
+    new Date(contractData.effective_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : contract.start_date ? 
+    new Date(contract.start_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : '[Effective Date]';
     
-  const acquisitionPrice = contractData.acquisition_price ? `$${contractData.acquisition_price.toLocaleString()}` : '$[Acquisition Price]';
+  const endDate = contractData.end_date ? 
+    new Date(contractData.end_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : contract.end_date ? 
+    new Date(contract.end_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : contractData.perpetual_rights ? 'Perpetual' : '[End Date or Perpetual]';
+
+  // Extract territory and governing law
+  const territory = Array.isArray(contractData.territory) ? contractData.territory.join(', ') : 
+                   Array.isArray(contract.territories) ? contract.territories.join(', ') : 
+                   '[Territory]';
+  
+  const governingLaw = contractData.governing_law === 'new_york' ? 'New York' : 
+                      contractData.governing_law === 'california' ? 'California' :
+                      contractData.governing_law === 'tennessee' ? 'Tennessee' :
+                      contractData.governing_law || '[Governing Law]';
+
+  // Extract party information
+  const buyerName = buyer.name || '[Buyer Name]';
+  const buyerAddress = buyer.address || '[Buyer Address]';
+  const buyerEmail = buyer.email || '[Buyer Email]';
+  
+  const sellerName = contract.counterparty_name || seller.name || '[Seller Name]';
+  const sellerAddress = seller.address || '[Seller Address]';
+  const sellerEmail = seller.email || '[Seller Email]';
+
+  // Extract delivery requirements
+  const deliveryReqs = contractData.delivery_requirements || [];
+  const metadataDelivered = deliveryReqs.includes('Metadata') ? 'Yes' : 'No';
+  const soundFileDelivered = deliveryReqs.includes('Sound File') ? 'Yes' : 'No';
+  const workRegistrationDelivered = deliveryReqs.includes('Work Registration') ? 'Yes' : 'No';
+  const leadSheetsDelivered = deliveryReqs.includes('Lead Sheets') ? 'Yes' : 'No';
+  const lyricsDelivered = deliveryReqs.includes('Lyrics') ? 'Yes' : 'No';
+  const mastersDelivered = deliveryReqs.includes('Masters') ? 'Yes' : 'No';
+  const approvalTerms = contractData.approval_conditions || '[Approval Terms]';
+
+  // Extract financial terms
+  const acquisitionPrice = contractData.acquisition_price ? `$${contractData.acquisition_price.toLocaleString()}` : '[Acquisition Price]';
+  const royaltyOverride = contractData.royalty_override_percentage || '[Royalty Override %]';
+  const paymentMethod = contractData.payment_method || '[Payment Method]';
+  const paymentTerms = contractData.payment_terms_days || '[Payment Terms in Days]';
+  const minimumThreshold = contractData.minimum_payment_threshold ? `$${contractData.minimum_payment_threshold}` : '$[Minimum Payment Threshold]';
+
+  // Extract rights and reversion terms
+  const rightsAcquired = Array.isArray(contractData.rights_acquired) ? contractData.rights_acquired.join(' / ') : '[Rights Acquired: Admin / Full Ownership / Sync / Master / Print]';
+  const perpetualRights = contractData.perpetual_rights ? 'Yes' : 'No';
+  const tailPeriod = contractData.tail_period_months || '[Tail Period]';
+  const reversionClause = contractData.reversion_clause || '[Reversion Clause]';
+
+  // Extract participation terms
+  const originalPublisherParticipation = contractData.original_publisher_participation || '[e.g. 10% override on royalties for 5 years]';
+  const renewalOptions = contractData.renewal_options ? 'Yes' : 'No';
+
+  // Generate interested parties table
+  const interestedPartiesRows = parties.map(party => `
+    <tr>
+      <td>${party.name || '[Party Name]'}</td>
+      <td>${party.party_type || '[publisher/administrator]'}</td>
+      <td>${party.controlled_status || '[Controlled Status %]'}</td>
+      <td>${party.performance_percentage || '[Performance %]'}%</td>
+      <td>${party.mechanical_percentage || '[Mechanical %]'}%</td>
+      <td>${party.synch_percentage || '[Sync %]'}%</td>
+      <td>${party.ipi_number || '[IPI Number]'}</td>
+      <td>${party.affiliation || '[PRO Affiliation]'}</td>
+    </tr>
+  `).join('');
 
   return `
     <!DOCTYPE html>
@@ -1134,17 +1210,98 @@ function generateCatalogAcquisitionHTML(contract: any, contractData: any, partie
       <meta charset="UTF-8">
       <title>${contract.title}</title>
       <style>
-        body { font-family: 'Times New Roman', serif; line-height: 1.6; margin: 40px; font-size: 12pt; color: #000; background: white; }
-        .header { text-align: center; margin-bottom: 40px; }
-        .agreement-title { font-size: 18pt; font-weight: bold; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
-        .section { margin: 30px 0; page-break-inside: avoid; }
-        .section-title { font-size: 14pt; font-weight: bold; margin: 30px 0 15px 0; color: #000; }
-        .section-content { margin: 15px 0; text-align: justify; line-height: 1.8; }
-        .party-section { margin: 20px 0; line-height: 1.8; }
-        .divider { border-bottom: 1px solid #000; margin: 30px 0; width: 100%; }
-        .bullet-point { margin: 10px 0; padding-left: 20px; }
-        .signature-section { margin-top: 60px; page-break-inside: avoid; }
-        .signature-block { margin: 40px 0; }
+        body { 
+          font-family: 'Times New Roman', serif; 
+          line-height: 1.6; 
+          margin: 40px; 
+          font-size: 12pt;
+          color: #000;
+          background: white;
+        }
+        .header { 
+          text-align: center; 
+          margin-bottom: 40px;
+        }
+        .agreement-title {
+          font-size: 18pt;
+          font-weight: bold;
+          margin-bottom: 30px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          border-bottom: 2px solid #000;
+          padding-bottom: 10px;
+        }
+        .section { 
+          margin: 30px 0; 
+          page-break-inside: avoid;
+        }
+        .section-title { 
+          font-size: 14pt; 
+          font-weight: bold; 
+          margin: 30px 0 15px 0; 
+          color: #000; 
+        }
+        .section-content {
+          margin: 15px 0;
+          text-align: justify;
+          line-height: 1.8;
+        }
+        .party-section { 
+          margin: 20px 0; 
+          line-height: 1.8;
+        }
+        .bullet-point {
+          margin: 10px 0;
+          padding-left: 20px;
+        }
+        .terms-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 20px 0;
+          border: 1px solid #000;
+        }
+        .terms-table th,
+        .terms-table td {
+          border: 1px solid #000;
+          padding: 12px;
+          text-align: left;
+          font-size: 11pt;
+        }
+        .terms-table th {
+          background-color: #f5f5f5;
+          font-weight: bold;
+        }
+        .exhibit-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 20px 0;
+          border: 1px solid #000;
+        }
+        .exhibit-table th,
+        .exhibit-table td {
+          border: 1px solid #000;
+          padding: 8px;
+          text-align: center;
+          font-size: 10pt;
+        }
+        .exhibit-table th {
+          background-color: #f5f5f5;
+          font-weight: bold;
+        }
+        .signature-section { 
+          margin-top: 60px; 
+          page-break-inside: avoid;
+        }
+        .signature-block { 
+          margin: 40px 0; 
+        }
+        .signature-line { 
+          border-bottom: 1px solid #000; 
+          width: 300px; 
+          margin: 20px 0 5px 0; 
+          height: 1px;
+          display: inline-block;
+        }
         .bold { font-weight: bold; }
         .center { text-align: center; }
       </style>
@@ -1155,35 +1312,166 @@ function generateCatalogAcquisitionHTML(contract: any, contractData: any, partie
       </div>
 
       <div class="section-content">
-        This Catalog Acquisition Agreement (the "Agreement") is made and entered into as of <strong>${effectiveDate}</strong>, by and between:
+        This Catalog Acquisition Agreement ("Agreement") is entered into as of <strong>${effectiveDate}</strong>, by and between:
       </div>
 
       <div class="party-section">
-        <strong>Buyer</strong><br>
+        <strong>Buyer (Administrator):</strong><br>
         <strong>${buyerName}</strong><br>
-        ("Buyer")
+        ${buyerAddress}<br>
+        ${buyerEmail}
       </div>
-
-      <div class="party-section">and</div>
 
       <div class="party-section">
-        <strong>Seller</strong><br>
+        <strong>Seller (Original Publisher):</strong><br>
         <strong>${sellerName}</strong><br>
-        ("Seller")
+        ${sellerAddress}<br>
+        ${sellerEmail}
       </div>
 
-      <div class="section-content">Each a "Party" and collectively the "Parties."</div>
-      <div class="divider"></div>
+      <div class="section-content">
+        Each a "Party" and collectively the "Parties."
+      </div>
 
       <div class="section">
-        <div class="section-title">1. Purchase and Sale</div>
+        <div class="section-title">1. Purpose</div>
         <div class="section-content">
-          Seller agrees to sell and Buyer agrees to purchase the musical catalog described in Exhibit A 
-          for the total purchase price of <strong>${acquisitionPrice}</strong>.
+          This Agreement governs the terms under which the Buyer acquires ownership or administration rights in and to the catalog of musical compositions owned or controlled by the Seller, listed in Exhibit A.
         </div>
       </div>
 
-      ${generateExhibitA(works)}
+      <div class="section">
+        <div class="section-title">2. Term and Territory</div>
+        <div class="bullet-point">
+          • <strong>Effective Date:</strong> ${effectiveDate}
+        </div>
+        <div class="bullet-point">
+          • <strong>End/Reversion Date:</strong> ${endDate}
+        </div>
+        <div class="bullet-point">
+          • <strong>Territory:</strong> ${territory}
+        </div>
+        <div class="bullet-point">
+          • <strong>Governing Law:</strong> ${governingLaw}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">3. Acquisition Terms</div>
+        <div class="bullet-point">
+          • <strong>Acquisition Price:</strong> ${acquisitionPrice}
+        </div>
+        <div class="bullet-point">
+          • <strong>Royalty Override to Seller:</strong> ${royaltyOverride}%
+        </div>
+        <div class="bullet-point">
+          • <strong>Rights Acquired:</strong> ${rightsAcquired}
+        </div>
+        <div class="bullet-point">
+          • <strong>Tail Period:</strong> ${tailPeriod} months
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">4. Delivery Requirements</div>
+        <div class="section-content">
+          The Seller shall provide the following materials for all Works included in the catalog:
+        </div>
+        <div class="bullet-point">- Metadata: ${metadataDelivered}</div>
+        <div class="bullet-point">- Sound Files: ${soundFileDelivered}</div>
+        <div class="bullet-point">- Work Registrations: ${workRegistrationDelivered}</div>
+        <div class="bullet-point">- Lead Sheets: ${leadSheetsDelivered}</div>
+        <div class="bullet-point">- Lyrics: ${lyricsDelivered}</div>
+        <div class="bullet-point">- Masters: ${mastersDelivered}</div>
+        <div class="bullet-point">- Approvals Required: ${approvalTerms}</div>
+        
+        <div class="section-content">
+          <strong>Delivery Clause:</strong> All required delivery materials must be submitted within 10 business days of the Effective Date to avoid payment delays.
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">5. Reversion Clause</div>
+        <div class="section-content">
+          ${reversionClause}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">6. Original Publisher Participation</div>
+        <div class="section-content">
+          ${originalPublisherParticipation}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">7. Representations and Warranties</div>
+        <div class="section-content">
+          Each Party warrants that it has the authority to enter into this Agreement. The Seller further warrants that all Works are original, unencumbered, and fully owned or controlled by the Seller.
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">8. Payment Terms</div>
+        <div class="section-content">
+          All payments shall be made in USD by ${paymentMethod} within ${paymentTerms} days of execution. Any future royalties owed per override shall be calculated quarterly.
+        </div>
+        <div class="bullet-point">
+          • <strong>Minimum Threshold for Payment:</strong> ${minimumThreshold}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">9. Entire Agreement</div>
+        <div class="section-content">
+          This document constitutes the full and final agreement between the Parties. No amendment shall be valid unless in writing and signed by both Parties.
+        </div>
+      </div>
+
+      ${parties.length > 0 ? `
+      <div class="section">
+        <div class="section-title">Interested Parties</div>
+        <table class="terms-table">
+          <thead>
+            <tr>
+              <th>Party Name</th>
+              <th>Party Type</th>
+              <th>Controlled Share</th>
+              <th>Performance %</th>
+              <th>Mechanical %</th>
+              <th>Sync %</th>
+              <th>IPI Number</th>
+              <th>PRO Affiliation</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${interestedPartiesRows}
+          </tbody>
+        </table>
+      </div>
+      ` : ''}
+
+      <div class="signature-section">
+        <div class="section-title">IN WITNESS WHEREOF</div>
+        
+        <div class="signature-block">
+          <strong>${buyerName}</strong><br>
+          Signature: <span class="signature-line"></span><br>
+          Name:<br>
+          Title:<br>
+          Date:
+        </div>
+        
+        <div class="signature-block">
+          <strong>${sellerName}</strong><br>
+          Signature: <span class="signature-line"></span><br>
+          Name:<br>
+          Title:<br>
+          Date:
+        </div>
+      </div>
+
+      ${generateCatalogExhibitA(works)}
     </body>
     </html>
   `;
@@ -1273,6 +1561,76 @@ function generateExhibitA(works: any[]): string {
           ${worksRows}
         </tbody>
       </table>
+    </div>
+  `;
+}
+
+function generateCatalogExhibitA(works: any[]): string {
+  if (works.length === 0) {
+    // If no works are defined, show a placeholder table
+    return `
+      <div style="page-break-before: always;">
+        <div class="section">
+          <div class="section-title">Exhibit A – Schedule of Works</div>
+          <table class="exhibit-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Writers & Splits</th>
+                <th>Publishers & Splits</th>
+                <th>Controlled Share</th>
+                <th>ISWC</th>
+                <th>IPI Numbers (W/P)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>[Work Title]</td>
+                <td>[Writer Name(s)]</td>
+                <td>[Publisher Name(s)]</td>
+                <td>[Controlled Share %]</td>
+                <td>[Work ID]</td>
+                <td>[IPI Numbers]</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  // Generate schedule of works table with actual data
+  const scheduleWorksRows = works.map(work => `
+    <tr>
+      <td>${work.song_title || '[Work Title]'}</td>
+      <td>[Writer Name(s)]</td>
+      <td>[Publisher Name(s)]</td>
+      <td>100%</td>
+      <td>${work.work_id || work.iswc || '[Work ID]'}</td>
+      <td>[IPI Numbers]</td>
+    </tr>
+  `).join('');
+
+  return `
+    <div style="page-break-before: always;">
+      <div class="section">
+        <div class="section-title">Exhibit A – Schedule of Works</div>
+        <table class="exhibit-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Writers & Splits</th>
+              <th>Publishers & Splits</th>
+              <th>Controlled Share</th>
+              <th>ISWC</th>
+              <th>IPI Numbers (W/P)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${scheduleWorksRows}
+          </tbody>
+        </table>
+      </div>
     </div>
   `;
 }
