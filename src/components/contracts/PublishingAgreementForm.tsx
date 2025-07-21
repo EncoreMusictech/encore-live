@@ -254,6 +254,7 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
       
       if (!validationResult.isValid) {
         console.error('Validation errors:', validationResult.errors);
+        console.error('Detailed validation errors:', JSON.stringify(validationResult.errors, null, 2));
         toast({
           title: "Validation Failed",
           description: `${validationResult.errors.length} error(s) found. Please review the form.`,
