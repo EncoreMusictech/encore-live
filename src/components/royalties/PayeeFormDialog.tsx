@@ -24,6 +24,7 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
     createPayee,
     fetchOriginalPublishers,
     fetchWriters,
+    autoGenerateOriginalPublisher,
   } = usePayeeHierarchy();
 
   const [loading, setLoading] = useState(false);
@@ -61,6 +62,13 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
       setSelectedWriter("");
     }
   }, [selectedAgreement, fetchOriginalPublishers]);
+
+  // Auto-select publisher when only one exists
+  useEffect(() => {
+    if (originalPublishers.length === 1 && !selectedPublisher) {
+      setSelectedPublisher(originalPublishers[0].id);
+    }
+  }, [originalPublishers, selectedPublisher]);
 
   useEffect(() => {
     if (selectedPublisher) {

@@ -80,8 +80,57 @@ export function usePayeeHierarchy() {
 
       if (error) throw error;
       setOriginalPublishers(data || []);
+      
+      // If no original publishers exist for this agreement, auto-generate one
+      if (agreementId && (!data || data.length === 0)) {
+        await autoGenerateOriginalPublisher(agreementId);
+      }
     } catch (error: any) {
       console.error('Error fetching original publishers:', error);
+    }
+  };
+
+  // Auto-generate original publisher with default name
+  const autoGenerateOriginalPublisher = async (agreementId: string) => {
+    if (!user) return;
+
+    try {
+      // Get the agreement details to extract writer name
+      const { data: agreementData, error: agreementError } = await supabase
+        .from('contracts')
+        .select('counterparty_name')
+        .eq('id', agreementId)
+        .single();
+
+      if (agreementError) throw agreementError;
+
+      const publisherName = `${agreementData.counterparty_name} Publishing Designee`;
+
+      const { data, error } = await supabase
+        .from('original_publishers')
+        .insert({
+          publisher_name: publisherName,
+          contact_info: {},
+          agreement_id: agreementId,
+          user_id: user.id,
+        } as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Refresh the original publishers list
+      await fetchOriginalPublishers(agreementId);
+      
+      toast({
+        title: "Auto-generated Publisher",
+        description: `Created "${publisherName}" for this agreement`,
+      });
+
+      return data;
+    } catch (error: any) {
+      console.error('Error auto-generating original publisher:', error);
+      return null;
     }
   };
 
@@ -257,5 +306,6 @@ export function usePayeeHierarchy() {
     createOriginalPublisher,
     createWriter,
     createPayee,
+    autoGenerateOriginalPublisher,
   };
 }
