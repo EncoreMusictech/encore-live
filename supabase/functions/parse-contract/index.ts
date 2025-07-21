@@ -71,11 +71,12 @@ serve(async (req) => {
       });
     }
 
-    if (!fileUrl) {
-      console.error('Missing fileUrl parameter');
+    // Accept either fileUrl or fileContent for backwards compatibility
+    if (!fileUrl && !fileContent) {
+      console.error('Missing fileUrl or fileContent parameter');
       return new Response(JSON.stringify({
         success: false,
-        error: 'Missing required parameter: fileUrl'
+        error: 'Missing required parameter: fileUrl or fileContent'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
