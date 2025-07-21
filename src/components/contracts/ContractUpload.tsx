@@ -149,7 +149,13 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
   };
 
   const handleFileUpload = async () => {
-    if (!selectedFile || !user) return;
+    if (!selectedFile || !user) {
+      console.error('Upload failed: Missing file or user', { selectedFile: !!selectedFile, user: !!user });
+      toast.error('Please select a file and ensure you are logged in');
+      return;
+    }
+
+    console.log('Starting file upload...', { fileName: selectedFile.name, fileSize: selectedFile.size, userId: user.id });
 
     try {
       setUploadStatus('uploading');
@@ -158,6 +164,8 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
 
       // Upload PDF to Supabase Storage
       const fileName = `${user.id}/${Date.now()}-${selectedFile.name}`;
+      console.log('Uploading to storage...', { fileName, bucketId: 'contract-documents' });
+      
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('contract-documents')
         .upload(fileName, selectedFile, {
@@ -166,21 +174,27 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
         });
 
       if (uploadError) {
+        console.error('Storage upload error:', uploadError);
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
+      console.log('File uploaded successfully:', uploadData);
       setUploadProgress(25);
 
       // Extract text from PDF
+      console.log('Extracting text from PDF...');
       const text = await extractTextFromPDF(selectedFile);
+      console.log('Text extracted, length:', text.length);
       setExtractedText(text);
       setUploadProgress(50);
 
       // Parse contract with AI
       setUploadStatus('parsing');
       setUploadProgress(75);
+      console.log('Parsing contract with AI...');
 
       const result = await parseContract(text);
+      console.log('Contract parsed successfully:', result);
       setParsedData(result.parsed_data);
       setParsingResultId(result.parsing_result_id);
       setConfidence(result.confidence);
@@ -198,7 +212,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       console.error('Upload error:', err);
       setError(err.message || 'Failed to process contract');
       setUploadStatus('error');
-      toast.error('Failed to parse contract');
+      toast.error(`Failed to parse contract: ${err.message}`);
     }
   };
 
