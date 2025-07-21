@@ -17,6 +17,8 @@ import { PublishingAgreementForm } from "@/components/contracts/PublishingAgreem
 import { EditContractForm } from "@/components/contracts/EditContractForm";
 import { TemplateLibrary } from "@/components/contracts/TemplateLibrary";
 import { DocuSignImport } from "@/components/contracts/DocuSignImport";
+import { DemoPublishingContracts } from "@/components/contracts/DemoPublishingContracts";
+import { DemoPublishingContract } from "@/data/demo-publishing-contracts";
 
 const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
@@ -366,8 +368,9 @@ const ContractManagement = () => {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="contracts">Contracts</TabsTrigger>
+            <TabsTrigger value="demos">Demo Contracts</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
@@ -389,6 +392,20 @@ const ContractManagement = () => {
             </div>
 
             <ContractList onEdit={handleEditContract} />
+          </TabsContent>
+
+          <TabsContent value="demos">
+            <DemoPublishingContracts 
+              onLoadDemo={(demoContract: DemoPublishingContract) => {
+                // Set the contract type and load the demo data
+                setSelectedContractType("publishing");
+                setCreationMethod("new");
+                setIsCreateDialogOpen(true);
+                
+                // You could pass the demo data to the form here
+                // For now, we'll let users see the structure and manually load it
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="templates">
