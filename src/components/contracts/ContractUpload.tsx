@@ -14,19 +14,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import * as pdfjsLib from "pdfjs-dist";
 
-// Set up PDF.js worker with error handling
+// Set up PDF.js worker with reliable CDN
 if (typeof window !== 'undefined') {
-  try {
-    // Try to use a bundled worker first, fallback to CDN
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-      'pdfjs-dist/build/pdf.worker.min.js',
-      import.meta.url
-    ).toString();
-  } catch (error) {
-    console.warn('Failed to set up bundled PDF worker, using CDN fallback');
-    // Fallback to CDN with error handling
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
-  }
+  // Use a reliable CDN directly without trying bundled worker
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 }
 
 interface ContractUploadProps {
