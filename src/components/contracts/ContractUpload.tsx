@@ -628,11 +628,23 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
 
               {/* PDF Preview Tab */}
               <TabsContent value="preview">
-                {uploadedFileUrl && selectedFile && (
+                {uploadedFileUrl && selectedFile ? (
                   <PDFViewer 
                     pdfUrl={uploadedFileUrl} 
                     fileName={selectedFile.name} 
                   />
+                ) : (
+                  <Card>
+                    <CardContent className="flex items-center justify-center h-96 text-center">
+                      <div>
+                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">PDF Preview Not Available</h3>
+                        <p className="text-muted-foreground">
+                          {!uploadedFileUrl ? 'File URL not found' : 'No file selected'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
               </TabsContent>
 

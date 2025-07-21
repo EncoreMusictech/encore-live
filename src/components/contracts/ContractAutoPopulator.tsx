@@ -116,18 +116,21 @@ export const ContractAutoPopulator: React.FC<ContractAutoPopulatorProps> = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert className={confidence >= 0.6 ? "border-green-200 bg-green-50" : "border-yellow-200 bg-yellow-50"}>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            {confidence >= 0.8 ? (
-              "High confidence parsing detected. The extracted data appears accurate and complete."
-            ) : confidence >= 0.6 ? (
-              "Medium confidence parsing. Please review the extracted data before proceeding."
-            ) : (
-              "Low confidence parsing detected. Manual review strongly recommended."
-            )}
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-4">
+          {confidence >= 0.8 ? (
+            <p className="text-sm text-green-600">
+              High confidence parsing detected. The extracted data appears accurate and complete.
+            </p>
+          ) : confidence >= 0.6 ? (
+            <p className="text-sm text-yellow-600">
+              Medium confidence parsing. Please review the extracted data before proceeding.
+            </p>
+          ) : (
+            <p className="text-sm text-red-600">
+              Low confidence parsing detected. Manual review strongly recommended.
+            </p>
+          )}
+        </div>
 
         <div className="space-y-6">
           <h4 className="font-medium">Extracted Information Preview:</h4>
