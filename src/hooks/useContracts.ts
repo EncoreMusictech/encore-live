@@ -237,6 +237,11 @@ export const useContracts = () => {
 
       if (error) throw error;
       
+      // If the work inherits royalty splits and has a copyright_id, inherit the writers
+      if (workData.inherits_royalty_splits && workData.copyright_id) {
+        await inheritWritersFromCopyright(contractId, workData.copyright_id);
+      }
+      
       await fetchContracts(); // Refresh to get updated data
       
       toast({
@@ -253,6 +258,72 @@ export const useContracts = () => {
         variant: "destructive",
       });
       throw error;
+    }
+  };
+
+  // Helper function to inherit writers from copyright to contract interested parties
+  const inheritWritersFromCopyright = async (contractId: string, copyrightId: string) => {
+    try {
+      // Get writers from the copyright
+      const { data: copyrightWriters, error: writersError } = await supabase
+        .from('copyright_writers')
+        .select('*')
+        .eq('copyright_id', copyrightId);
+
+      if (writersError) throw writersError;
+      
+      if (!copyrightWriters || copyrightWriters.length === 0) {
+        console.log('No writers found for copyright:', copyrightId);
+        return;
+      }
+
+      // Check existing interested parties to avoid duplicates
+      const { data: existingParties, error: existingError } = await supabase
+        .from('contract_interested_parties')
+        .select('name, ipi_number')
+        .eq('contract_id', contractId);
+
+      if (existingError) throw existingError;
+
+      // Create interested party records for each writer
+      const newParties = [];
+      for (const writer of copyrightWriters) {
+        // Check if this writer already exists in the contract
+        const exists = existingParties?.some(party => 
+          party.name === writer.writer_name || 
+          (party.ipi_number && writer.ipi_number && party.ipi_number === writer.ipi_number)
+        );
+        
+        if (!exists) {
+          newParties.push({
+            contract_id: contractId,
+            name: writer.writer_name,
+            party_type: 'writer',
+            ipi_number: writer.ipi_number,
+            controlled_status: writer.controlled_status || 'NC',
+            performance_percentage: writer.performance_share || writer.ownership_percentage || 0,
+            mechanical_percentage: writer.mechanical_share || writer.ownership_percentage || 0,
+            synch_percentage: writer.synchronization_share || writer.ownership_percentage || 0,
+            print_percentage: 0,
+            grand_rights_percentage: 0,
+            karaoke_percentage: 0,
+            affiliation: writer.pro_affiliation
+          });
+        }
+      }
+
+      if (newParties.length > 0) {
+        const { error: insertError } = await supabase
+          .from('contract_interested_parties')
+          .insert(newParties);
+
+        if (insertError) throw insertError;
+        
+        console.log(`Inherited ${newParties.length} writers from copyright to contract`);
+      }
+    } catch (error) {
+      console.error('Error inheriting writers from copyright:', error);
+      // Don't throw here as we don't want to break the main flow
     }
   };
 
