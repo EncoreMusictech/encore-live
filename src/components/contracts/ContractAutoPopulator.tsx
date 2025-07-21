@@ -129,8 +129,10 @@ export const ContractAutoPopulator: React.FC<ContractAutoPopulatorProps> = ({
           </AlertDescription>
         </Alert>
 
-        <div className="space-y-3">
+        <div className="space-y-6">
           <h4 className="font-medium">Extracted Information Preview:</h4>
+          
+          {/* Basic Contract Info */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="font-medium">Contract Type:</span>
@@ -144,21 +146,156 @@ export const ContractAutoPopulator: React.FC<ContractAutoPopulatorProps> = ({
                 {parsedData.territory || 'Not specified'}
               </p>
             </div>
-            <div>
-              <span className="font-medium">Counterparty:</span>
-              <p className="text-muted-foreground">
-                {parsedData.parties?.find(p => p.role !== 'administrator')?.name || 'Not identified'}
-              </p>
-            </div>
-            <div>
-              <span className="font-medium">Commission:</span>
-              <p className="text-muted-foreground">
-                {parsedData.financial_terms?.commission_percentage ? 
-                  `${(parsedData.financial_terms.commission_percentage * 100).toFixed(1)}%` : 
-                  'Not specified'}
-              </p>
-            </div>
           </div>
+
+          {/* Parties Information */}
+          {parsedData.parties && parsedData.parties.length > 0 && (
+            <div>
+              <h5 className="font-medium mb-2">Parties</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                {parsedData.parties.map((party, index) => (
+                  <div key={index} className="border rounded-lg p-3">
+                    <div className="font-medium capitalize">{party.role}:</div>
+                    <p className="text-muted-foreground">{party.name}</p>
+                    {party.contact_info && (
+                      <div className="mt-2 space-y-1">
+                        {party.contact_info.email && (
+                          <p className="text-xs text-muted-foreground">📧 {party.contact_info.email}</p>
+                        )}
+                        {party.contact_info.phone && (
+                          <p className="text-xs text-muted-foreground">📞 {party.contact_info.phone}</p>
+                        )}
+                        {party.contact_info.address && (
+                          <p className="text-xs text-muted-foreground">📍 {party.contact_info.address}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Financial Terms */}
+          {parsedData.financial_terms && (
+            <div>
+              <h5 className="font-medium mb-2">Financial Terms</h5>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                {parsedData.financial_terms.advance_amount && (
+                  <div>
+                    <span className="font-medium">Advance:</span>
+                    <p className="text-muted-foreground">${parsedData.financial_terms.advance_amount.toLocaleString()}</p>
+                  </div>
+                )}
+                {parsedData.financial_terms.commission_percentage && (
+                  <div>
+                    <span className="font-medium">Commission:</span>
+                    <p className="text-muted-foreground">{(parsedData.financial_terms.commission_percentage * 100).toFixed(1)}%</p>
+                  </div>
+                )}
+                {parsedData.financial_terms.royalty_rates?.mechanical && (
+                  <div>
+                    <span className="font-medium">Mechanical Royalty:</span>
+                    <p className="text-muted-foreground">{(parsedData.financial_terms.royalty_rates.mechanical * 100).toFixed(1)}%</p>
+                  </div>
+                )}
+                {parsedData.financial_terms.royalty_rates?.performance && (
+                  <div>
+                    <span className="font-medium">Performance Royalty:</span>
+                    <p className="text-muted-foreground">{(parsedData.financial_terms.royalty_rates.performance * 100).toFixed(1)}%</p>
+                  </div>
+                )}
+                {parsedData.financial_terms.royalty_rates?.synchronization && (
+                  <div>
+                    <span className="font-medium">Sync Royalty:</span>
+                    <p className="text-muted-foreground">{(parsedData.financial_terms.royalty_rates.synchronization * 100).toFixed(1)}%</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Key Dates */}
+          {parsedData.key_dates && (
+            <div>
+              <h5 className="font-medium mb-2">Key Dates</h5>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                {parsedData.key_dates.start_date && (
+                  <div>
+                    <span className="font-medium">Start Date:</span>
+                    <p className="text-muted-foreground">{parsedData.key_dates.start_date}</p>
+                  </div>
+                )}
+                {parsedData.key_dates.end_date && (
+                  <div>
+                    <span className="font-medium">End Date:</span>
+                    <p className="text-muted-foreground">{parsedData.key_dates.end_date}</p>
+                  </div>
+                )}
+                {parsedData.key_dates.renewal_terms && (
+                  <div>
+                    <span className="font-medium">Renewal Terms:</span>
+                    <p className="text-muted-foreground">{parsedData.key_dates.renewal_terms}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Works Covered */}
+          {parsedData.works_covered && parsedData.works_covered.length > 0 && (
+            <div>
+              <h5 className="font-medium mb-2">Works Covered ({parsedData.works_covered.length})</h5>
+              <div className="max-h-32 overflow-y-auto space-y-2">
+                {parsedData.works_covered.slice(0, 5).map((work, index) => (
+                  <div key={index} className="border rounded p-2 text-sm">
+                    <div className="font-medium">{work.title}</div>
+                    {work.artist && <p className="text-muted-foreground">Artist: {work.artist}</p>}
+                    <div className="flex gap-4 text-xs text-muted-foreground">
+                      {work.isrc && <span>ISRC: {work.isrc}</span>}
+                      {work.iswc && <span>ISWC: {work.iswc}</span>}
+                    </div>
+                  </div>
+                ))}
+                {parsedData.works_covered.length > 5 && (
+                  <p className="text-xs text-muted-foreground">...and {parsedData.works_covered.length - 5} more works</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Additional Terms */}
+          {(parsedData.payment_terms || parsedData.recoupment_status || parsedData.termination_clauses || parsedData.additional_terms) && (
+            <div>
+              <h5 className="font-medium mb-2">Additional Terms</h5>
+              <div className="space-y-2 text-sm">
+                {parsedData.payment_terms && (
+                  <div>
+                    <span className="font-medium">Payment Terms:</span>
+                    <p className="text-muted-foreground">{parsedData.payment_terms}</p>
+                  </div>
+                )}
+                {parsedData.recoupment_status && (
+                  <div>
+                    <span className="font-medium">Recoupment:</span>
+                    <p className="text-muted-foreground">{parsedData.recoupment_status}</p>
+                  </div>
+                )}
+                {parsedData.termination_clauses && (
+                  <div>
+                    <span className="font-medium">Termination:</span>
+                    <p className="text-muted-foreground">{parsedData.termination_clauses}</p>
+                  </div>
+                )}
+                {parsedData.additional_terms && (
+                  <div>
+                    <span className="font-medium">Additional Terms:</span>
+                    <p className="text-muted-foreground">{parsedData.additional_terms}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 pt-4">
