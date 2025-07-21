@@ -232,19 +232,9 @@ export function ContractList({ onEdit }: ContractListProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="space-y-1">
-                    <Badge variant="outline">
-                      {formatContractType(contract.contract_type)}
-                    </Badge>
-                    <div>
-                      <Badge 
-                        variant="secondary" 
-                        className={`text-xs ${getCreationMethodColor(getCreationMethod(contract))}`}
-                      >
-                        {getCreationMethod(contract)}
-                      </Badge>
-                    </div>
-                  </div>
+                  <Badge variant="outline">
+                    {formatContractType(contract.contract_type)}
+                  </Badge>
                 </TableCell>
                 <TableCell>{contract.counterparty_name}</TableCell>
                 <TableCell>
