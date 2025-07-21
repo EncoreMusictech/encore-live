@@ -172,11 +172,11 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
   const royaltyFrequency = contractData.distribution_cycle === 'quarterly' ? 'Quarterly' : 
                           contractData.distribution_cycle === 'semi_annually' ? 'Semi-Annually' :
                           contractData.distribution_cycle || 'Quarterly';
-  const paymentTermsDays = contractData.payment_terms_days || '[Payment Terms (days)]';
-  const minimumThreshold = contractData.minimum_payment_threshold ? `$${contractData.minimum_payment_threshold}` : '$[Minimum Threshold]';
-  const disputePeriodMonths = contractData.statement_dispute_period_months || '[Dispute Period (months)]';
-  const tailPeriodMonths = contractData.tail_period_months || '[Tail Period (months)]';
-  const terminationNoticeDays = contractData.termination_notice_days || '[Termination Notice Days]';
+  const paymentTermsDays = contractData.payment_terms_days || '60';
+  const minimumThreshold = contractData.minimum_payment_threshold ? `$${contractData.minimum_payment_threshold}` : '$100';
+  const disputePeriodMonths = contractData.statement_dispute_period_months || '12';
+  const tailPeriodMonths = contractData.tail_period_months || '6';
+  const terminationNoticeDays = contractData.termination_notice_days || '30';
 
   return `
     <!DOCTYPE html>
