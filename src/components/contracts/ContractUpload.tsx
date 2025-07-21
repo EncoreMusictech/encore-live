@@ -12,13 +12,6 @@ import { useDropzone } from "react-dropzone";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import * as pdfjsLib from "pdfjs-dist";
-
-// Set up PDF.js worker with reliable CDN
-if (typeof window !== 'undefined') {
-  // Use a reliable CDN directly without trying bundled worker
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-}
 
 interface ContractUploadProps {
   onBack: () => void;
@@ -86,32 +79,21 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
     selectedFile: !!selectedFile 
   });
 
-  const extractTextFromPDF = async (file: File): Promise<string> => {
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let fullText = '';
+  const extractTextFromPDF = async (fileUrl: string): Promise<string> => {
+    if (!user) throw new Error('User not authenticated');
 
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        fullText += pageText + '\n';
+    const { data, error } = await supabase.functions.invoke('parse-contract', {
+      body: {
+        fileUrl: fileUrl,
+        fileName: selectedFile?.name || 'unknown.pdf',
+        userId: user.id
       }
+    });
 
-      return fullText.trim();
-    } catch (error: any) {
-      console.error('PDF text extraction failed:', error);
-      
-      // If PDF.js fails, provide a helpful error message
-      if (error.message?.includes('worker') || error.message?.includes('Worker')) {
-        throw new Error('PDF processing failed due to worker setup. Please try refreshing the page and uploading again.');
-      }
-      
-      throw new Error(`Failed to extract text from PDF: ${error.message}`);
-    }
+    if (error) throw error;
+    if (!data.success) throw new Error(data.error || 'Failed to extract text from PDF');
+
+    return data.extractedText;
   };
 
   const parseContract = async (text: string) => {
@@ -203,9 +185,14 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       console.log('File uploaded successfully:', uploadData);
       setUploadProgress(25);
 
-      // Extract text from PDF
+      // Get the public URL for the uploaded file
+      const { data: { publicUrl } } = supabase.storage
+        .from('contract-documents')
+        .getPublicUrl(fileName);
+
+      // Extract text from PDF using edge function
       console.log('Extracting text from PDF...');
-      const text = await extractTextFromPDF(selectedFile);
+      const text = await extractTextFromPDF(publicUrl);
       console.log('Text extracted, length:', text.length);
       setExtractedText(text);
       setUploadProgress(50);

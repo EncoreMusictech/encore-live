@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0';
+import { getDocument } from 'https://esm.sh/pdfjs-dist@4.4.168/build/pdf.mjs';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -18,14 +19,14 @@ serve(async (req) => {
   }
 
   try {
-    const { fileContent, fileName, userId } = await req.json();
+    const { fileContent, fileUrl, fileName, userId } = await req.json();
 
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    if (!fileContent || !userId) {
-      throw new Error('Missing required parameters: fileContent and userId');
+    if (!fileUrl || !userId) {
+      throw new Error('Missing required parameters: fileUrl and userId');
     }
 
     console.log(`Processing contract parsing for user: ${userId}, file: ${fileName}`);
@@ -33,12 +34,50 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
+    // Extract text from PDF
+    let extractedText = '';
+    
+    if (fileName?.toLowerCase().endsWith('.pdf')) {
+      console.log('Downloading and processing PDF...');
+      
+      // Download PDF file
+      const pdfResponse = await fetch(fileUrl);
+      if (!pdfResponse.ok) {
+        throw new Error('Failed to download PDF file');
+      }
+      
+      const pdfBuffer = await pdfResponse.arrayBuffer();
+      console.log('PDF downloaded, extracting text...');
+      
+      // Extract text using PDF.js
+      const pdf = await getDocument({ data: new Uint8Array(pdfBuffer) }).promise;
+      
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        extractedText += pageText + '\n';
+      }
+      
+      extractedText = extractedText.trim();
+      console.log(`Extracted ${extractedText.length} characters from PDF`);
+    } else {
+      // For non-PDF files, use the provided file content
+      extractedText = fileContent || '';
+    }
+
+    if (!extractedText) {
+      throw new Error('No text could be extracted from the file');
+    }
+
     // Create initial parsing result record
     const { data: parsingResult, error: insertError } = await supabase
       .from('contract_parsing_results')
       .insert({
         user_id: userId,
-        original_text: fileContent,
+        original_text: extractedText,
         parsing_status: 'processing'
       })
       .select()
@@ -124,7 +163,7 @@ Provide confidence scores for each extracted field (0-1) and flag any uncertain 
           },
           {
             role: 'user',
-            content: `Please analyze this contract and extract the key information:\n\n${fileContent}`
+            content: `Please analyze this contract and extract the key information:\n\n${extractedText}`
           }
         ],
         temperature: 0.1,
@@ -185,6 +224,7 @@ Provide confidence scores for each extracted field (0-1) and flag any uncertain 
 
     return new Response(JSON.stringify({
       success: true,
+      extractedText: extractedText,
       parsing_result_id: parsingResult.id,
       parsed_data: parsedData,
       confidence: confidence,
