@@ -344,6 +344,12 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       setError(null);
       setShowAutoPopulator(false);
       setAutoPopulatedData(null);
+      // Clear previous parsing results when new file is selected
+      setParsedData(null);
+      setParsingResultId(null);
+      setExtractedText('');
+      setConfidence(0);
+      setUploadedFileUrl('');
       console.log('File set successfully:', file.name);
       toast.success(`File selected: ${file.name}`);
     } else {
