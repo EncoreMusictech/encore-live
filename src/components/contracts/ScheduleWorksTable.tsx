@@ -7,6 +7,7 @@ import { Plus, Trash2, ExternalLink } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { useCopyright } from "@/hooks/useCopyright";
 import { WorkSelectionDialog } from "./WorkSelectionDialog";
+import { CopyrightDetailsModal } from "../copyright/CopyrightDetailsModal";
 
 interface ScheduleWorksTableProps {
   contractId: string;
@@ -14,6 +15,8 @@ interface ScheduleWorksTableProps {
 
 export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState(false);
+  const [selectedCopyrightId, setSelectedCopyrightId] = useState<string | null>(null);
   const { contracts, removeScheduleWork, refetch } = useContracts();
 
   const contract = contracts.find(c => c.id === contractId);
@@ -30,6 +33,11 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   const handleWorkAdded = () => {
     setIsAddDialogOpen(false);
     refetch(); // Refresh the contracts data
+  };
+
+  const handleViewCopyright = (copyrightId: string) => {
+    setSelectedCopyrightId(copyrightId);
+    setIsCopyrightModalOpen(true);
   };
 
   return (
@@ -107,7 +115,12 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {work.copyright_id && (
-                          <Button variant="ghost" size="sm" title="View in Copyright Module">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            title="View in Copyright Module"
+                            onClick={() => handleViewCopyright(work.copyright_id)}
+                          >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
                         )}
@@ -128,6 +141,13 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Copyright Details Modal */}
+      <CopyrightDetailsModal
+        isOpen={isCopyrightModalOpen}
+        onOpenChange={setIsCopyrightModalOpen}
+        copyrightId={selectedCopyrightId}
+      />
     </div>
   );
 }
