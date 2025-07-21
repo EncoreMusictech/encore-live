@@ -14,17 +14,19 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import * as pdfjsLib from "pdfjs-dist";
 
-// Set up PDF.js worker with fallback options
+// Set up PDF.js worker with error handling
 if (typeof window !== 'undefined') {
-  // Try multiple worker sources for better reliability
-  const workerSources = [
-    `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
-    `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
-    `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
-  ];
-  
-  // Use the first available worker source
-  pdfjsLib.GlobalWorkerOptions.workerSrc = workerSources[0];
+  try {
+    // Try to use a bundled worker first, fallback to CDN
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.js',
+      import.meta.url
+    ).toString();
+  } catch (error) {
+    console.warn('Failed to set up bundled PDF worker, using CDN fallback');
+    // Fallback to CDN with error handling
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+  }
 }
 
 interface ContractUploadProps {
@@ -94,20 +96,31 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
   });
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
 
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ');
-      fullText += pageText + '\n';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += pageText + '\n';
+      }
+
+      return fullText.trim();
+    } catch (error: any) {
+      console.error('PDF text extraction failed:', error);
+      
+      // If PDF.js fails, provide a helpful error message
+      if (error.message?.includes('worker') || error.message?.includes('Worker')) {
+        throw new Error('PDF processing failed due to worker setup. Please try refreshing the page and uploading again.');
+      }
+      
+      throw new Error(`Failed to extract text from PDF: ${error.message}`);
     }
-
-    return fullText.trim();
   };
 
   const parseContract = async (text: string) => {
