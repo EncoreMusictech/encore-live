@@ -121,8 +121,8 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
   const territories = contract.territories && contract.territories.length > 0 
     ? contract.territories.join(', ') 
     : 'United States, Canada, United Kingdom';
-  const adminFee = contractData.admin_fee_percentage || contract.commission_percentage || '15%';
-  const controlledShare = contractData.admin_controlled_share || contract.controlled_percentage || '100%';
+  const adminFee = (contractData.admin_fee_percentage || contract.commission_percentage || '15').toString().replace('%', '');
+  const controlledShare = (contractData.admin_controlled_share || contract.controlled_percentage || '100').toString().replace('%', '');
   const approvalThreshold = contractData.approval_threshold || '50,000';
   const approvalType = contractData.approval_type || 'Pre-approved';
   const paymentTerms = contractData.payment_terms_days || '60';
@@ -343,7 +343,7 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
       <div class="section">
         <div class="section-title">5. Administration Fee</div>
         <div class="section-content">
-          Administrator shall retain a commission of <strong>${adminFee}</strong> of all gross revenue 
+          Administrator shall retain a commission of <strong>${adminFee}%</strong> of all gross revenue 
           received in connection with the Works during the Term and Tail Period.<br><br>
           The balance, after deduction of the administration fee and any authorized expenses, shall be 
           remitted to the Rights Owner.
@@ -355,7 +355,7 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
       <div class="section">
         <div class="section-title">6. Controlled Share</div>
         <div class="section-content">
-          Rights Owner confirms that Administrator shall administer <strong>${controlledShare}</strong> of the Rights Owner's 
+          Rights Owner confirms that Administrator shall administer <strong>${controlledShare}%</strong> of the Rights Owner's 
           controlled share in the Works listed under this Agreement.
         </div>
       </div>
