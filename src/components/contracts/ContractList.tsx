@@ -299,6 +299,7 @@ export function ContractList({ onEdit }: ContractListProps) {
         contract={viewContract}
         open={isViewDialogOpen}
         onOpenChange={setIsViewDialogOpen}
+        onEdit={onEdit}
       />
     </Card>
   );
