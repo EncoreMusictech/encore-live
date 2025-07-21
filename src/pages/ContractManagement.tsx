@@ -272,17 +272,25 @@ const ContractManagement = () => {
                       <CardContent>
                         <Button 
                           className="w-full" 
-                          onClick={() => {
-                            console.log('Choose File button clicked');
-                            console.log('Current states:', { 
+                          onMouseDown={() => console.log('Choose File - mouse down')}
+                          onMouseUp={() => console.log('Choose File - mouse up')}
+                          onTouchStart={() => console.log('Choose File - touch start')}
+                          onClick={(e) => {
+                            console.log('Choose File button clicked - event details:', e);
+                            console.log('Event target:', e.target);
+                            console.log('Current target:', e.currentTarget);
+                            console.log('Current states before update:', { 
                               creationMethod, 
                               showContractUpload, 
                               showDocuSignImport,
                               isCreateDialogOpen 
                             });
+                            e.preventDefault();
+                            e.stopPropagation();
                             setShowContractUpload(true);
                             console.log('showContractUpload set to true');
                           }}
+                          type="button"
                         >
                           Choose File
                         </Button>
