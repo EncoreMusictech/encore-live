@@ -87,43 +87,40 @@ serve(async (req) => {
 });
 
 function generatePublishingAgreementHTML(contract: any, agreementType: string): string {
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
   const contractData = contract.contract_data || {};
   
-  // Get first interested party as Rights Owner
-  const rightsOwner = contract.contract_interested_parties?.find((party: any) => 
-    party.party_type === 'writer' || party.party_type === 'songwriter'
-  ) || contract.contract_interested_parties?.[0];
+  // Use placeholders for all dynamic content
+  const effectiveDate = '[Effective Date]';
+  const endDate = '[End Date]';
+  const tailPeriod = '[Tail Period (months)]';
+  const territories = '[Territory]';
+  const adminFee = '[Admin Fee %]';
+  const controlledShare = '[Controlled Share %]';
+  const approvalThreshold = '[Approval Threshold]';
+  const approvalType = '[Approval Type]';
+  const paymentTerms = '[Payment Terms (days)]';
+  const minimumThreshold = '[Minimum Payment Threshold]';
+  const disputePeriod = '[Statement Dispute Period (months)]';
+  const governingLaw = '[Governing Law]';
+  const disputeResolution = '[Dispute Resolution Method]';
   
-  const effectiveDate = contract.start_date ? 
-    new Date(contract.start_date).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    }) : '[Effective Date]';
-    
-  const endDate = contract.end_date ? 
-    new Date(contract.end_date).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    }) : '[End Date]';
-
-  const territories = contract.territories && contract.territories.length > 0 
-    ? contract.territories.join(', ') 
-    : 'United States, Canada, United Kingdom, etc.';
-
-  const adminFee = contractData.admin_fee_percentage || '[Admin Fee %, e.g., 15%]';
-  const controlledShare = contractData.admin_controlled_share || '[100%]';
-  const tailPeriod = contractData.tail_period_months || '[Tail Period, e.g., 6 months]';
-  const approvalThreshold = '[Approval Threshold, e.g., 50,000]';
-  const distributionCycle = contract.distribution_cycle || '[Quarterly]';
-  const minimumThreshold = '[Minimum Threshold]';
-  const governingLaw = contractData.governing_law || '[New York/Other]';
+  // Administrator placeholders
+  const administratorName = '[Administrator Name]';
+  const administratorAddress = '[Administrator Address]';
+  const administratorEmail = '[Administrator Email]';
+  
+  // Rights Owner placeholders
+  const rightsOwnerName = '[Rights Owner Name]';
+  const rightsOwnerAddress = '[Rights Owner Address]';
+  const rightsOwnerEmail = '[Rights Owner Email]';
+  
+  // Delivery requirement placeholders
+  const metadataDelivered = '[Metadata Delivered: Yes/No]';
+  const workRegistrationDelivered = '[Work Registration Delivered: Yes/No]';
+  const leadSheetsDelivered = '[Lead Sheets Delivered: Yes/No]';
+  const soundFilesDelivered = '[Sound Files Delivered: Yes/No]';
+  const lyricsDelivered = '[Lyrics Delivered: Yes/No]';
+  const mastersDelivered = '[Masters Delivered: Yes/No]';
 
   return `
     <!DOCTYPE html>
@@ -231,9 +228,9 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
 
       <div class="party-section">
         <strong>Administrator:</strong><br>
-        <strong>${contract.counterparty_name}</strong><br>
-        ${contract.contact_address || '[Address]'}<br>
-        ${contract.recipient_email || '[Email]'}<br>
+        <strong>${administratorName}</strong><br>
+        ${administratorAddress}<br>
+        ${administratorEmail}<br>
         ("<strong>Administrator</strong>")
       </div>
 
@@ -243,9 +240,9 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
 
       <div class="party-section">
         <strong>Original Publisher / Rights Owner:</strong><br>
-        <strong>${rightsOwner?.name || '[Owner/Entity Name]'}</strong><br>
-        [Address]<br>
-        [Email]<br>
+        <strong>${rightsOwnerName}</strong><br>
+        ${rightsOwnerAddress}<br>
+        ${rightsOwnerEmail}<br>
         ("<strong>Rights Owner</strong>")
       </div>
 
@@ -351,7 +348,7 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
           political, tobacco, alcohol), Administrator shall obtain Rights Owner's prior written consent.
         </div>
         <div class="section-content" style="margin-top: 20px;">
-          Approval Type: <strong>[Pre-approved / Must Approve Syncs / Must Approve All Uses / Consultation Only]</strong>
+          Approval Type: <strong>${approvalType}</strong>
         </div>
       </div>
 
@@ -362,12 +359,12 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
         <div class="section-content">
           Rights Owner agrees to deliver, for each Work covered under this Agreement:
         </div>
-        <div class="bullet-point">• Complete metadata</div>
-        <div class="bullet-point">• Work registration information</div>
-        <div class="bullet-point">• Lead sheets</div>
-        ${contractData.delivery_requirements?.includes('Sound File') ? '<div class="bullet-point">• ☑ Sound Files</div>' : '<div class="bullet-point">• ☐ Sound Files</div>'}
-        ${contractData.delivery_requirements?.includes('Lyrics') ? '<div class="bullet-point">• ☑ Lyrics</div>' : '<div class="bullet-point">• ☐ Lyrics</div>'}
-        ${contractData.delivery_requirements?.includes('Masters') ? '<div class="bullet-point">• ☑ Master Recordings</div>' : '<div class="bullet-point">• ☐ Master Recordings</div>'}
+        <div class="bullet-point">• ☐ Metadata ${metadataDelivered}</div>
+        <div class="bullet-point">• ☐ Work Registration ${workRegistrationDelivered}</div>
+        <div class="bullet-point">• ☐ Lead Sheets ${leadSheetsDelivered}</div>
+        <div class="bullet-point">• ☐ Sound Files ${soundFilesDelivered}</div>
+        <div class="bullet-point">• ☐ Lyrics ${lyricsDelivered}</div>
+        <div class="bullet-point">• ☐ Masters ${mastersDelivered}</div>
         <div class="section-content" style="margin-top: 20px;">
           Failure to provide delivery materials may delay royalty collection and registration obligations.
         </div>
@@ -419,16 +416,16 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
       <div class="section">
         <div class="section-title">11. Accounting & Payment</div>
         <div class="bullet-point">
-          • Administrator shall provide royalty statements on a <strong>${distributionCycle}</strong> basis
+          • Administrator shall provide royalty statements on a <strong>quarterly</strong> basis
         </div>
         <div class="bullet-point">
-          • Payments shall be made in USD within <strong>[X]</strong> days after statement issuance
+          • Payments shall be made in USD within <strong>${paymentTerms}</strong> days after statement issuance
         </div>
         <div class="bullet-point">
           • No payment shall be due unless the accrued balance exceeds <strong>${minimumThreshold}</strong>
         </div>
         <div class="bullet-point">
-          • All statements shall be final unless challenged within <strong>[12 months]</strong> of issuance
+          • All statements shall be final unless challenged within <strong>${disputePeriod}</strong> of issuance
         </div>
       </div>
 
@@ -438,7 +435,7 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
         <div class="section-title">12. Governing Law</div>
         <div class="section-content">
           This Agreement shall be governed by and construed in accordance with the laws of the <strong>State of ${governingLaw}</strong>.<br>
-          Any disputes shall be resolved through <strong>[Mediation followed by Arbitration]</strong> in the chosen jurisdiction.
+          Any disputes shall be resolved through <strong>${disputeResolution}</strong> in the chosen jurisdiction.
         </div>
       </div>
 
@@ -486,73 +483,7 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
 }
 
 function generateExhibitA(contract: any): string {
-  const works = contract.contract_schedule_works || [];
-  const parties = contract.contract_interested_parties || [];
-  
-  if (works.length === 0) {
-    return `
-      <div class="section">
-        <div class="section-title center">Exhibit A – Schedule of Works</div>
-        <table class="exhibit-table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Writers & Splits</th>
-              <th>Publishers & Splits</th>
-              <th>Controlled Share</th>
-              <th>ISWC</th>
-              <th>IPI Numbers (W/P)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>[Work Title]</td>
-              <td>[Writer Names & Percentages]</td>
-              <td>[Publisher Names & Percentages]</td>
-              <td>[Controlled %]</td>
-              <td>[ISWC Number]</td>
-              <td>[IPI Numbers]</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    `;
-  }
-
-  const worksRows = works.map((work: any) => {
-    // Get writers for this work
-    const workWriters = parties.filter((party: any) => 
-      party.party_type === 'writer' || party.party_type === 'songwriter'
-    );
-    
-    const writersText = workWriters.length > 0 
-      ? workWriters.map((writer: any) => 
-          `${writer.name} (${writer.ownership_percentage || 0}%)`
-        ).join(', ')
-      : '[Writer Names & Splits]';
-
-    const publishersText = parties.filter((party: any) => 
-      party.party_type === 'publisher'
-    ).map((pub: any) => 
-      `${pub.name} (${pub.ownership_percentage || 0}%)`
-    ).join(', ') || '[Publisher Names & Splits]';
-
-    const controlledShare = workWriters.reduce((sum: number, writer: any) => 
-      sum + (writer.controlled_status === 'C' ? (writer.ownership_percentage || 0) : 0), 0
-    );
-
-    return `
-      <tr>
-        <td><strong>${work.song_title}</strong></td>
-        <td>${writersText}</td>
-        <td>${publishersText}</td>
-        <td>${controlledShare}%</td>
-        <td>${work.iswc || '[ISWC]'}</td>
-        <td>${work.work_id || '[IPI Numbers]'}</td>
-      </tr>
-    `;
-  }).join('');
-
+  // Always return the standardized placeholder table format
   return `
     <div class="section">
       <div class="section-title center">Exhibit A – Schedule of Works</div>
@@ -565,10 +496,19 @@ function generateExhibitA(contract: any): string {
             <th>Controlled Share</th>
             <th>ISWC</th>
             <th>IPI Numbers (W/P)</th>
+            <th>Registration Status</th>
           </tr>
         </thead>
         <tbody>
-          ${worksRows}
+          <tr>
+            <td>[Work Title]</td>
+            <td>[Writers & Splits]</td>
+            <td>[Publishers & Splits]</td>
+            <td>[Controlled Share %]</td>
+            <td>[ISWC Number]</td>
+            <td>[IPI Numbers]</td>
+            <td>[Registration Status]</td>
+          </tr>
         </tbody>
       </table>
     </div>
