@@ -101,7 +101,7 @@ export const demoPublishingContracts: DemoPublishingContract[] = [
       approval_conditions: "",
       agreement_type: "co_publishing",
       publisher_share_percentage: 50,
-      writer_share_percentage: 100,
+      writer_share_percentage: 50,
       sync_revenue_split: 50,
       print_revenue_split: 50,
       mechanical_revenue_split: 50,
