@@ -739,12 +739,66 @@ function generateSongwriterAgreementHTML(contract: any, contractData: any, parti
   const publisher = parties.find((p: any) => p.party_type === 'publisher') || {};
   const songwriter = parties.find((p: any) => p.party_type === 'writer' || p.party_type === 'songwriter') || {};
   
+  // Extract party information
   const publisherName = publisher.name || '[Publisher Name]';
-  const songwriterName = contract.counterparty_name || songwriter.name || '[Songwriter Name]';
+  const publisherAddress = publisher.address || '[Publisher Address]';
+  const publisherEmail = publisher.email || '[Publisher Email]';
   
+  const songwriterName = contract.counterparty_name || songwriter.name || '[Songwriter Name]';
+  const songwriterAddress = songwriter.address || contract.contact_address || '[Songwriter Address]';
+  const songwriterEmail = songwriter.email || contract.recipient_email || '[Songwriter Email]';
+
+  // Extract dates with fallbacks
   const effectiveDate = contractData.effective_date ? 
-    new Date(contractData.effective_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 
-    'January 1, 2024';
+    new Date(contractData.effective_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : contract.start_date ? 
+    new Date(contract.start_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : '[Effective Date]';
+    
+  const endDate = contractData.end_date ? 
+    new Date(contractData.end_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : contract.end_date ? 
+    new Date(contract.end_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : '[End Date]';
+
+  // Extract financial terms
+  const advanceAmount = contractData.advance_amount ? `$${contractData.advance_amount.toLocaleString()}` : contract.advance_amount ? `$${contract.advance_amount.toLocaleString()}` : '$[Advance Amount]';
+  const publisherShare = contractData.publisher_share_percentage || 50;
+  const writerShare = contractData.writer_share_percentage || 50;
+  const adminFeePercentage = contractData.admin_fee_percentage || 15;
+  
+  // Extract territory and governing law
+  const territory = Array.isArray(contractData.territory) ? contractData.territory.join(', ') : 
+                   Array.isArray(contract.territories) ? contract.territories.join(', ') : 
+                   'Worldwide';
+  
+  const governingLaw = contractData.governing_law === 'new_york' ? 'New York' : 
+                      contractData.governing_law === 'california' ? 'California' :
+                      contractData.governing_law === 'tennessee' ? 'Tennessee' :
+                      contractData.governing_law || 'New York';
+
+  // Extract delivery terms
+  const deliveryCommitment = contractData.delivery_commitment || contractData.delivery_commitment_songs || '[Number] songs per year';
+  const minimumDelivery = contractData.minimum_delivery_songs || '[Minimum Number]';
+  
+  // Extract accounting terms
+  const royaltyFrequency = contractData.distribution_cycle === 'quarterly' ? 'Quarterly' : 
+                          contractData.distribution_cycle === 'semi_annually' ? 'Semi-Annually' :
+                          contractData.distribution_cycle || 'Quarterly';
+  const paymentTermsDays = contractData.payment_terms_days || '60';
+  const minimumThreshold = contractData.minimum_payment_threshold ? `$${contractData.minimum_payment_threshold}` : '$100';
 
   return `
     <!DOCTYPE html>
@@ -753,17 +807,88 @@ function generateSongwriterAgreementHTML(contract: any, contractData: any, parti
       <meta charset="UTF-8">
       <title>${contract.title}</title>
       <style>
-        body { font-family: 'Times New Roman', serif; line-height: 1.6; margin: 40px; font-size: 12pt; color: #000; background: white; }
-        .header { text-align: center; margin-bottom: 40px; }
-        .agreement-title { font-size: 18pt; font-weight: bold; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
-        .section { margin: 30px 0; page-break-inside: avoid; }
-        .section-title { font-size: 14pt; font-weight: bold; margin: 30px 0 15px 0; color: #000; }
-        .section-content { margin: 15px 0; text-align: justify; line-height: 1.8; }
-        .party-section { margin: 20px 0; line-height: 1.8; }
-        .divider { border-bottom: 1px solid #000; margin: 30px 0; width: 100%; }
-        .bullet-point { margin: 10px 0; padding-left: 20px; }
-        .signature-section { margin-top: 60px; page-break-inside: avoid; }
-        .signature-block { margin: 40px 0; }
+        body { 
+          font-family: 'Times New Roman', serif; 
+          line-height: 1.6; 
+          margin: 40px; 
+          font-size: 12pt;
+          color: #000;
+          background: white;
+        }
+        .header { 
+          text-align: center; 
+          margin-bottom: 40px;
+        }
+        .agreement-title {
+          font-size: 18pt;
+          font-weight: bold;
+          margin-bottom: 30px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        .section { 
+          margin: 30px 0; 
+          page-break-inside: avoid;
+        }
+        .section-title { 
+          font-size: 14pt; 
+          font-weight: bold; 
+          margin: 30px 0 15px 0; 
+          color: #000; 
+        }
+        .section-content {
+          margin: 15px 0;
+          text-align: justify;
+          line-height: 1.8;
+        }
+        .party-section { 
+          margin: 20px 0; 
+          line-height: 1.8;
+        }
+        .divider {
+          border-bottom: 1px solid #000;
+          margin: 30px 0;
+          width: 100%;
+        }
+        .bullet-point {
+          margin: 10px 0;
+          padding-left: 20px;
+        }
+        .sub-bullet {
+          margin: 8px 0;
+          padding-left: 40px;
+        }
+        .signature-section { 
+          margin-top: 60px; 
+          page-break-inside: avoid;
+        }
+        .signature-block { 
+          margin: 40px 0; 
+        }
+        .signature-line { 
+          border-bottom: 1px solid #000; 
+          width: 300px; 
+          margin: 20px 0 5px 0; 
+          height: 1px;
+          display: inline-block;
+        }
+        .ownership-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 20px 0;
+          border: 1px solid #000;
+        }
+        .ownership-table th,
+        .ownership-table td {
+          border: 1px solid #000;
+          padding: 12px;
+          text-align: center;
+          font-size: 11pt;
+        }
+        .ownership-table th {
+          background-color: #f5f5f5;
+          font-weight: bold;
+        }
         .bold { font-weight: bold; }
         .center { text-align: center; }
       </style>
@@ -774,31 +899,211 @@ function generateSongwriterAgreementHTML(contract: any, contractData: any, parti
       </div>
 
       <div class="section-content">
-        This Exclusive Songwriter Agreement (the "Agreement") is made and entered into as of <strong>${effectiveDate}</strong>, by and between:
+        This Exclusive Songwriter Agreement (this "Agreement") is entered into on <strong>${effectiveDate}</strong> (the "Effective Date") between:
       </div>
 
       <div class="party-section">
-        <strong>Publisher</strong><br>
-        <strong>${publisherName}</strong><br>
-        ("Publisher")
+        <strong>${publisherName}</strong>, a [State/Country] [Entity Type] (the "Publisher"), with an address at ${publisherAddress}, and
       </div>
-
-      <div class="party-section">and</div>
 
       <div class="party-section">
-        <strong>Songwriter</strong><br>
-        <strong>${songwriterName}</strong><br>
-        ("Songwriter")
+        <strong>${songwriterName}</strong> (the "Songwriter"), with an address at ${songwriterAddress}.
       </div>
 
-      <div class="section-content">Each a "Party" and collectively the "Parties."</div>
       <div class="divider"></div>
 
       <div class="section">
         <div class="section-title">1. Grant of Rights</div>
         <div class="section-content">
-          Songwriter hereby grants to Publisher the exclusive worldwide rights to all musical compositions 
-          created during the term of this Agreement.
+          <strong>1.1 Exclusive Grant.</strong> Subject to the terms and conditions of this Agreement, Songwriter hereby grants, assigns, and transfers to Publisher, exclusively and irrevocably, all right, title, and interest in and to all Compositions (as defined below) created, written, composed, or otherwise produced by Songwriter during the Term.
+        </div>
+        <div class="section-content">
+          <strong>1.2 Compositions.</strong> "Compositions" means all musical compositions, including lyrics and music, created by Songwriter alone or in collaboration with others during the Term, including any and all copyrights therein and renewals and extensions thereof.
+        </div>
+        <div class="section-content">
+          <strong>1.3 Territory.</strong> The rights granted hereunder shall apply throughout the universe (the "Territory").
+        </div>
+        <div class="section-content">
+          <strong>1.4 Rights Included.</strong> The rights granted to Publisher include, without limitation:
+        </div>
+        <div class="bullet-point">(a) The exclusive right to publish, print, and sell the Compositions in all forms;</div>
+        <div class="bullet-point">(b) The exclusive right to license mechanical reproduction rights;</div>
+        <div class="bullet-point">(c) The exclusive right to license synchronization rights;</div>
+        <div class="bullet-point">(d) The exclusive right to license grand rights;</div>
+        <div class="bullet-point">(e) The exclusive right to collect and receive all income derived from the Compositions;</div>
+        <div class="bullet-point">(f) The exclusive right to register copyrights and renew the same.</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">2. Term</div>
+        <div class="section-content">
+          <strong>2.1 Initial Term.</strong> The initial term of this Agreement shall commence on the Effective Date and continue until ${endDate} (the "Initial Term").
+        </div>
+        <div class="section-content">
+          <strong>2.2 Options.</strong> Publisher shall have [Number] (___) successive options to extend this Agreement for additional periods of [Duration] (__) year(s) each (each an "Option Period").
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">3. Delivery Commitment</div>
+        <div class="section-content">
+          <strong>3.1 Minimum Delivery.</strong> During each Contract Period, Songwriter agrees to deliver to Publisher not less than ${minimumDelivery} newly-written Compositions that are Commercially Satisfactory (as defined below).
+        </div>
+        <div class="section-content">
+          <strong>3.2 Commercially Satisfactory.</strong> "Commercially Satisfactory" means, with respect to each Composition, that such Composition is entirely original with Songwriter, is of high commercial and artistic quality, and is suitable for commercial exploitation.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">4. Advances and Compensation</div>
+        <div class="section-content">
+          <strong>4.1 Advance.</strong> As an advance against Songwriter's share of Net Publisher's Share (as defined below), Publisher shall pay Songwriter ${advanceAmount} upon execution of this Agreement.
+        </div>
+        <div class="section-content">
+          <strong>4.2 Additional Advances.</strong> Publisher may, in its sole discretion, pay additional advances to Songwriter against future earnings.
+        </div>
+        <div class="section-content">
+          <strong>4.3 Recoupment.</strong> All advances shall be recoupable from Songwriter's share of Net Publisher's Share.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">5. Revenue Sharing</div>
+        <div class="section-content">
+          <strong>5.1 Publisher's Share.</strong> Publisher shall retain ${publisherShare}% of all Net Publisher's Share derived from the Compositions.
+        </div>
+        <div class="section-content">
+          <strong>5.2 Songwriter's Share.</strong> Songwriter shall receive ${writerShare}% of all Net Publisher's Share derived from the Compositions, subject to recoupment of advances and other charges.
+        </div>
+        <div class="section-content">
+          <strong>5.3 Net Publisher's Share.</strong> "Net Publisher's Share" means all income received by Publisher from the exploitation of the Compositions, less a ${adminFeePercentage}% administration fee and any direct costs of exploitation.
+        </div>
+
+        <table class="ownership-table">
+          <thead>
+            <tr>
+              <th>Revenue Type</th>
+              <th>Publisher Share (%)</th>
+              <th>Songwriter Share (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Mechanical Royalties</strong></td>
+              <td>${publisherShare}%</td>
+              <td>${writerShare}%</td>
+            </tr>
+            <tr>
+              <td><strong>Performance Royalties</strong></td>
+              <td>${publisherShare}%</td>
+              <td>${writerShare}%</td>
+            </tr>
+            <tr>
+              <td><strong>Synchronization</strong></td>
+              <td>${publisherShare}%</td>
+              <td>${writerShare}%</td>
+            </tr>
+            <tr>
+              <td><strong>Print</strong></td>
+              <td>${publisherShare}%</td>
+              <td>${writerShare}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">6. Exclusivity and Services</div>
+        <div class="section-content">
+          <strong>6.1 Exclusive Services.</strong> During the Term, Songwriter's songwriting services shall be exclusive to Publisher. Songwriter shall not write, compose, or create any musical compositions for any third party without Publisher's prior written consent.
+        </div>
+        <div class="section-content">
+          <strong>6.2 Professional Commitment.</strong> Songwriter agrees to devote Songwriter's professional efforts and time to the creation of Compositions hereunder.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">7. Warranties and Representations</div>
+        <div class="section-content">
+          Songwriter represents and warrants that:
+        </div>
+        <div class="bullet-point">(a) Songwriter has the full right, power, and authority to enter into this Agreement;</div>
+        <div class="bullet-point">(b) Each Composition shall be original with Songwriter;</div>
+        <div class="bullet-point">(c) No Composition shall infringe upon any copyright or other right of any third party;</div>
+        <div class="bullet-point">(d) Songwriter has not and will not grant any rights in the Compositions to any third party that would conflict with the rights granted to Publisher hereunder.</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">8. Accounting and Payment</div>
+        <div class="section-content">
+          <strong>8.1 Statements.</strong> Publisher shall render statements to Songwriter ${royaltyFrequency} showing all income received and expenses incurred with respect to the Compositions.
+        </div>
+        <div class="section-content">
+          <strong>8.2 Payment.</strong> Payments shall be made within ${paymentTermsDays} days after the end of each accounting period, provided the amount due exceeds ${minimumThreshold}.
+        </div>
+        <div class="section-content">
+          <strong>8.3 Audit Rights.</strong> Songwriter may, upon reasonable notice, examine Publisher's books and records relating to the Compositions during normal business hours.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">9. Termination</div>
+        <div class="section-content">
+          <strong>9.1 Termination for Cause.</strong> Either party may terminate this Agreement upon material breach by the other party, provided written notice is given and the breach is not cured within thirty (30) days.
+        </div>
+        <div class="section-content">
+          <strong>9.2 Effect of Termination.</strong> Upon termination, all rights in Compositions created during the Term shall remain with Publisher in perpetuity.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">10. General Provisions</div>
+        <div class="section-content">
+          <strong>10.1 Governing Law.</strong> This Agreement shall be governed by the laws of ${governingLaw}.
+        </div>
+        <div class="section-content">
+          <strong>10.2 Entire Agreement.</strong> This Agreement constitutes the entire agreement between the parties and supersedes all prior agreements and understandings.
+        </div>
+        <div class="section-content">
+          <strong>10.3 Amendments.</strong> This Agreement may be amended only by written instrument signed by both parties.
+        </div>
+      </div>
+
+      <div class="signature-section">
+        <div class="section-title center">IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.</div>
+        
+        <div class="signature-block">
+          <p><strong>PUBLISHER:</strong></p>
+          <p><strong>${publisherName}</strong></p>
+          <div>By: <span class="signature-line"></span></div>
+          <div>Name:</div>
+          <div>Title:</div>
+          <div>Date:</div>
+        </div>
+
+        <div class="signature-block">
+          <p><strong>SONGWRITER:</strong></p>
+          <div>Signature: <span class="signature-line"></span></div>
+          <div>${songwriterName}</div>
+          <div>Date:</div>
         </div>
       </div>
 
