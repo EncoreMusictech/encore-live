@@ -15,6 +15,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ContractReviewView } from './ContractReviewView';
 import { ContractAutoPopulator } from './ContractAutoPopulator';
+import { ContractDetailsView } from './ContractDetailsView';
+import { PDFViewer } from './PDFViewer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ContractUploadProps {
   onBack: () => void;
@@ -482,9 +485,10 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
           />
         )}
 
-        {/* Contract Details Form */}
+        {/* Tabbed Interface with PDF Preview and Contract Details */}
         {uploadStatus === 'completed' && !showAutoPopulator && parsedData && (
           <div className="space-y-6">
+            {/* Status Header */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -497,15 +501,25 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
                     'Review the extracted information and complete the contract details'
                   }
                 </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mt-4">
                   <span className="text-sm font-medium">AI Analysis Confidence</span>
                   <Badge variant={confidence > 0.8 ? "default" : confidence > 0.6 ? "secondary" : "destructive"}>
                     {Math.round(confidence * 100)}%
                   </Badge>
                 </div>
+              </CardHeader>
+            </Card>
 
+            {/* Tabbed Content */}
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="details">Contract Details</TabsTrigger>
+                <TabsTrigger value="preview">PDF Preview</TabsTrigger>
+                <TabsTrigger value="analysis">Full Analysis</TabsTrigger>
+              </TabsList>
+
+              {/* Contract Details Tab */}
+              <TabsContent value="details" className="space-y-6">
                 {autoPopulatedData && (
                   <Alert className="border-green-200 bg-green-50">
                     <CheckCircle className="h-4 w-4 text-green-600" />
@@ -515,97 +529,121 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
                   </Alert>
                 )}
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Contract Type:</span>
-                    <p className="text-muted-foreground capitalize">
-                      {parsedData.contract_type?.replace('_', ' ') || 'Unknown'}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="font-medium">Territory:</span>
-                    <p className="text-muted-foreground">
-                      {parsedData.territory || 'Not specified'}
-                    </p>
-                  </div>
-                </div>
-
-                {parsedData.parties && parsedData.parties.length > 0 && (
-                  <div>
-                    <span className="font-medium text-sm">Parties:</span>
-                    <div className="mt-1 space-y-1">
-                      {parsedData.parties.map((party, index) => (
-                        <p key={index} className="text-sm text-muted-foreground">
-                          {party.name} ({party.role})
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Quick Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Contract Type:</span>
+                        <p className="text-muted-foreground capitalize">
+                          {parsedData.contract_type?.replace('_', ' ') || 'Unknown'}
                         </p>
-                      ))}
+                      </div>
+                      <div>
+                        <span className="font-medium">Territory:</span>
+                        <p className="text-muted-foreground">
+                          {parsedData.territory || 'Not specified'}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
 
-            {/* Contract Details Form */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Contract Details</CardTitle>
-                <CardDescription>
-                  Complete the contract information to create your digital agreement
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="title">Contract Title</Label>
-                    <Input
-                      id="title"
-                      value={contractTitle}
-                      onChange={(e) => setContractTitle(e.target.value)}
-                      placeholder="Enter contract title"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="counterparty">Counterparty Name</Label>
-                    <Input
-                      id="counterparty"
-                      value={counterpartyName}
-                      onChange={(e) => setCounterpartyName(e.target.value)}
-                      placeholder="Enter counterparty name"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Additional notes about this contract"
-                    rows={4}
+                    {parsedData.parties && parsedData.parties.length > 0 && (
+                      <div>
+                        <span className="font-medium text-sm">Parties:</span>
+                        <div className="mt-1 space-y-1">
+                          {parsedData.parties.map((party, index) => (
+                            <p key={index} className="text-sm text-muted-foreground">
+                              {party.name} ({party.role})
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Contract Details</CardTitle>
+                    <CardDescription>
+                      Complete the contract information to create your digital agreement
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="title">Contract Title</Label>
+                        <Input
+                          id="title"
+                          value={contractTitle}
+                          onChange={(e) => setContractTitle(e.target.value)}
+                          placeholder="Enter contract title"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="counterparty">Counterparty Name</Label>
+                        <Input
+                          id="counterparty"
+                          value={counterpartyName}
+                          onChange={(e) => setCounterpartyName(e.target.value)}
+                          placeholder="Enter counterparty name"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="notes">Notes</Label>
+                      <Textarea
+                        id="notes"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Additional notes about this contract"
+                        rows={4}
+                      />
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button onClick={handleCreateContract} className="flex-1">
+                        Create Contract
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setUploadStatus('idle');
+                          setParsedData(null);
+                          setError(null);
+                          setShowAutoPopulator(false);
+                          setAutoPopulatedData(null);
+                        }}
+                      >
+                        Upload Different File
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* PDF Preview Tab */}
+              <TabsContent value="preview">
+                {uploadedFileUrl && selectedFile && (
+                  <PDFViewer 
+                    pdfUrl={uploadedFileUrl} 
+                    fileName={selectedFile.name} 
                   />
-                </div>
+                )}
+              </TabsContent>
 
-                <div className="flex gap-3 pt-4">
-                  <Button onClick={handleCreateContract} className="flex-1">
-                    Create Contract
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setSelectedFile(null);
-                      setUploadStatus('idle');
-                      setParsedData(null);
-                      setError(null);
-                      setShowAutoPopulator(false);
-                      setAutoPopulatedData(null);
-                    }}
-                  >
-                    Upload Different File
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Full Analysis Tab */}
+              <TabsContent value="analysis">
+                <ContractDetailsView 
+                  parsedData={parsedData} 
+                  confidence={confidence} 
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         )}
       </div>
