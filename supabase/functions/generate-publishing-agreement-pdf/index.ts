@@ -90,6 +90,66 @@ serve(async (req) => {
   }
 });
 
+// Helper function to determine contracting parties based on agreement type and interested parties
+function determineContractingParties(contract: any, parties: any[], agreementType: string) {
+  const contractData = contract.contract_data || {};
+  
+  switch (agreementType) {
+    case 'administration':
+      return {
+        primaryParty: parties.find((p: any) => p.party_type === 'administrator') || 
+                     { name: '[Administrator Name]', address: '[Administrator Address]', email: '[Administrator Email]' },
+        secondaryParty: parties.find((p: any) => 
+          p.party_type === 'publisher' || p.party_type === 'original_publisher' || p.party_type === 'artist'
+        ) || { name: contract.counterparty_name || '[Original Publisher]', address: '[Original Publisher Address]', email: '[Original Publisher Email]' }
+      };
+      
+    case 'catalog_acquisition':
+      const buyer = parties.find((p: any) => 
+        p.party_type === 'administrator' || 
+        p.party_type === 'buyer' ||
+        p.party_type === 'label' ||
+        (p.controlled_status === 'C' && (p.party_type === 'publisher' || p.party_type === 'co_publisher'))
+      );
+      
+      const seller = parties.find((p: any) => 
+        p.party_type === 'seller' ||
+        p.party_type === 'publisher' || 
+        p.party_type === 'original_publisher' ||
+        p.party_type === 'artist' ||
+        (p.controlled_status === 'NC' && p.party_type === 'co_publisher')
+      );
+      
+      return {
+        primaryParty: buyer || { name: '[Buyer Name]', address: '[Buyer Address]', email: '[Buyer Email]' },
+        secondaryParty: seller || { name: contract.counterparty_name || '[Seller Name]', address: '[Seller Address]', email: '[Seller Email]' }
+      };
+      
+    case 'co_publishing':
+      return {
+        primaryParty: parties.find((p: any) => p.party_type === 'co_publisher') || 
+                     { name: '[Co-Publisher Name]', address: '[Co-Publisher Address]', email: '[Co-Publisher Email]' },
+        secondaryParty: parties.find((p: any) => p.party_type === 'writer' || p.party_type === 'artist') || 
+                       { name: contract.counterparty_name || '[Writer/Artist Name]', address: '[Writer Address]', email: '[Writer Email]' }
+      };
+      
+    case 'exclusive_songwriter':
+      return {
+        primaryParty: parties.find((p: any) => p.party_type === 'publisher') || 
+                     { name: '[Publisher Name]', address: '[Publisher Address]', email: '[Publisher Email]' },
+        secondaryParty: parties.find((p: any) => p.party_type === 'writer') || 
+                       { name: contract.counterparty_name || '[Songwriter Name]', address: '[Songwriter Address]', email: '[Songwriter Email]' }
+      };
+      
+    default:
+      return {
+        primaryParty: { name: '[Party 1 Name]', address: '[Party 1 Address]', email: '[Party 1 Email]' },
+        secondaryParty: { name: contract.counterparty_name || '[Party 2 Name]', address: '[Party 2 Address]', email: '[Party 2 Email]' }
+      };
+  }
+}
+
+
 function generatePublishingAgreementHTML(contract: any, agreementType: string): string {
   const contractData = contract.contract_data || {};
   const parties = contract.contract_interested_parties || [];
@@ -111,9 +171,10 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
 }
 
 function generateAdministrationAgreementHTML(contract: any, contractData: any, parties: any[], works: any[]): string {
-  // Extract administrator and original publisher data
-  const administrator = parties.find((p: any) => p.party_type === 'administrator') || {};
-  const originalPublisher = parties.find((p: any) => p.party_type === 'original_publisher' || p.party_type === 'publisher') || {};
+  // Use intelligent party determination
+  const contractingParties = determineContractingParties(contract, parties, 'administration');
+  const administrator = contractingParties.primaryParty;
+  const originalPublisher = contractingParties.secondaryParty;
   
   // Extract dates with fallbacks
   const effectiveDate = contractData.effective_date ? 
@@ -1114,9 +1175,10 @@ function generateSongwriterAgreementHTML(contract: any, contractData: any, parti
 }
 
 function generateCatalogAcquisitionHTML(contract: any, contractData: any, parties: any[], works: any[]): string {
-  // Extract buyer and seller data
-  const buyer = parties.find((p: any) => p.party_type === 'buyer' || p.party_type === 'administrator') || {};
-  const seller = parties.find((p: any) => p.party_type === 'seller' || p.party_type === 'original_publisher' || p.party_type === 'publisher') || {};
+  // Use intelligent party determination
+  const contractingParties = determineContractingParties(contract, parties, 'catalog_acquisition');
+  const buyer = contractingParties.primaryParty;
+  const seller = contractingParties.secondaryParty;
   
   // Extract dates with fallbacks
   const effectiveDate = contractData.effective_date ? 

@@ -112,10 +112,13 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
     { value: "writer", label: "Writer" },
     { value: "producer", label: "Producer" },
     { value: "publisher", label: "Publisher" },
+    { value: "original_publisher", label: "Original Publisher" },
     { value: "administrator", label: "Administrator" },
     { value: "co_publisher", label: "Co-Publisher" },
     { value: "label", label: "Label" },
     { value: "artist", label: "Artist" },
+    { value: "buyer", label: "Buyer (Acquiring Party)" },
+    { value: "seller", label: "Seller (Transferring Party)" },
   ];
 
   const affiliations = [
