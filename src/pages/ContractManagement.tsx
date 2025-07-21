@@ -261,7 +261,17 @@ const ContractManagement = () => {
                       <CardContent>
                         <Button 
                           className="w-full" 
-                          onClick={() => setShowContractUpload(true)}
+                          onClick={() => {
+                            console.log('Choose File button clicked');
+                            console.log('Current states:', { 
+                              creationMethod, 
+                              showContractUpload, 
+                              showDocuSignImport,
+                              isCreateDialogOpen 
+                            });
+                            setShowContractUpload(true);
+                            console.log('showContractUpload set to true');
+                          }}
                         >
                           Choose File
                         </Button>
