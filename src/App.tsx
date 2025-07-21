@@ -23,10 +23,12 @@ import RoyaltiesPage from "./pages/RoyaltiesPage";
 import PayoutsPage from "./pages/PayoutsPage";
 import ClientPortal from "./components/ClientPortal";
 import ClientAdminPage from "./pages/ClientAdminPage";
+import { useState } from "react";
 
-const queryClient = new QueryClient();
+const App = () => {
+  const [queryClient] = useState(() => new QueryClient());
 
-const App = () => (
+  return (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <DemoAccessProvider>
@@ -79,6 +81,7 @@ const App = () => (
       </DemoAccessProvider>
     </AuthProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
