@@ -105,11 +105,22 @@ const ContractManagement = () => {
             </p>
           </div>
           
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+            console.log('Dialog state changing:', open);
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              // Reset all states when dialog closes
+              setCreationMethod(null);
+              setSelectedContractType(null);
+              setShowContractUpload(false);
+              setShowDocuSignImport(false);
+            }
+          }}>
             <DialogTrigger asChild>
               <Button 
                 className="gap-2" 
                 disabled={!canAccess('contractManagement')}
+                onClick={() => console.log('New Contract button clicked')}
               >
                 <Plus className="h-4 w-4" />
                 {canAccess('contractManagement') ? 'New Contract' : 'Demo Limit Reached'}
