@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { ContractList } from "@/components/contracts/ContractList";
 import { EnhancedContractForm } from "@/components/contracts/EnhancedContractForm";
 import { OrganizedContractForm } from "@/components/contracts/OrganizedContractForm";
+import { PublishingAgreementForm } from "@/components/contracts/PublishingAgreementForm";
 import { EditContractForm } from "@/components/contracts/EditContractForm";
 import { TemplateLibrary } from "@/components/contracts/TemplateLibrary";
 import { DocuSignImport } from "@/components/contracts/DocuSignImport";
@@ -40,7 +41,7 @@ const ContractManagement = () => {
     {
       id: "publishing",
       title: "Publishing Agreement",
-      description: "Admin, CoPub, Full Pub, or JV deals with royalty splits",
+      description: "Administration, Co-Publishing, Songwriter, or Catalog Acquisition",
       icon: FileText,
       color: "bg-blue-500"
     },
@@ -283,21 +284,35 @@ const ContractManagement = () => {
                      setShowDocuSignImport(false);
                    }}
                  />
-                 ) : (
-                   // Step 3: Organized Contract form
-                   <OrganizedContractForm 
-                     contractType={selectedContractType}
-                     onCancel={() => {
-                       setSelectedContractType(null);
-                       setCreationMethod(null);
-                     }}
-                     onSuccess={() => {
-                       setIsCreateDialogOpen(false);
-                       setSelectedContractType(null);
-                       setCreationMethod(null);
-                     }}
-                   />
-                 )}
+                  ) : (
+                    // Step 3: Contract form based on type
+                    selectedContractType === "publishing" ? (
+                      <PublishingAgreementForm 
+                        onCancel={() => {
+                          setSelectedContractType(null);
+                          setCreationMethod(null);
+                        }}
+                        onSuccess={() => {
+                          setIsCreateDialogOpen(false);
+                          setSelectedContractType(null);
+                          setCreationMethod(null);
+                        }}
+                      />
+                    ) : (
+                      <OrganizedContractForm 
+                        contractType={selectedContractType}
+                        onCancel={() => {
+                          setSelectedContractType(null);
+                          setCreationMethod(null);
+                        }}
+                        onSuccess={() => {
+                          setIsCreateDialogOpen(false);
+                          setSelectedContractType(null);
+                          setCreationMethod(null);
+                        }}
+                      />
+                    )
+                  )}
             </DialogContent>
           </Dialog>
 
