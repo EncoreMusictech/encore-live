@@ -52,8 +52,8 @@ export const ContractReviewView: React.FC<ContractReviewViewProps> = ({
       setLoading(true);
       
       // Check if this is a test/demo parsing result ID
-      if (parsingResultId?.startsWith('test-')) {
-        console.log('Test parsing result ID detected, skipping database query');
+      if (parsingResultId?.startsWith('test-') || parsingResultId?.startsWith('parsed-')) {
+        console.log('Test/demo parsing result ID detected, skipping database query');
         setParsingResult(null);
         return;
       }

@@ -140,8 +140,8 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
 
     if (error) throw error;
 
-    // Link the parsing result to the contract (skip for test IDs)
-    if (parsingResultId && !parsingResultId.startsWith('test-')) {
+    // Link the parsing result to the contract (skip for test/demo IDs)
+    if (parsingResultId && !parsingResultId.startsWith('test-') && !parsingResultId.startsWith('parsed-')) {
       await supabase
         .from('contract_parsing_results')
         .update({ contract_id: contract.id })
