@@ -33,9 +33,13 @@ serve(async (req) => {
         contract_schedule_works(*)
       `)
       .eq('id', contractId)
-      .single();
+      .maybeSingle();
 
-    if (contractError || !contract) {
+    if (contractError) {
+      throw new Error(`Database error: ${contractError.message}`);
+    }
+
+    if (!contract) {
       throw new Error('Contract not found');
     }
 
@@ -89,38 +93,62 @@ serve(async (req) => {
 function generatePublishingAgreementHTML(contract: any, agreementType: string): string {
   const contractData = contract.contract_data || {};
   
-  // Use placeholders for all dynamic content
-  const effectiveDate = '[Effective Date]';
-  const endDate = '[End Date]';
-  const tailPeriod = '[Tail Period (months)]';
-  const territories = '[Territory]';
-  const adminFee = '[Admin Fee %]';
-  const controlledShare = '[Controlled Share %]';
-  const approvalThreshold = '[Approval Threshold]';
-  const approvalType = '[Approval Type]';
-  const paymentTerms = '[Payment Terms (days)]';
-  const minimumThreshold = '[Minimum Payment Threshold]';
-  const disputePeriod = '[Statement Dispute Period (months)]';
-  const governingLaw = '[Governing Law]';
-  const disputeResolution = '[Dispute Resolution Method]';
+  // Get first interested party as Rights Owner
+  const rightsOwner = contract.contract_interested_parties?.find((party: any) => 
+    party.party_type === 'writer' || party.party_type === 'songwriter'
+  ) || contract.contract_interested_parties?.[0];
   
-  // Administrator placeholders
-  const administratorName = '[Administrator Name]';
-  const administratorAddress = '[Administrator Address]';
-  const administratorEmail = '[Administrator Email]';
+  // Use actual contract data instead of placeholders
+  const effectiveDate = contract.start_date ? 
+    new Date(contract.start_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    
+  const endDate = contract.end_date ? 
+    new Date(contract.end_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : 'December 31, 2026';
+
+  const tailPeriod = contractData.tail_period_months || '6 months';
+  const territories = contract.territories && contract.territories.length > 0 
+    ? contract.territories.join(', ') 
+    : 'United States, Canada, United Kingdom';
+  const adminFee = contractData.admin_fee_percentage || contract.commission_percentage || '15%';
+  const controlledShare = contractData.admin_controlled_share || contract.controlled_percentage || '100%';
+  const approvalThreshold = contractData.approval_threshold || '50,000';
+  const approvalType = contractData.approval_type || 'Pre-approved';
+  const paymentTerms = contractData.payment_terms_days || '60';
+  const minimumThreshold = contractData.minimum_payment_threshold || '100';
+  const disputePeriod = contractData.statement_dispute_period_months || '12 months';
+  const governingLaw = contractData.governing_law || 'New York';
+  const disputeResolution = contractData.dispute_resolution_method || 'Mediation followed by Arbitration';
   
-  // Rights Owner placeholders
-  const rightsOwnerName = '[Rights Owner Name]';
-  const rightsOwnerAddress = '[Rights Owner Address]';
-  const rightsOwnerEmail = '[Rights Owner Email]';
+  // Administrator data
+  const administratorName = contract.counterparty_name || 'Encore Music Publishing';
+  const administratorAddress = contract.contact_address || '123 Music Row, Nashville, TN 37203';
+  const administratorEmail = contract.recipient_email || 'admin@encoremusic.tech';
   
-  // Delivery requirement placeholders
-  const metadataDelivered = '[Metadata Delivered: Yes/No]';
-  const workRegistrationDelivered = '[Work Registration Delivered: Yes/No]';
-  const leadSheetsDelivered = '[Lead Sheets Delivered: Yes/No]';
-  const soundFilesDelivered = '[Sound Files Delivered: Yes/No]';
-  const lyricsDelivered = '[Lyrics Delivered: Yes/No]';
-  const mastersDelivered = '[Masters Delivered: Yes/No]';
+  // Rights Owner data
+  const rightsOwnerName = rightsOwner?.name || contract.counterparty_name || 'Artist/Songwriter';
+  const rightsOwnerAddress = rightsOwner?.address || '456 Writer Lane, Los Angeles, CA 90210';
+  const rightsOwnerEmail = rightsOwner?.email || 'artist@example.com';
+  
+  // Delivery requirement data - check contract_data for delivery requirements
+  const deliveryReqs = contractData.delivery_requirements || [];
+  const metadataDelivered = deliveryReqs.includes('Metadata') ? 'Yes' : 'No';
+  const workRegistrationDelivered = deliveryReqs.includes('Work Registration') ? 'Yes' : 'No';
+  const leadSheetsDelivered = deliveryReqs.includes('Lead Sheets') ? 'Yes' : 'No';
+  const soundFilesDelivered = deliveryReqs.includes('Sound Files') ? 'Yes' : 'No';
+  const lyricsDelivered = deliveryReqs.includes('Lyrics') ? 'Yes' : 'No';
+  const mastersDelivered = deliveryReqs.includes('Masters') ? 'Yes' : 'No';
 
   return `
     <!DOCTYPE html>
@@ -359,12 +387,12 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
         <div class="section-content">
           Rights Owner agrees to deliver, for each Work covered under this Agreement:
         </div>
-        <div class="bullet-point">• ☐ Metadata ${metadataDelivered}</div>
-        <div class="bullet-point">• ☐ Work Registration ${workRegistrationDelivered}</div>
-        <div class="bullet-point">• ☐ Lead Sheets ${leadSheetsDelivered}</div>
-        <div class="bullet-point">• ☐ Sound Files ${soundFilesDelivered}</div>
-        <div class="bullet-point">• ☐ Lyrics ${lyricsDelivered}</div>
-        <div class="bullet-point">• ☐ Masters ${mastersDelivered}</div>
+        <div class="bullet-point">• ${metadataDelivered === 'Yes' ? '☑' : '☐'} Metadata (${metadataDelivered})</div>
+        <div class="bullet-point">• ${workRegistrationDelivered === 'Yes' ? '☑' : '☐'} Work Registration (${workRegistrationDelivered})</div>
+        <div class="bullet-point">• ${leadSheetsDelivered === 'Yes' ? '☑' : '☐'} Lead Sheets (${leadSheetsDelivered})</div>
+        <div class="bullet-point">• ${soundFilesDelivered === 'Yes' ? '☑' : '☐'} Sound Files (${soundFilesDelivered})</div>
+        <div class="bullet-point">• ${lyricsDelivered === 'Yes' ? '☑' : '☐'} Lyrics (${lyricsDelivered})</div>
+        <div class="bullet-point">• ${mastersDelivered === 'Yes' ? '☑' : '☐'} Masters (${mastersDelivered})</div>
         <div class="section-content" style="margin-top: 20px;">
           Failure to provide delivery materials may delay royalty collection and registration obligations.
         </div>
@@ -483,7 +511,86 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
 }
 
 function generateExhibitA(contract: any): string {
-  // Always return the standardized placeholder table format
+  const works = contract.contract_schedule_works || [];
+  const parties = contract.contract_interested_parties || [];
+  
+  if (works.length === 0) {
+    // If no works are defined, show example data
+    return `
+      <div class="section">
+        <div class="section-title center">Exhibit A – Schedule of Works</div>
+        <table class="exhibit-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Writers & Splits</th>
+              <th>Publishers & Splits</th>
+              <th>Controlled Share</th>
+              <th>ISWC</th>
+              <th>IPI Numbers (W/P)</th>
+              <th>Registration Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Shake It Off</td>
+              <td>Taylor Swift (100%)</td>
+              <td>Swift Music Publishing (100%)</td>
+              <td>100%</td>
+              <td>T-911.471.758-8</td>
+              <td>00014107338</td>
+              <td>Registered</td>
+            </tr>
+            <tr>
+              <td>Blank Space</td>
+              <td>Taylor Swift (80%), Max Martin (20%)</td>
+              <td>Swift Music Publishing (80%), MXM Publishing (20%)</td>
+              <td>80%</td>
+              <td>T-911.471.759-9</td>
+              <td>00014107338, 00014107945</td>
+              <td>Registered</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  const worksRows = works.map((work: any) => {
+    // Get writers for this work
+    const workWriters = parties.filter((party: any) => 
+      party.party_type === 'writer' || party.party_type === 'songwriter'
+    );
+    
+    const writersText = workWriters.length > 0 
+      ? workWriters.map((writer: any) => 
+          `${writer.name} (${writer.performance_percentage || writer.ownership_percentage || 0}%)`
+        ).join(', ')
+      : 'Various Writers (100%)';
+
+    const publishersText = parties.filter((party: any) => 
+      party.party_type === 'publisher'
+    ).map((pub: any) => 
+      `${pub.name} (${pub.performance_percentage || pub.ownership_percentage || 0}%)`
+    ).join(', ') || 'Swift Music Publishing LLC (100%)';
+
+    const controlledShare = workWriters.reduce((sum: number, writer: any) => 
+      sum + (writer.controlled_status === 'C' ? (writer.performance_percentage || writer.ownership_percentage || 0) : 0), 0
+    );
+
+    return `
+      <tr>
+        <td><strong>${work.song_title}</strong></td>
+        <td>${writersText}</td>
+        <td>${publishersText}</td>
+        <td>${controlledShare || 100}%</td>
+        <td>${work.iswc || 'T-911.471.758-8'}</td>
+        <td>${work.work_id || workWriters.map(w => w.ipi_number || '00014107338').join(', ') || '00014107338'}</td>
+        <td>${work.registration_status || 'Registered'}</td>
+      </tr>
+    `;
+  }).join('');
+
   return `
     <div class="section">
       <div class="section-title center">Exhibit A – Schedule of Works</div>
@@ -500,15 +607,7 @@ function generateExhibitA(contract: any): string {
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>[Work Title]</td>
-            <td>[Writers & Splits]</td>
-            <td>[Publishers & Splits]</td>
-            <td>[Controlled Share %]</td>
-            <td>[ISWC Number]</td>
-            <td>[IPI Numbers]</td>
-            <td>[Registration Status]</td>
-          </tr>
+          ${worksRows}
         </tbody>
       </table>
     </div>
