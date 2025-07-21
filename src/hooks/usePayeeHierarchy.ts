@@ -83,7 +83,8 @@ export function usePayeeHierarchy() {
       
       // If no original publishers exist for this agreement, auto-generate one
       if (agreementId && (!data || data.length === 0)) {
-        await autoGenerateOriginalPublisher(agreementId);
+        // Use setTimeout to avoid race conditions from multiple rapid calls
+        setTimeout(() => autoGenerateOriginalPublisher(agreementId), 100);
       }
     } catch (error: any) {
       console.error('Error fetching original publishers:', error);
