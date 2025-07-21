@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -182,6 +182,13 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
     mode: "onChange",
   });
 
+  // Reset form when demo data is provided
+  useEffect(() => {
+    if (demoData) {
+      form.reset(formData);
+    }
+  }, [demoData, form, formData]);
+
   const steps: Array<{
     id: FormStep;
     label: string;
@@ -336,11 +343,17 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h3 className="text-lg font-semibold">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
               {agreementType ? getAgreementTypeLabel(agreementType) : "Publishing Agreement"}
+              {demoData && (
+                <Badge variant="secondary" className="gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  Demo
+                </Badge>
+              )}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Complete all sections to create your agreement
+              {demoData ? "Demo data has been pre-loaded for testing" : "Complete all sections to create your agreement"}
             </p>
           </div>
         </div>
@@ -477,29 +490,39 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Agreement Title *</Label>
-                  <Input
-                    id="title"
-                    {...form.register("title")}
-                    placeholder={`e.g., ${getAgreementTypeLabel(agreementType)} - Artist Name`}
-                  />
-                  {form.formState.errors.title && (
-                    <p className="text-sm text-destructive">{String(form.formState.errors.title.message)}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="counterparty">Counterparty *</Label>
-                  <Input
-                    id="counterparty"
-                    {...form.register("counterparty_name")}
-                    placeholder="Publisher, Label, or Writer name"
-                  />
-                  {form.formState.errors.counterparty_name && (
-                    <p className="text-sm text-destructive">{String(form.formState.errors.counterparty_name.message)}</p>
-                  )}
-                </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="title">Agreement Title *</Label>
+                   <Input
+                     id="title"
+                     {...form.register("title")}
+                     value={formData.title}
+                     placeholder={`e.g., ${getAgreementTypeLabel(agreementType)} - Artist Name`}
+                     onChange={(e) => {
+                       setFormData(prev => ({ ...prev, title: e.target.value }));
+                       form.setValue("title", e.target.value);
+                     }}
+                   />
+                   {form.formState.errors.title && (
+                     <p className="text-sm text-destructive">{String(form.formState.errors.title.message)}</p>
+                   )}
+                 </div>
+                 
+                 <div className="space-y-2">
+                   <Label htmlFor="counterparty">Counterparty *</Label>
+                   <Input
+                     id="counterparty"
+                     {...form.register("counterparty_name")}
+                     value={formData.counterparty_name}
+                     placeholder="Publisher, Label, or Writer name"
+                     onChange={(e) => {
+                       setFormData(prev => ({ ...prev, counterparty_name: e.target.value }));
+                       form.setValue("counterparty_name", e.target.value);
+                     }}
+                   />
+                   {form.formState.errors.counterparty_name && (
+                     <p className="text-sm text-destructive">{String(form.formState.errors.counterparty_name.message)}</p>
+                   )}
+                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
@@ -563,86 +586,95 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="governing_law">Governing Law</Label>
-                  <Select onValueChange={(value) => {
-                    setFormData(prev => ({ ...prev, governing_law: value }));
-                    form.setValue("governing_law", value);
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select governing law" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="new_york">New York</SelectItem>
-                      <SelectItem value="california">California</SelectItem>
-                      <SelectItem value="tennessee">Tennessee</SelectItem>
-                      <SelectItem value="united_kingdom">United Kingdom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="governing_law">Governing Law</Label>
+                   <Select 
+                     value={formData.governing_law} 
+                     onValueChange={(value) => {
+                       setFormData(prev => ({ ...prev, governing_law: value }));
+                       form.setValue("governing_law", value);
+                     }}
+                   >
+                     <SelectTrigger>
+                       <SelectValue placeholder="Select governing law" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="new_york">New York</SelectItem>
+                       <SelectItem value="california">California</SelectItem>
+                       <SelectItem value="tennessee">Tennessee</SelectItem>
+                       <SelectItem value="united_kingdom">United Kingdom</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
 
-                <div className="space-y-2">
-                  <Label>Territory</Label>
-                  <Select onValueChange={(value) => {
-                    setFormData(prev => ({ ...prev, territory: [value] }));
-                    form.setValue("territory", [value]);
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select territory" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {territoryOptions.map((territory) => (
-                        <SelectItem key={territory} value={territory}>{territory}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                 <div className="space-y-2">
+                   <Label>Territory</Label>
+                   <Select 
+                     value={Array.isArray(formData.territory) && formData.territory.length > 0 ? formData.territory[0] : ""}
+                     onValueChange={(value) => {
+                       setFormData(prev => ({ ...prev, territory: [value] }));
+                       form.setValue("territory", [value]);
+                     }}
+                   >
+                     <SelectTrigger>
+                       <SelectValue placeholder="Select territory" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {territoryOptions.map((territory) => (
+                         <SelectItem key={territory} value={territory}>{territory}</SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label>Delivery Requirements</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {deliveryOptions.map((requirement) => (
-                    <div key={requirement} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={requirement}
-                        onCheckedChange={(checked) => {
-                          const current = formData.delivery_requirements || [];
-                          const newRequirements = checked 
-                            ? [...current, requirement]
-                            : current.filter(r => r !== requirement);
-                          setFormData(prev => ({ ...prev, delivery_requirements: newRequirements }));
-                          form.setValue("delivery_requirements", newRequirements);
-                        }}
-                      />
-                      <Label htmlFor={requirement} className="text-sm">{requirement}</Label>
-                    </div>
-                  ))}
+                   {deliveryOptions.map((requirement) => (
+                     <div key={requirement} className="flex items-center space-x-2">
+                       <Checkbox
+                         id={requirement}
+                         checked={formData.delivery_requirements?.includes(requirement) || false}
+                         onCheckedChange={(checked) => {
+                           const current = formData.delivery_requirements || [];
+                           const newRequirements = checked 
+                             ? [...current, requirement]
+                             : current.filter(r => r !== requirement);
+                           setFormData(prev => ({ ...prev, delivery_requirements: newRequirements }));
+                           form.setValue("delivery_requirements", newRequirements);
+                         }}
+                       />
+                       <Label htmlFor={requirement} className="text-sm">{requirement}</Label>
+                     </div>
+                   ))}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="approvals_required"
-                    onCheckedChange={(checked) => {
-                      setFormData(prev => ({ ...prev, approvals_required: !!checked }));
-                      form.setValue("approvals_required", !!checked);
-                    }}
-                  />
-                  <Label htmlFor="approvals_required">Approvals Required</Label>
-                </div>
-                {formData.approvals_required && (
-                  <Textarea
-                    {...form.register("approval_conditions")}
-                    placeholder="Specify approval conditions (e.g., alcohol syncs, political content)"
-                    className="mt-2"
-                    onChange={(e) => {
-                      setFormData(prev => ({ ...prev, approval_conditions: e.target.value }));
-                      form.setValue("approval_conditions", e.target.value);
-                    }}
-                  />
-                )}
+                 <div className="flex items-center space-x-2">
+                   <Checkbox
+                     id="approvals_required"
+                     checked={formData.approvals_required || false}
+                     onCheckedChange={(checked) => {
+                       setFormData(prev => ({ ...prev, approvals_required: !!checked }));
+                       form.setValue("approvals_required", !!checked);
+                     }}
+                   />
+                   <Label htmlFor="approvals_required">Approvals Required</Label>
+                 </div>
+                 {formData.approvals_required && (
+                   <Textarea
+                     {...form.register("approval_conditions")}
+                     value={formData.approval_conditions || ""}
+                     placeholder="Specify approval conditions (e.g., alcohol syncs, political content)"
+                     className="mt-2"
+                     onChange={(e) => {
+                       setFormData(prev => ({ ...prev, approval_conditions: e.target.value }));
+                       form.setValue("approval_conditions", e.target.value);
+                     }}
+                   />
+                 )}
               </div>
             </CardContent>
           </Card>
