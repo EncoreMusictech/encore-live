@@ -46,6 +46,8 @@ export const ContractReviewView: React.FC<ContractReviewViewProps> = ({
   const loadParsingResult = async () => {
     if (!user) return;
 
+    console.log('loadParsingResult called with parsingResultId:', parsingResultId);
+
     try {
       setLoading(true);
       
@@ -56,6 +58,7 @@ export const ContractReviewView: React.FC<ContractReviewViewProps> = ({
         return;
       }
 
+      console.log('Making database query for parsing result');
       const { data, error } = await supabase
         .from('contract_parsing_results')
         .select('*')
