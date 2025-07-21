@@ -23,13 +23,26 @@ import RoyaltiesPage from "./pages/RoyaltiesPage";
 import PayoutsPage from "./pages/PayoutsPage";
 import ClientPortal from "./components/ClientPortal";
 import ClientAdminPage from "./pages/ClientAdminPage";
-import { useState } from "react";
+
+// Create a stable QueryClient instance
+let queryClient: QueryClient | null = null;
+const getQueryClient = () => {
+  if (!queryClient) {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 1000 * 60 * 5, // 5 minutes
+          retry: 2,
+        },
+      },
+    });
+  }
+  return queryClient;
+};
 
 const App = () => {
-  const [queryClient] = useState(() => new QueryClient());
-
   return (
-  <QueryClientProvider client={queryClient}>
+  <QueryClientProvider client={getQueryClient()}>
     <AuthProvider>
       <DemoAccessProvider>
         <TooltipProvider>
