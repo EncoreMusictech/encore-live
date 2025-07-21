@@ -10,6 +10,7 @@ import { usePayeeHierarchy } from "@/hooks/usePayeeHierarchy";
 import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PayeeFormDialogProps {
   open: boolean;
@@ -85,6 +86,53 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
       setSelectedWriter(writers[0].id);
     }
   }, [writers.length, selectedPublisher]); // Optimize dependencies
+
+  // Auto-populate royalty splits when agreement is selected (only for new payees)
+  useEffect(() => {
+    if (selectedAgreement && !editingPayee && open) {
+      fetchAgreementRoyaltySplits(selectedAgreement);
+    }
+  }, [selectedAgreement, editingPayee, open]);
+
+  // Function to fetch and auto-populate royalty splits from agreement
+  const fetchAgreementRoyaltySplits = async (agreementId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('contract_interested_parties')
+        .select('performance_percentage, mechanical_percentage, synch_percentage')
+        .eq('contract_id', agreementId)
+        .limit(1)
+        .single();
+
+      if (error) {
+        console.log('No royalty splits found for this agreement, keeping manual entry');
+        return;
+      }
+
+      if (data) {
+        // Only auto-populate if there are actual values (not 0)
+        const hasRoyaltySplits = data.performance_percentage > 0 || 
+                                data.mechanical_percentage > 0 || 
+                                data.synch_percentage > 0;
+
+        if (hasRoyaltySplits) {
+          setSplitData(prev => ({
+            ...prev,
+            default_performance_share: data.performance_percentage || 0,
+            default_mechanical_share: data.mechanical_percentage || 0,
+            default_sync_share: data.synch_percentage || 0,
+          }));
+
+          toast({
+            title: "Royalty Splits Auto-Populated",
+            description: "Default royalty splits have been loaded from the agreement.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching agreement royalty splits:', error);
+    }
+  };
 
   // Initialize form data when editing
   useEffect(() => {
