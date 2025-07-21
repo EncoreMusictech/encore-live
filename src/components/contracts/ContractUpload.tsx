@@ -12,6 +12,7 @@ import { useDropzone } from "react-dropzone";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { ContractReviewView } from './ContractReviewView';
 
 interface ContractUploadProps {
   onBack: () => void;
@@ -68,6 +69,8 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
   const [contractTitle, setContractTitle] = useState('');
   const [counterpartyName, setCounterpartyName] = useState('');
   const [notes, setNotes] = useState('');
+  const [showReviewView, setShowReviewView] = useState(false);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string>('');
   
   const { user } = useAuth();
 
@@ -196,6 +199,9 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
         .from('contract-documents')
         .getPublicUrl(fileName);
 
+       // Store the uploaded file URL
+      setUploadedFileUrl(publicUrl);
+
       // Extract text from PDF using edge function
       console.log('Extracting text from PDF...');
       const text = await extractTextFromPDF(publicUrl);
@@ -221,6 +227,9 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
 
       setUploadProgress(100);
       setUploadStatus('completed');
+
+      // Show the review view
+      setShowReviewView(true);
 
       toast.success('Contract parsed successfully!');
     } catch (err: any) {
@@ -280,6 +289,22 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       toast.error('Error with file selection');
     }
   });
+
+  // Show review view if contract parsing is complete
+  if (showReviewView && parsingResultId && uploadedFileUrl && selectedFile) {
+    return (
+      <ContractReviewView
+        parsingResultId={parsingResultId}
+        pdfUrl={uploadedFileUrl}
+        fileName={selectedFile.name}
+        onBack={() => setShowReviewView(false)}
+        onApprove={(contractData) => {
+          // Create contract from the review view data
+          handleCreateContract();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
