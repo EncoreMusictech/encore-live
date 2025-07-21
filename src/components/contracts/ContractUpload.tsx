@@ -90,8 +90,14 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       }
     });
 
-    if (error) throw error;
-    if (!data.success) throw new Error(data.error || 'Failed to extract text from PDF');
+    if (error) {
+      console.error('Edge function error:', error);
+      throw error;
+    }
+    if (!data.success) {
+      console.error('Edge function returned error:', data.error);
+      throw new Error(data.error || 'Failed to extract text from PDF');
+    }
 
     return data.extractedText;
   };

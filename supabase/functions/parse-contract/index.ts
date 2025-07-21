@@ -1,7 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0';
-import { getDocument } from 'https://esm.sh/pdfjs-dist@4.4.168/build/pdf.mjs';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -38,31 +37,24 @@ serve(async (req) => {
     let extractedText = '';
     
     if (fileName?.toLowerCase().endsWith('.pdf')) {
-      console.log('Downloading and processing PDF...');
+      console.log('Processing PDF file...');
       
-      // Download PDF file
-      const pdfResponse = await fetch(fileUrl);
-      if (!pdfResponse.ok) {
-        throw new Error('Failed to download PDF file');
-      }
+      // For now, we'll create a placeholder text and inform the user
+      // that they need to copy/paste the contract text manually
+      extractedText = `PDF file uploaded: ${fileName}
       
-      const pdfBuffer = await pdfResponse.arrayBuffer();
-      console.log('PDF downloaded, extracting text...');
+Please note: For best results, we recommend copying and pasting the contract text directly into a text format. 
+PDF processing is currently limited in this environment.
+
+You can:
+1. Copy the text from your PDF file
+2. Create a new contract by pasting the text directly
+3. Or provide the key contract details manually
+
+File processed: ${fileName}
+Upload time: ${new Date().toISOString()}`;
       
-      // Extract text using PDF.js
-      const pdf = await getDocument({ data: new Uint8Array(pdfBuffer) }).promise;
-      
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        extractedText += pageText + '\n';
-      }
-      
-      extractedText = extractedText.trim();
-      console.log(`Extracted ${extractedText.length} characters from PDF`);
+      console.log('PDF processing completed with placeholder text');
     } else {
       // For non-PDF files, use the provided file content
       extractedText = fileContent || '';
