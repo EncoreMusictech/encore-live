@@ -1548,6 +1548,13 @@ function generateCatalogAcquisitionHTML(contract: any, contractData: any, partie
 
 
 function generateCatalogExhibitA(works: any[], parties: any[] = [], contract: any = {}, contractData: any = {}): string {
+  console.log('Generating Exhibit A with:', { 
+    worksCount: works.length, 
+    partiesCount: parties.length, 
+    contractTitle: contract.title,
+    contractType: contract.contract_type 
+  });
+  
   // Extract contract data
   const acquiredWorkListUrl = contractData.acquired_work_list_url || contract.contract_data?.acquired_work_list_url || '[Acquired Work List URL]';
   
