@@ -82,7 +82,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
     selectedFile: !!selectedFile 
   });
 
-  const extractTextFromPDF = async (fileUrl: string): Promise<string> => {
+  const extractTextFromPDF = async (fileUrl: string) => {
     if (!user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase.functions.invoke('parse-contract', {
@@ -102,25 +102,15 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       throw new Error(data.error || 'Failed to extract text from PDF');
     }
 
-    return data.extractedText;
+    // Return the full parsing result
+    return {
+      extractedText: data.extractedText,
+      parsed_data: data.parsed_data,
+      parsing_result_id: data.parsing_result_id,
+      confidence: data.confidence
+    };
   };
 
-  const parseContract = async (text: string) => {
-    if (!user) throw new Error('User not authenticated');
-
-    const { data, error } = await supabase.functions.invoke('parse-contract', {
-      body: {
-        fileContent: text,
-        fileName: selectedFile?.name || 'unknown.pdf',
-        userId: user.id
-      }
-    });
-
-    if (error) throw error;
-    if (!data.success) throw new Error(data.error || 'Failed to parse contract');
-
-    return data;
-  };
 
   const createContractFromParsedData = async () => {
     if (!user || !parsedData) return;
@@ -202,23 +192,18 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
        // Store the uploaded file URL
       setUploadedFileUrl(publicUrl);
 
-      // Extract text from PDF using edge function
-      console.log('Extracting text from PDF...');
-      const text = await extractTextFromPDF(publicUrl);
-      console.log('Text extracted, length:', text.length);
-      setExtractedText(text);
-      setUploadProgress(50);
-
-      // Parse contract with AI
+      // Extract text and parse contract using edge function
+      console.log('Processing contract with AI...');
       setUploadStatus('parsing');
-      setUploadProgress(75);
-      console.log('Parsing contract with AI...');
-
-      const result = await parseContract(text);
-      console.log('Contract parsed successfully:', result);
+      const result = await extractTextFromPDF(publicUrl);
+      console.log('Contract processed successfully:', result);
+      
+      // Set all the extracted data
+      setExtractedText(result.extractedText);
       setParsedData(result.parsed_data);
       setParsingResultId(result.parsing_result_id);
       setConfidence(result.confidence);
+      setUploadProgress(75);
 
       // Auto-fill form fields from parsed data
       if (result.parsed_data.parties?.[1]?.name) {
