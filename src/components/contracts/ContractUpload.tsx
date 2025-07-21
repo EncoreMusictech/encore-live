@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ContractReviewView } from './ContractReviewView';
+import { ContractAutoPopulator } from './ContractAutoPopulator';
 
 interface ContractUploadProps {
   onBack: () => void;
@@ -70,11 +72,12 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
   const [counterpartyName, setCounterpartyName] = useState('');
   const [notes, setNotes] = useState('');
   const [showReviewView, setShowReviewView] = useState(false);
+  const [showAutoPopulator, setShowAutoPopulator] = useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string>('');
+  const [autoPopulatedData, setAutoPopulatedData] = useState<any>(null);
   
   const { user } = useAuth();
 
-  // Debug logging for initial component state
   console.log('ContractUpload component loaded', { 
     user: !!user, 
     userId: user?.id,
@@ -102,7 +105,6 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       throw new Error(data.error || 'Failed to extract text from PDF');
     }
 
-    // Return the full parsing result
     return {
       extractedText: data.extractedText,
       parsed_data: data.parsed_data,
@@ -111,25 +113,31 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
     };
   };
 
-
-  const createContractFromParsedData = async () => {
+  const createContractFromParsedData = async (formData?: any) => {
     if (!user || !parsedData) return;
 
-    // Map parsed data to contract format
+    const dataToUse = formData || autoPopulatedData || {};
+    
     const contractData = {
-      title: contractTitle || `${parsedData.contract_type} Agreement`,
-      counterparty_name: counterpartyName || parsedData.parties?.[1]?.name || 'Unknown Party',
-      contract_type: (parsedData.contract_type || 'publishing') as any,
-      start_date: parsedData.key_dates?.start_date || null,
-      end_date: parsedData.key_dates?.end_date || null,
-      notes: notes,
-      financial_terms: parsedData.financial_terms || {},
-      royalty_splits: parsedData.financial_terms?.royalty_rates || {},
-      advance_amount: parsedData.financial_terms?.advance_amount || 0,
-      commission_percentage: parsedData.financial_terms?.commission_percentage || 0,
-      territories: parsedData.territory ? [parsedData.territory] : [],
+      title: dataToUse.title || contractTitle || `${parsedData.contract_type} Agreement`,
+      counterparty_name: dataToUse.counterparty_name || counterpartyName || parsedData.parties?.[1]?.name || 'Unknown Party',
+      contract_type: (dataToUse.contract_type || parsedData.contract_type || 'publishing') as any,
+      start_date: dataToUse.start_date || parsedData.key_dates?.start_date || null,
+      end_date: dataToUse.end_date || parsedData.key_dates?.end_date || null,
+      notes: dataToUse.notes || notes,
+      financial_terms: dataToUse.financial_terms || parsedData.financial_terms || {},
+      royalty_splits: dataToUse.royalty_splits || parsedData.financial_terms?.royalty_rates || {},
+      advance_amount: dataToUse.advance_amount || parsedData.financial_terms?.advance_amount || 0,
+      commission_percentage: dataToUse.commission_percentage || 
+        (parsedData.financial_terms?.commission_percentage ? 
+          parsedData.financial_terms.commission_percentage * 100 : 0),
+      territories: dataToUse.territories || (parsedData.territory ? [parsedData.territory] : []),
       contract_data: parsedData as any,
-      user_id: user.id
+      user_id: user.id,
+      contact_name: dataToUse.contact_name || '',
+      contact_phone: dataToUse.contact_phone || '',
+      contact_address: dataToUse.contact_address || '',
+      recipient_email: dataToUse.recipient_email || ''
     };
 
     const { data: contract, error } = await supabase
@@ -189,7 +197,6 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
         .from('contract-documents')
         .getPublicUrl(fileName);
 
-       // Store the uploaded file URL
       setUploadedFileUrl(publicUrl);
 
       // Extract text and parse contract using edge function
@@ -213,8 +220,10 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       setUploadProgress(100);
       setUploadStatus('completed');
 
-      // Show the review view
-      setShowReviewView(true);
+      // Show auto-populator if confidence is reasonable
+      if (result.confidence >= 0.4) {
+        setShowAutoPopulator(true);
+      }
 
       toast.success('Contract parsed successfully!');
     } catch (err: any) {
@@ -223,6 +232,15 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       setUploadStatus('error');
       toast.error(`Failed to parse contract: ${err.message}`);
     }
+  };
+
+  const handleAutoPopulate = (formData: any) => {
+    setAutoPopulatedData(formData);
+    setContractTitle(formData.title);
+    setCounterpartyName(formData.counterparty_name);
+    setNotes(formData.notes);
+    setShowAutoPopulator(false);
+    toast.success('Contract details auto-populated! Please review and modify as needed.');
   };
 
   const handleCreateContract = async () => {
@@ -251,6 +269,8 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       setSelectedFile(file);
       setUploadStatus('idle');
       setError(null);
+      setShowAutoPopulator(false);
+      setAutoPopulatedData(null);
       console.log('File set successfully:', file.name);
       toast.success(`File selected: ${file.name}`);
     } else {
@@ -284,7 +304,6 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
         fileName={selectedFile.name}
         onBack={() => setShowReviewView(false)}
         onApprove={(contractData) => {
-          // Create contract from the review view data
           handleCreateContract();
         }}
       />
@@ -346,7 +365,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
                 </div>
               </div>
               <Button onClick={handleFileUpload} className="w-full">
-                Parse Contract
+                Parse Contract with AI
               </Button>
             </CardContent>
           </Card>
@@ -360,7 +379,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
                 <Loader2 className="h-6 w-6 animate-spin" />
                 <div>
                   <p className="font-medium">
-                    {uploadStatus === 'uploading' ? 'Extracting text...' : 'Parsing contract with AI...'}
+                    {uploadStatus === 'uploading' ? 'Uploading and extracting text...' : 'Analyzing contract with AI...'}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     This may take a few moments
@@ -383,32 +402,54 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
           </Alert>
         )}
 
-        {/* Parsing Results */}
-        {uploadStatus === 'completed' && parsedData && (
+        {/* Auto-Population Interface */}
+        {uploadStatus === 'completed' && showAutoPopulator && parsedData && (
+          <ContractAutoPopulator
+            parsedData={parsedData}
+            confidence={confidence}
+            onAutoPopulate={handleAutoPopulate}
+            onEditManually={() => setShowAutoPopulator(false)}
+          />
+        )}
+
+        {/* Contract Details Form */}
+        {uploadStatus === 'completed' && !showAutoPopulator && parsedData && (
           <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-green-500" />
-                  Contract Parsed Successfully
+                  Contract Analyzed Successfully
                 </CardTitle>
                 <CardDescription>
-                  Review the extracted information and create your contract
+                  {autoPopulatedData ? 
+                    'Form auto-populated with extracted data. Please review and modify as needed.' :
+                    'Review the extracted information and complete the contract details'
+                  }
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Parsing Confidence</span>
+                  <span className="text-sm font-medium">AI Analysis Confidence</span>
                   <Badge variant={confidence > 0.8 ? "default" : confidence > 0.6 ? "secondary" : "destructive"}>
                     {Math.round(confidence * 100)}%
                   </Badge>
                 </div>
 
+                {autoPopulatedData && (
+                  <Alert className="border-green-200 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription>
+                      Contract details have been auto-populated. You can modify any field before creating the contract.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="font-medium">Contract Type:</span>
                     <p className="text-muted-foreground capitalize">
-                      {parsedData.contract_type || 'Unknown'}
+                      {parsedData.contract_type?.replace('_', ' ') || 'Unknown'}
                     </p>
                   </div>
                   <div>
@@ -471,7 +512,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Additional notes about this contract"
-                    rows={3}
+                    rows={4}
                   />
                 </div>
 
@@ -486,6 +527,8 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
                       setUploadStatus('idle');
                       setParsedData(null);
                       setError(null);
+                      setShowAutoPopulator(false);
+                      setAutoPopulatedData(null);
                     }}
                   >
                     Upload Different File
