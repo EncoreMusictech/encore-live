@@ -91,6 +91,8 @@ export function WorkSelectionDialog({ contractId, onSuccess, onCancel }: WorkSel
     }
 
     try {
+      console.log('Adding selected works to contract:', { contractId, selectedWorksCount: selectedWorks.size });
+      
       for (const copyrightId of selectedWorks) {
         const copyright = copyrights.find(c => c.id === copyrightId);
         if (!copyright) continue;
@@ -102,6 +104,12 @@ export function WorkSelectionDialog({ contractId, onSuccess, onCancel }: WorkSel
           work_specific_advance: 0,
           work_specific_rate_reduction: 0
         };
+
+        console.log('Adding work to schedule:', {
+          copyrightId,
+          workTitle: copyright.work_title,
+          inheritance
+        });
 
         await addScheduleWork(contractId, {
           copyright_id: copyrightId,

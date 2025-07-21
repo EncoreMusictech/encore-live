@@ -19,6 +19,7 @@ import { TemplateLibrary } from "@/components/contracts/TemplateLibrary";
 import { DocuSignImport } from "@/components/contracts/DocuSignImport";
 import { DemoPublishingContracts } from "@/components/contracts/DemoPublishingContracts";
 import { DemoPublishingContract } from "@/data/demo-publishing-contracts";
+import { CopyrightWritersDebug } from "@/components/debug/CopyrightWritersDebug";
 
 const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
@@ -417,19 +418,24 @@ const ContractManagement = () => {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Contract Analytics</CardTitle>
-                <CardDescription>
-                  Insights into your contract portfolio and performance
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  Analytics dashboard coming soon...
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contract Analytics</CardTitle>
+                  <CardDescription>
+                    Insights into your contract portfolio and performance
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12 text-muted-foreground">
+                    Analytics dashboard coming soon...
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Temporary Debug Component */}
+              <CopyrightWritersDebug />
+            </div>
           </TabsContent>
         </Tabs>
       </div>

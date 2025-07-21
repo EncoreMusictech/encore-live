@@ -1555,6 +1555,14 @@ function generateCatalogExhibitA(works: any[], parties: any[] = [], contract: an
     contractType: contract.contract_type 
   });
   
+  console.log('Works data:', works);
+  console.log('Parties data:', parties);
+  console.log('Contract data:', { 
+    id: contract.id, 
+    title: contract.title,
+    controlled_percentage: contract.controlled_percentage 
+  });
+  
   // Extract contract data
   const acquiredWorkListUrl = contractData.acquired_work_list_url || contract.contract_data?.acquired_work_list_url || '[Acquired Work List URL]';
   

@@ -264,13 +264,20 @@ export const useContracts = () => {
   // Helper function to inherit writers from copyright to contract interested parties
   const inheritWritersFromCopyright = async (contractId: string, copyrightId: string) => {
     try {
+      console.log('Starting writer inheritance process...', { contractId, copyrightId });
+      
       // Get writers from the copyright
       const { data: copyrightWriters, error: writersError } = await supabase
         .from('copyright_writers')
         .select('*')
         .eq('copyright_id', copyrightId);
 
-      if (writersError) throw writersError;
+      if (writersError) {
+        console.error('Error fetching copyright writers:', writersError);
+        throw writersError;
+      }
+      
+      console.log('Found copyright writers:', copyrightWriters?.length || 0, copyrightWriters);
       
       if (!copyrightWriters || copyrightWriters.length === 0) {
         console.log('No writers found for copyright:', copyrightId);
@@ -283,7 +290,12 @@ export const useContracts = () => {
         .select('name, ipi_number')
         .eq('contract_id', contractId);
 
-      if (existingError) throw existingError;
+      if (existingError) {
+        console.error('Error fetching existing parties:', existingError);
+        throw existingError;
+      }
+
+      console.log('Existing parties in contract:', existingParties?.length || 0, existingParties);
 
       // Create interested party records for each writer
       const newParties = [];
@@ -294,8 +306,10 @@ export const useContracts = () => {
           (party.ipi_number && writer.ipi_number && party.ipi_number === writer.ipi_number)
         );
         
+        console.log(`Checking writer "${writer.writer_name}":`, { exists, ipi: writer.ipi_number });
+        
         if (!exists) {
-          newParties.push({
+          const newParty = {
             contract_id: contractId,
             name: writer.writer_name,
             party_type: 'writer',
@@ -308,18 +322,28 @@ export const useContracts = () => {
             grand_rights_percentage: 0,
             karaoke_percentage: 0,
             affiliation: writer.pro_affiliation
-          });
+          };
+          
+          console.log('Adding new party:', newParty);
+          newParties.push(newParty);
         }
       }
 
       if (newParties.length > 0) {
-        const { error: insertError } = await supabase
+        console.log(`Inserting ${newParties.length} new parties...`);
+        const { data: insertedParties, error: insertError } = await supabase
           .from('contract_interested_parties')
-          .insert(newParties);
+          .insert(newParties)
+          .select();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Error inserting new parties:', insertError);
+          throw insertError;
+        }
         
-        console.log(`Inherited ${newParties.length} writers from copyright to contract`);
+        console.log(`Successfully inherited ${newParties.length} writers from copyright to contract`, insertedParties);
+      } else {
+        console.log('No new writers to add - all already exist in contract');
       }
     } catch (error) {
       console.error('Error inheriting writers from copyright:', error);
