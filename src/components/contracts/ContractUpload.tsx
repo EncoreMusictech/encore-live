@@ -75,6 +75,14 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
   
   const { user } = useAuth();
 
+  // Debug logging for initial component state
+  console.log('ContractUpload component loaded', { 
+    user: !!user, 
+    userId: user?.id,
+    uploadStatus,
+    selectedFile: !!selectedFile 
+  });
+
   const extractTextFromPDF = async (file: File): Promise<string> => {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -229,12 +237,23 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    console.log('onDrop called with files:', acceptedFiles);
     const file = acceptedFiles[0];
+    console.log('Selected file:', { 
+      name: file?.name, 
+      type: file?.type, 
+      size: file?.size,
+      isPDF: file?.type === 'application/pdf'
+    });
+    
     if (file && file.type === 'application/pdf') {
       setSelectedFile(file);
       setUploadStatus('idle');
       setError(null);
+      console.log('File set successfully:', file.name);
+      toast.success(`File selected: ${file.name}`);
     } else {
+      console.error('Invalid file type:', file?.type);
       toast.error('Please select a PDF file');
     }
   }, []);
@@ -244,7 +263,15 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
     accept: {
       'application/pdf': ['.pdf']
     },
-    maxFiles: 1
+    maxFiles: 1,
+    onDropRejected: (rejectedFiles) => {
+      console.error('Files rejected:', rejectedFiles);
+      toast.error('Please select a valid PDF file');
+    },
+    onError: (error) => {
+      console.error('Dropzone error:', error);
+      toast.error('Error with file selection');
+    }
   });
 
   return (
