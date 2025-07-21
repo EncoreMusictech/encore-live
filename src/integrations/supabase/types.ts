@@ -503,6 +503,56 @@ export type Database = {
           },
         ]
       }
+      contract_parsing_results: {
+        Row: {
+          contract_id: string | null
+          created_at: string
+          error_message: string | null
+          extracted_entities: Json | null
+          id: string
+          original_text: string | null
+          parsed_data: Json
+          parsing_confidence: number | null
+          parsing_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contract_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          extracted_entities?: Json | null
+          id?: string
+          original_text?: string | null
+          parsed_data?: Json
+          parsing_confidence?: number | null
+          parsing_status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contract_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          extracted_entities?: Json | null
+          id?: string
+          original_text?: string | null
+          parsed_data?: Json
+          parsing_confidence?: number | null
+          parsing_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_parsing_results_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_royalty_connections: {
         Row: {
           catalog_id: string | null
