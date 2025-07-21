@@ -1676,40 +1676,52 @@ function generateCatalogExhibitA(works: any[]): string {
     `;
   }
 
-  // Generate schedule of works table with actual data and party information
+  // Generate schedule of works table with actual contract works data
   const scheduleWorksRows = works.map(work => {
-    // Find writers and publishers for this work from interested parties
-    const workWriters = parties.filter(party => party.party_type === 'writer');
-    const workPublishers = parties.filter(party => 
+    // Get writers and publishers from interested parties who are associated with this contract
+    const contractWriters = parties.filter(party => party.party_type === 'writer');
+    const contractPublishers = parties.filter(party => 
       party.party_type === 'publisher' || 
       party.party_type === 'original_publisher' ||
-      party.party_type === 'co_publisher'
+      party.party_type === 'co_publisher' ||
+      party.party_type === 'seller'
     );
     
-    // Calculate controlled share based on parties
-    const controlledShare = parties
-      .filter(party => party.controlled_status === 'C')
-      .reduce((total, party) => total + Math.max(
-        party.performance_percentage || 0,
-        party.mechanical_percentage || 0,
-        party.synch_percentage || 0
-      ), 0);
+    // For works that inherit royalty splits, use the contract's interested parties
+    const writersText = work.inherits_royalty_splits && contractWriters.length > 0
+      ? contractWriters.map(writer => {
+          const percentage = Math.max(
+            writer.performance_percentage || 0,
+            writer.mechanical_percentage || 0,
+            writer.synch_percentage || 0
+          );
+          return `${writer.name}${percentage > 0 ? ` (${percentage}%)` : ''}`;
+        }).join(', ')
+      : work.artist_name || '[Writer Name(s)]';
     
-    // Format writers with splits
-    const writersText = workWriters.length > 0 
-      ? workWriters.map(writer => 
-          `${writer.name} (${Math.max(writer.performance_percentage || 0, writer.mechanical_percentage || 0)}%)`
-        ).join(', ')
-      : '[Writer Name(s)]';
-    
-    // Format publishers with splits  
-    const publishersText = workPublishers.length > 0
-      ? workPublishers.map(pub => 
-          `${pub.name} (${Math.max(pub.performance_percentage || 0, pub.mechanical_percentage || 0)}%)`
-        ).join(', ')
+    const publishersText = work.inherits_royalty_splits && contractPublishers.length > 0
+      ? contractPublishers.map(publisher => {
+          const percentage = Math.max(
+            publisher.performance_percentage || 0,
+            publisher.mechanical_percentage || 0,
+            publisher.synch_percentage || 0
+          );
+          return `${publisher.name}${percentage > 0 ? ` (${percentage}%)` : ''}`;
+        }).join(', ')
       : '[Publisher Name(s)]';
     
-    // Get IPI numbers from parties
+    // Calculate controlled share - if inherits controlled status, use from contract parties
+    const controlledShare = work.inherits_controlled_status 
+      ? parties
+          .filter(party => party.controlled_status === 'C')
+          .reduce((total, party) => total + Math.max(
+            party.performance_percentage || 0,
+            party.mechanical_percentage || 0,
+            party.synch_percentage || 0
+          ), 0)
+      : 100; // Default to 100% if not inheriting
+    
+    // Get IPI numbers from interested parties
     const ipiNumbers = parties
       .filter(party => party.ipi_number)
       .map(party => `${party.name}: ${party.ipi_number}`)
@@ -1717,31 +1729,31 @@ function generateCatalogExhibitA(works: any[]): string {
     
     return `
       <tr>
-        <td>${work.song_title || '[Work Title]'}</td>
+        <td>${work.song_title}</td>
         <td>${writersText}</td>
         <td>${publishersText}</td>
         <td>${controlledShare > 0 ? `${controlledShare.toFixed(1)}%` : '100%'}</td>
-        <td>${work.work_id || work.iswc || '[Work ID]'}</td>
+        <td>${work.iswc || work.work_id || '[Work ID]'}</td>
         <td>${ipiNumbers}</td>
       </tr>
     `;
   }).join('');
 
-  const hasAcquiredWorkList = works.length > 0;
+  const hasScheduledWorks = works.length > 0;
   const hasExternalWorkList = acquiredWorkListUrl && acquiredWorkListUrl !== '[Acquired Work List URL]';
   
-  const workListNote = !hasAcquiredWorkList && hasExternalWorkList ? `
+  const workListNote = hasExternalWorkList && !hasScheduledWorks ? `
     <div class="section-content">
       <strong>Note:</strong> Complete work listing available at: ${acquiredWorkListUrl}
     </div>
   ` : '';
 
-  const tableContent = hasAcquiredWorkList ? scheduleWorksRows : `
+  const tableContent = hasScheduledWorks ? scheduleWorksRows : `
     <tr>
       <td colspan="6" style="text-align: center; font-style: italic; padding: 20px;">
         ${hasExternalWorkList 
           ? 'Works listed in separate catalog document referenced above' 
-          : 'No works have been added to this contract yet'}
+          : 'No works have been scheduled for this contract yet. Use the Schedule of Works section to add specific works to this agreement.'}
       </td>
     </tr>
   `;
