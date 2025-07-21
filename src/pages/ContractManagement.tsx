@@ -17,6 +17,7 @@ import { PublishingAgreementForm } from "@/components/contracts/PublishingAgreem
 import { EditContractForm } from "@/components/contracts/EditContractForm";
 import { TemplateLibrary } from "@/components/contracts/TemplateLibrary";
 import { DocuSignImport } from "@/components/contracts/DocuSignImport";
+import { ContractUpload } from "@/components/contracts/ContractUpload";
 import { DemoPublishingContracts } from "@/components/contracts/DemoPublishingContracts";
 import { DemoPublishingContract } from "@/data/demo-publishing-contracts";
 import { CopyrightWritersDebug } from "@/components/debug/CopyrightWritersDebug";
@@ -34,6 +35,7 @@ const ContractManagement = () => {
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
   const [creationMethod, setCreationMethod] = useState<string | null>(null);
   const [showDocuSignImport, setShowDocuSignImport] = useState(false);
+  const [showContractUpload, setShowContractUpload] = useState(false);
   const [selectedDemoData, setSelectedDemoData] = useState<DemoPublishingContract | null>(null);
 
   const handleEditContract = (contract: any) => {
@@ -257,19 +259,9 @@ const ContractManagement = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <input
-                          type="file"
-                          accept=".pdf"
-                          className="hidden"
-                          id="contract-upload"
-                          onChange={(e) => {
-                            // Handle file upload
-                            console.log('File uploaded:', e.target.files?.[0]);
-                          }}
-                        />
                         <Button 
                           className="w-full" 
-                          onClick={() => document.getElementById('contract-upload')?.click()}
+                          onClick={() => setShowContractUpload(true)}
                         >
                           Choose File
                         </Button>
@@ -277,7 +269,7 @@ const ContractManagement = () => {
                     </Card>
                   </div>
                  </div>
-               ) : showDocuSignImport ? (
+                ) : showDocuSignImport ? (
                  // DocuSign Import Flow
                  <DocuSignImport
                    onBack={() => setShowDocuSignImport(false)}
@@ -288,37 +280,56 @@ const ContractManagement = () => {
                      setShowDocuSignImport(false);
                    }}
                  />
+               ) : showContractUpload ? (
+                 // Contract Upload Flow
+                 <ContractUpload
+                   onBack={() => setShowContractUpload(false)}
+                   onSuccess={() => {
+                     setIsCreateDialogOpen(false);
+                     setSelectedContractType(null);
+                     setCreationMethod(null);
+                     setShowContractUpload(false);
+                   }}
+                 />
                   ) : (
                      // Step 3: Contract form based on type
                      selectedContractType === "publishing" ? (
                        <PublishingAgreementForm 
-                         onCancel={() => {
-                           setSelectedContractType(null);
-                           setCreationMethod(null);
-                           setSelectedDemoData(null);
-                         }}
-                         onSuccess={() => {
-                           setIsCreateDialogOpen(false);
-                           setSelectedContractType(null);
-                           setCreationMethod(null);
-                           setSelectedDemoData(null);
-                         }}
+                          onCancel={() => {
+                            setSelectedContractType(null);
+                            setCreationMethod(null);
+                            setSelectedDemoData(null);
+                            setShowContractUpload(false);
+                            setShowDocuSignImport(false);
+                          }}
+                          onSuccess={() => {
+                            setIsCreateDialogOpen(false);
+                            setSelectedContractType(null);
+                            setCreationMethod(null);
+                            setSelectedDemoData(null);
+                            setShowContractUpload(false);
+                            setShowDocuSignImport(false);
+                          }}
                          demoData={selectedDemoData}
                        />
                      ) : (
                        <OrganizedContractForm 
                          contractType={selectedContractType}
-                         onCancel={() => {
-                           setSelectedContractType(null);
-                           setCreationMethod(null);
-                           setSelectedDemoData(null);
-                         }}
-                         onSuccess={() => {
-                           setIsCreateDialogOpen(false);
-                           setSelectedContractType(null);
-                           setCreationMethod(null);
-                           setSelectedDemoData(null);
-                         }}
+                          onCancel={() => {
+                            setSelectedContractType(null);
+                            setCreationMethod(null);
+                            setSelectedDemoData(null);
+                            setShowContractUpload(false);
+                            setShowDocuSignImport(false);
+                          }}
+                          onSuccess={() => {
+                            setIsCreateDialogOpen(false);
+                            setSelectedContractType(null);
+                            setCreationMethod(null);
+                            setSelectedDemoData(null);
+                            setShowContractUpload(false);
+                            setShowDocuSignImport(false);
+                          }}
                        />
                      )
                   )}
