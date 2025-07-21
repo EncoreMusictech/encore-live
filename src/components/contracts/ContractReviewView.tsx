@@ -48,12 +48,20 @@ export const ContractReviewView: React.FC<ContractReviewViewProps> = ({
 
     try {
       setLoading(true);
+      
+      // Check if this is a test/demo parsing result ID
+      if (parsingResultId?.startsWith('test-')) {
+        console.log('Test parsing result ID detected, skipping database query');
+        setParsingResult(null);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('contract_parsing_results')
         .select('*')
         .eq('id', parsingResultId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setParsingResult(data);
