@@ -1540,7 +1540,7 @@ function generateCatalogAcquisitionHTML(contract: any, contractData: any, partie
         </div>
       </div>
 
-      ${generateCatalogExhibitA(works)}
+      ${generateCatalogExhibitA(works, parties)}
     </body>
     </html>
   `;
@@ -1634,7 +1634,7 @@ function generateExhibitA(works: any[]): string {
   `;
 }
 
-function generateCatalogExhibitA(works: any[]): string {
+function generateCatalogExhibitA(works: any[], parties: any[] = []): string {
   // Check if we have actual works added to this contract
   const hasActualWorks = works.length > 0;
   
