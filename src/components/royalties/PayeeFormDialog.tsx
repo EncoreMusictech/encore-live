@@ -77,6 +77,13 @@ export function PayeeFormDialog({ open, onOpenChange }: PayeeFormDialogProps) {
     }
   }, [selectedPublisher]); // Remove fetchWriters from dependencies
 
+  // Auto-select writer when only one exists
+  useEffect(() => {
+    if (writers.length === 1 && !selectedWriter && selectedPublisher) {
+      setSelectedWriter(writers[0].id);
+    }
+  }, [writers.length, selectedPublisher]); // Optimize dependencies
+
   const handlePayeeFormChange = (field: string, value: string | boolean) => {
     setPayeeData(prev => ({ ...prev, [field]: value }));
   };

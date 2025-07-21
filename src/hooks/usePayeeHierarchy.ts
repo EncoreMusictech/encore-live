@@ -175,8 +175,88 @@ export function usePayeeHierarchy() {
 
       if (error) throw error;
       setWriters(data || []);
+      
+      // If no writers exist for this original publisher, auto-generate one
+      if (originalPublisherId && (!data || data.length === 0)) {
+        setTimeout(() => autoGenerateWriter(originalPublisherId), 100);
+      }
     } catch (error: any) {
       console.error('Error fetching writers:', error);
+    }
+  };
+
+  // Auto-generate writer with default name
+  const autoGenerateWriter = async (originalPublisherId: string) => {
+    if (!user) return;
+
+    try {
+      // Get the original publisher and agreement details
+      const { data: publisherData, error: publisherError } = await supabase
+        .from('original_publishers')
+        .select('publisher_name, agreement_id')
+        .eq('id', originalPublisherId)
+        .single();
+
+      if (publisherError) throw publisherError;
+
+      // Get the agreement counterparty name
+      const { data: agreementData, error: agreementError } = await supabase
+        .from('contracts')
+        .select('counterparty_name')
+        .eq('id', publisherData.agreement_id)
+        .single();
+
+      if (agreementError) throw agreementError;
+
+      const writerName = agreementData.counterparty_name;
+
+      // Check if a writer with this name already exists for this original publisher
+      const { data: existingWriter } = await supabase
+        .from('writers')
+        .select('id')
+        .eq('original_publisher_id', originalPublisherId)
+        .eq('writer_name', writerName)
+        .eq('user_id', user.id)
+        .single();
+
+      if (existingWriter) {
+        // Writer already exists, just refresh the list
+        await fetchWriters(originalPublisherId);
+        return existingWriter;
+      }
+
+      const { data, error } = await supabase
+        .from('writers')
+        .insert({
+          writer_name: writerName,
+          contact_info: {},
+          original_publisher_id: originalPublisherId,
+          user_id: user.id,
+        } as any)
+        .select()
+        .single();
+
+      if (error) {
+        // If it's a duplicate key error, just refresh and return
+        if (error.code === '23505') {
+          await fetchWriters(originalPublisherId);
+          return null;
+        }
+        throw error;
+      }
+
+      // Refresh the writers list
+      await fetchWriters(originalPublisherId);
+      
+      toast({
+        title: "Auto-generated Writer",
+        description: `Created "${writerName}" for this original publisher`,
+      });
+
+      return data;
+    } catch (error: any) {
+      console.error('Error auto-generating writer:', error);
+      return null;
     }
   };
 
@@ -330,5 +410,6 @@ export function usePayeeHierarchy() {
     createWriter,
     createPayee,
     autoGenerateOriginalPublisher,
+    autoGenerateWriter,
   };
 }
