@@ -228,140 +228,142 @@ const ContractManagement = () => {
                   />
                 </div>
               ) : creationMethod === 'upload' ? (
-                // Step 2c: Upload options
-                <div className="space-y-6">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => setCreationMethod(null)}
-                    className="gap-2"
-                  >
-                    ← Back to options
-                  </Button>
-                  
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                      <CardHeader className="text-center">
-                        <div className="bg-blue-500 rounded-lg p-3 w-fit mx-auto mb-2">
-                          <FileText className="h-6 w-6 text-white" />
-                        </div>
-                        <CardTitle className="text-lg">Import from DocuSign</CardTitle>
-                        <CardDescription>
-                          Connect your DocuSign account to import existing contracts
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button 
-                          className="w-full" 
-                          onClick={() => setShowDocuSignImport(true)}
-                        >
-                          Connect DocuSign
-                        </Button>
-                      </CardContent>
-                    </Card>
+                !showContractUpload && !showDocuSignImport ? (
+                  // Step 2c: Upload options
+                  <div className="space-y-6">
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => setCreationMethod(null)}
+                      className="gap-2"
+                    >
+                      ← Back to options
+                    </Button>
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                        <CardHeader className="text-center">
+                          <div className="bg-blue-500 rounded-lg p-3 w-fit mx-auto mb-2">
+                            <FileText className="h-6 w-6 text-white" />
+                          </div>
+                          <CardTitle className="text-lg">Import from DocuSign</CardTitle>
+                          <CardDescription>
+                            Connect your DocuSign account to import existing contracts
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <Button 
+                            className="w-full" 
+                            onClick={() => setShowDocuSignImport(true)}
+                          >
+                            Connect DocuSign
+                          </Button>
+                        </CardContent>
+                      </Card>
 
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                      <CardHeader className="text-center">
-                        <div className="bg-green-500 rounded-lg p-3 w-fit mx-auto mb-2">
-                          <Upload className="h-6 w-6 text-white" />
-                        </div>
-                        <CardTitle className="text-lg">Upload PDF</CardTitle>
-                        <CardDescription>
-                          Upload a contract PDF and we'll extract the key terms
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button 
-                          className="w-full" 
-                          onMouseDown={() => console.log('Choose File - mouse down')}
-                          onMouseUp={() => console.log('Choose File - mouse up')}
-                          onTouchStart={() => console.log('Choose File - touch start')}
-                          onClick={(e) => {
-                            console.log('Choose File button clicked - event details:', e);
-                            console.log('Event target:', e.target);
-                            console.log('Current target:', e.currentTarget);
-                            console.log('Current states before update:', { 
-                              creationMethod, 
-                              showContractUpload, 
-                              showDocuSignImport,
-                              isCreateDialogOpen 
-                            });
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setShowContractUpload(true);
-                            console.log('showContractUpload set to true');
-                          }}
-                          type="button"
-                        >
-                          Choose File
-                        </Button>
-                      </CardContent>
-                    </Card>
+                      <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                        <CardHeader className="text-center">
+                          <div className="bg-green-500 rounded-lg p-3 w-fit mx-auto mb-2">
+                            <Upload className="h-6 w-6 text-white" />
+                          </div>
+                          <CardTitle className="text-lg">Upload PDF</CardTitle>
+                          <CardDescription>
+                            Upload a contract PDF and we'll extract the key terms
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <Button 
+                            className="w-full" 
+                            onMouseDown={() => console.log('Choose File - mouse down')}
+                            onMouseUp={() => console.log('Choose File - mouse up')}
+                            onTouchStart={() => console.log('Choose File - touch start')}
+                            onClick={(e) => {
+                              console.log('Choose File button clicked - event details:', e);
+                              console.log('Event target:', e.target);
+                              console.log('Current target:', e.currentTarget);
+                              console.log('Current states before update:', { 
+                                creationMethod, 
+                                showContractUpload, 
+                                showDocuSignImport,
+                                isCreateDialogOpen 
+                              });
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setShowContractUpload(true);
+                              console.log('showContractUpload set to true');
+                            }}
+                            type="button"
+                          >
+                            Choose File
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
-                 </div>
                 ) : showDocuSignImport ? (
-                 // DocuSign Import Flow
-                 <DocuSignImport
-                   onBack={() => setShowDocuSignImport(false)}
-                   onSuccess={() => {
-                     setIsCreateDialogOpen(false);
-                     setSelectedContractType(null);
-                     setCreationMethod(null);
-                     setShowDocuSignImport(false);
-                   }}
-                 />
-               ) : showContractUpload ? (
-                 // Contract Upload Flow
-                 <ContractUpload
-                   onBack={() => setShowContractUpload(false)}
-                   onSuccess={() => {
-                     setIsCreateDialogOpen(false);
-                     setSelectedContractType(null);
-                     setCreationMethod(null);
-                     setShowContractUpload(false);
-                   }}
-                 />
-                  ) : (
-                     // Step 3: Contract form based on type
-                     selectedContractType === "publishing" ? (
-                       <PublishingAgreementForm 
-                          onCancel={() => {
-                            setSelectedContractType(null);
-                            setCreationMethod(null);
-                            setSelectedDemoData(null);
-                            setShowContractUpload(false);
-                            setShowDocuSignImport(false);
-                          }}
-                          onSuccess={() => {
-                            setIsCreateDialogOpen(false);
-                            setSelectedContractType(null);
-                            setCreationMethod(null);
-                            setSelectedDemoData(null);
-                            setShowContractUpload(false);
-                            setShowDocuSignImport(false);
-                          }}
-                         demoData={selectedDemoData}
-                       />
-                     ) : (
-                       <OrganizedContractForm 
-                         contractType={selectedContractType}
-                          onCancel={() => {
-                            setSelectedContractType(null);
-                            setCreationMethod(null);
-                            setSelectedDemoData(null);
-                            setShowContractUpload(false);
-                            setShowDocuSignImport(false);
-                          }}
-                          onSuccess={() => {
-                            setIsCreateDialogOpen(false);
-                            setSelectedContractType(null);
-                            setCreationMethod(null);
-                            setSelectedDemoData(null);
-                            setShowContractUpload(false);
-                            setShowDocuSignImport(false);
-                          }}
-                       />
-                     )
-                  )}
+                  // DocuSign Import Flow
+                  <DocuSignImport
+                    onBack={() => setShowDocuSignImport(false)}
+                    onSuccess={() => {
+                      setIsCreateDialogOpen(false);
+                      setSelectedContractType(null);
+                      setCreationMethod(null);
+                      setShowDocuSignImport(false);
+                    }}
+                  />
+                ) : showContractUpload ? (
+                  // Contract Upload Flow
+                  <ContractUpload
+                    onBack={() => setShowContractUpload(false)}
+                    onSuccess={() => {
+                      setIsCreateDialogOpen(false);
+                      setSelectedContractType(null);
+                      setCreationMethod(null);
+                      setShowContractUpload(false);
+                    }}
+                  />
+                ) : null
+              ) : (
+                 // Step 3: Contract form based on type
+                 selectedContractType === "publishing" ? (
+                   <PublishingAgreementForm 
+                      onCancel={() => {
+                        setSelectedContractType(null);
+                        setCreationMethod(null);
+                        setSelectedDemoData(null);
+                        setShowContractUpload(false);
+                        setShowDocuSignImport(false);
+                      }}
+                      onSuccess={() => {
+                        setIsCreateDialogOpen(false);
+                        setSelectedContractType(null);
+                        setCreationMethod(null);
+                        setSelectedDemoData(null);
+                        setShowContractUpload(false);
+                        setShowDocuSignImport(false);
+                      }}
+                     demoData={selectedDemoData}
+                   />
+                 ) : (
+                   <OrganizedContractForm 
+                     contractType={selectedContractType}
+                      onCancel={() => {
+                        setSelectedContractType(null);
+                        setCreationMethod(null);
+                        setSelectedDemoData(null);
+                        setShowContractUpload(false);
+                        setShowDocuSignImport(false);
+                      }}
+                      onSuccess={() => {
+                        setIsCreateDialogOpen(false);
+                        setSelectedContractType(null);
+                        setCreationMethod(null);
+                        setSelectedDemoData(null);
+                        setShowContractUpload(false);
+                        setShowDocuSignImport(false);
+                      }}
+                   />
+                 )
+               )}
             </DialogContent>
           </Dialog>
 
