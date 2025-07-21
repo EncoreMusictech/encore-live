@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
@@ -49,7 +50,7 @@ serve(async (req) => {
     // Generate PDF-like content (in production, use proper PDF library)
     const pdfContent = await generatePublishingPDF(htmlContent, contract);
 
-    // Update contract with generated PDF URL (in production, this would be a storage URL)
+    // Update contract with generated PDF URL
     const { error: updateError } = await supabase
       .from('contracts')
       .update({ 
@@ -86,9 +87,44 @@ serve(async (req) => {
 });
 
 function generatePublishingAgreementHTML(contract: any, agreementType: string): string {
-  const currentDate = new Date().toLocaleDateString();
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
   const contractData = contract.contract_data || {};
   
+  // Get first interested party as Rights Owner
+  const rightsOwner = contract.contract_interested_parties?.find((party: any) => 
+    party.party_type === 'writer' || party.party_type === 'songwriter'
+  ) || contract.contract_interested_parties?.[0];
+  
+  const effectiveDate = contract.start_date ? 
+    new Date(contract.start_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : '[Effective Date]';
+    
+  const endDate = contract.end_date ? 
+    new Date(contract.end_date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : '[End Date]';
+
+  const territories = contract.territories && contract.territories.length > 0 
+    ? contract.territories.join(', ') 
+    : 'United States, Canada, United Kingdom, etc.';
+
+  const adminFee = contractData.admin_fee_percentage || '[Admin Fee %, e.g., 15%]';
+  const controlledShare = contractData.admin_controlled_share || '[100%]';
+  const tailPeriod = contractData.tail_period_months || '[Tail Period, e.g., 6 months]';
+  const approvalThreshold = '[Approval Threshold, e.g., 50,000]';
+  const distributionCycle = contract.distribution_cycle || '[Quarterly]';
+  const minimumThreshold = '[Minimum Threshold]';
+  const governingLaw = contractData.governing_law || '[New York/Other]';
+
   return `
     <!DOCTYPE html>
     <html>
@@ -98,574 +134,445 @@ function generatePublishingAgreementHTML(contract: any, agreementType: string): 
       <style>
         body { 
           font-family: 'Times New Roman', serif; 
-          line-height: 1.8; 
+          line-height: 1.6; 
           margin: 40px; 
           font-size: 12pt;
           color: #000;
+          background: white;
         }
         .header { 
           text-align: center; 
-          margin-bottom: 50px; 
-          border-bottom: 3px solid #000; 
-          padding-bottom: 30px; 
+          margin-bottom: 40px;
         }
         .agreement-title {
-          font-size: 20pt;
+          font-size: 18pt;
           font-weight: bold;
-          margin-bottom: 10px;
+          margin-bottom: 30px;
           text-transform: uppercase;
-          letter-spacing: 2px;
+          letter-spacing: 1px;
         }
         .section { 
-          margin: 40px 0; 
+          margin: 30px 0; 
           page-break-inside: avoid;
         }
         .section-title { 
           font-size: 14pt; 
           font-weight: bold; 
-          margin-bottom: 20px; 
+          margin: 30px 0 15px 0; 
           color: #000; 
-          text-transform: uppercase;
-          border-bottom: 1px solid #000; 
-          padding-bottom: 8px; 
         }
-        .subsection {
-          margin: 25px 0;
-          padding-left: 20px;
-        }
-        .clause {
+        .section-content {
           margin: 15px 0;
           text-align: justify;
-          text-indent: 20px;
+          line-height: 1.8;
         }
-        .party-info { 
-          margin: 25px 0; 
-          padding: 20px; 
-          border: 2px solid #000; 
-          background-color: #f9f9f9;
+        .party-section { 
+          margin: 20px 0; 
+          line-height: 1.8;
         }
-        .financial-grid { 
-          display: grid; 
-          grid-template-columns: 1fr 1fr; 
-          gap: 30px; 
-          margin: 30px 0; 
+        .divider {
+          border-bottom: 1px solid #000;
+          margin: 30px 0;
+          width: 100%;
         }
-        .term-box { 
-          padding: 15px; 
-          border: 1px solid #000; 
-          background-color: #fff;
+        .bullet-point {
+          margin: 10px 0;
+          padding-left: 20px;
         }
-        table { 
-          width: 100%; 
-          border-collapse: collapse; 
-          margin: 25px 0; 
-          border: 2px solid #000;
-        }
-        th, td { 
-          border: 1px solid #000; 
-          padding: 12px; 
-          text-align: left; 
-          vertical-align: top;
-        }
-        th { 
-          background-color: #e9e9e9; 
-          font-weight: bold; 
-          text-align: center;
+        .sub-bullet {
+          margin: 8px 0;
+          padding-left: 40px;
         }
         .signature-section { 
-          margin-top: 80px; 
+          margin-top: 60px; 
           page-break-inside: avoid;
         }
         .signature-block { 
-          margin: 50px 0; 
-          border: 1px solid #000;
-          padding: 30px;
+          margin: 40px 0; 
         }
         .signature-line { 
-          border-bottom: 2px solid #000; 
-          width: 400px; 
-          margin: 25px 0; 
-          height: 2px;
+          border-bottom: 1px solid #000; 
+          width: 300px; 
+          margin: 20px 0 5px 0; 
+          height: 1px;
+          display: inline-block;
         }
-        .footer { 
-          margin-top: 60px; 
-          font-size: 10pt; 
-          color: #666; 
-          text-align: center; 
-          border-top: 1px solid #ccc;
-          padding-top: 20px;
+        .exhibit-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 20px 0;
+          border: 1px solid #000;
         }
-        .watermark {
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%) rotate(-45deg);
-          font-size: 72pt;
-          color: rgba(0,0,0,0.05);
-          z-index: -1;
-          pointer-events: none;
-        }
-        .page-number {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
+        .exhibit-table th,
+        .exhibit-table td {
+          border: 1px solid #000;
+          padding: 8px;
+          text-align: left;
           font-size: 10pt;
         }
+        .exhibit-table th {
+          background-color: #f5f5f5;
+          font-weight: bold;
+          text-align: center;
+        }
+        .bold { font-weight: bold; }
+        .center { text-align: center; }
       </style>
     </head>
     <body>
-      <div class="watermark">DRAFT</div>
-      
       <div class="header">
-        <div class="agreement-title">${getAgreementTypeTitle(agreementType)}</div>
-        <h2>${contract.title}</h2>
-        <p><strong>Agreement Date:</strong> ${currentDate}</p>
-        <p><strong>Agreement ID:</strong> ${contract.agreement_id || generateAgreementId()}</p>
-        <p><strong>Status:</strong> ${contract.contract_status?.toUpperCase() || 'DRAFT'}</p>
+        <div class="agreement-title">PUBLISHING ADMINISTRATION AGREEMENT</div>
       </div>
 
-      <div class="section">
-        <div class="section-title">Article I - Parties</div>
-        <div class="clause">
-          This ${getAgreementTypeTitle(agreementType)} ("Agreement") is entered into on ${currentDate}, 
-          between <strong>${contract.counterparty_name}</strong> ("Publisher") and the Writer(s) 
-          listed in the Schedule of Interested Parties below.
-        </div>
-        
-        <div class="party-info">
-          <strong>PUBLISHER/ADMINISTRATOR:</strong><br>
-          Company: ${contract.counterparty_name}<br>
-          ${contract.contact_address ? `Address: ${contract.contact_address}<br>` : ''}
-          ${contract.contact_phone ? `Phone: ${contract.contact_phone}<br>` : ''}
-          ${contract.recipient_email ? `Email: ${contract.recipient_email}<br>` : ''}
-          ${contract.contact_name ? `Contact: ${contract.contact_name}` : ''}
-        </div>
+      <div class="section-content">
+        This Publishing Administration Agreement ("<strong>Agreement</strong>") is made and entered into as of
+        <strong>${effectiveDate}</strong>, by and between:
       </div>
 
-      <div class="section">
-        <div class="section-title">Article II - Term and Territory</div>
-        <div class="clause">
-          <strong>Effective Date:</strong> ${contract.start_date ? new Date(contract.start_date).toLocaleDateString() : 'To be determined'}<br>
-          <strong>Termination Date:</strong> ${contract.end_date ? new Date(contract.end_date).toLocaleDateString() : 'Perpetual/To be determined'}<br>
-          <strong>Territory:</strong> ${contract.territories && contract.territories.length > 0 ? contract.territories.join(', ') : 'Worldwide'}<br>
-          ${contractData.governing_law ? `<strong>Governing Law:</strong> ${contractData.governing_law}` : ''}
-        </div>
+      <div class="party-section">
+        <strong>Administrator:</strong><br>
+        <strong>${contract.counterparty_name}</strong><br>
+        ${contract.contact_address || '[Address]'}<br>
+        ${contract.recipient_email || '[Email]'}<br>
+        ("<strong>Administrator</strong>")
       </div>
 
-      ${generateAgreementSpecificTerms(agreementType, contract, contractData)}
-
-      ${contract.contract_interested_parties && contract.contract_interested_parties.length > 0 ? `
-      <div class="section">
-        <div class="section-title">Article IV - Interested Parties and Royalty Splits</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Party Name</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Performance %</th>
-              <th>Mechanical %</th>
-              <th>Sync %</th>
-              <th>Print %</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${contract.contract_interested_parties.map((party: any) => `
-            <tr>
-              <td><strong>${party.name}</strong></td>
-              <td>${formatPartyType(party.party_type)}</td>
-              <td>${party.controlled_status === 'C' ? 'Controlled' : 'Non-Controlled'}</td>
-              <td>${party.performance_percentage || 0}%</td>
-              <td>${party.mechanical_percentage || 0}%</td>
-              <td>${party.synch_percentage || 0}%</td>
-              <td>${party.print_percentage || 0}%</td>
-            </tr>
-            `).join('')}
-          </tbody>
-        </table>
+      <div class="party-section">
+        and
       </div>
-      ` : ''}
 
-      ${contract.contract_schedule_works && contract.contract_schedule_works.length > 0 ? `
-      <div class="section">
-        <div class="section-title">Article V - Schedule of Works</div>
-        <div class="clause">
-          The following musical compositions are subject to this Agreement:
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Song Title</th>
-              <th>Artist/Performer</th>
-              <th>Work ID</th>
-              <th>ISWC</th>
-              <th>ISRC</th>
-              <th>Album</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${contract.contract_schedule_works.map((work: any) => `
-            <tr>
-              <td><strong>${work.song_title}</strong></td>
-              <td>${work.artist_name || 'Various'}</td>
-              <td>${work.work_id || 'TBD'}</td>
-              <td>${work.iswc || 'TBD'}</td>
-              <td>${work.isrc || 'TBD'}</td>
-              <td>${work.album_title || 'N/A'}</td>
-            </tr>
-            `).join('')}
-          </tbody>
-        </table>
+      <div class="party-section">
+        <strong>Original Publisher / Rights Owner:</strong><br>
+        <strong>${rightsOwner?.name || '[Owner/Entity Name]'}</strong><br>
+        [Address]<br>
+        [Email]<br>
+        ("<strong>Rights Owner</strong>")
       </div>
-      ` : ''}
+
+      <div class="section-content">
+        Administrator and Rights Owner may each be referred to individually as a "<strong>Party</strong>" and 
+        collectively as the "<strong>Parties</strong>."
+      </div>
+
+      <div class="divider"></div>
 
       <div class="section">
-        <div class="section-title">Article VI - General Terms and Conditions</div>
-        <div class="subsection">
-          <div class="clause">
-            <strong>6.1 Rights Granted:</strong> Subject to the terms and conditions herein, 
-            Writer grants to Publisher the rights specified in Article III above for the 
-            musical works listed in the Schedule of Works.
-          </div>
-          <div class="clause">
-            <strong>6.2 Accounting:</strong> Publisher shall provide statements and payments 
-            according to the distribution cycle specified: ${contract.distribution_cycle || 'quarterly'}.
-          </div>
-          <div class="clause">
-            <strong>6.3 Audit Rights:</strong> Writer shall have the right to audit Publisher's 
-            books and records relating to this Agreement upon thirty (30) days written notice.
-          </div>
-          <div class="clause">
-            <strong>6.4 Termination:</strong> This Agreement may be terminated by either party 
-            upon material breach that remains uncured after thirty (30) days written notice.
-          </div>
-          ${contractData.approvals_required ? `
-          <div class="clause">
-            <strong>6.5 Approval Requirements:</strong> ${contractData.approval_conditions || 'Certain uses require prior written approval.'}
-          </div>
-          ` : ''}
+        <div class="section-title">1. Purpose</div>
+        <div class="section-content">
+          This Agreement sets forth the terms under which Administrator will exclusively administer 
+          certain musical compositions owned or controlled by Rights Owner ("<strong>Works</strong>"), as listed in 
+          <em>Exhibit A</em>, throughout the designated Territory and Term.
         </div>
       </div>
 
-      ${contract.notes ? `
+      <div class="divider"></div>
+
       <div class="section">
-        <div class="section-title">Article VII - Additional Terms</div>
-        <div class="clause">${contract.notes}</div>
+        <div class="section-title">2. Term</div>
+        <div class="section-content">
+          This Agreement shall be effective as of <strong>${effectiveDate}</strong> and shall continue until <strong>${endDate}</strong>, 
+          unless earlier terminated in accordance with Section 10.<br><br>
+          The Administrator shall be entitled to continue collecting on licenses entered during the 
+          Term for a tail period of <strong>${tailPeriod}</strong> following termination.
+        </div>
       </div>
-      ` : ''}
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">3. Territory</div>
+        <div class="section-content">
+          The Territory for this Agreement shall include the following jurisdictions:<br>
+          <strong>${territories}</strong>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">4. Rights Granted</div>
+        <div class="section-content">
+          Rights Owner hereby grants Administrator the sole and exclusive right to:
+        </div>
+        <div class="bullet-point">
+          • Register, administer, and license the Works for:
+          <div class="sub-bullet">○ Synchronization</div>
+          <div class="sub-bullet">○ Mechanical reproduction</div>
+          <div class="sub-bullet">○ Print publication</div>
+          <div class="sub-bullet">○ Digital and streaming platforms</div>
+          <div class="sub-bullet">○ Any other monetizable use of the Works</div>
+        </div>
+        <div class="bullet-point">
+          • Collect and disburse royalties for said uses
+        </div>
+        <div class="bullet-point">
+          • Enter into subpublishing agreements as necessary
+        </div>
+        <div class="section-content" style="margin-top: 20px;">
+          Administrator shall have the right to enforce rights and collect retroactive royalties where applicable.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">5. Administration Fee</div>
+        <div class="section-content">
+          Administrator shall retain a commission of <strong>${adminFee}</strong> of all gross revenue 
+          received in connection with the Works during the Term and Tail Period.<br><br>
+          The balance, after deduction of the administration fee and any authorized expenses, shall be 
+          remitted to the Rights Owner.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">6. Controlled Share</div>
+        <div class="section-content">
+          Rights Owner confirms that Administrator shall administer <strong>${controlledShare}</strong> of the Rights Owner's 
+          controlled share in the Works listed under this Agreement.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">7. Approval Rights</div>
+        <div class="section-content">
+          Unless otherwise agreed in writing:
+        </div>
+        <div class="bullet-point">
+          • All licenses for fees under <strong>$${approvalThreshold}</strong> USD shall be 
+          deemed <strong>pre-approved</strong>
+        </div>
+        <div class="bullet-point">
+          • For licenses exceeding that threshold or involving sensitive use categories (e.g., 
+          political, tobacco, alcohol), Administrator shall obtain Rights Owner's prior written consent.
+        </div>
+        <div class="section-content" style="margin-top: 20px;">
+          Approval Type: <strong>[Pre-approved / Must Approve Syncs / Must Approve All Uses / Consultation Only]</strong>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">8. Delivery Requirements</div>
+        <div class="section-content">
+          Rights Owner agrees to deliver, for each Work covered under this Agreement:
+        </div>
+        <div class="bullet-point">• Complete metadata</div>
+        <div class="bullet-point">• Work registration information</div>
+        <div class="bullet-point">• Lead sheets</div>
+        ${contractData.delivery_requirements?.includes('Sound File') ? '<div class="bullet-point">• ☑ Sound Files</div>' : '<div class="bullet-point">• ☐ Sound Files</div>'}
+        ${contractData.delivery_requirements?.includes('Lyrics') ? '<div class="bullet-point">• ☑ Lyrics</div>' : '<div class="bullet-point">• ☐ Lyrics</div>'}
+        ${contractData.delivery_requirements?.includes('Masters') ? '<div class="bullet-point">• ☑ Master Recordings</div>' : '<div class="bullet-point">• ☐ Master Recordings</div>'}
+        <div class="section-content" style="margin-top: 20px;">
+          Failure to provide delivery materials may delay royalty collection and registration obligations.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">9. Warranties and Representations</div>
+        <div class="section-content">
+          Each Party represents and warrants that:
+        </div>
+        <div class="bullet-point">
+          • It has full authority and legal capacity to enter into and perform under this Agreement
+        </div>
+        <div class="bullet-point">
+          • The Works are original and do not infringe on the rights of any third party
+        </div>
+        <div class="bullet-point">
+          • No prior agreements exist that would conflict with the rights granted herein
+        </div>
+        <div class="section-content" style="margin-top: 20px;">
+          Rights Owner agrees to indemnify Administrator against any third-party claims arising from 
+          a breach of the foregoing warranties.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">10. Termination</div>
+        <div class="section-content">
+          This Agreement may be terminated:
+        </div>
+        <div class="bullet-point">
+          • Upon <strong>30 days' written notice</strong> for material breach not cured within the notice period
+        </div>
+        <div class="bullet-point">
+          • Immediately upon bankruptcy, insolvency, or illegal activity of either Party
+        </div>
+        <div class="section-content" style="margin-top: 20px;">
+          Termination shall not affect Administrator's right to collect on pre-Term licenses for the 
+          duration of the Tail Period.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">11. Accounting & Payment</div>
+        <div class="bullet-point">
+          • Administrator shall provide royalty statements on a <strong>${distributionCycle}</strong> basis
+        </div>
+        <div class="bullet-point">
+          • Payments shall be made in USD within <strong>[X]</strong> days after statement issuance
+        </div>
+        <div class="bullet-point">
+          • No payment shall be due unless the accrued balance exceeds <strong>${minimumThreshold}</strong>
+        </div>
+        <div class="bullet-point">
+          • All statements shall be final unless challenged within <strong>[12 months]</strong> of issuance
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">12. Governing Law</div>
+        <div class="section-content">
+          This Agreement shall be governed by and construed in accordance with the laws of the <strong>State of ${governingLaw}</strong>.<br>
+          Any disputes shall be resolved through <strong>[Mediation followed by Arbitration]</strong> in the chosen jurisdiction.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-title">13. Entire Agreement</div>
+        <div class="section-content">
+          This Agreement contains the entire understanding of the Parties and supersedes any prior 
+          or contemporaneous agreements or understandings.<br>
+          Any amendments must be made in writing and signed by both Parties.
+        </div>
+      </div>
+
+      <div class="divider"></div>
 
       <div class="signature-section">
-        <div class="section-title">Signatures</div>
+        <div class="section-title center">IN WITNESS WHEREOF, the Parties have executed this Agreement as of the date first above written.</div>
         
+        <div class="divider"></div>
+
         <div class="signature-block">
-          <strong>PUBLISHER:</strong><br>
-          ${contract.counterparty_name}<br><br>
-          
-          By: <div class="signature-line"></div>
-          Name: _________________________________<br>
-          Title: _________________________________<br>
-          Date: _________________________________
+          <strong>ADMINISTRATOR</strong><br>
+          Signature: <div class="signature-line"></div><br>
+          Name:<br>
+          Title:<br>
+          Date:
         </div>
 
         <div class="signature-block">
-          <strong>WRITER(S):</strong><br><br>
-          
-          By: <div class="signature-line"></div>
-          Name: _________________________________<br>
-          Address: _________________________________<br>
-          Date: _________________________________
+          <strong>RIGHTS OWNER</strong><br>
+          Signature: <div class="signature-line"></div><br>
+          Name:<br>
+          Title:<br>
+          Date:
         </div>
+
+        <div class="divider"></div>
       </div>
 
-      <div class="footer">
-        <p>This ${getAgreementTypeTitle(agreementType)} is governed by the laws of ${contractData.governing_law || 'the applicable jurisdiction'}.</p>
-        <p>Generated on ${currentDate} | Agreement ID: ${contract.agreement_id || generateAgreementId()}</p>
-        <p>Page 1 of 1</p>
-      </div>
+      ${generateExhibitA(contract)}
     </body>
     </html>
   `;
 }
 
-function getAgreementTypeTitle(type: string): string {
-  const titles = {
-    administration: "ADMINISTRATION AGREEMENT",
-    co_publishing: "CO-PUBLISHING AGREEMENT",
-    exclusive_songwriter: "EXCLUSIVE SONGWRITER AGREEMENT",
-    catalog_acquisition: "CATALOG ACQUISITION AGREEMENT"
-  };
-  return titles[type as keyof typeof titles] || "PUBLISHING AGREEMENT";
-}
-
-function generateAgreementSpecificTerms(agreementType: string, contract: any, contractData: any): string {
-  switch (agreementType) {
-    case 'administration':
-      return generateAdminTerms(contract, contractData);
-    case 'co_publishing':
-      return generateCoPublishingTerms(contract, contractData);
-    case 'exclusive_songwriter':
-      return generateExclusiveTerms(contract, contractData);
-    case 'catalog_acquisition':
-      return generateAcquisitionTerms(contract, contractData);
-    default:
-      return generateGeneralTerms(contract, contractData);
+function generateExhibitA(contract: any): string {
+  const works = contract.contract_schedule_works || [];
+  const parties = contract.contract_interested_parties || [];
+  
+  if (works.length === 0) {
+    return `
+      <div class="section">
+        <div class="section-title center">Exhibit A – Schedule of Works</div>
+        <table class="exhibit-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Writers & Splits</th>
+              <th>Publishers & Splits</th>
+              <th>Controlled Share</th>
+              <th>ISWC</th>
+              <th>IPI Numbers (W/P)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>[Work Title]</td>
+              <td>[Writer Names & Percentages]</td>
+              <td>[Publisher Names & Percentages]</td>
+              <td>[Controlled %]</td>
+              <td>[ISWC Number]</td>
+              <td>[IPI Numbers]</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   }
-}
 
-function generateAdminTerms(contract: any, contractData: any): string {
+  const worksRows = works.map((work: any) => {
+    // Get writers for this work
+    const workWriters = parties.filter((party: any) => 
+      party.party_type === 'writer' || party.party_type === 'songwriter'
+    );
+    
+    const writersText = workWriters.length > 0 
+      ? workWriters.map((writer: any) => 
+          `${writer.name} (${writer.ownership_percentage || 0}%)`
+        ).join(', ')
+      : '[Writer Names & Splits]';
+
+    const publishersText = parties.filter((party: any) => 
+      party.party_type === 'publisher'
+    ).map((pub: any) => 
+      `${pub.name} (${pub.ownership_percentage || 0}%)`
+    ).join(', ') || '[Publisher Names & Splits]';
+
+    const controlledShare = workWriters.reduce((sum: number, writer: any) => 
+      sum + (writer.controlled_status === 'C' ? (writer.ownership_percentage || 0) : 0), 0
+    );
+
+    return `
+      <tr>
+        <td><strong>${work.song_title}</strong></td>
+        <td>${writersText}</td>
+        <td>${publishersText}</td>
+        <td>${controlledShare}%</td>
+        <td>${work.iswc || '[ISWC]'}</td>
+        <td>${work.work_id || '[IPI Numbers]'}</td>
+      </tr>
+    `;
+  }).join('');
+
   return `
     <div class="section">
-      <div class="section-title">Article III - Administration Terms</div>
-      <div class="financial-grid">
-        ${contractData.admin_fee_percentage ? `
-        <div class="term-box">
-          <strong>Administration Fee:</strong><br>
-          ${contractData.admin_fee_percentage}% of gross receipts
-        </div>
-        ` : ''}
-        ${contractData.admin_controlled_share ? `
-        <div class="term-box">
-          <strong>Controlled Share:</strong><br>
-          ${contractData.admin_controlled_share}% administration
-        </div>
-        ` : ''}
-        ${contractData.approval_rights ? `
-        <div class="term-box">
-          <strong>Approval Rights:</strong><br>
-          ${formatApprovalRights(contractData.approval_rights)}
-        </div>
-        ` : ''}
-        ${contractData.tail_period_months ? `
-        <div class="term-box">
-          <strong>Tail Period:</strong><br>
-          ${contractData.tail_period_months} months after termination
-        </div>
-        ` : ''}
-      </div>
-      
-      ${contractData.admin_rights && contractData.admin_rights.length > 0 ? `
-      <div class="subsection">
-        <strong>Administrative Rights Granted:</strong><br>
-        ${contractData.admin_rights.map((right: string) => `• ${right}`).join('<br>')}
-      </div>
-      ` : ''}
-      
-      ${contractData.reversion_conditions ? `
-      <div class="subsection">
-        <strong>Reversion Conditions:</strong><br>
-        ${contractData.reversion_conditions}
-      </div>
-      ` : ''}
+      <div class="section-title center">Exhibit A – Schedule of Works</div>
+      <table class="exhibit-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Writers & Splits</th>
+            <th>Publishers & Splits</th>
+            <th>Controlled Share</th>
+            <th>ISWC</th>
+            <th>IPI Numbers (W/P)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${worksRows}
+        </tbody>
+      </table>
     </div>
   `;
-}
-
-function generateCoPublishingTerms(contract: any, contractData: any): string {
-  return `
-    <div class="section">
-      <div class="section-title">Article III - Co-Publishing Terms</div>
-      <div class="financial-grid">
-        ${contractData.publisher_share_percentage ? `
-        <div class="term-box">
-          <strong>Publisher Share:</strong><br>
-          ${contractData.publisher_share_percentage}% of publisher's share
-        </div>
-        ` : ''}
-        ${contractData.writer_share_percentage ? `
-        <div class="term-box">
-          <strong>Writer Share:</strong><br>
-          ${contractData.writer_share_percentage}% retained by writer
-        </div>
-        ` : ''}
-        ${contractData.advance_amount ? `
-        <div class="term-box">
-          <strong>Advance:</strong><br>
-          $${contractData.advance_amount.toLocaleString()}
-          ${contractData.recoupable ? ' (Recoupable)' : ' (Non-recoupable)'}
-        </div>
-        ` : ''}
-        ${contractData.delivery_commitment ? `
-        <div class="term-box">
-          <strong>Delivery Commitment:</strong><br>
-          ${contractData.delivery_commitment} songs per year
-        </div>
-        ` : ''}
-      </div>
-      
-      <div class="subsection">
-        <strong>Revenue Splits:</strong><br>
-        ${contractData.sync_revenue_split ? `Sync: ${contractData.sync_revenue_split}% to Publisher<br>` : ''}
-        ${contractData.print_revenue_split ? `Print: ${contractData.print_revenue_split}% to Publisher<br>` : ''}
-        ${contractData.mechanical_revenue_split ? `Mechanical: ${contractData.mechanical_revenue_split}% to Publisher<br>` : ''}
-      </div>
-      
-      <div class="subsection">
-        <strong>Additional Terms:</strong><br>
-        Exclusivity: ${contractData.exclusivity ? 'Yes' : 'No'}<br>
-        Option Periods: ${contractData.option_periods ? 'Yes' : 'No'}
-      </div>
-    </div>
-  `;
-}
-
-function generateExclusiveTerms(contract: any, contractData: any): string {
-  return `
-    <div class="section">
-      <div class="section-title">Article III - Exclusive Songwriter Terms</div>
-      <div class="clause">
-        <strong>Exclusivity:</strong> Writer agrees to provide exclusive songwriting services to Publisher 
-        during the term of this Agreement.
-      </div>
-      
-      <div class="financial-grid">
-        ${contractData.advance_amount ? `
-        <div class="term-box">
-          <strong>Advance:</strong><br>
-          $${contractData.advance_amount.toLocaleString()}
-          ${contractData.recoupable ? ' (Recoupable against royalties)' : ''}
-        </div>
-        ` : ''}
-        ${contractData.delivery_requirement ? `
-        <div class="term-box">
-          <strong>Delivery Requirement:</strong><br>
-          ${contractData.delivery_requirement} acceptable songs per year
-        </div>
-        ` : ''}
-        ${contractData.mechanical_royalty_rate ? `
-        <div class="term-box">
-          <strong>Mechanical Royalty:</strong><br>
-          ${contractData.mechanical_royalty_rate}% to Writer
-        </div>
-        ` : ''}
-        ${contractData.sync_royalty_rate ? `
-        <div class="term-box">
-          <strong>Sync Royalty:</strong><br>
-          ${contractData.sync_royalty_rate}% to Writer
-        </div>
-        ` : ''}
-      </div>
-      
-      ${contractData.exclusivity_period_start && contractData.exclusivity_period_end ? `
-      <div class="subsection">
-        <strong>Exclusivity Period:</strong><br>
-        From ${new Date(contractData.exclusivity_period_start).toLocaleDateString()} 
-        to ${new Date(contractData.exclusivity_period_end).toLocaleDateString()}
-      </div>
-      ` : ''}
-      
-      <div class="subsection">
-        <strong>Renewal Options:</strong> ${contractData.renewal_options ? 'Publisher has options to renew' : 'No automatic renewal'}
-      </div>
-    </div>
-  `;
-}
-
-function generateAcquisitionTerms(contract: any, contractData: any): string {
-  return `
-    <div class="section">
-      <div class="section-title">Article III - Catalog Acquisition Terms</div>
-      <div class="financial-grid">
-        ${contractData.acquisition_price ? `
-        <div class="term-box">
-          <strong>Purchase Price:</strong><br>
-          $${contractData.acquisition_price.toLocaleString()}
-        </div>
-        ` : ''}
-        ${contractData.rights_acquired ? `
-        <div class="term-box">
-          <strong>Rights Acquired:</strong><br>
-          ${formatRightsAcquired(contractData.rights_acquired)}
-        </div>
-        ` : ''}
-        ${contractData.royalty_override_to_seller ? `
-        <div class="term-box">
-          <strong>Seller Override:</strong><br>
-          ${contractData.royalty_override_to_seller}% ongoing royalty to Seller
-        </div>
-        ` : ''}
-        ${contractData.tail_period_months ? `
-        <div class="term-box">
-          <strong>Tail Period:</strong><br>
-          ${contractData.tail_period_months} months
-        </div>
-        ` : ''}
-      </div>
-      
-      <div class="subsection">
-        <strong>Rights Type:</strong> ${contractData.perpetual_rights ? 'Perpetual' : 'Term-limited'}<br>
-        ${contractData.acquired_work_list_url ? `<strong>Work List:</strong> Available at ${contractData.acquired_work_list_url}<br>` : ''}
-      </div>
-      
-      ${contractData.reversion_clause ? `
-      <div class="subsection">
-        <strong>Reversion Clause:</strong><br>
-        ${contractData.reversion_clause}
-      </div>
-      ` : ''}
-      
-      ${contractData.original_publisher_participation ? `
-      <div class="subsection">
-        <strong>Original Publisher Participation:</strong><br>
-        ${contractData.original_publisher_participation}
-      </div>
-      ` : ''}
-    </div>
-  `;
-}
-
-function generateGeneralTerms(contract: any, contractData: any): string {
-  return `
-    <div class="section">
-      <div class="section-title">Article III - Publishing Terms</div>
-      <div class="financial-grid">
-        ${contract.advance_amount > 0 ? `
-        <div class="term-box">
-          <strong>Advance Amount:</strong><br>
-          $${contract.advance_amount.toLocaleString()}
-        </div>
-        ` : ''}
-        ${contract.commission_percentage > 0 ? `
-        <div class="term-box">
-          <strong>Commission Rate:</strong><br>
-          ${contract.commission_percentage}%
-        </div>
-        ` : ''}
-      </div>
-    </div>
-  `;
-}
-
-function formatPartyType(type: string): string {
-  return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-}
-
-function formatApprovalRights(rights: string): string {
-  const formatMap = {
-    'pre_approved': 'Pre-approved for standard uses',
-    'must_approve_syncs': 'Must approve sync licenses',
-    'must_approve_all': 'Must approve all uses',
-    'consultation_only': 'Consultation only'
-  };
-  return formatMap[rights as keyof typeof formatMap] || rights;
-}
-
-function formatRightsAcquired(rights: string): string {
-  const formatMap = {
-    '100_percent': '100% Publishing Rights',
-    'partial': 'Partial Publishing Rights',
-    'admin_only': 'Administration Rights Only',
-    'masters_and_publishing': 'Masters & Publishing Rights'
-  };
-  return formatMap[rights as keyof typeof formatMap] || rights;
-}
-
-function generateAgreementId(): string {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `AGR-${year}${month}${day}-${random}`;
 }
 
 async function generatePublishingPDF(htmlContent: string, contract: any): Promise<string> {
@@ -675,7 +582,7 @@ async function generatePublishingPDF(htmlContent: string, contract: any): Promis
   const pdfMetadata = {
     title: contract.title,
     author: "Publishing Management System",
-    subject: `${getAgreementTypeTitle(contract.contract_data?.agreement_type || 'administration')}`,
+    subject: "Publishing Administration Agreement",
     creator: "Encore Music Platform",
     creationDate: new Date().toISOString(),
     pages: 1

@@ -30,7 +30,7 @@ export const usePDFGeneration = () => {
     try {
       console.log('Generating PDF for contract:', contractId);
 
-      const { data, error } = await supabase.functions.invoke('generate-pdf', {
+      const { data, error } = await supabase.functions.invoke('generate-publishing-agreement-pdf', {
         body: { contractId }
       });
 
@@ -67,14 +67,14 @@ export const usePDFGeneration = () => {
 
   const downloadPDF = (pdfData: string, fileName: string) => {
     try {
-      // Create a blob from the PDF data
-      const blob = new Blob([pdfData], { type: 'application/pdf' });
+      // Create a blob from the HTML content
+      const blob = new Blob([pdfData], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
 
       // Create a temporary download link
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${fileName}.pdf`;
+      link.download = `${fileName}.html`;
       document.body.appendChild(link);
       link.click();
 
@@ -84,7 +84,7 @@ export const usePDFGeneration = () => {
 
       toast({
         title: "Downloaded",
-        description: `${fileName}.pdf has been downloaded`,
+        description: `${fileName}.html has been downloaded`,
       });
     } catch (error) {
       console.error('Download error:', error);
@@ -96,9 +96,35 @@ export const usePDFGeneration = () => {
     }
   };
 
+  const openPDFInNewWindow = (pdfData: string, contractTitle: string) => {
+    try {
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.document.write(pdfData);
+        newWindow.document.close();
+        newWindow.document.title = contractTitle;
+        
+        toast({
+          title: "PDF Opened",
+          description: "Agreement opened in new window",
+        });
+      } else {
+        throw new Error('Failed to open new window');
+      }
+    } catch (error) {
+      console.error('Error opening PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open PDF in new window",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     generatePDF,
     downloadPDF,
+    openPDFInNewWindow,
     isGenerating
   };
 };

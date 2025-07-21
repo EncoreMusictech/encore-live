@@ -40,6 +40,7 @@ import { ScheduleWorksTable } from "./ScheduleWorksTable";
 import { AgreementTypeTerms } from "./AgreementTypeTerms";
 import { usePublishingAgreementValidation } from "@/hooks/usePublishingAgreementValidation";
 import { usePublishingAgreementWorkflow } from "@/hooks/usePublishingAgreementWorkflow";
+import { usePDFGeneration } from "@/hooks/usePDFGeneration";
 
 // Agreement type enum
 export type AgreementType = 
@@ -153,6 +154,7 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
   const { incrementUsage } = useDemoAccess();
   const { validateAgreement, generateAgreementId, isValidating } = usePublishingAgreementValidation();
   const { generateAgreementPDF, sendForSignature, checkContractCompliance, isProcessing } = usePublishingAgreementWorkflow();
+  const { generatePDF, downloadPDF, openPDFInNewWindow, isGenerating } = usePDFGeneration();
 
   // State for form values - initialize with demo data if provided
   const [formData, setFormData] = useState({
@@ -227,6 +229,15 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
     form.setValue("agreement_type", type);
     setCompletedSteps(prev => new Set([...prev, "type"]));
     setCurrentStep("basic");
+  };
+
+  const handleGeneratePDF = async () => {
+    if (!contractId) return;
+    
+    const result = await generatePDF(contractId);
+    if (result && result.pdfData) {
+      openPDFInNewWindow(result.pdfData, result.contractTitle);
+    }
   };
 
   const handleSubmit = async (values: any) => {
@@ -835,20 +846,20 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
                 {contractId && (
                   <div className="flex flex-col gap-3 max-w-md mx-auto">
                     <Button 
-                      onClick={() => generateAgreementPDF(contractId)}
-                      disabled={isProcessing}
+                      onClick={handleGeneratePDF}
+                      disabled={isGenerating || isProcessing}
                       variant="outline"
                       className="gap-2"
                     >
                       <FileText className="h-4 w-4" />
-                      Generate PDF
+                      {isGenerating ? "Generating..." : "Generate PDF"}
                     </Button>
                     
                     <Button 
                       onClick={() => sendForSignature(contractId, [
                         { name: formData.counterparty_name, email: "", role: "Publisher" }
                       ])}
-                      disabled={isProcessing}
+                      disabled={isProcessing || isGenerating}
                       className="gap-2"
                     >
                       <Users className="h-4 w-4" />
