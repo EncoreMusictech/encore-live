@@ -244,10 +244,16 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
     setIsLoading(true);
     
     try {
+      console.log('Form submission - agreementType:', agreementType);
+      console.log('Form submission - formData:', formData);
+      console.log('Form submission - values:', values);
+      
       // First validate the agreement
       const validationResult = await validateAgreement(agreementType!, formData);
+      console.log('Validation result:', validationResult);
       
       if (!validationResult.isValid) {
+        console.error('Validation errors:', validationResult.errors);
         toast({
           title: "Validation Failed",
           description: `${validationResult.errors.length} error(s) found. Please review the form.`,
