@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,6 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { useExpenses, PayoutExpense } from '@/hooks/useExpenses';
 import { useContracts } from '@/hooks/useContracts';
 import { useCopyright } from '@/hooks/useCopyright';
@@ -39,13 +44,13 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
     expense_behavior: expense?.expense_behavior || 'direct' as 'crossed' | 'direct',
     is_commission_fee: expense?.is_commission_fee || false,
     is_finder_fee: expense?.is_finder_fee || false,
-    valid_from_date: expense?.valid_from_date || '',
-    valid_to_date: expense?.valid_to_date || '',
+    valid_from_date: expense?.valid_from_date ? new Date(expense.valid_from_date) : undefined,
+    valid_to_date: expense?.valid_to_date ? new Date(expense.valid_to_date) : undefined,
     expense_cap: expense?.expense_cap || undefined,
     work_id: expense?.work_id || '',
     is_recoupable: expense?.is_recoupable || false,
     invoice_url: expense?.invoice_url || '',
-    date_incurred: expense?.date_incurred || new Date().toISOString().split('T')[0],
+    date_incurred: expense?.date_incurred ? new Date(expense.date_incurred) : new Date(),
     expense_status: expense?.expense_status || 'pending' as 'pending' | 'approved' | 'rejected',
     payout_id: expense?.payout_id || payoutId || ''
   });
@@ -84,7 +89,10 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
         agreement_id: formData.agreement_id === 'none' ? undefined : formData.agreement_id || undefined,
         payee_id: formData.payee_id === 'none' ? undefined : formData.payee_id || undefined,
         work_id: formData.work_id === 'none' ? undefined : formData.work_id || undefined,
-        payout_id: formData.payout_id || undefined
+        payout_id: formData.payout_id || undefined,
+        valid_from_date: formData.valid_from_date ? format(formData.valid_from_date, 'yyyy-MM-dd') : undefined,
+        valid_to_date: formData.valid_to_date ? format(formData.valid_to_date, 'yyyy-MM-dd') : undefined,
+        date_incurred: formData.date_incurred ? format(formData.date_incurred, 'yyyy-MM-dd') : undefined
       };
 
       if (expense) {
@@ -140,14 +148,30 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date_incurred">Date Incurred</Label>
-              <Input
-                id="date_incurred"
-                type="date"
-                value={formData.date_incurred}
-                onChange={(e) => setFormData(prev => ({ ...prev, date_incurred: e.target.value }))}
-                required
-              />
+              <Label>Date Incurred</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.date_incurred && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.date_incurred ? format(formData.date_incurred, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.date_incurred}
+                    onSelect={(date) => setFormData(prev => ({ ...prev, date_incurred: date }))}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
@@ -240,23 +264,57 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="valid_from_date">Valid From Date</Label>
-              <Input
-                id="valid_from_date"
-                type="date"
-                value={formData.valid_from_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, valid_from_date: e.target.value }))}
-              />
+              <Label>Valid From Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.valid_from_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.valid_from_date ? format(formData.valid_from_date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.valid_from_date}
+                    onSelect={(date) => setFormData(prev => ({ ...prev, valid_from_date: date }))}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="valid_to_date">Valid To Date</Label>
-              <Input
-                id="valid_to_date"
-                type="date"
-                value={formData.valid_to_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, valid_to_date: e.target.value }))}
-              />
+              <Label>Valid To Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.valid_to_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.valid_to_date ? format(formData.valid_to_date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.valid_to_date}
+                    onSelect={(date) => setFormData(prev => ({ ...prev, valid_to_date: date }))}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
