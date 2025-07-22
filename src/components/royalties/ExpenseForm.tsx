@@ -81,9 +81,9 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
         amount: Number(formData.amount),
         percentage_rate: formData.is_percentage ? Number(formData.percentage_rate) : 0,
         expense_cap: formData.expense_cap ? Number(formData.expense_cap) : undefined,
-        agreement_id: formData.agreement_id || undefined,
-        payee_id: formData.payee_id || undefined,
-        work_id: formData.work_id || undefined,
+        agreement_id: formData.agreement_id === 'none' ? undefined : formData.agreement_id || undefined,
+        payee_id: formData.payee_id === 'none' ? undefined : formData.payee_id || undefined,
+        work_id: formData.work_id === 'none' ? undefined : formData.work_id || undefined,
         payout_id: formData.payout_id || undefined
       };
 
@@ -267,7 +267,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
                   <SelectValue placeholder="Select agreement" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Agreement</SelectItem>
+                  <SelectItem value="none">No Agreement</SelectItem>
                   {contracts.map(contract => (
                     <SelectItem key={contract.id} value={contract.id}>
                       {contract.title} - {contract.counterparty_name}
@@ -284,7 +284,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
                   <SelectValue placeholder="Select payee" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Payee</SelectItem>
+                  <SelectItem value="none">No Payee</SelectItem>
                   {payees.map(payee => (
                     <SelectItem key={payee.id} value={payee.id}>
                       {payee.payee_name}
@@ -301,7 +301,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
                   <SelectValue placeholder="Select work" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Work</SelectItem>
+                  <SelectItem value="none">No Work</SelectItem>
                   {copyrights.map(work => (
                     <SelectItem key={work.id} value={work.id}>
                       {work.work_title}
