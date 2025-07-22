@@ -182,7 +182,6 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe the expense..."
-              required
             />
           </div>
 
