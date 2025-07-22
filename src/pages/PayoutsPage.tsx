@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, CreditCard, DollarSign, Users, TrendingUp } from "lucide-react";
 import { usePayouts } from "@/hooks/usePayouts";
+import { useExpenses } from "@/hooks/useExpenses";
 import { EnhancedPayoutForm } from "@/components/royalties/EnhancedPayoutForm";
 import { PayoutList } from "@/components/royalties/PayoutList";
 import { PayeesTable } from "@/components/royalties/PayeesTable";
@@ -17,6 +18,7 @@ import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 export default function PayoutsPage() {
   const [showForm, setShowForm] = useState(false);
   const { payouts, loading } = usePayouts();
+  const { expenses } = useExpenses();
 
   useEffect(() => {
     updatePageMetadata('payouts');
@@ -26,6 +28,8 @@ export default function PayoutsPage() {
   const pendingPayouts = payouts.filter(payout => payout.status === 'pending').length;
   const paidPayouts = payouts.filter(payout => payout.status === 'paid').length;
   const approvedPayouts = payouts.filter(payout => payout.status === 'approved').length;
+  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const pendingExpenses = expenses.filter(e => e.expense_status === 'pending').length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,7 +51,7 @@ export default function PayoutsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Payouts</CardTitle>
@@ -85,6 +89,19 @@ export default function PayoutsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${totalPayouts.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+              <TrendingUp className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">${totalExpenses.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                {pendingExpenses} pending approval
+              </p>
             </CardContent>
           </Card>
         </div>

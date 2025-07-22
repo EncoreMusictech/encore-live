@@ -1456,47 +1456,107 @@ export type Database = {
       }
       payout_expenses: {
         Row: {
+          agreement_id: string | null
           amount: number
           created_at: string
+          date_incurred: string | null
           description: string
+          expense_behavior: string | null
+          expense_cap: number | null
+          expense_status: string | null
           expense_type: string
           id: string
+          invoice_url: string | null
+          is_commission_fee: boolean | null
+          is_finder_fee: boolean | null
           is_percentage: boolean | null
+          is_recoupable: boolean | null
+          payee_id: string | null
           payout_id: string | null
           percentage_rate: number | null
           updated_at: string
           user_id: string
+          valid_from_date: string | null
+          valid_to_date: string | null
+          work_id: string | null
         }
         Insert: {
+          agreement_id?: string | null
           amount?: number
           created_at?: string
+          date_incurred?: string | null
           description: string
+          expense_behavior?: string | null
+          expense_cap?: number | null
+          expense_status?: string | null
           expense_type: string
           id?: string
+          invoice_url?: string | null
+          is_commission_fee?: boolean | null
+          is_finder_fee?: boolean | null
           is_percentage?: boolean | null
+          is_recoupable?: boolean | null
+          payee_id?: string | null
           payout_id?: string | null
           percentage_rate?: number | null
           updated_at?: string
           user_id: string
+          valid_from_date?: string | null
+          valid_to_date?: string | null
+          work_id?: string | null
         }
         Update: {
+          agreement_id?: string | null
           amount?: number
           created_at?: string
+          date_incurred?: string | null
           description?: string
+          expense_behavior?: string | null
+          expense_cap?: number | null
+          expense_status?: string | null
           expense_type?: string
           id?: string
+          invoice_url?: string | null
+          is_commission_fee?: boolean | null
+          is_finder_fee?: boolean | null
           is_percentage?: boolean | null
+          is_recoupable?: boolean | null
+          payee_id?: string | null
           payout_id?: string | null
           percentage_rate?: number | null
           updated_at?: string
           user_id?: string
+          valid_from_date?: string | null
+          valid_to_date?: string | null
+          work_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payout_expenses_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_expenses_payee_id_fkey"
+            columns: ["payee_id"]
+            isOneToOne: false
+            referencedRelation: "payees"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payout_expenses_payout_id_fkey"
             columns: ["payout_id"]
             isOneToOne: false
             referencedRelation: "payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_expenses_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
             referencedColumns: ["id"]
           },
         ]
