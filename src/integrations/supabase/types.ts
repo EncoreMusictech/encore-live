@@ -1698,6 +1698,81 @@ export type Database = {
           },
         ]
       }
+      quarterly_balance_reports: {
+        Row: {
+          agreement_id: string | null
+          calculation_date: string | null
+          closing_balance: number
+          contact_id: string | null
+          created_at: string
+          expenses_amount: number
+          id: string
+          is_calculated: boolean
+          opening_balance: number
+          payee_id: string
+          payments_amount: number
+          period_label: string | null
+          quarter: number
+          royalties_amount: number
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          agreement_id?: string | null
+          calculation_date?: string | null
+          closing_balance?: number
+          contact_id?: string | null
+          created_at?: string
+          expenses_amount?: number
+          id?: string
+          is_calculated?: boolean
+          opening_balance?: number
+          payee_id: string
+          payments_amount?: number
+          period_label?: string | null
+          quarter: number
+          royalties_amount?: number
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          agreement_id?: string | null
+          calculation_date?: string | null
+          closing_balance?: number
+          contact_id?: string | null
+          created_at?: string
+          expenses_amount?: number
+          id?: string
+          is_calculated?: boolean
+          opening_balance?: number
+          payee_id?: string
+          payments_amount?: number
+          period_label?: string | null
+          quarter?: number
+          royalties_amount?: number
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quarterly_balance_reports_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quarterly_balance_reports_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rate_limits: {
         Row: {
           action_type: string
