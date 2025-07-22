@@ -41,6 +41,8 @@ export function ExpensesTable() {
         return 'bg-yellow-100 text-yellow-800';
       case 'recording_cost':
         return 'bg-red-100 text-red-800';
+      case 'advance':
+        return 'bg-purple-100 text-purple-800';
       case 'other':
         return 'bg-gray-100 text-gray-800';
       default:

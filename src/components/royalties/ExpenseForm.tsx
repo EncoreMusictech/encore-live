@@ -111,6 +111,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
     'travel_expense',
     'studio_rental',
     'equipment_rental',
+    'advance',
     'other'
   ];
 
