@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Music, Calendar, Clock, Users } from "lucide-react";
+import { useDebounce, useVirtualScroll } from "@/hooks/usePerformanceOptimization";
+import { TrackSelectorSkeleton, AsyncLoading } from "@/components/LoadingStates";
 
 interface Track {
   id: string;
@@ -41,7 +43,7 @@ interface TrackSelectorProps {
   onEstimateStreams: (item: Album | Track, isAlbum?: boolean) => number;
 }
 
-const TrackSelector = ({ 
+const TrackSelector = memo(({ 
   albums, 
   singles, 
   selectedItems, 
@@ -50,18 +52,19 @@ const TrackSelector = ({
 }: TrackSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedData, setSelectedData] = useState<any[]>([]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const formatDuration = (ms: number) => {
+  const formatDuration = useCallback((ms: number) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = ((ms % 60000) / 1000).toFixed(0);
     return `${minutes}:${(parseInt(seconds) < 10 ? '0' : '')}${seconds}`;
-  };
+  }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).getFullYear();
-  };
+  }, []);
 
-  const handleItemToggle = (itemId: string, itemData: any, isAlbum: boolean = false) => {
+  const handleItemToggle = useCallback((itemId: string, itemData: any, isAlbum: boolean = false) => {
     const newSelectedItems = selectedItems.includes(itemId)
       ? selectedItems.filter(id => id !== itemId)
       : [...selectedItems, itemId];
@@ -72,20 +75,24 @@ const TrackSelector = ({
 
     setSelectedData(newSelectedData);
     onSelectionChange(newSelectedItems, newSelectedData);
-  };
+  }, [selectedItems, selectedData, onSelectionChange]);
 
-  const filteredAlbums = albums.filter(album =>
-    album.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAlbums = useMemo(() => 
+    albums.filter(album =>
+      album.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    ), [albums, debouncedSearchTerm]
   );
 
-  const filteredSingles = singles.filter(single =>
-    single.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSingles = useMemo(() => 
+    singles.filter(single =>
+      single.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    ), [singles, debouncedSearchTerm]
   );
 
-  const getEstimatedEarnings = (item: Album | Track, isAlbum?: boolean) => {
+  const getEstimatedEarnings = useCallback((item: Album | Track, isAlbum?: boolean) => {
     const streams = onEstimateStreams(item, isAlbum);
     return streams * 0.003; // $0.003 per stream
-  };
+  }, [onEstimateStreams]);
 
   return (
     <div className="space-y-6">
@@ -233,6 +240,6 @@ const TrackSelector = ({
       </Tabs>
     </div>
   );
-};
+});
 
 export default TrackSelector;

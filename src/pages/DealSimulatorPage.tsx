@@ -3,8 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { updatePageMetadata } from "@/utils/seo";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
-import TrackSelector from "@/components/TrackSelector";
-import DealSimulator from "@/components/DealSimulator";
+import { TrackSelectorWithSuspense, DealSimulatorWithSuspense } from "@/components/LazyComponents";
 import DealScenarios from "@/components/DealScenarios";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -288,7 +287,7 @@ const DealSimulatorPage = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <TrackSelector
+                    <TrackSelectorWithSuspense
                       albums={discographyData.albums}
                       singles={discographyData.singles}
                       selectedItems={selectedTracks}
@@ -328,7 +327,7 @@ const DealSimulatorPage = () => {
 
             <TabsContent value="simulation">
               {selectedTracks.length > 0 && currentArtist && (
-                <DealSimulator
+                <DealSimulatorWithSuspense
                   selectedTracks={selectedTrackData}
                   artistName={currentArtist.name}
                   onSaveScenario={handleSaveScenario}

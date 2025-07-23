@@ -1,7 +1,9 @@
-import { useState } from "react";
+import React, { useState, useCallback, useMemo, memo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { useAsyncOperation } from "@/hooks/useAsyncOperation";
+import { useDebounce } from "@/hooks/usePerformanceOptimization";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft } from "lucide-react";
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, Area, AreaChart, ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar } from 'recharts';
+import { CatalogValuationSkeleton, AsyncLoading } from "@/components/LoadingStates";
 
 interface TopTrack {
   name: string;
@@ -108,9 +111,8 @@ interface ValuationParams {
   methodology?: string;
 }
 
-const CatalogValuation = () => {
+const CatalogValuation = memo(() => {
   const [artistName, setArtistName] = useState("");
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ValuationResult | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<"pessimistic" | "base" | "optimistic">("base");
   const [showAdvancedInputs, setShowAdvancedInputs] = useState(false);
@@ -119,10 +121,18 @@ const CatalogValuation = () => {
     catalogAge: 5,
     methodology: 'advanced'
   });
+  
   const { toast } = useToast();
   const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
+  const debouncedArtistName = useDebounce(artistName, 300);
+  
+  const { loading, execute, error } = useAsyncOperation({
+    showToast: true,
+    successMessage: "Catalog valuation completed successfully",
+    errorMessage: "Failed to get catalog valuation"
+  });
 
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     // Check demo access before proceeding
     if (!canAccess('catalogValuation')) {
       showUpgradeModalForModule('catalogValuation');
@@ -137,94 +147,87 @@ const CatalogValuation = () => {
       return;
     }
 
-    setLoading(true);
     setResult(null);
 
     try {
-      console.log("Calling advanced Spotify catalog valuation function...");
-      
-      const { data, error } = await supabase.functions.invoke('spotify-catalog-valuation', {
-        body: { 
-          artistName: artistName.trim(),
-          valuationParams
+      const data = await execute(async () => {
+        console.log("Calling advanced Spotify catalog valuation function...");
+        
+        const { data, error } = await supabase.functions.invoke('spotify-catalog-valuation', {
+          body: { 
+            artistName: artistName.trim(),
+            valuationParams
+          }
+        });
+
+        if (error) {
+          console.error("Function error:", error);
+          throw new Error(error.message || 'Failed to get catalog valuation');
         }
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        return data;
       });
 
-      if (error) {
-        console.error("Function error:", error);
-        throw new Error(error.message || 'Failed to get catalog valuation');
-      }
+      if (data) {
+        console.log("Valuation result:", data);
+        setResult(data);
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
+        // Increment demo usage AFTER successful search
+        incrementUsage('catalogValuation');
 
-      console.log("Valuation result:", data);
-      setResult(data);
+        // Save enhanced data to database (only for authenticated users)
+        const { data: user } = await supabase.auth.getUser();
+        if (user.user) {
+          const { error: saveError } = await supabase
+            .from('catalog_valuations')
+            .insert({
+              user_id: user.user.id,
+              artist_name: data.artist_name,
+              total_streams: data.total_streams,
+              monthly_listeners: data.monthly_listeners,
+              top_tracks: data.top_tracks,
+              valuation_amount: data.risk_adjusted_value || data.valuation_amount,
+              currency: data.currency,
+              ltm_revenue: data.ltm_revenue,
+              catalog_age_years: data.catalog_age_years,
+              genre: data.genre,
+              popularity_score: data.popularity_score,
+              discount_rate: data.discount_rate,
+              dcf_valuation: data.dcf_valuation,
+              multiple_valuation: data.multiple_valuation,
+              risk_adjusted_value: data.risk_adjusted_value,
+              confidence_score: data.confidence_score,
+              valuation_methodology: data.valuation_methodology,
+              cash_flow_projections: data.cash_flow_projections,
+              comparable_multiples: data.comparable_multiples
+            });
 
-      // Increment demo usage AFTER successful search
-      incrementUsage('catalogValuation');
-
-      // Save enhanced data to database (only for authenticated users)
-      const { data: user } = await supabase.auth.getUser();
-      if (user.user) {
-        const { error: saveError } = await supabase
-          .from('catalog_valuations')
-          .insert({
-            user_id: user.user.id,
-            artist_name: data.artist_name,
-            total_streams: data.total_streams,
-            monthly_listeners: data.monthly_listeners,
-            top_tracks: data.top_tracks,
-            valuation_amount: data.risk_adjusted_value || data.valuation_amount,
-            currency: data.currency,
-            ltm_revenue: data.ltm_revenue,
-            catalog_age_years: data.catalog_age_years,
-            genre: data.genre,
-            popularity_score: data.popularity_score,
-            discount_rate: data.discount_rate,
-            dcf_valuation: data.dcf_valuation,
-            multiple_valuation: data.multiple_valuation,
-            risk_adjusted_value: data.risk_adjusted_value,
-            confidence_score: data.confidence_score,
-            valuation_methodology: data.valuation_methodology,
-            cash_flow_projections: data.cash_flow_projections,
-            comparable_multiples: data.comparable_multiples
-          });
-
-        if (saveError) {
-          console.error("Error saving valuation:", saveError);
+          if (saveError) {
+            console.error("Error saving valuation:", saveError);
+          }
         }
       }
-
-      toast({
-        title: "Success",
-        description: `Advanced catalog valuation completed for ${data.artist_name}`,
-      });
     } catch (error) {
       console.error("Catalog valuation error:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to get catalog valuation",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [artistName, valuationParams, canAccess, showUpgradeModalForModule, toast, execute, incrementUsage]);
 
-  const formatNumber = (num: number) => {
+  const formatNumber = useCallback((num: number) => {
     return new Intl.NumberFormat().format(num);
-  };
+  }, []);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
-  };
+  }, []);
 
-  const generateAdvancedReport = () => {
+  const generateAdvancedReport = useCallback(() => {
     if (!result) return;
     
     const reportText = `
@@ -312,10 +315,16 @@ Actual market values may vary significantly based on numerous factors not captur
       title: "Advanced Report Downloaded",
       description: "Comprehensive catalog valuation report has been downloaded successfully",
     });
-  };
+  }, [result, formatCurrency, formatNumber, toast]);
 
   return (
-    <div className="space-y-6">
+    <AsyncLoading 
+      isLoading={loading} 
+      error={error?.message} 
+      skeleton={<CatalogValuationSkeleton />}
+      retry={handleSearch}
+    >
+      <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -1634,7 +1643,8 @@ ${result.industry_benchmarks ? `• Genre: ${result.industry_benchmarks.genre}
         </>
       )}
     </div>
+    </AsyncLoading>
   );
-};
+});
 
 export default CatalogValuation;

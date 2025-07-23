@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { updatePageMetadata } from "@/utils/seo";
-import CatalogValuation from "@/components/CatalogValuation";
+import { CatalogValuationWithSuspense } from "@/components/LazyComponents";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -183,7 +183,7 @@ const CatalogValuationPage = () => {
                   Discover the estimated value of any artist's music catalog using real streaming data from Spotify.
                 </p>
               </div>
-              <CatalogValuation />
+              <CatalogValuationWithSuspense />
             </>
           )}
         </div>

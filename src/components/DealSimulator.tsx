@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useCallback, useMemo, memo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,8 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Calculator, TrendingUp, DollarSign, Users } from "lucide-react";
+import { useCatalogCalculations } from "@/hooks/usePerformanceOptimization";
+import { DealSimulatorSkeleton, AsyncLoading } from "@/components/LoadingStates";
 
 interface DealTerms {
   advance: number;
@@ -34,7 +36,7 @@ interface DealSimulatorProps {
   onSaveScenario: (scenario: any) => void;
 }
 
-const DealSimulator = ({ selectedTracks, artistName, onSaveScenario }: DealSimulatorProps) => {
+const DealSimulator = memo(({ selectedTracks, artistName, onSaveScenario }: DealSimulatorProps) => {
   const [dealTerms, setDealTerms] = useState<DealTerms>({
     advance: 100000,
     royaltyRate: 50,
@@ -47,9 +49,12 @@ const DealSimulator = ({ selectedTracks, artistName, onSaveScenario }: DealSimul
 
   const [scenarioName, setScenarioName] = useState("");
   const [projections, setProjections] = useState<DealProjection[]>([]);
+  
+  // Use optimized calculations hook
+  const calculatedData = useCatalogCalculations(selectedTracks, dealTerms, dealTerms.termLength);
 
-  // Calculate base streams from selected tracks
-  const calculateBaseStreams = () => {
+  // Calculate base streams from selected tracks (memoized)
+  const calculateBaseStreams = useCallback(() => {
     return selectedTracks.reduce((total, track) => {
       if (track.isAlbum) {
         // For albums, estimate based on popularity and track count
@@ -62,65 +67,22 @@ const DealSimulator = ({ selectedTracks, artistName, onSaveScenario }: DealSimul
         return total + (popularity * 200000); // Singles typically get more streams per track
       }
     }, 0);
-  };
+  }, [selectedTracks]);
 
-  const calculateProjections = () => {
-    const baseStreams = calculateBaseStreams();
-    const baseRevenue = baseStreams * 0.003; // $0.003 per stream
-    
-    const projections: DealProjection[] = [];
-    let currentRecoupment = dealTerms.advance;
-    
-    for (let year = 1; year <= dealTerms.termLength; year++) {
-      // Growth rate decreases over time (realistic decay)
-      const growthRate = Math.max(0.02, 0.15 - (year * 0.02)); // 15% year 1, declining to 2%
-      const yearlyStreams = baseStreams * Math.pow(1 + growthRate, year - 1);
-      const grossRevenue = yearlyStreams * 0.003;
-      
-      // Calculate net revenue (after platform fees, etc.)
-      const netRevenue = grossRevenue * 0.7; // 30% platform/distribution fees
-      
-      // Apply ownership percentage to the revenue (what portion of catalog you own)
-      const ownedRevenue = netRevenue * (dealTerms.ownershipPercentage / 100);
-      
-      // Calculate earnings split
-      const acquirerShare = dealTerms.dealType === 'acquisition' ? 100 : dealTerms.royaltyRate;
-      const artistShare = 100 - acquirerShare;
-      
-      const acquirerEarnings = (ownedRevenue * acquirerShare) / 100;
-      const artistEarnings = (ownedRevenue * artistShare) / 100;
-      
-      // Calculate recoupment
-      const recoupmentPayment = Math.min(currentRecoupment, acquirerEarnings * (dealTerms.recoupmentRate / 100));
-      currentRecoupment = Math.max(0, currentRecoupment - recoupmentPayment);
-      
-      // Calculate ROI
-      const totalInvested = dealTerms.advance + (year * 10000); // Assume $10k annual costs
-      const totalReturned = projections.reduce((sum, p) => sum + p.acquirerEarnings, 0) + acquirerEarnings;
-      const roi = ((totalReturned - totalInvested) / totalInvested) * 100;
-      
-      projections.push({
-        year,
-        grossRevenue,
-        netRevenue,
-        artistEarnings,
-        acquirerEarnings,
-        recoupmentBalance: currentRecoupment,
-        roi
-      });
+  const calculateProjections = useCallback(() => {
+    if (calculatedData?.projections) {
+      setProjections(calculatedData.projections);
     }
-    
-    setProjections(projections);
-  };
+  }, [calculatedData]);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
-  };
+  }, []);
 
-  const handleSaveScenario = () => {
+  const handleSaveScenario = useCallback(() => {
     if (!scenarioName.trim()) {
       alert('Please enter a scenario name');
       return;
@@ -136,10 +98,12 @@ const DealSimulator = ({ selectedTracks, artistName, onSaveScenario }: DealSimul
 
     onSaveScenario(scenario);
     setScenarioName("");
-  };
+  }, [scenarioName, artistName, selectedTracks, dealTerms, projections, onSaveScenario]);
 
-  const totalProjectedRevenue = projections.reduce((sum, p) => sum + p.acquirerEarnings, 0);
-  const finalROI = projections.length > 0 ? projections[projections.length - 1].roi : 0;
+  // Use optimized calculations or fallback to projections
+  const totalProjectedRevenue = calculatedData?.totalProjectedRevenue || projections.reduce((sum, p) => sum + p.acquirerEarnings, 0);
+  const finalROI = calculatedData?.finalROI || (projections.length > 0 ? projections[projections.length - 1].roi : 0);
+  const paybackPeriod = calculatedData?.paybackPeriod || (projections.findIndex(p => p.roi > 0) + 1) || null;
 
   return (
     <div className="space-y-6">
@@ -344,7 +308,7 @@ const DealSimulator = ({ selectedTracks, artistName, onSaveScenario }: DealSimul
                   <div className="space-y-1">
                     <p className="text-sm font-medium leading-none">Payback Period</p>
                     <p className="text-2xl font-bold">
-                      {projections.findIndex(p => p.roi > 0) + 1 || 'N/A'} years
+                      {paybackPeriod || 'N/A'} years
                     </p>
                   </div>
                 </div>
@@ -412,6 +376,6 @@ const DealSimulator = ({ selectedTracks, artistName, onSaveScenario }: DealSimul
       )}
     </div>
   );
-};
+});
 
 export default DealSimulator;
