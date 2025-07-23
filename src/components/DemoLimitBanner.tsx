@@ -28,6 +28,8 @@ const DemoLimitBanner = ({ module, className = "" }: DemoLimitBannerProps) => {
         return 'Copyright Management';
       case 'royaltiesProcessing':
         return 'Royalties Processing';
+      case 'accountBalances':
+        return 'Account Balances Summary';
       default:
         return moduleId;
     }
@@ -43,6 +45,8 @@ const DemoLimitBanner = ({ module, className = "" }: DemoLimitBannerProps) => {
         return 'copyright registration';
       case 'royaltiesProcessing':
         return 'statement import';
+      case 'accountBalances':
+        return 'balance report view';
       default:
         return 'action';
     }

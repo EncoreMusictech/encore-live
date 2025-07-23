@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { toast } from "@/hooks/use-toast";
+import { getDemoQuarterlyBalanceReports } from "@/data/demo-quarterly-balance-reports";
 
 export interface QuarterlyBalanceReport {
   id: string;
@@ -47,24 +49,34 @@ export function useQuarterlyBalanceReports() {
   const [reports, setReports] = useState<QuarterlyBalanceReport[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { isDemo } = useDemoAccess();
 
   const fetchReports = async () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('quarterly_balance_reports')
-        .select(`
-          *,
-          contacts!quarterly_balance_reports_contact_id_fkey(name, email),
-          contracts!quarterly_balance_reports_agreement_id_fkey(title, agreement_id)
-        `)
-        .eq('user_id', user.id)
-        .order('year', { ascending: false })
-        .order('quarter', { ascending: false });
+      if (isDemo) {
+        // Use demo data when in demo mode
+        const demoData = getDemoQuarterlyBalanceReports();
+        setReports(demoData.sort((a, b) => {
+          if (a.year !== b.year) return b.year - a.year;
+          return b.quarter - a.quarter;
+        }));
+      } else {
+        const { data, error } = await supabase
+          .from('quarterly_balance_reports')
+          .select(`
+            *,
+            contacts!quarterly_balance_reports_contact_id_fkey(name, email),
+            contracts!quarterly_balance_reports_agreement_id_fkey(title, agreement_id)
+          `)
+          .eq('user_id', user.id)
+          .order('year', { ascending: false })
+          .order('quarter', { ascending: false });
 
-      if (error) throw error;
-      setReports(data || []);
+        if (error) throw error;
+        setReports(data || []);
+      }
     } catch (error: any) {
       console.error('Error fetching quarterly balance reports:', error);
       toast({
@@ -79,6 +91,15 @@ export function useQuarterlyBalanceReports() {
 
   const createReport = async (reportData: QuarterlyBalanceInsert): Promise<QuarterlyBalanceReport | null> => {
     if (!user) return null;
+
+    if (isDemo) {
+      toast({
+        title: "Demo Mode",
+        description: "Report creation is not available in demo mode. Sign up to create real reports.",
+        variant: "destructive",
+      });
+      return null;
+    }
 
     try {
       const { data, error } = await supabase
@@ -115,6 +136,15 @@ export function useQuarterlyBalanceReports() {
   };
 
   const updateReport = async (id: string, reportData: Partial<QuarterlyBalanceReport>): Promise<QuarterlyBalanceReport | null> => {
+    if (isDemo) {
+      toast({
+        title: "Demo Mode",
+        description: "Report editing is not available in demo mode. Sign up to modify real reports.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('quarterly_balance_reports')
@@ -148,6 +178,15 @@ export function useQuarterlyBalanceReports() {
   };
 
   const deleteReport = async (id: string): Promise<void> => {
+    if (isDemo) {
+      toast({
+        title: "Demo Mode", 
+        description: "Report deletion is not available in demo mode. Sign up to manage real reports.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('quarterly_balance_reports')
@@ -173,6 +212,15 @@ export function useQuarterlyBalanceReports() {
 
   const generateReportsFromData = async (payeeId: string, contactId?: string, agreementId?: string): Promise<void> => {
     if (!user) return;
+
+    if (isDemo) {
+      toast({
+        title: "Demo Mode",
+        description: "Report generation is not available in demo mode. Sign up to generate real reports.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       // Get current year and quarter

@@ -10,10 +10,13 @@ import { useQuarterlyBalanceReports, QuarterlyBalanceReport } from "@/hooks/useQ
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
+import DemoLimitBanner from "@/components/DemoLimitBanner";
 
 export function QuarterlyBalanceReportsTable() {
   const { reports, loading, createReport, generateReportsFromData, exportToCSV } = useQuarterlyBalanceReports();
   const { user } = useAuth();
+  const { isDemo } = useDemoAccess();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterYear, setFilterYear] = useState<string>("all");
   const [filterQuarter, setFilterQuarter] = useState<string>("all");
@@ -115,6 +118,12 @@ export function QuarterlyBalanceReportsTable() {
 
   return (
     <div className="space-y-6">
+      {isDemo && (
+        <DemoLimitBanner 
+          module="accountBalances"
+        />
+      )}
+      
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
