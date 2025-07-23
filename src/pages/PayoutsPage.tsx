@@ -15,6 +15,8 @@ import { PayeesTable } from "@/components/royalties/PayeesTable";
 import { ExpensesTable } from "@/components/royalties/ExpensesTable";
 import { AccountBalancesTable } from "@/components/royalties/AccountBalancesTable";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export default function PayoutsPage() {
   const [showForm, setShowForm] = useState(false);
@@ -22,21 +24,60 @@ export default function PayoutsPage() {
   const { expenses } = useExpenses();
 
   const createDemoData = async () => {
+    // First, let's check if we have any contacts to use as clients
+    const { data: contacts } = await supabase
+      .from('contacts')
+      .select('id, name')
+      .eq('contact_type', 'client')
+      .limit(2);
+
+    if (!contacts || contacts.length === 0) {
+      toast({
+        title: "No Clients Found",
+        description: "Please create some client contacts first in the Contracts module",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const demoPayouts = [
       {
-        client_id: '1', period: 'Q4 2024', gross_royalties: 15000, 
-        total_expenses: 2250, net_payable: 12750, amount_due: 12750,
-        payment_method: 'ACH', workflow_stage: 'pending_review'
+        client_id: contacts[0]?.id, 
+        period: 'Q4 2024', 
+        gross_royalties: 15000, 
+        total_expenses: 2250, 
+        net_payable: 12750, 
+        amount_due: 12750,
+        payment_method: 'ACH', 
+        workflow_stage: 'pending_review'
       },
       {
-        client_id: '2', period: 'Q3 2024', gross_royalties: 8500,
-        total_expenses: 1275, net_payable: 7225, amount_due: 7225,
-        payment_method: 'Wire', workflow_stage: 'approved'
+        client_id: contacts[1]?.id || contacts[0]?.id, 
+        period: 'Q3 2024', 
+        gross_royalties: 8500,
+        total_expenses: 1275, 
+        net_payable: 7225, 
+        amount_due: 7225,
+        payment_method: 'Wire', 
+        workflow_stage: 'approved'
       }
     ];
     
     for (const payout of demoPayouts) {
-      try { await createPayout(payout); } catch (e) { console.log('Demo data exists'); }
+      try { 
+        await createPayout(payout); 
+        toast({
+          title: "Demo Data Created",
+          description: `Sample payout for ${payout.period} created successfully`,
+        });
+      } catch (e) { 
+        console.log('Demo payout creation failed:', e); 
+        toast({
+          title: "Demo Creation Failed", 
+          description: "Some demo data may already exist",
+          variant: "destructive",
+        });
+      }
     }
   };
 
