@@ -52,17 +52,17 @@ export function useQuarterlyBalanceReports() {
   const { isDemo } = useDemoAccess();
 
   const fetchReports = async () => {
-    if (!user) return;
-    
     try {
       if (isDemo) {
         // Use demo data when in demo mode
+        console.log('Loading demo quarterly balance reports...');
         const demoData = getDemoQuarterlyBalanceReports();
+        console.log('Demo data loaded:', demoData.length, 'reports');
         setReports(demoData.sort((a, b) => {
           if (a.year !== b.year) return b.year - a.year;
           return b.quarter - a.quarter;
         }));
-      } else {
+      } else if (user) {
         const { data, error } = await supabase
           .from('quarterly_balance_reports')
           .select(`
@@ -347,7 +347,7 @@ export function useQuarterlyBalanceReports() {
 
   useEffect(() => {
     fetchReports();
-  }, [user]);
+  }, [user, isDemo]);
 
   return {
     reports,

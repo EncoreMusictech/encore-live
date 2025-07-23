@@ -1,16 +1,10 @@
-import { QuarterlyBalanceReport } from "@/hooks/useQuarterlyBalanceReports";
 
-export interface DemoQuarterlyBalanceReport extends Omit<QuarterlyBalanceReport, 'id' | 'user_id' | 'created_at' | 'updated_at'> {
-  id: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
+import { QuarterlyBalanceReport } from "@/hooks/useQuarterlyBalanceReports";
 
 const currentYear = new Date().getFullYear();
 const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
 
-export const demoQuarterlyBalanceReports: DemoQuarterlyBalanceReport[] = [
+export const demoQuarterlyBalanceReports: QuarterlyBalanceReport[] = [
   // Current Quarter - Taylor Swift
   {
     id: "demo-qbr-1",
@@ -244,11 +238,6 @@ export const demoQuarterlyBalanceReports: DemoQuarterlyBalanceReport[] = [
   }
 ];
 
-export function getDemoQuarterlyBalanceReports(): DemoQuarterlyBalanceReport[] {
-  return demoQuarterlyBalanceReports.map(report => ({
-    ...report,
-    // Ensure proper typing
-    created_at: report.created_at,
-    updated_at: report.updated_at,
-  }));
+export function getDemoQuarterlyBalanceReports(): QuarterlyBalanceReport[] {
+  return demoQuarterlyBalanceReports;
 }
