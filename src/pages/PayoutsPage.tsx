@@ -9,6 +9,7 @@ import { Plus, CreditCard, DollarSign, Users, TrendingUp } from "lucide-react";
 import { usePayouts } from "@/hooks/usePayouts";
 import { useExpenses } from "@/hooks/useExpenses";
 import { EnhancedPayoutForm } from "@/components/royalties/EnhancedPayoutForm";
+import { PayoutList } from "@/components/royalties/PayoutList";
 import { PayoutListDemo } from "@/components/royalties/PayoutListDemo";
 import { PayeesTable } from "@/components/royalties/PayeesTable";
 import { ExpensesTable } from "@/components/royalties/ExpensesTable";
@@ -162,7 +163,7 @@ export default function PayoutsPage() {
                 </TabsContent>
                 
                 <TabsContent value="payouts" className="mt-6">
-                  <PayoutListDemo />
+                  <PayoutList />
                 </TabsContent>
               </Tabs>
             </CardContent>

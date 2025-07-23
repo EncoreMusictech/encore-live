@@ -11,16 +11,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Search, Edit, Trash2, Download, FileText, DollarSign, ChevronDown, Play, CheckCircle, AlertCircle, Clock, XCircle } from "lucide-react";
 import { usePayouts } from "@/hooks/usePayouts";
 import { PayoutForm } from "./PayoutForm";
+import { toast } from "@/hooks/use-toast";
 
 export function PayoutList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingPayout, setEditingPayout] = useState<any>(null);
   const [selectedPayouts, setSelectedPayouts] = useState<string[]>([]);
-  const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts } = usePayouts();
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [exportingStatement, setExportingStatement] = useState<string | null>(null);
+  const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts } = usePayouts();
 
   const filteredPayouts = payouts.filter(payout => {
-    const matchesSearch = payout.period.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = payout.period?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
     const matchesStatus = statusFilter === "all" || payout.workflow_stage === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -60,22 +63,172 @@ export function PayoutList() {
   };
 
   const handleDelete = async (id: string) => {
-    await deletePayout(id);
+    try {
+      await deletePayout(id);
+      toast({
+        title: "Payout Deleted",
+        description: "Payout has been successfully deleted",
+      });
+    } catch (error) {
+      console.error('Error deleting payout:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete payout. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleExportStatement = (payout: any) => {
-    // This would generate and download a PDF statement
-    console.log('Exporting statement for:', payout);
+  const handleExportStatement = async (payout: any) => {
+    setExportingStatement(payout.id);
+    try {
+      toast({
+        title: "Generating Statement",
+        description: "Creating PDF statement...",
+      });
+
+      // Call the edge function to generate PDF
+      const response = await fetch('/api/generate-payout-statement', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ payoutId: payout.id }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate statement');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `payout-statement-${payout.period || payout.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Statement Ready",
+        description: "PDF statement downloaded successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting statement:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate statement. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setExportingStatement(null);
+    }
   };
 
   const handleWorkflowUpdate = async (payoutId: string, newStage: string) => {
-    await updateWorkflowStage(payoutId, newStage);
+    try {
+      await updateWorkflowStage(payoutId, newStage, `Updated to ${newStage} via UI`);
+      toast({
+        title: "Workflow Updated",
+        description: `Payout status updated to ${newStage.replace('_', ' ')}`,
+      });
+    } catch (error) {
+      console.error('Error updating workflow:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update workflow stage",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleBulkAction = async (action: string) => {
-    if (selectedPayouts.length === 0) return;
-    await bulkUpdatePayouts(selectedPayouts, action);
-    setSelectedPayouts([]);
+    if (selectedPayouts.length === 0) {
+      toast({
+        title: "No Selection",
+        description: "Please select payouts to perform bulk actions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBulkActionLoading(true);
+    try {
+      switch (action) {
+        case 'bulk_approve':
+          await bulkUpdatePayouts(selectedPayouts, 'update_workflow_stage', { stage: 'approved' });
+          toast({
+            title: "Bulk Approval",
+            description: `${selectedPayouts.length} payouts approved successfully`,
+          });
+          break;
+        case 'bulk_process':
+          await bulkUpdatePayouts(selectedPayouts, 'update_workflow_stage', { stage: 'processing' });
+          toast({
+            title: "Bulk Processing",
+            description: `${selectedPayouts.length} payouts set to processing`,
+          });
+          break;
+        case 'bulk_export':
+          await handleBulkExport();
+          break;
+      }
+      setSelectedPayouts([]);
+    } catch (error) {
+      console.error('Error performing bulk action:', error);
+      toast({
+        title: "Error",
+        description: "Failed to perform bulk action",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkExport = async () => {
+    toast({
+      title: "Export Started",
+      description: "Generating statements for selected payouts...",
+    });
+    
+    try {
+      // Generate statements for all selected payouts
+      const response = await fetch('/api/generate-bulk-statements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ payoutIds: selectedPayouts }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate bulk statements');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bulk-payout-statements-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export Complete",
+        description: "Bulk statements downloaded successfully",
+      });
+    } catch (error) {
+      console.error('Error in bulk export:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate bulk statements",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -129,8 +282,9 @@ export function PayoutList() {
         {selectedPayouts.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                Bulk Actions ({selectedPayouts.length}) <ChevronDown className="ml-2 h-4 w-4" />
+              <Button variant="outline" disabled={bulkActionLoading}>
+                {bulkActionLoading ? "Processing..." : `Bulk Actions (${selectedPayouts.length})`}
+                <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -227,9 +381,14 @@ export function PayoutList() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleExportStatement(payout)}
+                      disabled={exportingStatement === payout.id}
                       title="Export PDF Statement"
                     >
-                      <FileText className="h-4 w-4" />
+                      {exportingStatement === payout.id ? (
+                        <Download className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <FileText className="h-4 w-4" />
+                      )}
                     </Button>
                     <Dialog>
                       <DialogTrigger asChild>
