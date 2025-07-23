@@ -18,8 +18,27 @@ import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 
 export default function PayoutsPage() {
   const [showForm, setShowForm] = useState(false);
-  const { payouts, loading } = usePayouts();
+  const { payouts, loading, createPayout } = usePayouts();
   const { expenses } = useExpenses();
+
+  const createDemoData = async () => {
+    const demoPayouts = [
+      {
+        client_id: '1', period: 'Q4 2024', gross_royalties: 15000, 
+        total_expenses: 2250, net_payable: 12750, amount_due: 12750,
+        payment_method: 'ACH', workflow_stage: 'pending_review'
+      },
+      {
+        client_id: '2', period: 'Q3 2024', gross_royalties: 8500,
+        total_expenses: 1275, net_payable: 7225, amount_due: 7225,
+        payment_method: 'Wire', workflow_stage: 'approved'
+      }
+    ];
+    
+    for (const payout of demoPayouts) {
+      try { await createPayout(payout); } catch (e) { console.log('Demo data exists'); }
+    }
+  };
 
   useEffect(() => {
     updatePageMetadata('payouts');
@@ -46,10 +65,19 @@ export default function PayoutsPage() {
               Handle periodic statements and payments for clients
             </p>
           </div>
-          <Button onClick={() => setShowForm(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Payout
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => createDemoData()} 
+              variant="outline"
+              className="gap-2"
+            >
+              Create Demo Data
+            </Button>
+            <Button onClick={() => setShowForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Payout
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
