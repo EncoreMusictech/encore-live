@@ -29,6 +29,17 @@ export interface Payout {
   admin_fee_percentage?: number;
   admin_fee_amount?: number;
   processing_fee_amount?: number;
+  // New workflow fields
+  workflow_stage?: string;
+  payment_processor?: string;
+  payment_processor_reference?: string;
+  payment_initiated_at?: string;
+  payment_completed_at?: string;
+  payment_failed_at?: string;
+  failure_reason?: string;
+  auto_payment_enabled?: boolean;
+  priority_level?: number;
+  quarterly_report_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -343,6 +354,90 @@ export function usePayouts() {
     }
   };
 
+  const updateWorkflowStage = async (payoutId: string, newStage: string, reason?: string, metadata = {}) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .rpc('update_payout_workflow_stage', {
+          payout_id_param: payoutId,
+          new_stage: newStage,
+          reason_param: reason,
+          metadata_param: metadata
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Payout moved to ${newStage}`,
+      });
+
+      await fetchPayouts();
+      return true;
+    } catch (error: any) {
+      console.error('Error updating workflow stage:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update workflow stage",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const bulkUpdatePayouts = async (payoutIds: string[], operation: string, config = {}) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('payout_batch_operations')
+        .insert({
+          user_id: user.id,
+          operation_type: operation,
+          payout_ids: payoutIds,
+          total_count: payoutIds.length,
+          operation_config: config
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Batch operation ${operation} initiated`,
+      });
+
+      await fetchPayouts();
+      return true;
+    } catch (error: any) {
+      console.error('Error creating batch operation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to initiate batch operation",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const getWorkflowHistory = async (payoutId: string) => {
+    if (!user) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('payout_workflow_history')
+        .select('*')
+        .eq('payout_id', payoutId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error: any) {
+      console.error('Error fetching workflow history:', error);
+      return [];
+    }
+  };
+
   useEffect(() => {
     fetchPayouts();
   }, [user]);
@@ -358,6 +453,9 @@ export function usePayouts() {
     calculatePayoutTotals,
     getClientAccountBalance,
     getPayoutExpenses,
+    updateWorkflowStage,
+    bulkUpdatePayouts,
+    getWorkflowHistory,
     refreshPayouts: fetchPayouts,
   };
 }

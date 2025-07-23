@@ -25,9 +25,10 @@ export default function PayoutsPage() {
   }, []);
 
   const totalPayouts = payouts.reduce((sum, payout) => sum + payout.net_payable, 0);
-  const pendingPayouts = payouts.filter(payout => payout.status === 'pending').length;
-  const paidPayouts = payouts.filter(payout => payout.status === 'paid').length;
-  const approvedPayouts = payouts.filter(payout => payout.status === 'approved').length;
+  const pendingPayouts = payouts.filter(payout => payout.workflow_stage === 'pending_review').length;
+  const processingPayouts = payouts.filter(payout => payout.workflow_stage === 'processing').length;
+  const paidPayouts = payouts.filter(payout => payout.workflow_stage === 'paid').length;
+  const approvedPayouts = payouts.filter(payout => payout.workflow_stage === 'approved').length;
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   const pendingExpenses = expenses.filter(e => e.expense_status === 'pending').length;
 
@@ -51,7 +52,7 @@ export default function PayoutsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Payouts</CardTitle>
@@ -64,7 +65,7 @@ export default function PayoutsPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
+              <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
               <Users className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
@@ -79,6 +80,16 @@ export default function PayoutsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">{approvedPayouts}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Processing</CardTitle>
+              <TrendingUp className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{processingPayouts}</div>
             </CardContent>
           </Card>
           

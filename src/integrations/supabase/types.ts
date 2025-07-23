@@ -1454,6 +1454,158 @@ export type Database = {
           },
         ]
       }
+      payment_integration_settings: {
+        Row: {
+          configuration: Json
+          created_at: string | null
+          id: string
+          integration_name: string
+          integration_type: string
+          is_active: boolean | null
+          is_default: boolean | null
+          limits: Json | null
+          processing_fees: Json | null
+          supported_currencies: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          configuration?: Json
+          created_at?: string | null
+          id?: string
+          integration_name: string
+          integration_type: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          limits?: Json | null
+          processing_fees?: Json | null
+          supported_currencies?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          configuration?: Json
+          created_at?: string | null
+          id?: string
+          integration_name?: string
+          integration_type?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          limits?: Json | null
+          processing_fees?: Json | null
+          supported_currencies?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payment_processing_queue: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          last_attempt_at: string | null
+          max_retries: number | null
+          next_retry_at: string | null
+          payout_id: string
+          processing_status: string | null
+          processor_config: Json | null
+          processor_type: string
+          retry_count: number | null
+          scheduled_for: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          max_retries?: number | null
+          next_retry_at?: string | null
+          payout_id: string
+          processing_status?: string | null
+          processor_config?: Json | null
+          processor_type: string
+          retry_count?: number | null
+          scheduled_for?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          max_retries?: number | null
+          next_retry_at?: string | null
+          payout_id?: string
+          processing_status?: string | null
+          processor_config?: Json | null
+          processor_type?: string
+          retry_count?: number | null
+          scheduled_for?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_processing_queue_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "payouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_batch_operations: {
+        Row: {
+          created_at: string | null
+          error_details: Json | null
+          failed_count: number | null
+          id: string
+          operation_config: Json | null
+          operation_status: string | null
+          operation_type: string
+          payout_ids: string[]
+          processed_count: number | null
+          results: Json | null
+          total_count: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_details?: Json | null
+          failed_count?: number | null
+          id?: string
+          operation_config?: Json | null
+          operation_status?: string | null
+          operation_type: string
+          payout_ids: string[]
+          processed_count?: number | null
+          results?: Json | null
+          total_count: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          error_details?: Json | null
+          failed_count?: number | null
+          id?: string
+          operation_config?: Json | null
+          operation_status?: string | null
+          operation_type?: string
+          payout_ids?: string[]
+          processed_count?: number | null
+          results?: Json | null
+          total_count?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       payout_expenses: {
         Row: {
           agreement_id: string | null
@@ -1600,6 +1752,47 @@ export type Database = {
           },
         ]
       }
+      payout_workflow_history: {
+        Row: {
+          created_at: string | null
+          from_stage: string | null
+          id: string
+          metadata: Json | null
+          payout_id: string
+          reason: string | null
+          to_stage: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          from_stage?: string | null
+          id?: string
+          metadata?: Json | null
+          payout_id: string
+          reason?: string | null
+          to_stage: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          from_stage?: string | null
+          id?: string
+          metadata?: Json | null
+          payout_id?: string
+          reason?: string | null
+          to_stage?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_workflow_history_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "payouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payouts: {
         Row: {
           admin_fee_amount: number | null
@@ -1608,20 +1801,29 @@ export type Database = {
           approval_status: string | null
           approved_at: string | null
           approved_by_user_id: string | null
+          auto_payment_enabled: boolean | null
           client_id: string
           created_at: string
+          failure_reason: string | null
           gross_royalties: number
           id: string
           net_payable: number
           notes: string | null
+          payment_completed_at: string | null
           payment_date: string | null
+          payment_failed_at: string | null
+          payment_initiated_at: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_processor: string | null
+          payment_processor_reference: string | null
           payment_reference: string | null
           payments_to_date: number
           period: string
           period_end: string | null
           period_start: string | null
+          priority_level: number | null
           processing_fee_amount: number | null
+          quarterly_report_id: string | null
           royalties_to_date: number
           statement_notes: string | null
           statement_pdf_url: string | null
@@ -1629,6 +1831,7 @@ export type Database = {
           total_expenses: number
           updated_at: string
           user_id: string
+          workflow_stage: string | null
         }
         Insert: {
           admin_fee_amount?: number | null
@@ -1637,20 +1840,29 @@ export type Database = {
           approval_status?: string | null
           approved_at?: string | null
           approved_by_user_id?: string | null
+          auto_payment_enabled?: boolean | null
           client_id: string
           created_at?: string
+          failure_reason?: string | null
           gross_royalties?: number
           id?: string
           net_payable?: number
           notes?: string | null
+          payment_completed_at?: string | null
           payment_date?: string | null
+          payment_failed_at?: string | null
+          payment_initiated_at?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_processor?: string | null
+          payment_processor_reference?: string | null
           payment_reference?: string | null
           payments_to_date?: number
           period: string
           period_end?: string | null
           period_start?: string | null
+          priority_level?: number | null
           processing_fee_amount?: number | null
+          quarterly_report_id?: string | null
           royalties_to_date?: number
           statement_notes?: string | null
           statement_pdf_url?: string | null
@@ -1658,6 +1870,7 @@ export type Database = {
           total_expenses?: number
           updated_at?: string
           user_id: string
+          workflow_stage?: string | null
         }
         Update: {
           admin_fee_amount?: number | null
@@ -1666,20 +1879,29 @@ export type Database = {
           approval_status?: string | null
           approved_at?: string | null
           approved_by_user_id?: string | null
+          auto_payment_enabled?: boolean | null
           client_id?: string
           created_at?: string
+          failure_reason?: string | null
           gross_royalties?: number
           id?: string
           net_payable?: number
           notes?: string | null
+          payment_completed_at?: string | null
           payment_date?: string | null
+          payment_failed_at?: string | null
+          payment_initiated_at?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_processor?: string | null
+          payment_processor_reference?: string | null
           payment_reference?: string | null
           payments_to_date?: number
           period?: string
           period_end?: string | null
           period_start?: string | null
+          priority_level?: number | null
           processing_fee_amount?: number | null
+          quarterly_report_id?: string | null
           royalties_to_date?: number
           statement_notes?: string | null
           statement_pdf_url?: string | null
@@ -1687,6 +1909,7 @@ export type Database = {
           total_expenses?: number
           updated_at?: string
           user_id?: string
+          workflow_stage?: string | null
         }
         Relationships: [
           {
@@ -1694,6 +1917,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_quarterly_report_id_fkey"
+            columns: ["quarterly_report_id"]
+            isOneToOne: false
+            referencedRelation: "quarterly_balance_reports"
             referencedColumns: ["id"]
           },
         ]
@@ -3190,6 +3420,15 @@ export type Database = {
       }
       setup_demo_user: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_payout_workflow_stage: {
+        Args: {
+          payout_id_param: string
+          new_stage: string
+          reason_param?: string
+          metadata_param?: Json
+        }
         Returns: undefined
       }
       validate_royalty_splits: {
