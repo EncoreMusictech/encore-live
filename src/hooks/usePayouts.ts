@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from './use-toast';
+import { useAsyncOperation } from './useAsyncOperation';
+import { useOptimisticUpdates } from './useOptimisticUpdates';
+import { useRetryLogic } from './useRetryLogic';
 
 export interface Payout {
   id: string;
@@ -79,14 +82,53 @@ export interface PayoutRoyalty {
 }
 
 export function usePayouts() {
-  const [payouts, setPayouts] = useState<Payout[]>([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { toast } = useToast();
+  
+  // Use optimistic updates for better UX
+  const {
+    data: payouts,
+    setData: setPayouts,
+    addOptimisticUpdate,
+    confirmUpdate,
+    revertUpdate,
+    hasPendingUpdates
+  } = useOptimisticUpdates<Payout>([]);
 
-  const fetchPayouts = async () => {
-    if (!user) return;
+  const [loading, setLoading] = useState(true);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+
+  // Async operation handler for better error management
+  const { execute: executeAsync } = useAsyncOperation({
+    showToast: false, // We'll handle toasts manually for better UX
+  });
+
+  // Retry logic for failed operations
+  const { executeWithRetry } = useRetryLogic(
+    async () => fetchPayouts(),
+    {
+      maxRetries: 3,
+      shouldRetry: (error) => !error.message.includes('auth'),
+    }
+  );
+
+  // Optimized fetch with caching and error handling
+  const fetchPayouts = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    // Avoid excessive refetching
+    const now = Date.now();
+    if (now - lastFetchTime < 30000 && payouts.length > 0) { // 30 second cache
+      setLoading(false);
+      return;
+    }
     
     try {
+      setLoading(true);
+      
       const { data, error } = await supabase
         .from('payouts')
         .select(`
@@ -101,21 +143,52 @@ export function usePayouts() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
       setPayouts(data || []);
+      setLastFetchTime(now);
+      
     } catch (error: any) {
       console.error('Error fetching payouts:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch payouts",
-        variant: "destructive",
-      });
+      
+      // More specific error handling
+      if (error.code === 'PGRST301') {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to view payouts",
+          variant: "destructive",
+        });
+      } else if (error.message?.includes('network')) {
+        toast({
+          title: "Network Error",
+          description: "Check your connection and try again",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch payouts",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, lastFetchTime, payouts.length, toast]);
 
-  const createPayout = async (payoutData: any) => {
+  // Enhanced create with optimistic updates
+  const createPayout = useCallback(async (payoutData: any) => {
     if (!user) return null;
+
+    // Create optimistic payout
+    const optimisticPayout: Payout = {
+      id: `temp_${Date.now()}`,
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...payoutData,
+    };
+
+    const updateId = addOptimisticUpdate('create', optimisticPayout);
 
     try {
       const { expenses, ...payout } = payoutData;
@@ -149,25 +222,39 @@ export function usePayouts() {
         }
       }
 
+      // Confirm optimistic update and update with real data
+      confirmUpdate(updateId);
+      await fetchPayouts();
+
       toast({
         title: "Success",
         description: "Payout created successfully",
       });
 
-      await fetchPayouts();
       return data;
     } catch (error: any) {
       console.error('Error creating payout:', error);
+      
+      // Revert optimistic update
+      revertUpdate(updateId);
+      
       toast({
         title: "Error",
-        description: "Failed to create payout",
+        description: error.message || "Failed to create payout",
         variant: "destructive",
       });
       return null;
     }
-  };
+  }, [user, addOptimisticUpdate, confirmUpdate, revertUpdate, fetchPayouts, toast]);
 
-  const updatePayout = async (id: string, payoutData: Partial<Payout>) => {
+  // Enhanced update with optimistic updates
+  const updatePayout = useCallback(async (id: string, payoutData: Partial<Payout>) => {
+    const existingPayout = payouts.find(p => p.id === id);
+    if (!existingPayout) return null;
+
+    const optimisticPayout = { ...existingPayout, ...payoutData, updated_at: new Date().toISOString() };
+    const updateId = addOptimisticUpdate('update', optimisticPayout, existingPayout);
+
     try {
       const { data, error } = await supabase
         .from('payouts')
@@ -178,25 +265,35 @@ export function usePayouts() {
 
       if (error) throw error;
 
+      confirmUpdate(updateId);
+      await fetchPayouts();
+
       toast({
         title: "Success",
         description: "Payout updated successfully",
       });
 
-      await fetchPayouts();
       return data;
     } catch (error: any) {
       console.error('Error updating payout:', error);
+      revertUpdate(updateId);
+      
       toast({
         title: "Error",
-        description: "Failed to update payout",
+        description: error.message || "Failed to update payout",
         variant: "destructive",
       });
       return null;
     }
-  };
+  }, [payouts, addOptimisticUpdate, confirmUpdate, revertUpdate, fetchPayouts, toast]);
 
-  const deletePayout = async (id: string) => {
+  // Enhanced delete with optimistic updates
+  const deletePayout = useCallback(async (id: string) => {
+    const existingPayout = payouts.find(p => p.id === id);
+    if (!existingPayout) return;
+
+    const updateId = addOptimisticUpdate('delete', existingPayout);
+
     try {
       const { error } = await supabase
         .from('payouts')
@@ -205,21 +302,24 @@ export function usePayouts() {
 
       if (error) throw error;
 
+      confirmUpdate(updateId);
+
       toast({
         title: "Success",
         description: "Payout deleted successfully",
       });
 
-      await fetchPayouts();
     } catch (error: any) {
       console.error('Error deleting payout:', error);
+      revertUpdate(updateId);
+      
       toast({
         title: "Error",
-        description: "Failed to delete payout",
+        description: error.message || "Failed to delete payout",
         variant: "destructive",
       });
     }
-  };
+  }, [payouts, addOptimisticUpdate, confirmUpdate, revertUpdate, toast]);
 
   const addRoyaltyToPayout = async (payoutId: string, royaltyData: Omit<PayoutRoyalty, 'id' | 'payout_id' | 'created_at'>) => {
     try {
@@ -438,13 +538,35 @@ export function usePayouts() {
     }
   };
 
+  // Enhanced initialization with retry logic
   useEffect(() => {
-    fetchPayouts();
-  }, [user]);
+    if (user) {
+      executeWithRetry().catch(console.error);
+    }
+  }, [user, executeWithRetry]);
+
+  // Memoized computed values for performance
+  const memoizedValues = useMemo(() => {
+    const totalPayouts = payouts.length;
+    const pendingPayouts = payouts.filter(p => p.workflow_stage === 'pending_review').length;
+    const approvedPayouts = payouts.filter(p => p.workflow_stage === 'approved').length;
+    const paidPayouts = payouts.filter(p => p.workflow_stage === 'paid').length;
+    const totalAmount = payouts.reduce((sum, p) => sum + p.amount_due, 0);
+
+    return {
+      totalPayouts,
+      pendingPayouts,
+      approvedPayouts,
+      paidPayouts,
+      totalAmount,
+    };
+  }, [payouts]);
 
   return {
     payouts,
     loading,
+    hasPendingUpdates,
+    statistics: memoizedValues,
     createPayout,
     updatePayout,
     deletePayout,
@@ -457,5 +579,6 @@ export function usePayouts() {
     bulkUpdatePayouts,
     getWorkflowHistory,
     refreshPayouts: fetchPayouts,
+    retryFetch: executeWithRetry,
   };
 }
