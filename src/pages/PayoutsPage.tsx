@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, CreditCard, DollarSign, Users, TrendingUp } from "lucide-react";
 import { usePayouts } from "@/hooks/usePayouts";
 import { useExpenses } from "@/hooks/useExpenses";
+import { useAuth } from "@/hooks/useAuth";
 import { EnhancedPayoutForm } from "@/components/royalties/EnhancedPayoutForm";
 import { PayoutList } from "@/components/royalties/PayoutList";
 import { PayoutListDemo } from "@/components/royalties/PayoutListDemo";
@@ -22,22 +23,60 @@ export default function PayoutsPage() {
   const [showForm, setShowForm] = useState(false);
   const { payouts, loading, createPayout } = usePayouts();
   const { expenses } = useExpenses();
+  const { user } = useAuth();
 
   const createDemoData = async () => {
     // First, let's check if we have any contacts to use as clients
-    const { data: contacts } = await supabase
+    let { data: contacts } = await supabase
       .from('contacts')
       .select('id, name')
       .eq('contact_type', 'client')
       .limit(2);
 
+    // If no client contacts exist, create some demo ones
     if (!contacts || contacts.length === 0) {
-      toast({
-        title: "No Clients Found",
-        description: "Please create some client contacts first in the Contracts module",
-        variant: "destructive",
-      });
-      return;
+      if (!user?.id) {
+        toast({
+          title: "Authentication Error",
+          description: "Please sign in to create demo data",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const demoClients = [
+        {
+          name: 'Harmony Records LLC',
+          contact_type: 'client',
+          email: 'accounting@harmonyrecords.com',
+          phone: '(555) 123-4567',
+          user_id: user.id
+        },
+        {
+          name: 'Stellar Music Publishing',
+          contact_type: 'client', 
+          email: 'royalties@stellarmusic.com',
+          phone: '(555) 987-6543',
+          user_id: user.id
+        }
+      ];
+
+      for (const client of demoClients) {
+        try {
+          await supabase.from('contacts').insert(client);
+        } catch (e) {
+          console.log('Demo client creation failed:', e);
+        }
+      }
+
+      // Refetch the contacts after creating them
+      const { data: newContacts } = await supabase
+        .from('contacts')
+        .select('id, name')
+        .eq('contact_type', 'client')
+        .limit(2);
+      
+      contacts = newContacts;
     }
 
     const demoPayouts = [
