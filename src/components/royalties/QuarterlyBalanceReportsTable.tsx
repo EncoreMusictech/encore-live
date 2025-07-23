@@ -33,24 +33,9 @@ export function QuarterlyBalanceReportsTable() {
     payments_amount: 0,
   });
 
-  // Get unique years and calculate summary stats
-  const { uniqueYears, summaryStats } = useMemo(() => {
-    const years = [...new Set(reports.map(r => r.year))].sort((a, b) => b - a);
-    const totalBalance = reports.reduce((sum, r) => sum + r.closing_balance, 0);
-    const totalRoyalties = reports.reduce((sum, r) => sum + r.royalties_amount, 0);
-    const totalExpenses = reports.reduce((sum, r) => sum + r.expenses_amount, 0);
-    const totalPayments = reports.reduce((sum, r) => sum + r.payments_amount, 0);
-    
-    return {
-      uniqueYears: years,
-      summaryStats: {
-        totalBalance,
-        totalRoyalties,
-        totalExpenses,
-        totalPayments,
-        reportCount: reports.length
-      }
-    };
+  // Get unique years from all reports
+  const uniqueYears = useMemo(() => {
+    return [...new Set(reports.map(r => r.year))].sort((a, b) => b - a);
   }, [reports]);
 
   // Filter reports based on search and filters
@@ -67,6 +52,22 @@ export function QuarterlyBalanceReportsTable() {
       return matchesSearch && matchesYear && matchesQuarter;
     });
   }, [reports, searchTerm, filterYear, filterQuarter]);
+
+  // Calculate summary stats from filtered reports
+  const summaryStats = useMemo(() => {
+    const totalBalance = filteredReports.reduce((sum, r) => sum + r.closing_balance, 0);
+    const totalRoyalties = filteredReports.reduce((sum, r) => sum + r.royalties_amount, 0);
+    const totalExpenses = filteredReports.reduce((sum, r) => sum + r.expenses_amount, 0);
+    const totalPayments = filteredReports.reduce((sum, r) => sum + r.payments_amount, 0);
+    
+    return {
+      totalBalance,
+      totalRoyalties,
+      totalExpenses,
+      totalPayments,
+      reportCount: filteredReports.length
+    };
+  }, [filteredReports]);
 
   const handleCreateReport = async () => {
     const created = await createReport(newReport);
