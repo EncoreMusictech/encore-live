@@ -48,7 +48,7 @@ export const demoQuarterlyBalanceReports: QuarterlyBalanceReport[] = [
     royalties_amount: 78500.00,
     expenses_amount: 8500.00,
     payments_amount: 63000.00,
-    closing_balance: 125000.00,
+    closing_balance: 105000.00,
     is_calculated: true,
     calculation_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
     created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
