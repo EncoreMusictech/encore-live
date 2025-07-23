@@ -6,7 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, Edit, Trash2, FileText, ChevronDown, Play, CheckCircle, AlertCircle, Clock, XCircle } from "lucide-react";
+import { Search, Edit, Trash2, FileText, ChevronDown, Play, CheckCircle, AlertCircle, Clock, XCircle, Info } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Demo data to show the enhanced features
 const demoPayouts = [
@@ -100,7 +102,12 @@ export function PayoutListDemo() {
 
   const handleWorkflowUpdate = (payoutId: string, newStage: string) => {
     console.log(`Updating payout ${payoutId} to stage: ${newStage}`);
-    // In real implementation, this would call the API
+    // Note: This is demo data only - changes won't affect the dashboard
+    toast({
+      title: "Demo Mode",
+      description: "This is demo data. Create real payouts to see dashboard updates.",
+      variant: "default",
+    });
   };
 
   const handleBulkAction = (action: string) => {
@@ -126,6 +133,16 @@ export function PayoutListDemo() {
 
   return (
     <div className="space-y-4">
+      {/* Demo Alert */}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Demo Mode:</strong> This tab shows sample payout data for demonstration purposes. 
+          The dashboard statistics above reflect your actual database (currently empty). 
+          Use "New Payout" to create real payouts that will update the dashboard.
+        </AlertDescription>
+      </Alert>
+
       {/* Enhanced Filters and Bulk Actions */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">

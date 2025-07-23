@@ -112,8 +112,16 @@ export function EnhancedPayoutForm({ onCancel, payout }: EnhancedPayoutFormProps
 
       if (payout) {
         await updatePayout(payout.id, payoutData);
+        toast({
+          title: "Success",
+          description: "Payout updated successfully. Dashboard will reflect changes.",
+        });
       } else {
         await createPayout(payoutData);
+        toast({
+          title: "Success", 
+          description: "Payout created successfully. Check the dashboard for updated statistics.",
+        });
       }
       onCancel();
     } catch (error) {
