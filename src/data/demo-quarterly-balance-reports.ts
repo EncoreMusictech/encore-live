@@ -63,6 +63,35 @@ export const demoQuarterlyBalanceReports: QuarterlyBalanceReport[] = [
     }
   },
 
+  // Q2 Previous Year - Taylor Swift
+  {
+    id: "demo-qbr-2b",
+    user_id: "demo-user",
+    payee_id: "payee-taylor-swift",
+    contact_id: "contact-taylor-swift",
+    agreement_id: "demo-admin-agreement",
+    year: currentQuarter <= 2 ? currentYear - 1 : currentYear,
+    quarter: currentQuarter <= 2 ? currentQuarter + 2 : currentQuarter - 2,
+    period_label: `${currentQuarter <= 2 ? currentYear - 1 : currentYear} Q${currentQuarter <= 2 ? currentQuarter + 2 : currentQuarter - 2}`,
+    opening_balance: 72000.00,
+    royalties_amount: 95500.00,
+    expenses_amount: 11200.00,
+    payments_amount: 58000.00,
+    closing_balance: 98300.00,
+    is_calculated: true,
+    calculation_date: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(), // 180 days ago
+    created_at: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
+    contacts: {
+      name: "Taylor Swift Publishing",
+      email: "taylor@swiftmusic.com"
+    },
+    contracts: {
+      title: "Artist Rights Administration - Taylor Swift Demo",
+      agreement_id: "demo-admin-agreement"
+    }
+  },
+
   // Current Quarter - The Weeknd
   {
     id: "demo-qbr-3",
