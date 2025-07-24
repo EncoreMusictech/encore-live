@@ -52,6 +52,13 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// Analog Soul, Digital Spine Color Palette
+				'jet-black': 'hsl(var(--jet-black))',
+				'electric-lavender': 'hsl(var(--electric-lavender))',
+				'dusty-gold': 'hsl(var(--dusty-gold))',
+				'platinum-gray': 'hsl(var(--platinum-gray))',
+				'deep-crimson': 'hsl(var(--deep-crimson))',
+				// Legacy colors (maintaining compatibility)
 				'music-blue': 'hsl(var(--music-blue))',
 				'music-purple': 'hsl(var(--music-purple))',
 				'music-gold': 'hsl(var(--music-gold))',
@@ -68,6 +75,11 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				}
 			},
+			fontFamily: {
+				headline: ['Space Grotesk', 'Helvetica Neue', 'sans-serif'],
+				body: ['Inter', 'Helvetica Neue', 'sans-serif'],
+				accent: ['Space Grotesk', 'Helvetica Neue', 'sans-serif'],
+			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
@@ -77,10 +89,12 @@ export default {
 				'gradient-primary': 'var(--gradient-primary)',
 				'gradient-accent': 'var(--gradient-accent)',
 				'gradient-dark': 'var(--gradient-dark)',
+				'gradient-vinyl': 'var(--gradient-vinyl)',
 			},
 			boxShadow: {
 				'elegant': 'var(--shadow-elegant)',
 				'glow': 'var(--shadow-glow)',
+				'fader': 'var(--shadow-fader)',
 			},
 			keyframes: {
 				'accordion-down': {

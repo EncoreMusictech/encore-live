@@ -9,15 +9,19 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow transition-all duration-300",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+          "border border-electric-lavender/30 bg-transparent text-electric-lavender hover:bg-electric-lavender hover:text-jet-black hover:shadow-fader transition-all duration-300",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // Analog Soul variants
+        fader: "bg-gradient-accent text-jet-black hover:shadow-fader transition-all duration-300 hover:scale-105",
+        vinyl: "bg-gradient-vinyl border border-dusty-gold/30 text-dusty-gold hover:bg-dusty-gold hover:text-jet-black transition-all duration-300",
+        studio: "bg-jet-black border border-electric-lavender text-electric-lavender hover:bg-electric-lavender hover:text-jet-black shadow-elegant transition-all duration-300",
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -8,108 +8,97 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 240 10% 3.9%;
-    --foreground: 240 10% 97%;
+    /* Analog Soul, Digital Spine Color Palette */
+    /* Primary Colors */
+    --jet-black: 0 0% 0%;                    /* #000000 - Power, timelessness, control */
+    --electric-lavender: 254 100% 76%;       /* #9D84FF - Innovation, royalty tech */
+    
+    /* Secondary Colors */
+    --dusty-gold: 39 35% 64%;               /* #C8AD7F - Catalog value, legacy */
+    --platinum-gray: 0 0% 90%;              /* #E5E5E5 - Structure, clarity */
+    --deep-crimson: 355 93% 25%;            /* #7C0A02 - Urgency, unresolved actions */
+    
+    /* Dark theme mapping */
+    --background: var(--jet-black);
+    --foreground: var(--platinum-gray);
 
-    --card: 240 8% 8%;
-    --card-foreground: 240 10% 97%;
+    --card: 0 0% 8%;
+    --card-foreground: var(--platinum-gray);
 
-    --popover: 240 8% 8%;
-    --popover-foreground: 240 10% 97%;
+    --popover: 0 0% 8%;
+    --popover-foreground: var(--platinum-gray);
 
-    --primary: 260 100% 80%;
-    --primary-foreground: 240 10% 3.9%;
+    --primary: var(--electric-lavender);
+    --primary-foreground: var(--jet-black);
 
-    --secondary: 240 8% 15%;
-    --secondary-foreground: 240 10% 97%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: var(--platinum-gray);
 
-    --muted: 240 8% 15%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 45 100% 70%;
-    --accent-foreground: 240 10% 3.9%;
+    --accent: var(--dusty-gold);
+    --accent-foreground: var(--jet-black);
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 240 10% 97%;
+    --destructive: var(--deep-crimson);
+    --destructive-foreground: var(--platinum-gray);
 
-    --border: 240 8% 20%;
-    --input: 240 8% 15%;
-    --ring: 260 100% 80%;
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: var(--electric-lavender);
 
-    /* Music industry color palette */
+    /* Legacy music colors (maintaining compatibility) */
     --music-blue: 220 100% 50%;
-    --music-purple: 260 100% 80%;
-    --music-gold: 45 100% 70%;
-    --music-dark: 240 10% 3.9%;
-    --music-light: 240 10% 97%;
+    --music-purple: var(--electric-lavender);
+    --music-gold: var(--dusty-gold);
+    --music-dark: var(--jet-black);
+    --music-light: var(--platinum-gray);
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--music-blue)), hsl(var(--music-purple)));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--music-purple)), hsl(var(--music-gold)));
-    --gradient-dark: linear-gradient(135deg, hsl(var(--music-dark)), hsl(240 8% 8%));
+    /* Analog Soul Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--electric-lavender)), hsl(var(--dusty-gold)));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--dusty-gold)), hsl(var(--electric-lavender)));
+    --gradient-dark: linear-gradient(135deg, hsl(var(--jet-black)), hsl(0 0% 8%));
+    --gradient-vinyl: radial-gradient(circle at center, hsl(var(--jet-black)), hsl(0 0% 15%));
 
-    /* Shadows */
-    --shadow-elegant: 0 10px 30px -10px hsl(var(--music-purple) / 0.3);
-    --shadow-glow: 0 0 40px hsl(var(--music-purple) / 0.2);
+    /* Analog Equipment Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(var(--electric-lavender) / 0.3);
+    --shadow-glow: 0 0 40px hsl(var(--electric-lavender) / 0.2);
+    --shadow-fader: 0 4px 12px hsl(var(--dusty-gold) / 0.3);
 
-    /* Animations */
+    /* Studio Equipment Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-analog: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar - Analog Equipment Aesthetic */
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: var(--platinum-gray);
+    --sidebar-primary: var(--electric-lavender);
+    --sidebar-primary-foreground: var(--jet-black);
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: var(--dusty-gold);
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: var(--electric-lavender);
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+  /* Analog Soul Typography System */
+  .font-headline {
+    font-family: 'Space Grotesk', 'Helvetica Neue', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  
+  .font-body {
+    font-family: 'Inter', 'Helvetica Neue', sans-serif;
+    font-weight: 400;
+  }
+  
+  .font-accent {
+    font-family: 'Space Grotesk', 'Helvetica Neue', sans-serif;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
 }
 
