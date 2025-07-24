@@ -310,7 +310,12 @@ const PricingPage = () => {
       
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-primary/5 pointer-events-none" />
+        {/* Record Groove Background */}
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
+          backgroundImage: `url('/lovable-uploads/ab53c16c-028b-497c-ac9f-feab103ef7de.png')`
+        }} />
+        {/* Overlay for readability */}
+        <div className="absolute inset-0 bg-jet-black/40" />
         <div className="container mx-auto px-4 py-20 relative">
           <div className="text-center mb-16 animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">

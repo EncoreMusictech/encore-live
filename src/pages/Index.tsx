@@ -194,7 +194,13 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-dark">
+      <section className="relative py-20 overflow-hidden">
+        {/* Record Groove Background */}
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
+          backgroundImage: `url('/lovable-uploads/ab53c16c-028b-497c-ac9f-feab103ef7de.png')`
+        }} />
+        {/* Overlay for readability */}
+        <div className="absolute inset-0 bg-jet-black/40" />
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground">
