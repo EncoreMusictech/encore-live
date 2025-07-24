@@ -112,26 +112,6 @@ export default function FeaturesPage() {
                 </CardContent>
               </Card>
             )}
-            {/* Features Overview */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Key Features</CardTitle>
-                <CardDescription>
-                  Everything included in the {module.title} module
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {module.features.map((feature, index) => (
-                    <li key={index} className="flex items-start space-x-3">
-                      <div className="w-2 h-2 rounded-full bg-music-purple mt-2 flex-shrink-0" />
-                      <span className="text-muted-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-
             {/* Sub-modules */}
             {module.subModules && module.subModules.length > 0 && (
               <Card>
@@ -179,6 +159,26 @@ export default function FeaturesPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Key Features */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Key Features</CardTitle>
+                <CardDescription>
+                  Everything included in the {module.title} module
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3">
+                  {module.features.map((feature, index) => (
+                    <li key={index} className="flex items-start space-x-3">
+                      <div className="w-2 h-2 rounded-full bg-music-purple mt-2 flex-shrink-0" />
+                      <span className="text-muted-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+
             {/* Quick Actions */}
             <Card>
               <CardHeader>
@@ -228,41 +228,6 @@ export default function FeaturesPage() {
                 >
                   Contact Sales
                 </Button>
-              </CardContent>
-            </Card>
-
-            {/* Module Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Module Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Tier:</span>
-                  <Badge 
-                    className={
-                      module.tier === 'Free' 
-                        ? 'bg-secondary text-secondary-foreground'
-                        : module.tier === 'Pro'
-                        ? 'bg-music-purple text-primary-foreground'
-                        : 'bg-music-gold text-accent-foreground'
-                    }
-                  >
-                    {module.tier}
-                  </Badge>
-                </div>
-                
-                {module.subModules && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Components:</span>
-                    <span className="text-sm font-medium">{module.subModules.length}</span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Features:</span>
-                  <span className="text-sm font-medium">{module.features.length}</span>
-                </div>
               </CardContent>
             </Card>
           </div>
