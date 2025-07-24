@@ -11,11 +11,17 @@ import {
 import { Music, Menu, User, LogOut, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { SubscriptionBadge } from "@/components/SubscriptionBadge";
 import { modules } from "@/data/modules";
 
 const Header = () => {
   const { user, signOut } = useAuth();
+  const { subscribed } = useSubscription();
+  
+  // Check if user has paid access (admin or subscriber)
+  const isAdministrator = user?.email === 'info@encoremusic.tech';
+  const hasPaidAccess = isAdministrator || subscribed;
 
   return (
     <header className="border-b border-border bg-jet-black/90 backdrop-blur-lg sticky top-0 z-50">
@@ -69,9 +75,11 @@ const Header = () => {
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
-          <Link to="/modules" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300">
-            Modules
-          </Link>
+          {hasPaidAccess && (
+            <Link to="/modules" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300">
+              Modules
+            </Link>
+          )}
           <Link to="/pricing" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-dusty-gold transition-colors duration-300">
             Pricing
           </Link>
@@ -108,12 +116,14 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px]">
               <nav className="flex flex-col space-y-4 mt-6">
-                <Link 
-                  to="/modules" 
-                  className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
-                >
-                  Modules
-                </Link>
+                {hasPaidAccess && (
+                  <Link 
+                    to="/modules" 
+                    className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
+                  >
+                    Modules
+                  </Link>
+                )}
                 <Link 
                   to="/pricing" 
                   className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
