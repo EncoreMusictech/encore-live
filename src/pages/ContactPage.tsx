@@ -1,4 +1,5 @@
 import { useState } from "react";
+import LiveChatInterface from "@/components/LiveChatInterface";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -129,10 +130,8 @@ const ContactPage = () => {
                 <CardDescription>Get instant help from our support team</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">Average response: 2 min</p>
-                <Button className="bg-gradient-primary text-primary-foreground">
-                  Start Chat
-                </Button>
+                <p className="text-sm text-muted-foreground mb-4">AI-powered instant support</p>
+                <LiveChatInterface />
               </CardContent>
             </Card>
 
