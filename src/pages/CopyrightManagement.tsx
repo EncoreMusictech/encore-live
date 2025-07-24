@@ -23,7 +23,7 @@ import { ActivityLog } from "@/components/copyright/ActivityLog";
 
 const CopyrightManagement = () => {
   const { toast } = useToast();
-  const { copyrights, loading, getWritersForCopyright, deleteCopyright, refetch } = useCopyright();
+  const { copyrights, loading, realtimeError, getWritersForCopyright, deleteCopyright, refetch } = useCopyright();
   const { canAccess } = useDemoAccess();
   const [writers, setWriters] = useState<{[key: string]: any[]}>({});
   const [editingCopyright, setEditingCopyright] = useState<any>(null);
@@ -174,6 +174,7 @@ const CopyrightManagement = () => {
               copyrights={copyrights}
               writers={writers}
               loading={loading}
+              realtimeError={realtimeError}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />

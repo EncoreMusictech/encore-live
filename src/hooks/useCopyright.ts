@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tables, TablesInsert } from '@/integrations/supabase/types';
 import { useActivityLog } from '@/hooks/useActivityLog';
+import { useOptimisticUpdates } from '@/hooks/useOptimisticUpdates';
 
 export type Copyright = Tables<'copyrights'>;
 export type CopyrightWriter = Tables<'copyright_writers'>;
@@ -13,18 +14,29 @@ export type CopyrightInsert = TablesInsert<'copyrights'>;
 export const useCopyright = () => {
   const [copyrights, setCopyrights] = useState<Copyright[]>([]);
   const [loading, setLoading] = useState(true);
+  const [realtimeError, setRealtimeError] = useState<string | null>(null);
   const { toast } = useToast();
   const { logActivity } = useActivityLog();
+  const { 
+    data: optimisticCopyrights, 
+    addOptimisticUpdate, 
+    confirmUpdate, 
+    revertUpdate,
+    clearAllPending 
+  } = useOptimisticUpdates<Copyright>(copyrights);
 
-  const fetchCopyrights = async () => {
+  const fetchCopyrights = useCallback(async () => {
     try {
+      console.log('Fetching copyrights...');
       const { data, error } = await supabase
         .from('copyrights')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('Copyrights fetched successfully:', data?.length || 0, 'records');
       setCopyrights(data || []);
+      clearAllPending(); // Clear any pending optimistic updates since we have fresh data
     } catch (error) {
       console.error('Error fetching copyrights:', error);
       toast({
@@ -35,10 +47,22 @@ export const useCopyright = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast, clearAllPending]);
 
   const createCopyright = async (copyrightData: CopyrightInsert) => {
+    const tempCopyright: Copyright = {
+      id: `temp-${Date.now()}`,
+      user_id: 'temp',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...copyrightData
+    } as Copyright;
+
+    // Add optimistic update
+    const updateId = addOptimisticUpdate('create', tempCopyright);
+
     try {
+      console.log('Creating copyright with data:', copyrightData);
       const user = await supabase.auth.getUser();
       if (!user.data.user) throw new Error('No authenticated user');
 
@@ -53,7 +77,11 @@ export const useCopyright = () => {
 
       if (error) throw error;
       
-      setCopyrights(prev => [data, ...prev]);
+      console.log('Copyright created successfully:', data);
+      
+      // Confirm optimistic update
+      confirmUpdate(updateId);
+      setCopyrights(prev => [data, ...prev.filter(c => c.id !== tempCopyright.id)]);
       
       // Log the create activity
       await logActivity({
@@ -75,6 +103,8 @@ export const useCopyright = () => {
       return data;
     } catch (error) {
       console.error('Error creating copyright:', error);
+      // Revert optimistic update
+      revertUpdate(updateId);
       toast({
         title: "Error",
         description: "Failed to create copyright work",
@@ -85,7 +115,18 @@ export const useCopyright = () => {
   };
 
   const updateCopyright = async (id: string, updates: Partial<CopyrightInsert>) => {
+    const oldCopyright = copyrights.find(c => c.id === id);
+    if (!oldCopyright) {
+      throw new Error('Copyright not found for update');
+    }
+
+    // Create optimistic update
+    const optimisticCopyright = { ...oldCopyright, ...updates, updated_at: new Date().toISOString() };
+    const updateId = addOptimisticUpdate('update', optimisticCopyright, oldCopyright);
+
     try {
+      console.log('Updating copyright:', id, 'with updates:', updates);
+      
       const { data, error } = await supabase
         .from('copyrights')
         .update(updates)
@@ -95,9 +136,17 @@ export const useCopyright = () => {
 
       if (error) throw error;
       
-      const oldCopyright = copyrights.find(c => c.id === id);
+      console.log('Copyright updated successfully:', data);
+      console.log('PRO Status fields in updated data:', {
+        ascap_status: data.ascap_status,
+        bmi_status: data.bmi_status,
+        socan_status: data.socan_status,
+        sesac_status: data.sesac_status,
+        mlc_status: data.mlc_status
+      });
       
-      // Update the local state immediately
+      // Confirm optimistic update and update local state with server data
+      confirmUpdate(updateId);
       setCopyrights(prev => prev.map(c => c.id === id ? data : c));
       
       // Log the update activity
@@ -121,6 +170,8 @@ export const useCopyright = () => {
       return data;
     } catch (error) {
       console.error('Error updating copyright:', error);
+      // Revert optimistic update
+      revertUpdate(updateId);
       toast({
         title: "Error",
         description: "Failed to update copyright work",
@@ -213,19 +264,89 @@ export const useCopyright = () => {
     }
   };
 
+  // Set up real-time subscriptions
   useEffect(() => {
     fetchCopyrights();
-  }, []);
+
+    console.log('Setting up real-time copyright subscriptions...');
+    
+    // Subscribe to copyright changes
+    const copyrightChannel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'copyrights'
+        },
+        (payload) => {
+          console.log('Real-time copyright change received:', payload);
+          
+          switch (payload.eventType) {
+            case 'INSERT':
+              setCopyrights(prev => {
+                // Avoid duplicates
+                const exists = prev.some(c => c.id === payload.new.id);
+                if (!exists) {
+                  console.log('Adding new copyright from real-time:', payload.new);
+                  return [payload.new as Copyright, ...prev];
+                }
+                return prev;
+              });
+              break;
+              
+            case 'UPDATE':
+              setCopyrights(prev => {
+                const updated = prev.map(c => 
+                  c.id === payload.new.id ? payload.new as Copyright : c
+                );
+                console.log('Updated copyright from real-time:', payload.new);
+                console.log('PRO Status in real-time update:', {
+                  ascap_status: payload.new.ascap_status,
+                  bmi_status: payload.new.bmi_status,
+                  socan_status: payload.new.socan_status,
+                  sesac_status: payload.new.sesac_status,
+                  mlc_status: payload.new.mlc_status
+                });
+                return updated;
+              });
+              break;
+              
+            case 'DELETE':
+              setCopyrights(prev => prev.filter(c => c.id !== payload.old.id));
+              console.log('Deleted copyright from real-time:', payload.old.id);
+              break;
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Real-time copyright subscription active');
+          setRealtimeError(null);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Real-time subscription error');
+          setRealtimeError('Real-time updates unavailable');
+        }
+      });
+
+    return () => {
+      console.log('Cleaning up real-time copyright subscriptions...');
+      supabase.removeChannel(copyrightChannel);
+    };
+  }, [fetchCopyrights]);
 
   return {
-    copyrights,
+    copyrights: optimisticCopyrights, // Return optimistic data instead of raw data
     loading,
+    realtimeError,
     createCopyright,
     updateCopyright,
     deleteCopyright,
     getWritersForCopyright,
     getPublishersForCopyright,
     getRecordingsForCopyright,
-    refetch: fetchCopyrights
+    refetch: fetchCopyrights,
+    clearPendingUpdates: clearAllPending
   };
 };

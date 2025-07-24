@@ -23,6 +23,7 @@ interface CopyrightTableProps {
   copyrights: Copyright[];
   writers: { [key: string]: CopyrightWriter[] };
   loading: boolean;
+  realtimeError?: string | null;
   onEdit?: (copyright: Copyright) => void;
   onDelete?: (copyright: Copyright) => void;
 }
@@ -30,7 +31,7 @@ interface CopyrightTableProps {
 type SortDirection = 'asc' | 'desc';
 type SortField = 'work_title' | 'work_id' | 'created_at' | 'registration_status' | 'controlled_share';
 
-export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writers, loading, onEdit, onDelete }) => {
+export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writers, loading, realtimeError, onEdit, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('work_title');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -285,9 +286,22 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Music className="w-5 h-5" />
-            My Copyrights
+          <CardTitle className="flex items-center gap-2 justify-between">
+            <div className="flex items-center gap-2">
+              <Music className="w-5 h-5" />
+              My Copyrights
+            </div>
+            {realtimeError ? (
+              <Badge variant="destructive" className="text-xs">
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Real-time updates offline
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-200">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Live updates active
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">

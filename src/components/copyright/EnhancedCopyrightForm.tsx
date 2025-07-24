@@ -602,15 +602,25 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         mp3_link: mergedFormData.mp3_link || null
       };
       
+      console.log('About to save copyright with PRO status data:', {
+        ascap_status: cleanFormData.ascap_status,
+        bmi_status: cleanFormData.bmi_status,
+        socan_status: cleanFormData.socan_status,
+        sesac_status: cleanFormData.sesac_status,
+        mlc_status: cleanFormData.mlc_status
+      });
+
       let copyrightData;
       if (editingCopyright) {
         // Update existing copyright
+        console.log('Updating existing copyright:', editingCopyright.id);
         copyrightData = await updateCopyright(editingCopyright.id, cleanFormData as Partial<CopyrightInsert>);
         
         // Delete existing writers and recreate them
         await supabase.from('copyright_writers').delete().eq('copyright_id', editingCopyright.id);
       } else {
         // Create new copyright
+        console.log('Creating new copyright');
         copyrightData = await createCopyright(cleanFormData as CopyrightInsert);
       }
       
@@ -632,7 +642,12 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         resetForm();
       }
       
-      console.log('Copyright saved successfully, calling onSuccess callback');
+      console.log('Copyright saved successfully, waiting for real-time propagation...');
+      
+      // Add a small delay to ensure real-time updates have propagated
+      await new Promise(resolve => setTimeout(resolve, 250));
+      
+      console.log('Calling onSuccess callback');
       onSuccess?.();
     } catch (error) {
       console.error('Error saving copyright:', error);
