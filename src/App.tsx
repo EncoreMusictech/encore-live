@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { DemoAccessProvider } from "@/hooks/useDemoAccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminOrProtectedRoute from "@/components/AdminOrProtectedRoute";
 import DemoUpgradeModal from "@/components/DemoUpgradeModal";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { SecurityProvider } from "@/components/SecurityProvider";
@@ -81,11 +82,11 @@ const App = () => {
                 </ErrorBoundary>
               } />
               <Route path="/sync-licensing" element={
-                <ProtectedRoute>
+                <AdminOrProtectedRoute>
                   <ErrorBoundary>
                     <SyncLicensingPage />
                   </ErrorBoundary>
-                </ProtectedRoute>
+                </AdminOrProtectedRoute>
               } />
               <Route path="/sync-licensing-preview" element={
                 <ProtectedRoute>
