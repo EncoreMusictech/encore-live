@@ -191,13 +191,7 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="relative py-20 overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
-          backgroundImage: `url('/lovable-uploads/dba8d125-c0e8-4fc1-80e9-2f8633458521.png')`
-        }} />
-        {/* Overlay for readability */}
-        <div className="absolute inset-0 bg-jet-black/40" />
+      <section className="py-20 bg-secondary/20">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground">

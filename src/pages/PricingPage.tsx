@@ -308,14 +308,8 @@ const PricingPage = () => {
       <Header />
       
       {/* Ready to Get Started Section */}
-      <div className="relative overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
-          backgroundImage: `url('/lovable-uploads/dba8d125-c0e8-4fc1-80e9-2f8633458521.png')`
-        }} />
-        {/* Overlay for readability */}
-        <div className="absolute inset-0 bg-jet-black/40" />
-        <div className="container mx-auto px-4 py-20 relative">
+      <div className="py-20 bg-secondary/20">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-16 animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">Flexible <span className="bg-gradient-primary bg-clip-text text-transparent">Pricing</span> for Every Creator</h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-4">

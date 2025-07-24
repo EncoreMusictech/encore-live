@@ -4,12 +4,6 @@ import { ArrowRight, Music, TrendingUp, Shield } from "lucide-react";
 const Hero = () => {
   return (
     <section className="relative overflow-hidden py-20 lg:py-32">
-      {/* Background */}
-      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
-        backgroundImage: `url('/lovable-uploads/dba8d125-c0e8-4fc1-80e9-2f8633458521.png')`
-      }} />
-      {/* Overlay for readability */}
-      <div className="absolute inset-0 bg-jet-black/40" />
       
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in">
