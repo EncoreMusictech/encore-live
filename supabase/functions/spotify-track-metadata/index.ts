@@ -133,7 +133,7 @@ serve(async (req) => {
 
     // Return the best match (first result) and alternatives
     const bestMatch = trackMetadata[0];
-    const alternatives = trackMetadata.slice(1, 5); // Up to 4 alternatives
+    const alternatives = trackMetadata.slice(1, 10); // Up to 9 alternatives
 
     console.log(`Best match for "${workTitle}": ${bestMatch.trackName} by ${bestMatch.artist}`);
 
