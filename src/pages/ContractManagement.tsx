@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Header from "@/components/Header";
 import { updatePageMetadata } from "@/utils/seo";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter, ArrowLeft } from "lucide-react";
+import { FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter, ArrowLeft, TrendingUp, Clock, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { ContractList } from "@/components/contracts/ContractList";
@@ -22,10 +22,12 @@ import { ContractUpload } from "@/components/contracts/ContractUpload";
 import { DemoPublishingContracts } from "@/components/contracts/DemoPublishingContracts";
 import { DemoPublishingContract } from "@/data/demo-publishing-contracts";
 import { CopyrightWritersDebug } from "@/components/debug/CopyrightWritersDebug";
+import { useContracts } from "@/hooks/useContracts";
 
 const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
   const { canAccess } = useDemoAccess();
+  const { contracts, loading } = useContracts();
 
   useEffect(() => {
     updatePageMetadata('contractManagement');
@@ -82,12 +84,62 @@ const ContractManagement = () => {
     }
   ];
 
-  const stats = [
-    { title: "Active Contracts", value: "24", change: "+3 this month" },
-    { title: "Pending Signatures", value: "5", change: "2 urgent" },
-    { title: "Expiring Soon", value: "8", change: "Next 30 days" },
-    { title: "Total Value", value: "$2.4M", change: "+12% this quarter" }
-  ];
+  // Calculate dynamic stats from actual contract data
+  const stats = useMemo(() => {
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    const activeContracts = contracts.filter(contract => 
+      contract.contract_status === 'signed'
+    ).length;
+    
+    const pendingSignatures = contracts.filter(contract => 
+      contract.signature_status === 'pending' || contract.signature_status === 'sent'
+    ).length;
+    
+    const expiringSoon = contracts.filter(contract => {
+      if (!contract.end_date) return false;
+      const endDate = new Date(contract.end_date);
+      return endDate >= now && endDate <= thirtyDaysFromNow;
+    }).length;
+    
+    const totalValue = contracts.reduce((sum, contract) => {
+      return sum + (contract.advance_amount || 0);
+    }, 0);
+    
+    const formatValue = (value: number) => {
+      if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+      if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+      return `$${value.toFixed(0)}`;
+    };
+    
+    return [
+      { 
+        title: "Active Contracts", 
+        value: activeContracts.toString(), 
+        change: contracts.length === 0 ? "No contracts yet" : `${contracts.length} total`,
+        icon: FileText
+      },
+      { 
+        title: "Pending Signatures", 
+        value: pendingSignatures.toString(), 
+        change: pendingSignatures > 0 ? `${pendingSignatures} awaiting` : "All signed",
+        icon: Users
+      },
+      { 
+        title: "Expiring Soon", 
+        value: expiringSoon.toString(), 
+        change: expiringSoon > 0 ? "Next 30 days" : "None expiring",
+        icon: Clock
+      },
+      { 
+        title: "Total Value", 
+        value: totalValue > 0 ? formatValue(totalValue) : "$0", 
+        change: contracts.length > 0 ? "In advances" : "No advances",
+        icon: TrendingUp
+      }
+    ];
+  }, [contracts]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -411,23 +463,31 @@ const ContractManagement = () => {
 
         {/* Stats Overview */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {stat.title}
-                    </p>
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {stat.change}
-                    </p>
+          {stats.map((stat, index) => {
+            const IconComponent = stat.icon;
+            return (
+              <Card key={index}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {stat.title}
+                      </p>
+                      <p className="text-2xl font-bold">{stat.value}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {stat.change}
+                      </p>
+                    </div>
+                    <div className="ml-4">
+                      <div className="bg-primary/10 rounded-lg p-2">
+                        <IconComponent className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Main Content Tabs */}
@@ -476,22 +536,140 @@ const ContractManagement = () => {
 
           <TabsContent value="analytics">
             <div className="space-y-6">
+              {/* Contract Status Distribution */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Contract Status Distribution</CardTitle>
+                    <CardDescription>
+                      Breakdown of contracts by current status
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {contracts.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No contracts to analyze</p>
+                        <p className="text-sm">Create your first contract to see analytics</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {(() => {
+                          const statusCounts = contracts.reduce((acc, contract) => {
+                            const status = contract.contract_status || 'draft';
+                            acc[status] = (acc[status] || 0) + 1;
+                            return acc;
+                          }, {} as Record<string, number>);
+                          
+                          return Object.entries(statusCounts).map(([status, count]) => (
+                            <div key={status} className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Badge variant={status === 'active' ? 'default' : status === 'pending' ? 'secondary' : 'outline'}>
+                                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                                </Badge>
+                                <span className="text-sm text-muted-foreground">
+                                  {count} contract{count !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <span className="font-medium">
+                                {Math.round((count / contracts.length) * 100)}%
+                              </span>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Contract Types</CardTitle>
+                    <CardDescription>
+                      Distribution by agreement type
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {contracts.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No contract types to show</p>
+                        <p className="text-sm">Create contracts to see type distribution</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {(() => {
+                          const typeCounts = contracts.reduce((acc, contract) => {
+                            const type = contract.contract_type || 'other';
+                            acc[type] = (acc[type] || 0) + 1;
+                            return acc;
+                          }, {} as Record<string, number>);
+                          
+                          return Object.entries(typeCounts).map(([type, count]) => (
+                            <div key={type} className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-3 h-3 rounded-full bg-primary"></div>
+                                <span className="capitalize">
+                                  {type.replace('_', ' ')}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-medium">{count}</span>
+                                <span className="text-sm text-muted-foreground ml-2">
+                                  ({Math.round((count / contracts.length) * 100)}%)
+                                </span>
+                              </div>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent Activity */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Contract Analytics</CardTitle>
+                  <CardTitle>Recent Activity</CardTitle>
                   <CardDescription>
-                    Insights into your contract portfolio and performance
+                    Latest contract updates and changes
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-12 text-muted-foreground">
-                    Analytics dashboard coming soon...
-                  </div>
+                  {contracts.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No recent activity</p>
+                      <p className="text-sm">Contract updates will appear here</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {contracts
+                        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                        .slice(0, 5)
+                        .map((contract) => (
+                          <div key={contract.id} className="flex items-center justify-between border-b pb-3 last:border-b-0">
+                            <div>
+                              <p className="font-medium">{contract.title}</p>
+                              <p className="text-sm text-muted-foreground">
+                                with {contract.counterparty_name}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={contract.contract_status === 'active' ? 'default' : 'secondary'}>
+                                {contract.contract_status}
+                              </Badge>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(contract.updated_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-              
-              {/* Temporary Debug Component */}
-              <CopyrightWritersDebug />
             </div>
           </TabsContent>
         </Tabs>
