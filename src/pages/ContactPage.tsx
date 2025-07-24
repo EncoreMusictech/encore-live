@@ -70,19 +70,19 @@ const ContactPage = () => {
   const recentTickets = [
     {
       id: "TIC-001",
-      subject: "Upload issue with audio files",
+      subject: "Copyright registration parsing error",
       status: "resolved",
       daysAgo: 2
     },
     {
       id: "TIC-002", 
-      subject: "Subscription billing question",
+      subject: "Writer allocation calculation issue",
       status: "in_progress",
       daysAgo: 3
     },
     {
       id: "TIC-003",
-      subject: "NFT minting error",
+      subject: "Royalty statement import failed",
       status: "resolved", 
       daysAgo: 7
     }
