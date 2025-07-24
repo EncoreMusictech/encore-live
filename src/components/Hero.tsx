@@ -3,12 +3,13 @@ import { ArrowRight, Music, TrendingUp, Shield } from "lucide-react";
 
 const Hero = () => {
   return (
-    <section className="relative overflow-hidden bg-gradient-vinyl py-20 lg:py-32">
-      {/* Vinyl Groove Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--electric-lavender))_0%,transparent_70%)] opacity-20" />
-      <div className="absolute inset-0" style={{
-        backgroundImage: `repeating-conic-gradient(from 0deg at 50% 50%, transparent 0deg, hsl(var(--dusty-gold) / 0.1) 1deg, transparent 2deg)`
+    <section className="relative overflow-hidden py-20 lg:py-32">
+      {/* Record Groove Background */}
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
+        backgroundImage: `url('/lovable-uploads/ab53c16c-028b-497c-ac9f-feab103ef7de.png')`
       }} />
+      {/* Overlay for readability */}
+      <div className="absolute inset-0 bg-jet-black/40" />
       
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in">
