@@ -157,15 +157,23 @@ export function OrganizedContractForm({ contractType, onCancel, onSuccess }: Org
   };
 
   const handleNext = () => {
+    console.log("Next button clicked, current step:", currentStep);
     const currentIndex = steps.findIndex(s => s.id === currentStep);
     if (currentIndex < steps.length - 1) {
-      if (isStepValid(currentStep)) {
+      const validation = getStepValidation(currentStep);
+      console.log("Step validation result:", validation);
+      
+      if (validation.success) {
         setCompletedSteps(prev => new Set([...prev, currentStep]));
         setCurrentStep(steps[currentIndex + 1].id);
       } else {
+        console.log("Validation errors:", 'error' in validation ? validation.error?.errors : []);
+        const errors = 'error' in validation ? validation.error?.errors || [] : [];
+        const errorMessages = errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+        
         toast({
           title: "Validation Error",
-          description: "Please complete all required fields before proceeding",
+          description: `Please complete all required fields: ${errorMessages}`,
           variant: "destructive",
         });
       }
