@@ -310,7 +310,7 @@ const PricingPage = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Hero Section */}
+      {/* Ready to Get Started Section */}
       <div className="relative overflow-hidden">
         {/* Record Groove Background */}
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
@@ -320,12 +320,28 @@ const PricingPage = () => {
         <div className="absolute inset-0 bg-jet-black/40" />
         <div className="container mx-auto px-4 py-20 relative">
           <div className="text-center mb-16 animate-fade-in">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Flexible <span className="bg-gradient-primary bg-clip-text text-transparent">Pricing</span> for Every Creator
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Choose modular tools, bundled savings, or enterprise solutions. Only pay for what you use.
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">Ready to Get Started?</h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-4">
+              Only pay for what you use. Bundle and save.
             </p>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+              All modules include unlimited assets and users
+            </p>
+            
+            <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-primary" />
+                <span>14-day free trial</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-primary" />
+                <span>No setup fees</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-primary" />
+                <span>Cancel anytime</span>
+              </div>
+            </div>
             
             {/* Subscription Status */}
             {subscribed && subscription_tier && (
@@ -635,72 +651,6 @@ const PricingPage = () => {
           </TabsContent>
         </Tabs>
 
-        {/* CTA Section */}
-        <div className="text-center mt-20 space-y-8">
-          <div className="space-y-4">
-            <h2 className="text-3xl font-bold">Ready to Get Started?</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Only pay for what you use. Bundle and save.
-            </p>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              className="bg-gradient-primary text-primary-foreground"
-              onClick={() => {
-                if (!user) {
-                  window.location.href = '/auth';
-                  return;
-                }
-                // Switch to modules tab and scroll
-                const tabsTrigger = document.querySelector('[data-state="inactive"][value="modules"]') || 
-                                  document.querySelector('[value="modules"]');
-                if (tabsTrigger) {
-                  (tabsTrigger as HTMLElement).click();
-                }
-                // Scroll to modules section with a slight delay to allow tab switch
-                setTimeout(() => {
-                  const modulesSection = document.querySelector('[value="modules"]')?.parentElement;
-                  if (modulesSection) {
-                    modulesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }, 100);
-              }}
-            >
-              {!user ? 'Sign In to Get Started' : 'Customize My Plan'}
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              onClick={() => {
-                if (!user) {
-                  window.location.href = '/auth';
-                  return;
-                }
-                createCheckout('bundle', 'starter');
-              }}
-              disabled={loading}
-            >
-              {!user ? 'Sign In to Subscribe' : 'Try Starter Plan'}
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-center gap-8 mt-8 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-primary" />
-              <span>14-day free trial</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-primary" />
-              <span>No setup fees</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-primary" />
-              <span>Cancel anytime</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
