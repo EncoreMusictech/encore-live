@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { updatePageMetadata } from "@/utils/seo";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useFreeTrial } from "@/hooks/useFreeTrial";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -250,6 +251,7 @@ const PricingPage = () => {
   const [selectedModules, setSelectedModules] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const { subscribed, subscription_tier, loading, createCheckout, openCustomerPortal } = useSubscription();
+  const { createTrialCheckout } = useFreeTrial();
 
   useEffect(() => {
     updatePageMetadata('pricing');
@@ -469,8 +471,21 @@ const PricingPage = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-center">
-                    <Button size="lg" className="bg-gradient-primary text-primary-foreground">
-                      Start Custom Plan
+                    <Button 
+                      size="lg" 
+                      className="bg-gradient-primary text-primary-foreground"
+                      onClick={() => {
+                        if (!user) {
+                          window.location.href = '/auth';
+                          return;
+                        }
+                        // Start free trial for custom selected modules
+                        const modulesArray = Array.from(selectedModules);
+                        createTrialCheckout('custom', 'custom', modulesArray);
+                      }}
+                      disabled={loading || selectedModules.size === 0}
+                    >
+                      {!user ? 'Sign In to Start Trial' : 'Start 14-Day Free Trial'}
                     </Button>
                   </div>
                 </CardContent>
@@ -638,12 +653,19 @@ const PricingPage = () => {
                   window.location.href = '/auth';
                   return;
                 }
-                // Scroll to modules tab
-                const modulesTab = document.querySelector('[value="modules"]');
-                if (modulesTab) {
-                  (modulesTab as HTMLElement).click();
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                // Switch to modules tab and scroll
+                const tabsTrigger = document.querySelector('[data-state="inactive"][value="modules"]') || 
+                                  document.querySelector('[value="modules"]');
+                if (tabsTrigger) {
+                  (tabsTrigger as HTMLElement).click();
                 }
+                // Scroll to modules section with a slight delay to allow tab switch
+                setTimeout(() => {
+                  const modulesSection = document.querySelector('[value="modules"]')?.parentElement;
+                  if (modulesSection) {
+                    modulesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 100);
               }}
             >
               {!user ? 'Sign In to Get Started' : 'Customize My Plan'}

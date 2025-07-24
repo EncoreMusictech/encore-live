@@ -105,7 +105,7 @@ export const useFreeTrial = () => {
     }
   };
 
-  const createTrialCheckout = async (trialType: 'module' | 'bundle', trialIdentifier: string, trialModules: string[], billingInterval: 'month' | 'year' = 'month') => {
+  const createTrialCheckout = async (trialType: 'module' | 'bundle' | 'custom', trialIdentifier: string, trialModules: string[], billingInterval: 'month' | 'year' = 'month') => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -117,9 +117,12 @@ export const useFreeTrial = () => {
 
     try {
       setLoading(true);
+      
+      // For custom packages, use 'bundle' as productType and calculate total price
+      const productType = trialType === 'custom' ? 'bundle' : trialType;
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 
-          productType: trialType, 
+          productType, 
           productId: trialIdentifier, 
           billingInterval,
           trialModules 

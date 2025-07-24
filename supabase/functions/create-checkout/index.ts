@@ -60,7 +60,50 @@ serve(async (req) => {
     // Get pricing based on product type and ID
     let lineItems = [];
     
-    if (productType === 'bundle') {
+    if (productType === 'bundle' && productId === 'custom') {
+      // Handle custom packages with dynamic pricing based on selected modules
+      if (!trialModules || !Array.isArray(trialModules) || trialModules.length === 0) {
+        throw new Error("Custom packages require module selection");
+      }
+      
+      // Calculate total price for selected modules
+      const modulePricing = {
+        'royalties': { monthly: 199, annual: 1990 },
+        'copyright': { monthly: 99, annual: 990 },
+        'contracts': { monthly: 59, annual: 590 },
+        'sync': { monthly: 149, annual: 1490 },
+        'valuation': { monthly: 99, annual: 990 },
+        'dashboard': { monthly: 149, annual: 1490 }
+      };
+      
+      let totalPrice = 0;
+      const moduleNames = [];
+      
+      for (const moduleId of trialModules) {
+        const pricing = modulePricing[moduleId];
+        if (pricing) {
+          totalPrice += billingInterval === 'year' ? pricing.annual : pricing.monthly;
+          moduleNames.push(moduleId.charAt(0).toUpperCase() + moduleId.slice(1));
+        }
+      }
+      
+      if (totalPrice === 0) {
+        throw new Error("No valid modules selected for custom package");
+      }
+      
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: { 
+            name: `Custom Package (${moduleNames.join(', ')})`,
+            description: `Custom music industry tools package - ${billingInterval}ly billing`
+          },
+          unit_amount: totalPrice * 100, // Convert to cents
+          recurring: { interval: billingInterval }
+        },
+        quantity: 1,
+      }];
+    } else if (productType === 'bundle') {
       // Bundle products from the pricing page
       const bundlePricing = {
         'starter': { monthly: 79, annual: 790 },
