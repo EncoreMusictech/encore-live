@@ -107,7 +107,9 @@ const ModulesPage = () => {
     }
   ];
 
-  const subscribedModules = allModules.filter(module => 
+  // Administrator account gets access to all modules
+  const isAdministrator = user?.email === 'info@encoremusic.tech';
+  const subscribedModules = isAdministrator ? allModules : allModules.filter(module => 
     userModules.includes(module.id)
   );
 
