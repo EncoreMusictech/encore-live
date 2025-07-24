@@ -80,6 +80,9 @@ export function EditContractForm({ contract, onCancel, onSuccess }: EditContract
     setIsLoading(true);
     
     try {
+      console.log('Submitting contract update for:', contract.id);
+      console.log('Update data:', values);
+      
       const contractData = {
         title: values.title,
         counterparty_name: values.counterparty_name,
@@ -100,6 +103,8 @@ export function EditContractForm({ contract, onCancel, onSuccess }: EditContract
         notes: values.notes || null,
       };
 
+      console.log('Prepared contract data:', contractData);
+      
       await updateContract(contract.id, contractData);
       
       toast({
@@ -110,6 +115,12 @@ export function EditContractForm({ contract, onCancel, onSuccess }: EditContract
       onSuccess();
     } catch (error) {
       console.error('Error updating contract:', error);
+      
+      toast({
+        title: "Error",
+        description: "Failed to update contract. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
