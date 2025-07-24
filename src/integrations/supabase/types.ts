@@ -3477,8 +3477,8 @@ export type Database = {
       log_copyright_activity: {
         Args: {
           p_user_id: string
-          p_copyright_id: string
-          p_action_type: string
+          p_copyright_id?: string
+          p_action_type?: string
           p_operation_details?: Json
           p_affected_fields?: string[]
           p_old_values?: Json
