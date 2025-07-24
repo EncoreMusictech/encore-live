@@ -137,7 +137,10 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     setSpotifyLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('spotify-track-metadata', {
-        body: { workTitle: artist ? `${workTitle} ${artist}` : workTitle }
+        body: { 
+          workTitle: workTitle.trim(),
+          artist: artist?.trim() || undefined
+        }
       });
 
       if (error) {

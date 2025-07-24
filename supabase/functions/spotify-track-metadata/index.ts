@@ -32,7 +32,7 @@ serve(async (req) => {
   try {
     // Parse and validate request body
     const body = await req.json();
-    const { workTitle } = body;
+    const { workTitle, artist } = body;
 
     // Input validation and sanitization
     if (!workTitle || typeof workTitle !== 'string' || workTitle.trim().length === 0) {
@@ -58,7 +58,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Searching Spotify for: ${workTitle}`);
+    console.log(`Searching Spotify for: ${workTitle}${artist ? ` by ${artist}` : ''}`);
 
     // Get Spotify access token
     const clientId = Deno.env.get('SPOTIFY_CLIENT_ID');
@@ -85,8 +85,15 @@ serve(async (req) => {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Search for tracks
-    const searchQuery = encodeURIComponent(`track:"${workTitle}"`);
+    // Build search query - prioritize artist search when artist is provided
+    let searchQuery;
+    if (artist && artist.trim()) {
+      // Artist-first search: find tracks by this artist
+      searchQuery = encodeURIComponent(`artist:"${artist.trim()}" track:"${sanitizedWorkTitle}"`);
+    } else {
+      // Track-first search: find tracks with this title
+      searchQuery = encodeURIComponent(`track:"${sanitizedWorkTitle}"`);
+    }
     const searchResponse = await fetch(
       `https://api.spotify.com/v1/search?q=${searchQuery}&type=track&limit=10`,
       {
