@@ -66,7 +66,7 @@ const Index = () => {
       features: [
         "All modules included",
         "API access",
-        "Priority support",
+        "24/7 support",
         "Custom integrations",
         "Dedicated account manager",
         "White-label options"
