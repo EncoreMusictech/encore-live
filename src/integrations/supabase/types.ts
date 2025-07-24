@@ -3072,6 +3072,48 @@ export type Database = {
           },
         ]
       }
+      user_free_trials: {
+        Row: {
+          created_at: string
+          id: string
+          stripe_subscription_id: string | null
+          trial_end_date: string
+          trial_identifier: string
+          trial_modules: string[]
+          trial_start_date: string
+          trial_status: string
+          trial_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          stripe_subscription_id?: string | null
+          trial_end_date?: string
+          trial_identifier: string
+          trial_modules?: string[]
+          trial_start_date?: string
+          trial_status?: string
+          trial_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          stripe_subscription_id?: string | null
+          trial_end_date?: string
+          trial_identifier?: string
+          trial_modules?: string[]
+          trial_start_date?: string
+          trial_status?: string
+          trial_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_module_access: {
         Row: {
           access_source: string
@@ -3365,6 +3407,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      expire_trials: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       generate_batch_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -3420,6 +3466,10 @@ export type Database = {
           days_until_expiry: number
         }[]
       }
+      has_active_trial: {
+        Args: { p_user_id: string; p_modules: string[] }
+        Returns: boolean
+      }
       has_client_portal_access: {
         Args: { _user_id: string; _module?: string }
         Returns: boolean
@@ -3457,6 +3507,15 @@ export type Database = {
       setup_demo_user: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      start_free_trial: {
+        Args: {
+          p_user_id: string
+          p_trial_type: string
+          p_trial_identifier: string
+          p_trial_modules: string[]
+        }
+        Returns: string
       }
       update_payout_workflow_stage: {
         Args: {
