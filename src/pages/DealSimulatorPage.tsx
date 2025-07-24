@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Calculator, Music, BarChart3, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Artist {
   id: string;
@@ -200,11 +201,13 @@ const DealSimulatorPage = () => {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => window.location.href = '/catalog-valuation'}
+              asChild
               className="text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Catalog Valuation
+              <Link to="/demo-modules">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Demo Modules
+              </Link>
             </Button>
           </div>
           

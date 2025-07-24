@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Music, DollarSign, Users, AlertTriangle, FileText } from "lucide-react";
+import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, ArrowLeft } from "lucide-react";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
+import { Link } from "react-router-dom";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
@@ -30,6 +31,21 @@ export default function RoyaltiesPage() {
   return <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto py-8 px-4">
+        {/* Back to Demo Modules */}
+        <div className="flex items-center gap-2 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            asChild
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/demo-modules">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Demo Modules
+            </Link>
+          </Button>
+        </div>
+
         <RoyaltiesModuleNav />
         
         <div className="flex justify-between items-center mb-8">

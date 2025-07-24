@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Plus, Filter, LayoutGrid, Calendar, List } from "lucide-react";
+import { Plus, Filter, LayoutGrid, Calendar, List, ArrowLeft } from "lucide-react";
 import { updatePageMetadata } from "@/utils/seo";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -61,6 +62,20 @@ const SyncLicensingPage = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
+        {/* Back to Demo Modules */}
+        <div className="flex items-center gap-2 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            asChild
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/demo-modules">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Demo Modules
+            </Link>
+          </Button>
+        </div>
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Sync Licensing Tracker</h1>

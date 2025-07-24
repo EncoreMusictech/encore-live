@@ -8,8 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Music, FileText, Users, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Plus, Search, Music, FileText, Users, CheckCircle, Clock, AlertTriangle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 import { useCopyright } from "@/hooks/useCopyright";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
@@ -138,6 +139,20 @@ const CopyrightManagement = () => {
       <Header />
       
       <main className="container mx-auto px-4 py-8">
+        {/* Back to Demo Modules */}
+        <div className="flex items-center gap-2 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            asChild
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/demo-modules">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Demo Modules
+            </Link>
+          </Button>
+        </div>
         {/* Demo Limit Banner */}
         <DemoLimitBanner module="copyrightManagement" className="mb-6" />
 

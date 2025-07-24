@@ -6,7 +6,8 @@ import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, ArrowRight, Brain, Target } from "lucide-react";
+import { Calculator, TrendingUp, ArrowRight, Brain, Target, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const CatalogValuationPage = () => {
   const [selectedModule, setSelectedModule] = useState<'selection' | 'valuation' | 'deals'>('selection');
@@ -154,6 +155,21 @@ const CatalogValuationPage = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto px-4 py-8">
+        {/* Back to Demo Modules */}
+        <div className="flex items-center gap-2 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            asChild
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/demo-modules">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Demo Modules
+            </Link>
+          </Button>
+        </div>
+        
         <div className="max-w-6xl mx-auto">
           {selectedModule === 'selection' && renderModuleSelection()}
           

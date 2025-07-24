@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, CreditCard, DollarSign, Users, TrendingUp } from "lucide-react";
+import { Plus, CreditCard, DollarSign, Users, TrendingUp, ArrowLeft } from "lucide-react";
 import { usePayouts } from "@/hooks/usePayouts";
+import { Link } from "react-router-dom";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useAuth } from "@/hooks/useAuth";
 import { EnhancedPayoutForm } from "@/components/royalties/EnhancedPayoutForm";
@@ -136,6 +137,21 @@ export default function PayoutsPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto py-8 px-4">
+        {/* Back to Demo Modules */}
+        <div className="flex items-center gap-2 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            asChild
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/demo-modules">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Demo Modules
+            </Link>
+          </Button>
+        </div>
+
         <RoyaltiesModuleNav />
         
         <div className="flex justify-between items-center mb-8">

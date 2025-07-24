@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter } from "lucide-react";
+import { FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
 import { ContractList } from "@/components/contracts/ContractList";
 import { EnhancedContractForm } from "@/components/contracts/EnhancedContractForm";
 import { OrganizedContractForm } from "@/components/contracts/OrganizedContractForm";
@@ -93,6 +94,20 @@ const ContractManagement = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
+        {/* Back to Demo Modules */}
+        <div className="flex items-center gap-2 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            asChild
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/demo-modules">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Demo Modules
+            </Link>
+          </Button>
+        </div>
         {/* Demo Limit Banner */}
         <DemoLimitBanner module="contractManagement" className="mb-6" />
 
