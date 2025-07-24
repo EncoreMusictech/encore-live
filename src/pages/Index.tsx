@@ -200,18 +200,12 @@ const Index = () => {
             <p className="text-xl text-muted-foreground">
               Join thousands of music professionals who trust ENCORE for their rights management needs.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow">
-                Start Your Free Trial
-              </Button>
+            <div className="flex justify-center">
               <Button variant="outline" size="lg" className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground" asChild>
                 <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
                   Schedule a Demo
                 </a>
               </Button>
-              <Link to="/client-admin">
-                <Button variant="ghost" size="lg">Client Admin</Button>
-              </Link>
             </div>
           </div>
         </div>
