@@ -1133,6 +1133,8 @@ export type Database = {
           iswc: string | null
           language_code: string | null
           masters_ownership: string | null
+          mlc_status: string | null
+          mlc_work_id: string | null
           mp3_link: string | null
           notes: string | null
           notice_date: string | null
@@ -1178,6 +1180,8 @@ export type Database = {
           iswc?: string | null
           language_code?: string | null
           masters_ownership?: string | null
+          mlc_status?: string | null
+          mlc_work_id?: string | null
           mp3_link?: string | null
           notes?: string | null
           notice_date?: string | null
@@ -1223,6 +1227,8 @@ export type Database = {
           iswc?: string | null
           language_code?: string | null
           masters_ownership?: string | null
+          mlc_status?: string | null
+          mlc_work_id?: string | null
           mp3_link?: string | null
           notes?: string | null
           notice_date?: string | null

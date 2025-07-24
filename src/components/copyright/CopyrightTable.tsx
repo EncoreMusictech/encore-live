@@ -70,6 +70,9 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
     if (copyright.sesac_status && copyright.sesac_status !== 'not_registered') {
       statuses.push({ pro: 'SESAC', status: copyright.sesac_status });
     }
+    if (copyright.mlc_status && copyright.mlc_status !== 'not_registered') {
+      statuses.push({ pro: 'MLC', status: copyright.mlc_status });
+    }
     
     return statuses;
   };
@@ -121,6 +124,8 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
       'SOCAN Status',
       'SESAC Work ID',
       'SESAC Status',
+      'MLC Work ID',
+      'MLC Status',
       'Created At',
       'Updated At'
     ];
@@ -157,6 +162,8 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
         copyright.socan_status || 'Not Registered',
         copyright.sesac_work_id || '',
         copyright.sesac_status || 'Not Registered',
+        (copyright as any).mlc_work_id || '',
+        (copyright as any).mlc_status || 'Not Registered',
         new Date(copyright.created_at).toISOString(),
         new Date(copyright.updated_at).toISOString()
       ];

@@ -235,8 +235,9 @@ const CopyrightManagement = () => {
                       const bmiRegistered = (c as any).bmi_status?.toLowerCase().includes('registered');
                       const socanRegistered = (c as any).socan_status?.toLowerCase().includes('registered');
                       const sesacRegistered = (c as any).sesac_status?.toLowerCase().includes('registered');
+                      const mlcRegistered = (c as any).mlc_status?.toLowerCase().includes('registered');
                       
-                      return ascapRegistered || bmiRegistered || socanRegistered || sesacRegistered ||
+                      return ascapRegistered || bmiRegistered || socanRegistered || sesacRegistered || mlcRegistered ||
                              c.registration_status === "fully_registered" || 
                              c.registration_status === "registered";
                     }).length}

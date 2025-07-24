@@ -92,10 +92,12 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     bmi_work_id?: string;
     socan_work_id?: string;
     sesac_work_id?: string;
+    mlc_work_id?: string;
     ascap_status?: string;
     bmi_status?: string;
     socan_status?: string;
     sesac_status?: string;
+    mlc_status?: string;
     registration_status?: string;
     date_submitted?: string;
     copyright_reg_number?: string;
@@ -269,10 +271,12 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
       bmi_work_id: editingCopyright.bmi_work_id || '',
       socan_work_id: editingCopyright.socan_work_id || '',
       sesac_work_id: editingCopyright.sesac_work_id || '',
+      mlc_work_id: (editingCopyright as any).mlc_work_id || '',
       ascap_status: (editingCopyright as any).ascap_status || 'not_registered',
       bmi_status: (editingCopyright as any).bmi_status || 'not_registered',
       socan_status: (editingCopyright as any).socan_status || 'not_registered',
       sesac_status: (editingCopyright as any).sesac_status || 'not_registered',
+      mlc_status: (editingCopyright as any).mlc_status || 'not_registered',
       copyright_reg_number: editingCopyright.copyright_reg_number || '',
       copyright_date: editingCopyright.copyright_date || '',
       notice_date: editingCopyright.notice_date || '',
@@ -453,10 +457,12 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         bmi_work_id: formData.bmi_work_id || null,
         socan_work_id: formData.socan_work_id || null,
         sesac_work_id: formData.sesac_work_id || null,
+        mlc_work_id: formData.mlc_work_id || null,
         ascap_status: formData.ascap_status === 'not_registered' ? null : formData.ascap_status,
         bmi_status: formData.bmi_status === 'not_registered' ? null : formData.bmi_status,
         socan_status: formData.socan_status === 'not_registered' ? null : formData.socan_status,
         sesac_status: formData.sesac_status === 'not_registered' ? null : formData.sesac_status,
+        mlc_status: formData.mlc_status === 'not_registered' ? null : formData.mlc_status,
         copyright_reg_number: formData.copyright_reg_number || null,
         copyright_date: formData.copyright_date || null,
         notice_date: formData.notice_date || null,
@@ -1024,6 +1030,34 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                   <Select
                     value={formData.sesac_status || 'not_registered'}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, sesac_status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_registered">Not Registered</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="registered">Registered</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="mlc_work_id">MLC Work ID</Label>
+                  <Input
+                    id="mlc_work_id"
+                    value={formData.mlc_work_id || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, mlc_work_id: e.target.value }))}
+                    placeholder="MLC Work ID"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="mlc_status">MLC Status</Label>
+                  <Select
+                    value={formData.mlc_status || 'not_registered'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, mlc_status: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
