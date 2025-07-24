@@ -6,6 +6,13 @@ interface SubscriptionData {
   subscribed: boolean;
   subscription_tier: string | null;
   subscription_end: string | null;
+  has_active_trial: boolean;
+  trial_info: {
+    trial_type: string;
+    trial_identifier: string;
+    trial_modules: string[];
+    trial_end_date: string;
+  } | null;
 }
 
 export const useSubscription = () => {
@@ -13,6 +20,8 @@ export const useSubscription = () => {
     subscribed: false,
     subscription_tier: null,
     subscription_end: null,
+    has_active_trial: false,
+    trial_info: null,
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -130,6 +139,8 @@ export const useSubscription = () => {
           subscribed: false,
           subscription_tier: null,
           subscription_end: null,
+          has_active_trial: false,
+          trial_info: null,
         });
         setLoading(false);
       }

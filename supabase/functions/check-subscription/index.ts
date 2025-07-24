@@ -106,6 +106,31 @@ serve(async (req) => {
       logStep("No active subscription found");
     }
 
+    // Check for active free trials
+    const { data: trialData, error: trialError } = await supabaseClient
+      .from('user_free_trials')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('trial_status', 'active')
+      .gt('trial_end_date', new Date().toISOString())
+      .order('trial_end_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let hasActiveTrial = false;
+    let trialInfo = null;
+    
+    if (trialData && !trialError) {
+      hasActiveTrial = true;
+      trialInfo = {
+        trial_type: trialData.trial_type,
+        trial_identifier: trialData.trial_identifier,
+        trial_modules: trialData.trial_modules,
+        trial_end_date: trialData.trial_end_date
+      };
+      logStep("Active free trial found", trialInfo);
+    }
+
     await supabaseClient.from("subscribers").upsert({
       email: user.email,
       user_id: user.id,
@@ -116,11 +141,13 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'email' });
 
-    logStep("Updated database with subscription info", { subscribed: hasActiveSub, subscriptionTier });
+    logStep("Updated database with subscription info", { subscribed: hasActiveSub, subscriptionTier, hasActiveTrial });
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       subscription_tier: subscriptionTier,
-      subscription_end: subscriptionEnd
+      subscription_end: subscriptionEnd,
+      has_active_trial: hasActiveTrial,
+      trial_info: trialInfo
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

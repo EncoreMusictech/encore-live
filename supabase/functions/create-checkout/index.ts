@@ -42,8 +42,8 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { productType, productId, billingInterval = 'month' } = await req.json();
-    logStep("Request body parsed", { productType, productId, billingInterval });
+    const { productType, productId, billingInterval = 'month', trialModules } = await req.json();
+    logStep("Request body parsed", { productType, productId, billingInterval, trialModules });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
@@ -121,7 +121,9 @@ serve(async (req) => {
     logStep("Line items prepared", { lineItems });
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
-    const session = await stripe.checkout.sessions.create({
+    
+    // Create session configuration with trial support
+    const sessionConfig: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: lineItems,
@@ -134,7 +136,20 @@ serve(async (req) => {
         product_id: productId,
         billing_interval: billingInterval
       }
-    });
+    };
+
+    // Add free trial if modules are specified (14 day trial)
+    if (trialModules && Array.isArray(trialModules) && trialModules.length > 0) {
+      sessionConfig.subscription_data = {
+        trial_period_days: 14,
+        metadata: {
+          trial_modules: JSON.stringify(trialModules)
+        }
+      };
+      logStep("Adding 14-day free trial to subscription", { trialModules });
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     logStep("Stripe checkout session created", { sessionId: session.id, url: session.url });
 
