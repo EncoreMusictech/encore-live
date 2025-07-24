@@ -83,31 +83,13 @@ const Index = () => {
       <Hero />
       
       {/* Modules Section */}
-      <section id="modules" className="py-20 bg-secondary/30 relative overflow-hidden">
-        {/* Background Tech Images */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-10 left-10 w-32 h-32 rounded-full overflow-hidden border border-electric-lavender/30">
-            <img 
-              src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=200&q=80" 
-              alt="MacBook with code"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="absolute bottom-10 right-10 w-24 h-24 rounded-lg overflow-hidden border border-dusty-gold/30 rotate-12">
-            <img 
-              src="https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?auto=format&fit=crop&w=200&q=80" 
-              alt="Light bulb innovation"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-        
-        <div className="container mx-auto px-4 relative z-10">
+      <section id="modules" className="py-20 bg-secondary/30">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-16 animate-fade-in">
-            <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Complete <span className="bg-gradient-primary bg-clip-text text-transparent">Rights Management</span> Suite
             </h2>
-            <p className="font-body text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Six powerful modules designed specifically for music industry professionals
             </p>
           </div>
@@ -130,31 +112,13 @@ const Index = () => {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-background relative overflow-hidden">
-        {/* Background Tech Graphics */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 right-20 w-40 h-40 rounded-lg overflow-hidden border border-electric-lavender/20 -rotate-6">
-            <img 
-              src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=300&q=80" 
-              alt="Monitor with code"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="absolute bottom-20 left-20 w-28 h-28 rounded-full overflow-hidden border border-dusty-gold/20">
-            <img 
-              src="https://images.unsplash.com/photo-1483058712412-4245e9b90334?auto=format&fit=crop&w=200&q=80" 
-              alt="iMac setup"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-        
-        <div className="container mx-auto px-4 relative z-10">
+      <section id="pricing" className="py-20 bg-background">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Choose Your <span className="bg-gradient-accent bg-clip-text text-transparent">Plan</span>
             </h2>
-            <p className="font-body text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Bundled packages with significant savings, or build your own modular solution
             </p>
           </div>
