@@ -52,7 +52,7 @@ const Auth = () => {
       console.log('Starting demo login...');
       
       // Try to sign in first
-      const { error: signInError } = await signIn('info@encoremusic.tech', 'demo123');
+      const { error: signInError } = await signIn('demo@encoremusic.tech', 'demo123');
       console.log('First sign in attempt result:', { signInError });
       
       if (signInError) {
@@ -68,7 +68,7 @@ const Auth = () => {
         if (!response.error) {
           console.log('Demo user created, attempting sign in again...');
           // Try to sign in again after creating the user
-          const { error: secondSignInError } = await signIn('info@encoremusic.tech', 'demo123');
+          const { error: secondSignInError } = await signIn('demo@encoremusic.tech', 'demo123');
           console.log('Second sign in attempt result:', { secondSignInError });
         } else {
           console.error('Failed to create demo user:', response.error);

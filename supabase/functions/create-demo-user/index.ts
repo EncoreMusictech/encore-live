@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
 
     // Create the demo user
     const { data: user, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: 'info@encoremusic.tech',
+      email: 'demo@encoremusic.tech',
       password: 'demo123',
       email_confirm: true
     })
