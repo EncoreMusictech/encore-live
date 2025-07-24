@@ -22,12 +22,10 @@ import { ContractUpload } from "@/components/contracts/ContractUpload";
 import { DemoPublishingContracts } from "@/components/contracts/DemoPublishingContracts";
 import { DemoPublishingContract } from "@/data/demo-publishing-contracts";
 import { CopyrightWritersDebug } from "@/components/debug/CopyrightWritersDebug";
-import { useContracts } from "@/hooks/useContracts";
 
 const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
   const { canAccess } = useDemoAccess();
-  const { contracts, loading } = useContracts();
 
   useEffect(() => {
     updatePageMetadata('contractManagement');
@@ -84,42 +82,11 @@ const ContractManagement = () => {
     }
   ];
 
-  // Calculate real-time stats from contract data
-  const activeContracts = contracts?.filter(c => c.contract_status === 'active' || c.contract_status === 'signed') || [];
-  const pendingSignatures = contracts?.filter(c => c.signature_status === 'pending' || c.signature_status === 'sent') || [];
-  const expiringContracts = contracts?.filter(c => {
-    if (!c.end_date) return false;
-    const endDate = new Date(c.end_date);
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-    return endDate <= thirtyDaysFromNow && endDate >= new Date();
-  }) || [];
-  
-  const totalValue = contracts?.reduce((sum, contract) => {
-    return sum + (contract.advance_amount || 0);
-  }, 0) || 0;
-
   const stats = [
-    { 
-      title: "Active Contracts", 
-      value: activeContracts.length.toString(), 
-      change: contracts && contracts.length > 0 ? `${contracts.length} total` : "No contracts yet"
-    },
-    { 
-      title: "Pending Signatures", 
-      value: pendingSignatures.length.toString(), 
-      change: pendingSignatures.length > 2 ? `${pendingSignatures.length - 2} urgent` : "On track"
-    },
-    { 
-      title: "Expiring Soon", 
-      value: expiringContracts.length.toString(), 
-      change: "Next 30 days"
-    },
-    { 
-      title: "Total Value", 
-      value: `$${totalValue.toLocaleString()}`, 
-      change: activeContracts.length > 0 ? `${activeContracts.length} active deals` : "No active deals"
-    }
+    { title: "Active Contracts", value: "24", change: "+3 this month" },
+    { title: "Pending Signatures", value: "5", change: "2 urgent" },
+    { title: "Expiring Soon", value: "8", change: "Next 30 days" },
+    { title: "Total Value", value: "$2.4M", change: "+12% this quarter" }
   ];
 
   return (
@@ -442,27 +409,22 @@ const ContractManagement = () => {
           </Dialog>
         </div>
 
-
-        {/* Real-time Analytics Dashboard */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Stats Overview */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map((stat, index) => (
             <Card key={index}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {stat.title}
-                </CardTitle>
-                <div className="h-4 w-4 text-muted-foreground">
-                  {index === 0 && <FileText className="h-4 w-4" />}
-                  {index === 1 && <Users className="h-4 w-4" />}
-                  {index === 2 && <Calendar className="h-4 w-4" />}
-                  {index === 3 && <DollarSign className="h-4 w-4" />}
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {stat.title}
+                    </p>
+                    <p className="text-2xl font-bold">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stat.change}
+                    </p>
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stat.change}
-                </p>
               </CardContent>
             </Card>
           ))}
@@ -470,14 +432,42 @@ const ContractManagement = () => {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="contracts">All Contracts</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="contracts">Contracts</TabsTrigger>
+            <TabsTrigger value="demos">Demo Contracts</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="contracts">
+          <TabsContent value="contracts" className="space-y-4">
+            {/* Search and Filter Bar */}
+            <div className="flex gap-4 items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input 
+                  placeholder="Search contracts by title, counterparty, or type..."
+                  className="pl-10"
+                />
+              </div>
+              <Button variant="outline" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+            </div>
+
             <ContractList onEdit={handleEditContract} />
+          </TabsContent>
+
+          <TabsContent value="demos">
+            <DemoPublishingContracts 
+              onLoadDemo={(demoContract: DemoPublishingContract) => {
+                // Store the demo data and open the form
+                setSelectedDemoData(demoContract);
+                setSelectedContractType("publishing");
+                setCreationMethod("new");
+                setIsCreateDialogOpen(true);
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="templates">
@@ -485,48 +475,23 @@ const ContractManagement = () => {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Contract Status Distribution</CardTitle>
+                  <CardTitle>Contract Analytics</CardTitle>
+                  <CardDescription>
+                    Insights into your contract portfolio and performance
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {['draft', 'signed', 'active', 'expired', 'terminated'].map((status) => {
-                      const count = contracts?.filter(c => c.contract_status === status).length || 0;
-                      const percentage = contracts && contracts.length > 0 ? (count / contracts.length * 100).toFixed(1) : 0;
-                      return (
-                        <div key={status} className="flex items-center justify-between">
-                          <span className="capitalize">{status.replace('_', ' ')}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">{count}</span>
-                            <span className="text-xs text-muted-foreground">({percentage}%)</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="text-center py-12 text-muted-foreground">
+                    Analytics dashboard coming soon...
                   </div>
                 </CardContent>
               </Card>
               
-              <Card>
-                <CardHeader>
-                  <CardTitle>Contract Types</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {contractTypes.map((type) => {
-                      const count = contracts?.filter(c => c.contract_type === type.id).length || 0;
-                      return (
-                        <div key={type.id} className="flex items-center justify-between">
-                          <span>{type.title}</span>
-                          <span className="text-sm text-muted-foreground">{count}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Temporary Debug Component */}
+              <CopyrightWritersDebug />
             </div>
           </TabsContent>
         </Tabs>
