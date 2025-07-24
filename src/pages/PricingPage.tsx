@@ -311,12 +311,29 @@ const PricingPage = () => {
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-primary/5 pointer-events-none" />
+        {/* Background Tech Images */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-10 left-5 w-24 h-24 rounded-lg overflow-hidden border border-electric-lavender/20 rotate-45">
+            <img 
+              src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=200&q=80" 
+              alt="Circuit board"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="absolute top-20 right-10 w-32 h-32 rounded-full overflow-hidden border border-dusty-gold/20">
+            <img 
+              src="https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=200&q=80" 
+              alt="Colorful code"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
         <div className="container mx-auto px-4 py-20 relative">
           <div className="text-center mb-16 animate-fade-in">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            <h1 className="font-headline text-4xl md:text-6xl font-bold mb-6">
               Flexible <span className="bg-gradient-primary bg-clip-text text-transparent">Pricing</span> for Every Creator
             </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+            <p className="font-body text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
               Choose modular tools, bundled savings, or enterprise solutions. Only pay for what you use.
             </p>
             

@@ -48,8 +48,8 @@ const Hero = () => {
               <div className="bg-gradient-primary rounded-full p-3 w-12 h-12 mx-auto mb-4">
                 <Music className="h-6 w-6 text-primary-foreground" />
               </div>
-              <h3 className="font-semibold">Complete Rights Management</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="font-headline font-semibold">Complete Rights Management</h3>
+              <p className="font-body text-sm text-muted-foreground">
                 Track copyrights, contracts, and licensing deals
               </p>
             </div>
@@ -58,8 +58,8 @@ const Hero = () => {
               <div className="bg-gradient-primary rounded-full p-3 w-12 h-12 mx-auto mb-4">
                 <TrendingUp className="h-6 w-6 text-primary-foreground" />
               </div>
-              <h3 className="font-semibold">Catalog Valuation</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="font-headline font-semibold">Catalog Valuation</h3>
+              <p className="font-body text-sm text-muted-foreground">
                 AI-powered forecasting and market analysis
               </p>
             </div>
@@ -68,10 +68,39 @@ const Hero = () => {
               <div className="bg-gradient-primary rounded-full p-3 w-12 h-12 mx-auto mb-4">
                 <Shield className="h-6 w-6 text-primary-foreground" />
               </div>
-              <h3 className="font-semibold">Secure Client Portal</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="font-headline font-semibold">Secure Client Portal</h3>
+              <p className="font-body text-sm text-muted-foreground">
                 Tier-based access for artists and stakeholders
               </p>
+            </div>
+          </div>
+
+          {/* Tech Aesthetic Graphics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16 opacity-60">
+            <div className="relative overflow-hidden rounded-lg border border-electric-lavender/20 shadow-fader">
+              <img 
+                src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80" 
+                alt="Circuit board representing digital infrastructure"
+                className="w-full h-48 object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-vinyl opacity-80"></div>
+              <div className="absolute bottom-4 left-4 text-white">
+                <h4 className="font-headline text-lg font-bold">Digital Spine</h4>
+                <p className="font-body text-sm opacity-90">Powered by cutting-edge technology</p>
+              </div>
+            </div>
+            
+            <div className="relative overflow-hidden rounded-lg border border-dusty-gold/20 shadow-fader">
+              <img 
+                src="https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=800&q=80" 
+                alt="Code on monitor representing software interface"
+                className="w-full h-48 object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-accent opacity-80"></div>
+              <div className="absolute bottom-4 left-4 text-white">
+                <h4 className="font-headline text-lg font-bold">Analog Soul</h4>
+                <p className="font-body text-sm opacity-90">Classic workflow, modern precision</p>
+              </div>
             </div>
           </div>
         </div>
