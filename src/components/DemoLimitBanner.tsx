@@ -30,6 +30,8 @@ const DemoLimitBanner = ({ module, className = "" }: DemoLimitBannerProps) => {
         return 'Royalties Processing';
       case 'accountBalances':
         return 'Account Balances Summary';
+      case 'dealSimulator':
+        return 'Deal Simulator';
       default:
         return moduleId;
     }
@@ -47,6 +49,8 @@ const DemoLimitBanner = ({ module, className = "" }: DemoLimitBannerProps) => {
         return 'statement import';
       case 'accountBalances':
         return 'balance report view';
+      case 'dealSimulator':
+        return 'saved scenario';
       default:
         return 'action';
     }

@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { updatePageMetadata } from "@/utils/seo";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 import Header from "@/components/Header";
 import { TrackSelectorWithSuspense, DealSimulatorWithSuspense } from "@/components/LazyComponents";
 import DealScenarios from "@/components/DealScenarios";
+import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +34,7 @@ interface Album {
 }
 
 const DealSimulatorPage = () => {
+  const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
   const [currentArtist, setCurrentArtist] = useState<Artist | null>(null);
   const [artistName, setArtistName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -138,6 +141,12 @@ const DealSimulatorPage = () => {
       return;
     }
 
+    // Check demo access before saving
+    if (!canAccess('dealSimulator')) {
+      showUpgradeModalForModule('dealSimulator');
+      return;
+    }
+
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) {
@@ -160,6 +169,9 @@ const DealSimulatorPage = () => {
       if (error) {
         throw error;
       }
+
+      // Increment demo usage after successful save
+      incrementUsage('dealSimulator');
 
       toast({
         title: "Success",
@@ -204,6 +216,8 @@ const DealSimulatorPage = () => {
               Analyze catalog acquisitions and licensing deals with detailed financial projections
             </p>
           </div>
+
+          <DemoLimitBanner module="dealSimulator" className="mb-6" />
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">

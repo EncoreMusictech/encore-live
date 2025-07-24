@@ -18,8 +18,8 @@ const DemoModulesPage = () => {
   const demoModules = [
     {
       id: "catalog-valuation",
-      title: "Catalog Valuation",
-      description: "AI-powered catalog assessment with 3-5 year forecasting and deal simulation tools",
+      title: "Catalog Valuation & Deal Simulator",
+      description: "AI-powered catalog assessment with 3-5 year forecasting and deal simulation tools. Includes 1 demo valuation and 1 demo deal scenario save.",
       icon: TrendingUp,
       path: "/catalog-valuation",
       demoKey: "catalogValuation",

@@ -22,6 +22,10 @@ interface DemoLimits {
     licenses: number;
     maxLicenses: number;
   };
+  dealSimulator: {
+    scenarios: number;
+    maxScenarios: number;
+  };
 }
 
 interface DemoAccessContextType {
@@ -63,6 +67,10 @@ const INITIAL_DEMO_LIMITS: DemoLimits = {
   syncLicensing: {
     licenses: 0,
     maxLicenses: 1,
+  },
+  dealSimulator: {
+    scenarios: 0,
+    maxScenarios: 1,
   },
 };
 
@@ -123,6 +131,8 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
           return demoLimits.royaltiesProcessing.imports < demoLimits.royaltiesProcessing.maxImports;
         case 'syncLicensing':
           return demoLimits.syncLicensing.licenses < demoLimits.syncLicensing.maxLicenses;
+        case 'dealSimulator':
+          return demoLimits.dealSimulator.scenarios < demoLimits.dealSimulator.maxScenarios;
         default:
           return false;
       }
@@ -144,6 +154,8 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
           return demoLimits.royaltiesProcessing.imports < demoLimits.royaltiesProcessing.maxImports;
         case 'syncLicensing':
           return demoLimits.syncLicensing.licenses < demoLimits.syncLicensing.maxLicenses;
+        case 'dealSimulator':
+          return demoLimits.dealSimulator.scenarios < demoLimits.dealSimulator.maxScenarios;
         default:
           return false;
       }
@@ -176,6 +188,9 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
           case 'syncLicensing':
             newLimits.syncLicensing.licenses += 1;
             break;
+          case 'dealSimulator':
+            newLimits.dealSimulator.scenarios += 1;
+            break;
         }
         
         return newLimits;
@@ -204,6 +219,9 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
         case 'syncLicensing':
           setUpgradeMessage('Demo complete! You\'ve explored sync licensing. Sign up to manage unlimited sync deals and access advanced tracking features.');
           break;
+        case 'dealSimulator':
+          setUpgradeMessage('Demo complete! You\'ve saved your first deal scenario. Sign up to save unlimited scenarios and access advanced deal modeling features.');
+          break;
       }
       setShowUpgradeModal(true);
     }
@@ -225,6 +243,8 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
           return demoLimits.royaltiesProcessing.maxImports - demoLimits.royaltiesProcessing.imports;
         case 'syncLicensing':
           return demoLimits.syncLicensing.maxLicenses - demoLimits.syncLicensing.licenses;
+        case 'dealSimulator':
+          return demoLimits.dealSimulator.maxScenarios - demoLimits.dealSimulator.scenarios;
         default:
           return 0;
       }
