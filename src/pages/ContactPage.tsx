@@ -1,0 +1,385 @@
+import { useState } from "react";
+import Header from "@/components/Header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { 
+  MessageCircle, 
+  Phone, 
+  Mail, 
+  Send, 
+  Search, 
+  Clock, 
+  CheckCircle,
+  AlertCircle,
+  FileText,
+  PlayCircle,
+  Users,
+  Star
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+
+const ContactPage = () => {
+  const [ticketForm, setTicketForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    priority: "",
+    category: "",
+    subject: "",
+    description: ""
+  });
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleTicketSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle ticket submission
+    toast({
+      title: "Support Ticket Submitted",
+      description: "We'll get back to you within 24 hours.",
+    });
+    // Reset form
+    setTicketForm({
+      firstName: "",
+      lastName: "",
+      email: "",
+      priority: "",
+      category: "",
+      subject: "",
+      description: ""
+    });
+  };
+
+  const faqItems = [
+    "How do I upgrade my subscription tier?",
+    "What payment methods do you accept?",
+    "How do I mint an NFT of my music?",
+    "Can I cancel my subscription anytime?",
+    "How does the vendor marketplace work?"
+  ];
+
+  const recentTickets = [
+    {
+      id: "TIC-001",
+      subject: "Upload issue with audio files",
+      status: "resolved",
+      daysAgo: 2
+    },
+    {
+      id: "TIC-002", 
+      subject: "Subscription billing question",
+      status: "in_progress",
+      daysAgo: 3
+    },
+    {
+      id: "TIC-003",
+      subject: "NFT minting error",
+      status: "resolved", 
+      daysAgo: 7
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      
+      {/* Hero Section with Record Groove Background */}
+      <div className="relative overflow-hidden py-20">
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
+          backgroundImage: `url('/lovable-uploads/ab53c16c-028b-497c-ac9f-feab103ef7de.png')`
+        }} />
+        <div className="absolute inset-0 bg-jet-black/40" />
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center mb-16">
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+              Customer Support
+            </h1>
+            <p className="text-xl text-foreground/80 max-w-2xl mx-auto">
+              24/7 dedicated support for all your HRMNY needs
+            </p>
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <span className="text-green-400 font-medium">Online Now</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Contact Methods */}
+          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <Card className="text-center hover:shadow-elegant transition-all duration-300">
+              <CardHeader>
+                <div className="bg-gradient-primary rounded-full p-4 w-16 h-16 mx-auto mb-4">
+                  <MessageCircle className="h-8 w-8 text-primary-foreground" />
+                </div>
+                <CardTitle>Live Chat</CardTitle>
+                <CardDescription>Get instant help from our support team</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Average response: 2 min</p>
+                <Button className="bg-gradient-primary text-primary-foreground">
+                  Start Chat
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center hover:shadow-elegant transition-all duration-300">
+              <CardHeader>
+                <div className="bg-gradient-primary rounded-full p-4 w-16 h-16 mx-auto mb-4">
+                  <Phone className="h-8 w-8 text-primary-foreground" />
+                </div>
+                <CardTitle>Phone Support</CardTitle>
+                <CardDescription>Speak directly with a support specialist</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-primary font-medium mb-4">+1 (555) 123-HRMNY</p>
+                <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                  Call Now
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center hover:shadow-elegant transition-all duration-300">
+              <CardHeader>
+                <div className="bg-gradient-primary rounded-full p-4 w-16 h-16 mx-auto mb-4">
+                  <Mail className="h-8 w-8 text-primary-foreground" />
+                </div>
+                <CardTitle>Email Support</CardTitle>
+                <CardDescription>Send us a detailed message</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-primary font-medium mb-4">support@hrmny.com</p>
+                <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                  Send Email
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Support Ticket Form */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Send className="h-5 w-5" />
+                Submit a Support Ticket
+              </CardTitle>
+              <CardDescription>
+                Describe your issue and we'll get back to you quickly
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleTicketSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      placeholder="Enter your first name"
+                      value={ticketForm.firstName}
+                      onChange={(e) => setTicketForm({...ticketForm, firstName: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      placeholder="Enter your last name"
+                      value={ticketForm.lastName}
+                      onChange={(e) => setTicketForm({...ticketForm, lastName: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={ticketForm.email}
+                    onChange={(e) => setTicketForm({...ticketForm, email: e.target.value})}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="priority">Priority Level</Label>
+                    <Select value={ticketForm.priority} onValueChange={(value) => setTicketForm({...ticketForm, priority: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Low - General inquiry" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low - General inquiry</SelectItem>
+                        <SelectItem value="medium">Medium - Issue affecting workflow</SelectItem>
+                        <SelectItem value="high">High - Urgent issue</SelectItem>
+                        <SelectItem value="critical">Critical - System down</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="category">Category</Label>
+                    <Select value={ticketForm.category} onValueChange={(value) => setTicketForm({...ticketForm, category: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Account & Billing" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="billing">Account & Billing</SelectItem>
+                        <SelectItem value="technical">Technical Support</SelectItem>
+                        <SelectItem value="feature">Feature Request</SelectItem>
+                        <SelectItem value="integration">Integration Help</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="subject">Subject</Label>
+                  <Input
+                    id="subject"
+                    placeholder="Brief description of your issue"
+                    value={ticketForm.subject}
+                    onChange={(e) => setTicketForm({...ticketForm, subject: e.target.value})}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Please provide detailed information about your issue..."
+                    rows={4}
+                    value={ticketForm.description}
+                    onChange={(e) => setTicketForm({...ticketForm, description: e.target.value})}
+                    required
+                  />
+                </div>
+
+                <Button type="submit" className="w-full bg-gradient-primary text-primary-foreground">
+                  <Send className="h-4 w-4 mr-2" />
+                  Submit Ticket
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Right Sidebar */}
+          <div className="space-y-6">
+            
+            {/* FAQ Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
+                  Frequently Asked Questions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search FAQs..."
+                    className="pl-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  {faqItems.map((faq, index) => (
+                    <button key={index} className="w-full text-left p-2 hover:bg-muted rounded-md transition-colors text-sm">
+                      {faq}
+                    </button>
+                  ))}
+                </div>
+                <Button variant="outline" className="w-full">View All FAQs</Button>
+              </CardContent>
+            </Card>
+
+            {/* Recent Tickets */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Recent Tickets</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {recentTickets.map((ticket) => (
+                  <div key={ticket.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{ticket.subject}</p>
+                      <p className="text-xs text-muted-foreground">#{ticket.id} • {ticket.daysAgo} days ago</p>
+                    </div>
+                    <Badge variant={ticket.status === "resolved" ? "default" : "secondary"} className="text-xs">
+                      {ticket.status === "resolved" ? (
+                        <><CheckCircle className="h-3 w-3 mr-1" />Resolved</>
+                      ) : (
+                        <><Clock className="h-3 w-3 mr-1" />In Progress</>
+                      )}
+                    </Badge>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Helpful Resources */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Helpful Resources</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button variant="ghost" className="w-full justify-start">
+                  <FileText className="h-4 w-4 mr-2" />
+                  User Guide & Documentation
+                </Button>
+                <Button variant="ghost" className="w-full justify-start">
+                  <PlayCircle className="h-4 w-4 mr-2" />
+                  Video Tutorials
+                </Button>
+                <Button variant="ghost" className="w-full justify-start">
+                  <Users className="h-4 w-4 mr-2" />
+                  Community Forum
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Rate Our Support */}
+        <Separator className="my-12" />
+        <Card className="max-w-md mx-auto text-center">
+          <CardHeader>
+            <CardTitle>Rate Our Support</CardTitle>
+            <CardDescription>How was your experience with our support team?</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} className="p-1">
+                  <Star className="h-6 w-6 text-yellow-400 fill-current" />
+                </button>
+              ))}
+            </div>
+            <Button className="bg-gradient-primary text-primary-foreground">
+              Submit Rating
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default ContactPage;

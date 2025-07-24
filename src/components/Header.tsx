@@ -33,9 +33,9 @@ const Header = () => {
           <Link to="/pricing" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-dusty-gold transition-colors duration-300">
             Pricing
           </Link>
-          <a href="#contact" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300">
+          <Link to="/contact" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300">
             Contact
-          </a>
+          </Link>
         </nav>
 
         <div className="flex items-center space-x-3">
@@ -78,12 +78,12 @@ const Header = () => {
                 >
                   Pricing
                 </Link>
-                <a 
-                  href="#contact" 
+                <Link 
+                  to="/contact" 
                   className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
                 >
                   Contact
-                </a>
+                </Link>
               </nav>
             </SheetContent>
           </Sheet>

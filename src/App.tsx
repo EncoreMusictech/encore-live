@@ -25,6 +25,7 @@ import RoyaltiesPage from "./pages/RoyaltiesPage";
 import PayoutsPage from "./pages/PayoutsPage";
 import ClientPortal from "./components/ClientPortal";
 import ClientAdminPage from "./pages/ClientAdminPage";
+import ContactPage from "./pages/ContactPage";
 
 // Create a stable QueryClient instance
 let queryClient: QueryClient | null = null;
@@ -110,6 +111,7 @@ const App = () => {
                 </ProtectedRoute>
               } />
               <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/contact" element={<ContactPage />} />
               <Route path="/client-portal" element={
                 <ProtectedRoute>
                   <ErrorBoundary>
