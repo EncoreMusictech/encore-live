@@ -1,9 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Music, Menu, User, LogOut } from "lucide-react";
+import { 
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+import { Music, Menu, User, LogOut, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { SubscriptionBadge } from "@/components/SubscriptionBadge";
+import { modules } from "@/data/modules";
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -27,6 +36,39 @@ const Header = () => {
         </Link>
 
         <nav className="hidden md:flex items-center space-x-6">
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300 bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
+                  Features
+                </NavigationMenuTrigger>
+                <NavigationMenuContent className="bg-jet-black/95 backdrop-blur-lg border border-electric-lavender/20 shadow-glow">
+                  <div className="grid w-[400px] gap-3 p-4">
+                    {modules.map((module) => (
+                      <NavigationMenuLink key={module.id} asChild>
+                        <Link
+                          to={`/features/${module.id}`}
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-electric-lavender/10 hover:text-electric-lavender focus:bg-electric-lavender/10 focus:text-electric-lavender"
+                        >
+                          <div className="flex items-center gap-3">
+                            <module.icon className="h-4 w-4 text-dusty-gold" />
+                            <div>
+                              <div className="text-sm font-medium leading-none text-platinum-gray">
+                                {module.title}
+                              </div>
+                              <p className="line-clamp-2 text-xs leading-snug text-platinum-gray/60 mt-1">
+                                {module.description}
+                              </p>
+                            </div>
+                          </div>
+                        </Link>
+                      </NavigationMenuLink>
+                    ))}
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
           <Link to="/modules" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300">
             Modules
           </Link>
