@@ -5,13 +5,15 @@ import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const ModulesPage = () => {
   const { user } = useAuth();
+  const { subscribed, subscription_tier, loading: subscriptionLoading } = useSubscription();
   const { toast } = useToast();
   const [userModules, setUserModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,13 +109,15 @@ const ModulesPage = () => {
     }
   ];
 
-  // Administrator account gets access to all modules
+  // Check if user has paid subscription access
   const isAdministrator = user?.email === 'info@encoremusic.tech';
+  const hasPaidAccess = isAdministrator || subscribed;
+  
   const subscribedModules = isAdministrator ? allModules : allModules.filter(module => 
     userModules.includes(module.id)
   );
 
-  if (loading) {
+  if (loading || subscriptionLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -141,14 +145,53 @@ const ModulesPage = () => {
     );
   }
 
+  // Redirect non-subscribers to pricing page
+  if (!hasPaidAccess) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="bg-gradient-primary rounded-full p-4 w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+                <Lock className="h-8 w-8 text-primary-foreground" />
+              </div>
+              <h1 className="text-3xl font-bold mb-4">Subscription Required</h1>
+              <p className="text-muted-foreground mb-6">
+                Access to modules is restricted to paid subscribers. Upgrade your account to unlock powerful music industry tools.
+              </p>
+              <div className="space-y-3">
+                <Button asChild className="w-full">
+                  <Link to="/pricing">View Pricing Plans</Link>
+                </Button>
+                <Button variant="outline" asChild className="w-full">
+                  <Link to="/">Back to Home</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">My Modules</h1>
-          <p className="text-muted-foreground">Manage your subscribed modules and access powerful music industry tools.</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">My Modules</h1>
+              <p className="text-muted-foreground">Manage your subscribed modules and access powerful music industry tools.</p>
+            </div>
+            {subscription_tier && (
+              <Badge className="bg-gradient-primary text-primary-foreground">
+                {subscription_tier} Plan
+              </Badge>
+            )}
+          </div>
         </div>
 
         {subscribedModules.length === 0 ? (
