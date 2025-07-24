@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { DemoAccessProvider } from "@/hooks/useDemoAccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminOrProtectedRoute from "@/components/AdminOrProtectedRoute";
+import DemoOrProtectedRoute from "@/components/DemoOrProtectedRoute";
 import DemoUpgradeModal from "@/components/DemoUpgradeModal";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { SecurityProvider } from "@/components/SecurityProvider";
@@ -66,31 +67,39 @@ const App = () => {
               <Route path="/demo-modules" element={<DemoModulesPage />} />
               <Route path="/features/:moduleId" element={<FeaturesPage />} />
               <Route path="/catalog-valuation" element={
-                <ErrorBoundary>
-                  <CatalogValuationPage />
-                </ErrorBoundary>
+                <DemoOrProtectedRoute moduleId="catalogValuation">
+                  <ErrorBoundary>
+                    <CatalogValuationPage />
+                  </ErrorBoundary>
+                </DemoOrProtectedRoute>
               } />
               <Route path="/deal-simulator" element={
-                <ErrorBoundary>
-                  <DealSimulatorPage />
-                </ErrorBoundary>
+                <DemoOrProtectedRoute moduleId="dealSimulator">
+                  <ErrorBoundary>
+                    <DealSimulatorPage />
+                  </ErrorBoundary>
+                </DemoOrProtectedRoute>
               } />
               <Route path="/contract-management" element={
-                <ErrorBoundary>
-                  <ContractManagement />
-                </ErrorBoundary>
+                <DemoOrProtectedRoute moduleId="contractManagement">
+                  <ErrorBoundary>
+                    <ContractManagement />
+                  </ErrorBoundary>
+                </DemoOrProtectedRoute>
               } />
               <Route path="/copyright-management" element={
-                <ErrorBoundary>
-                  <CopyrightManagement />
-                </ErrorBoundary>
+                <DemoOrProtectedRoute moduleId="copyrightManagement">
+                  <ErrorBoundary>
+                    <CopyrightManagement />
+                  </ErrorBoundary>
+                </DemoOrProtectedRoute>
               } />
               <Route path="/sync-licensing" element={
-                <AdminOrProtectedRoute>
+                <DemoOrProtectedRoute moduleId="syncLicensing">
                   <ErrorBoundary>
                     <SyncLicensingPage />
                   </ErrorBoundary>
-                </AdminOrProtectedRoute>
+                </DemoOrProtectedRoute>
               } />
               <Route path="/sync-licensing-preview" element={
                 <ProtectedRoute>
@@ -100,14 +109,18 @@ const App = () => {
                 </ProtectedRoute>
               } />
               <Route path="/reconciliation" element={
-                <ErrorBoundary>
-                  <ReconciliationPage />
-                </ErrorBoundary>
+                <DemoOrProtectedRoute moduleId="royaltiesProcessing">
+                  <ErrorBoundary>
+                    <ReconciliationPage />
+                  </ErrorBoundary>
+                </DemoOrProtectedRoute>
               } />
               <Route path="/royalties" element={
-                <ErrorBoundary>
-                  <RoyaltiesPage />
-                </ErrorBoundary>
+                <DemoOrProtectedRoute moduleId="royaltiesProcessing">
+                  <ErrorBoundary>
+                    <RoyaltiesPage />
+                  </ErrorBoundary>
+                </DemoOrProtectedRoute>
               } />
               <Route path="/payouts" element={
                 <ProtectedRoute>
