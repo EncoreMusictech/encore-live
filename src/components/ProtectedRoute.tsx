@@ -1,12 +1,13 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { logSecurityEvent, isSessionValid } from '@/lib/security';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -20,7 +21,22 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  if (!user) {
+  if (!user || !session) {
+    logSecurityEvent('unauthorized_access_attempt', {
+      path: location.pathname,
+      timestamp: Date.now()
+    });
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // Validate session age (sessions older than 24 hours should be refreshed)
+  const sessionTimestamp = session.expires_at ? new Date(session.expires_at).getTime() : Date.now();
+  if (!isSessionValid(sessionTimestamp, 86400000)) { // 24 hours
+    logSecurityEvent('expired_session_access', {
+      userId: user.id,
+      sessionAge: Date.now() - sessionTimestamp,
+      path: location.pathname
+    });
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 

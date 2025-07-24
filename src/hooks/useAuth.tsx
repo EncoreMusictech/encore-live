@@ -2,6 +2,13 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  validateEmail, 
+  validatePassword, 
+  sanitizeInput, 
+  clientRateLimit, 
+  logSecurityEvent 
+} from '@/lib/security';
 
 interface AuthContextType {
   user: User | null;
@@ -41,9 +48,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    // Input validation
+    // Rate limiting for sign up attempts
+    const clientIp = 'signup-attempt'; // In a real app, you'd get the actual IP
+    if (!clientRateLimit(clientIp, 5, 900000)) { // 5 attempts per 15 minutes
+      const rateLimitError = { message: "Too many sign up attempts. Please try again later." };
+      logSecurityEvent('signup_rate_limit_exceeded', { email: sanitizeInput(email) });
+      toast({
+        title: "Sign up failed",
+        description: rateLimitError.message,
+        variant: "destructive",
+      });
+      return { error: rateLimitError };
+    }
+
+    // Input validation and sanitization
     if (!email?.trim() || !password?.trim()) {
       const validationError = { message: "Email and password are required" };
+      logSecurityEvent('signup_missing_credentials', {});
       toast({
         title: "Sign up failed",
         description: validationError.message,
@@ -52,10 +73,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return { error: validationError };
     }
 
-    // Basic email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+    const sanitizedEmail = sanitizeInput(email.trim().toLowerCase(), 320);
+    
+    // Enhanced email validation
+    if (!validateEmail(sanitizedEmail)) {
       const validationError = { message: "Please enter a valid email address" };
+      logSecurityEvent('signup_invalid_email', { email: sanitizedEmail });
       toast({
         title: "Sign up failed",
         description: validationError.message,
@@ -64,9 +87,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return { error: validationError };
     }
 
-    // Password strength validation
-    if (password.length < 8) {
-      const validationError = { message: "Password must be at least 8 characters long" };
+    // Enhanced password validation
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      const validationError = { message: passwordValidation.errors.join(', ') };
+      logSecurityEvent('signup_weak_password', { email: sanitizedEmail });
       toast({
         title: "Sign up failed",
         description: validationError.message,
@@ -78,7 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(), // Normalize email
+      email: sanitizedEmail,
       password,
       options: {
         emailRedirectTo: redirectUrl
@@ -86,12 +111,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     if (error) {
-      // Enhanced error handling
+      // Enhanced error handling with security logging
       let errorMessage = error.message;
+      logSecurityEvent('signup_failed', { 
+        email: sanitizedEmail, 
+        error: error.message,
+        timestamp: Date.now()
+      });
+      
       if (error.message.includes('already registered')) {
         errorMessage = "An account with this email already exists. Please sign in instead.";
       } else if (error.message.includes('invalid')) {
         errorMessage = "Please check your email and password and try again.";
+      } else if (error.message.includes('rate')) {
+        errorMessage = "Too many requests. Please try again later.";
+      } else {
+        // Don't expose internal errors
+        errorMessage = "Sign up failed. Please try again.";
       }
       
       toast({
@@ -100,6 +136,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         variant: "destructive",
       });
     } else {
+      logSecurityEvent('signup_success', { email: sanitizedEmail });
       toast({
         title: "Check your email",
         description: "We've sent you a confirmation link",
@@ -110,9 +147,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    // Input validation
+    // Rate limiting for sign in attempts
+    const clientIp = 'signin-attempt'; // In a real app, you'd get the actual IP
+    if (!clientRateLimit(clientIp, 10, 900000)) { // 10 attempts per 15 minutes
+      const rateLimitError = { message: "Too many sign in attempts. Please try again later." };
+      logSecurityEvent('signin_rate_limit_exceeded', { email: sanitizeInput(email) });
+      toast({
+        title: "Sign in failed",
+        description: rateLimitError.message,
+        variant: "destructive",
+      });
+      return { error: rateLimitError };
+    }
+
+    // Input validation and sanitization
     if (!email?.trim() || !password?.trim()) {
       const validationError = { message: "Email and password are required" };
+      logSecurityEvent('signin_missing_credentials', {});
+      toast({
+        title: "Sign in failed",
+        description: validationError.message,
+        variant: "destructive",
+      });
+      return { error: validationError };
+    }
+
+    const sanitizedEmail = sanitizeInput(email.trim().toLowerCase(), 320);
+    
+    if (!validateEmail(sanitizedEmail)) {
+      const validationError = { message: "Please enter a valid email address" };
+      logSecurityEvent('signin_invalid_email', { email: sanitizedEmail });
       toast({
         title: "Sign in failed",
         description: validationError.message,
@@ -122,17 +186,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(), // Normalize email
+      email: sanitizedEmail,
       password,
     });
 
     if (error) {
-      // Enhanced error handling - don't expose specific error details
+      // Enhanced error handling with security logging
+      logSecurityEvent('signin_failed', { 
+        email: sanitizedEmail, 
+        error: error.message,
+        timestamp: Date.now()
+      });
+      
       let errorMessage = "Invalid email or password";
       if (error.message.includes('Email not confirmed')) {
         errorMessage = "Please check your email and click the confirmation link before signing in.";
       } else if (error.message.includes('Too many requests')) {
         errorMessage = "Too many failed attempts. Please try again later.";
+      } else if (error.message.includes('Invalid login credentials')) {
+        errorMessage = "Invalid email or password";
       }
       
       toast({
@@ -140,6 +212,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: errorMessage,
         variant: "destructive",
       });
+    } else {
+      logSecurityEvent('signin_success', { email: sanitizedEmail });
     }
 
     return { error };
