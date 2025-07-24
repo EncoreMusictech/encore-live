@@ -325,7 +325,7 @@ const PricingPage = () => {
               All modules include unlimited assets and users
             </p>
             
-            <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground mb-8">
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-primary" />
                 <span>14-day free trial</span>
@@ -339,6 +339,8 @@ const PricingPage = () => {
                 <span>Cancel anytime</span>
               </div>
             </div>
+            
+            <h2 className="text-3xl md:text-4xl font-bold mb-8">Ready to Get Started?</h2>
             
             {/* Subscription Status */}
             {subscribed && subscription_tier && (
