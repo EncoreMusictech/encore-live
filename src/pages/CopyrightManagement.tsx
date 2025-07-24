@@ -95,29 +95,24 @@ const CopyrightManagement = () => {
     setEditingCopyright(null);
     setIsEditDialogOpen(false);
     
-    // Wait a moment for the database update to complete, then refetch
-    await new Promise(resolve => setTimeout(resolve, 500));
-    await refetch();
-    
-    toast({
-      title: "Copyright Updated", 
-      description: "Your copyright work has been successfully updated."
-    });
-    
-    // Log the updated data after refetch
-    setTimeout(() => {
-      console.log('Current copyrights after update:', copyrights);
-      const updatedCopyright = copyrights?.find(c => c.id === editingCopyright?.id);
-      if (updatedCopyright) {
-        console.log('Updated copyright PRO status:', {
-          ascap_status: (updatedCopyright as any).ascap_status,
-          bmi_status: (updatedCopyright as any).bmi_status,
-          socan_status: (updatedCopyright as any).socan_status,
-          sesac_status: (updatedCopyright as any).sesac_status
-        });
-        console.log('Full updated copyright object:', updatedCopyright);
-      }
-    }, 1000);
+    // Immediately refetch the data to ensure table updates
+    try {
+      await refetch();
+      
+      toast({
+        title: "Copyright Updated", 
+        description: "Your copyright work has been successfully updated."
+      });
+      
+      console.log('Copyright data refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing copyright data:', error);
+      toast({
+        title: "Refresh Error",
+        description: "Data was saved but failed to refresh the table. Please reload the page.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEditCancel = () => {
@@ -186,14 +181,25 @@ const CopyrightManagement = () => {
 
           <TabsContent value="register">
             <EnhancedCopyrightForm 
-              onSuccess={() => {
-                refetch();
-                toast({
-                  title: "Copyright Created",
-                  description: "Your copyright work has been successfully created with all metadata."
-                });
+              onSuccess={async () => {
+                // Switch to the copyrights tab and refresh the data
+                setActiveTab("copyrights");
+                try {
+                  await refetch();
+                  toast({
+                    title: "Copyright Created",
+                    description: "Your copyright work has been successfully created with all metadata."
+                  });
+                } catch (error) {
+                  console.error('Error refreshing after create:', error);
+                  toast({
+                    title: "Created Successfully",
+                    description: "Copyright created but failed to refresh table. Please reload the page.",
+                    variant: "destructive"
+                  });
+                }
               }}
-              onCancel={() => {}}
+              onCancel={() => setActiveTab("copyrights")}
             />
           </TabsContent>
 

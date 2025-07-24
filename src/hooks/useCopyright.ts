@@ -96,6 +96,8 @@ export const useCopyright = () => {
       if (error) throw error;
       
       const oldCopyright = copyrights.find(c => c.id === id);
+      
+      // Update the local state immediately
       setCopyrights(prev => prev.map(c => c.id === id ? data : c));
       
       // Log the update activity
