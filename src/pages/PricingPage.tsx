@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { updatePageMetadata } from "@/utils/seo";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -246,6 +248,8 @@ const comparisonFeatures = [
 
 const PricingPage = () => {
   const [selectedModules, setSelectedModules] = useState<Set<string>>(new Set());
+  const { user } = useAuth();
+  const { subscribed, subscription_tier, loading, createCheckout, openCustomerPortal } = useSubscription();
 
   useEffect(() => {
     updatePageMetadata('pricing');
@@ -315,6 +319,32 @@ const PricingPage = () => {
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
               Choose modular tools, bundled savings, or enterprise solutions. Only pay for what you use.
             </p>
+            
+            {/* Subscription Status */}
+            {subscribed && subscription_tier && (
+              <div className="max-w-md mx-auto">
+                <Card className="bg-gradient-primary/10 border-primary/20">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Crown className="w-5 h-5 text-primary" />
+                      <span className="font-semibold">Active Subscription</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Currently subscribed to: <span className="font-medium text-foreground">{subscription_tier}</span>
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-3"
+                      onClick={openCustomerPortal}
+                      disabled={loading}
+                    >
+                      Manage Subscription
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -389,8 +419,18 @@ const PricingPage = () => {
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-gradient-primary text-primary-foreground hover:opacity-90'
                         }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!user) {
+                            // Redirect to auth page
+                            window.location.href = '/auth';
+                            return;
+                          }
+                          createCheckout('module', module.id);
+                        }}
+                        disabled={loading}
                       >
-                        {isSelected ? 'Added to Plan' : 'Add to Plan'}
+                        {!user ? 'Sign In to Subscribe' : (isSelected ? 'Added to Plan' : 'Subscribe')}
                       </Button>
                     </CardContent>
                   </Card>
@@ -511,8 +551,18 @@ const PricingPage = () => {
                         ))}
                       </ul>
 
-                      <Button className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90">
-                        Try This Plan
+                      <Button 
+                        className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
+                        onClick={() => {
+                          if (!user) {
+                            window.location.href = '/auth';
+                            return;
+                          }
+                          createCheckout('bundle', plan.id);
+                        }}
+                        disabled={loading}
+                      >
+                        {!user ? 'Sign In to Subscribe' : 'Subscribe to Plan'}
                       </Button>
                     </CardContent>
                   </Card>
@@ -575,11 +625,37 @@ const PricingPage = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-gradient-primary text-primary-foreground">
-              Customize My Plan
+            <Button 
+              size="lg" 
+              className="bg-gradient-primary text-primary-foreground"
+              onClick={() => {
+                if (!user) {
+                  window.location.href = '/auth';
+                  return;
+                }
+                // Scroll to modules tab
+                const modulesTab = document.querySelector('[value="modules"]');
+                if (modulesTab) {
+                  (modulesTab as HTMLElement).click();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+            >
+              {!user ? 'Sign In to Get Started' : 'Customize My Plan'}
             </Button>
-            <Button size="lg" variant="outline">
-              Try a Starter Plan
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={() => {
+                if (!user) {
+                  window.location.href = '/auth';
+                  return;
+                }
+                createCheckout('bundle', 'starter');
+              }}
+              disabled={loading}
+            >
+              {!user ? 'Sign In to Subscribe' : 'Try Starter Plan'}
             </Button>
           </div>
 

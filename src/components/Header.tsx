@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Music, Menu, User, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { SubscriptionBadge } from "@/components/SubscriptionBadge";
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -35,6 +36,7 @@ const Header = () => {
         </nav>
 
         <div className="flex items-center space-x-3">
+          <SubscriptionBadge />
           {user ? (
             <>
               <div className="flex items-center space-x-2 text-sm">
@@ -47,18 +49,11 @@ const Header = () => {
               </Button>
             </>
           ) : (
-            <>
-              <Link to="/auth">
-                <Button variant="ghost" size="sm">
-                  Sign In
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow">
-                  Start Free Trial
-                </Button>
-              </Link>
-            </>
+            <Link to="/auth">
+              <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow">
+                Start Free Trial
+              </Button>
+            </Link>
           )}
           <Sheet>
             <SheetTrigger asChild>
