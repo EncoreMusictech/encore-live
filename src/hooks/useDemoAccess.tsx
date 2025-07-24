@@ -18,6 +18,10 @@ interface DemoLimits {
     imports: number;
     maxImports: number;
   };
+  syncLicensing: {
+    licenses: number;
+    maxLicenses: number;
+  };
 }
 
 interface DemoAccessContextType {
@@ -54,6 +58,10 @@ const INITIAL_DEMO_LIMITS: DemoLimits = {
   royaltiesProcessing: {
     imports: 0,
     maxImports: 1,
+  },
+  syncLicensing: {
+    licenses: 0,
+    maxLicenses: 1,
   },
 };
 
@@ -115,6 +123,8 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
           return demoLimits.copyrightManagement.registrations < demoLimits.copyrightManagement.maxRegistrations;
         case 'royaltiesProcessing':
           return demoLimits.royaltiesProcessing.imports < demoLimits.royaltiesProcessing.maxImports;
+        case 'syncLicensing':
+          return demoLimits.syncLicensing.licenses < demoLimits.syncLicensing.maxLicenses;
         default:
           return false;
       }
@@ -142,6 +152,9 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
         case 'royaltiesProcessing':
           newLimits.royaltiesProcessing.imports += 1;
           break;
+        case 'syncLicensing':
+          newLimits.syncLicensing.licenses += 1;
+          break;
       }
       
       return newLimits;
@@ -164,6 +177,9 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
       case 'royaltiesProcessing':
         setUpgradeMessage('You\'ve completed the royalties demo. Sign up to unlock full reconciliation tools and unlimited statement processing.');
         break;
+      case 'syncLicensing':
+        setUpgradeMessage('Demo complete! You\'ve explored sync licensing. Sign up to manage unlimited sync deals and access advanced tracking features.');
+        break;
     }
     setShowUpgradeModal(true);
   };
@@ -180,6 +196,8 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
         return demoLimits.copyrightManagement.maxRegistrations - demoLimits.copyrightManagement.registrations;
       case 'royaltiesProcessing':
         return demoLimits.royaltiesProcessing.maxImports - demoLimits.royaltiesProcessing.imports;
+      case 'syncLicensing':
+        return demoLimits.syncLicensing.maxLicenses - demoLimits.syncLicensing.licenses;
       default:
         return 0;
     }

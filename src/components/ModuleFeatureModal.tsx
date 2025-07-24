@@ -2,6 +2,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface ModuleFeatureModalProps {
   isOpen: boolean;
@@ -100,6 +103,52 @@ const ModuleFeatureModal = ({ isOpen, onClose, module }: ModuleFeatureModalProps
 
   const screenshots = moduleScreenshots[module.id] || [];
   const Icon = module.icon;
+  const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleDemoClick = () => {
+    const moduleMapping: Record<string, string> = {
+      "catalog-valuation": "catalogValuation",
+      "contract-management": "contractManagement", 
+      "copyright-management": "copyrightManagement",
+      "sync-licensing": "syncLicensing",
+      "royalties-processing": "royaltiesProcessing"
+    };
+
+    const demoModule = moduleMapping[module.id];
+    
+    if (demoModule && canAccess(demoModule)) {
+      incrementUsage(demoModule);
+      toast({
+        title: "Demo Access Granted",
+        description: `You now have demo access to ${module.title}. Welcome to the demo!`,
+      });
+      
+      // Navigate to the appropriate module path
+      const modulePathMapping: Record<string, string> = {
+        "catalog-valuation": "/catalog-valuation",
+        "contract-management": "/contract-management",
+        "copyright-management": "/copyright-management", 
+        "sync-licensing": "/sync-licensing",
+        "royalties-processing": "/reconciliation"
+      };
+      
+      const path = modulePathMapping[module.id];
+      if (path) {
+        onClose();
+        navigate(path);
+      }
+    } else if (demoModule) {
+      showUpgradeModalForModule(demoModule);
+    } else {
+      toast({
+        title: "Demo Not Available",
+        description: "Demo access is not available for this module.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const tierColors = {
     Free: "bg-secondary text-secondary-foreground",
@@ -169,9 +218,7 @@ const ModuleFeatureModal = ({ isOpen, onClose, module }: ModuleFeatureModalProps
             </Button>
             <Button 
               variant="outline"
-              onClick={() => {
-                window.location.href = "/auth";
-              }}
+              onClick={handleDemoClick}
               className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground"
             >
               Demo
