@@ -103,13 +103,7 @@ export default function FeaturesPage() {
             {/* Screenshots Showcase */}
             {moduleScreenshots[module.id] && moduleScreenshots[module.id].length > 0 && (
               <Card>
-                <CardHeader>
-                  <CardTitle>Screenshots</CardTitle>
-                  <CardDescription>
-                    See {module.title} in action
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <ModuleScreenshotSlideshow 
                     screenshots={moduleScreenshots[module.id]} 
                     autoPlay={true}
