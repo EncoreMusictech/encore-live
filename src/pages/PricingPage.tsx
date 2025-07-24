@@ -317,7 +317,7 @@ const PricingPage = () => {
         <div className="absolute inset-0 bg-jet-black/40" />
         <div className="container mx-auto px-4 py-20 relative">
           <div className="text-center mb-16 animate-fade-in">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">Ready to Get Started?</h1>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">Flexible <span className="bg-gradient-primary bg-clip-text text-transparent">Pricing</span> for Every Creator</h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-4">
               Only pay for what you use. Bundle and save.
             </p>
