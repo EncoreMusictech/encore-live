@@ -86,6 +86,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     copyright_date?: string;
     notice_date?: string;
     isrc?: string;
+    artist?: string;
   }>>({
     work_title: '',
     work_type: 'original',
@@ -504,6 +505,18 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                    </div>
                 </div>
                 
+                <div className="space-y-2">
+                  <Label htmlFor="artist">Artist</Label>
+                  <Input
+                    id="artist"
+                    value={formData.artist || spotifyMetadata?.artist || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, artist: e.target.value }))}
+                    placeholder={spotifyMetadata?.artist ? "Auto-filled from Spotify" : "Enter artist name"}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="work_id">Work ID</Label>
                   <Input
