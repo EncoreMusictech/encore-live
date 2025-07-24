@@ -229,7 +229,10 @@ const CopyrightManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">
-                    {copyrights.filter(c => c.registration_status === "fully_registered").length}
+                    {copyrights.filter(c => 
+                      c.registration_status === "fully_registered" || 
+                      c.registration_status === "registered"
+                    ).length}
                   </div>
                   <p className="text-muted-foreground text-sm">Complete registration</p>
                 </CardContent>
@@ -241,7 +244,11 @@ const CopyrightManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-yellow-600">
-                    {copyrights.filter(c => c.registration_status === "pending_registration").length}
+                    {copyrights.filter(c => 
+                      c.status === "draft" ||
+                      c.registration_status === "pending_registration" ||
+                      c.registration_status === "pending"
+                    ).length}
                   </div>
                   <p className="text-muted-foreground text-sm">Awaiting registration</p>
                 </CardContent>
