@@ -117,13 +117,8 @@ export const getAllPROs = (): { value: string; label: string; territory: string 
       territory: cmo.territory
     }));
   
-  // Sort by territory first, then by name
-  pros.sort((a, b) => {
-    if (a.territory !== b.territory) {
-      return a.territory.localeCompare(b.territory);
-    }
-    return a.value.localeCompare(b.value);
-  });
+  // Sort alphabetically by name only
+  pros.sort((a, b) => a.value.localeCompare(b.value));
   
   return pros;
 };
