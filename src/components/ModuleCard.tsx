@@ -43,9 +43,6 @@ const ModuleCard = ({
           <div className="bg-gradient-primary rounded-lg p-3">
             <Icon className="h-6 w-6 text-primary-foreground" />
           </div>
-          <Badge className={tierColors[tier]}>
-            {tier}
-          </Badge>
         </div>
         
         <div>
