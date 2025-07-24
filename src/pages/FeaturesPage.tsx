@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { modules } from '@/data/modules';
+import { moduleScreenshots } from '@/data/module-screenshots';
 import Header from '@/components/Header';
+import ModuleScreenshotSlideshow from '@/components/ModuleScreenshotSlideshow';
 import { updatePageMetadata } from '@/utils/seo';
 import { useEffect } from 'react';
 
@@ -98,6 +100,24 @@ export default function FeaturesPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Screenshots Showcase */}
+            {moduleScreenshots[module.id] && moduleScreenshots[module.id].length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Screenshots</CardTitle>
+                  <CardDescription>
+                    See {module.title} in action
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ModuleScreenshotSlideshow 
+                    screenshots={moduleScreenshots[module.id]} 
+                    autoPlay={true}
+                    interval={5000}
+                  />
+                </CardContent>
+              </Card>
+            )}
             {/* Features Overview */}
             <Card>
               <CardHeader>

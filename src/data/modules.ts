@@ -87,6 +87,22 @@ export const modules = [
     description: "Centralized contract storage with smart tagging, alerts, and template library",
     icon: FileText,
     tier: "Free" as const,
+    subModules: [
+      {
+        id: "contract-upload",
+        title: "Contract Upload & Organization",
+        description: "Upload, categorize, and organize all your music contracts in one place",
+        icon: FileText,
+        path: "/contract-management"
+      },
+      {
+        id: "template-library",
+        title: "Template Library",
+        description: "Access industry-standard contract templates for all deal types",
+        icon: Archive,
+        path: "/contract-management"
+      }
+    ],
     features: [
       "Upload & organize contracts",
       "Auto-tag by deal type",
@@ -101,6 +117,22 @@ export const modules = [
     description: "Register and track copyrights with split assignments and metadata management",
     icon: Copyright,
     tier: "Free" as const,
+    subModules: [
+      {
+        id: "copyright-registration",
+        title: "Copyright Registration",
+        description: "Register and track copyrights with detailed metadata management",
+        icon: Copyright,
+        path: "/copyright-management"
+      },
+      {
+        id: "bulk-upload",
+        title: "Bulk Upload System",
+        description: "Import multiple works efficiently with CSV/Excel templates",
+        icon: Archive,
+        path: "/copyright-management"
+      }
+    ],
     features: [
       "ISRC/ISWC/IPI tracking",
       "Writer/publisher splits",
@@ -115,6 +147,22 @@ export const modules = [
     description: "Comprehensive sync deal pipeline with pitch tracking and deal memo generation",
     icon: Film,
     tier: "Pro" as const,
+    subModules: [
+      {
+        id: "sync-requests",
+        title: "Sync Request Management",
+        description: "Track and manage sync licensing requests from inquiry to completion",
+        icon: Film,
+        path: "/sync-licensing"
+      },
+      {
+        id: "rights-clearance",
+        title: "Rights Clearance",
+        description: "Comprehensive rights management and clearance workflow",
+        icon: Archive,
+        path: "/sync-licensing"
+      }
+    ],
     features: [
       "Pitch status tracking",
       "Media type categorization",
@@ -129,6 +177,22 @@ export const modules = [
     description: "Secure tier-based access for artists, managers, and vendors with custom views",
     icon: Users,
     tier: "Pro" as const,
+    subModules: [
+      {
+        id: "artist-dashboard",
+        title: "Artist Dashboard",
+        description: "Comprehensive earnings and performance dashboard for artists",
+        icon: Users,
+        path: "/client-portal"
+      },
+      {
+        id: "manager-oversight",
+        title: "Manager Oversight",
+        description: "Advanced deal and royalty oversight tools for managers",
+        icon: Archive,
+        path: "/client-portal"
+      }
+    ],
     features: [
       "Artist earnings dashboard",
       "Manager deal oversight",
