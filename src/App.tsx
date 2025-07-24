@@ -81,11 +81,9 @@ const App = () => {
                 </ErrorBoundary>
               } />
               <Route path="/copyright-management" element={
-                <ProtectedRoute>
-                  <ErrorBoundary>
-                    <CopyrightManagement />
-                  </ErrorBoundary>
-                </ProtectedRoute>
+                <ErrorBoundary>
+                  <CopyrightManagement />
+                </ErrorBoundary>
               } />
               <Route path="/sync-licensing" element={
                 <AdminOrProtectedRoute>
