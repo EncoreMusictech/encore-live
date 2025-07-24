@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AudioPlayer } from './AudioPlayer';
 import { useWriterContracts } from '@/hooks/useWriterContracts';
 import { WriterAgreementSection } from './WriterAgreementSection';
+import { ArtistSelector } from './ArtistSelector';
 
 interface EnhancedCopyrightFormProps {
   onSuccess?: () => void;
@@ -47,6 +48,21 @@ interface SpotifyMetadata {
   artist?: string;
   duration?: number;
   releaseDate?: string;
+  trackName?: string;
+  albumName?: string;
+  label?: string;
+}
+
+interface SpotifyTrackMetadata {
+  isrc?: string;
+  artist: string;
+  duration: number;
+  releaseDate: string;
+  trackName: string;
+  albumName: string;
+  label?: string;
+  previewUrl?: string;
+  popularity?: number;
 }
 
 export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ onSuccess, onCancel, editingCopyright }) => {
@@ -104,6 +120,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
   const [writers, setWriters] = useState<Writer[]>([]);
   const [spotifyMetadata, setSpotifyMetadata] = useState<SpotifyMetadata | null>(null);
+  const [spotifyAlternatives, setSpotifyAlternatives] = useState<SpotifyTrackMetadata[]>([]);
   const [newAka, setNewAka] = useState('');
 
   // Calculate total controlled share
@@ -137,10 +154,20 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           isrc: data.bestMatch.isrc,
           artist: data.bestMatch.artist,
           duration: data.bestMatch.duration,
-          releaseDate: data.bestMatch.releaseDate
+          releaseDate: data.bestMatch.releaseDate,
+          trackName: data.bestMatch.trackName,
+          albumName: data.bestMatch.albumName,
+          label: data.bestMatch.label
         };
 
         setSpotifyMetadata(metadata);
+        
+        // Store alternatives if available
+        if (data.alternatives && data.alternatives.length > 0) {
+          setSpotifyAlternatives(data.alternatives);
+        } else {
+          setSpotifyAlternatives([]);
+        }
         
         // Auto-populate form fields
         setFormData(prev => ({
@@ -149,7 +176,8 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           masters_ownership: metadata.masterOwner || prev.masters_ownership,
           mp3_link: metadata.previewUrl || prev.mp3_link,
           duration_seconds: metadata.duration || prev.duration_seconds,
-          creation_date: metadata.releaseDate || prev.creation_date
+          creation_date: metadata.releaseDate || prev.creation_date,
+          artist: metadata.artist || prev.artist
         }));
 
         // Store ISRC in spotifyMetadata for display/use
@@ -158,9 +186,10 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           isrc: metadata.isrc
         }));
 
+        const totalOptions = 1 + (data.alternatives?.length || 0);
         toast({
           title: "Spotify Metadata Found",
-          description: `Auto-filled metadata for "${data.bestMatch.trackName}" by ${data.bestMatch.artist}`,
+          description: `Found ${totalOptions} artist option${totalOptions > 1 ? 's' : ''} for "${data.bestMatch.trackName}"`,
         });
       }
     } catch (error) {
@@ -339,6 +368,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     });
     setWriters([]);
     setSpotifyMetadata(null);
+    setSpotifyAlternatives([]);
     setNewAka('');
     
     // Reset collapsible sections to initial state
@@ -505,15 +535,50 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                    </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="artist">Artist</Label>
-                  <Input
-                    id="artist"
-                    value={formData.artist || spotifyMetadata?.artist || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, artist: e.target.value }))}
-                    placeholder={spotifyMetadata?.artist ? "Auto-filled from Spotify" : "Enter artist name"}
-                  />
-                </div>
+                <ArtistSelector
+                  value={formData.artist || ''}
+                  onChange={(value) => setFormData(prev => ({ ...prev, artist: value }))}
+                  spotifyMetadata={spotifyMetadata && spotifyMetadata.artist ? {
+                    isrc: spotifyMetadata.isrc,
+                    artist: spotifyMetadata.artist,
+                    duration: spotifyMetadata.duration || 0,
+                    releaseDate: spotifyMetadata.releaseDate || '',
+                    trackName: spotifyMetadata.trackName || '',
+                    albumName: spotifyMetadata.albumName || spotifyMetadata.albumTitle || '',
+                    label: spotifyMetadata.label || spotifyMetadata.masterOwner,
+                    previewUrl: spotifyMetadata.previewUrl,
+                    popularity: spotifyMetadata.popularity
+                  } : null}
+                  alternatives={spotifyAlternatives}
+                  loading={spotifyLoading}
+                  onArtistSelect={(selectedMetadata) => {
+                    // Update form with selected artist's metadata
+                    setFormData(prev => ({
+                      ...prev,
+                      artist: selectedMetadata.artist,
+                      album_title: selectedMetadata.albumName || prev.album_title,
+                      masters_ownership: selectedMetadata.label || prev.masters_ownership,
+                      mp3_link: selectedMetadata.previewUrl || prev.mp3_link,
+                      duration_seconds: selectedMetadata.duration || prev.duration_seconds,
+                      creation_date: selectedMetadata.releaseDate || prev.creation_date
+                    }));
+                    
+                    // Update spotify metadata
+                    setSpotifyMetadata({
+                      albumTitle: selectedMetadata.albumName,
+                      masterOwner: selectedMetadata.label,
+                      previewUrl: selectedMetadata.previewUrl,
+                      popularity: selectedMetadata.popularity,
+                      isrc: selectedMetadata.isrc,
+                      artist: selectedMetadata.artist,
+                      duration: selectedMetadata.duration,
+                      releaseDate: selectedMetadata.releaseDate,
+                      trackName: selectedMetadata.trackName,
+                      albumName: selectedMetadata.albumName,
+                      label: selectedMetadata.label
+                    });
+                  }}
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
