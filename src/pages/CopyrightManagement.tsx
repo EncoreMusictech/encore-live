@@ -229,10 +229,17 @@ const CopyrightManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">
-                    {copyrights.filter(c => 
-                      c.registration_status === "fully_registered" || 
-                      c.registration_status === "registered"
-                    ).length}
+                    {copyrights.filter(c => {
+                      // Check if any PRO status contains "registered"
+                      const ascapRegistered = (c as any).ascap_status?.toLowerCase().includes('registered');
+                      const bmiRegistered = (c as any).bmi_status?.toLowerCase().includes('registered');
+                      const socanRegistered = (c as any).socan_status?.toLowerCase().includes('registered');
+                      const sesacRegistered = (c as any).sesac_status?.toLowerCase().includes('registered');
+                      
+                      return ascapRegistered || bmiRegistered || socanRegistered || sesacRegistered ||
+                             c.registration_status === "fully_registered" || 
+                             c.registration_status === "registered";
+                    }).length}
                   </div>
                   <p className="text-muted-foreground text-sm">Complete registration</p>
                 </CardContent>
