@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Star } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Index = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [selectedTier, setSelectedTier] = useState<"Free" | "Pro" | "Enterprise">("Pro");
   const [selectedModule, setSelectedModule] = useState<typeof modules[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,11 +24,7 @@ const Index = () => {
   }, []);
 
   const handleGetStarted = (moduleId: string) => {
-    const module = modules.find(m => m.id === moduleId);
-    if (module) {
-      setSelectedModule(module);
-      setIsModalOpen(true);
-    }
+    navigate(`/features/${moduleId}`);
   };
 
   const pricingTiers = [

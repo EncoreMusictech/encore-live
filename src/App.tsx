@@ -20,6 +20,7 @@ import ContractManagement from "./pages/ContractManagement";
 import CopyrightManagement from "./pages/CopyrightManagement";
 import SyncLicensingPage from "./pages/SyncLicensingPage";
 import SyncLicensingPreviewPage from "./pages/SyncLicensingPreviewPage";
+import FeaturesPage from "./pages/FeaturesPage";
 import PricingPage from "./pages/PricingPage";
 import ReconciliationPage from "./pages/ReconciliationPage";
 import RoyaltiesPage from "./pages/RoyaltiesPage";
@@ -61,6 +62,7 @@ const App = () => {
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<Index />} />
               <Route path="/modules" element={<ModulesPage />} />
+              <Route path="/features/:moduleId" element={<FeaturesPage />} />
               <Route path="/catalog-valuation" element={
                 <ErrorBoundary>
                   <CatalogValuationPage />
