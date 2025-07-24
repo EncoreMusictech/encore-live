@@ -31,6 +31,7 @@ interface ParsedCopyright {
   publishers?: ParsedPublisher[];
   recordings?: ParsedRecording[];
   errors?: string[];
+  warnings?: string[];
   row_number?: number;
 }
 
@@ -65,7 +66,7 @@ interface BulkUploadProps {
 
 export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
   const { toast } = useToast();
-  const { createCopyright } = useCopyright();
+  const { createCopyright, copyrights, getWritersForCopyright } = useCopyright();
   const { logActivity } = useActivityLog();
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedCopyright[]>([]);
@@ -129,6 +130,52 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     URL.revokeObjectURL(url);
   };
 
+  // Function to check for potential duplicates
+  const checkForDuplicates = useCallback(async (parsedCopyrights: ParsedCopyright[]) => {
+    try {
+      // For each parsed copyright, check against existing copyrights
+      for (const parsedCopyright of parsedCopyrights) {
+        parsedCopyright.warnings = [];
+        
+        for (const existingCopyright of copyrights) {
+          // Check work title similarity (case-insensitive)
+          const titleMatch = parsedCopyright.work_title.toLowerCase() === existingCopyright.work_title.toLowerCase();
+          
+          if (titleMatch) {
+            // Get writers for the existing copyright
+            const existingWriters = await getWritersForCopyright(existingCopyright.id);
+            
+            // Compare writers and splits
+            const parsedWriterNames = (parsedCopyright.writers || []).map(w => w.writer_name.toLowerCase().trim()).sort();
+            const existingWriterNames = existingWriters.map(w => w.writer_name.toLowerCase().trim()).sort();
+            
+            const writersMatch = parsedWriterNames.length === existingWriterNames.length && 
+                               parsedWriterNames.every((name, index) => name === existingWriterNames[index]);
+            
+            if (writersMatch) {
+              // Compare ownership splits
+              const parsedSplits = (parsedCopyright.writers || []).map(w => w.ownership_percentage).sort();
+              const existingSplits = existingWriters.map(w => w.ownership_percentage).sort();
+              
+              const splitsMatch = parsedSplits.length === existingSplits.length &&
+                                parsedSplits.every((split, index) => Math.abs(split - existingSplits[index]) < 0.01);
+              
+              if (splitsMatch) {
+                parsedCopyright.warnings!.push(`Potential duplicate: Exact match found with existing work "${existingCopyright.work_title}" (Work ID: ${existingCopyright.work_id || 'N/A'})`);
+              } else {
+                parsedCopyright.warnings!.push(`Potential duplicate: Similar work found with different splits "${existingCopyright.work_title}" (Work ID: ${existingCopyright.work_id || 'N/A'})`);
+              }
+            } else {
+              parsedCopyright.warnings!.push(`Potential duplicate: Same title with different writers "${existingCopyright.work_title}" (Work ID: ${existingCopyright.work_id || 'N/A'})`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for duplicates:', error);
+    }
+  }, [copyrights, getWritersForCopyright]);
+
   const parseFile = useCallback(async (uploadedFile: File) => {
     try {
       setIsProcessing(true);
@@ -166,6 +213,10 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
 
       // Process and validate data
       const processed = processRawData(rawData);
+      
+      // Check for duplicates against existing copyrights
+      await checkForDuplicates(processed);
+      
       setParsedData(processed);
       
       const valid = processed.filter(item => !item.errors || item.errors.length === 0);
@@ -182,7 +233,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     } finally {
       setIsProcessing(false);
     }
-  }, []);
+  }, [checkForDuplicates]);
 
   const processRawData = (rawData: any[]): ParsedCopyright[] => {
     return rawData.map((row, index) => {
@@ -502,6 +553,9 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               <TabsTrigger value="valid">
                 Valid Records ({validData.length})
               </TabsTrigger>
+              <TabsTrigger value="warnings">
+                Warnings ({parsedData.filter(item => item.warnings && item.warnings.length > 0).length})
+              </TabsTrigger>
               <TabsTrigger value="errors">
                 Errors ({parsedData.length - validData.length})
               </TabsTrigger>
@@ -566,6 +620,50 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   No valid records found. Please fix the errors and try again.
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="warnings" className="space-y-4">
+              {parsedData.filter(item => item.warnings && item.warnings.length > 0).length > 0 ? (
+                <div className="overflow-x-auto max-h-96">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Row</TableHead>
+                        <TableHead>Work Title</TableHead>
+                        <TableHead>Writers</TableHead>
+                        <TableHead>Duplicate Warnings</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {parsedData
+                        .filter(item => item.warnings && item.warnings.length > 0)
+                        .map((item, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{item.row_number}</TableCell>
+                            <TableCell className="font-medium">{item.work_title}</TableCell>
+                            <TableCell>
+                              {item.writers?.map(w => `${w.writer_name} (${w.ownership_percentage}%)`).join(', ') || '-'}
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                {item.warnings!.map((warning, warningIndex) => (
+                                  <Badge key={warningIndex} variant="secondary" className="text-xs">
+                                    <AlertCircle className="w-3 h-3 mr-1" />
+                                    {warning}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No potential duplicates found. All records appear to be unique!
                 </div>
               )}
             </TabsContent>
