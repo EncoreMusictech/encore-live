@@ -3158,6 +3158,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_subscriptions: {
         Row: {
           billing_cycle: string
@@ -3480,6 +3501,13 @@ export type Database = {
         Args: { _user_id: string; _module?: string }
         Returns: boolean
       }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
       log_copyright_activity: {
         Args: {
           p_user_id: string
@@ -3542,6 +3570,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "user"
       artist_type: "indie" | "label" | "360" | "distribution_only"
       batch_status: "Pending" | "Imported" | "Processed"
       client_role: "admin" | "client"
@@ -3699,6 +3728,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       artist_type: ["indie", "label", "360", "distribution_only"],
       batch_status: ["Pending", "Imported", "Processed"],
       client_role: ["admin", "client"],

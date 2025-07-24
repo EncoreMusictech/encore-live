@@ -5,15 +5,28 @@ import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Lock } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Lock, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+interface ModuleType {
+  id: string;
+  title: string;
+  description: string;
+  icon: any;
+  status: string;
+  path: string;
+  subModules?: { title: string; path: string; }[];
+  adminOnly?: boolean;
+}
 
 const ModulesPage = () => {
   const { user } = useAuth();
   const { subscribed, subscription_tier, loading: subscriptionLoading } = useSubscription();
+  const { isAdmin, loading: rolesLoading } = useUserRoles();
   const { toast } = useToast();
   const [userModules, setUserModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +70,7 @@ const ModulesPage = () => {
     fetchUserModules();
   }, [user, toast]);
 
-  const allModules = [
+  const allModules: ModuleType[] = [
     {
       id: "catalog-valuation",
       title: "Catalog Valuation",
@@ -109,15 +122,31 @@ const ModulesPage = () => {
     }
   ];
 
+  // Admin-only modules
+  const adminModules: ModuleType[] = [
+    {
+      id: "client-portal",
+      title: "Client Portal",
+      description: "Secure tier-based access for artists, managers, and vendors with custom views",
+      icon: Users,
+      status: "Active",
+      path: "/client-portal",
+      adminOnly: true
+    }
+  ];
+
   // Check if user has paid subscription access
-  const isAdministrator = user?.email === 'info@encoremusic.tech';
+  const isAdministrator = user?.email === 'info@encoremusic.tech' || isAdmin;
   const hasPaidAccess = isAdministrator || subscribed;
   
-  const subscribedModules = isAdministrator ? allModules : allModules.filter(module => 
+  // Include admin modules if user is admin
+  const availableModules = isAdmin ? [...allModules, ...adminModules] : allModules;
+  
+  const subscribedModules = isAdministrator ? availableModules : availableModules.filter(module => 
     userModules.includes(module.id)
   );
 
-  if (loading || subscriptionLoading) {
+  if (loading || subscriptionLoading || rolesLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -213,9 +242,16 @@ const ModulesPage = () => {
                     <div className="bg-gradient-primary rounded-lg p-2 w-fit">
                       <IconComponent className="h-6 w-6 text-primary-foreground" />
                     </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
-                      {module.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        {module.status}
+                      </Badge>
+                      {module.adminOnly && (
+                        <Badge variant="outline" className="text-orange-600 border-orange-200">
+                          Admin Only
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   <CardTitle className="text-xl">{module.title}</CardTitle>
                   <CardDescription>{module.description}</CardDescription>
