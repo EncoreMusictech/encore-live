@@ -55,6 +55,25 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
     }
   };
 
+  const getProRegistrationStatuses = (copyright: any) => {
+    const statuses = [];
+    
+    if (copyright.ascap_status && copyright.ascap_status !== 'not_registered') {
+      statuses.push({ pro: 'ASCAP', status: copyright.ascap_status });
+    }
+    if (copyright.bmi_status && copyright.bmi_status !== 'not_registered') {
+      statuses.push({ pro: 'BMI', status: copyright.bmi_status });
+    }
+    if (copyright.socan_status && copyright.socan_status !== 'not_registered') {
+      statuses.push({ pro: 'SOCAN', status: copyright.socan_status });
+    }
+    if (copyright.sesac_status && copyright.sesac_status !== 'not_registered') {
+      statuses.push({ pro: 'SESAC', status: copyright.sesac_status });
+    }
+    
+    return statuses;
+  };
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -384,7 +403,27 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                         </div>
                       </TableCell>
                       <TableCell>
-                        {getRegistrationStatusBadge(copyright.registration_status || 'not_registered')}
+                        <div className="space-y-1">
+                          {(() => {
+                            const proStatuses = getProRegistrationStatuses(copyright);
+                            if (proStatuses.length === 0) {
+                              return <Badge variant="outline">Not Registered</Badge>;
+                            }
+                            return proStatuses.map((proStatus, index) => (
+                              <div key={index} className="flex items-center gap-1">
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                                >
+                                  {proStatus.pro}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {proStatus.status.replace('_', ' ')}
+                                </span>
+                              </div>
+                            ));
+                          })()}
+                        </div>
                       </TableCell>
                        <TableCell>
                          {copyright.mp3_link ? (
