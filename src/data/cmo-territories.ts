@@ -107,6 +107,27 @@ export const getCMOsByTerritory = (territory: string): CMO[] => {
   return CMO_DATA.filter(cmo => cmo.territory === territory);
 };
 
+// Get all PROs for the PRO Affiliation dropdown
+export const getAllPROs = (): { value: string; label: string; territory: string }[] => {
+  const pros = CMO_DATA
+    .filter(cmo => cmo.type === 'PRO' || cmo.type === 'Both')
+    .map(cmo => ({
+      value: cmo.name,
+      label: `${cmo.name} (${cmo.territory})`,
+      territory: cmo.territory
+    }));
+  
+  // Sort by territory first, then by name
+  pros.sort((a, b) => {
+    if (a.territory !== b.territory) {
+      return a.territory.localeCompare(b.territory);
+    }
+    return a.value.localeCompare(b.value);
+  });
+  
+  return pros;
+};
+
 // Registration status options
 export const REGISTRATION_STATUS_OPTIONS = [
   { value: 'not_registered', label: 'Not Registered' },

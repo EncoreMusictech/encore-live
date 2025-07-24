@@ -22,7 +22,7 @@ import { useWriterContracts } from '@/hooks/useWriterContracts';
 import { WriterAgreementSection } from './WriterAgreementSection';
 import { ArtistSelector } from './ArtistSelector';
 import { ProRegistrationSection } from './ProRegistrationSection';
-import { CMORegistration } from '@/data/cmo-territories';
+import { CMORegistration, getAllPROs } from '@/data/cmo-territories';
 
 interface EnhancedCopyrightFormProps {
   onSuccess?: () => void;
@@ -836,10 +836,12 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                         <SelectTrigger>
                           <SelectValue placeholder="Select PRO" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ASCAP">ASCAP</SelectItem>
-                          <SelectItem value="BMI">BMI</SelectItem>
-                          <SelectItem value="SESAC">SESAC</SelectItem>
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                          {getAllPROs().map(pro => (
+                            <SelectItem key={`${pro.value}-${pro.territory}`} value={pro.value}>
+                              {pro.label}
+                            </SelectItem>
+                          ))}
                           <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select>
