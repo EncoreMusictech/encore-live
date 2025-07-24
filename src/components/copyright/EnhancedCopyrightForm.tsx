@@ -21,6 +21,8 @@ import { AudioPlayer } from './AudioPlayer';
 import { useWriterContracts } from '@/hooks/useWriterContracts';
 import { WriterAgreementSection } from './WriterAgreementSection';
 import { ArtistSelector } from './ArtistSelector';
+import { ProRegistrationSection } from './ProRegistrationSection';
+import { CMORegistration } from '@/data/cmo-territories';
 
 interface EnhancedCopyrightFormProps {
   onSuccess?: () => void;
@@ -124,6 +126,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
   const [spotifyMetadata, setSpotifyMetadata] = useState<SpotifyMetadata | null>(null);
   const [spotifyAlternatives, setSpotifyAlternatives] = useState<SpotifyTrackMetadata[]>([]);
   const [newAka, setNewAka] = useState('');
+  const [cmoRegistrations, setCmoRegistrations] = useState<CMORegistration[]>([]);
 
   // Calculate total controlled share
   const totalControlledShare = writers
@@ -395,6 +398,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     setSpotifyMetadata(null);
     setSpotifyAlternatives([]);
     setNewAka('');
+    setCmoRegistrations([]);
     
     // Reset collapsible sections to initial state
     setMetadataOpen(true);
@@ -929,149 +933,10 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="ascap_work_id">ASCAP Work ID</Label>
-                  <Input
-                    id="ascap_work_id"
-                    value={formData.ascap_work_id || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, ascap_work_id: e.target.value }))}
-                    placeholder="ASCAP Work ID"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="ascap_status">ASCAP Status</Label>
-                  <Select
-                    value={formData.ascap_status || 'not_registered'}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, ascap_status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="not_registered">Not Registered</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="registered">Registered</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="bmi_work_id">BMI Work ID</Label>
-                  <Input
-                    id="bmi_work_id"
-                    value={formData.bmi_work_id || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, bmi_work_id: e.target.value }))}
-                    placeholder="BMI Work ID"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="bmi_status">BMI Status</Label>
-                  <Select
-                    value={formData.bmi_status || 'not_registered'}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, bmi_status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="not_registered">Not Registered</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="registered">Registered</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="socan_work_id">SOCAN Work ID</Label>
-                  <Input
-                    id="socan_work_id"
-                    value={formData.socan_work_id || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, socan_work_id: e.target.value }))}
-                    placeholder="SOCAN Work ID"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="socan_status">SOCAN Status</Label>
-                  <Select
-                    value={formData.socan_status || 'not_registered'}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, socan_status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="not_registered">Not Registered</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="registered">Registered</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="sesac_work_id">SESAC Work ID</Label>
-                  <Input
-                    id="sesac_work_id"
-                    value={formData.sesac_work_id || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, sesac_work_id: e.target.value }))}
-                    placeholder="SESAC Work ID"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="sesac_status">SESAC Status</Label>
-                  <Select
-                    value={formData.sesac_status || 'not_registered'}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, sesac_status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="not_registered">Not Registered</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="registered">Registered</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="mlc_work_id">MLC Work ID</Label>
-                  <Input
-                    id="mlc_work_id"
-                    value={formData.mlc_work_id || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, mlc_work_id: e.target.value }))}
-                    placeholder="MLC Work ID"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="mlc_status">MLC Status</Label>
-                  <Select
-                    value={formData.mlc_status || 'not_registered'}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, mlc_status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="not_registered">Not Registered</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="registered">Registered</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
+            <ProRegistrationSection 
+              registrations={cmoRegistrations}
+              onRegistrationsChange={setCmoRegistrations}
+            />
           </CollapsibleContent>
         </Card>
       </Collapsible>
