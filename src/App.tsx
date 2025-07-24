@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import CatalogValuationPage from "./pages/CatalogValuation";
 import DealSimulatorPage from "./pages/DealSimulatorPage";
 import ModulesPage from "./pages/ModulesPage";
+import DemoModulesPage from "./pages/DemoModulesPage";
 import ContractManagement from "./pages/ContractManagement";
 import CopyrightManagement from "./pages/CopyrightManagement";
 import SyncLicensingPage from "./pages/SyncLicensingPage";
@@ -62,6 +63,7 @@ const App = () => {
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<Index />} />
               <Route path="/modules" element={<ModulesPage />} />
+              <Route path="/demo-modules" element={<DemoModulesPage />} />
               <Route path="/features/:moduleId" element={<FeaturesPage />} />
               <Route path="/catalog-valuation" element={
                 <ErrorBoundary>

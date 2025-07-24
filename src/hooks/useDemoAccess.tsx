@@ -41,6 +41,7 @@ interface DemoAccessContextType {
 const DemoAccessContext = createContext<DemoAccessContextType | undefined>(undefined);
 
 const ADMIN_EMAIL = 'info@encoremusic.tech';
+const DEMO_EMAIL = 'demo@encoremusic.tech';
 
 const INITIAL_DEMO_LIMITS: DemoLimits = {
   catalogValuation: {
@@ -72,7 +73,7 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
   const [upgradeMessage, setUpgradeMessage] = useState('');
 
   // Determine if user is demo or admin
-  const isDemo = !user || user?.user_metadata?.role === 'demo'; // Unauthenticated users or users with demo role are demo users
+  const isDemo = !user || user?.email === DEMO_EMAIL || user?.user_metadata?.role === 'demo'; // Unauthenticated users, demo account, or users with demo role are demo users
   const isAdmin = user?.email === ADMIN_EMAIL;
 
   // Load demo limits from localStorage on mount
@@ -109,10 +110,28 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
     // Admin users have full access
     if (isAdmin) return true;
     
-    // Authenticated non-admin users have full access
-    if (user && !isAdmin) return true;
+    // Demo account users have limited access (same as unauthenticated demo users)
+    if (user?.email === DEMO_EMAIL) {
+      switch (module) {
+        case 'catalogValuation':
+          return demoLimits.catalogValuation.searches < demoLimits.catalogValuation.maxSearches;
+        case 'contractManagement':
+          return demoLimits.contractManagement.contracts < demoLimits.contractManagement.maxContracts;
+        case 'copyrightManagement':
+          return demoLimits.copyrightManagement.registrations < demoLimits.copyrightManagement.maxRegistrations;
+        case 'royaltiesProcessing':
+          return demoLimits.royaltiesProcessing.imports < demoLimits.royaltiesProcessing.maxImports;
+        case 'syncLicensing':
+          return demoLimits.syncLicensing.licenses < demoLimits.syncLicensing.maxLicenses;
+        default:
+          return false;
+      }
+    }
     
-    // Demo users have limited access
+    // Authenticated non-admin, non-demo users have full access
+    if (user && !isDemo) return true;
+    
+    // Unauthenticated demo users have limited access
     if (isDemo) {
       switch (module) {
         case 'catalogValuation':
@@ -134,73 +153,84 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
   };
 
   const incrementUsage = (module: string): void => {
-    if (isAdmin || !isDemo) return; // Only track for demo users
+    if (isAdmin) return; // Admin never has limits
     
-    setDemoLimits(prev => {
-      const newLimits = { ...prev };
-      
-      switch (module) {
-        case 'catalogValuation':
-          newLimits.catalogValuation.searches += 1;
-          break;
-        case 'contractManagement':
-          newLimits.contractManagement.contracts += 1;
-          break;
-        case 'copyrightManagement':
-          newLimits.copyrightManagement.registrations += 1;
-          break;
-        case 'royaltiesProcessing':
-          newLimits.royaltiesProcessing.imports += 1;
-          break;
-        case 'syncLicensing':
-          newLimits.syncLicensing.licenses += 1;
-          break;
-      }
-      
-      return newLimits;
-    });
+    // Track usage for demo account and unauthenticated demo users
+    if (user?.email === DEMO_EMAIL || isDemo) {
+      setDemoLimits(prev => {
+        const newLimits = { ...prev };
+        
+        switch (module) {
+          case 'catalogValuation':
+            newLimits.catalogValuation.searches += 1;
+            break;
+          case 'contractManagement':
+            newLimits.contractManagement.contracts += 1;
+            break;
+          case 'copyrightManagement':
+            newLimits.copyrightManagement.registrations += 1;
+            break;
+          case 'royaltiesProcessing':
+            newLimits.royaltiesProcessing.imports += 1;
+            break;
+          case 'syncLicensing':
+            newLimits.syncLicensing.licenses += 1;
+            break;
+        }
+        
+        return newLimits;
+      });
+    }
   };
 
   const showUpgradeModalForModule = (module: string): void => {
-    if (isAdmin || !isDemo) return;
+    if (isAdmin) return; // Admin never sees upgrade modals
     
-    switch (module) {
-      case 'catalogValuation':
-        setUpgradeMessage('Demo complete! You\'ve used your free catalog valuation. Sign up to unlock unlimited valuations and deal simulations.');
-        break;
-      case 'contractManagement':
-        setUpgradeMessage('Demo complete. Sign up to manage more contracts and unlock advanced features.');
-        break;
-      case 'copyrightManagement':
-        setUpgradeMessage('Demo complete! You\'ve registered your first copyright. Sign up to manage unlimited copyrights and access bulk registration.');
-        break;
-      case 'royaltiesProcessing':
-        setUpgradeMessage('You\'ve completed the royalties demo. Sign up to unlock full reconciliation tools and unlimited statement processing.');
-        break;
-      case 'syncLicensing':
-        setUpgradeMessage('Demo complete! You\'ve explored sync licensing. Sign up to manage unlimited sync deals and access advanced tracking features.');
-        break;
+    // Show upgrade modal for demo account and unauthenticated demo users
+    if (user?.email === DEMO_EMAIL || isDemo) {
+      switch (module) {
+        case 'catalogValuation':
+          setUpgradeMessage('Demo complete! You\'ve used your free catalog valuation. Sign up to unlock unlimited valuations and deal simulations.');
+          break;
+        case 'contractManagement':
+          setUpgradeMessage('Demo complete. Sign up to manage more contracts and unlock advanced features.');
+          break;
+        case 'copyrightManagement':
+          setUpgradeMessage('Demo complete! You\'ve registered your first copyright. Sign up to manage unlimited copyrights and access bulk registration.');
+          break;
+        case 'royaltiesProcessing':
+          setUpgradeMessage('You\'ve completed the royalties demo. Sign up to unlock full reconciliation tools and unlimited statement processing.');
+          break;
+        case 'syncLicensing':
+          setUpgradeMessage('Demo complete! You\'ve explored sync licensing. Sign up to manage unlimited sync deals and access advanced tracking features.');
+          break;
+      }
+      setShowUpgradeModal(true);
     }
-    setShowUpgradeModal(true);
   };
 
   const getRemainingUsage = (module: string): number => {
-    if (isAdmin || !isDemo) return Infinity;
+    if (isAdmin) return Infinity; // Admin has unlimited access
     
-    switch (module) {
-      case 'catalogValuation':
-        return demoLimits.catalogValuation.maxSearches - demoLimits.catalogValuation.searches;
-      case 'contractManagement':
-        return demoLimits.contractManagement.maxContracts - demoLimits.contractManagement.contracts;
-      case 'copyrightManagement':
-        return demoLimits.copyrightManagement.maxRegistrations - demoLimits.copyrightManagement.registrations;
-      case 'royaltiesProcessing':
-        return demoLimits.royaltiesProcessing.maxImports - demoLimits.royaltiesProcessing.imports;
-      case 'syncLicensing':
-        return demoLimits.syncLicensing.maxLicenses - demoLimits.syncLicensing.licenses;
-      default:
-        return 0;
+    // Demo account and unauthenticated demo users have limited access
+    if (user?.email === DEMO_EMAIL || isDemo) {
+      switch (module) {
+        case 'catalogValuation':
+          return demoLimits.catalogValuation.maxSearches - demoLimits.catalogValuation.searches;
+        case 'contractManagement':
+          return demoLimits.contractManagement.maxContracts - demoLimits.contractManagement.contracts;
+        case 'copyrightManagement':
+          return demoLimits.copyrightManagement.maxRegistrations - demoLimits.copyrightManagement.registrations;
+        case 'royaltiesProcessing':
+          return demoLimits.royaltiesProcessing.maxImports - demoLimits.royaltiesProcessing.imports;
+        case 'syncLicensing':
+          return demoLimits.syncLicensing.maxLicenses - demoLimits.syncLicensing.licenses;
+        default:
+          return 0;
+      }
     }
+    
+    return Infinity; // Non-demo users have unlimited access
   };
 
   const resetDemoData = (): void => {

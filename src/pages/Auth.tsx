@@ -24,10 +24,13 @@ const Auth = () => {
     updatePageMetadata('auth');
   }, []);
 
-  // Redirect authenticated users to main page
+  // Redirect authenticated users to appropriate page
   useEffect(() => {
     if (user) {
-      const from = location.state?.from?.pathname || '/';
+      // Check if this is the demo account
+      const isDemoAccount = user.email === 'demo@encoremusic.tech';
+      const defaultRedirect = isDemoAccount ? '/demo-modules' : '/';
+      const from = location.state?.from?.pathname || defaultRedirect;
       navigate(from, { replace: true });
     }
   }, [user, navigate, location]);
