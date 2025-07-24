@@ -69,7 +69,7 @@ const Index = () => {
         "24/7 support",
         "Custom integrations",
         "Dedicated account manager",
-        "White-label options"
+        "Dedicated account manager"
       ]
     }
   ];

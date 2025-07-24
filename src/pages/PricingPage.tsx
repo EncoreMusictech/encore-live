@@ -244,7 +244,7 @@ const comparisonFeatures = [
   { name: "Client Dashboard", modules: ["dashboard"] },
   { name: "API Access", modules: [] },
   { name: "24/7 Support", modules: [] },
-  { name: "White Label", modules: [] }
+  
 ];
 
 const PricingPage = () => {
@@ -298,9 +298,6 @@ const PricingPage = () => {
     }
     if (featureName === "24/7 Support") {
       return ["publishing-pro", "licensing-pro", "growth", "enterprise"].includes(planId);
-    }
-    if (featureName === "White Label") {
-      return planId === "enterprise";
     }
 
     return feature.modules.some(moduleId => plan.modules.includes(moduleId));

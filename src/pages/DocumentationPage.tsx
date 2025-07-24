@@ -263,7 +263,6 @@ const DocumentationPage = () => {
         "Statement & Document Access",
         "Communication Tools",
         "Mobile-Responsive Design",
-        "White-Label Options",
         "Analytics & Insights"
       ],
       capabilities: {
@@ -507,7 +506,7 @@ const DocumentationPage = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Separate client portals with granular access controls and white-label options
+                Separate client portals with granular access controls and customization options
               </p>
             </CardContent>
           </Card>
