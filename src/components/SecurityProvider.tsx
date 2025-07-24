@@ -157,22 +157,34 @@ export const SecurityProvider: React.FC<SecurityProviderProps> = ({ children }) 
           lastFocusTime = Date.now();
         });
 
-        // Enhanced console access monitoring
+        // Enhanced console access monitoring with recursion prevention
         const originalConsole = { ...console };
         const consoleAccessPattern = /console\.(log|warn|error|debug)/;
         
         Object.keys(originalConsole).forEach(method => {
           if (typeof originalConsole[method as keyof Console] === 'function') {
             (console as any)[method] = function(...args: any[]) {
-              // Track potential debugging attempts
-              const stackTrace = new Error().stack || '';
-              if (!stackTrace.includes('SecurityProvider') && !stackTrace.includes('securityMonitor')) {
-                logSecurityEvent('console_access', {
-                  method,
-                  timestamp: Date.now(),
-                  argsCount: args.length
-                });
+              // Prevent infinite recursion by checking for security logs
+              const firstArg = args[0];
+              const isSecurityLog = typeof firstArg === 'string' && firstArg.includes('[SECURITY]');
+              
+              if (!isSecurityLog) {
+                // Track potential debugging attempts
+                const stackTrace = new Error().stack || '';
+                if (!stackTrace.includes('SecurityProvider') && !stackTrace.includes('securityMonitor')) {
+                  try {
+                    // Use original console to avoid recursion
+                    originalConsole.warn(`[SECURITY] console_access:`, {
+                      method,
+                      timestamp: Date.now(),
+                      argsCount: args.length
+                    });
+                  } catch (error) {
+                    // Silently fail to prevent breaking the app
+                  }
+                }
               }
+              
               return (originalConsole as any)[method].apply(this, args);
             };
           }
