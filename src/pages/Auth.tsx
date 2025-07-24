@@ -49,23 +49,32 @@ const Auth = () => {
   const handleDemoLogin = async () => {
     setLoading(true);
     try {
+      console.log('Starting demo login...');
+      
       // Try to sign in first
       const { error: signInError } = await signIn('info@encoremusic.tech', 'demo123');
+      console.log('First sign in attempt result:', { signInError });
       
       if (signInError) {
+        console.log('Sign in failed, attempting to create demo user...');
+        
         // If sign in fails, create the demo user via edge function
-        const response = await fetch('https://plxsenykjisqutxcvjeg.supabase.co/functions/v1/create-demo-user', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBseHNlbnlramlzcXV0eGN2amVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0OTQ5OTcsImV4cCI6MjA2ODA3MDk5N30.f-luEprJjlx1sN-siFWgAKlHJ3c1aewKxPqwxIb9gtA',
-            'Content-Type': 'application/json',
-          },
+        const response = await supabase.functions.invoke('create-demo-user', {
+          method: 'POST'
         });
         
-        if (response.ok) {
+        console.log('Create demo user response:', response);
+        
+        if (!response.error) {
+          console.log('Demo user created, attempting sign in again...');
           // Try to sign in again after creating the user
-          await signIn('info@encoremusic.tech', 'demo123');
+          const { error: secondSignInError } = await signIn('info@encoremusic.tech', 'demo123');
+          console.log('Second sign in attempt result:', { secondSignInError });
+        } else {
+          console.error('Failed to create demo user:', response.error);
         }
+      } else {
+        console.log('Demo login successful on first attempt');
       }
     } catch (error) {
       console.error('Demo login error:', error);
