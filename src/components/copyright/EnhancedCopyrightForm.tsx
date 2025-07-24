@@ -211,12 +211,28 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     const timeoutId = setTimeout(() => {
       if (formData.work_title) {
         console.log('Triggering Spotify search for new copyright:', formData.work_title);
-        fetchSpotifyMetadata(formData.work_title);
+        fetchSpotifyMetadata(formData.work_title, formData.artist);
       }
     }, 1000);
 
     return () => clearTimeout(timeoutId);
    }, [formData.work_title, fetchSpotifyMetadata, editingCopyright]);
+
+  // Debounce metadata fetching when artist changes manually
+  useEffect(() => {
+    // Only run when creating new copyright and both work title and artist are provided
+    if (editingCopyright || !formData.work_title || !formData.artist) {
+      return;
+    }
+    
+    console.log('Setting up Spotify search for artist change:', formData.artist);
+    const timeoutId = setTimeout(() => {
+      console.log('Triggering Spotify search with artist:', formData.work_title, formData.artist);
+      fetchSpotifyMetadata(formData.work_title, formData.artist);
+    }, 1500); // Slightly longer delay for artist changes
+
+    return () => clearTimeout(timeoutId);
+   }, [formData.artist, fetchSpotifyMetadata, editingCopyright, formData.work_title]);
 
   // Load existing copyright data when editing
   useEffect(() => {
@@ -577,6 +593,11 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                       albumName: selectedMetadata.albumName,
                       label: selectedMetadata.label
                     });
+                  }}
+                  onManualEntry={(artistName) => {
+                    console.log('Manual artist entry:', artistName);
+                    // This will trigger the useEffect for artist changes
+                    // which will refetch Spotify metadata with the manual artist name
                   }}
                 />
               </div>

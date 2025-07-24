@@ -26,6 +26,7 @@ interface ArtistSelectorProps {
   spotifyMetadata: SpotifyTrackMetadata | null;
   alternatives: SpotifyTrackMetadata[];
   onArtistSelect?: (metadata: SpotifyTrackMetadata) => void;
+  onManualEntry?: (artistName: string) => void;
   loading?: boolean;
   placeholder?: string;
 }
@@ -36,6 +37,7 @@ export const ArtistSelector: React.FC<ArtistSelectorProps> = ({
   spotifyMetadata,
   alternatives = [],
   onArtistSelect,
+  onManualEntry,
   loading = false,
   placeholder = "Enter artist name"
 }) => {
@@ -78,9 +80,19 @@ export const ArtistSelector: React.FC<ArtistSelectorProps> = ({
     const selectedMetadata = options.find(option => option.artist === selectedArtist);
     if (selectedMetadata && onArtistSelect) {
       onArtistSelect(selectedMetadata);
+    } else if (!selectedMetadata && onManualEntry) {
+      // This is a manually entered artist name
+      onManualEntry(selectedArtist);
     }
     
     setOpen(false);
+  };
+
+  const handleManualInput = (artistName: string) => {
+    onChange(artistName);
+    if (onManualEntry) {
+      onManualEntry(artistName);
+    }
   };
 
   const filteredOptions = options.filter(option =>
@@ -96,7 +108,7 @@ export const ArtistSelector: React.FC<ArtistSelectorProps> = ({
           <Input
             id="artist"
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => handleManualInput(e.target.value)}
             placeholder={spotifyMetadata?.artist ? "Auto-filled from Spotify" : placeholder}
           />
           {loading && (
