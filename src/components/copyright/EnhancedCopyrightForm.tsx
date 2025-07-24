@@ -516,6 +516,33 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                 </div>
               </div>
 
+              {/* AKAs Section */}
+              <div className="space-y-2">
+                <Label>AKAs (Alternate Titles)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={newAka}
+                    onChange={(e) => setNewAka(e.target.value)}
+                    placeholder="Enter alternate title"
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAka())}
+                  />
+                  <Button type="button" onClick={addAka} disabled={!newAka}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.akas?.map(aka => (
+                    <Badge key={aka} variant="secondary" className="flex items-center gap-1">
+                      {aka}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => removeAka(aka)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="work_id">Work ID</Label>
@@ -630,33 +657,6 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                       {formData.contains_sample ? 'Yes' : 'No'}
                     </Label>
                   </div>
-                </div>
-              </div>
-
-              {/* AKAs Section */}
-              <div className="space-y-2">
-                <Label>AKAs (Alternate Titles)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={newAka}
-                    onChange={(e) => setNewAka(e.target.value)}
-                    placeholder="Enter alternate title"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAka())}
-                  />
-                  <Button type="button" onClick={addAka} disabled={!newAka}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.akas?.map(aka => (
-                    <Badge key={aka} variant="secondary" className="flex items-center gap-1">
-                      {aka}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
-                        onClick={() => removeAka(aka)}
-                      />
-                    </Badge>
-                  ))}
                 </div>
               </div>
 
