@@ -57,11 +57,14 @@ const ContactPage = () => {
   };
 
   const faqItems = [
-    "How do I upgrade my subscription tier?",
-    "What payment methods do you accept?",
-    "How do I mint an NFT of my music?",
-    "Can I cancel my subscription anytime?",
-    "How does the vendor marketplace work?"
+    "How do I register my first copyright in the system?",
+    "What royalty statement formats does ENCORE support?",
+    "How do I set up writer splits and allocations?",
+    "Can I integrate ENCORE with my existing accounting system?",
+    "What's the difference between controlled and non-controlled works?",
+    "How do I generate and send client statements?",
+    "What contract templates are available in the system?",
+    "How does the sync licensing pipeline work?"
   ];
 
   const recentTickets = [
@@ -102,7 +105,7 @@ const ContactPage = () => {
               Customer Support
             </h1>
             <p className="text-xl text-foreground/80 max-w-2xl mx-auto">
-              24/7 dedicated support for all your HRMNY needs
+              24/7 dedicated support for all your ENCORE Rights Management needs
             </p>
             <div className="flex items-center justify-center gap-2 mt-4">
               <div className="w-3 h-3 rounded-full bg-green-500"></div>
@@ -142,7 +145,7 @@ const ContactPage = () => {
                 <CardDescription>Speak directly with a support specialist</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-primary font-medium mb-4">+1 (555) 123-HRMNY</p>
+                <p className="text-sm text-primary font-medium mb-4">+1 (555) 123-ENCORE</p>
                 <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                   Call Now
                 </Button>
@@ -158,7 +161,7 @@ const ContactPage = () => {
                 <CardDescription>Send us a detailed message</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-primary font-medium mb-4">support@hrmny.com</p>
+                <p className="text-sm text-primary font-medium mb-4">support@encore.com</p>
                 <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                   Send Email
                 </Button>
