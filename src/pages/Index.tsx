@@ -37,8 +37,8 @@ const Index = () => {
       features: [
         "Copyright Management",
         "Contract Manager", 
-        "Up to 50 works per month",
-        "Email support",
+        "Unlimited works & users",
+        "24/7 support",
         "Save 50%"
       ]
     },
@@ -49,11 +49,11 @@ const Index = () => {
       description: "Complete solution for indie publishers",
       audience: "Indie publishers",
       features: [
-        "Advanced royalty management",
-        "Bulk copyright processing",
-        "Contract automation",
-        "Multi-writer splits",
-        "Phone support"
+        "Royalties Processing",
+        "Copyright Management",
+        "Contract Manager",
+        "Unlimited works & users",
+        "24/7 support"
       ],
       popular: true
     },
@@ -64,12 +64,12 @@ const Index = () => {
       description: "Everything for large publishers and labels",
       audience: "Enterprise users",
       features: [
-        "All modules included",
+        "All 6 modules included",
+        "Unlimited works & users",
         "API access",
-        "24/7 support",
         "Custom integrations",
         "Dedicated account manager",
-        "Dedicated account manager"
+        "24/7 support"
       ]
     }
   ];
