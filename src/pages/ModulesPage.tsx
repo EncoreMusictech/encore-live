@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { updatePageMetadata } from "@/utils/seo";
@@ -6,13 +6,56 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const ModulesPage = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [userModules, setUserModules] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     updatePageMetadata('modules');
   }, []);
 
-  const subscribedModules = [
+  useEffect(() => {
+    const fetchUserModules = async () => {
+      if (!user) {
+        setUserModules([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('user_module_access')
+          .select('module_id')
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error('Error fetching user modules:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load your modules",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setUserModules(data?.map(item => item.module_id) || []);
+      } catch (error) {
+        console.error('Error fetching user modules:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserModules();
+  }, [user, toast]);
+
+  const allModules = [
     {
       id: "catalog-valuation",
       title: "Catalog Valuation",
@@ -64,6 +107,38 @@ const ModulesPage = () => {
     }
   ];
 
+  const subscribedModules = allModules.filter(module => 
+    userModules.includes(module.id)
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">Loading your modules...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold mb-4">My Modules</h1>
+            <p className="text-muted-foreground mb-4">Please sign in to view your modules.</p>
+            <Button asChild>
+              <Link to="/auth">Sign In</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -74,8 +149,17 @@ const ModulesPage = () => {
           <p className="text-muted-foreground">Manage your subscribed modules and access powerful music industry tools.</p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {subscribedModules.map((module) => {
+        {subscribedModules.length === 0 ? (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-semibold mb-4">No modules found</h2>
+            <p className="text-muted-foreground mb-6">You don't have access to any modules yet.</p>
+            <Button asChild>
+              <Link to="/pricing">Browse Modules</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {subscribedModules.map((module) => {
             const IconComponent = module.icon;
             return (
               <Card key={module.id} className="hover:shadow-lg transition-shadow">
@@ -100,8 +184,9 @@ const ModulesPage = () => {
                 </CardContent>
               </Card>
             );
-          })}
-        </div>
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
