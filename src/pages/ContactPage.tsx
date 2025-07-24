@@ -340,7 +340,11 @@ const ContactPage = () => {
                 <CardTitle>Helpful Resources</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="ghost" className="w-full justify-start">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start"
+                  onClick={() => window.open('/documentation', '_blank')}
+                >
                   <FileText className="h-4 w-4 mr-2" />
                   User Guide & Documentation
                 </Button>
