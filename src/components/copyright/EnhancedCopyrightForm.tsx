@@ -296,6 +296,67 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
       mp3_link: editingCopyright.mp3_link || ''
     });
 
+    // Convert existing PRO status fields to CMO registrations for the new UI
+    const existingCMORegistrations: CMORegistration[] = [];
+    
+    if (editingCopyright.ascap_work_id || (editingCopyright as any).ascap_status) {
+      existingCMORegistrations.push({
+        id: `ascap-${Date.now()}`,
+        cmoId: 'ascap',
+        cmoName: 'ASCAP',
+        territory: 'USA',
+        workNumber: editingCopyright.ascap_work_id || '',
+        registrationStatus: (editingCopyright as any).ascap_status || 'not_registered'
+      });
+    }
+    
+    if (editingCopyright.bmi_work_id || (editingCopyright as any).bmi_status) {
+      existingCMORegistrations.push({
+        id: `bmi-${Date.now()}`,
+        cmoId: 'bmi',
+        cmoName: 'BMI',
+        territory: 'USA',
+        workNumber: editingCopyright.bmi_work_id || '',
+        registrationStatus: (editingCopyright as any).bmi_status || 'not_registered'
+      });
+    }
+    
+    if (editingCopyright.socan_work_id || (editingCopyright as any).socan_status) {
+      existingCMORegistrations.push({
+        id: `socan-${Date.now()}`,
+        cmoId: 'socan',
+        cmoName: 'SOCAN',
+        territory: 'Canada',
+        workNumber: editingCopyright.socan_work_id || '',
+        registrationStatus: (editingCopyright as any).socan_status || 'not_registered'
+      });
+    }
+    
+    if (editingCopyright.sesac_work_id || (editingCopyright as any).sesac_status) {
+      existingCMORegistrations.push({
+        id: `sesac-${Date.now()}`,
+        cmoId: 'sesac',
+        cmoName: 'SESAC',
+        territory: 'USA',
+        workNumber: editingCopyright.sesac_work_id || '',
+        registrationStatus: (editingCopyright as any).sesac_status || 'not_registered'
+      });
+    }
+    
+    if ((editingCopyright as any).mlc_work_id || (editingCopyright as any).mlc_status) {
+      existingCMORegistrations.push({
+        id: `mlc-${Date.now()}`,
+        cmoId: 'mlc',
+        cmoName: 'The MLC',
+        territory: 'USA',
+        workNumber: (editingCopyright as any).mlc_work_id || '',
+        registrationStatus: (editingCopyright as any).mlc_status || 'not_registered'
+      });
+    }
+    
+    console.log('Loading existing CMO registrations:', existingCMORegistrations);
+    setCmoRegistrations(existingCMORegistrations);
+
     // Load existing writers
     const loadWriters = async () => {
       try {
@@ -408,6 +469,50 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     setContractLinkOpen(false);
   };
 
+  // Map CMO registrations to legacy PRO status fields
+  const mapCMORegistrationsToLegacyFields = () => {
+    const legacyFields = {
+      ascap_work_id: '',
+      ascap_status: 'not_registered',
+      bmi_work_id: '',
+      bmi_status: 'not_registered',
+      socan_work_id: '',
+      socan_status: 'not_registered',
+      sesac_work_id: '',
+      sesac_status: 'not_registered',
+      mlc_work_id: '',
+      mlc_status: 'not_registered'
+    };
+
+    // Map each CMO registration to the corresponding legacy field
+    cmoRegistrations.forEach(registration => {
+      switch (registration.cmoId) {
+        case 'ascap':
+          legacyFields.ascap_work_id = registration.workNumber;
+          legacyFields.ascap_status = registration.registrationStatus;
+          break;
+        case 'bmi':
+          legacyFields.bmi_work_id = registration.workNumber;
+          legacyFields.bmi_status = registration.registrationStatus;
+          break;
+        case 'socan':
+          legacyFields.socan_work_id = registration.workNumber;
+          legacyFields.socan_status = registration.registrationStatus;
+          break;
+        case 'sesac':
+          legacyFields.sesac_work_id = registration.workNumber;
+          legacyFields.sesac_status = registration.registrationStatus;
+          break;
+        case 'mlc':
+          legacyFields.mlc_work_id = registration.workNumber;
+          legacyFields.mlc_status = registration.registrationStatus;
+          break;
+      }
+    });
+
+    return legacyFields;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.work_title) return;
@@ -443,44 +548,58 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     });
     
     try {
-      // Prepare the copyright data with only valid database fields
+      // Map CMO registrations to legacy fields and merge with form data
+      const legacyPROFields = mapCMORegistrationsToLegacyFields();
+      const mergedFormData = { ...formData, ...legacyPROFields };
+
+      console.log('CMO Registrations:', cmoRegistrations);
+      console.log('Mapped Legacy Fields:', legacyPROFields);
+      console.log('Merged Form Data PRO Status:', {
+        ascap_status: mergedFormData.ascap_status,
+        bmi_status: mergedFormData.bmi_status,
+        socan_status: mergedFormData.socan_status,
+        sesac_status: mergedFormData.sesac_status,
+        mlc_status: mergedFormData.mlc_status
+      });
+
+      // Prepare the copyright data with only valid database fields using merged data
       const cleanFormData: Omit<CopyrightInsert, 'user_id'> = {
-        work_title: formData.work_title || '',
-        work_type: formData.work_type,
-        language_code: formData.language_code,
-        registration_type: formData.registration_type,
-        status: formData.status,
-        supports_ddex: formData.supports_ddex,
-        supports_cwr: formData.supports_cwr,
-        collection_territories: formData.collection_territories,
-        rights_types: formData.rights_types,
-        contains_sample: formData.contains_sample,
-        akas: formData.akas,
-        registration_status: formData.registration_status,
-        ascap_work_id: formData.ascap_work_id || null,
-        bmi_work_id: formData.bmi_work_id || null,
-        socan_work_id: formData.socan_work_id || null,
-        sesac_work_id: formData.sesac_work_id || null,
-        mlc_work_id: formData.mlc_work_id || null,
-        ascap_status: formData.ascap_status === 'not_registered' ? null : formData.ascap_status,
-        bmi_status: formData.bmi_status === 'not_registered' ? null : formData.bmi_status,
-        socan_status: formData.socan_status === 'not_registered' ? null : formData.socan_status,
-        sesac_status: formData.sesac_status === 'not_registered' ? null : formData.sesac_status,
-        mlc_status: formData.mlc_status === 'not_registered' ? null : formData.mlc_status,
-        copyright_reg_number: formData.copyright_reg_number || null,
-        copyright_date: formData.copyright_date || null,
-        notice_date: formData.notice_date || null,
-        creation_date: formData.creation_date || null,
-        work_classification: formData.work_classification || null,
-        notes: formData.notes || null,
-        internal_id: formData.internal_id,
-        iswc: formData.iswc || null,
-        catalogue_number: formData.catalogue_number || null,
-        opus_number: formData.opus_number || null,
-        duration_seconds: formData.duration_seconds,
-        album_title: formData.album_title || null,
-        masters_ownership: formData.masters_ownership || null,
-        mp3_link: formData.mp3_link || null
+        work_title: mergedFormData.work_title || '',
+        work_type: mergedFormData.work_type,
+        language_code: mergedFormData.language_code,
+        registration_type: mergedFormData.registration_type,
+        status: mergedFormData.status,
+        supports_ddex: mergedFormData.supports_ddex,
+        supports_cwr: mergedFormData.supports_cwr,
+        collection_territories: mergedFormData.collection_territories,
+        rights_types: mergedFormData.rights_types,
+        contains_sample: mergedFormData.contains_sample,
+        akas: mergedFormData.akas,
+        registration_status: mergedFormData.registration_status,
+        ascap_work_id: mergedFormData.ascap_work_id || null,
+        bmi_work_id: mergedFormData.bmi_work_id || null,
+        socan_work_id: mergedFormData.socan_work_id || null,
+        sesac_work_id: mergedFormData.sesac_work_id || null,
+        mlc_work_id: mergedFormData.mlc_work_id || null,
+        ascap_status: mergedFormData.ascap_status === 'not_registered' ? null : mergedFormData.ascap_status,
+        bmi_status: mergedFormData.bmi_status === 'not_registered' ? null : mergedFormData.bmi_status,
+        socan_status: mergedFormData.socan_status === 'not_registered' ? null : mergedFormData.socan_status,
+        sesac_status: mergedFormData.sesac_status === 'not_registered' ? null : mergedFormData.sesac_status,
+        mlc_status: mergedFormData.mlc_status === 'not_registered' ? null : mergedFormData.mlc_status,
+        copyright_reg_number: mergedFormData.copyright_reg_number || null,
+        copyright_date: mergedFormData.copyright_date || null,
+        notice_date: mergedFormData.notice_date || null,
+        creation_date: mergedFormData.creation_date || null,
+        work_classification: mergedFormData.work_classification || null,
+        notes: mergedFormData.notes || null,
+        internal_id: mergedFormData.internal_id,
+        iswc: mergedFormData.iswc || null,
+        catalogue_number: mergedFormData.catalogue_number || null,
+        opus_number: mergedFormData.opus_number || null,
+        duration_seconds: mergedFormData.duration_seconds,
+        album_title: mergedFormData.album_title || null,
+        masters_ownership: mergedFormData.masters_ownership || null,
+        mp3_link: mergedFormData.mp3_link || null
       };
       
       let copyrightData;
