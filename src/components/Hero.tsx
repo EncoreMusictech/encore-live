@@ -4,9 +4,9 @@ import { ArrowRight, Music, TrendingUp, Shield } from "lucide-react";
 const Hero = () => {
   return (
     <section className="relative overflow-hidden py-20 lg:py-32">
-      {/* Record Groove Background */}
+      {/* Background */}
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
-        backgroundImage: `url('/lovable-uploads/ab53c16c-028b-497c-ac9f-feab103ef7de.png')`
+        backgroundImage: `url('/lovable-uploads/dba8d125-c0e8-4fc1-80e9-2f8633458521.png')`
       }} />
       {/* Overlay for readability */}
       <div className="absolute inset-0 bg-jet-black/40" />
