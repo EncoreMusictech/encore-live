@@ -164,8 +164,10 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         
         // Store alternatives if available
         if (data.alternatives && data.alternatives.length > 0) {
+          console.log(`Received ${data.alternatives.length} alternatives from Spotify:`, data.alternatives);
           setSpotifyAlternatives(data.alternatives);
         } else {
+          console.log('No alternatives received from Spotify');
           setSpotifyAlternatives([]);
         }
         
