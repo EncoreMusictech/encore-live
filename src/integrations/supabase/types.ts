@@ -3403,6 +3403,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_royalty_source_if_not_exists: {
+        Args: { new_source: string }
+        Returns: undefined
+      }
       calculate_contract_controlled_percentage: {
         Args: { contract_id_param: string }
         Returns: number

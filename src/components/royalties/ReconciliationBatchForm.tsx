@@ -196,21 +196,29 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
 
   const onSubmit = async (data: any) => {
     try {
-      // Validate that source is one of the allowed enum values
+      // If source is not in the predefined list, add it to the enum first
       const validSources = sourceOptions.map(option => option.value);
-      if (!validSources.includes(sourceValue)) {
-        toast({
-          title: "Invalid Source",
-          description: "Please select a valid source from the available options",
-          variant: "destructive",
+      if (!validSources.includes(sourceValue) && sourceValue?.trim()) {
+        // Add the new source to the enum
+        const { error: addSourceError } = await supabase.rpc('add_royalty_source_if_not_exists', {
+          new_source: sourceValue.trim()
         });
-        return;
+        
+        if (addSourceError) {
+          console.error('Error adding new source:', addSourceError);
+          toast({
+            title: "Error",
+            description: "Failed to add new source to the system",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       // Clean up the data before submitting
       const cleanedData = {
         ...data,
-        source: sourceValue, // Use the validated sourceValue
+        source: sourceValue, // Use the sourceValue
         // Convert empty string to null for linked_statement_id
         linked_statement_id: data.linked_statement_id || null,
         // Ensure numeric values are properly handled
@@ -313,7 +321,12 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
                    <CommandEmpty>
                      <div className="text-center py-2">
                        <p className="text-sm text-muted-foreground mb-2">No matching source found.</p>
-                       <p className="text-xs text-muted-foreground">Please select from the available options or use "Other" for custom sources.</p>
+                       <p className="text-xs text-muted-foreground">
+                         {sourceValue?.trim() ? 
+                           `Press Enter to use "${sourceValue}" as a new source` : 
+                           "Type to add a custom source"
+                         }
+                       </p>
                      </div>
                    </CommandEmpty>
                   <CommandGroup>
