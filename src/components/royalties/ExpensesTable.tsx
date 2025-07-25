@@ -119,13 +119,12 @@ export function ExpensesTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Payee</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Behavior</TableHead>
-              <TableHead>Payee</TableHead>
-              <TableHead>Work</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -133,6 +132,9 @@ export function ExpensesTable() {
           <TableBody>
             {filteredExpenses.map((expense) => (
               <TableRow key={expense.id}>
+                <TableCell>
+                  {expense.payees?.payee_name || '-'}
+                </TableCell>
                 <TableCell>
                   <Badge className={getExpenseTypeColor(expense.expense_type)}>
                     {expense.expense_type.replace('_', ' ')}
@@ -169,12 +171,6 @@ export function ExpensesTable() {
                   <Badge variant="outline">
                     {expense.expense_behavior}
                   </Badge>
-                </TableCell>
-                <TableCell>
-                  {expense.payees?.payee_name || '-'}
-                </TableCell>
-                <TableCell>
-                  {expense.copyrights?.work_title || '-'}
                 </TableCell>
                 <TableCell>
                   {new Date(expense.created_at).toLocaleDateString()}
