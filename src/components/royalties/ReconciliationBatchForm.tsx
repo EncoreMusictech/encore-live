@@ -196,22 +196,39 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
 
   const onSubmit = async (data: any) => {
     try {
+      console.log('=== RECONCILIATION BATCH FORM SUBMIT ===');
+      console.log('Source value:', sourceValue);
+      console.log('Form data:', data);
+      
       // If source is not in the predefined list, add it to the enum first
       const validSources = sourceOptions.map(option => option.value);
+      console.log('Valid sources:', validSources);
+      console.log('Source value exists in valid sources:', validSources.includes(sourceValue));
+      
       if (!validSources.includes(sourceValue) && sourceValue?.trim()) {
+        console.log('Adding new source to enum:', sourceValue.trim());
+        
         // Add the new source to the enum
         const { error: addSourceError } = await supabase.rpc('add_royalty_source_if_not_exists', {
           new_source: sourceValue.trim()
         });
         
+        console.log('Add source result:', { error: addSourceError });
+        
         if (addSourceError) {
           console.error('Error adding new source:', addSourceError);
           toast({
             title: "Error",
-            description: "Failed to add new source to the system",
+            description: "Failed to add new source to the system. Error: " + addSourceError.message,
             variant: "destructive",
           });
           return;
+        } else {
+          console.log('Successfully added new source to enum');
+          toast({
+            title: "Success",
+            description: `Added "${sourceValue.trim()}" as a new source option`,
+          });
         }
       }
 
@@ -316,17 +333,36 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
                   placeholder="Search or enter source..." 
                   value={sourceValue}
                   onValueChange={setSourceValue}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && sourceValue?.trim()) {
+                      e.preventDefault();
+                      console.log('Enter pressed with sourceValue:', sourceValue);
+                      setSourceOpen(false);
+                    }
+                  }}
                 />
                  <CommandList>
                    <CommandEmpty>
                      <div className="text-center py-2">
                        <p className="text-sm text-muted-foreground mb-2">No matching source found.</p>
-                       <p className="text-xs text-muted-foreground">
-                         {sourceValue?.trim() ? 
-                           `Press Enter to use "${sourceValue}" as a new source` : 
-                           "Type to add a custom source"
-                         }
-                       </p>
+                       {sourceValue?.trim() ? (
+                         <Button
+                           type="button"
+                           variant="outline"
+                           size="sm"
+                           className="text-xs"
+                           onClick={() => {
+                             console.log('Custom source button clicked:', sourceValue);
+                             setSourceOpen(false);
+                           }}
+                         >
+                           Use "{sourceValue.trim()}" as new source
+                         </Button>
+                       ) : (
+                         <p className="text-xs text-muted-foreground">
+                           Type to add a custom source
+                         </p>
+                       )}
                      </div>
                    </CommandEmpty>
                   <CommandGroup>
