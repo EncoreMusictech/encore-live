@@ -494,7 +494,7 @@ const ContractManagement = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="contracts">Contracts</TabsTrigger>
-            <TabsTrigger value="demos">Templates</TabsTrigger>
+            <TabsTrigger value="demos">Demos</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
