@@ -648,34 +648,46 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
 
               <TabsContent value="contacts" className="space-y-4">
                 <ContactManagement
-                  licensorData={{
+                  licensorData={useMemo(() => ({
                     name: form.watch('licensor_name'),
                     email: form.watch('licensor_email'),
                     phone: form.watch('licensor_phone'),
                     address: form.watch('licensor_address'),
                     company: form.watch('licensor_company'),
-                  }}
-                  licenseeData={{
+                  }), [
+                    form.watch('licensor_name'),
+                    form.watch('licensor_email'),
+                    form.watch('licensor_phone'),
+                    form.watch('licensor_address'),
+                    form.watch('licensor_company'),
+                  ])}
+                  licenseeData={useMemo(() => ({
                     name: form.watch('licensee_name'),
                     email: form.watch('licensee_email'),
                     phone: form.watch('licensee_phone'),
                     address: form.watch('licensee_address'),
                     company: form.watch('licensee_company'),
-                  }}
-                  onLicensorChange={(data) => {
+                  }), [
+                    form.watch('licensee_name'),
+                    form.watch('licensee_email'),
+                    form.watch('licensee_phone'),
+                    form.watch('licensee_address'),
+                    form.watch('licensee_company'),
+                  ])}
+                  onLicensorChange={useCallback((data) => {
                     form.setValue('licensor_name', data.name);
                     form.setValue('licensor_email', data.email);
                     form.setValue('licensor_phone', data.phone);
                     form.setValue('licensor_address', data.address);
                     form.setValue('licensor_company', data.company);
-                  }}
-                  onLicenseeChange={(data) => {
+                  }, [form])}
+                  onLicenseeChange={useCallback((data) => {
                     form.setValue('licensee_name', data.name);
                     form.setValue('licensee_email', data.email);
                     form.setValue('licensee_phone', data.phone);
                     form.setValue('licensee_address', data.address);
                     form.setValue('licensee_company', data.company);
-                  }}
+                  }, [form])}
                 />
               </TabsContent>
 
