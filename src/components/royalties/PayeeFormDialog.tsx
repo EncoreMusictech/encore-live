@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { usePayeeHierarchy } from "@/hooks/usePayeeHierarchy";
 import { useContracts } from "@/hooks/useContracts";
+import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
   } = usePayeeHierarchy();
   
   const { createContract } = useContracts();
+  const { subscribed } = useSubscription();
 
   const [loading, setLoading] = useState(false);
   
@@ -248,12 +250,17 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
 
     setLoading(true);
     try {
-      const newContract = await createContract({
+      // Create the contract with agreement_id set to the title for paid subscribers
+      const contractPayload = {
         title: contractData.title,
         counterparty_name: contractData.counterparty_name,
         contract_type: contractData.contract_type,
         contract_status: "draft" as const,
-      });
+        // Auto-populate agreement_id with the contract title for paid subscribers
+        ...(subscribed && { agreement_id: contractData.title }),
+      };
+
+      const newContract = await createContract(contractPayload);
 
       if (newContract) {
         setSelectedAgreement(newContract.id);
@@ -267,7 +274,9 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
         
         toast({
           title: "Success",
-          description: "Contract created successfully",
+          description: subscribed 
+            ? "Contract created successfully and added to Contract Management" 
+            : "Contract created successfully",
         });
       }
     } catch (error) {
