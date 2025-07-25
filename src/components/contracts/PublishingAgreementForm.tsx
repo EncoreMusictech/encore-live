@@ -170,7 +170,7 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
     approval_conditions: demoData?.formData?.approval_conditions || "",
     agreement_type: demoData?.agreementType || agreementType,
     // Initialize agreement-type specific fields
-    admin_rights: demoData?.formData?.admin_rights || [],
+    admin_rights: demoData?.formData?.admin_rights || (agreementType === 'administration' ? ['Collect royalties', 'License works'] : []),
     admin_fee_percentage: demoData?.formData?.admin_fee_percentage || 0,
     admin_controlled_share: demoData?.formData?.admin_controlled_share || 0,
     approval_rights: demoData?.formData?.approval_rights || "pre_approved",
