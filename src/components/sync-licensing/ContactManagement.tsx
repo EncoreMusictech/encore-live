@@ -48,6 +48,10 @@ export const ContactManagement = ({
     mode: "onChange"
   });
 
+  // Debug logging
+  console.log('ContactManagement render - licensorData:', licensorData);
+  console.log('ContactManagement render - licenseeData:', licenseeData);
+
   // Update form values when props change (without form deps to prevent resets)
   useEffect(() => {
     if (licensorData && Object.keys(licensorData).length > 0) {
