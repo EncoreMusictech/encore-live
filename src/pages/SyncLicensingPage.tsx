@@ -50,7 +50,7 @@ const SyncLicensingPage = () => {
       .reduce((sum, license) => sum + (license.invoiced_amount || 0), 0);
     const paidDealsAmount = syncLicenses
       .filter(license => license.payment_status === "Paid in Full")
-      .reduce((sum, license) => sum + (license.invoiced_amount || 0), 0);
+      .reduce((sum, license) => sum + (license.pub_fee_all_in || 0), 0);
 
     return { totalDeals, activeDeals, totalRevenue: outstandingInvoices, paidDeals: paidDealsAmount };
   };
