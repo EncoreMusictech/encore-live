@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AudioPlayer } from '../copyright/AudioPlayer';
+import { ArtistSelector } from '../copyright/ArtistSelector';
 
 interface Writer {
   id: string;
@@ -57,6 +58,21 @@ interface SpotifyMetadata {
   artist?: string;
   duration?: number;
   releaseDate?: string;
+  trackName?: string;
+  albumName?: string;
+  label?: string;
+}
+
+interface SpotifyTrackMetadata {
+  isrc?: string;
+  artist: string;
+  duration: number;
+  releaseDate: string;
+  trackName: string;
+  albumName: string;
+  label?: string;
+  previewUrl?: string;
+  popularity?: number;
 }
 
 interface EnhancedScheduleWorkFormProps {
@@ -140,6 +156,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
   const [publishers, setPublishers] = useState<Publisher[]>([]);
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [spotifyMetadata, setSpotifyMetadata] = useState<SpotifyMetadata | null>(null);
+  const [spotifyAlternatives, setSpotifyAlternatives] = useState<SpotifyTrackMetadata[]>([]);
   const [newAka, setNewAka] = useState('');
 
   // Calculate total shares
@@ -156,7 +173,10 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
     setSpotifyLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('spotify-track-metadata', {
-        body: { workTitle: artist ? `${workTitle} ${artist}` : workTitle }
+        body: { 
+          workTitle: workTitle.trim(),
+          artist: artist?.trim() || undefined
+        }
       });
 
       if (error) {
@@ -173,10 +193,22 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
           isrc: data.bestMatch.isrc,
           artist: data.bestMatch.artist,
           duration: data.bestMatch.duration,
-          releaseDate: data.bestMatch.releaseDate
+          releaseDate: data.bestMatch.releaseDate,
+          trackName: data.bestMatch.trackName,
+          albumName: data.bestMatch.albumName,
+          label: data.bestMatch.label
         };
 
         setSpotifyMetadata(metadata);
+        
+        // Store alternatives if available
+        if (data.alternatives && data.alternatives.length > 0) {
+          console.log(`Received ${data.alternatives.length} alternatives from Spotify:`, data.alternatives);
+          setSpotifyAlternatives(data.alternatives);
+        } else {
+          console.log('No alternatives received from Spotify');
+          setSpotifyAlternatives([]);
+        }
         
         // Auto-populate form fields
         setFormData(prev => ({
@@ -190,9 +222,10 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
           isrc: metadata.isrc || prev.isrc
         }));
 
+        const totalOptions = 1 + (data.alternatives?.length || 0);
         toast({
           title: "Spotify Metadata Found",
-          description: `Auto-filled metadata for "${data.bestMatch.trackName}" by ${data.bestMatch.artist}`,
+          description: `Found ${totalOptions} artist option${totalOptions > 1 ? 's' : ''} for "${data.bestMatch.trackName}"`,
         });
       }
     } catch (error) {
@@ -202,16 +235,34 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
     }
   }, [toast]);
 
-  // Debounce the metadata fetching
+  // Debounce the metadata fetching when song title changes
   useEffect(() => {
+    console.log('Setting up Spotify search timeout for:', formData.song_title);
     const timeoutId = setTimeout(() => {
       if (formData.song_title) {
+        console.log('Triggering Spotify search for:', formData.song_title);
         fetchSpotifyMetadata(formData.song_title, formData.artist_name);
       }
     }, 1000);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.song_title, formData.artist_name, fetchSpotifyMetadata]);
+   }, [formData.song_title, fetchSpotifyMetadata]);
+
+   // Debounce metadata fetching when artist changes manually
+   useEffect(() => {
+     // Only run when both song title and artist are provided
+     if (!formData.song_title || !formData.artist_name) {
+       return;
+     }
+     
+     console.log('Setting up Spotify search for artist change:', formData.artist_name);
+     const timeoutId = setTimeout(() => {
+       console.log('Triggering Spotify search with artist:', formData.song_title, formData.artist_name);
+       fetchSpotifyMetadata(formData.song_title, formData.artist_name);
+     }, 1500); // Slightly longer delay for artist changes
+
+     return () => clearTimeout(timeoutId);
+    }, [formData.artist_name, fetchSpotifyMetadata, formData.song_title]);
 
   const addWriter = () => {
     const newWriter: Writer = {
@@ -511,10 +562,30 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                 
                 <div className="space-y-2">
                   <Label htmlFor="artist_name">Artist Name</Label>
-                  <Input
-                    id="artist_name"
+                  <ArtistSelector
                     value={formData.artist_name}
-                    onChange={(e) => setFormData({...formData, artist_name: e.target.value})}
+                    onChange={(value) => setFormData({...formData, artist_name: value})}
+                    onArtistSelect={(metadata) => {
+                      console.log('Artist selected from Spotify:', metadata.artist);
+                      setFormData(prev => ({...prev, artist_name: metadata.artist}));
+                    }}
+                    onManualEntry={(artistName) => {
+                      console.log('Manual artist entry:', artistName);
+                      setFormData(prev => ({...prev, artist_name: artistName}));
+                    }}
+                    spotifyMetadata={spotifyMetadata ? {
+                      isrc: spotifyMetadata.isrc,
+                      artist: spotifyMetadata.artist || '',
+                      duration: spotifyMetadata.duration || 0,
+                      releaseDate: spotifyMetadata.releaseDate || '',
+                      trackName: spotifyMetadata.trackName || '',
+                      albumName: spotifyMetadata.albumName || '',
+                      label: spotifyMetadata.label,
+                      previewUrl: spotifyMetadata.previewUrl,
+                      popularity: spotifyMetadata.popularity
+                    } : null}
+                    alternatives={spotifyAlternatives}
+                    loading={spotifyLoading}
                     placeholder="Recording artist"
                   />
                 </div>
