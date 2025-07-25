@@ -170,7 +170,7 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
     approval_conditions: demoData?.formData?.approval_conditions || "",
     agreement_type: demoData?.agreementType || agreementType,
     // Initialize agreement-type specific fields
-    admin_rights: demoData?.formData?.admin_rights || (agreementType === 'administration' ? ['Collect royalties', 'License works'] : []),
+    admin_rights: demoData?.formData?.admin_rights || (agreementType === 'administration' ? ['Digital', 'Performance'] : []),
     admin_fee_percentage: demoData?.formData?.admin_fee_percentage || 0,
     admin_controlled_share: demoData?.formData?.admin_controlled_share || 0,
     approval_rights: demoData?.formData?.approval_rights || "pre_approved",
@@ -194,6 +194,15 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
       form.reset(formData);
     }
   }, [demoData, form, formData]);
+
+  // Set default admin rights when agreement type changes to administration
+  useEffect(() => {
+    if (agreementType === 'administration' && (!formData.admin_rights || formData.admin_rights.length === 0)) {
+      const defaultAdminRights = ['Digital', 'Performance'];
+      setFormData(prev => ({ ...prev, admin_rights: defaultAdminRights }));
+      form.setValue("admin_rights", defaultAdminRights);
+    }
+  }, [agreementType, form]);
 
   const steps: Array<{
     id: FormStep;
