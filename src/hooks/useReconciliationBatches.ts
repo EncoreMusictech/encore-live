@@ -59,26 +59,23 @@ export function useReconciliationBatches() {
 
           // If batch has a linked statement, also include royalties from that statement
           if (batch.linked_statement_id) {
-            // Try direct statement_id match first
-            const { data: directRoyalties } = await supabase
-              .from('royalty_allocations')
-              .select('gross_royalty_amount')
-              .eq('user_id', user.id)
-              .eq('statement_id', batch.linked_statement_id);
+            // First get the staging record to find its statement_id
+            const { data: stagingRecord } = await supabase
+              .from('royalties_import_staging')
+              .select('statement_id')
+              .eq('id', batch.linked_statement_id)
+              .single();
 
-            if (directRoyalties && directRoyalties.length > 0) {
-              allocated_amount += directRoyalties.reduce((sum, allocation) => 
-                sum + (allocation.gross_royalty_amount || 0), 0);
-            } else {
-              // Try staging_record_id if no direct match
-              const { data: stagingRoyalties } = await supabase
+            if (stagingRecord?.statement_id) {
+              // Search for royalties using the staging record's statement_id
+              const { data: statementRoyalties } = await supabase
                 .from('royalty_allocations')
                 .select('gross_royalty_amount')
                 .eq('user_id', user.id)
-                .eq('staging_record_id', batch.linked_statement_id);
+                .eq('statement_id', stagingRecord.statement_id);
 
-              if (stagingRoyalties && stagingRoyalties.length > 0) {
-                allocated_amount += stagingRoyalties.reduce((sum, allocation) => 
+              if (statementRoyalties && statementRoyalties.length > 0) {
+                allocated_amount += statementRoyalties.reduce((sum, allocation) => 
                   sum + (allocation.gross_royalty_amount || 0), 0);
               }
             }
