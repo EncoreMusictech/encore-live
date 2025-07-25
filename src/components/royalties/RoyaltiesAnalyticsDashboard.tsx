@@ -606,46 +606,42 @@ export function RoyaltiesAnalyticsDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Royalties x Source</CardTitle>
-            <CardDescription>Revenue distribution by source</CardDescription>
+            <CardDescription>Revenue distribution by source (gross amounts)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={analyticsData.source}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={120}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {analyticsData.source.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
+                <BarChart
+                  layout="horizontal"
+                  data={analyticsData.source}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis 
+                    type="number" 
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
+                  />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    width={100}
+                  />
                   <Tooltip 
-                    formatter={(value) => `$${value.toLocaleString()}`}
+                    formatter={(value) => [`$${value.toLocaleString()}`, 'Gross Amount']}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--background))', 
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '6px'
                     }}
                   />
-                </PieChart>
+                  <Bar 
+                    dataKey="value" 
+                    fill="hsl(var(--primary))"
+                    radius={[0, 4, 4, 0]}
+                  />
+                </BarChart>
               </ResponsiveContainer>
-              <div className="flex justify-center mt-4 flex-wrap gap-4">
-                {analyticsData.source.map((entry, index) => (
-                  <div key={entry.name} className="flex items-center text-sm">
-                    <div 
-                      className="w-3 h-3 rounded-full mr-2" 
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    {entry.name}
-                  </div>
-                ))}
-              </div>
             </div>
           </CardContent>
         </Card>
