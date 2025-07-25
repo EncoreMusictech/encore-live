@@ -520,30 +520,6 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                 </div>
               </div>
 
-              {/* Spotify Metadata Display */}
-              {spotifyMetadata && (
-                <Card className="bg-green-50 border-green-200">
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-800">Spotify Metadata Found</span>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-2 text-sm">
-                      {spotifyMetadata.artist && <div>Artist: {spotifyMetadata.artist}</div>}
-                      {spotifyMetadata.albumTitle && <div>Album: {spotifyMetadata.albumTitle}</div>}
-                      {spotifyMetadata.isrc && <div>ISRC: {spotifyMetadata.isrc}</div>}
-                      {spotifyMetadata.masterOwner && <div>Label: {spotifyMetadata.masterOwner}</div>}
-                      {spotifyMetadata.duration && <div>Duration: {Math.floor(spotifyMetadata.duration / 1000 / 60)}:{String(Math.floor((spotifyMetadata.duration / 1000) % 60)).padStart(2, '0')}</div>}
-                      {spotifyMetadata.releaseDate && <div>Release: {spotifyMetadata.releaseDate}</div>}
-                    </div>
-                    {spotifyMetadata.previewUrl && (
-                      <div className="mt-3">
-                        <AudioPlayer src={spotifyMetadata.previewUrl} />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Additional Metadata */}
               <div className="grid md:grid-cols-3 gap-4">
