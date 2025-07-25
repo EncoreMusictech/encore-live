@@ -47,7 +47,9 @@ export type AgreementType =
   | "administration"
   | "co_publishing" 
   | "exclusive_songwriter"
-  | "catalog_acquisition";
+  | "catalog_acquisition"
+  | "artist"
+  | "distribution";
 
 // Validation schemas for different agreement types
 const sharedCoreSchema = z.object({

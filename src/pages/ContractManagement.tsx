@@ -19,8 +19,9 @@ import { EditContractForm } from "@/components/contracts/EditContractForm";
 import { TemplateLibrary } from "@/components/contracts/TemplateLibrary";
 import { DocuSignImport } from "@/components/contracts/DocuSignImport";
 import { ContractUpload } from "@/components/contracts/ContractUpload";
-import { DemoPublishingContracts } from "@/components/contracts/DemoPublishingContracts";
+import { DemoContracts } from "@/components/contracts/DemoContracts";
 import { DemoPublishingContract } from "@/data/demo-publishing-contracts";
+import { DemoArtistContract } from "@/data/demo-artist-contracts";
 import { CopyrightWritersDebug } from "@/components/debug/CopyrightWritersDebug";
 import { useContracts } from "@/hooks/useContracts";
 
@@ -519,11 +520,16 @@ const ContractManagement = () => {
           </TabsContent>
 
           <TabsContent value="demos">
-            <DemoPublishingContracts 
-              onLoadDemo={(demoContract: DemoPublishingContract) => {
+            <DemoContracts 
+              onLoadDemo={(demoContract: DemoPublishingContract | DemoArtistContract) => {
                 // Store the demo data and open the form
                 setSelectedDemoData(demoContract);
-                setSelectedContractType("publishing");
+                // Determine contract type based on agreement type
+                if (demoContract.agreementType === "artist" || demoContract.agreementType === "distribution") {
+                  setSelectedContractType(demoContract.agreementType);
+                } else {
+                  setSelectedContractType("publishing");
+                }
                 setCreationMethod("new");
                 setIsCreateDialogOpen(true);
               }}
