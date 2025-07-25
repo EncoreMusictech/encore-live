@@ -37,7 +37,20 @@ export function RoyaltyAllocationList() {
     const matchesSearch = allocation.song_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (allocation.work_id && allocation.work_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (allocation.artist && allocation.artist.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         (allocation.isrc && allocation.isrc.toLowerCase().includes(searchTerm.toLowerCase()));
+                         (allocation.isrc && allocation.isrc.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         // Search by writer names
+                         (allocation.work_writers && allocation.work_writers.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (allocation.mapped_data?.['WORK WRITERS'] && allocation.mapped_data['WORK WRITERS'].toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         // Search within ownership_splits for writer names
+                         (allocation.ownership_splits && typeof allocation.ownership_splits === 'object' && 
+                          Object.keys(allocation.ownership_splits).some(contactId => {
+                            if (contactId.startsWith('copyright_writer_')) {
+                              const writerData = allocation.ownership_splits[contactId];
+                              return writerData.writer_name?.toLowerCase().includes(searchTerm.toLowerCase());
+                            }
+                            const contact = contacts.find(c => c.id === contactId);
+                            return contact?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+                          }));
     
     const matchesWriter = !writerFilter || 
                          (allocation.ownership_splits && 
@@ -256,7 +269,7 @@ export function RoyaltyAllocationList() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by song title, work ID, artist, or ISRC..."
+            placeholder="Search by song title, work ID, artist, writer, or ISRC..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
