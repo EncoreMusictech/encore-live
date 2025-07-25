@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
+import { getQuarterFromDate } from '@/lib/utils';
 
 export interface ReconciliationBatch {
   id: string;
@@ -212,11 +213,26 @@ export function useReconciliationBatches() {
 
   const linkBatchToAllocations = async (batchId: string, allocationIds: string[]) => {
     try {
-      // Update all specified allocations to link them to this batch
+      // First, get the batch's date_received to calculate the quarter
+      const { data: batch, error: batchError } = await supabase
+        .from('reconciliation_batches')
+        .select('date_received')
+        .eq('id', batchId)
+        .single();
+
+      if (batchError) throw batchError;
+      
+      // Calculate quarter from the batch's date_received
+      const quarter = getQuarterFromDate(batch.date_received);
+
+      // Update all specified allocations to link them to this batch and set the quarter
       const updatePromises = allocationIds.map(allocationId =>
         supabase
           .from('royalty_allocations')
-          .update({ batch_id: batchId })
+          .update({ 
+            batch_id: batchId,
+            quarter: quarter
+          })
           .eq('id', allocationId)
       );
 
@@ -230,7 +246,7 @@ export function useReconciliationBatches() {
 
       toast({
         title: "Success",
-        description: `Successfully linked ${allocationIds.length} allocation${allocationIds.length !== 1 ? 's' : ''} to batch`,
+        description: `Successfully linked ${allocationIds.length} allocation${allocationIds.length !== 1 ? 's' : ''} to batch with quarter ${quarter}`,
       });
 
       await fetchBatches();
