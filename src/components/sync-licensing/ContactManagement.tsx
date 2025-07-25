@@ -48,18 +48,28 @@ export const ContactManagement = ({
     mode: "onChange"
   });
 
-  // Update form values when props change
+  // Update form values when props change (without form deps to prevent resets)
   useEffect(() => {
-    if (licensorData) {
-      licensorForm.reset(licensorData);
+    if (licensorData && Object.keys(licensorData).length > 0) {
+      // Only reset if there's actual data and form is empty
+      const currentValues = licensorForm.getValues();
+      const isEmpty = Object.values(currentValues).every(val => !val);
+      if (isEmpty) {
+        licensorForm.reset(licensorData);
+      }
     }
-  }, [licensorData, licensorForm]);
+  }, [licensorData]);
 
   useEffect(() => {
-    if (licenseeData) {
-      licenseeForm.reset(licenseeData);
+    if (licenseeData && Object.keys(licenseeData).length > 0) {
+      // Only reset if there's actual data and form is empty
+      const currentValues = licenseeForm.getValues();
+      const isEmpty = Object.values(currentValues).every(val => !val);
+      if (isEmpty) {
+        licenseeForm.reset(licenseeData);
+      }
     }
-  }, [licenseeData, licenseeForm]);
+  }, [licenseeData]);
 
   // Debounced callback refs to prevent excessive re-renders
   const licensorTimeoutRef = useRef<NodeJS.Timeout>();
