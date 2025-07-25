@@ -15,13 +15,20 @@ export interface PayoutExpense {
   agreement_id?: string;
   payee_id?: string;
   expense_behavior: 'crossed' | 'direct';
+  // Legacy individual boolean fields (kept for backward compatibility)
   is_commission_fee: boolean;
   is_finder_fee: boolean;
+  is_recoupable: boolean;
+  // New combined JSON field
+  expense_flags?: {
+    recoupable?: boolean;
+    commission_fee?: boolean;
+    finder_fee?: boolean;
+  };
   valid_from_date?: string;
   valid_to_date?: string;
   expense_cap?: number;
   work_id?: string;
-  is_recoupable: boolean;
   invoice_url?: string;
   date_incurred?: string;
   expense_status: 'pending' | 'approved' | 'rejected';

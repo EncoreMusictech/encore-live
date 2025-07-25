@@ -42,13 +42,15 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
     agreement_id: expense?.agreement_id || '',
     payee_id: expense?.payee_id || '',
     expense_behavior: expense?.expense_behavior || 'direct' as 'crossed' | 'direct',
-    is_commission_fee: expense?.is_commission_fee || false,
-    is_finder_fee: expense?.is_finder_fee || false,
+    expense_flags: {
+      recoupable: expense?.expense_flags?.recoupable || expense?.is_recoupable || false,
+      commission_fee: expense?.expense_flags?.commission_fee || expense?.is_commission_fee || false,
+      finder_fee: expense?.expense_flags?.finder_fee || expense?.is_finder_fee || false,
+    },
     valid_from_date: expense?.valid_from_date ? new Date(expense.valid_from_date) : undefined,
     valid_to_date: expense?.valid_to_date ? new Date(expense.valid_to_date) : undefined,
     expense_cap: expense?.expense_cap || undefined,
     work_id: expense?.work_id || '',
-    is_recoupable: expense?.is_recoupable || false,
     invoice_url: expense?.invoice_url || '',
     date_incurred: expense?.date_incurred ? new Date(expense.date_incurred) : new Date(),
     expense_status: expense?.expense_status || 'pending' as 'pending' | 'approved' | 'rejected',
@@ -92,7 +94,12 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
         payout_id: formData.payout_id || undefined,
         valid_from_date: formData.valid_from_date ? format(formData.valid_from_date, 'yyyy-MM-dd') : undefined,
         valid_to_date: formData.valid_to_date ? format(formData.valid_to_date, 'yyyy-MM-dd') : undefined,
-        date_incurred: formData.date_incurred ? format(formData.date_incurred, 'yyyy-MM-dd') : undefined
+        date_incurred: formData.date_incurred ? format(formData.date_incurred, 'yyyy-MM-dd') : undefined,
+        // Store in both old and new format for compatibility
+        is_recoupable: formData.expense_flags.recoupable,
+        is_commission_fee: formData.expense_flags.commission_fee,
+        is_finder_fee: formData.expense_flags.finder_fee,
+        expense_flags: formData.expense_flags
       };
 
       if (expense) {
@@ -385,8 +392,11 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="is_recoupable"
-                checked={formData.is_recoupable}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_recoupable: !!checked }))}
+                checked={formData.expense_flags.recoupable}
+                onCheckedChange={(checked) => setFormData(prev => ({ 
+                  ...prev, 
+                  expense_flags: { ...prev.expense_flags, recoupable: !!checked }
+                }))}
               />
               <Label htmlFor="is_recoupable">Recoupable</Label>
             </div>
@@ -394,8 +404,11 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="is_commission_fee"
-                checked={formData.is_commission_fee}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_commission_fee: !!checked }))}
+                checked={formData.expense_flags.commission_fee}
+                onCheckedChange={(checked) => setFormData(prev => ({ 
+                  ...prev, 
+                  expense_flags: { ...prev.expense_flags, commission_fee: !!checked }
+                }))}
               />
               <Label htmlFor="is_commission_fee">Commission Fee</Label>
             </div>
@@ -403,8 +416,11 @@ export function ExpenseForm({ expense, onSuccess, onCancel, payoutId }: ExpenseF
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="is_finder_fee"
-                checked={formData.is_finder_fee}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_finder_fee: !!checked }))}
+                checked={formData.expense_flags.finder_fee}
+                onCheckedChange={(checked) => setFormData(prev => ({ 
+                  ...prev, 
+                  expense_flags: { ...prev.expense_flags, finder_fee: !!checked }
+                }))}
               />
               <Label htmlFor="is_finder_fee">Finder Fee</Label>
             </div>

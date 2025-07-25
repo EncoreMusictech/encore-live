@@ -1621,6 +1621,7 @@ export type Database = {
           description: string
           expense_behavior: string | null
           expense_cap: number | null
+          expense_flags: Json | null
           expense_status: string | null
           expense_type: string
           id: string
@@ -1646,6 +1647,7 @@ export type Database = {
           description: string
           expense_behavior?: string | null
           expense_cap?: number | null
+          expense_flags?: Json | null
           expense_status?: string | null
           expense_type: string
           id?: string
@@ -1671,6 +1673,7 @@ export type Database = {
           description?: string
           expense_behavior?: string | null
           expense_cap?: number | null
+          expense_flags?: Json | null
           expense_status?: string | null
           expense_type?: string
           id?: string

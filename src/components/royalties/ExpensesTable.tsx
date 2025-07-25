@@ -140,13 +140,13 @@ export function ExpensesTable() {
                     {expense.expense_type.replace('_', ' ')}
                   </Badge>
                   <div className="flex gap-1 mt-1">
-                    {expense.is_recoupable && (
+                    {(expense.expense_flags?.recoupable || expense.is_recoupable) && (
                       <Badge variant="outline" className="text-xs">Recoupable</Badge>
                     )}
-                    {expense.is_commission_fee && (
+                    {(expense.expense_flags?.commission_fee || expense.is_commission_fee) && (
                       <Badge variant="outline" className="text-xs">Commission</Badge>
                     )}
-                    {expense.is_finder_fee && (
+                    {(expense.expense_flags?.finder_fee || expense.is_finder_fee) && (
                       <Badge variant="outline" className="text-xs">Finder</Badge>
                     )}
                   </div>
