@@ -40,6 +40,15 @@ const SyncLicensingPage = () => {
     }
   };
 
+  const calculateTotalControlledAmount = (license: any) => {
+    if (!license.fee_allocations || !Array.isArray(license.fee_allocations)) {
+      return 0;
+    }
+    return license.fee_allocations.reduce((total: number, allocation: any) => {
+      return total + (allocation.controlledAmount || 0);
+    }, 0);
+  };
+
   const getStatsFromLicenses = () => {
     const totalDeals = syncLicenses.length;
     const activeDeals = syncLicenses.filter(
@@ -50,7 +59,7 @@ const SyncLicensingPage = () => {
       .reduce((sum, license) => sum + (license.invoiced_amount || 0), 0);
     const paidDealsAmount = syncLicenses
       .filter(license => license.payment_status === "Paid in Full")
-      .reduce((sum, license) => sum + (license.pub_fee_all_in || 0), 0);
+      .reduce((sum, license) => sum + calculateTotalControlledAmount(license), 0);
 
     return { totalDeals, activeDeals, totalRevenue: outstandingInvoices, paidDeals: paidDealsAmount };
   };
