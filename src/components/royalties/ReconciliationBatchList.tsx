@@ -153,26 +153,32 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                    {new Date(batch.date_received).toLocaleDateString()}
                  </TableCell>
                  <TableCell>${batch.total_gross_amount.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <div className="space-y-1 min-w-[120px]">
-                      {(() => {
-                        const allocatedAmount = batch.allocated_amount || 0;
-                        const totalAmount = batch.total_gross_amount || 1; // Avoid division by zero
-                        const progressPercentage = totalAmount > 0 ? (allocatedAmount / totalAmount) * 100 : 0;
-                        const clampedProgress = Math.min(Math.max(progressPercentage, 0), 100);
-                        
-                        return (
-                          <>
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>${allocatedAmount.toLocaleString()}</span>
-                              <span>{clampedProgress.toFixed(1)}%</span>
-                            </div>
-                            <Progress value={clampedProgress} className="h-2" />
-                          </>
-                        );
-                      })()}
-                    </div>
-                 </TableCell>
+                   <TableCell>
+                     <div className="space-y-1 min-w-[120px]">
+                       {(() => {
+                         const royaltyAmount = batch.allocated_amount || 0; // This represents the royalty amount from linked statements
+                         const batchAmount = batch.total_gross_amount || 1; // Avoid division by zero
+                         const progressPercentage = batchAmount > 0 ? (royaltyAmount / batchAmount) * 100 : 0;
+                         const isOverProgress = progressPercentage > 100;
+                         const displayProgress = isOverProgress ? Math.min(progressPercentage, 100) : progressPercentage;
+                         
+                         return (
+                           <>
+                             <div className="flex justify-between text-xs text-muted-foreground">
+                               <span>${royaltyAmount.toLocaleString()}</span>
+                               <span className={isOverProgress ? "text-red-600 font-medium" : ""}>
+                                 {progressPercentage.toFixed(1)}%
+                               </span>
+                             </div>
+                             <Progress 
+                               value={displayProgress} 
+                               className={`h-2 ${isOverProgress ? '[&>[data-state="complete"]]:bg-red-500' : ''}`} 
+                             />
+                           </>
+                         );
+                       })()}
+                     </div>
+                  </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {onSelectBatch && (
