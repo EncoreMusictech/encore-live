@@ -101,7 +101,10 @@ function AdministrationTerms({ formData, onUpdate }: { formData: any; onUpdate: 
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="approval_rights">Approval Rights</Label>
-            <Select onValueChange={(value) => onUpdate("approval_rights", value)}>
+            <Select 
+              value={formData.approval_rights || "pre_approved"}
+              onValueChange={(value) => onUpdate("approval_rights", value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select approval rights" />
               </SelectTrigger>

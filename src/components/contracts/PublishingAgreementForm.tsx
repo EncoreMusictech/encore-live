@@ -169,6 +169,12 @@ export function PublishingAgreementForm({ onCancel, onSuccess, demoData }: Publi
     approvals_required: demoData?.formData?.approvals_required || false,
     approval_conditions: demoData?.formData?.approval_conditions || "",
     agreement_type: demoData?.agreementType || agreementType,
+    // Initialize agreement-type specific fields
+    admin_rights: demoData?.formData?.admin_rights || [],
+    admin_fee_percentage: demoData?.formData?.admin_fee_percentage || 0,
+    admin_controlled_share: demoData?.formData?.admin_controlled_share || 0,
+    approval_rights: demoData?.formData?.approval_rights || "pre_approved",
+    tail_period_months: demoData?.formData?.tail_period_months || 0,
     // Spread all other demo form data
     ...(demoData?.formData || {})
   });
