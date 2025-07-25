@@ -36,30 +36,28 @@ export function RoyaltiesAnalyticsDashboard() {
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Get unique filter values from processed royalties only
+  // Get unique filter values from all royalties
   const filterOptions = useMemo(() => {
-    // Filter to show only processed royalties
-    const processedAllocations = allocations.filter(allocation => 
-      allocation.batch_id // Only include allocations that have been processed through batches
-    );
+    // Use all allocations, not just processed ones
+    const allAllocations = allocations;
     
-    const workTitles = [...new Set(processedAllocations.map(a => a.song_title).filter(Boolean))];
-    const artists = [...new Set(processedAllocations.map(a => a.artist).filter(Boolean))];
+    const workTitles = [...new Set(allAllocations.map(a => a.song_title).filter(Boolean))];
+    const artists = [...new Set(allAllocations.map(a => a.artist).filter(Boolean))];
     
     return {
       workTitles,
       artists,
-      // Mock data for territory, source, and media type since they're not in the current schema
-      territories: ['US', 'UK', 'Canada', 'Australia', 'Germany', 'France'],
-      sources: ['Spotify', 'Apple Music', 'YouTube', 'Amazon Music', 'ASCAP', 'BMI'],
-      mediaTypes: ['Streaming', 'Radio', 'TV', 'Film', 'Commercial', 'Digital Download']
+      // Get actual values from the database where available
+      territories: [...new Set(allAllocations.map(a => a.country).filter(Boolean))],
+      sources: [...new Set(allAllocations.map(a => a.source).filter(Boolean))],
+      mediaTypes: [...new Set(allAllocations.map(a => a.media_type).filter(Boolean))]
     };
   }, [allocations]);
 
-  // Process data for analytics - only processed royalties
+  // Process data for analytics - analyze ALL royalties
   const analyticsData = useMemo(() => {
-    // Start with only processed royalties (those with batch_id)
-    let filtered = allocations.filter(allocation => allocation.batch_id);
+    // Start with ALL allocations, not just processed ones
+    let filtered = [...allocations];
 
     // Apply date range filter
     if (dateRange.from || dateRange.to) {
@@ -222,7 +220,7 @@ export function RoyaltiesAnalyticsDashboard() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `processed-royalties-analytics-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `royalties-analytics-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -230,7 +228,7 @@ export function RoyaltiesAnalyticsDashboard() {
 
     toast({
       title: "Export successful",
-      description: "Processed royalties analytics data has been exported successfully."
+      description: "Royalties analytics data has been exported successfully."
     });
   };
 
@@ -256,7 +254,7 @@ export function RoyaltiesAnalyticsDashboard() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-2">
-          <div className="animate-pulse">Loading processed royalties analytics...</div>
+          <div className="animate-pulse">Loading royalties analytics...</div>
           <p className="text-sm text-muted-foreground">Analyzing your royalty data</p>
         </div>
       </div>
@@ -269,8 +267,8 @@ export function RoyaltiesAnalyticsDashboard() {
       <div className="flex flex-col space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold">Processed Royalties Analytics</h2>
-            <p className="text-muted-foreground">Comprehensive insights from your processed royalty data</p>
+            <h2 className="text-3xl font-bold">Royalties Analytics</h2>
+            <p className="text-muted-foreground">Comprehensive insights from all your royalty data</p>
           </div>
           
           <div className="flex items-center gap-2">
@@ -492,7 +490,7 @@ export function RoyaltiesAnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${analyticsData.total.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">From processed royalties</p>
+            <p className="text-xs text-muted-foreground">From all royalties</p>
           </CardContent>
         </Card>
 
@@ -503,7 +501,7 @@ export function RoyaltiesAnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analyticsData.count.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Processed transactions</p>
+            <p className="text-xs text-muted-foreground">Total transactions</p>
           </CardContent>
         </Card>
 
