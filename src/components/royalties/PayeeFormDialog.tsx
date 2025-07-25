@@ -7,10 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { usePayeeHierarchy } from "@/hooks/usePayeeHierarchy";
+import { useContracts } from "@/hooks/useContracts";
 import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { Plus } from "lucide-react";
 
 interface PayeeFormDialogProps {
   open: boolean;
@@ -29,6 +31,8 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
     fetchWriters,
     autoGenerateOriginalPublisher,
   } = usePayeeHierarchy();
+  
+  const { createContract } = useContracts();
 
   const [loading, setLoading] = useState(false);
   
@@ -36,6 +40,14 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
   const [selectedAgreement, setSelectedAgreement] = useState("");
   const [selectedPublisher, setSelectedPublisher] = useState("");
   const [selectedWriter, setSelectedWriter] = useState("");
+  
+  // Manual Contract Creation State
+  const [showCreateContract, setShowCreateContract] = useState(false);
+  const [contractData, setContractData] = useState({
+    title: "",
+    counterparty_name: "",
+    contract_type: "publishing" as const,
+  });
 
   // Payee Setup Form State
   const [payeeData, setPayeeData] = useState({
@@ -187,6 +199,12 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
       setSelectedAgreement("");
       setSelectedPublisher("");
       setSelectedWriter("");
+      setShowCreateContract(false);
+      setContractData({
+        title: "",
+        counterparty_name: "",
+        contract_type: "publishing" as const,
+      });
       setPayeeData({
         payee_name: "",
         payee_type: "writer",
@@ -212,6 +230,51 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
 
   const handleSplitFormChange = (field: string, value: string | number) => {
     setSplitData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleContractDataChange = (field: string, value: string) => {
+    setContractData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreateContract = async () => {
+    if (!contractData.title.trim() || !contractData.counterparty_name.trim()) {
+      toast({
+        title: "Error",
+        description: "Contract title and counterparty name are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const newContract = await createContract({
+        title: contractData.title,
+        counterparty_name: contractData.counterparty_name,
+        contract_type: contractData.contract_type,
+        contract_status: "draft" as const,
+      });
+
+      if (newContract) {
+        setSelectedAgreement(newContract.id);
+        setShowCreateContract(false);
+        // Reset contract form
+        setContractData({
+          title: "",
+          counterparty_name: "",
+          contract_type: "publishing" as const,
+        });
+        
+        toast({
+          title: "Success",
+          description: "Contract created successfully",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating contract:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -320,7 +383,18 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
               <CardContent className="space-y-4">
                 {/* Agreement Selection */}
                 <div className="space-y-2">
-                  <Label htmlFor="agreement">Agreement (AGR#) *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="agreement">Agreement (AGR#) *</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCreateContract(true)}
+                      className="h-8"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Create New
+                    </Button>
+                  </div>
                   <Select value={selectedAgreement} onValueChange={setSelectedAgreement}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select an agreement" />
@@ -338,6 +412,75 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Manual Contract Creation */}
+                {showCreateContract && (
+                  <Card className="border-dashed">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Create New Contract</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="contract_title" className="text-sm">Contract Title *</Label>
+                          <Input
+                            id="contract_title"
+                            value={contractData.title}
+                            onChange={(e) => handleContractDataChange("title", e.target.value)}
+                            placeholder="e.g., Publishing Agreement"
+                            className="h-8"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="counterparty_name" className="text-sm">Counterparty Name *</Label>
+                          <Input
+                            id="counterparty_name"
+                            value={contractData.counterparty_name}
+                            onChange={(e) => handleContractDataChange("counterparty_name", e.target.value)}
+                            placeholder="e.g., ABC Music Publishing"
+                            className="h-8"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="contract_type" className="text-sm">Contract Type</Label>
+                        <Select
+                          value={contractData.contract_type}
+                          onValueChange={(value) => handleContractDataChange("contract_type", value)}
+                        >
+                          <SelectTrigger className="h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="publishing">Publishing Agreement</SelectItem>
+                            <SelectItem value="artist">Artist Agreement</SelectItem>
+                            <SelectItem value="producer">Producer Agreement</SelectItem>
+                            <SelectItem value="sync">Sync Licensing</SelectItem>
+                            <SelectItem value="distribution">Distribution Agreement</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowCreateContract(false)}
+                          className="h-8"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleCreateContract}
+                          disabled={loading || !contractData.title.trim() || !contractData.counterparty_name.trim()}
+                          size="sm"
+                          className="h-8"
+                        >
+                          {loading ? "Creating..." : "Create Contract"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Original Publisher Selection */}
                 {selectedAgreement && (
