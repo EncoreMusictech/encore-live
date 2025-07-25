@@ -196,9 +196,21 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
 
   const onSubmit = async (data: any) => {
     try {
+      // Validate that source is one of the allowed enum values
+      const validSources = sourceOptions.map(option => option.value);
+      if (!validSources.includes(sourceValue)) {
+        toast({
+          title: "Invalid Source",
+          description: "Please select a valid source from the available options",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Clean up the data before submitting
       const cleanedData = {
         ...data,
+        source: sourceValue, // Use the validated sourceValue
         // Convert empty string to null for linked_statement_id
         linked_statement_id: data.linked_statement_id || null,
         // Ensure numeric values are properly handled
@@ -297,22 +309,13 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
                   value={sourceValue}
                   onValueChange={setSourceValue}
                 />
-                <CommandList>
-                  <CommandEmpty>
-                    <div className="text-center py-2">
-                      <p className="text-sm text-muted-foreground mb-2">No predefined source found.</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSourceOpen(false);
-                        }}
-                        className="text-xs"
-                      >
-                        Use "{sourceValue}" as custom source
-                      </Button>
-                    </div>
-                  </CommandEmpty>
+                 <CommandList>
+                   <CommandEmpty>
+                     <div className="text-center py-2">
+                       <p className="text-sm text-muted-foreground mb-2">No matching source found.</p>
+                       <p className="text-xs text-muted-foreground">Please select from the available options or use "Other" for custom sources.</p>
+                     </div>
+                   </CommandEmpty>
                   <CommandGroup>
                     {sourceOptions.map((source) => (
                       <CommandItem
