@@ -39,71 +39,61 @@ export const ContactManagement = ({
   const [activeTab, setActiveTab] = useState<string>("licensor");
 
   const licensorForm = useForm({
-    defaultValues: licensorData || {},
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      company: ''
+    },
     mode: "onChange"
   });
 
   const licenseeForm = useForm({
-    defaultValues: licenseeData || {},
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      company: ''
+    },
     mode: "onChange"
   });
 
-  // Debug logging
-  console.log('ContactManagement render - licensorData:', licensorData);
-  console.log('ContactManagement render - licenseeData:', licenseeData);
-
-  // Update form values when props change (without form deps to prevent resets)
+  // Initialize forms only once on mount
   useEffect(() => {
     if (licensorData && Object.keys(licensorData).length > 0) {
-      // Only reset if there's actual data and form is empty
-      const currentValues = licensorForm.getValues();
-      const isEmpty = Object.values(currentValues).every(val => !val);
-      if (isEmpty) {
-        licensorForm.reset(licensorData);
-      }
+      licensorForm.reset(licensorData);
     }
-  }, [licensorData]);
+  }, []);
 
   useEffect(() => {
     if (licenseeData && Object.keys(licenseeData).length > 0) {
-      // Only reset if there's actual data and form is empty
-      const currentValues = licenseeForm.getValues();
-      const isEmpty = Object.values(currentValues).every(val => !val);
-      if (isEmpty) {
-        licenseeForm.reset(licenseeData);
-      }
+      licenseeForm.reset(licenseeData);
     }
-  }, [licenseeData]);
+  }, []);
 
-  // Remove debouncing and use direct callbacks
-  const handleLicensorChange = useCallback((data: ContactData) => {
-    onLicensorChange(data);
-  }, [onLicensorChange]);
+  // Only sync with parent on blur to avoid re-renders during typing
+  const handleLicensorBlur = useCallback(() => {
+    const formData = licensorForm.getValues();
+    onLicensorChange(formData);
+  }, [onLicensorChange, licensorForm]);
 
-  const handleLicenseeChange = useCallback((data: ContactData) => {
-    onLicenseeChange(data);
-  }, [onLicenseeChange]);
-
-  // Auto-update parent form when licensor data changes
-  useEffect(() => {
-    const subscription = licensorForm.watch(handleLicensorChange);
-    return () => subscription.unsubscribe();
-  }, [licensorForm, handleLicensorChange]);
-
-  // Auto-update parent form when licensee data changes
-  useEffect(() => {
-    const subscription = licenseeForm.watch(handleLicenseeChange);
-    return () => subscription.unsubscribe();
-  }, [licenseeForm, handleLicenseeChange]);
+  const handleLicenseeBlur = useCallback(() => {
+    const formData = licenseeForm.getValues();
+    onLicenseeChange(formData);
+  }, [onLicenseeChange, licenseeForm]);
 
   const ContactForm = ({ 
     form, 
     title, 
-    icon: Icon 
+    icon: Icon,
+    onBlur
   }: { 
     form: any; 
     title: string;
     icon: React.ComponentType<any>;
+    onBlur: () => void;
   }) => (
     <Card>
       <CardHeader>
@@ -114,7 +104,7 @@ export const ContactManagement = ({
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <div className="space-y-4">
+          <div className="space-y-4" onBlur={onBlur}>
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -235,6 +225,7 @@ export const ContactManagement = ({
             form={licensorForm}
             title="Licensor"
             icon={Building2}
+            onBlur={handleLicensorBlur}
           />
         </TabsContent>
 
@@ -243,6 +234,7 @@ export const ContactManagement = ({
             form={licenseeForm}
             title="Licensee"
             icon={User}
+            onBlur={handleLicenseeBlur}
           />
         </TabsContent>
       </Tabs>

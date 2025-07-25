@@ -648,32 +648,8 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
 
               <TabsContent value="contacts" className="space-y-4">
                 <ContactManagement
-                  licensorData={useMemo(() => ({
-                    name: form.watch('licensor_name'),
-                    email: form.watch('licensor_email'),
-                    phone: form.watch('licensor_phone'),
-                    address: form.watch('licensor_address'),
-                    company: form.watch('licensor_company'),
-                  }), [
-                    form.watch('licensor_name'),
-                    form.watch('licensor_email'),
-                    form.watch('licensor_phone'),
-                    form.watch('licensor_address'),
-                    form.watch('licensor_company'),
-                  ])}
-                  licenseeData={useMemo(() => ({
-                    name: form.watch('licensee_name'),
-                    email: form.watch('licensee_email'),
-                    phone: form.watch('licensee_phone'),
-                    address: form.watch('licensee_address'),
-                    company: form.watch('licensee_company'),
-                  }), [
-                    form.watch('licensee_name'),
-                    form.watch('licensee_email'),
-                    form.watch('licensee_phone'),
-                    form.watch('licensee_address'),
-                    form.watch('licensee_company'),
-                  ])}
+                  licensorData={undefined}
+                  licenseeData={undefined}
                   onLicensorChange={useCallback((data) => {
                     form.setValue('licensor_name', data.name);
                     form.setValue('licensor_email', data.email);
