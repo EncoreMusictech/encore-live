@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { Plus, Trash2, User, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -75,51 +75,26 @@ export const ContactManagement = ({
     }
   }, [licenseeData]);
 
-  // Debounced callback refs to prevent excessive re-renders
-  const licensorTimeoutRef = useRef<NodeJS.Timeout>();
-  const licenseeTimeoutRef = useRef<NodeJS.Timeout>();
-
-  const debouncedLicensorChange = useCallback((data: ContactData) => {
-    if (licensorTimeoutRef.current) {
-      clearTimeout(licensorTimeoutRef.current);
-    }
-    licensorTimeoutRef.current = setTimeout(() => {
-      onLicensorChange(data);
-    }, 300);
+  // Remove debouncing and use direct callbacks
+  const handleLicensorChange = useCallback((data: ContactData) => {
+    onLicensorChange(data);
   }, [onLicensorChange]);
 
-  const debouncedLicenseeChange = useCallback((data: ContactData) => {
-    if (licenseeTimeoutRef.current) {
-      clearTimeout(licenseeTimeoutRef.current);
-    }
-    licenseeTimeoutRef.current = setTimeout(() => {
-      onLicenseeChange(data);
-    }, 300);
+  const handleLicenseeChange = useCallback((data: ContactData) => {
+    onLicenseeChange(data);
   }, [onLicenseeChange]);
 
   // Auto-update parent form when licensor data changes
   useEffect(() => {
-    const subscription = licensorForm.watch(debouncedLicensorChange);
+    const subscription = licensorForm.watch(handleLicensorChange);
     return () => subscription.unsubscribe();
-  }, [licensorForm, debouncedLicensorChange]);
+  }, [licensorForm, handleLicensorChange]);
 
   // Auto-update parent form when licensee data changes
   useEffect(() => {
-    const subscription = licenseeForm.watch(debouncedLicenseeChange);
+    const subscription = licenseeForm.watch(handleLicenseeChange);
     return () => subscription.unsubscribe();
-  }, [licenseeForm, debouncedLicenseeChange]);
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (licensorTimeoutRef.current) {
-        clearTimeout(licensorTimeoutRef.current);
-      }
-      if (licenseeTimeoutRef.current) {
-        clearTimeout(licenseeTimeoutRef.current);
-      }
-    };
-  }, []);
+  }, [licenseeForm, handleLicenseeChange]);
 
   const ContactForm = ({ 
     form, 
