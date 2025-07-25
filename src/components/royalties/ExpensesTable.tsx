@@ -121,6 +121,7 @@ export function ExpensesTable() {
             <TableRow>
               <TableHead>Payee</TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>Flags</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Status</TableHead>
@@ -139,7 +140,9 @@ export function ExpensesTable() {
                   <Badge className={getExpenseTypeColor(expense.expense_type)}>
                     {expense.expense_type.replace('_', ' ')}
                   </Badge>
-                  <div className="flex gap-1 mt-1">
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1 flex-wrap">
                     {(expense.expense_flags?.recoupable || expense.is_recoupable) && (
                       <Badge variant="outline" className="text-xs">Recoupable</Badge>
                     )}
