@@ -223,20 +223,21 @@ export function useQuarterlyBalanceReports() {
     }
 
     try {
-      // Get current year and quarter
+      // Get current year and quarter to establish range
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
 
-      // Fetch data from different modules for the past 4 quarters
+      // Generate quarters from current quarter up to 8 quarters in the future
       const quarters = [];
-      for (let i = 3; i >= 0; i--) {
+      for (let i = 0; i < 8; i++) {
         let year = currentYear;
-        let quarter = currentQuarter - i;
+        let quarter = currentQuarter + i;
         
-        if (quarter <= 0) {
-          year -= 1;
-          quarter += 4;
+        // Handle year rollover
+        while (quarter > 4) {
+          quarter -= 4;
+          year += 1;
         }
         
         quarters.push({ year, quarter });
@@ -247,24 +248,30 @@ export function useQuarterlyBalanceReports() {
         const quarterStart = new Date(year, (quarter - 1) * 3, 1);
         const quarterEnd = new Date(year, quarter * 3, 0, 23, 59, 59);
 
-        // Fetch royalties for this period
-        const { data: royalties } = await supabase
+        // Fetch royalties that are linked to batches with date_received in this quarter
+        // Only include royalties that have a batch_id (reconciled royalties)
+        const { data: royaltiesWithBatches } = await supabase
           .from('royalty_allocations')
-          .select('net_amount')
+          .select(`
+            net_amount,
+            batch_id,
+            reconciliation_batches!inner(date_received)
+          `)
           .eq('user_id', user.id)
-          .gte('created_at', quarterStart.toISOString())
-          .lte('created_at', quarterEnd.toISOString());
+          .not('batch_id', 'is', null)
+          .gte('reconciliation_batches.date_received', quarterStart.toISOString().split('T')[0])
+          .lte('reconciliation_batches.date_received', quarterEnd.toISOString().split('T')[0]);
 
-        // Fetch expenses for this period
+        // Fetch expenses for this period linked to this payee
         const { data: expenses } = await supabase
           .from('payout_expenses')
           .select('amount')
           .eq('user_id', user.id)
-          .eq('is_recoupable', true)
-          .gte('created_at', quarterStart.toISOString())
-          .lte('created_at', quarterEnd.toISOString());
+          .eq('payee_id', payeeId)
+          .gte('date_incurred', quarterStart.toISOString().split('T')[0])
+          .lte('date_incurred', quarterEnd.toISOString().split('T')[0]);
 
-        // Fetch payments for this period
+        // Fetch payments for this period linked to this payee
         const { data: payments } = await supabase
           .from('payouts')
           .select('amount_due')
@@ -274,12 +281,32 @@ export function useQuarterlyBalanceReports() {
           .gte('created_at', quarterStart.toISOString())
           .lte('created_at', quarterEnd.toISOString());
 
-        const royaltiesAmount = royalties?.reduce((sum, r) => sum + (r.net_amount || 0), 0) || 0;
+        // Calculate totals
+        const royaltiesAmount = royaltiesWithBatches?.reduce((sum, r) => sum + (r.net_amount || 0), 0) || 0;
         const expensesAmount = expenses?.reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
         const paymentsAmount = payments?.reduce((sum, p) => sum + (p.amount_due || 0), 0) || 0;
 
-        // Create or update the report
-        await supabase
+        // Get the previous quarter's closing balance for opening balance
+        let previousQuarter = quarter - 1;
+        let previousYear = year;
+        if (previousQuarter === 0) {
+          previousQuarter = 4;
+          previousYear -= 1;
+        }
+
+        const { data: previousReport } = await supabase
+          .from('quarterly_balance_reports')
+          .select('closing_balance')
+          .eq('user_id', user.id)
+          .eq('payee_id', payeeId)
+          .eq('year', previousYear)
+          .eq('quarter', previousQuarter)
+          .single();
+
+        const openingBalance = previousReport?.closing_balance || 0;
+
+        // Create or update the report with automatic closing balance calculation
+        const { error } = await supabase
           .from('quarterly_balance_reports')
           .upsert({
             user_id: user.id,
@@ -288,17 +315,24 @@ export function useQuarterlyBalanceReports() {
             agreement_id: agreementId,
             year,
             quarter,
+            opening_balance: openingBalance,
             royalties_amount: royaltiesAmount,
             expenses_amount: expensesAmount,
             payments_amount: paymentsAmount,
+          }, {
+            onConflict: 'user_id,payee_id,year,quarter'
           });
+
+        if (error) {
+          console.error('Error upserting report:', error);
+        }
       }
 
       await fetchReports();
       
       toast({
-        title: "Success",
-        description: "Quarterly balance reports generated successfully",
+        title: "Success", 
+        description: "Quarterly balance reports updated with reconciled royalties",
       });
     } catch (error: any) {
       console.error('Error generating quarterly balance reports:', error);
@@ -349,6 +383,74 @@ export function useQuarterlyBalanceReports() {
     fetchReports();
   }, [user, isDemo]);
 
+  // Initialize quarterly balance reports for a new payee
+  const initializePayeeReports = async (payeeId: string, contactId?: string, agreementId?: string) => {
+    if (isDemo) {
+      console.log('Demo mode: cannot initialize payee reports');
+      return;
+    }
+
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    try {
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentQuarter = Math.floor((currentDate.getMonth() + 3) / 3);
+      
+      // Generate reports for current quarter and next 7 quarters (2 years)
+      const reportsToCreate = [];
+      
+      for (let i = 0; i < 8; i++) {
+        let year = currentYear;
+        let quarter = currentQuarter + i;
+        
+        // Handle year rollover
+        while (quarter > 4) {
+          quarter -= 4;
+          year += 1;
+        }
+        
+        reportsToCreate.push({
+          user_id: user.id,
+          payee_id: payeeId,
+          contact_id: contactId || null,
+          agreement_id: agreementId || null,
+          year,
+          quarter,
+          opening_balance: 0,
+          royalties_amount: 0,
+          expenses_amount: 0,
+          payments_amount: 0,
+          closing_balance: 0,
+          is_calculated: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      }
+
+      // Insert all reports
+      const { error } = await supabase
+        .from('quarterly_balance_reports')
+        .insert(reportsToCreate);
+
+      if (error) {
+        console.error('Error initializing payee reports:', error);
+        return;
+      }
+
+      console.log(`Initialized ${reportsToCreate.length} quarterly balance reports for payee ${payeeId}`);
+      
+      // Trigger aggregation for any existing royalties
+      await generateReportsFromData(payeeId, contactId, agreementId);
+      
+    } catch (error) {
+      console.error('Error in initializePayeeReports:', error);
+    }
+  };
+
   return {
     reports,
     loading,
@@ -358,5 +460,6 @@ export function useQuarterlyBalanceReports() {
     deleteReport,
     generateReportsFromData,
     exportToCSV,
+    initializePayeeReports,
   };
 }
