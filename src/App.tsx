@@ -110,11 +110,11 @@ const App = () => {
                 </ErrorBoundary>
               } />
               <Route path="/payouts" element={
-                <ProtectedRoute>
+                <AdminOrProtectedRoute>
                   <ErrorBoundary>
                     <PayoutsPage />
                   </ErrorBoundary>
-                </ProtectedRoute>
+                </AdminOrProtectedRoute>
               } />
                <Route path="/pricing" element={<PricingPage />} />
                <Route path="/contact" element={<ContactPage />} />
