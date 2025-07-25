@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +21,7 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accen
 export function RoyaltiesAnalyticsDashboard() {
   const { allocations, loading } = useRoyaltyAllocations();
   const { writers: controlledWriters, loading: writersLoading } = useControlledWriters();
+  const [batchSources, setBatchSources] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
@@ -35,6 +36,36 @@ export function RoyaltiesAnalyticsDashboard() {
   const [aiInsights, setAiInsights] = useState<string>("");
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Fetch batch sources to map batch IDs to sources
+  useEffect(() => {
+    const fetchBatchSources = async () => {
+      if (allocations.length === 0) return;
+      
+      const batchIds = [...new Set(allocations.map(a => a.batch_id).filter(Boolean))];
+      if (batchIds.length === 0) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('reconciliation_batches')
+          .select('id, source')
+          .in('id', batchIds);
+        
+        if (error) throw error;
+        
+        const sourcesMap = data.reduce((acc, batch) => {
+          acc[batch.id] = batch.source;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        setBatchSources(sourcesMap);
+      } catch (error) {
+        console.error('Error fetching batch sources:', error);
+      }
+    };
+    
+    fetchBatchSources();
+  }, [allocations]);
 
   // Get unique filter values from all royalties
   const filterOptions = useMemo(() => {
@@ -134,12 +165,19 @@ export function RoyaltiesAnalyticsDashboard() {
 
     // 3. Royalties x Source
     const sourceData = filtered.reduce((acc, allocation) => {
-      // Check multiple possible source fields
+      // Check multiple possible source fields, including batch source lookup
       const source = allocation.source || 
                     allocation.mapped_data?.["Statement Source"] || 
                     allocation.mapped_data?.["REVENUE SOURCE"] ||
-                    allocation.revenue_source || 
+                    allocation.revenue_source ||
+                    (allocation.batch_id ? batchSources[allocation.batch_id] : null) ||  // Look up batch source
                     'Unknown';
+      
+      // Debug logging to see what sources we're getting
+      if (allocation.batch_id && batchSources[allocation.batch_id]) {
+        console.log('Found batch source:', batchSources[allocation.batch_id], 'for allocation:', allocation.royalty_id);
+      }
+      
       acc[source] = (acc[source] || 0) + allocation.gross_royalty_amount;
       return acc;
     }, {} as Record<string, number>);
@@ -181,7 +219,7 @@ export function RoyaltiesAnalyticsDashboard() {
       count: filtered.length,
       averagePerRoyalty: filtered.length > 0 ? filtered.reduce((sum, a) => sum + a.gross_royalty_amount, 0) / filtered.length : 0
     };
-  }, [allocations, dateRange, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType, controlledWriters]);
+  }, [allocations, dateRange, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType, controlledWriters, batchSources]);
 
   const generateAIInsights = async () => {
     setLoadingInsights(true);
