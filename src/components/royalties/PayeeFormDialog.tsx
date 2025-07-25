@@ -689,12 +689,6 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
                 </div>
               </div>
 
-              <div className="text-sm text-muted-foreground">
-                Total: {splitData.default_performance_share + splitData.default_mechanical_share + splitData.default_sync_share}%
-                {(splitData.default_performance_share + splitData.default_mechanical_share + splitData.default_sync_share) > 100 && (
-                  <span className="text-destructive ml-2">Exceeds 100%</span>
-                )}
-              </div>
             </div>
 
             <div className="space-y-4">
