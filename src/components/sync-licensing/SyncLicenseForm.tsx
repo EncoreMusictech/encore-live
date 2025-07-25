@@ -377,14 +377,44 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
     try {
       const feeAllocations = await calculateFeeAllocations();
       
-      const submissionData = {
+      // Sanitize numeric fields - convert empty strings to null
+      const sanitizeNumericField = (value: any) => {
+        if (value === '' || value === undefined || value === null) {
+          return null;
+        }
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? null : parsed;
+      };
+
+      const sanitizedData = {
         ...data,
+        // Convert numeric fields
+        pub_fee: sanitizeNumericField(data.pub_fee),
+        master_fee: sanitizeNumericField(data.master_fee),
+        advance_amount: sanitizeNumericField(data.advance_amount),
+        backend_percentage: sanitizeNumericField(data.backend_percentage),
+        scene_duration_seconds: sanitizeNumericField(data.scene_duration_seconds),
+        // Convert empty strings to null for other fields
+        project_title: data.project_title === '' ? null : data.project_title,
+        synch_agent: data.synch_agent === '' ? null : data.synch_agent,
+        media_type: data.media_type === '' ? null : data.media_type,
+        platforms: data.platforms === '' ? null : data.platforms,
+        territory: data.territory === '' ? null : data.territory,
+        term_duration: data.term_duration === '' ? null : data.term_duration,
+        episode_season: data.episode_season === '' ? null : data.episode_season,
+        source: data.source === '' ? null : data.source,
+        territory_of_licensee: data.territory_of_licensee === '' ? null : data.territory_of_licensee,
+        music_type: data.music_type === '' ? null : data.music_type,
+        music_use: data.music_use === '' ? null : data.music_use,
+        smpte: data.smpte === '' ? null : data.smpte,
+      };
+      
+      const submissionData = {
+        ...sanitizedData,
         user_id: user.id,
         linked_copyright_ids: selectedCopyrights.map(c => c.id),
         controlled_writers: controlledWriters,
         fee_allocations: feeAllocations,
-        // Remove undefined values
-        ...Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined))
       };
 
       if (isEditing && license) {
