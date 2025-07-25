@@ -42,6 +42,9 @@ export function useReconciliationBatches() {
       // Then get the allocated amounts for each batch
       const batchesWithAllocations = await Promise.all(
         (batchData || []).map(async (batch) => {
+          let allocated_amount = 0;
+
+          // Get the sum of gross_royalty_amount for all allocations linked to this batch via batch_id
           const { data: allocations, error: allocError } = await supabase
             .from('royalty_allocations')
             .select('gross_royalty_amount')
@@ -49,11 +52,37 @@ export function useReconciliationBatches() {
 
           if (allocError) {
             console.warn(`Error fetching allocations for batch ${batch.id}:`, allocError);
-            return { ...batch, allocated_amount: 0 };
+          } else {
+            allocated_amount += allocations?.reduce((sum, allocation) => 
+              sum + (allocation.gross_royalty_amount || 0), 0) || 0;
           }
 
-          const allocated_amount = allocations?.reduce((sum, allocation) => 
-            sum + (allocation.gross_royalty_amount || 0), 0) || 0;
+          // If batch has a linked statement, also include royalties from that statement
+          if (batch.linked_statement_id) {
+            // Try direct statement_id match first
+            const { data: directRoyalties } = await supabase
+              .from('royalty_allocations')
+              .select('gross_royalty_amount')
+              .eq('user_id', user.id)
+              .eq('statement_id', batch.linked_statement_id);
+
+            if (directRoyalties && directRoyalties.length > 0) {
+              allocated_amount += directRoyalties.reduce((sum, allocation) => 
+                sum + (allocation.gross_royalty_amount || 0), 0);
+            } else {
+              // Try staging_record_id if no direct match
+              const { data: stagingRoyalties } = await supabase
+                .from('royalty_allocations')
+                .select('gross_royalty_amount')
+                .eq('user_id', user.id)
+                .eq('staging_record_id', batch.linked_statement_id);
+
+              if (stagingRoyalties && stagingRoyalties.length > 0) {
+                allocated_amount += stagingRoyalties.reduce((sum, allocation) => 
+                  sum + (allocation.gross_royalty_amount || 0), 0);
+              }
+            }
+          }
 
           return { ...batch, allocated_amount };
         })
