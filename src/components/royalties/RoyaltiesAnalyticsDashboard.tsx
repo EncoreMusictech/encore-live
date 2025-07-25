@@ -134,7 +134,12 @@ export function RoyaltiesAnalyticsDashboard() {
 
     // 3. Royalties x Source
     const sourceData = filtered.reduce((acc, allocation) => {
-      const source = allocation.source || 'Unknown';
+      // Check multiple possible source fields
+      const source = allocation.source || 
+                    allocation.mapped_data?.["Statement Source"] || 
+                    allocation.mapped_data?.["REVENUE SOURCE"] ||
+                    allocation.revenue_source || 
+                    'Unknown';
       acc[source] = (acc[source] || 0) + allocation.gross_royalty_amount;
       return acc;
     }, {} as Record<string, number>);
