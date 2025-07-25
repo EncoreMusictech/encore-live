@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Plus, Trash2, User, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -61,21 +61,51 @@ export const ContactManagement = ({
     }
   }, [licenseeData, licenseeForm]);
 
+  // Debounced callback refs to prevent excessive re-renders
+  const licensorTimeoutRef = useRef<NodeJS.Timeout>();
+  const licenseeTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const debouncedLicensorChange = useCallback((data: ContactData) => {
+    if (licensorTimeoutRef.current) {
+      clearTimeout(licensorTimeoutRef.current);
+    }
+    licensorTimeoutRef.current = setTimeout(() => {
+      onLicensorChange(data);
+    }, 300);
+  }, [onLicensorChange]);
+
+  const debouncedLicenseeChange = useCallback((data: ContactData) => {
+    if (licenseeTimeoutRef.current) {
+      clearTimeout(licenseeTimeoutRef.current);
+    }
+    licenseeTimeoutRef.current = setTimeout(() => {
+      onLicenseeChange(data);
+    }, 300);
+  }, [onLicenseeChange]);
+
   // Auto-update parent form when licensor data changes
   useEffect(() => {
-    const subscription = licensorForm.watch((data) => {
-      onLicensorChange(data as ContactData);
-    });
+    const subscription = licensorForm.watch(debouncedLicensorChange);
     return () => subscription.unsubscribe();
-  }, [licensorForm, onLicensorChange]);
+  }, [licensorForm, debouncedLicensorChange]);
 
   // Auto-update parent form when licensee data changes
   useEffect(() => {
-    const subscription = licenseeForm.watch((data) => {
-      onLicenseeChange(data as ContactData);
-    });
+    const subscription = licenseeForm.watch(debouncedLicenseeChange);
     return () => subscription.unsubscribe();
-  }, [licenseeForm, onLicenseeChange]);
+  }, [licenseeForm, debouncedLicenseeChange]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (licensorTimeoutRef.current) {
+        clearTimeout(licensorTimeoutRef.current);
+      }
+      if (licenseeTimeoutRef.current) {
+        clearTimeout(licenseeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const ContactForm = ({ 
     form, 
