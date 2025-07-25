@@ -560,8 +560,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="artist_name">Artist Name</Label>
+                <div>
                   <ArtistSelector
                     value={formData.artist_name}
                     onChange={(value) => setFormData({...formData, artist_name: value})}
