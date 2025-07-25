@@ -111,38 +111,70 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
   // Function to fetch and auto-populate royalty splits from agreement
   const fetchAgreementRoyaltySplits = async (agreementId: string) => {
     try {
-      const { data, error } = await supabase
+      // First, fetch the commission percentage from the contract
+      const { data: contractData, error: contractError } = await supabase
+        .from('contracts')
+        .select('commission_percentage')
+        .eq('id', agreementId)
+        .single();
+
+      if (contractError) {
+        console.log('No contract found for this agreement');
+        return;
+      }
+
+      // Calculate default royalty splits based on commission (100 - commission)
+      const commissionPercentage = contractData.commission_percentage || 0;
+      const defaultRoyaltyPercentage = 100 - commissionPercentage;
+
+      // Try to fetch existing royalty splits from contract_interested_parties
+      const { data: splitsData, error: splitsError } = await supabase
         .from('contract_interested_parties')
         .select('performance_percentage, mechanical_percentage, synch_percentage')
         .eq('contract_id', agreementId)
         .limit(1)
         .single();
 
-      if (error) {
-        console.log('No royalty splits found for this agreement, keeping manual entry');
-        return;
-      }
+      // Use existing splits if available, otherwise use calculated default
+      let performanceShare, mechanicalShare, syncShare;
 
-      if (data) {
-        // Only auto-populate if there are actual values (not 0)
-        const hasRoyaltySplits = data.performance_percentage > 0 || 
-                                data.mechanical_percentage > 0 || 
-                                data.synch_percentage > 0;
+      if (!splitsError && splitsData) {
+        // Check if there are actual values in the interested parties table
+        const hasExistingSplits = splitsData.performance_percentage > 0 || 
+                                  splitsData.mechanical_percentage > 0 || 
+                                  splitsData.synch_percentage > 0;
 
-        if (hasRoyaltySplits) {
-          setSplitData(prev => ({
-            ...prev,
-            default_performance_share: data.performance_percentage || 0,
-            default_mechanical_share: data.mechanical_percentage || 0,
-            default_sync_share: data.synch_percentage || 0,
-          }));
-
-          toast({
-            title: "Royalty Splits Auto-Populated",
-            description: "Default royalty splits have been loaded from the agreement.",
-          });
+        if (hasExistingSplits) {
+          performanceShare = splitsData.performance_percentage || 0;
+          mechanicalShare = splitsData.mechanical_percentage || 0;
+          syncShare = splitsData.synch_percentage || 0;
+        } else {
+          // Use calculated default based on commission
+          performanceShare = defaultRoyaltyPercentage;
+          mechanicalShare = defaultRoyaltyPercentage;
+          syncShare = defaultRoyaltyPercentage;
         }
+      } else {
+        // Use calculated default based on commission
+        performanceShare = defaultRoyaltyPercentage;
+        mechanicalShare = defaultRoyaltyPercentage;
+        syncShare = defaultRoyaltyPercentage;
       }
+
+      setSplitData(prev => ({
+        ...prev,
+        default_performance_share: performanceShare,
+        default_mechanical_share: mechanicalShare,
+        default_sync_share: syncShare,
+      }));
+
+      toast({
+        title: "Royalty Splits Auto-Populated",
+        description: commissionPercentage > 0 
+          ? `Default royalty splits set to ${defaultRoyaltyPercentage}% (100% - ${commissionPercentage}% commission)`
+          : "Default royalty splits have been loaded from the agreement.",
+      });
+
     } catch (error) {
       console.error('Error fetching agreement royalty splits:', error);
     }
