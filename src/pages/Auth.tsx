@@ -10,7 +10,6 @@ import { Separator } from '@/components/ui/separator';
 import { PlayCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import AdminPasswordReset from '@/components/AdminPasswordReset';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -187,9 +186,6 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
-      
-      {/* Admin Password Reset Tool */}
-      <AdminPasswordReset />
     </div>
   );
 };
