@@ -533,7 +533,11 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" onKeyDown={(e) => {
+      if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+        e.preventDefault();
+      }
+    }}>
       {/* Metadata Section */}
       <Collapsible open={metadataOpen} onOpenChange={setMetadataOpen}>
         <Card>
