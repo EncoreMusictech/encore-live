@@ -29,20 +29,20 @@ export function Stepper({ steps, orientation = 'horizontal', className }: Steppe
             index !== steps.length - 1 && (orientation === 'horizontal' ? "flex-1" : "")
           )}
         >
-          {/* Step Circle */}
+          {/* Step Box */}
           <div className="flex flex-col items-center">
             <div
               className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                "w-16 h-16 rounded-lg flex items-center justify-center text-sm font-medium border-2 relative",
                 step.status === 'completed'
-                  ? "bg-green-500 text-white"
+                  ? "bg-green-100 border-green-500 text-green-700"
                   : step.status === 'current'
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-600"
+                  ? "bg-purple-100 border-purple-500 text-purple-700"
+                  : "bg-gray-100 border-gray-300 text-gray-500"
               )}
             >
               {step.status === 'completed' ? (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"
                     d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -50,7 +50,7 @@ export function Stepper({ steps, orientation = 'horizontal', className }: Steppe
                   />
                 </svg>
               ) : step.icon ? (
-                <step.icon className="w-4 h-4" />
+                <step.icon className="w-6 h-6" />
               ) : (
                 index + 1
               )}
@@ -78,8 +78,10 @@ export function Stepper({ steps, orientation = 'horizontal', className }: Steppe
           {index !== steps.length - 1 && (
             <div
               className={cn(
-                orientation === 'horizontal' ? "flex-1 h-px mx-4" : "w-px h-8 my-2",
-                "bg-gray-200"
+                orientation === 'horizontal' ? "flex-1 h-0.5 mx-6 mt-8" : "w-0.5 h-8 my-2 ml-8",
+                steps[index + 1]?.status === 'completed' || step.status === 'completed' 
+                  ? "bg-green-300" 
+                  : "bg-gray-300"
               )}
             />
           )}
