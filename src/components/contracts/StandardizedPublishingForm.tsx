@@ -208,7 +208,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
     }
   };
 
-  // Form steps configuration (6-step workflow)
+  // Form steps configuration (5-step workflow)
   const steps: ContractFormStep[] = [
     {
       id: 'type',
@@ -248,19 +248,6 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
       validation: () => !!(formData.publisherShare && formData.writerShare)
     },
     {
-      id: 'works',
-      title: 'Schedule of Works',
-      description: 'Select musical works covered by this agreement',
-      icon: Music,
-      component: (props: any) => (
-        <ContractWorks
-          {...props}
-          contractType="publishing agreement"
-        />
-      ),
-      validation: () => formData.selectedWorks && formData.selectedWorks.length > 0
-    },
-    {
       id: 'interested_parties',
       title: 'Interested Parties',
       description: 'Manage ownership and interested parties',
@@ -283,12 +270,11 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
           contractType="publishing agreement"
           customValidation={[
             { label: 'Publishing agreement type selected', isValid: !!props.data.publishingAgreementType, required: true },
-            { label: 'Publisher and writer shares defined', isValid: !!(props.data.publisherShare && props.data.writerShare), required: true },
-            { label: 'Works selected', isValid: props.data.selectedWorks && props.data.selectedWorks.length > 0, required: true }
+            { label: 'Publisher and writer shares defined', isValid: !!(props.data.publisherShare && props.data.writerShare), required: true }
           ]}
         />
       ),
-      validation: () => true // Custom validation in the review component
+      validation: () => true
     }
   ];
 

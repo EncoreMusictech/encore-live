@@ -177,7 +177,7 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
     }
   };
 
-  // Form steps configuration (6-step workflow)
+  // Form steps configuration (5-step workflow)
   const steps: ContractFormStep[] = [
     {
       id: 'type',
@@ -217,19 +217,6 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
       validation: () => !!(formData.royaltyRate && formData.termLength)
     },
     {
-      id: 'works',
-      title: 'Schedule of Works',
-      description: 'Select musical works covered by this agreement',
-      icon: Music,
-      component: (props: any) => (
-        <ContractWorks
-          {...props}
-          contractType="artist agreement"
-        />
-      ),
-      validation: () => formData.selectedWorks && formData.selectedWorks.length > 0
-    },
-    {
       id: 'interested_parties',
       title: 'Interested Parties',
       description: 'Manage ownership and interested parties',
@@ -253,12 +240,11 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
           customValidation={[
             { label: 'Artist agreement type selected', isValid: !!props.data.artistAgreementType, required: true },
             { label: 'Royalty rate specified', isValid: !!props.data.royaltyRate, required: true },
-            { label: 'Term length defined', isValid: !!props.data.termLength, required: true },
-            { label: 'Works selected', isValid: props.data.selectedWorks && props.data.selectedWorks.length > 0, required: true }
+            { label: 'Term length defined', isValid: !!props.data.termLength, required: true }
           ]}
         />
       ),
-      validation: () => true // Custom validation in the review component
+      validation: () => true
     }
   ];
 
