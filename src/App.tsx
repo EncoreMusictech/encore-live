@@ -1,3 +1,4 @@
+
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -30,117 +31,76 @@ import ClientAdminPage from "./pages/ClientAdminPage";
 import ContactPage from "./pages/ContactPage";
 import DocumentationPage from "./pages/DocumentationPage";
 
-// Create a stable QueryClient instance
-let queryClient: QueryClient | null = null;
-const getQueryClient = () => {
-  if (!queryClient) {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          staleTime: 1000 * 60 * 5, // 5 minutes
-          retry: 2,
-        },
-      },
-    });
-  }
-  return queryClient;
-};
+// Create a stable QueryClient instance outside of the component
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 2,
+    },
+  },
+});
 
 const App = () => {
   return (
-  <QueryClientProvider client={getQueryClient()}>
-    <SecurityProvider>
-      <AuthProvider>
-         <DemoAccessProvider>
-           <ErrorBoundary>
-             <TooltipProvider>
-             <DemoUpgradeModal />
-             <BrowserRouter>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={<Index />} />
-              <Route path="/modules" element={<ModulesPage />} />
-              <Route path="/demo-modules" element={<DemoModulesPage />} />
-              <Route path="/features/:moduleId" element={<FeaturesPage />} />
-              <Route path="/catalog-valuation" element={
-                <ErrorBoundary>
-                  <CatalogValuationPage />
-                </ErrorBoundary>
-              } />
-              <Route path="/deal-simulator" element={
-                <ErrorBoundary>
-                  <DealSimulatorPage />
-                </ErrorBoundary>
-              } />
-              <Route path="/contract-management" element={
-                <ErrorBoundary>
-                  <ContractManagement />
-                </ErrorBoundary>
-              } />
-              <Route path="/copyright-management" element={
-                <ErrorBoundary>
-                  <CopyrightManagement />
-                </ErrorBoundary>
-              } />
-              <Route path="/sync-licensing" element={
-                <AdminOrProtectedRoute>
-                  <ErrorBoundary>
-                    <SyncLicensingPage />
-                  </ErrorBoundary>
-                </AdminOrProtectedRoute>
-              } />
-              <Route path="/sync-licensing-preview" element={
-                <ProtectedRoute>
-                  <ErrorBoundary>
-                    <SyncLicensingPreviewPage />
-                  </ErrorBoundary>
-                </ProtectedRoute>
-              } />
-              <Route path="/reconciliation" element={
-                <ErrorBoundary>
-                  <ReconciliationPage />
-                </ErrorBoundary>
-              } />
-              <Route path="/royalties" element={
-                <ErrorBoundary>
-                  <RoyaltiesPage />
-                </ErrorBoundary>
-              } />
-              <Route path="/payouts" element={
-                <AdminOrProtectedRoute>
-                  <ErrorBoundary>
-                    <PayoutsPage />
-                  </ErrorBoundary>
-                </AdminOrProtectedRoute>
-              } />
-               <Route path="/pricing" element={<PricingPage />} />
-               <Route path="/contact" element={<ContactPage />} />
-               <Route path="/documentation" element={<DocumentationPage />} />
-              <Route path="/client-portal" element={
-                <ProtectedRoute>
-                  <ErrorBoundary>
-                    <ClientPortal />
-                  </ErrorBoundary>
-                </ProtectedRoute>
-              } />
-              <Route path="/client-admin" element={
-                <ProtectedRoute>
-                  <ErrorBoundary>
-                    <ClientAdminPage />
-                  </ErrorBoundary>
-                </ProtectedRoute>
-              } />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-           </BrowserRouter>
-         </TooltipProvider>
-         </ErrorBoundary>
-      </DemoAccessProvider>
-    </AuthProvider>
-    </SecurityProvider>
-    <Sonner />
-  </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <SecurityProvider>
+          <AuthProvider>
+            <DemoAccessProvider>
+              <TooltipProvider>
+                <DemoUpgradeModal />
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/" element={<Index />} />
+                    <Route path="/modules" element={<ModulesPage />} />
+                    <Route path="/demo-modules" element={<DemoModulesPage />} />
+                    <Route path="/features/:moduleId" element={<FeaturesPage />} />
+                    <Route path="/catalog-valuation" element={<CatalogValuationPage />} />
+                    <Route path="/deal-simulator" element={<DealSimulatorPage />} />
+                    <Route path="/contract-management" element={<ContractManagement />} />
+                    <Route path="/copyright-management" element={<CopyrightManagement />} />
+                    <Route path="/sync-licensing" element={
+                      <AdminOrProtectedRoute>
+                        <SyncLicensingPage />
+                      </AdminOrProtectedRoute>
+                    } />
+                    <Route path="/sync-licensing-preview" element={
+                      <ProtectedRoute>
+                        <SyncLicensingPreviewPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/reconciliation" element={<ReconciliationPage />} />
+                    <Route path="/royalties" element={<RoyaltiesPage />} />
+                    <Route path="/payouts" element={
+                      <AdminOrProtectedRoute>
+                        <PayoutsPage />
+                      </AdminOrProtectedRoute>
+                    } />
+                    <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/documentation" element={<DocumentationPage />} />
+                    <Route path="/client-portal" element={
+                      <ProtectedRoute>
+                        <ClientPortal />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/client-admin" element={
+                      <ProtectedRoute>
+                        <ClientAdminPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </BrowserRouter>
+              </TooltipProvider>
+            </DemoAccessProvider>
+          </AuthProvider>
+        </SecurityProvider>
+        <Sonner />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
