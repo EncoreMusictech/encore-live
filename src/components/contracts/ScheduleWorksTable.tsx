@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, ExternalLink } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
-import { WorkAdditionModal } from "./WorkAdditionModal";
+import { useWorkSelectionModal } from "@/hooks/useWorkSelectionModal";
 import { CopyrightDetailsModal } from "../copyright/CopyrightDetailsModal";
 
 interface ScheduleWorksTableProps {
@@ -11,10 +11,10 @@ interface ScheduleWorksTableProps {
 }
 
 export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedCopyrightId, setSelectedCopyrightId] = useState<string | null>(null);
   const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState(false);
-  const { contracts, removeScheduleWork, refetch } = useContracts();
+  const { contracts, removeScheduleWork } = useContracts();
+  const { openModal } = useWorkSelectionModal();
 
   // Debug logging
   console.log('ScheduleWorksTable - Contract ID:', contractId);
@@ -34,20 +34,9 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
     }
   };
 
-  const handleWorkAdded = () => {
-    console.log('ScheduleWorksTable - Work added successfully');
-    setIsAddModalOpen(false);
-    refetch(); // Refresh the contracts data
-  };
-
   const handleViewCopyright = (copyrightId: string) => {
     setSelectedCopyrightId(copyrightId);
     setIsCopyrightModalOpen(true);
-  };
-
-  const handleModalClose = () => {
-    console.log('ScheduleWorksTable - Closing modal');
-    setIsAddModalOpen(false);
   };
 
   return (
@@ -59,22 +48,14 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
         <Button 
           className="gap-2"
           onClick={() => {
-            console.log('ScheduleWorksTable - Opening add work modal');
-            setIsAddModalOpen(true);
+            console.log('ScheduleWorksTable - Opening global work selection modal');
+            openModal(contractId);
           }}
         >
           <Plus className="h-4 w-4" />
           Add Work
         </Button>
       </div>
-
-      {/* Isolated Modal Component */}
-      <WorkAdditionModal
-        contractId={contractId}
-        isOpen={isAddModalOpen}
-        onClose={handleModalClose}
-        onSuccess={handleWorkAdded}
-      />
 
       {scheduleWorks.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
