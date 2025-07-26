@@ -3,7 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { ArtistAgreementFormData } from "../ArtistAgreementForm";
 
 interface ArtistAgreementFormBasicInfoProps {
@@ -82,22 +87,64 @@ export const ArtistAgreementFormBasicInfo: React.FC<ArtistAgreementFormBasicInfo
             <Label htmlFor="effectiveDate">
               Effective Date <span className="text-destructive">*</span>
             </Label>
-            <Input
-              id="effectiveDate"
-              type="date"
-              value={data.effectiveDate}
-              onChange={(e) => onChange({ effectiveDate: e.target.value })}
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !data.effectiveDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {data.effectiveDate ? (
+                    format(new Date(data.effectiveDate), "PPP")
+                  ) : (
+                    <span>Select effective date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={data.effectiveDate ? new Date(data.effectiveDate) : undefined}
+                  onSelect={(date) => onChange({ effectiveDate: date ? format(date, "yyyy-MM-dd") : "" })}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="expirationDate">Expiration Date</Label>
-            <Input
-              id="expirationDate"
-              type="date"
-              value={data.expirationDate}
-              onChange={(e) => onChange({ expirationDate: e.target.value })}
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !data.expirationDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {data.expirationDate ? (
+                    format(new Date(data.expirationDate), "PPP")
+                  ) : (
+                    <span>Perpetual or select end date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={data.expirationDate ? new Date(data.expirationDate) : undefined}
+                  onSelect={(date) => onChange({ expirationDate: date ? format(date, "yyyy-MM-dd") : "" })}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>
