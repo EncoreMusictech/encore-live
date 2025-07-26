@@ -7,6 +7,7 @@ interface StepperProps {
     title: string;
     description?: string;
     status: 'completed' | 'current' | 'pending';
+    icon?: React.ComponentType<any>;
   }>;
   orientation?: 'horizontal' | 'vertical';
   className?: string;
@@ -48,6 +49,8 @@ export function Stepper({ steps, orientation = 'horizontal', className }: Steppe
                     clipRule="evenodd"
                   />
                 </svg>
+              ) : step.icon ? (
+                <step.icon className="w-4 h-4" />
               ) : (
                 index + 1
               )}

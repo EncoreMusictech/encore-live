@@ -59,8 +59,9 @@ export function ContractFormBase({
   // Prepare stepper data
   const stepperSteps = steps.map((step, index) => ({
     title: step.title,
-    description: step.description,
-    status: (index < currentStep ? 'completed' : index === currentStep ? 'current' : 'pending') as 'completed' | 'current' | 'pending'
+    description: undefined, // Use shorter titles without descriptions
+    status: (index < currentStep ? 'completed' : index === currentStep ? 'current' : 'pending') as 'completed' | 'current' | 'pending',
+    icon: step.icon
   }));
 
   const validateCurrentStep = () => {
