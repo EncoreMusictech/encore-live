@@ -237,21 +237,21 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
 
   // Debounce the metadata fetching when song title changes
   useEffect(() => {
+    if (!formData.song_title || formData.song_title.length < 3) return;
+    
     console.log('Setting up Spotify search timeout for:', formData.song_title);
     const timeoutId = setTimeout(() => {
-      if (formData.song_title) {
-        console.log('Triggering Spotify search for:', formData.song_title);
-        fetchSpotifyMetadata(formData.song_title, formData.artist_name);
-      }
+      console.log('Triggering Spotify search for:', formData.song_title);
+      fetchSpotifyMetadata(formData.song_title, formData.artist_name);
     }, 1000);
 
     return () => clearTimeout(timeoutId);
-   }, [formData.song_title, fetchSpotifyMetadata]);
+   }, [formData.song_title]); // Remove fetchSpotifyMetadata from deps to prevent infinite loops
 
    // Debounce metadata fetching when artist changes manually
    useEffect(() => {
      // Only run when both song title and artist are provided
-     if (!formData.song_title || !formData.artist_name) {
+     if (!formData.song_title || !formData.artist_name || formData.song_title.length < 3) {
        return;
      }
      
@@ -262,7 +262,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
      }, 1500); // Slightly longer delay for artist changes
 
      return () => clearTimeout(timeoutId);
-    }, [formData.artist_name, fetchSpotifyMetadata, formData.song_title]);
+    }, [formData.artist_name]); // Remove other deps to prevent infinite loops
 
   const addWriter = () => {
     const newWriter: Writer = {
