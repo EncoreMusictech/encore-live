@@ -201,6 +201,7 @@ export function WorkSelectionDialog({ contractId, onSuccess, onCancel }: WorkSel
                             </div>
                           </div>
                           <Button
+                            type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => toggleWorkSelection(copyrightId)}
@@ -274,10 +275,10 @@ export function WorkSelectionDialog({ contractId, onSuccess, onCancel }: WorkSel
                   })}
                   
                   <div className="flex gap-2 pt-4">
-                    <Button onClick={handleAddSelectedWorks} className="flex-1">
+                    <Button type="button" onClick={handleAddSelectedWorks} className="flex-1">
                       Add {selectedWorks.size} Work(s) to Schedule
                     </Button>
-                    <Button variant="outline" onClick={() => setSelectedWorks(new Set())}>
+                    <Button type="button" variant="outline" onClick={() => setSelectedWorks(new Set())}>
                       Clear Selection
                     </Button>
                   </div>
@@ -324,6 +325,7 @@ export function WorkSelectionDialog({ contractId, onSuccess, onCancel }: WorkSel
                         >
                           <TableCell>
                             <Button
+                              type="button"
                               variant={selectedWorks.has(copyright.id) ? 'default' : 'outline'}
                               size="sm"
                               onClick={() => toggleWorkSelection(copyright.id)}
