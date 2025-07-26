@@ -49,17 +49,17 @@ const getQueryClient = () => {
 
 const App = () => {
   return (
-  <QueryClientProvider client={getQueryClient()}>
-    <SecurityProvider>
-      <AuthProvider>
-        <DemoAccessProvider>
-          <ErrorBoundary>
-            <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <DemoUpgradeModal />
-            <BrowserRouter>
-            <Routes>
+    <ErrorBoundary>
+      <QueryClientProvider client={getQueryClient()}>
+        <SecurityProvider>
+          <AuthProvider>
+            <DemoAccessProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <DemoUpgradeModal />
+                <BrowserRouter>
+                  <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<Index />} />
               <Route path="/modules" element={<ModulesPage />} />
@@ -133,16 +133,16 @@ const App = () => {
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-        </ErrorBoundary>
-      </DemoAccessProvider>
-    </AuthProvider>
-    </SecurityProvider>
-  </QueryClientProvider>
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </BrowserRouter>
+              </TooltipProvider>
+            </DemoAccessProvider>
+          </AuthProvider>
+        </SecurityProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
