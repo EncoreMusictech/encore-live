@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,8 +9,6 @@ import { DemoAccessProvider } from "@/hooks/useDemoAccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminOrProtectedRoute from "@/components/AdminOrProtectedRoute";
 import DemoUpgradeModal from "@/components/DemoUpgradeModal";
-import { ErrorBoundary } from "@/components/ui/error-boundary";
-import { SecurityProvider } from "@/components/SecurityProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -31,76 +30,71 @@ import ClientAdminPage from "./pages/ClientAdminPage";
 import ContactPage from "./pages/ContactPage";
 import DocumentationPage from "./pages/DocumentationPage";
 
-// Create a stable QueryClient instance outside of the component
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60 * 5,
       retry: 2,
     },
   },
 });
 
-const App = () => {
+const App: React.FC = () => {
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <SecurityProvider>
-          <AuthProvider>
-            <DemoAccessProvider>
-              <TooltipProvider>
-                <DemoUpgradeModal />
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/" element={<Index />} />
-                    <Route path="/modules" element={<ModulesPage />} />
-                    <Route path="/demo-modules" element={<DemoModulesPage />} />
-                    <Route path="/features/:moduleId" element={<FeaturesPage />} />
-                    <Route path="/catalog-valuation" element={<CatalogValuationPage />} />
-                    <Route path="/deal-simulator" element={<DealSimulatorPage />} />
-                    <Route path="/contract-management" element={<ContractManagement />} />
-                    <Route path="/copyright-management" element={<CopyrightManagement />} />
-                    <Route path="/sync-licensing" element={
-                      <AdminOrProtectedRoute>
-                        <SyncLicensingPage />
-                      </AdminOrProtectedRoute>
-                    } />
-                    <Route path="/sync-licensing-preview" element={
-                      <ProtectedRoute>
-                        <SyncLicensingPreviewPage />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/reconciliation" element={<ReconciliationPage />} />
-                    <Route path="/royalties" element={<RoyaltiesPage />} />
-                    <Route path="/payouts" element={
-                      <AdminOrProtectedRoute>
-                        <PayoutsPage />
-                      </AdminOrProtectedRoute>
-                    } />
-                    <Route path="/pricing" element={<PricingPage />} />
-                    <Route path="/contact" element={<ContactPage />} />
-                    <Route path="/documentation" element={<DocumentationPage />} />
-                    <Route path="/client-portal" element={
-                      <ProtectedRoute>
-                        <ClientPortal />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/client-admin" element={
-                      <ProtectedRoute>
-                        <ClientAdminPage />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
-              </TooltipProvider>
-            </DemoAccessProvider>
-          </AuthProvider>
-        </SecurityProvider>
-        <Sonner />
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <DemoAccessProvider>
+          <TooltipProvider>
+            <BrowserRouter>
+              <DemoUpgradeModal />
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/" element={<Index />} />
+                <Route path="/modules" element={<ModulesPage />} />
+                <Route path="/demo-modules" element={<DemoModulesPage />} />
+                <Route path="/features/:moduleId" element={<FeaturesPage />} />
+                <Route path="/catalog-valuation" element={<CatalogValuationPage />} />
+                <Route path="/deal-simulator" element={<DealSimulatorPage />} />
+                <Route path="/contract-management" element={<ContractManagement />} />
+                <Route path="/copyright-management" element={<CopyrightManagement />} />
+                <Route path="/sync-licensing" element={
+                  <AdminOrProtectedRoute>
+                    <SyncLicensingPage />
+                  </AdminOrProtectedRoute>
+                } />
+                <Route path="/sync-licensing-preview" element={
+                  <ProtectedRoute>
+                    <SyncLicensingPreviewPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/reconciliation" element={<ReconciliationPage />} />
+                <Route path="/royalties" element={<RoyaltiesPage />} />
+                <Route path="/payouts" element={
+                  <AdminOrProtectedRoute>
+                    <PayoutsPage />
+                  </AdminOrProtectedRoute>
+                } />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/documentation" element={<DocumentationPage />} />
+                <Route path="/client-portal" element={
+                  <ProtectedRoute>
+                    <ClientPortal />
+                  </ProtectedRoute>
+                } />
+                <Route path="/client-admin" element={
+                  <ProtectedRoute>
+                    <ClientAdminPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+            <Sonner />
+          </TooltipProvider>
+        </DemoAccessProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 };
 
