@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash2, ExternalLink } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
-import { WorkAdditionModal } from "./WorkAdditionModal";
+import { WorkSelectionDialog } from "./WorkSelectionDialog";
 import { CopyrightDetailsModal } from "../copyright/CopyrightDetailsModal";
 
 interface ScheduleWorksTableProps {
@@ -11,7 +12,8 @@ interface ScheduleWorksTableProps {
 }
 
 export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isSpotifyFetching, setIsSpotifyFetching] = useState(false);
   const [selectedCopyrightId, setSelectedCopyrightId] = useState<string | null>(null);
   const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState(false);
   const { contracts, removeScheduleWork, refetch } = useContracts();
@@ -35,8 +37,7 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   };
 
   const handleWorkAdded = () => {
-    console.log('ScheduleWorksTable - Work added successfully');
-    setIsAddModalOpen(false);
+    setIsAddDialogOpen(false);
     refetch(); // Refresh the contracts data
   };
 
@@ -45,9 +46,11 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
     setIsCopyrightModalOpen(true);
   };
 
-  const handleModalClose = () => {
-    console.log('ScheduleWorksTable - Closing modal');
-    setIsAddModalOpen(false);
+  const handleDialogClose = () => {
+    // Only allow dialog to close if not fetching Spotify data
+    if (!isSpotifyFetching) {
+      setIsAddDialogOpen(false);
+    }
   };
 
   return (
@@ -56,25 +59,36 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
         <p className="text-sm text-muted-foreground">
           Works linked to this contract inherit royalty and party metadata
         </p>
-        <Button 
-          className="gap-2"
-          onClick={() => {
-            console.log('ScheduleWorksTable - Opening add work modal');
-            setIsAddModalOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          Add Work
-        </Button>
+        <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+          if (!open && !isSpotifyFetching) {
+            setIsAddDialogOpen(false);
+          } else if (open) {
+            setIsAddDialogOpen(true);
+          }
+        }}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Work
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add Work to Schedule</DialogTitle>
+              <DialogDescription>
+                Select existing works from your copyright catalog or create new works to add to this contract
+              </DialogDescription>
+            </DialogHeader>
+            
+            <WorkSelectionDialog 
+              contractId={contractId}
+              onSuccess={handleWorkAdded}
+              onCancel={handleDialogClose}
+              onSpotifyFetchChange={setIsSpotifyFetching}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Isolated Modal Component */}
-      <WorkAdditionModal
-        contractId={contractId}
-        isOpen={isAddModalOpen}
-        onClose={handleModalClose}
-        onSuccess={handleWorkAdded}
-      />
 
       {scheduleWorks.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">

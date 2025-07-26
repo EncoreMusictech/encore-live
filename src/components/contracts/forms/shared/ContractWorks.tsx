@@ -21,23 +21,15 @@ export const ContractWorks: React.FC<ContractWorksProps> = ({
   const [showWorkSelection, setShowWorkSelection] = useState(false);
   const { copyrights, loading } = useCopyright();
   
-  // Create stable snapshot of copyrights to pass to dialog
-  const [stableCopyrights, setStableCopyrights] = useState<any[]>([]);
-  const [stableLoading, setStableLoading] = useState(true);
+  // Stable references to prevent dialog from closing during Spotify fetches
+  const stableCopyrights = React.useRef(copyrights);
+  const stableLoading = React.useRef(loading);
   
-  // Only update stable references when component first loads or count changes
+  // Only update refs when data meaningfully changes
   React.useEffect(() => {
-    if (copyrights.length > 0 && stableCopyrights.length === 0) {
-      // Initial load
-      setStableCopyrights(copyrights);
-      setStableLoading(loading);
-    } else if (copyrights.length !== stableCopyrights.length) {
-      // Count changed - update the stable reference
-      setStableCopyrights(copyrights);
-    }
-    
-    if (loading !== stableLoading) {
-      setStableLoading(loading);
+    if (copyrights.length !== stableCopyrights.current.length || loading !== stableLoading.current) {
+      stableCopyrights.current = copyrights;
+      stableLoading.current = loading;
     }
   }, [copyrights.length, loading]);
   
@@ -69,8 +61,8 @@ export const ContractWorks: React.FC<ContractWorksProps> = ({
       {showWorkSelection && (
         <WorkSelectionDialog
           contractId={data.contractId}
-          copyrights={stableCopyrights}
-          loading={stableLoading}
+          copyrights={stableCopyrights.current}
+          loading={stableLoading.current}
           onSuccess={() => {
             setShowWorkSelection(false);
             // Optionally trigger a refresh of the works table

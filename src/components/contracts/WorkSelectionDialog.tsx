@@ -38,34 +38,10 @@ export function WorkSelectionDialog({
   // Debug logging for contract ID
   console.log('WorkSelectionDialog - Contract ID:', contractId);
   
-  // Use stable references to prevent dialog closing
-  const [stableCopyrights, setStableCopyrights] = useState<Copyright[]>([]);
-  const [stableLoading, setStableLoading] = useState(true);
-  
   // Use prop data first, fallback to hook if not provided
   const copyrightHook = useCopyright();
-  const hookCopyrights = propCopyrights || copyrightHook.copyrights;
-  const hookLoading = propLoading !== undefined ? propLoading : copyrightHook.loading;
-  
-  // Only update stable references when component first mounts or when meaningful data changes
-  useEffect(() => {
-    if (hookCopyrights.length > 0 && stableCopyrights.length === 0) {
-      // Initial load
-      setStableCopyrights(hookCopyrights);
-      setStableLoading(hookLoading);
-    } else if (hookCopyrights.length !== stableCopyrights.length) {
-      // Only update if the count actually changed (new/deleted copyrights)
-      setStableCopyrights(hookCopyrights);
-    }
-    
-    if (hookLoading !== stableLoading) {
-      setStableLoading(hookLoading);
-    }
-  }, [hookCopyrights.length, hookLoading]);
-  
-  // Use stable references
-  const copyrights = stableCopyrights;
-  const loading = stableLoading;
+  const copyrights = propCopyrights || copyrightHook.copyrights;
+  const loading = propLoading !== undefined ? propLoading : copyrightHook.loading;
   
   const { addScheduleWork } = useContracts();
   
