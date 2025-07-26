@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArtistAgreementFormData } from "../ArtistAgreementForm";
 import { ScheduleWorksTable } from "../ScheduleWorksTable";
 import { useToast } from "@/hooks/use-toast";
+import { useContracts } from "@/hooks/useContracts";
 
 interface ArtistAgreementFormWorksProps {
   data: ArtistAgreementFormData;
@@ -14,16 +15,82 @@ export const ArtistAgreementFormWorks: React.FC<ArtistAgreementFormWorksProps> =
   onChange
 }) => {
   const { toast } = useToast();
+  const { createContract } = useContracts();
   const [contractId, setContractId] = useState<string | null>(null);
+  const [isCreatingContract, setIsCreatingContract] = useState(false);
 
-  // Create a temporary contract ID for the schedule works table
-  // In a real implementation, this would be the actual contract ID after saving
+  // Create a real contract when the component mounts
   useEffect(() => {
-    if (!contractId) {
-      // Generate a temporary ID for demo purposes
-      setContractId(`temp-artist-contract-${Date.now()}`);
-    }
-  }, [contractId]);
+    const createArtistContract = async () => {
+      if (contractId || isCreatingContract) return; // Don't create if already exists or in progress
+      
+      setIsCreatingContract(true);
+      try {
+        // Create the contract data structure
+        const contractData = {
+          contract_type: "artist" as const,
+          title: `${data.agreementType || "Artist"} Agreement - ${data.artistName || "Draft"}`,
+          counterparty_name: data.artistName || "Artist",
+          start_date: data.effectiveDate || new Date().toISOString().split('T')[0],
+          end_date: data.expirationDate || null,
+          territories: [data.territory || "worldwide"],
+          contract_data: {
+            agreement_type: data.agreementType,
+            artist_name: data.artistName,
+            legal_name: data.legalName,
+            stage_name: data.stageName,
+            territory: data.territory,
+            effective_date: data.effectiveDate,
+            expiration_date: data.expirationDate,
+            recording_commitment: data.recordingCommitment,
+            advance_amount: data.advanceAmount,
+            royalty_rate: data.royaltyRate,
+            mechanical_rate: data.mechanicalRate,
+            performance_royalty: data.performanceRoyalty,
+            exclusivity: data.exclusivity,
+            key_person_clause: data.keyPersonClause,
+            leaving_member_clause: data.leavingMemberClause,
+            touring_split: data.touringSplit,
+            merchandising_split: data.merchandisingSplit,
+            artist_contact: {
+              address: data.artistAddress,
+              phone: data.artistPhone,
+              email: data.artistEmail
+            },
+            label_contact: {
+              name: data.labelName,
+              address: data.labelAddress,
+              contact: data.labelContact
+            }
+          },
+          contract_status: "draft" as const
+        };
+
+        const newContract = await createContract(contractData);
+        
+        if (newContract) {
+          setContractId(newContract.id);
+          toast({
+            title: "Contract Created",
+            description: "You can now add works to this agreement",
+          });
+        } else {
+          throw new Error("Failed to create contract");
+        }
+      } catch (error) {
+        console.error('Error creating contract:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create contract. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsCreatingContract(false);
+      }
+    };
+
+    createArtistContract();
+  }, [data, contractId, isCreatingContract, createContract, toast]);
 
   // Update the selected works count for validation when works are added/removed
   useEffect(() => {
@@ -35,10 +102,18 @@ export const ArtistAgreementFormWorks: React.FC<ArtistAgreementFormWorksProps> =
     }
   }, [contractId, onChange]);
 
+  if (isCreatingContract) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-muted-foreground">Creating contract...</div>
+      </div>
+    );
+  }
+
   if (!contractId) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-muted-foreground">Loading works...</div>
+        <div className="text-muted-foreground">Preparing works interface...</div>
       </div>
     );
   }
