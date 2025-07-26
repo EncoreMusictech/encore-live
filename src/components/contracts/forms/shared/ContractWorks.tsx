@@ -19,27 +19,13 @@ export const ContractWorks: React.FC<ContractWorksProps> = ({
 }) => {
   const [showWorkSelection, setShowWorkSelection] = useState(false);
   
-  // If contractId is not available yet, show loading state
-  if (!data.contractId) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Schedule of Works</CardTitle>
-          <CardDescription>
-            Select the musical works that will be included in this {contractType} agreement.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Contract must be created before adding works. This will happen automatically when you proceed to this step.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleAddWork = () => {
+    if (!data.contractId) {
+      // If no contractId, show a message that works can be added after saving
+      return;
+    }
+    setShowWorkSelection(true);
+  };
 
   return (
     <>
@@ -48,24 +34,37 @@ export const ContractWorks: React.FC<ContractWorksProps> = ({
           <div>
             <CardTitle>Schedule of Works</CardTitle>
             <CardDescription>
-              Works linked to this contract inherit royalty and party metadata
+              Select musical works covered by this agreement
             </CardDescription>
           </div>
-          <Button 
-            onClick={() => setShowWorkSelection(true)}
-            className="shrink-0"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Work
-          </Button>
+          {data.contractId && (
+            <Button 
+              onClick={handleAddWork}
+              className="shrink-0"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Work
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
-          <ScheduleWorksTable contractId={data.contractId} />
-          
-          {(!data.selectedWorks || data.selectedWorks.length === 0) && (
-            <div className="text-center py-8 text-muted-foreground">
-              No works in schedule yet. Click "Add Work" to link works to this contract.
-            </div>
+          {data.contractId ? (
+            <>
+              <ScheduleWorksTable contractId={data.contractId} />
+              
+              {(!data.selectedWorks || data.selectedWorks.length === 0) && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No works in schedule yet. Click "Add Work" to link works to this contract.
+                </div>
+              )}
+            </>
+          ) : (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Save your contract as a draft first to add works to the schedule. Use the "Save Draft" button below to create the contract, then return to this step to add works.
+              </AlertDescription>
+            </Alert>
           )}
         </CardContent>
       </Card>
