@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Check, Music, Globe, Truck, Crown } from "lucide-react";
 import { ArtistAgreementFormData } from "../ArtistAgreementForm";
+import { getDemoArtistContract } from "@/data/demo-artist-contracts";
 
 interface ArtistAgreementFormSelectTypeProps {
   data: ArtistAgreementFormData;
@@ -51,7 +52,53 @@ export const ArtistAgreementFormSelectType: React.FC<ArtistAgreementFormSelectTy
   onChange
 }) => {
   const handleTypeSelect = (typeId: string) => {
-    onChange({ agreementType: typeId });
+    // Map the agreement type to demo contract IDs
+    const demoContractMap: Record<string, string> = {
+      'indie': 'indie-artist-demo',
+      '360': '360-deal-demo', 
+      'distribution': 'distribution-demo'
+    };
+
+    const demoContractId = demoContractMap[typeId];
+    const demoContract = demoContractId ? getDemoArtistContract(demoContractId) : null;
+
+    if (demoContract) {
+      // Pre-fill form with demo data
+      const formData = demoContract.formData;
+      const firstParty = demoContract.interestedParties[0]; // Artist
+      const secondParty = demoContract.interestedParties[1]; // Label/Distributor
+
+      onChange({
+        agreementType: typeId,
+        // Basic Info from demo
+        artistName: firstParty?.name || "",
+        legalName: firstParty?.name || "",
+        stageName: firstParty?.name || "",
+        territory: formData.territory || "worldwide",
+        
+        // Terms from demo
+        recordingCommitment: formData.numberOfAlbums?.toString() || "",
+        advanceAmount: formData.recordingAdvance?.toString() || formData.minimumAdvance?.toString() || "",
+        royaltyRate: formData.artistRoyaltyRate?.toString() || formData.artistShare?.toString() || "",
+        mechanicalRate: formData.mechanicalPercentage?.toString() || "",
+        performanceRoyalty: formData.netReceiptsPercentage?.toString() || "",
+        
+        // Additional Terms
+        exclusivity: formData.exclusivity === "exclusive",
+        touringSplit: formData.livePerformanceRevenue ? "50/50" : "N/A",
+        merchandisingSplit: formData.merchandiseRevenue ? "50/50" : "N/A",
+        
+        // Parties from demo
+        artistEmail: firstParty?.email || "",
+        artistPhone: firstParty?.phone || "",
+        artistAddress: firstParty?.address || "",
+        labelName: secondParty?.name || "",
+        labelAddress: secondParty?.address || "",
+        labelContact: secondParty?.email || "",
+      });
+    } else {
+      onChange({ agreementType: typeId });
+    }
   };
 
   return (
