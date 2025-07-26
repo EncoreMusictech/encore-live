@@ -248,6 +248,15 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
     });
   }, [copyrights, writers, searchTerm, sortField, sortDirection]);
 
+  // Debug logging
+  console.log('CopyrightTable - Debug:', {
+    copyrightsCount: copyrights.length,
+    loading,
+    filteredCount: filteredAndSortedCopyrights.length,
+    searchTerm,
+    firstThreeCopyrights: copyrights.slice(0, 3).map(c => ({ id: c.id, work_title: c.work_title }))
+  });
+
   if (loading) {
     return (
       <div className="text-center py-8">

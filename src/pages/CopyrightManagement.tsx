@@ -30,6 +30,16 @@ const CopyrightManagement = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("copyrights");
 
+  // Debug logging
+  useEffect(() => {
+    console.log('CopyrightManagement - Data debug:', {
+      copyrightsCount: copyrights.length,
+      loading,
+      realtimeError,
+      firstThreeCopyrights: copyrights.slice(0, 3).map(c => ({ id: c.id, work_title: c.work_title, created_at: c.created_at }))
+    });
+  }, [copyrights, loading, realtimeError]);
+
   useEffect(() => {
     updatePageMetadata('copyrightManagement');
   }, []);
