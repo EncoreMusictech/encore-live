@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 // Import providers
 import { AuthProvider } from "@/hooks/useAuth";
@@ -47,18 +48,20 @@ const queryClient = new QueryClient({
 
 const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <TooltipProvider>
-          <AuthProvider>
-            <DemoAccessProvider>
-              <AppContent />
-              <Sonner />
-            </DemoAccessProvider>
-          </AuthProvider>
-        </TooltipProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <TooltipProvider>
+            <AuthProvider>
+              <DemoAccessProvider>
+                <AppContent />
+                <Sonner />
+              </DemoAccessProvider>
+            </AuthProvider>
+          </TooltipProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
