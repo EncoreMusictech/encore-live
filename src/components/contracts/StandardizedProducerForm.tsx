@@ -4,7 +4,7 @@ import { ContractFormBase, ContractFormStep } from "./forms/ContractFormBase";
 import { ContractTypeSelection } from "./forms/shared/ContractTypeSelection";
 import { ContractBasicInfoAndParties } from "./forms/shared/ContractBasicInfoAndParties";
 import { ContractReview } from "./forms/shared/ContractReview";
-import { ContractWorks } from "./forms/shared/ContractWorks";
+
 import { ContractInterestedParties } from "./forms/shared/ContractInterestedParties";
 import { ProducerForm } from "./forms/ProducerForm";
 import { Music, FileText, DollarSign, Users, Clock, CheckCircle, UserCheck } from "lucide-react";
@@ -227,19 +227,6 @@ export function StandardizedProducerForm({
         />
       ),
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
-    },
-    {
-      id: "works",
-      title: "Schedule of Works",
-      description: "Select or add musical works covered by this agreement",
-      icon: Music,
-      component: (props: any) => (
-        <ContractWorks
-          {...props}
-          contractType="producer agreement"
-        />
-      ),
-      validation: () => true // Optional - allow proceeding without works
     },
     {
       id: "terms",

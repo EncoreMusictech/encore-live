@@ -4,7 +4,7 @@ import { ContractFormBase, type ContractFormStep } from './forms/ContractFormBas
 import { ContractTypeSelection } from './forms/shared/ContractTypeSelection';
 import { ContractBasicInfoAndParties } from './forms/shared/ContractBasicInfoAndParties';
 import { ContractReview } from './forms/shared/ContractReview';
-import { ContractWorks } from './forms/shared/ContractWorks';
+
 import { ContractInterestedParties } from './forms/shared/ContractInterestedParties';
 import { PublishingForm } from './forms/PublishingForm';
 import { useContracts } from '@/hooks/useContracts';
@@ -238,19 +238,6 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
         />
       ),
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
-    },
-    {
-      id: 'works',
-      title: 'Schedule of Works',
-      description: 'Select or add musical works covered by this agreement',
-      icon: Music,
-      component: (props: any) => (
-        <ContractWorks
-          {...props}
-          contractType="publishing agreement"
-        />
-      ),
-      validation: () => true // Optional - allow proceeding without works
     },
     {
       id: 'terms',
