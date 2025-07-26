@@ -31,12 +31,9 @@ export const ContractWorks: React.FC<ContractWorksProps> = ({
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <CardTitle>Schedule of Works</CardTitle>
-            <CardDescription>
-              Select musical works covered by this agreement
-            </CardDescription>
-          </div>
+          <CardDescription>
+            Works linked to this contract inherit royalty and party metadata
+          </CardDescription>
           {data.contractId && (
             <Button 
               onClick={handleAddWork}
