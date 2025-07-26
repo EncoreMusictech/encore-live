@@ -276,7 +276,12 @@ export const StandardizedArtistForm: React.FC = () => {
         contract_type: 'artist',
         title: formData.agreementTitle,
         counterparty_name: formData.counterparty,
-        terms: formData
+        advance_amount: formData.advanceAmount ? parseFloat(formData.advanceAmount) : undefined,
+        contract_status: 'draft',
+        start_date: formData.effectiveDate,
+        end_date: formData.expirationDate,
+        notes: formData.notes,
+        contract_data: formData
       });
 
       if (contract?.id) {
@@ -303,8 +308,12 @@ export const StandardizedArtistForm: React.FC = () => {
         contract_type: 'artist',
         title: formData.agreementTitle,
         counterparty_name: formData.counterparty,
-        contract_status: 'pending_review',
-        terms: formData
+        advance_amount: formData.advanceAmount ? parseFloat(formData.advanceAmount) : undefined,
+        contract_status: 'signed',
+        start_date: formData.effectiveDate,
+        end_date: formData.expirationDate,
+        notes: formData.notes,
+        contract_data: formData
       });
 
       toast({
