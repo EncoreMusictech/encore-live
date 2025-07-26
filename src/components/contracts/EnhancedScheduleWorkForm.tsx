@@ -532,6 +532,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
   ];
 
   return (
+    <div onClick={(e) => e.stopPropagation()}>
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Metadata Section */}
       <Collapsible open={metadataOpen} onOpenChange={setMetadataOpen}>
@@ -655,7 +656,12 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                     value={newAka}
                     onChange={(e) => setNewAka(e.target.value)}
                     placeholder="Add alternative title"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAka())}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addAka();
+                      }
+                    }}
                   />
                   <Button type="button" variant="outline" onClick={addAka}>
                     <Plus className="h-4 w-4" />
@@ -949,5 +955,6 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
         </Button>
       </div>
     </form>
+    </div>
   );
 }
