@@ -236,6 +236,18 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
       )
     },
     {
+      id: 'interested_parties',
+      title: 'Interested Parties',
+      description: 'Manage ownership and interested parties',
+      icon: UserCheck,
+      component: (props: any) => (
+        <ContractInterestedParties
+          {...props}
+          contractType="artist agreement"
+        />
+      )
+    },
+    {
       id: 'works',
       title: 'Schedule of Works',
       description: 'Select musical works covered by this agreement',
@@ -247,18 +259,6 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
         />
       ),
       validation: () => formData.selectedWorks && formData.selectedWorks.length > 0
-    },
-    {
-      id: 'interested_parties',
-      title: 'Interested Parties',
-      description: 'Manage ownership and interested parties',
-      icon: UserCheck,
-      component: (props: any) => (
-        <ContractInterestedParties
-          {...props}
-          contractType="artist agreement"
-        />
-      )
     },
     {
       id: 'review',
