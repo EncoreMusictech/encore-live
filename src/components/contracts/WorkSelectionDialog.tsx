@@ -20,30 +20,28 @@ interface WorkSelectionDialogProps {
   contractId: string;
   onSuccess: () => void;
   onCancel: () => void;
+  copyrights?: Copyright[];
+  loading?: boolean;
 }
 
-export function WorkSelectionDialog({ contractId, onSuccess, onCancel }: WorkSelectionDialogProps) {
+export function WorkSelectionDialog({ 
+  contractId, 
+  onSuccess, 
+  onCancel, 
+  copyrights: propCopyrights,
+  loading: propLoading 
+}: WorkSelectionDialogProps) {
   const { toast } = useToast();
   
   // Debug logging for contract ID
   console.log('WorkSelectionDialog - Contract ID:', contractId);
   
-  // Stabilize copyright data to prevent remounts during Spotify fetches
+  // Use prop data first, fallback to hook if not provided
   const copyrightHook = useCopyright();
-  const stableCopyrights = useRef(copyrightHook.copyrights);
-  const stableLoading = useRef(copyrightHook.loading);
-  
-  // Update refs when data actually changes, not on every render
-  useEffect(() => {
-    stableCopyrights.current = copyrightHook.copyrights;
-    stableLoading.current = copyrightHook.loading;
-  }, [copyrightHook.copyrights.length, copyrightHook.loading]);
+  const copyrights = propCopyrights || copyrightHook.copyrights;
+  const loading = propLoading !== undefined ? propLoading : copyrightHook.loading;
   
   const { addScheduleWork } = useContracts();
-  
-  // Use stable references
-  const copyrights = stableCopyrights.current;
-  const loading = stableLoading.current;
   
   // Debug logging for copyrights data
   console.log('WorkSelectionDialog - Copyrights:', { 

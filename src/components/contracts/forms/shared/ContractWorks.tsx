@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { WorkSelectionDialog } from '../../WorkSelectionDialog';
 import { AlertTriangle, Plus } from "lucide-react";
+import { useCopyright } from '@/hooks/useCopyright';
 
 interface ContractWorksProps {
   data: any;
@@ -18,6 +19,7 @@ export const ContractWorks: React.FC<ContractWorksProps> = ({
   contractType
 }) => {
   const [showWorkSelection, setShowWorkSelection] = useState(false);
+  const { copyrights, loading } = useCopyright();
   
   const handleAddWork = () => {
     if (!data.contractId) {
@@ -47,6 +49,8 @@ export const ContractWorks: React.FC<ContractWorksProps> = ({
       {showWorkSelection && (
         <WorkSelectionDialog
           contractId={data.contractId}
+          copyrights={copyrights}
+          loading={loading}
           onSuccess={() => {
             setShowWorkSelection(false);
             // Optionally trigger a refresh of the works table
