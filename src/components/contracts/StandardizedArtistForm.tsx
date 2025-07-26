@@ -9,7 +9,8 @@ import { ContractInterestedParties } from './forms/shared/ContractInterestedPart
 import { ArtistForm } from './forms/ArtistForm';
 import { useContracts } from '@/hooks/useContracts';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Users, Music, DollarSign, UserCheck, Eye, Briefcase } from 'lucide-react';
+import { FileText, Users, Music, DollarSign, UserCheck, Eye, Briefcase, ListMusic } from 'lucide-react';
+import { ContractWorks } from './forms/shared/ContractWorks';
 
 // Artist agreement types
 const artistTypes = [
@@ -215,6 +216,18 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
       icon: DollarSign,
       component: ArtistForm,
       validation: () => !!(formData.royaltyRate && formData.termLength)
+    },
+    {
+      id: 'works',
+      title: 'Schedule of Works',
+      description: 'Select and manage musical works for this agreement',
+      icon: ListMusic,
+      component: (props: any) => (
+        <ContractWorks
+          {...props}
+          contractType="artist"
+        />
+      )
     },
     {
       id: 'interested_parties',

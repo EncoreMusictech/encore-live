@@ -7,7 +7,8 @@ import { ContractReview } from "./forms/shared/ContractReview";
 
 import { ContractInterestedParties } from "./forms/shared/ContractInterestedParties";
 import { ProducerForm } from "./forms/ProducerForm";
-import { Music, FileText, DollarSign, Users, Clock, CheckCircle, UserCheck } from "lucide-react";
+import { Music, FileText, DollarSign, Users, Clock, CheckCircle, UserCheck, ListMusic } from "lucide-react";
+import { ContractWorks } from "./forms/shared/ContractWorks";
 import { useContracts } from "@/hooks/useContracts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -235,6 +236,18 @@ export function StandardizedProducerForm({
       icon: DollarSign,
       component: ProducerForm,
       validation: () => !!(formData.upfrontFee || formData.producerPoints)
+    },
+    {
+      id: "works",
+      title: "Schedule of Works",
+      description: "Select and manage musical works for this agreement",
+      icon: ListMusic,
+      component: (props: any) => (
+        <ContractWorks
+          {...props}
+          contractType="producer"
+        />
+      )
     },
     {
       id: "interested_parties",

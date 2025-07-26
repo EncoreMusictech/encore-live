@@ -7,7 +7,8 @@ import { ContractReview } from "./forms/shared/ContractReview";
 
 import { ContractInterestedParties } from "./forms/shared/ContractInterestedParties";
 import { SyncForm } from "./forms/SyncForm";
-import { Film, FileText, DollarSign, Users, Globe, CheckCircle, Music, UserCheck } from "lucide-react";
+import { Film, FileText, DollarSign, Users, Globe, CheckCircle, Music, UserCheck, ListMusic } from "lucide-react";
+import { ContractWorks } from "./forms/shared/ContractWorks";
 import { useContracts } from "@/hooks/useContracts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -251,6 +252,18 @@ export function StandardizedSyncForm({
       icon: DollarSign,
       component: SyncForm,
       validation: () => !!(formData.licenseFee && formData.productionTitle)
+    },
+    {
+      id: "works",
+      title: "Schedule of Works",
+      description: "Select and manage musical works for this agreement",
+      icon: ListMusic,
+      component: (props: any) => (
+        <ContractWorks
+          {...props}
+          contractType="sync"
+        />
+      )
     },
     {
       id: "interested_parties",
