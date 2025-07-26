@@ -228,12 +228,7 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
           partyLabels={{ firstParty: 'Label/Company', secondParty: 'Artist' }}
         />
       ),
-      validation: () => !!(
-        formData.firstParty.contactName && 
-        formData.firstParty.email &&
-        formData.secondParty.contactName && 
-        formData.secondParty.email
-      )
+      validation: () => true
     },
     {
       id: 'interested_parties',

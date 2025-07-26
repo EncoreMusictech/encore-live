@@ -247,12 +247,7 @@ export function StandardizedProducerForm({
           partyLabels={{ firstParty: 'Artist/Label', secondParty: 'Producer' }}
         />
       ),
-      validation: () => !!(
-        formData.firstParty.contactName && 
-        formData.firstParty.email &&
-        formData.secondParty.contactName && 
-        formData.secondParty.email
-      )
+      validation: () => true
     },
     {
       id: "works",

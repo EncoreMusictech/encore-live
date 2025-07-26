@@ -241,12 +241,7 @@ export function StandardizedDistributionForm({
           partyLabels={{ firstParty: 'Artist/Label', secondParty: 'Distributor' }}
         />
       ),
-      validation: () => !!(
-        formData.firstParty.contactName && 
-        formData.firstParty.email &&
-        formData.secondParty.contactName && 
-        formData.secondParty.email
-      )
+      validation: () => true
     },
     {
       id: "works",

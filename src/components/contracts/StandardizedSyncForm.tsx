@@ -263,12 +263,7 @@ export function StandardizedSyncForm({
           partyLabels={{ firstParty: 'Rights Holder', secondParty: 'Production Company' }}
         />
       ),
-      validation: () => !!(
-        formData.firstParty.contactName && 
-        formData.firstParty.email &&
-        formData.secondParty.contactName && 
-        formData.secondParty.email
-      )
+      validation: () => true
     },
     {
       id: "works",

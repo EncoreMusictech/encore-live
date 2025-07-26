@@ -130,7 +130,7 @@ export const ArtistAgreementForm: React.FC = () => {
       case 3: // Additional Terms
         return true; // Optional fields
       case 4: // Parties
-        return !!(formData.artistEmail && formData.labelName);
+        return true;
       case 5: // Works
         return formData.selectedWorks.length > 0;
       case 6: // Review

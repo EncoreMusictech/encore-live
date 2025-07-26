@@ -259,12 +259,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
           partyLabels={{ firstParty: 'Publisher', secondParty: 'Writer/Songwriter' }}
         />
       ),
-      validation: () => !!(
-        formData.firstParty.contactName && 
-        formData.firstParty.email &&
-        formData.secondParty.contactName && 
-        formData.secondParty.email
-      )
+      validation: () => true
     },
     {
       id: 'works',
