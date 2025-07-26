@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -17,6 +17,9 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   const [selectedCopyrightId, setSelectedCopyrightId] = useState<string | null>(null);
   const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState(false);
   const { contracts, removeScheduleWork, refetch } = useContracts();
+  
+  // Prevent dialog from closing during Spotify operations
+  const dialogRef = useRef(isAddDialogOpen);
 
   // Debug logging
   console.log('ScheduleWorksTable - Contract ID:', contractId);
@@ -46,12 +49,18 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
     setIsCopyrightModalOpen(true);
   };
 
-  const handleDialogClose = () => {
+  const handleDialogClose = useCallback(() => {
     // Only allow dialog to close if not fetching Spotify data
     if (!isSpotifyFetching) {
       setIsAddDialogOpen(false);
+      dialogRef.current = false;
     }
-  };
+  }, [isSpotifyFetching]);
+  
+  // Update ref when dialog state changes
+  useEffect(() => {
+    dialogRef.current = isAddDialogOpen;
+  }, [isAddDialogOpen]);
 
   return (
     <div className="space-y-6">
@@ -59,13 +68,22 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
         <p className="text-sm text-muted-foreground">
           Works linked to this contract inherit royalty and party metadata
         </p>
-        <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
-          if (!open && !isSpotifyFetching) {
-            setIsAddDialogOpen(false);
-          } else if (open) {
-            setIsAddDialogOpen(true);
-          }
-        }}>
+        <Dialog 
+          open={isAddDialogOpen} 
+          onOpenChange={(open) => {
+            // Prevent closing during Spotify fetch operations
+            if (!open && isSpotifyFetching) {
+              console.log('Preventing dialog close during Spotify fetch');
+              return;
+            }
+            
+            if (open) {
+              setIsAddDialogOpen(true);
+            } else {
+              handleDialogClose();
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
