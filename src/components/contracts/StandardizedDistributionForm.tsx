@@ -1,12 +1,14 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ContractFormBase, ContractFormStep } from "./forms/ContractFormBase";
 import { ContractTypeSelection } from "./forms/shared/ContractTypeSelection";
 import { ContractBasicInfo } from "./forms/shared/ContractBasicInfo";
 import { ContractParties } from "./forms/shared/ContractParties";
 import { ContractReview } from "./forms/shared/ContractReview";
+import { ContractWorks } from "./forms/shared/ContractWorks";
+import { ContractInterestedParties } from "./forms/shared/ContractInterestedParties";
 import { DistributionForm } from "./forms/DistributionForm";
-import { Truck, FileText, DollarSign, Users, Globe, CheckCircle } from "lucide-react";
-import { getDemoContractData } from "@/data/demo-contract-types";
+import { Truck, FileText, DollarSign, Users, Globe, CheckCircle, Music, UserCheck } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,8 +24,7 @@ const distributionTypes = [
       "Simple revenue splits"
     ],
     icon: Truck,
-    popular: false,
-    demoId: "distribution-demo"
+    demoId: "demo_distribution_only"
   },
   {
     id: "label_services",
@@ -36,8 +37,7 @@ const distributionTypes = [
       "Professional guidance"
     ],
     icon: Globe,
-    popular: true,
-    demoId: "distribution-demo"
+    demoId: "demo_label_services"
   },
   {
     id: "full_label",
@@ -50,8 +50,7 @@ const distributionTypes = [
       "Full industry backing"
     ],
     icon: DollarSign,
-    popular: false,
-    demoId: "distribution-demo"
+    demoId: "demo_full_label"
   },
   {
     id: "licensing",
@@ -63,32 +62,120 @@ const distributionTypes = [
       "Revenue optimization",
       "Strategic partnerships"
     ],
-    icon: FileText,
-    popular: false,
-    demoId: "distribution-demo"
+    icon: FileText
   }
 ];
 
+// Default form data matching contract table structure
 const defaultFormData = {
-  agreement_type: "",
-  contract_type: "distribution",
-  status: "draft"
+  // Basic Info
+  agreementTitle: '',
+  counterparty: '',
+  effectiveDate: '',
+  expirationDate: '',
+  territory: 'worldwide',
+  governingLaw: 'new_york',
+  notes: '',
+  
+  // Type Selection
+  distributionAgreementType: '',
+  
+  // Distribution Terms
+  distributionType: '',
+  artistRevenueShare: '',
+  labelRevenueShare: '',
+  contractTerm: '',
+  releaseCommitment: '',
+  marketingCommitment: '',
+  
+  // Parties
+  firstParty: {
+    contactName: '',
+    email: '',
+    phone: '',
+    taxId: '',
+    address: ''
+  },
+  secondParty: {
+    contactName: '',
+    email: '',
+    phone: '',
+    taxId: '',
+    address: ''
+  },
+  
+  // Works & Parties
+  contractId: '',
+  selectedWorks: [],
+  
+  // Metadata
+  createdAt: new Date().toISOString(),
+  status: 'draft'
 };
 
 export function StandardizedDistributionForm() {
   const [formData, setFormData] = useState(defaultFormData);
   const { createContract } = useContracts();
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const updateFormData = (updates: Partial<typeof formData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+  };
 
   const handleDemoDataLoad = (demoId: string) => {
-    const demoData = getDemoContractData("distribution", demoId);
-    if (demoData) {
-      setFormData({
-        ...formData,
-        ...demoData.basicInfo,
-        ...demoData.terms,
-        ...demoData.parties,
-        agreement_type: formData.agreement_type
+    const demoData = {
+      demo_distribution_only: {
+        agreementTitle: 'Distribution Agreement - Independent Artist',
+        counterparty: 'Demo Distribution Co.',
+        effectiveDate: new Date().toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 2).toISOString().split('T')[0], // 2 years
+        artistRevenueShare: '85',
+        labelRevenueShare: '15',
+        contractTerm: '2',
+        releaseCommitment: 'Minimum 1 release per year',
+        marketingCommitment: 'Basic digital marketing support',
+        firstParty: {
+          contactName: 'Demo Distribution Co.',
+          email: 'contracts@demodistribution.com',
+          phone: '(555) 123-4567',
+          taxId: '12-3456789',
+          address: '123 Distribution Ave, Los Angeles, CA 90028'
+        },
+        secondParty: {
+          contactName: 'Demo Artist',
+          email: 'artist@demo.com',
+          phone: '(555) 987-6543',
+          taxId: '98-7654321',
+          address: '456 Artist St, Nashville, TN 37203'
+        }
+      },
+      demo_label_services: {
+        agreementTitle: 'Label Services Agreement - Emerging Artist',
+        counterparty: 'Demo Label Services',
+        effectiveDate: new Date().toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 3).toISOString().split('T')[0], // 3 years
+        artistRevenueShare: '70',
+        labelRevenueShare: '30',
+        contractTerm: '3',
+        releaseCommitment: 'Minimum 2 releases per year',
+        marketingCommitment: 'Full marketing and promotional support',
+        firstParty: {
+          contactName: 'Demo Label Services',
+          email: 'services@demolabel.com',
+          phone: '(555) 111-2222',
+          taxId: '11-2233445',
+          address: '789 Label Row, New York, NY 10001'
+        }
+      }
+    };
+
+    const selectedDemo = demoData[demoId as keyof typeof demoData];
+    if (selectedDemo) {
+      updateFormData(selectedDemo);
+      toast({
+        title: "Demo data loaded",
+        description: "Form has been populated with sample data.",
       });
     }
   };
@@ -103,11 +190,11 @@ export function StandardizedDistributionForm() {
         <ContractTypeSelection
           {...props}
           contractTypes={distributionTypes}
-          selectedField="agreement_type"
+          selectedField="distributionAgreementType"
           onDemoDataLoad={handleDemoDataLoad}
         />
       ),
-      validation: (data) => !!data.agreement_type
+      validation: () => !!formData.distributionAgreementType
     },
     {
       id: "basic",
@@ -115,9 +202,12 @@ export function StandardizedDistributionForm() {
       description: "Agreement details and timeline",
       icon: FileText,
       component: (props: any) => (
-        <ContractBasicInfo {...props} contractType="distribution agreement" />
+        <ContractBasicInfo
+          {...props}
+          contractType="distribution agreement"
+        />
       ),
-      validation: (data) => !!(data.title && data.counterparty_name)
+      validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
     },
     {
       id: "terms",
@@ -125,24 +215,51 @@ export function StandardizedDistributionForm() {
       description: "Revenue sharing and distribution details",
       icon: DollarSign,
       component: DistributionForm,
-      validation: (data) => !!(data.distribution_type && data.artist_revenue_share && data.label_revenue_share)
+      validation: () => !!(formData.artistRevenueShare && formData.labelRevenueShare)
     },
     {
       id: "parties",
-      title: "Party Information",
-      description: "Contact details for all parties",
+      title: "Parties",
+      description: "Contact information for all parties",
       icon: Users,
       component: (props: any) => (
         <ContractParties
           {...props}
           contractType="distribution agreement"
-          partyLabels={{
-            party1: "Artist/Label",
-            party2: "Distributor"
-          }}
+          partyLabels={{ firstParty: 'Artist/Label', secondParty: 'Distributor' }}
         />
       ),
-      validation: (data) => !!(data.party1_contact_name && data.party1_email)
+      validation: () => !!(
+        formData.firstParty.contactName && 
+        formData.firstParty.email &&
+        formData.secondParty.contactName && 
+        formData.secondParty.email
+      )
+    },
+    {
+      id: "works",
+      title: "Schedule of Works",
+      description: "Select musical works covered by this agreement",
+      icon: Music,
+      component: (props: any) => (
+        <ContractWorks
+          {...props}
+          contractType="distribution agreement"
+        />
+      ),
+      validation: () => formData.selectedWorks && formData.selectedWorks.length > 0
+    },
+    {
+      id: "interested_parties",
+      title: "Interested Parties",
+      description: "Manage ownership and interested parties",
+      icon: UserCheck,
+      component: (props: any) => (
+        <ContractInterestedParties
+          {...props}
+          contractType="distribution agreement"
+        />
+      )
     },
     {
       id: "review",
@@ -154,69 +271,83 @@ export function StandardizedDistributionForm() {
           {...props}
           contractType="distribution agreement"
           customValidation={[
-            {
-              label: "Revenue splits defined",
-              isValid: !!(props.data.artist_revenue_share && props.data.label_revenue_share),
-              required: true
-            },
-            {
-              label: "Contract term specified",
-              isValid: !!props.data.contract_term,
-              required: false
-            },
-            {
-              label: "Release commitment defined",
-              isValid: !!props.data.release_commitment,
-              required: false
-            },
-            {
-              label: "Territory coverage specified",
-              isValid: !!props.data.territory,
-              required: false
-            }
+            { label: 'Distribution agreement type selected', isValid: !!props.data.distributionAgreementType, required: true },
+            { label: 'Revenue splits defined', isValid: !!(props.data.artistRevenueShare && props.data.labelRevenueShare), required: true },
+            { label: 'Works selected', isValid: props.data.selectedWorks && props.data.selectedWorks.length > 0, required: true }
           ]}
         />
-      )
+      ),
+      validation: () => true // Custom validation in the review component
     }
   ];
 
-  const handleSave = async (data: any) => {
+  const handleSave = async () => {
     try {
-      await createContract({
-        ...data,
-        contract_type: "distribution",
-        user_id: undefined // Will be set by the backend
+      const contract = await createContract({
+        contract_type: 'distribution',
+        title: formData.agreementTitle,
+        counterparty_name: formData.counterparty,
+        contract_status: 'draft',
+        start_date: formData.effectiveDate,
+        end_date: formData.expirationDate,
+        notes: formData.notes,
+        contract_data: formData
+      });
+
+      if (contract?.id) {
+        updateFormData({ contractId: contract.id });
+      }
+
+      toast({
+        title: "Draft saved",
+        description: "Your distribution agreement has been saved as a draft.",
       });
     } catch (error) {
-      throw new Error("Failed to save distribution agreement");
+      console.error('Error saving draft:', error);
+      toast({
+        title: "Error saving draft",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async () => {
     try {
-      await createContract({
-        ...data,
-        contract_type: "distribution",
-        contract_status: "pending_review",
-        user_id: undefined // Will be set by the backend
+      const contract = await createContract({
+        contract_type: 'distribution',
+        title: formData.agreementTitle,
+        counterparty_name: formData.counterparty,
+        contract_status: 'signed',
+        start_date: formData.effectiveDate,
+        end_date: formData.expirationDate,
+        notes: formData.notes,
+        contract_data: formData
       });
-      
+
       toast({
-        title: "Distribution Agreement Submitted",
+        title: "Agreement submitted",
         description: "Your distribution agreement has been submitted for review.",
       });
+
+      navigate('/contract-management');
     } catch (error) {
-      throw new Error("Failed to submit distribution agreement");
+      console.error('Error submitting agreement:', error);
+      toast({
+        title: "Error submitting agreement",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   return (
     <ContractFormBase
-      title="Distribution Agreement"
-      contractType="contract-management"
+      title="Create Distribution Agreement"
+      contractType="distribution agreement"
       steps={steps}
       formData={formData}
-      onFormDataChange={setFormData}
+      onFormDataChange={updateFormData}
       onSave={handleSave}
       onSubmit={handleSubmit}
     />

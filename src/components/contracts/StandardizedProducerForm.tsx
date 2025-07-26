@@ -1,12 +1,14 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ContractFormBase, ContractFormStep } from "./forms/ContractFormBase";
 import { ContractTypeSelection } from "./forms/shared/ContractTypeSelection";
 import { ContractBasicInfo } from "./forms/shared/ContractBasicInfo";
 import { ContractParties } from "./forms/shared/ContractParties";
 import { ContractReview } from "./forms/shared/ContractReview";
+import { ContractWorks } from "./forms/shared/ContractWorks";
+import { ContractInterestedParties } from "./forms/shared/ContractInterestedParties";
 import { ProducerForm } from "./forms/ProducerForm";
-import { Music, FileText, DollarSign, Users, Clock, CheckCircle } from "lucide-react";
-import { getDemoContractData } from "@/data/demo-contract-types";
+import { Music, FileText, DollarSign, Users, Clock, CheckCircle, UserCheck } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,8 +24,7 @@ const producerTypes = [
       "Quick turnaround"
     ],
     icon: DollarSign,
-    popular: false,
-    demoId: "producer-demo"
+    demoId: "demo_flat_fee"
   },
   {
     id: "points",
@@ -36,8 +37,7 @@ const producerTypes = [
       "Performance-based earnings"
     ],
     icon: Clock,
-    popular: false,
-    demoId: "producer-demo"
+    demoId: "demo_points"
   },
   {
     id: "hybrid",
@@ -50,31 +50,138 @@ const producerTypes = [
       "Industry standard approach"
     ],
     icon: Music,
-    popular: true,
-    demoId: "producer-demo"
+    demoId: "demo_hybrid"
   }
 ];
 
+// Default form data matching contract table structure
 const defaultFormData = {
-  agreement_type: "",
-  contract_type: "producer",
-  status: "draft"
+  // Basic Info
+  agreementTitle: '',
+  counterparty: '',
+  effectiveDate: '',
+  expirationDate: '',
+  territory: 'worldwide',
+  governingLaw: 'new_york',
+  notes: '',
+  
+  // Type Selection
+  producerAgreementType: '',
+  
+  // Producer Terms
+  producerType: '',
+  upfrontFee: '',
+  producerPoints: '',
+  trackCount: '',
+  producerCredit: '',
+  masterOwnership: '',
+  
+  // Parties
+  firstParty: {
+    contactName: '',
+    email: '',
+    phone: '',
+    taxId: '',
+    address: ''
+  },
+  secondParty: {
+    contactName: '',
+    email: '',
+    phone: '',
+    taxId: '',
+    address: ''
+  },
+  
+  // Works & Parties
+  contractId: '',
+  selectedWorks: [],
+  
+  // Metadata
+  createdAt: new Date().toISOString(),
+  status: 'draft'
 };
 
 export function StandardizedProducerForm() {
   const [formData, setFormData] = useState(defaultFormData);
   const { createContract } = useContracts();
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const updateFormData = (updates: Partial<typeof formData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+  };
 
   const handleDemoDataLoad = (demoId: string) => {
-    const demoData = getDemoContractData("producer", demoId);
-    if (demoData) {
-      setFormData({
-        ...formData,
-        ...demoData.basicInfo,
-        ...demoData.terms,
-        ...demoData.parties,
-        agreement_type: formData.agreement_type
+    const demoData = {
+      demo_flat_fee: {
+        agreementTitle: 'Producer Agreement - Flat Fee',
+        counterparty: 'Demo Producer',
+        effectiveDate: new Date().toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year
+        upfrontFee: '5000',
+        producerPoints: '0',
+        trackCount: '10',
+        producerCredit: 'Produced by Demo Producer',
+        masterOwnership: 'Artist retains 100%',
+        firstParty: {
+          contactName: 'Demo Artist',
+          email: 'artist@demo.com',
+          phone: '(555) 123-4567',
+          taxId: '12-3456789',
+          address: '123 Artist St, Los Angeles, CA 90028'
+        },
+        secondParty: {
+          contactName: 'Demo Producer',
+          email: 'producer@demo.com',
+          phone: '(555) 987-6543',
+          taxId: '98-7654321',
+          address: '456 Producer Ave, Nashville, TN 37203'
+        }
+      },
+      demo_points: {
+        agreementTitle: 'Producer Agreement - Points Only',
+        counterparty: 'Demo Producer Co.',
+        effectiveDate: new Date().toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 2).toISOString().split('T')[0], // 2 years
+        upfrontFee: '0',
+        producerPoints: '3',
+        trackCount: '12',
+        producerCredit: 'Produced by Demo Producer Co.',
+        masterOwnership: 'Shared ownership structure',
+        firstParty: {
+          contactName: 'Demo Producer Co.',
+          email: 'business@demoproducer.com',
+          phone: '(555) 111-2222',
+          taxId: '11-2233445',
+          address: '789 Production Row, Atlanta, GA 30309'
+        }
+      },
+      demo_hybrid: {
+        agreementTitle: 'Producer Agreement - Hybrid Deal',
+        counterparty: 'Premium Producer',
+        effectiveDate: new Date().toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 3).toISOString().split('T')[0], // 3 years
+        upfrontFee: '2500',
+        producerPoints: '2',
+        trackCount: '8',
+        producerCredit: 'Produced by Premium Producer',
+        masterOwnership: 'Split ownership agreement',
+        firstParty: {
+          contactName: 'Premium Producer',
+          email: 'info@premiumproducer.com',
+          phone: '(555) 333-4444',
+          taxId: '33-4455667',
+          address: '321 Studio Blvd, New York, NY 10001'
+        }
+      }
+    };
+
+    const selectedDemo = demoData[demoId as keyof typeof demoData];
+    if (selectedDemo) {
+      updateFormData(selectedDemo);
+      toast({
+        title: "Demo data loaded",
+        description: "Form has been populated with sample data.",
       });
     }
   };
@@ -89,11 +196,11 @@ export function StandardizedProducerForm() {
         <ContractTypeSelection
           {...props}
           contractTypes={producerTypes}
-          selectedField="agreement_type"
+          selectedField="producerAgreementType"
           onDemoDataLoad={handleDemoDataLoad}
         />
       ),
-      validation: (data) => !!data.agreement_type
+      validation: () => !!formData.producerAgreementType
     },
     {
       id: "basic",
@@ -101,9 +208,12 @@ export function StandardizedProducerForm() {
       description: "Agreement details and timeline",
       icon: FileText,
       component: (props: any) => (
-        <ContractBasicInfo {...props} contractType="producer agreement" />
+        <ContractBasicInfo
+          {...props}
+          contractType="producer agreement"
+        />
       ),
-      validation: (data) => !!(data.title && data.counterparty_name)
+      validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
     },
     {
       id: "terms",
@@ -111,24 +221,51 @@ export function StandardizedProducerForm() {
       description: "Compensation and production details",
       icon: DollarSign,
       component: ProducerForm,
-      validation: (data) => !!(data.producer_type && (data.upfront_fee || data.producer_points))
+      validation: () => !!(formData.upfrontFee || formData.producerPoints)
     },
     {
       id: "parties",
-      title: "Party Information",
-      description: "Contact details for all parties",
+      title: "Parties",
+      description: "Contact information for all parties",
       icon: Users,
       component: (props: any) => (
         <ContractParties
           {...props}
           contractType="producer agreement"
-          partyLabels={{
-            party1: "Artist/Label",
-            party2: "Producer"
-          }}
+          partyLabels={{ firstParty: 'Artist/Label', secondParty: 'Producer' }}
         />
       ),
-      validation: (data) => !!(data.party1_contact_name && data.party1_email)
+      validation: () => !!(
+        formData.firstParty.contactName && 
+        formData.firstParty.email &&
+        formData.secondParty.contactName && 
+        formData.secondParty.email
+      )
+    },
+    {
+      id: "works",
+      title: "Schedule of Works",
+      description: "Select musical works covered by this agreement",
+      icon: Music,
+      component: (props: any) => (
+        <ContractWorks
+          {...props}
+          contractType="producer agreement"
+        />
+      ),
+      validation: () => formData.selectedWorks && formData.selectedWorks.length > 0
+    },
+    {
+      id: "interested_parties",
+      title: "Interested Parties",
+      description: "Manage ownership and interested parties",
+      icon: UserCheck,
+      component: (props: any) => (
+        <ContractInterestedParties
+          {...props}
+          contractType="producer agreement"
+        />
+      )
     },
     {
       id: "review",
@@ -140,64 +277,83 @@ export function StandardizedProducerForm() {
           {...props}
           contractType="producer agreement"
           customValidation={[
-            {
-              label: "Producer compensation defined",
-              isValid: !!(props.data.upfront_fee || props.data.producer_points),
-              required: true
-            },
-            {
-              label: "Track count specified",
-              isValid: !!props.data.track_count,
-              required: false
-            },
-            {
-              label: "Credit terms defined",
-              isValid: !!props.data.producer_credit,
-              required: false
-            }
+            { label: 'Producer agreement type selected', isValid: !!props.data.producerAgreementType, required: true },
+            { label: 'Producer compensation defined', isValid: !!(props.data.upfrontFee || props.data.producerPoints), required: true },
+            { label: 'Works selected', isValid: props.data.selectedWorks && props.data.selectedWorks.length > 0, required: true }
           ]}
         />
-      )
+      ),
+      validation: () => true // Custom validation in the review component
     }
   ];
 
-  const handleSave = async (data: any) => {
+  const handleSave = async () => {
     try {
-      await createContract({
-        ...data,
-        contract_type: "producer",
-        user_id: undefined // Will be set by the backend
+      const contract = await createContract({
+        contract_type: 'producer',
+        title: formData.agreementTitle,
+        counterparty_name: formData.counterparty,
+        contract_status: 'draft',
+        start_date: formData.effectiveDate,
+        end_date: formData.expirationDate,
+        notes: formData.notes,
+        contract_data: formData
+      });
+
+      if (contract?.id) {
+        updateFormData({ contractId: contract.id });
+      }
+
+      toast({
+        title: "Draft saved",
+        description: "Your producer agreement has been saved as a draft.",
       });
     } catch (error) {
-      throw new Error("Failed to save producer agreement");
+      console.error('Error saving draft:', error);
+      toast({
+        title: "Error saving draft",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async () => {
     try {
-      await createContract({
-        ...data,
-        contract_type: "producer",
-        contract_status: "pending_review",
-        user_id: undefined // Will be set by the backend
+      const contract = await createContract({
+        contract_type: 'producer',
+        title: formData.agreementTitle,
+        counterparty_name: formData.counterparty,
+        contract_status: 'signed',
+        start_date: formData.effectiveDate,
+        end_date: formData.expirationDate,
+        notes: formData.notes,
+        contract_data: formData
       });
-      
+
       toast({
-        title: "Producer Agreement Submitted",
+        title: "Agreement submitted",
         description: "Your producer agreement has been submitted for review.",
       });
+
+      navigate('/contract-management');
     } catch (error) {
-      throw new Error("Failed to submit producer agreement");
+      console.error('Error submitting agreement:', error);
+      toast({
+        title: "Error submitting agreement",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   return (
     <ContractFormBase
-      title="Producer Agreement"
-      contractType="contract-management"
+      title="Create Producer Agreement"
+      contractType="producer agreement"
       steps={steps}
       formData={formData}
-      onFormDataChange={setFormData}
+      onFormDataChange={updateFormData}
       onSave={handleSave}
       onSubmit={handleSubmit}
     />
