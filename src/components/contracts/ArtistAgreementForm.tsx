@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Music, Disc, Truck, FileText, Save, Eye } from "lucide-react";
 
 // Import sub-components
+import { ArtistAgreementFormSelectType } from "./forms/ArtistAgreementFormSelectType";
 import { ArtistAgreementFormBasicInfo } from "./forms/ArtistAgreementFormBasicInfo";
 import { ArtistAgreementFormTerms } from "./forms/ArtistAgreementFormTerms";
 import { ArtistAgreementFormAdditionalTerms } from "./forms/ArtistAgreementFormAdditionalTerms";
@@ -62,7 +63,7 @@ const defaultFormData: ArtistAgreementFormData = {
   artistName: "",
   legalName: "",
   stageName: "",
-  agreementType: "recording",
+  agreementType: "",
   effectiveDate: "",
   expirationDate: "",
   territory: "worldwide",
@@ -94,6 +95,7 @@ const defaultFormData: ArtistAgreementFormData = {
 };
 
 const steps = [
+  { id: "select", title: "Select Type", icon: Music, description: "Choose agreement type" },
   { id: "basic", title: "Basic Info", icon: Music, description: "Artist and agreement details" },
   { id: "terms", title: "Terms", icon: FileText, description: "Recording and financial terms" },
   { id: "additional", title: "Additional", icon: Disc, description: "Additional clauses and terms" },
@@ -119,17 +121,19 @@ export const ArtistAgreementForm: React.FC = () => {
 
   const validateStep = (stepIndex: number): boolean => {
     switch (stepIndex) {
-      case 0: // Basic Info
+      case 0: // Select Type
+        return !!formData.agreementType;
+      case 1: // Basic Info
         return !!(formData.artistName && formData.legalName && formData.agreementType);
-      case 1: // Terms
+      case 2: // Terms
         return !!(formData.recordingCommitment && formData.royaltyRate);
-      case 2: // Additional Terms
+      case 3: // Additional Terms
         return true; // Optional fields
-      case 3: // Parties
+      case 4: // Parties
         return !!(formData.artistEmail && formData.labelName);
-      case 4: // Works
+      case 5: // Works
         return formData.selectedWorks.length > 0;
-      case 5: // Review
+      case 6: // Review
         return true;
       default:
         return false;
@@ -211,40 +215,47 @@ export const ArtistAgreementForm: React.FC = () => {
     switch (currentStep) {
       case 0:
         return (
-          <ArtistAgreementFormBasicInfo
+          <ArtistAgreementFormSelectType
             data={formData}
             onChange={updateFormData}
           />
         );
       case 1:
         return (
-          <ArtistAgreementFormTerms
+          <ArtistAgreementFormBasicInfo
             data={formData}
             onChange={updateFormData}
           />
         );
       case 2:
         return (
-          <ArtistAgreementFormAdditionalTerms
+          <ArtistAgreementFormTerms
             data={formData}
             onChange={updateFormData}
           />
         );
       case 3:
         return (
-          <ArtistAgreementFormParties
+          <ArtistAgreementFormAdditionalTerms
             data={formData}
             onChange={updateFormData}
           />
         );
       case 4:
         return (
-          <ArtistAgreementFormWorks
+          <ArtistAgreementFormParties
             data={formData}
             onChange={updateFormData}
           />
         );
       case 5:
+        return (
+          <ArtistAgreementFormWorks
+            data={formData}
+            onChange={updateFormData}
+          />
+        );
+      case 6:
         return (
           <ArtistAgreementFormReview
             data={formData}
