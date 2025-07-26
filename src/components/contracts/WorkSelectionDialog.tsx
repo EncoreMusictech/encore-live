@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,11 +24,23 @@ interface WorkSelectionDialogProps {
 
 export function WorkSelectionDialog({ contractId, onSuccess, onCancel }: WorkSelectionDialogProps) {
   const { toast } = useToast();
-  const { copyrights, loading } = useCopyright();
+  
+  // Stabilize copyright data to prevent remounts during Spotify fetches
+  const copyrightHook = useCopyright();
+  const stableCopyrights = useRef(copyrightHook.copyrights);
+  const stableLoading = useRef(copyrightHook.loading);
+  
+  // Update refs when data actually changes, not on every render
+  useEffect(() => {
+    stableCopyrights.current = copyrightHook.copyrights;
+    stableLoading.current = copyrightHook.loading;
+  }, [copyrightHook.copyrights.length, copyrightHook.loading]);
+  
   const { addScheduleWork } = useContracts();
   
-  // Prevent dialog from closing during component state changes
-  const [isDialogStable, setIsDialogStable] = useState(true);
+  // Use stable references
+  const copyrights = stableCopyrights.current;
+  const loading = stableLoading.current;
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWorks, setSelectedWorks] = useState<Set<string>>(new Set());
