@@ -84,6 +84,9 @@ interface EnhancedScheduleWorkFormProps {
 export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: EnhancedScheduleWorkFormProps) {
   const { toast } = useToast();
   
+  // Debug logging
+  console.log('EnhancedScheduleWorkForm - Contract ID:', contractId);
+  
   const [loading, setLoading] = useState(false);
   const [spotifyLoading, setSpotifyLoading] = useState(false);
   

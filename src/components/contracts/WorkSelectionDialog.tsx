@@ -25,6 +25,9 @@ interface WorkSelectionDialogProps {
 export function WorkSelectionDialog({ contractId, onSuccess, onCancel }: WorkSelectionDialogProps) {
   const { toast } = useToast();
   
+  // Debug logging for contract ID
+  console.log('WorkSelectionDialog - Contract ID:', contractId);
+  
   // Stabilize copyright data to prevent remounts during Spotify fetches
   const copyrightHook = useCopyright();
   const stableCopyrights = useRef(copyrightHook.copyrights);
@@ -41,6 +44,13 @@ export function WorkSelectionDialog({ contractId, onSuccess, onCancel }: WorkSel
   // Use stable references
   const copyrights = stableCopyrights.current;
   const loading = stableLoading.current;
+  
+  // Debug logging for copyrights data
+  console.log('WorkSelectionDialog - Copyrights:', { 
+    count: copyrights.length, 
+    loading,
+    addScheduleWorkExists: !!addScheduleWork
+  });
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWorks, setSelectedWorks] = useState<Set<string>>(new Set());
@@ -302,10 +312,34 @@ export function WorkSelectionDialog({ contractId, onSuccess, onCancel }: WorkSel
 
             {/* Copyright Works Table */}
             {loading ? (
-              <div className="text-center py-8">Loading copyright works...</div>
+              <div className="text-center py-8">
+                <div className="text-muted-foreground">Loading copyright works...</div>
+                <div className="text-xs text-muted-foreground mt-2">
+                  If this takes too long, please check your internet connection or refresh the page.
+                </div>
+              </div>
             ) : filteredCopyrights.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                {searchTerm ? 'No works found matching your search.' : 'No copyright works found. Create your first work using the "Create New Work" tab.'}
+                {searchTerm ? (
+                  <div>
+                    <p>No works found matching "{searchTerm}"</p>
+                    <p className="text-xs mt-2">Try adjusting your search terms or clear the search to see all works.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p>No copyright works found in your catalog.</p>
+                    <p className="text-xs mt-2">
+                      Create your first work using the "Create New Work" tab above, or visit the Copyright Management module to register new works.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => window.open('/copyright-management', '_blank')}
+                    >
+                      Open Copyright Management
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <Card>

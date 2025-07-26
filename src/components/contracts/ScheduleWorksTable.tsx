@@ -17,8 +17,15 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   const [selectedCopyrightId, setSelectedCopyrightId] = useState<string | null>(null);
   const { contracts, removeScheduleWork, refetch } = useContracts();
 
+  // Debug logging
+  console.log('ScheduleWorksTable - Contract ID:', contractId);
+  console.log('ScheduleWorksTable - Contracts:', contracts.length);
+
   const contract = contracts.find(c => c.id === contractId);
   const scheduleWorks = contract?.contract_schedule_works || [];
+  
+  console.log('ScheduleWorksTable - Contract found:', !!contract);
+  console.log('ScheduleWorksTable - Schedule works count:', scheduleWorks.length);
 
   const handleRemoveWork = async (workId: string) => {
     try {
