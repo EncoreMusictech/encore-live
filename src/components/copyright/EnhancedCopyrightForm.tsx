@@ -644,8 +644,8 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
       
       console.log('Copyright saved successfully, waiting for real-time propagation...');
       
-      // Add a small delay to ensure real-time updates have propagated
-      await new Promise(resolve => setTimeout(resolve, 250));
+      // Allow more time for real-time updates to propagate and avoid race conditions
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       console.log('Calling onSuccess callback');
       onSuccess?.();

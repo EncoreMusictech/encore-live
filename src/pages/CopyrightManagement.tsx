@@ -182,23 +182,13 @@ const CopyrightManagement = () => {
 
           <TabsContent value="register">
             <EnhancedCopyrightForm 
-              onSuccess={async () => {
-                // Switch to the copyrights tab and refresh the data
+              onSuccess={() => {
+                // Switch to the copyrights tab - let real-time updates handle the data refresh
                 setActiveTab("copyrights");
-                try {
-                  await refetch();
-                  toast({
-                    title: "Copyright Created",
-                    description: "Your copyright work has been successfully created with all metadata."
-                  });
-                } catch (error) {
-                  console.error('Error refreshing after create:', error);
-                  toast({
-                    title: "Created Successfully",
-                    description: "Copyright created but failed to refresh table. Please reload the page.",
-                    variant: "destructive"
-                  });
-                }
+                toast({
+                  title: "Copyright Created",
+                  description: "Your copyright work has been successfully created with all metadata."
+                });
               }}
               onCancel={() => setActiveTab("copyrights")}
             />
