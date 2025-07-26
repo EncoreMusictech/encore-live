@@ -152,7 +152,7 @@ export function ContractFormBase({
   const CurrentStepComponent = currentStepData.component;
 
   return (
-    <div className="h-full w-full max-h-[80vh] overflow-y-auto space-y-6 p-1">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
