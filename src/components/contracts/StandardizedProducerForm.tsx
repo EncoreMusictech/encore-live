@@ -104,14 +104,16 @@ const defaultFormData = {
 interface StandardizedProducerFormProps {
   onCancel?: () => void;
   onSuccess?: () => void;
+  onBack?: () => void;
   demoData?: any;
 }
 
 export function StandardizedProducerForm({ 
   onCancel, 
   onSuccess, 
+  onBack,
   demoData 
-}: StandardizedProducerFormProps = {}) {
+}: StandardizedProducerFormProps) {
   const [formData, setFormData] = useState(defaultFormData);
   const { createContract } = useContracts();
   const { toast } = useToast();
@@ -370,6 +372,7 @@ export function StandardizedProducerForm({
       onFormDataChange={updateFormData}
       onSave={handleSave}
       onSubmit={handleSubmit}
+      onBack={onBack}
     />
   );
 }

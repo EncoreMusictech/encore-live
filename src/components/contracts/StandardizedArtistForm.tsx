@@ -98,12 +98,14 @@ const defaultFormData = {
 interface StandardizedArtistFormProps {
   onCancel?: () => void;
   onSuccess?: () => void;
+  onBack?: () => void;
   demoData?: any;
 }
 
 export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({ 
   onCancel, 
   onSuccess, 
+  onBack,
   demoData 
 }) => {
   const [formData, setFormData] = useState(defaultFormData);
@@ -355,6 +357,7 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
       onFormDataChange={updateFormData}
       onSave={handleSave}
       onSubmit={handleSubmit}
+      onBack={onBack}
     />
   );
 };

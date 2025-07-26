@@ -116,14 +116,16 @@ const defaultFormData = {
 interface StandardizedDistributionFormProps {
   onCancel?: () => void;
   onSuccess?: () => void;
+  onBack?: () => void;
   demoData?: any;
 }
 
 export function StandardizedDistributionForm({ 
   onCancel, 
   onSuccess, 
+  onBack,
   demoData 
-}: StandardizedDistributionFormProps = {}) {
+}: StandardizedDistributionFormProps) {
   const [formData, setFormData] = useState(defaultFormData);
   const { createContract } = useContracts();
   const { toast } = useToast();
@@ -364,6 +366,7 @@ export function StandardizedDistributionForm({
       onFormDataChange={updateFormData}
       onSave={handleSave}
       onSubmit={handleSubmit}
+      onBack={onBack}
     />
   );
 }

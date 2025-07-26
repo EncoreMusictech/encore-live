@@ -98,12 +98,14 @@ const defaultFormData = {
 interface StandardizedPublishingFormProps {
   onCancel?: () => void;
   onSuccess?: () => void;
+  onBack?: () => void;
   demoData?: any;
 }
 
 export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProps> = ({ 
   onCancel, 
   onSuccess, 
+  onBack,
   demoData 
 }) => {
   const [formData, setFormData] = useState(defaultFormData);
@@ -384,6 +386,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
       onFormDataChange={updateFormData}
       onSave={handleSave}
       onSubmit={handleSubmit}
+      onBack={onBack}
     />
   );
 };

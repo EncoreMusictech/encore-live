@@ -117,14 +117,16 @@ const defaultFormData = {
 interface StandardizedSyncFormProps {
   onCancel?: () => void;
   onSuccess?: () => void;
+  onBack?: () => void;
   demoData?: any;
 }
 
 export function StandardizedSyncForm({ 
   onCancel, 
   onSuccess, 
+  onBack,
   demoData 
-}: StandardizedSyncFormProps = {}) {
+}: StandardizedSyncFormProps) {
   const [formData, setFormData] = useState(defaultFormData);
   const { createContract } = useContracts();
   const { toast } = useToast();
@@ -387,6 +389,7 @@ export function StandardizedSyncForm({
       onFormDataChange={updateFormData}
       onSave={handleSave}
       onSubmit={handleSubmit}
+      onBack={onBack}
     />
   );
 }

@@ -26,6 +26,7 @@ export interface ContractFormBaseProps {
   onFormDataChange: (data: any) => void;
   onSave?: (data: any) => Promise<void>;
   onSubmit?: (data: any) => Promise<void>;
+  onBack?: () => void;
   demoData?: any;
   validationErrors?: string[];
 }
@@ -38,6 +39,7 @@ export function ContractFormBase({
   onFormDataChange,
   onSave,
   onSubmit,
+  onBack,
   demoData,
   validationErrors = []
 }: ContractFormBaseProps) {
@@ -154,7 +156,7 @@ export function ContractFormBase({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
+          <Button variant="ghost" size="icon" onClick={onBack || (() => window.history.back())}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>

@@ -394,23 +394,26 @@ const ContractManagement = () => {
               ) : (
                  // Step 3: Contract form based on type
                  (() => {
-                   const commonProps = {
-                     onCancel: () => {
-                       setSelectedContractType(null);
-                       setCreationMethod(null);
-                       setSelectedDemoData(null);
-                       setShowContractUpload(false);
-                       setShowDocuSignImport(false);
-                     },
-                     onSuccess: () => {
-                       setIsCreateDialogOpen(false);
-                       setSelectedContractType(null);
-                       setCreationMethod(null);
-                       setSelectedDemoData(null);
-                       setShowContractUpload(false);
-                       setShowDocuSignImport(false);
-                     }
-                   };
+                    const commonProps = {
+                      onCancel: () => {
+                        setSelectedContractType(null);
+                        setCreationMethod(null);
+                        setSelectedDemoData(null);
+                        setShowContractUpload(false);
+                        setShowDocuSignImport(false);
+                      },
+                      onSuccess: () => {
+                        setIsCreateDialogOpen(false);
+                        setSelectedContractType(null);
+                        setCreationMethod(null);
+                        setSelectedDemoData(null);
+                        setShowContractUpload(false);
+                        setShowDocuSignImport(false);
+                      },
+                      onBack: () => {
+                        setSelectedContractType(null);
+                      }
+                    };
 
                    switch (selectedContractType) {
                      case "publishing":
