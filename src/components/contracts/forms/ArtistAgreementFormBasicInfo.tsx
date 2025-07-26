@@ -60,27 +60,6 @@ export const ArtistAgreementFormBasicInfo: React.FC<ArtistAgreementFormBasicInfo
         <h3 className="text-lg font-semibold mb-4">Agreement Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="agreementType">
-              Agreement Type <span className="text-destructive">*</span>
-            </Label>
-            <Select
-              value={data.agreementType}
-              onValueChange={(value) => onChange({ agreementType: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select agreement type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recording">Recording Agreement</SelectItem>
-                <SelectItem value="publishing">Publishing Agreement</SelectItem>
-                <SelectItem value="development">Development Deal</SelectItem>
-                <SelectItem value="distribution">Distribution Agreement</SelectItem>
-                <SelectItem value="360">360 Deal</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="territory">Territory</Label>
             <Select
               value={data.territory}
