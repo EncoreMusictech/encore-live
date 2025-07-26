@@ -16,29 +16,23 @@ interface StepperProps {
 export function Stepper({ steps, orientation = 'horizontal', className }: StepperProps) {
   return (
     <div className={cn(
-      "flex",
+      "flex items-center justify-center",
       orientation === 'horizontal' ? "flex-row" : "flex-col",
       className
     )}>
       {steps.map((step, index) => (
-        <div
-          key={index}
-          className={cn(
-            "flex items-center",
-            orientation === 'horizontal' ? "flex-row" : "flex-col",
-            index !== steps.length - 1 && (orientation === 'horizontal' ? "flex-1" : "")
-          )}
-        >
-          {/* Step Box */}
-          <div className="flex flex-col items-center">
+        <React.Fragment key={index}>
+          {/* Step Container */}
+          <div className="flex flex-col items-center relative">
+            {/* Step Box */}
             <div
               className={cn(
-                "w-16 h-16 rounded-lg flex items-center justify-center text-sm font-medium border-2 relative",
+                "w-20 h-20 rounded-lg flex items-center justify-center text-sm font-medium border-2 relative z-10",
                 step.status === 'completed'
-                  ? "bg-green-100 border-green-500 text-green-700"
+                  ? "bg-green-50 border-green-500 text-green-700"
                   : step.status === 'current'
-                  ? "bg-purple-100 border-purple-500 text-purple-700"
-                  : "bg-gray-100 border-gray-300 text-gray-500"
+                  ? "bg-purple-50 border-purple-500 text-purple-700"
+                  : "bg-gray-50 border-gray-300 text-gray-500"
               )}
             >
               {step.status === 'completed' ? (
@@ -57,17 +51,17 @@ export function Stepper({ steps, orientation = 'horizontal', className }: Steppe
             </div>
             
             {/* Step Labels */}
-            <div className="mt-2 text-center">
+            <div className="mt-3 text-center max-w-[120px]">
               <div className={cn(
-                "text-sm font-medium",
+                "text-sm font-semibold",
                 step.status === 'completed' ? "text-green-700" :
-                step.status === 'current' ? "text-blue-700" :
+                step.status === 'current' ? "text-purple-700" :
                 "text-gray-600"
               )}>
                 {step.title}
               </div>
               {step.description && (
-                <div className="text-xs text-gray-500 mt-1 max-w-24">
+                <div className="text-xs text-muted-foreground mt-1">
                   {step.description}
                 </div>
               )}
@@ -76,16 +70,18 @@ export function Stepper({ steps, orientation = 'horizontal', className }: Steppe
 
           {/* Connector Line */}
           {index !== steps.length - 1 && (
-            <div
-              className={cn(
-                orientation === 'horizontal' ? "flex-1 h-0.5 mx-6 mt-8" : "w-0.5 h-8 my-2 ml-8",
-                steps[index + 1]?.status === 'completed' || step.status === 'completed' 
-                  ? "bg-green-300" 
-                  : "bg-gray-300"
-              )}
-            />
+            <div className="flex items-center">
+              <div
+                className={cn(
+                  "h-0.5 w-16 mx-4 transition-colors duration-200",
+                  step.status === 'completed'
+                    ? "bg-green-500"
+                    : "bg-gray-300"
+                )}
+              />
+            </div>
           )}
-        </div>
+        </React.Fragment>
       ))}
     </div>
   );
