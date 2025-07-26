@@ -19,11 +19,17 @@ export const useCopyright = () => {
   const { logActivity } = useActivityLog();
   const { 
     data: optimisticCopyrights, 
+    setData: setOptimisticData,
     addOptimisticUpdate, 
     confirmUpdate, 
     revertUpdate,
     clearAllPending 
-  } = useOptimisticUpdates<Copyright>(copyrights);
+  } = useOptimisticUpdates<Copyright>([]);
+
+  // Sync optimistic data with server data whenever copyrights change
+  useEffect(() => {
+    setOptimisticData(copyrights);
+  }, [copyrights, setOptimisticData]);
 
   const fetchCopyrights = useCallback(async () => {
     try {
