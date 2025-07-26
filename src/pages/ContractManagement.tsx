@@ -23,6 +23,7 @@ import { DemoContracts } from "@/components/contracts/DemoContracts";
 import { DemoPublishingContract } from "@/data/demo-publishing-contracts";
 import { DemoArtistContract } from "@/data/demo-artist-contracts";
 import { CopyrightWritersDebug } from "@/components/debug/CopyrightWritersDebug";
+import { ArtistAgreementForm } from "@/components/contracts/ArtistAgreementForm";
 import { useContracts } from "@/hooks/useContracts";
 
 const ContractManagement = () => {
@@ -411,6 +412,8 @@ const ContractManagement = () => {
                       }}
                      demoData={selectedDemoData}
                    />
+                 ) : selectedContractType === "artist" ? (
+                   <ArtistAgreementForm />
                  ) : (
                    <OrganizedContractForm 
                      contractType={selectedContractType}
