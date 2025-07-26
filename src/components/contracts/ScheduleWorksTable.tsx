@@ -13,8 +13,9 @@ interface ScheduleWorksTableProps {
 
 export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState(false);
+  const [isSpotifyFetching, setIsSpotifyFetching] = useState(false);
   const [selectedCopyrightId, setSelectedCopyrightId] = useState<string | null>(null);
+  const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState(false);
   const { contracts, removeScheduleWork, refetch } = useContracts();
 
   // Debug logging
@@ -45,13 +46,26 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
     setIsCopyrightModalOpen(true);
   };
 
+  const handleDialogClose = () => {
+    // Only allow dialog to close if not fetching Spotify data
+    if (!isSpotifyFetching) {
+      setIsAddDialogOpen(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-muted-foreground">
           Works linked to this contract inherit royalty and party metadata
         </p>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+          if (!open && !isSpotifyFetching) {
+            setIsAddDialogOpen(false);
+          } else if (open) {
+            setIsAddDialogOpen(true);
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
@@ -69,7 +83,8 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
             <WorkSelectionDialog 
               contractId={contractId}
               onSuccess={handleWorkAdded}
-              onCancel={() => setIsAddDialogOpen(false)}
+              onCancel={handleDialogClose}
+              onSpotifyFetchChange={setIsSpotifyFetching}
             />
           </DialogContent>
         </Dialog>

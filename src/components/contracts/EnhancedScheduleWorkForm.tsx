@@ -79,9 +79,10 @@ interface EnhancedScheduleWorkFormProps {
   contractId: string;
   onSuccess: () => void;
   onCancel: () => void;
+  onSpotifyFetchChange?: (isLoading: boolean) => void;
 }
 
-export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: EnhancedScheduleWorkFormProps) {
+export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSpotifyFetchChange }: EnhancedScheduleWorkFormProps) {
   const { toast } = useToast();
   
   // Debug logging
@@ -174,6 +175,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
     if (!workTitle.trim() || workTitle.length < 3) return;
 
     setSpotifyLoading(true);
+    onSpotifyFetchChange?.(true);
     try {
       const { data, error } = await supabase.functions.invoke('spotify-track-metadata', {
         body: { 
@@ -235,6 +237,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
       console.error('Error fetching metadata:', error);
     } finally {
       setSpotifyLoading(false);
+      onSpotifyFetchChange?.(false);
     }
   }, [toast]);
 

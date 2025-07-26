@@ -22,6 +22,7 @@ interface WorkSelectionDialogProps {
   onCancel: () => void;
   copyrights?: Copyright[];
   loading?: boolean;
+  onSpotifyFetchChange?: (isLoading: boolean) => void;
 }
 
 export function WorkSelectionDialog({ 
@@ -29,7 +30,8 @@ export function WorkSelectionDialog({
   onSuccess, 
   onCancel, 
   copyrights: propCopyrights,
-  loading: propLoading 
+  loading: propLoading,
+  onSpotifyFetchChange
 }: WorkSelectionDialogProps) {
   const { toast } = useToast();
   
@@ -430,6 +432,7 @@ export function WorkSelectionDialog({
             contractId={contractId}
             onSuccess={onSuccess}
             onCancel={onCancel}
+            onSpotifyFetchChange={onSpotifyFetchChange}
           />
         </TabsContent>
       </Tabs>
