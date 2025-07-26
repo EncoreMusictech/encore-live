@@ -120,25 +120,7 @@ export const ArtistAgreementFormWorks: React.FC<ArtistAgreementFormWorksProps> =
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Select Recording Works</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Choose the recordings that will be covered under this agreement.
-        </p>
-      </div>
-
-      {/* Schedule of Works - This component handles its own Add Work functionality */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Schedule of Works</CardTitle>
-          <CardDescription>
-            Works linked to this contract inherit royalty and party metadata
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScheduleWorksTable contractId={contractId} />
-        </CardContent>
-      </Card>
+      <ScheduleWorksTable contractId={contractId} />
 
       {data.selectedWorks.length === 0 && (
         <Card className="bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800">
