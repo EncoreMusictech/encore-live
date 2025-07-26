@@ -199,7 +199,7 @@ export function StandardizedProducerForm({
   const steps: ContractFormStep[] = [
     {
       id: "type",
-      title: "Producer Type",
+      title: "Agreement Type",
       description: "Select the type of producer agreement",
       icon: Music,
       component: (props: any) => (

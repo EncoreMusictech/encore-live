@@ -193,7 +193,7 @@ export function StandardizedDistributionForm({
   const steps: ContractFormStep[] = [
     {
       id: "type",
-      title: "Distribution Type",
+      title: "Agreement Type",
       description: "Select the type of distribution agreement",
       icon: Truck,
       component: (props: any) => (
