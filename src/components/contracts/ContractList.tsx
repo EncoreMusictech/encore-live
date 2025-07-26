@@ -28,6 +28,14 @@ interface Contract {
   original_pdf_url?: string;
 }
 
+interface ContractConnectionCheck {
+  has_connections: boolean;
+  royalty_connections: number;
+  active_payouts: number;
+  royalty_allocations: number;
+  can_delete: boolean;
+}
+
 interface ContractListProps {
   onEdit?: (contract: Contract) => void;
 }
@@ -157,7 +165,36 @@ export function ContractList({ onEdit }: ContractListProps) {
     }
   };
 
+  const checkContractConnections = async (contractId: string): Promise<ContractConnectionCheck> => {
+    try {
+      const { data, error } = await supabase
+        .rpc('check_contract_payee_connections', { contract_id_param: contractId });
+
+      if (error) {
+        console.error('Error checking contract connections:', error);
+        return { can_delete: false, has_connections: true, royalty_connections: 0, active_payouts: 0, royalty_allocations: 0 };
+      }
+
+      return (data as unknown as ContractConnectionCheck) || { can_delete: false, has_connections: true, royalty_connections: 0, active_payouts: 0, royalty_allocations: 0 };
+    } catch (error) {
+      console.error('Error:', error);
+      return { can_delete: false, has_connections: true, royalty_connections: 0, active_payouts: 0, royalty_allocations: 0 };
+    }
+  };
+
   const handleDelete = async (contractId: string) => {
+    // Check for royalty connections before deletion
+    const connectionCheck = await checkContractConnections(contractId);
+    
+    if (!connectionCheck.can_delete) {
+      toast({
+        title: "Cannot Delete Contract",
+        description: `This contract cannot be deleted because it has active connections to the Royalties Processing system (${connectionCheck.royalty_connections || 0} royalty connections, ${connectionCheck.active_payouts || 0} active payouts, ${connectionCheck.royalty_allocations || 0} royalty allocations).`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('contracts')
@@ -212,10 +249,49 @@ export function ContractList({ onEdit }: ContractListProps) {
   const handleBulkDelete = async () => {
     const selectedContracts = contracts.filter(contract => selectedItems.has(contract.id));
     
+    // Check each contract for connections before proceeding
+    const contractsWithConnections: (Contract & { connections: ContractConnectionCheck })[] = [];
+    const contractsToDelete: Contract[] = [];
+    
+    for (const contract of selectedContracts) {
+      const connectionCheck = await checkContractConnections(contract.id);
+      if (!connectionCheck.can_delete) {
+        contractsWithConnections.push({
+          ...contract,
+          connections: connectionCheck
+        });
+      } else {
+        contractsToDelete.push(contract);
+      }
+    }
+    
+    // If some contracts have connections, show warning
+    if (contractsWithConnections.length > 0) {
+      const hasOnlyProtectedContracts = contractsToDelete.length === 0;
+      
+      toast({
+        title: hasOnlyProtectedContracts ? "Cannot Delete Any Selected Contracts" : "Some Contracts Cannot Be Deleted",
+        description: hasOnlyProtectedContracts 
+          ? `All ${contractsWithConnections.length} selected contract(s) have active connections to the Royalties Processing system and cannot be deleted.`
+          : `${contractsWithConnections.length} contract(s) have active royalty connections and will be skipped. Only ${contractsToDelete.length} contract(s) will be deleted.`,
+        variant: "destructive",
+      });
+      
+      // If no contracts can be deleted, return early
+      if (hasOnlyProtectedContracts) {
+        return;
+      }
+    }
+    
+    // Proceed with deleting only the contracts without connections
+    if (contractsToDelete.length === 0) {
+      return;
+    }
+    
     // Clear current operations and add delete operations
     clearOperations();
     addOperations(
-      selectedContracts.map(contract => ({
+      contractsToDelete.map(contract => ({
         type: 'delete' as const,
         data: contract
       }))
@@ -247,11 +323,12 @@ export function ContractList({ onEdit }: ContractListProps) {
     // Show success message and refresh
     const deletedCount = statistics.completed;
     const failedCount = statistics.failed;
+    const skippedCount = contractsWithConnections.length;
     
     if (deletedCount > 0) {
       toast({
         title: "Bulk Delete Complete",
-        description: `Successfully deleted ${deletedCount} contract(s)${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
+        description: `Successfully deleted ${deletedCount} contract(s)${failedCount > 0 ? `, ${failedCount} failed` : ''}${skippedCount > 0 ? `, ${skippedCount} skipped (have royalty connections)` : ''}`,
       });
       fetchContracts();
     }

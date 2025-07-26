@@ -3415,6 +3415,10 @@ export type Database = {
         Args: { copyright_id_param: string }
         Returns: number
       }
+      check_contract_payee_connections: {
+        Args: { contract_id_param: string }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: {
           p_identifier: string
@@ -3607,6 +3611,8 @@ export type Database = {
         | "Tidal"
         | "Pandora"
         | "SiriusXM"
+        | "Test Source"
+        | "Shondaland"
       sync_type: "one_time" | "mfn" | "perpetual" | "term_limited"
     }
     CompositeTypes: {
@@ -3766,6 +3772,8 @@ export const Constants = {
         "Tidal",
         "Pandora",
         "SiriusXM",
+        "Test Source",
+        "Shondaland",
       ],
       sync_type: ["one_time", "mfn", "perpetual", "term_limited"],
     },
