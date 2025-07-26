@@ -1,10 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash2, ExternalLink } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
-import { WorkSelectionDialog } from "./WorkSelectionDialog";
+import { WorkAdditionModal } from "./WorkAdditionModal";
 import { CopyrightDetailsModal } from "../copyright/CopyrightDetailsModal";
 
 interface ScheduleWorksTableProps {
@@ -12,14 +11,10 @@ interface ScheduleWorksTableProps {
 }
 
 export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isSpotifyFetching, setIsSpotifyFetching] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedCopyrightId, setSelectedCopyrightId] = useState<string | null>(null);
   const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState(false);
   const { contracts, removeScheduleWork, refetch } = useContracts();
-  
-  // Prevent dialog from closing during Spotify operations
-  const dialogRef = useRef(isAddDialogOpen);
 
   // Debug logging
   console.log('ScheduleWorksTable - Contract ID:', contractId);
@@ -40,7 +35,8 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   };
 
   const handleWorkAdded = () => {
-    setIsAddDialogOpen(false);
+    console.log('ScheduleWorksTable - Work added successfully');
+    setIsAddModalOpen(false);
     refetch(); // Refresh the contracts data
   };
 
@@ -49,18 +45,10 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
     setIsCopyrightModalOpen(true);
   };
 
-  const handleDialogClose = useCallback(() => {
-    // Only allow dialog to close if not fetching Spotify data
-    if (!isSpotifyFetching) {
-      setIsAddDialogOpen(false);
-      dialogRef.current = false;
-    }
-  }, [isSpotifyFetching]);
-  
-  // Update ref when dialog state changes
-  useEffect(() => {
-    dialogRef.current = isAddDialogOpen;
-  }, [isAddDialogOpen]);
+  const handleModalClose = () => {
+    console.log('ScheduleWorksTable - Closing modal');
+    setIsAddModalOpen(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -68,45 +56,25 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
         <p className="text-sm text-muted-foreground">
           Works linked to this contract inherit royalty and party metadata
         </p>
-        <Dialog 
-          open={isAddDialogOpen} 
-          onOpenChange={(open) => {
-            // Prevent closing during Spotify fetch operations
-            if (!open && isSpotifyFetching) {
-              console.log('Preventing dialog close during Spotify fetch');
-              return;
-            }
-            
-            if (open) {
-              setIsAddDialogOpen(true);
-            } else {
-              handleDialogClose();
-            }
+        <Button 
+          className="gap-2"
+          onClick={() => {
+            console.log('ScheduleWorksTable - Opening add work modal');
+            setIsAddModalOpen(true);
           }}
         >
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Work
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add Work to Schedule</DialogTitle>
-              <DialogDescription>
-                Select existing works from your copyright catalog or create new works to add to this contract
-              </DialogDescription>
-            </DialogHeader>
-            
-            <WorkSelectionDialog 
-              contractId={contractId}
-              onSuccess={handleWorkAdded}
-              onCancel={handleDialogClose}
-              onSpotifyFetchChange={setIsSpotifyFetching}
-            />
-          </DialogContent>
-        </Dialog>
+          <Plus className="h-4 w-4" />
+          Add Work
+        </Button>
       </div>
+
+      {/* Isolated Modal Component */}
+      <WorkAdditionModal
+        contractId={contractId}
+        isOpen={isAddModalOpen}
+        onClose={handleModalClose}
+        onSuccess={handleWorkAdded}
+      />
 
       {scheduleWorks.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
