@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ContractFormBase, ContractFormStep } from "./forms/ContractFormBase";
 import { ContractTypeSelection } from "./forms/shared/ContractTypeSelection";
-import { ContractBasicInfo } from "./forms/shared/ContractBasicInfo";
-import { ContractParties } from "./forms/shared/ContractParties";
+import { ContractBasicInfoAndParties } from "./forms/shared/ContractBasicInfoAndParties";
 import { ContractReview } from "./forms/shared/ContractReview";
 import { ContractWorks } from "./forms/shared/ContractWorks";
 import { ContractInterestedParties } from "./forms/shared/ContractInterestedParties";
@@ -214,6 +213,7 @@ export function StandardizedSyncForm({
     }
   };
 
+  // Form steps configuration (6-step workflow)
   const steps: ContractFormStep[] = [
     {
       id: "type",
@@ -231,14 +231,15 @@ export function StandardizedSyncForm({
       validation: () => !!formData.syncAgreementType
     },
     {
-      id: "basic",
-      title: "Basic Information",
-      description: "License details and timeline",
+      id: "basic_and_parties",
+      title: "Basic Info & Parties",
+      description: "License details, timeline, and party information",
       icon: FileText,
       component: (props: any) => (
-        <ContractBasicInfo
+        <ContractBasicInfoAndParties
           {...props}
           contractType="sync license"
+          partyLabels={{ firstParty: 'Rights Holder', secondParty: 'Production Company' }}
         />
       ),
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
@@ -250,20 +251,6 @@ export function StandardizedSyncForm({
       icon: DollarSign,
       component: SyncForm,
       validation: () => !!(formData.licenseFee && formData.productionTitle)
-    },
-    {
-      id: "parties",
-      title: "Parties",
-      description: "Contact information for all parties",
-      icon: Users,
-      component: (props: any) => (
-        <ContractParties
-          {...props}
-          contractType="sync license"
-          partyLabels={{ firstParty: 'Rights Holder', secondParty: 'Production Company' }}
-        />
-      ),
-      validation: () => true
     },
     {
       id: "works",

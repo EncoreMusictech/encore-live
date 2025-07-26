@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ContractFormBase, type ContractFormStep } from './forms/ContractFormBase';
 import { ContractTypeSelection } from './forms/shared/ContractTypeSelection';
-import { ContractBasicInfo } from './forms/shared/ContractBasicInfo';
-import { ContractParties } from './forms/shared/ContractParties';
+import { ContractBasicInfoAndParties } from './forms/shared/ContractBasicInfoAndParties';
 import { ContractReview } from './forms/shared/ContractReview';
 import { ContractWorks } from './forms/shared/ContractWorks';
 import { ContractInterestedParties } from './forms/shared/ContractInterestedParties';
@@ -178,7 +177,7 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
     }
   };
 
-  // Form steps configuration
+  // Form steps configuration (6-step workflow)
   const steps: ContractFormStep[] = [
     {
       id: 'type',
@@ -196,14 +195,15 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
       validation: () => !!formData.artistAgreementType
     },
     {
-      id: 'basic',
-      title: 'Basic Information',
-      description: 'Agreement details and timeline',
+      id: 'basic_and_parties',
+      title: 'Basic Info & Parties',
+      description: 'Agreement details, timeline, and party information',
       icon: FileText,
       component: (props: any) => (
-        <ContractBasicInfo
+        <ContractBasicInfoAndParties
           {...props}
           contractType="artist agreement"
+          partyLabels={{ firstParty: 'Label/Company', secondParty: 'Artist' }}
         />
       ),
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
@@ -217,18 +217,17 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
       validation: () => !!(formData.royaltyRate && formData.termLength)
     },
     {
-      id: 'parties',
-      title: 'Parties',
-      description: 'Contact information for all parties',
-      icon: Users,
+      id: 'works',
+      title: 'Schedule of Works',
+      description: 'Select musical works covered by this agreement',
+      icon: Music,
       component: (props: any) => (
-        <ContractParties
+        <ContractWorks
           {...props}
           contractType="artist agreement"
-          partyLabels={{ firstParty: 'Label/Company', secondParty: 'Artist' }}
         />
       ),
-      validation: () => true
+      validation: () => formData.selectedWorks && formData.selectedWorks.length > 0
     },
     {
       id: 'interested_parties',
@@ -241,19 +240,6 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
           contractType="artist agreement"
         />
       )
-    },
-    {
-      id: 'works',
-      title: 'Schedule of Works',
-      description: 'Select musical works covered by this agreement',
-      icon: Music,
-      component: (props: any) => (
-        <ContractWorks
-          {...props}
-          contractType="artist agreement"
-        />
-      ),
-      validation: () => formData.selectedWorks && formData.selectedWorks.length > 0
     },
     {
       id: 'review',

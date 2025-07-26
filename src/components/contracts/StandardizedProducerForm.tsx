@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ContractFormBase, ContractFormStep } from "./forms/ContractFormBase";
 import { ContractTypeSelection } from "./forms/shared/ContractTypeSelection";
-import { ContractBasicInfo } from "./forms/shared/ContractBasicInfo";
-import { ContractParties } from "./forms/shared/ContractParties";
+import { ContractBasicInfoAndParties } from "./forms/shared/ContractBasicInfoAndParties";
 import { ContractReview } from "./forms/shared/ContractReview";
 import { ContractWorks } from "./forms/shared/ContractWorks";
 import { ContractInterestedParties } from "./forms/shared/ContractInterestedParties";
@@ -198,6 +197,7 @@ export function StandardizedProducerForm({
     }
   };
 
+  // Form steps configuration (6-step workflow)
   const steps: ContractFormStep[] = [
     {
       id: "type",
@@ -215,14 +215,15 @@ export function StandardizedProducerForm({
       validation: () => !!formData.producerAgreementType
     },
     {
-      id: "basic",
-      title: "Basic Information",
-      description: "Agreement details and timeline",
+      id: "basic_and_parties",
+      title: "Basic Info & Parties",
+      description: "Agreement details, timeline, and party information",
       icon: FileText,
       component: (props: any) => (
-        <ContractBasicInfo
+        <ContractBasicInfoAndParties
           {...props}
           contractType="producer agreement"
+          partyLabels={{ firstParty: 'Artist/Label', secondParty: 'Producer' }}
         />
       ),
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
@@ -234,20 +235,6 @@ export function StandardizedProducerForm({
       icon: DollarSign,
       component: ProducerForm,
       validation: () => !!(formData.upfrontFee || formData.producerPoints)
-    },
-    {
-      id: "parties",
-      title: "Parties",
-      description: "Contact information for all parties",
-      icon: Users,
-      component: (props: any) => (
-        <ContractParties
-          {...props}
-          contractType="producer agreement"
-          partyLabels={{ firstParty: 'Artist/Label', secondParty: 'Producer' }}
-        />
-      ),
-      validation: () => true
     },
     {
       id: "works",
