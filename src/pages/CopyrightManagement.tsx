@@ -125,6 +125,27 @@ const CopyrightManagement = () => {
     }
   };
 
+  const handleBulkDelete = async (copyrights: any[]) => {
+    try {
+      // Delete copyrights one by one
+      for (const copyright of copyrights) {
+        await deleteCopyright(copyright.id);
+      }
+      
+      toast({
+        title: "Copyrights Deleted",
+        description: `Successfully deleted ${copyrights.length} copyright${copyrights.length > 1 ? 's' : ''}.`
+      });
+    } catch (error) {
+      console.error('Error deleting copyrights:', error);
+      toast({
+        title: "Deletion Error",
+        description: "Some copyrights could not be deleted. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleEditCancel = () => {
     setEditingCopyright(null);
     setIsEditDialogOpen(false);
@@ -187,6 +208,7 @@ const CopyrightManagement = () => {
               realtimeError={realtimeError}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onBulkDelete={handleBulkDelete}
             />
           </TabsContent>
 

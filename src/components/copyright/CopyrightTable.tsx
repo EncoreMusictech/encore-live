@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink, Edit, Download, Trash2 } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink, Edit, Download, Trash2, X } from 'lucide-react';
 import { Copyright, CopyrightWriter } from '@/hooks/useCopyright';
 import { AudioPlayer } from './AudioPlayer';
 
@@ -26,15 +27,48 @@ interface CopyrightTableProps {
   realtimeError?: string | null;
   onEdit?: (copyright: Copyright) => void;
   onDelete?: (copyright: Copyright) => void;
+  onBulkDelete?: (copyrights: Copyright[]) => void;
 }
 
 type SortDirection = 'asc' | 'desc';
 type SortField = 'work_title' | 'work_id' | 'created_at' | 'registration_status' | 'controlled_share';
 
-export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writers, loading, realtimeError, onEdit, onDelete }) => {
+export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writers, loading, realtimeError, onEdit, onDelete, onBulkDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('work_title');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedItems(new Set(filteredAndSortedCopyrights.map(c => c.id)));
+    } else {
+      setSelectedItems(new Set());
+    }
+  };
+
+  const handleSelectOne = (copyrightId: string, checked: boolean) => {
+    const newSelected = new Set(selectedItems);
+    if (checked) {
+      newSelected.add(copyrightId);
+    } else {
+      newSelected.delete(copyrightId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const handleBulkDelete = () => {
+    if (onBulkDelete && selectedItems.size > 0) {
+      const selectedCopyrights = copyrights.filter(c => selectedItems.has(c.id));
+      onBulkDelete(selectedCopyrights);
+      setSelectedItems(new Set()); // Clear selection after delete
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedItems(new Set());
+  };
 
   const calculateControlledShare = (copyrightWriters: CopyrightWriter[]) => {
     return copyrightWriters
@@ -293,6 +327,61 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
         </Button>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedItems.size > 0 && (
+        <Card className="border-orange-200 bg-orange-50/50">
+          <CardContent className="px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">
+                  {selectedItems.size} copyright{selectedItems.size > 1 ? 's' : ''} selected
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearSelection}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Clear Selection
+                </Button>
+                {onBulkDelete && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete Selected
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Multiple Copyrights</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete {selectedItems.size} copyright{selectedItems.size > 1 ? 's' : ''}? This action cannot be undone and will remove all associated writers, publishers, and recordings for these works.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>No, Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleBulkDelete}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Yes, Delete All Selected
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 justify-between">
@@ -318,6 +407,13 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={selectedItems.size > 0 && selectedItems.size === filteredAndSortedCopyrights.length}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all copyrights"
+                    />
+                  </TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('work_id')}
@@ -377,6 +473,13 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                   
                   return (
                     <TableRow key={copyright.id} className="hover:bg-muted/30">
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedItems.has(copyright.id)}
+                          onCheckedChange={(checked) => handleSelectOne(copyright.id, checked as boolean)}
+                          aria-label={`Select ${copyright.work_title}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-mono text-sm">
                         <Badge variant="outline" className="text-xs">
                           {copyright.work_id}
