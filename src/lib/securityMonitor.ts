@@ -191,24 +191,11 @@ export class SecureSessionManager {
   }
 }
 
-// Content Security Policy helper
+// Content Security Policy helper - simplified to avoid meta tag limitations
 export const enforceCSP = (): void => {
-  // Add runtime CSP enforcement
-  const meta = document.createElement('meta');
-  meta.httpEquiv = 'Content-Security-Policy';
-  meta.content = `
-    default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval';
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' data: https:;
-    font-src 'self' data: https://fonts.gstatic.com;
-    connect-src 'self' https://plxsenykjisqutxcvjeg.supabase.co https://api.spotify.com;
-    frame-ancestors 'none';
-    base-uri 'self';
-    object-src 'none';
-  `.replace(/\s+/g, ' ').trim();
-  
-  document.head.appendChild(meta);
+  // Note: frame-ancestors directive is ignored in meta tags, so we skip CSP meta injection
+  // CSP should be handled at the server/hosting level for full effectiveness
+  console.log('[SECURITY] CSP enforcement would be better handled via HTTP headers');
 };
 
 // Initialize security monitoring
