@@ -16,7 +16,7 @@ interface StepperProps {
 export function Stepper({ steps, orientation = 'horizontal', className }: StepperProps) {
   return (
     <div className={cn(
-      "flex items-center justify-center",
+      "flex items-start justify-center",
       orientation === 'horizontal' ? "flex-row" : "flex-col",
       className
     )}>
@@ -70,7 +70,7 @@ export function Stepper({ steps, orientation = 'horizontal', className }: Steppe
 
           {/* Connector Line */}
           {index !== steps.length - 1 && (
-            <div className="flex items-center">
+            <div className="flex items-start pt-10">
               <div
                 className={cn(
                   "h-0.5 w-16 mx-4 transition-colors duration-200",
