@@ -229,17 +229,9 @@ export function StandardizedProducerForm({
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
     },
     {
-      id: "terms",
-      title: "Producer Terms",
-      description: "Compensation and production details",
-      icon: DollarSign,
-      component: ProducerForm,
-      validation: () => !!(formData.upfrontFee || formData.producerPoints)
-    },
-    {
       id: "works",
       title: "Schedule of Works",
-      description: "Select musical works covered by this agreement",
+      description: "Select or add musical works covered by this agreement",
       icon: Music,
       component: (props: any) => (
         <ContractWorks
@@ -247,7 +239,15 @@ export function StandardizedProducerForm({
           contractType="producer agreement"
         />
       ),
-      validation: () => formData.selectedWorks && formData.selectedWorks.length > 0
+      validation: () => true // Optional - allow proceeding without works
+    },
+    {
+      id: "terms",
+      title: "Producer Terms",
+      description: "Compensation and production details",
+      icon: DollarSign,
+      component: ProducerForm,
+      validation: () => !!(formData.upfrontFee || formData.producerPoints)
     },
     {
       id: "interested_parties",
@@ -272,12 +272,11 @@ export function StandardizedProducerForm({
           contractType="producer agreement"
           customValidation={[
             { label: 'Producer agreement type selected', isValid: !!props.data.producerAgreementType, required: true },
-            { label: 'Producer compensation defined', isValid: !!(props.data.upfrontFee || props.data.producerPoints), required: true },
-            { label: 'Works selected', isValid: props.data.selectedWorks && props.data.selectedWorks.length > 0, required: true }
+            { label: 'Producer compensation defined', isValid: !!(props.data.upfrontFee || props.data.producerPoints), required: true }
           ]}
         />
       ),
-      validation: () => true // Custom validation in the review component
+      validation: () => true
     }
   ];
 

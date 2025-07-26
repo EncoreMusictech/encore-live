@@ -223,17 +223,9 @@ export function StandardizedDistributionForm({
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
     },
     {
-      id: "terms",
-      title: "Distribution Terms",
-      description: "Revenue sharing and distribution details",
-      icon: DollarSign,
-      component: DistributionForm,
-      validation: () => !!(formData.artistRevenueShare && formData.labelRevenueShare)
-    },
-    {
       id: "works",
       title: "Schedule of Works",
-      description: "Select musical works covered by this agreement",
+      description: "Select or add musical works covered by this agreement",
       icon: Music,
       component: (props: any) => (
         <ContractWorks
@@ -241,7 +233,15 @@ export function StandardizedDistributionForm({
           contractType="distribution agreement"
         />
       ),
-      validation: () => formData.selectedWorks && formData.selectedWorks.length > 0
+      validation: () => true // Optional - allow proceeding without works
+    },
+    {
+      id: "terms",
+      title: "Distribution Terms",
+      description: "Revenue sharing and distribution details",
+      icon: DollarSign,
+      component: DistributionForm,
+      validation: () => !!(formData.artistRevenueShare && formData.labelRevenueShare)
     },
     {
       id: "interested_parties",
@@ -266,12 +266,11 @@ export function StandardizedDistributionForm({
           contractType="distribution agreement"
           customValidation={[
             { label: 'Distribution agreement type selected', isValid: !!props.data.distributionAgreementType, required: true },
-            { label: 'Revenue splits defined', isValid: !!(props.data.artistRevenueShare && props.data.labelRevenueShare), required: true },
-            { label: 'Works selected', isValid: props.data.selectedWorks && props.data.selectedWorks.length > 0, required: true }
+            { label: 'Revenue splits defined', isValid: !!(props.data.artistRevenueShare && props.data.labelRevenueShare), required: true }
           ]}
         />
       ),
-      validation: () => true // Custom validation in the review component
+      validation: () => true
     }
   ];
 

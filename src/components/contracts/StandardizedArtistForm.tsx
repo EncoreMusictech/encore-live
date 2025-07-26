@@ -177,7 +177,7 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
     }
   };
 
-  // Form steps configuration (5-step workflow)
+  // Form steps configuration (6-step workflow)
   const steps: ContractFormStep[] = [
     {
       id: 'type',
@@ -207,6 +207,19 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
         />
       ),
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
+    },
+    {
+      id: 'works',
+      title: 'Schedule of Works',
+      description: 'Select or add musical works covered by this agreement',
+      icon: Music,
+      component: (props: any) => (
+        <ContractWorks
+          {...props}
+          contractType="artist agreement"
+        />
+      ),
+      validation: () => true // Optional - allow proceeding without works
     },
     {
       id: 'terms',

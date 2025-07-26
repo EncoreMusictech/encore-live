@@ -245,17 +245,9 @@ export function StandardizedSyncForm({
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
     },
     {
-      id: "terms",
-      title: "Sync Terms",
-      description: "Usage rights and compensation",
-      icon: DollarSign,
-      component: SyncForm,
-      validation: () => !!(formData.licenseFee && formData.productionTitle)
-    },
-    {
       id: "works",
       title: "Schedule of Works",
-      description: "Select musical works covered by this license",
+      description: "Select or add musical works covered by this license",
       icon: Music,
       component: (props: any) => (
         <ContractWorks
@@ -263,7 +255,15 @@ export function StandardizedSyncForm({
           contractType="sync license"
         />
       ),
-      validation: () => formData.selectedWorks && formData.selectedWorks.length > 0
+      validation: () => true // Optional - allow proceeding without works
+    },
+    {
+      id: "terms",
+      title: "Sync Terms",
+      description: "Usage rights and compensation",
+      icon: DollarSign,
+      component: SyncForm,
+      validation: () => !!(formData.licenseFee && formData.productionTitle)
     },
     {
       id: "interested_parties",
@@ -289,12 +289,11 @@ export function StandardizedSyncForm({
           customValidation={[
             { label: 'Sync license type selected', isValid: !!props.data.syncAgreementType, required: true },
             { label: 'License fee specified', isValid: !!props.data.licenseFee, required: true },
-            { label: 'Production details provided', isValid: !!(props.data.productionTitle && props.data.productionCompany), required: true },
-            { label: 'Works selected', isValid: props.data.selectedWorks && props.data.selectedWorks.length > 0, required: true }
+            { label: 'Production details provided', isValid: !!(props.data.productionTitle && props.data.productionCompany), required: true }
           ]}
         />
       ),
-      validation: () => true // Custom validation in the review component
+      validation: () => true
     }
   ];
 
