@@ -15,7 +15,7 @@ export const ArtistAgreementFormWorks: React.FC<ArtistAgreementFormWorksProps> =
   onChange
 }) => {
   const { toast } = useToast();
-  const { createContract } = useContracts();
+  const { createContract, contracts } = useContracts();
   const [contractId, setContractId] = useState<string | null>(null);
   const [isCreatingContract, setIsCreatingContract] = useState(false);
 
@@ -92,15 +92,24 @@ export const ArtistAgreementFormWorks: React.FC<ArtistAgreementFormWorksProps> =
     createArtistContract();
   }, [data, contractId, isCreatingContract, createContract, toast]);
 
-  // Update the selected works count for validation when works are added/removed
+  // Update the selected works from the actual contract data
   useEffect(() => {
-    // This will be automatically handled by the ScheduleWorksTable component
-    // We just need to update our validation state
     if (contractId) {
-      // For now, assume works are being added (this would be tracked by the ScheduleWorksTable)
-      onChange({ selectedWorks: [{ id: 'dummy' }] }); // Dummy work for validation
+      // Fetch the contract to get the actual schedule works
+      const contract = contracts.find(c => c.id === contractId);
+      if (contract && contract.contract_schedule_works) {
+        const works = contract.contract_schedule_works.map(work => ({
+          id: work.id,
+          title: work.song_title,
+          artist: work.artist_name,
+          album: work.album_title,
+          genre: 'Unknown', // We don't have genre in the schedule works
+          isrc: work.isrc
+        }));
+        onChange({ selectedWorks: works });
+      }
     }
-  }, [contractId, onChange]);
+  }, [contractId, contracts, onChange]);
 
   if (isCreatingContract) {
     return (
