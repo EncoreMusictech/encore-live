@@ -235,18 +235,37 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
     }
   }, [toast]);
 
-  // Debounce the metadata fetching when song title changes
+  // Debounce the metadata fetching when song title changes with defensive programming
   useEffect(() => {
     if (!formData.song_title || formData.song_title.length < 3) return;
     
     console.log('Setting up Spotify search timeout for:', formData.song_title);
     const timeoutId = setTimeout(() => {
-      console.log('Triggering Spotify search for:', formData.song_title);
-      fetchSpotifyMetadata(formData.song_title, formData.artist_name);
+      // Use local flag to prevent state updates after unmount
+      let isMounted = true;
+      
+      const performSpotifyFetch = async () => {
+        try {
+          console.log('Triggering Spotify search for:', formData.song_title);
+          if (isMounted) {
+            await fetchSpotifyMetadata(formData.song_title, formData.artist_name);
+          }
+        } catch (error) {
+          if (isMounted) {
+            console.error('Spotify fetch error in debounced effect:', error);
+          }
+        }
+      };
+      
+      performSpotifyFetch();
+      
+      return () => {
+        isMounted = false;
+      };
     }, 1000);
 
     return () => clearTimeout(timeoutId);
-   }, [formData.song_title]); // Remove fetchSpotifyMetadata from deps to prevent infinite loops
+   }, [formData.song_title, formData.artist_name]); // Controlled dependencies
 
    // Debounce metadata fetching when artist changes manually
    useEffect(() => {

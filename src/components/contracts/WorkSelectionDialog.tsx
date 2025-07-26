@@ -27,6 +27,9 @@ export function WorkSelectionDialog({ contractId, onSuccess, onCancel }: WorkSel
   const { copyrights, loading } = useCopyright();
   const { addScheduleWork } = useContracts();
   
+  // Prevent dialog from closing during component state changes
+  const [isDialogStable, setIsDialogStable] = useState(true);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWorks, setSelectedWorks] = useState<Set<string>>(new Set());
   const [workInheritance, setWorkInheritance] = useState<{[key: string]: {

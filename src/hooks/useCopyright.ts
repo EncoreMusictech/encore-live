@@ -264,7 +264,7 @@ export const useCopyright = () => {
     }
   };
 
-  // Set up real-time subscriptions
+  // Set up real-time subscriptions - run only once on mount
   useEffect(() => {
     fetchCopyrights();
 
@@ -334,7 +334,7 @@ export const useCopyright = () => {
       console.log('Cleaning up real-time copyright subscriptions...');
       supabase.removeChannel(copyrightChannel);
     };
-  }, [fetchCopyrights]);
+  }, []); // Remove fetchCopyrights dependency to prevent recreation of subscriptions
 
   return {
     copyrights: optimisticCopyrights, // Return optimistic data instead of raw data
