@@ -40,15 +40,15 @@ export function ContractTypeSelection({
   };
 
   return (
-    <div className="space-y-8">
-      <div className="text-center space-y-3">
-        <h3 className="text-2xl font-semibold tracking-tight">Choose Agreement Type</h3>
-        <p className="text-muted-foreground text-base max-w-2xl mx-auto">
-          Select the type of music industry agreement you want to create. Each type includes specific terms and clauses tailored for different business relationships.
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <h3 className="text-xl font-semibold">Choose Agreement Type</h3>
+        <p className="text-muted-foreground">
+          Select the type of agreement you want to create
         </p>
       </div>
 
-      <div className="grid gap-4 max-w-4xl mx-auto">
+      <div className="grid gap-4">
         {contractTypes.map((type) => {
           const isSelected = data[selectedField] === type.id;
           const IconComponent = type.icon;
@@ -56,71 +56,48 @@ export function ContractTypeSelection({
           return (
             <Card
               key={type.id}
-              className={`
-                cursor-pointer transition-all duration-300 group
-                ${isSelected
-                  ? "border-primary bg-gradient-to-r from-primary/5 to-primary/10 shadow-lg ring-2 ring-primary/20"
-                  : "border-border hover:border-primary/50 hover:shadow-md hover:bg-muted/30"
-                }
-              `}
+              className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+                isSelected
+                  ? "border-primary bg-primary/5 shadow-md"
+                  : "border-border hover:border-primary/50"
+              }`}
               onClick={() => handleTypeSelect(type.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleTypeSelect(type.id);
-                }
-              }}
-              aria-pressed={isSelected}
-              aria-label={`Select ${type.title}`}
             >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className={`
-                      p-3 rounded-xl transition-all duration-200
-                      ${isSelected 
-                        ? 'bg-primary text-primary-foreground shadow-lg' 
-                        : 'bg-muted group-hover:bg-primary/10 group-hover:text-primary'
-                      }
-                    `}>
-                      <IconComponent className="h-6 w-6" />
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                      <IconComponent className="h-5 w-5" />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-xl">{type.title}</CardTitle>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg">{type.title}</CardTitle>
                         {type.popular && (
-                          <Badge variant="default" className="text-xs bg-gradient-primary text-primary-foreground">
-                            Most Popular
+                          <Badge variant="secondary" className="text-xs">
+                            Popular
                           </Badge>
                         )}
                       </div>
-                      <CardDescription className="text-sm leading-relaxed">
+                      <CardDescription className="text-sm">
                         {type.description}
                       </CardDescription>
                     </div>
                   </div>
                   {isSelected && (
-                    <div className="bg-primary text-primary-foreground rounded-full p-2 shadow-lg">
-                      <Check className="h-5 w-5" />
+                    <div className="bg-primary text-primary-foreground rounded-full p-1">
+                      <Check className="h-4 w-4" />
                     </div>
                   )}
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="space-y-3">
-                  <div className="text-sm font-semibold text-foreground">Key Features:</div>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-muted-foreground">Key Features:</div>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-1 text-sm">
                     {type.features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <div className={`
-                          h-2 w-2 rounded-full flex-shrink-0 mt-1.5 transition-colors
-                          ${isSelected ? 'bg-primary' : 'bg-muted-foreground group-hover:bg-primary'}
-                        `} />
-                        <span className="text-muted-foreground group-hover:text-foreground transition-colors">
-                          {feature}
-                        </span>
+                      <li key={index} className="flex items-center gap-2">
+                        <div className="h-1.5 w-1.5 bg-primary rounded-full flex-shrink-0" />
+                        {feature}
                       </li>
                     ))}
                   </ul>
@@ -129,12 +106,6 @@ export function ContractTypeSelection({
             </Card>
           );
         })}
-      </div>
-      
-      <div className="text-center">
-        <p className="text-xs text-muted-foreground">
-          Need help choosing? Each agreement type includes industry-standard terms and can be customized to your specific needs.
-        </p>
       </div>
     </div>
   );

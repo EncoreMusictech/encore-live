@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter, ArrowLeft, TrendingUp, Clock, AlertTriangle, Briefcase, Music, Headphones } from "lucide-react";
+import { FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter, ArrowLeft, TrendingUp, Clock, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { ContractList } from "@/components/contracts/ContractList";
@@ -25,14 +25,6 @@ import { DemoContracts } from "@/components/contracts/DemoContracts";
 import { DemoPublishingContract } from "@/data/demo-publishing-contracts";
 import { DemoArtistContract } from "@/data/demo-artist-contracts";
 import { useContracts } from "@/hooks/useContracts";
-import { 
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 
 const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
@@ -155,42 +147,30 @@ const ContractManagement = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="container mx-auto px-4 py-4 sm:py-6 lg:py-8">
-        {/* Breadcrumb Navigation */}
-        <Breadcrumb className="mb-4">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/demo-modules" className="flex items-center gap-1">
-                  <Briefcase className="h-3 w-3" />
-                  Demo Modules
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage className="flex items-center gap-1">
-                <FileText className="h-3 w-3" />
-                Contract Management
-              </BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
+      <div className="container mx-auto px-4 py-8">
+        {/* Back to Demo Modules */}
+        <div className="flex items-center gap-2 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            asChild
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/demo-modules">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Demo Modules
+            </Link>
+          </Button>
+        </div>
         {/* Demo Limit Banner */}
         <DemoLimitBanner module="contractManagement" className="mb-6" />
 
         {/* Header Section */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-primary rounded-xl p-2">
-                <FileText className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Contract Management</h1>
-            </div>
-            <p className="text-muted-foreground text-sm sm:text-base max-w-2xl">
-              Create, upload, and manage music industry agreements with intelligent term extraction and automated royalty processing.
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Contract Management</h1>
+            <p className="text-muted-foreground">
+              Simulate, upload, generate, and manage music industry agreements with automated royalty extraction.
             </p>
           </div>
           
@@ -207,8 +187,7 @@ const ContractManagement = () => {
           }}>
             <DialogTrigger asChild>
               <Button 
-                size="lg"
-                className="gap-2 bg-gradient-primary hover:bg-gradient-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200" 
+                className="gap-2" 
                 disabled={!canAccess('contractManagement')}
                 onClick={() => console.log('New Contract button clicked')}
               >
@@ -480,77 +459,32 @@ const ContractManagement = () => {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          {loading ? (
-            // Loading skeleton for stats
-            Array.from({ length: 4 }).map((_, index) => (
-              <Card key={index} className="border-muted/50">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {stats.map((stat, index) => {
+            const IconComponent = stat.icon;
+            return (
+              <Card key={index}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 space-y-3">
-                      <div className="h-4 bg-muted rounded animate-pulse" />
-                      <div className="h-8 bg-muted rounded w-16 animate-pulse" />
-                      <div className="h-3 bg-muted rounded w-20 animate-pulse" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {stat.title}
+                      </p>
+                      <p className="text-2xl font-bold">{stat.value}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {stat.change}
+                      </p>
                     </div>
                     <div className="ml-4">
-                      <div className="bg-muted rounded-lg p-2 w-9 h-9 animate-pulse" />
+                      <div className="bg-primary/10 rounded-lg p-2">
+                        <IconComponent className="h-5 w-5 text-primary" />
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            ))
-          ) : (
-            stats.map((stat, index) => {
-              const IconComponent = stat.icon;
-              const isWarning = stat.title === "Expiring Soon" && parseInt(stat.value) > 0;
-              const isSuccess = stat.title === "Active Contracts" && parseInt(stat.value) > 0;
-              
-              return (
-                <Card 
-                  key={index} 
-                  className={`
-                    transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer
-                    ${isWarning ? 'border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20' : ''}
-                    ${isSuccess ? 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20' : ''}
-                  `}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-muted-foreground mb-2">
-                          {stat.title}
-                        </p>
-                        <p className="text-2xl sm:text-3xl font-bold tracking-tight">
-                          {stat.value}
-                        </p>
-                        <p className={`text-xs mt-2 ${
-                          isWarning ? 'text-orange-600 dark:text-orange-400' : 
-                          isSuccess ? 'text-green-600 dark:text-green-400' : 
-                          'text-muted-foreground'
-                        }`}>
-                          {stat.change}
-                        </p>
-                      </div>
-                      <div className="ml-4">
-                        <div className={`
-                          rounded-xl p-3 transition-colors
-                          ${isWarning ? 'bg-orange-100 dark:bg-orange-900/30' : 
-                            isSuccess ? 'bg-green-100 dark:bg-green-900/30' : 
-                            'bg-primary/10'}
-                        `}>
-                          <IconComponent className={`h-6 w-6 ${
-                            isWarning ? 'text-orange-600 dark:text-orange-400' : 
-                            isSuccess ? 'text-green-600 dark:text-green-400' : 
-                            'text-primary'
-                          }`} />
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
+            );
+          })}
         </div>
 
         {/* Main Content Tabs */}
