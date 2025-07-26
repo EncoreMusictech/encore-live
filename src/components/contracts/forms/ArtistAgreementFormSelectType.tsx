@@ -16,12 +16,10 @@ const agreementTypes = [
     description: "Standard recording deal for independent artists",
     features: [
       "Recording Commitment",
-      "Royalty Rates",
+      "Royalty Rates", 
       "Creative Control",
       "Revenue Splits"
-    ],
-    icon: Music,
-    recommended: false
+    ]
   },
   {
     id: "360",
@@ -34,7 +32,6 @@ const agreementTypes = [
       "Merchandising",
       "Brand Partnerships"
     ],
-    icon: Globe,
     recommended: true
   },
   {
@@ -46,9 +43,7 @@ const agreementTypes = [
       "Advance Payment",
       "Marketing Support",
       "Recoupment Terms"
-    ],
-    icon: Truck,
-    recommended: false
+    ]
   }
 ];
 
@@ -62,68 +57,56 @@ export const ArtistAgreementFormSelectType: React.FC<ArtistAgreementFormSelectTy
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
+      <div>
         <h3 className="text-2xl font-bold mb-2">Select Agreement Type</h3>
         <p className="text-muted-foreground">
           Demo data is pre-loaded. The recommended type is highlighted, but you can select any type.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {agreementTypes.map((type) => {
-          const Icon = type.icon;
           const isSelected = data.agreementType === type.id;
+          const isRecommended = type.recommended;
           
           return (
             <Card
               key={type.id}
-              className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
+              className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-2 ${
                 isSelected 
-                  ? "ring-2 ring-primary bg-primary/5" 
-                  : type.recommended 
-                    ? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                    : "hover:bg-muted/50"
+                  ? "border-primary bg-primary/5" 
+                  : isRecommended
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+                    : "border-border hover:border-muted-foreground/50"
               }`}
               onClick={() => handleTypeSelect(type.id)}
             >
-              <CardHeader>
+              <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${
-                      isSelected 
-                        ? "bg-primary text-primary-foreground"
-                        : type.recommended
-                          ? "bg-blue-500 text-white"
-                          : "bg-muted"
-                    }`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">{type.title}</CardTitle>
-                      {type.recommended && (
-                        <Badge variant="secondary" className="mt-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CardTitle className="text-xl">{type.title}</CardTitle>
+                      {isRecommended && (
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100">
                           <Star className="w-3 h-3 mr-1" />
                           Demo
                         </Badge>
                       )}
                     </div>
+                    <CardDescription className="text-muted-foreground">
+                      {type.description}
+                    </CardDescription>
                   </div>
-                  {isSelected && (
-                    <div className="p-1 bg-primary rounded-full">
-                      <Check className="w-4 h-4 text-primary-foreground" />
-                    </div>
-                  )}
                 </div>
-                <CardDescription className="mt-2">
-                  {type.description}
-                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
+              <CardContent className="pt-0">
+                <div className="space-y-3">
                   {type.features.map((feature, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                      <span>{feature}</span>
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-sm font-medium">{feature}</span>
                     </div>
                   ))}
                 </div>
@@ -134,7 +117,7 @@ export const ArtistAgreementFormSelectType: React.FC<ArtistAgreementFormSelectTy
       </div>
 
       {data.agreementType && (
-        <Card className="bg-green-50 dark:bg-green-950/20">
+        <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <Check className="w-4 h-4 text-green-600" />
@@ -147,7 +130,7 @@ export const ArtistAgreementFormSelectType: React.FC<ArtistAgreementFormSelectTy
       )}
 
       {!data.agreementType && (
-        <Card className="bg-blue-50 dark:bg-blue-950/20">
+        <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <Crown className="w-4 h-4 text-blue-600" />
