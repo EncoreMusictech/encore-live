@@ -210,7 +210,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
           setSpotifyAlternatives([]);
         }
         
-        // Auto-populate form fields
+        // Auto-populate form fields (but avoid updating artist_name to prevent recursive fetching)
         setFormData(prev => ({
           ...prev,
           album_title: metadata.albumTitle || prev.album_title,
@@ -218,7 +218,8 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
           mp3_link: metadata.previewUrl || prev.mp3_link,
           duration_seconds: metadata.duration || prev.duration_seconds,
           creation_date: metadata.releaseDate || prev.creation_date,
-          artist_name: metadata.artist || prev.artist_name,
+          // Only update artist_name if it's empty to avoid recursive Spotify calls
+          artist_name: !prev.artist_name ? (metadata.artist || prev.artist_name) : prev.artist_name,
           isrc: metadata.isrc || prev.isrc
         }));
 
