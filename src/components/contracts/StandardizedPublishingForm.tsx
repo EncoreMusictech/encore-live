@@ -9,7 +9,8 @@ import { ContractInterestedParties } from './forms/shared/ContractInterestedPart
 import { PublishingForm } from './forms/PublishingForm';
 import { useContracts } from '@/hooks/useContracts';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Users, Music, DollarSign, UserCheck, Eye, BookOpen } from 'lucide-react';
+import { FileText, Users, Music, DollarSign, UserCheck, Eye, BookOpen, ListMusic } from 'lucide-react';
+import { ContractWorks } from './forms/shared/ContractWorks';
 
 // Publishing agreement types
 const publishingTypes = [
@@ -246,6 +247,18 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
       icon: DollarSign,
       component: PublishingForm,
       validation: () => !!(formData.publisherShare && formData.writerShare)
+    },
+    {
+      id: 'works',
+      title: 'Schedule of Works',
+      description: 'Select and manage musical works for this agreement',
+      icon: ListMusic,
+      component: (props: any) => (
+        <ContractWorks
+          {...props}
+          contractType="publishing"
+        />
+      )
     },
     {
       id: 'interested_parties',
