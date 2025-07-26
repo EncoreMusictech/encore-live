@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Music, Globe, Truck, Crown, Star } from "lucide-react";
+import { Check, Music, Globe, Truck, Crown } from "lucide-react";
 import { ArtistAgreementFormData } from "../ArtistAgreementForm";
 
 interface ArtistAgreementFormSelectTypeProps {
@@ -31,8 +31,7 @@ const agreementTypes = [
       "Touring Revenue",
       "Merchandising",
       "Brand Partnerships"
-    ],
-    recommended: true
+    ]
   },
   {
     id: "distribution",
@@ -60,14 +59,13 @@ export const ArtistAgreementFormSelectType: React.FC<ArtistAgreementFormSelectTy
       <div>
         <h3 className="text-2xl font-bold mb-2">Select Agreement Type</h3>
         <p className="text-muted-foreground">
-          Demo data is pre-loaded. The recommended type is highlighted, but you can select any type.
+          Choose the type of artist agreement that best fits your needs.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {agreementTypes.map((type) => {
           const isSelected = data.agreementType === type.id;
-          const isRecommended = type.recommended;
           
           return (
             <Card
@@ -75,25 +73,15 @@ export const ArtistAgreementFormSelectType: React.FC<ArtistAgreementFormSelectTy
               className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-2 ${
                 isSelected 
                   ? "border-primary bg-primary/5" 
-                  : isRecommended
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                    : "border-border hover:border-muted-foreground/50"
+                  : "border-border hover:border-muted-foreground/50"
               }`}
               onClick={() => handleTypeSelect(type.id)}
             >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CardTitle className="text-xl">{type.title}</CardTitle>
-                      {isRecommended && (
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100">
-                          <Star className="w-3 h-3 mr-1" />
-                          Demo
-                        </Badge>
-                      )}
-                    </div>
-                    <CardDescription className="text-muted-foreground">
+                    <CardTitle className="text-xl">{type.title}</CardTitle>
+                    <CardDescription className="text-muted-foreground mt-2">
                       {type.description}
                     </CardDescription>
                   </div>
