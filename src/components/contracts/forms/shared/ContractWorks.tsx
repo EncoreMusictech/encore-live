@@ -30,31 +30,9 @@ export const ContractWorks: React.FC<ContractWorksProps> = ({
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardDescription>
-            Works linked to this contract inherit royalty and party metadata
-          </CardDescription>
-          {data.contractId && (
-            <Button 
-              onClick={handleAddWork}
-              className="shrink-0"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Work
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {data.contractId ? (
-            <>
-              <ScheduleWorksTable contractId={data.contractId} />
-              
-              {(!data.selectedWorks || data.selectedWorks.length === 0) && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No works in schedule yet. Click "Add Work" to link works to this contract.
-                </div>
-              )}
-            </>
+            <ScheduleWorksTable contractId={data.contractId} />
           ) : (
             <Alert>
               <AlertTriangle className="h-4 w-4" />

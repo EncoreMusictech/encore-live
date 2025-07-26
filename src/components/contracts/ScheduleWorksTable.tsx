@@ -44,8 +44,10 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            Schedule of Works
+          <div className="flex items-center justify-between">
+            <CardDescription>
+              Works linked to this contract inherit royalty and party metadata
+            </CardDescription>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2">
@@ -68,10 +70,7 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
                 />
               </DialogContent>
             </Dialog>
-          </CardTitle>
-          <CardDescription>
-            Works linked to this contract inherit royalty and party metadata
-          </CardDescription>
+          </div>
         </CardHeader>
         
         <CardContent>
