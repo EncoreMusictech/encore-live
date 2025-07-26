@@ -21,6 +21,18 @@ export const ContractWorks: React.FC<ContractWorksProps> = ({
   const [showWorkSelection, setShowWorkSelection] = useState(false);
   const { copyrights, loading } = useCopyright();
   
+  // Stable references to prevent dialog from closing during Spotify fetches
+  const stableCopyrights = React.useRef(copyrights);
+  const stableLoading = React.useRef(loading);
+  
+  // Only update refs when data meaningfully changes
+  React.useEffect(() => {
+    if (copyrights.length !== stableCopyrights.current.length || loading !== stableLoading.current) {
+      stableCopyrights.current = copyrights;
+      stableLoading.current = loading;
+    }
+  }, [copyrights.length, loading]);
+  
   const handleAddWork = () => {
     if (!data.contractId) {
       // If no contractId, show a message that works can be added after saving
@@ -49,8 +61,8 @@ export const ContractWorks: React.FC<ContractWorksProps> = ({
       {showWorkSelection && (
         <WorkSelectionDialog
           contractId={data.contractId}
-          copyrights={copyrights}
-          loading={loading}
+          copyrights={stableCopyrights.current}
+          loading={stableLoading.current}
           onSuccess={() => {
             setShowWorkSelection(false);
             // Optionally trigger a refresh of the works table
