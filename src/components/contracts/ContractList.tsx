@@ -4,12 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { FileText, MoreHorizontal, Edit, Eye, Download, Trash2, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { FileText, MoreHorizontal, Edit, Eye, Download, Trash2, Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ContractViewDialog } from "./ContractViewDialog";
 import { usePDFGeneration } from "@/hooks/usePDFGeneration";
+import { useBulkOperations } from "@/hooks/useBulkOperations";
 
 interface Contract {
   id: string;
@@ -35,8 +38,18 @@ export function ContractList({ onEdit }: ContractListProps) {
   const [viewContract, setViewContract] = useState<Contract | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [downloadingContractId, setDownloadingContractId] = useState<string | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { generatePDF, downloadPDF, isGenerating } = usePDFGeneration();
+  
+  const {
+    operations,
+    addOperations,
+    processOperations,
+    clearOperations,
+    statistics,
+    isProcessing
+  } = useBulkOperations<Contract>();
 
   useEffect(() => {
     fetchContracts();
@@ -172,6 +185,80 @@ export function ContractList({ onEdit }: ContractListProps) {
     }
   };
 
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedItems(new Set(contracts.map(contract => contract.id)));
+    } else {
+      setSelectedItems(new Set());
+    }
+  };
+
+  const handleSelectItem = (contractId: string, checked: boolean) => {
+    const newSelection = new Set(selectedItems);
+    if (checked) {
+      newSelection.add(contractId);
+    } else {
+      newSelection.delete(contractId);
+    }
+    setSelectedItems(newSelection);
+  };
+
+  const clearSelection = () => {
+    setSelectedItems(new Set());
+  };
+
+  // Bulk delete functionality
+  const handleBulkDelete = async () => {
+    const selectedContracts = contracts.filter(contract => selectedItems.has(contract.id));
+    
+    // Clear current operations and add delete operations
+    clearOperations();
+    addOperations(
+      selectedContracts.map(contract => ({
+        type: 'delete' as const,
+        data: contract
+      }))
+    );
+
+    // Process deletions
+    await processOperations(async (operations) => {
+      const results = [];
+      
+      for (const operation of operations) {
+        try {
+          const { error } = await supabase
+            .from('contracts')
+            .delete()
+            .eq('id', operation.data.id);
+
+          if (error) throw error;
+          
+          results.push({ success: true, id: operation.data.id });
+        } catch (error) {
+          console.error(`Failed to delete contract ${operation.data.id}:`, error);
+          results.push({ success: false, id: operation.data.id, error });
+        }
+      }
+      
+      return results;
+    });
+
+    // Show success message and refresh
+    const deletedCount = statistics.completed;
+    const failedCount = statistics.failed;
+    
+    if (deletedCount > 0) {
+      toast({
+        title: "Bulk Delete Complete",
+        description: `Successfully deleted ${deletedCount} contract(s)${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
+      });
+      fetchContracts();
+    }
+    
+    clearSelection();
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -204,9 +291,72 @@ export function ContractList({ onEdit }: ContractListProps) {
         <CardTitle>Your Contracts</CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Bulk Actions Bar */}
+        {selectedItems.size > 0 && (
+          <Card className="border-orange-200 bg-orange-50/50 mb-4">
+            <CardContent className="px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">
+                    {selectedItems.size} contract{selectedItems.size > 1 ? 's' : ''} selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearSelection}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Clear Selection
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4 mr-1" />
+                        )}
+                        Delete Selected
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Contracts</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete {selectedItems.size} contract{selectedItems.size > 1 ? 's' : ''}? 
+                          This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkDelete}>
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[50px]">
+                <Checkbox
+                  checked={selectedItems.size === contracts.length && contracts.length > 0}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all contracts"
+                />
+              </TableHead>
               <TableHead>Contract</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Counterparty</TableHead>
@@ -220,6 +370,13 @@ export function ContractList({ onEdit }: ContractListProps) {
           <TableBody>
             {contracts.map((contract) => (
               <TableRow key={contract.id}>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedItems.has(contract.id)}
+                    onCheckedChange={(checked) => handleSelectItem(contract.id, checked as boolean)}
+                    aria-label={`Select ${contract.title}`}
+                  />
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {getTypeIcon(contract.contract_type)}
