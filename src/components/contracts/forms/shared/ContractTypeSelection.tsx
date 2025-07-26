@@ -65,19 +65,12 @@ export function ContractTypeSelection({
             >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="space-y-2 flex-1">
                       <CardTitle className="text-xl text-white">{type.title}</CardTitle>
-                      {type.demoId && (
-                        <Badge variant="outline" className="text-xs border-purple-400 text-purple-300">
-                          ✨ Demo
-                        </Badge>
-                      )}
+                      <CardDescription className="text-gray-400 text-base">
+                        {type.description}
+                      </CardDescription>
                     </div>
-                    <CardDescription className="text-gray-400 text-base">
-                      {type.description}
-                    </CardDescription>
-                  </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
