@@ -152,9 +152,9 @@ export function ContractFormBase({
   const CurrentStepComponent = currentStepData.component;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b bg-background">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onBack || (() => window.history.back())}>
             <ArrowLeft className="h-4 w-4" />
@@ -170,71 +170,64 @@ export function ContractFormBase({
       </div>
 
       {/* Progress Card */}
-      <div className="p-6 border-b bg-background">
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">
-                  Step {currentStep + 1} of {steps.length}: {currentStepData.title}
-                </CardTitle>
-                <CardDescription>{currentStepData.description}</CardDescription>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold">{Math.round(progress)}%</div>
-                <div className="text-sm text-muted-foreground">Complete</div>
-              </div>
-            </div>
-            <Progress value={progress} className="w-full" />
-          </CardHeader>
-          <CardContent className="pt-0">
-            <Stepper steps={stepperSteps} orientation="horizontal" />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
-          {/* Validation Errors */}
-          {validationErrors.length > 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <div className="space-y-1">
-                  <div className="font-medium">Please address the following issues:</div>
-                  <ul className="list-disc list-inside space-y-1">
-                    {validationErrors.map((error, index) => (
-                      <li key={index} className="text-sm">{error}</li>
-                    ))}
-                  </ul>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Current Step Content */}
-          <Card className="flex-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <currentStepData.icon className="h-5 w-5" />
-                {currentStepData.title}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">
+                Step {currentStep + 1} of {steps.length}: {currentStepData.title}
               </CardTitle>
               <CardDescription>{currentStepData.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CurrentStepComponent
-                data={formData}
-                onChange={onFormDataChange}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold">{Math.round(progress)}%</div>
+              <div className="text-sm text-muted-foreground">Complete</div>
+            </div>
+          </div>
+          <Progress value={progress} className="w-full" />
+        </CardHeader>
+        <CardContent>
+          <Stepper steps={stepperSteps} orientation="horizontal" />
+        </CardContent>
+      </Card>
 
-      {/* Fixed Navigation Footer */}
-      <div className="border-t bg-background p-6">
-        <div className="flex items-center justify-between">
+      {/* Validation Errors */}
+      {validationErrors.length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-1">
+              <div className="font-medium">Please address the following issues:</div>
+              <ul className="list-disc list-inside space-y-1">
+                {validationErrors.map((error, index) => (
+                  <li key={index} className="text-sm">{error}</li>
+                ))}
+              </ul>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Current Step Content */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <currentStepData.icon className="h-5 w-5" />
+            {currentStepData.title}
+          </CardTitle>
+          <CardDescription>{currentStepData.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CurrentStepComponent
+            data={formData}
+            onChange={onFormDataChange}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Navigation */}
+      <Card>
+        <CardContent className="flex items-center justify-between pt-6">
           <Button
             variant="outline"
             onClick={handlePrevious}
@@ -280,8 +273,8 @@ export function ContractFormBase({
               </Button>
             )}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
