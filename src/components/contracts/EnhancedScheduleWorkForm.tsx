@@ -210,7 +210,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
           setSpotifyAlternatives([]);
         }
         
-        // Auto-populate form fields (but avoid updating artist_name to prevent recursive fetching)
+        // Auto-populate form fields
         setFormData(prev => ({
           ...prev,
           album_title: metadata.albumTitle || prev.album_title,
@@ -218,8 +218,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
           mp3_link: metadata.previewUrl || prev.mp3_link,
           duration_seconds: metadata.duration || prev.duration_seconds,
           creation_date: metadata.releaseDate || prev.creation_date,
-          // Only update artist_name if it's empty to avoid recursive Spotify calls
-          artist_name: !prev.artist_name ? (metadata.artist || prev.artist_name) : prev.artist_name,
+          artist_name: metadata.artist || prev.artist_name,
           isrc: metadata.isrc || prev.isrc
         }));
 
@@ -658,10 +657,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                     placeholder="Add alternative title"
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAka())}
                   />
-                  <Button type="button" variant="outline" onClick={(e) => {
-                    e.preventDefault();
-                    addAka();
-                  }}>
+                  <Button type="button" variant="outline" onClick={addAka}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -672,10 +668,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                         {aka}
                         <X 
                           className="h-3 w-3 cursor-pointer" 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            removeAka(aka);
-                          }}
+                          onClick={() => removeAka(aka)}
                         />
                       </Badge>
                     ))}
@@ -719,10 +712,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium">Writers</h4>
-                  <Button type="button" variant="outline" size="sm" onClick={(e) => {
-                    e.preventDefault();
-                    addWriter();
-                  }}>
+                  <Button type="button" variant="outline" size="sm" onClick={addWriter}>
                     <Plus className="h-4 w-4 mr-1" />
                     Add Writer
                   </Button>
@@ -795,10 +785,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            removeWriter(writer.id);
-                          }}
+                          onClick={() => removeWriter(writer.id)}
                           className="text-red-600 hover:text-red-700"
                         >
                           <X className="h-4 w-4" />
@@ -819,10 +806,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium">Publishers</h4>
-                  <Button type="button" variant="outline" size="sm" onClick={(e) => {
-                    e.preventDefault();
-                    addPublisher();
-                  }}>
+                  <Button type="button" variant="outline" size="sm" onClick={addPublisher}>
                     <Plus className="h-4 w-4 mr-1" />
                     Add Publisher
                   </Button>
@@ -865,10 +849,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            removePublisher(publisher.id);
-                          }}
+                          onClick={() => removePublisher(publisher.id)}
                           className="text-red-600 hover:text-red-700"
                         >
                           <X className="h-4 w-4" />
@@ -955,10 +936,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3">
-        <Button type="button" variant="outline" onClick={(e) => {
-          e.preventDefault();
-          onCancel();
-        }}>
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
         <Button 
