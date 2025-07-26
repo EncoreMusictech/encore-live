@@ -114,7 +114,17 @@ const defaultFormData = {
   status: 'draft'
 };
 
-export function StandardizedSyncForm() {
+interface StandardizedSyncFormProps {
+  onCancel?: () => void;
+  onSuccess?: () => void;
+  demoData?: any;
+}
+
+export function StandardizedSyncForm({ 
+  onCancel, 
+  onSuccess, 
+  demoData 
+}: StandardizedSyncFormProps = {}) {
   const [formData, setFormData] = useState(defaultFormData);
   const { createContract } = useContracts();
   const { toast } = useToast();
@@ -353,7 +363,11 @@ export function StandardizedSyncForm() {
         description: "Your sync license has been submitted for review.",
       });
 
-      navigate('/contract-management');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/contract-management');
+      }
     } catch (error) {
       console.error('Error submitting agreement:', error);
       toast({

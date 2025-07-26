@@ -101,7 +101,17 @@ const defaultFormData = {
   status: 'draft'
 };
 
-export function StandardizedProducerForm() {
+interface StandardizedProducerFormProps {
+  onCancel?: () => void;
+  onSuccess?: () => void;
+  demoData?: any;
+}
+
+export function StandardizedProducerForm({ 
+  onCancel, 
+  onSuccess, 
+  demoData 
+}: StandardizedProducerFormProps = {}) {
   const [formData, setFormData] = useState(defaultFormData);
   const { createContract } = useContracts();
   const { toast } = useToast();
@@ -336,7 +346,11 @@ export function StandardizedProducerForm() {
         description: "Your producer agreement has been submitted for review.",
       });
 
-      navigate('/contract-management');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/contract-management');
+      }
     } catch (error) {
       console.error('Error submitting agreement:', error);
       toast({

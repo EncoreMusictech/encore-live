@@ -113,7 +113,17 @@ const defaultFormData = {
   status: 'draft'
 };
 
-export function StandardizedDistributionForm() {
+interface StandardizedDistributionFormProps {
+  onCancel?: () => void;
+  onSuccess?: () => void;
+  demoData?: any;
+}
+
+export function StandardizedDistributionForm({ 
+  onCancel, 
+  onSuccess, 
+  demoData 
+}: StandardizedDistributionFormProps = {}) {
   const [formData, setFormData] = useState(defaultFormData);
   const { createContract } = useContracts();
   const { toast } = useToast();
@@ -330,7 +340,11 @@ export function StandardizedDistributionForm() {
         description: "Your distribution agreement has been submitted for review.",
       });
 
-      navigate('/contract-management');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/contract-management');
+      }
     } catch (error) {
       console.error('Error submitting agreement:', error);
       toast({

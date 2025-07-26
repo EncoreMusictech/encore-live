@@ -95,7 +95,17 @@ const defaultFormData = {
   status: 'draft'
 };
 
-export const StandardizedArtistForm: React.FC = () => {
+interface StandardizedArtistFormProps {
+  onCancel?: () => void;
+  onSuccess?: () => void;
+  demoData?: any;
+}
+
+export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({ 
+  onCancel, 
+  onSuccess, 
+  demoData 
+}) => {
   const [formData, setFormData] = useState(defaultFormData);
   const { createContract } = useContracts();
   const { toast } = useToast();
@@ -321,7 +331,11 @@ export const StandardizedArtistForm: React.FC = () => {
         description: "Your artist agreement has been submitted for review.",
       });
 
-      navigate('/contract-management');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/contract-management');
+      }
     } catch (error) {
       console.error('Error submitting agreement:', error);
       toast({

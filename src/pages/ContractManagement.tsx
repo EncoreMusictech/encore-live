@@ -12,9 +12,11 @@ import { FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter, Ar
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { ContractList } from "@/components/contracts/ContractList";
-import { EnhancedContractForm } from "@/components/contracts/EnhancedContractForm";
-import { OrganizedContractForm } from "@/components/contracts/OrganizedContractForm";
-import { PublishingAgreementForm } from "@/components/contracts/PublishingAgreementForm";
+import { StandardizedPublishingForm } from "@/components/contracts/StandardizedPublishingForm";
+import { StandardizedArtistForm } from "@/components/contracts/StandardizedArtistForm";
+import { StandardizedProducerForm } from "@/components/contracts/StandardizedProducerForm";
+import { StandardizedSyncForm } from "@/components/contracts/StandardizedSyncForm";
+import { StandardizedDistributionForm } from "@/components/contracts/StandardizedDistributionForm";
 import { EditContractForm } from "@/components/contracts/EditContractForm";
 import { TemplateLibrary } from "@/components/contracts/TemplateLibrary";
 import { DocuSignImport } from "@/components/contracts/DocuSignImport";
@@ -22,8 +24,6 @@ import { ContractUpload } from "@/components/contracts/ContractUpload";
 import { DemoContracts } from "@/components/contracts/DemoContracts";
 import { DemoPublishingContract } from "@/data/demo-publishing-contracts";
 import { DemoArtistContract } from "@/data/demo-artist-contracts";
-import { CopyrightWritersDebug } from "@/components/debug/CopyrightWritersDebug";
-import { ArtistAgreementForm } from "@/components/contracts/ArtistAgreementForm";
 import { useContracts } from "@/hooks/useContracts";
 
 const ContractManagement = () => {
@@ -393,47 +393,40 @@ const ContractManagement = () => {
                 ) : null
               ) : (
                  // Step 3: Contract form based on type
-                 selectedContractType === "publishing" ? (
-                   <PublishingAgreementForm 
-                      onCancel={() => {
-                        setSelectedContractType(null);
-                        setCreationMethod(null);
-                        setSelectedDemoData(null);
-                        setShowContractUpload(false);
-                        setShowDocuSignImport(false);
-                      }}
-                      onSuccess={() => {
-                        setIsCreateDialogOpen(false);
-                        setSelectedContractType(null);
-                        setCreationMethod(null);
-                        setSelectedDemoData(null);
-                        setShowContractUpload(false);
-                        setShowDocuSignImport(false);
-                      }}
-                     demoData={selectedDemoData}
-                   />
-                 ) : selectedContractType === "artist" ? (
-                   <ArtistAgreementForm />
-                 ) : (
-                   <OrganizedContractForm 
-                     contractType={selectedContractType}
-                      onCancel={() => {
-                        setSelectedContractType(null);
-                        setCreationMethod(null);
-                        setSelectedDemoData(null);
-                        setShowContractUpload(false);
-                        setShowDocuSignImport(false);
-                      }}
-                      onSuccess={() => {
-                        setIsCreateDialogOpen(false);
-                        setSelectedContractType(null);
-                        setCreationMethod(null);
-                        setSelectedDemoData(null);
-                        setShowContractUpload(false);
-                        setShowDocuSignImport(false);
-                      }}
-                   />
-                 )
+                 (() => {
+                   const commonProps = {
+                     onCancel: () => {
+                       setSelectedContractType(null);
+                       setCreationMethod(null);
+                       setSelectedDemoData(null);
+                       setShowContractUpload(false);
+                       setShowDocuSignImport(false);
+                     },
+                     onSuccess: () => {
+                       setIsCreateDialogOpen(false);
+                       setSelectedContractType(null);
+                       setCreationMethod(null);
+                       setSelectedDemoData(null);
+                       setShowContractUpload(false);
+                       setShowDocuSignImport(false);
+                     }
+                   };
+
+                   switch (selectedContractType) {
+                     case "publishing":
+                       return <StandardizedPublishingForm {...commonProps} demoData={selectedDemoData} />;
+                     case "artist":
+                       return <StandardizedArtistForm {...commonProps} demoData={selectedDemoData} />;
+                     case "producer":
+                       return <StandardizedProducerForm {...commonProps} demoData={selectedDemoData} />;
+                     case "sync":
+                       return <StandardizedSyncForm {...commonProps} demoData={selectedDemoData} />;
+                     case "distribution":
+                       return <StandardizedDistributionForm {...commonProps} demoData={selectedDemoData} />;
+                     default:
+                       return null;
+                   }
+                 })()
                )}
             </DialogContent>
           </Dialog>
