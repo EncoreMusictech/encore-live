@@ -657,7 +657,10 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                     placeholder="Add alternative title"
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAka())}
                   />
-                  <Button type="button" variant="outline" onClick={addAka}>
+                  <Button type="button" variant="outline" onClick={(e) => {
+                    e.preventDefault();
+                    addAka();
+                  }}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -668,7 +671,10 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                         {aka}
                         <X 
                           className="h-3 w-3 cursor-pointer" 
-                          onClick={() => removeAka(aka)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removeAka(aka);
+                          }}
                         />
                       </Badge>
                     ))}
@@ -712,7 +718,10 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium">Writers</h4>
-                  <Button type="button" variant="outline" size="sm" onClick={addWriter}>
+                  <Button type="button" variant="outline" size="sm" onClick={(e) => {
+                    e.preventDefault();
+                    addWriter();
+                  }}>
                     <Plus className="h-4 w-4 mr-1" />
                     Add Writer
                   </Button>
@@ -785,7 +794,10 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeWriter(writer.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removeWriter(writer.id);
+                          }}
                           className="text-red-600 hover:text-red-700"
                         >
                           <X className="h-4 w-4" />
@@ -806,7 +818,10 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium">Publishers</h4>
-                  <Button type="button" variant="outline" size="sm" onClick={addPublisher}>
+                  <Button type="button" variant="outline" size="sm" onClick={(e) => {
+                    e.preventDefault();
+                    addPublisher();
+                  }}>
                     <Plus className="h-4 w-4 mr-1" />
                     Add Publisher
                   </Button>
@@ -849,7 +864,10 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removePublisher(publisher.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removePublisher(publisher.id);
+                          }}
                           className="text-red-600 hover:text-red-700"
                         >
                           <X className="h-4 w-4" />
@@ -936,7 +954,10 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel }: En
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={(e) => {
+          e.preventDefault();
+          onCancel();
+        }}>
           Cancel
         </Button>
         <Button 
