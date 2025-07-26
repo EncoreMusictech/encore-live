@@ -79,14 +79,19 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
   const [demoLimits, setDemoLimits] = useState<DemoLimits>(INITIAL_DEMO_LIMITS);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   // Determine if user is demo or admin
-  const isDemo = !user || user?.email === DEMO_EMAIL || user?.user_metadata?.role === 'demo'; // Unauthenticated users, demo account, or users with demo role are demo users
+  const isDemo = !user || user?.email === DEMO_EMAIL || user?.user_metadata?.role === 'demo';
   const isAdmin = user?.email === ADMIN_EMAIL;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Load demo limits from localStorage on mount
   useEffect(() => {
-    if (isDemo) {
+    if (mounted && isDemo) {
       const storedLimits = localStorage.getItem('encore_demo_limits');
       if (storedLimits) {
         try {
@@ -98,21 +103,21 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
         }
       }
     }
-  }, [isDemo]);
+  }, [isDemo, mounted]);
 
   // Save demo limits to localStorage whenever they change
   useEffect(() => {
-    if (isDemo) {
+    if (mounted && isDemo) {
       localStorage.setItem('encore_demo_limits', JSON.stringify(demoLimits));
     }
-  }, [demoLimits, isDemo]);
+  }, [demoLimits, isDemo, mounted]);
 
   // Reset demo data when user signs in
   useEffect(() => {
-    if (user && !isAdmin) {
+    if (mounted && user && !isAdmin) {
       resetDemoData();
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, mounted]);
 
   const canAccess = (module: string): boolean => {
     // Admin users have full access

@@ -10,8 +10,12 @@ if (!container) {
   throw new Error('Failed to find the root element')
 }
 
-createRoot(container).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-)
+// Ensure React is fully loaded before creating root
+setTimeout(() => {
+  const root = createRoot(container)
+  root.render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  )
+}, 0)
