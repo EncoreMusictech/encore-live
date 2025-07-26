@@ -5,16 +5,16 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-// Import auth and demo providers
-import { useAuth } from "@/hooks/useAuth";
-import { useDemoAccess } from "@/hooks/useDemoAccess";
+// Import providers
+import { AuthProvider } from "@/hooks/useAuth";
+import { DemoAccessProvider } from "@/hooks/useDemoAccess";
 
 // Import route components
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminOrProtectedRoute from "@/components/AdminOrProtectedRoute";
 import DemoUpgradeModal from "@/components/DemoUpgradeModal";
 
-// Import pages directly (no lazy loading to avoid initialization issues)
+// Import pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -50,8 +50,12 @@ const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <TooltipProvider>
-          <AppContent />
-          <Sonner />
+          <AuthProvider>
+            <DemoAccessProvider>
+              <AppContent />
+              <Sonner />
+            </DemoAccessProvider>
+          </AuthProvider>
         </TooltipProvider>
       </BrowserRouter>
     </QueryClientProvider>
