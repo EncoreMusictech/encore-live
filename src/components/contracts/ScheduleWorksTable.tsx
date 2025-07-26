@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, ExternalLink } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
-import { useWorkSelectionModal } from "@/hooks/useWorkSelectionModal";
+import { StableWorkModal } from "./StableWorkModal";
 import { CopyrightDetailsModal } from "../copyright/CopyrightDetailsModal";
 
 interface ScheduleWorksTableProps {
@@ -11,10 +11,10 @@ interface ScheduleWorksTableProps {
 }
 
 export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCopyrightId, setSelectedCopyrightId] = useState<string | null>(null);
   const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState(false);
-  const { contracts, removeScheduleWork } = useContracts();
-  const { openModal } = useWorkSelectionModal();
+  const { contracts, removeScheduleWork, refetch } = useContracts();
 
   // Debug logging
   console.log('ScheduleWorksTable - Contract ID:', contractId);
@@ -34,6 +34,12 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
     }
   };
 
+  const handleWorkAdded = () => {
+    console.log('ScheduleWorksTable - Work added successfully');
+    setIsModalOpen(false);
+    refetch(); // Refresh the contracts data
+  };
+
   const handleViewCopyright = (copyrightId: string) => {
     setSelectedCopyrightId(copyrightId);
     setIsCopyrightModalOpen(true);
@@ -48,14 +54,22 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
         <Button 
           className="gap-2"
           onClick={() => {
-            console.log('ScheduleWorksTable - Opening global work selection modal');
-            openModal(contractId);
+            console.log('ScheduleWorksTable - Opening stable work modal');
+            setIsModalOpen(true);
           }}
         >
           <Plus className="h-4 w-4" />
           Add Work
         </Button>
       </div>
+
+      {/* Stable Modal Component */}
+      <StableWorkModal
+        contractId={contractId}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleWorkAdded}
+      />
 
       {scheduleWorks.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">

@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { DemoAccessProvider } from "@/hooks/useDemoAccess";
-import { GlobalWorkSelectionModal } from '@/components/contracts/GlobalWorkSelectionModal';
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminOrProtectedRoute from "@/components/AdminOrProtectedRoute";
 import DemoUpgradeModal from "@/components/DemoUpgradeModal";
@@ -56,7 +55,6 @@ const App = () => {
            <ErrorBoundary>
              <TooltipProvider>
              <DemoUpgradeModal />
-             <GlobalWorkSelectionModal />
              <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<Auth />} />
