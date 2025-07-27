@@ -9,11 +9,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Search, Edit, Trash2, Download, FileText, DollarSign, ChevronDown, Play, CheckCircle, AlertCircle, Clock, XCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { usePayouts } from "@/hooks/usePayouts";
+import { useAuth } from "@/hooks/useAuth";
 import { PayoutForm } from "./PayoutForm";
 import { toast } from "@/hooks/use-toast";
 
 export function PayoutList() {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingPayout, setEditingPayout] = useState<any>(null);
@@ -248,34 +251,51 @@ export function PayoutList() {
     }
   };
 
-  // Fetch expenses for all payouts
+  // Fetch expenses for all payees
   useEffect(() => {
     const fetchAllExpenses = async () => {
       if (!payouts.length) return;
       
-      const expensePromises = payouts.map(async (payout) => {
-        const expenses = await getPayoutExpenses(payout.id);
-        // Calculate total recoupable expenses
-        const recoupableTotal = expenses
-          .filter(expense => {
-            // Check the legacy boolean field first
-            if (expense.is_recoupable) return true;
+      // Get unique client IDs from payouts
+      const clientIds = [...new Set(payouts.map(payout => payout.client_id).filter(Boolean))];
+      
+      const expensePromises = clientIds.map(async (clientId) => {
+        try {
+          // Fetch all expenses for this payee (client)
+          const { data: expenses, error } = await supabase
+            .from('payout_expenses')
+            .select('*')
+            .eq('payee_id', clientId)
+            .eq('user_id', user?.id);
+
+          if (error) throw error;
+
+          // Calculate total recoupable expenses for this payee
+          const recoupableTotal = (expenses || [])
+            .filter(expense => {
+              // Check the legacy boolean field first
+              if (expense.is_recoupable) return true;
+              
+              // Check the new JSON field if it exists
+              if (expense.expense_flags && typeof expense.expense_flags === 'object') {
+                const flags = expense.expense_flags as { recoupable?: boolean };
+                return flags.recoupable === true;
+              }
+              
+              return false;
+            })
+            .reduce((sum, expense) => sum + expense.amount, 0);
             
-            // Check the new JSON field if it exists
-            if (expense.expense_flags && typeof expense.expense_flags === 'object') {
-              const flags = expense.expense_flags as { recoupable?: boolean };
-              return flags.recoupable === true;
-            }
-            
-            return false;
-          })
-          .reduce((sum, expense) => sum + expense.amount, 0);
-        return { payoutId: payout.id, total: recoupableTotal };
+          return { clientId, total: recoupableTotal };
+        } catch (error) {
+          console.error('Error fetching expenses for client:', clientId, error);
+          return { clientId, total: 0 };
+        }
       });
       
       const results = await Promise.all(expensePromises);
-      const expenseMap = results.reduce((acc, { payoutId, total }) => {
-        acc[payoutId] = total;
+      const expenseMap = results.reduce((acc, { clientId, total }) => {
+        acc[clientId] = total;
         return acc;
       }, {} as {[key: string]: number});
       
@@ -283,7 +303,7 @@ export function PayoutList() {
     };
 
     fetchAllExpenses();
-  }, [payouts, getPayoutExpenses]);
+  }, [payouts, user?.id]);
 
   if (loading) {
     return <div className="p-8 text-center">Loading payouts...</div>;
@@ -377,7 +397,7 @@ export function PayoutList() {
                 <TableCell>{payout.period}</TableCell>
                 <TableCell>${payout.gross_royalties.toLocaleString()}</TableCell>
                 <TableCell className="text-red-600">
-                  ${(payoutExpenses[payout.id] || 0).toLocaleString()}
+                  ${(payoutExpenses[payout.client_id] || 0).toLocaleString()}
                 </TableCell>
                 <TableCell>${payout.net_payable.toLocaleString()}</TableCell>
                 <TableCell className="font-medium">
