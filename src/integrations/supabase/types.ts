@@ -3537,6 +3537,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      link_expenses_to_payout: {
+        Args: { payout_id_param: string }
+        Returns: undefined
+      }
       log_copyright_activity: {
         Args: {
           p_user_id: string

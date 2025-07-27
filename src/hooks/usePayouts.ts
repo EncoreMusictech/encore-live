@@ -228,6 +228,16 @@ export function usePayouts() {
         }
       }
 
+      // Link any existing unlinked expenses for this client's payee
+      try {
+        await supabase.rpc('link_expenses_to_payout', {
+          payout_id_param: data.id
+        });
+      } catch (linkError) {
+        console.error('Error linking expenses to payout:', linkError);
+        // Continue anyway, this is not critical for payout creation
+      }
+
       // Confirm optimistic update and update with real data
       confirmUpdate(updateId);
       await fetchPayouts();
@@ -394,6 +404,57 @@ export function usePayouts() {
 
       const grossRoyalties = royalties?.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0) || 0;
       
+      // Get the contact name for this client to find associated payee
+      const { data: contact, error: contactError } = await supabase
+        .from('contacts')
+        .select('name')
+        .eq('id', clientId)
+        .single();
+
+      if (contactError && contactError.code !== 'PGRST116') throw contactError;
+
+      let totalRecoupableExpenses = 0;
+      
+      if (contact?.name) {
+        // Find payees matching this contact name
+        const { data: payees, error: payeeError } = await supabase
+          .from('payees')
+          .select('id')
+          .eq('payee_name', contact.name)
+          .eq('user_id', user?.id);
+
+        if (payeeError) throw payeeError;
+
+        if (payees && payees.length > 0) {
+          const payeeIds = payees.map(p => p.id);
+          
+          // Calculate total recoupable expenses for this payee
+          const { data: expenses, error: expenseError } = await supabase
+            .from('payout_expenses')
+            .select('amount, is_recoupable, expense_flags, expense_status')
+            .in('payee_id', payeeIds)
+            .eq('user_id', user?.id)
+            .eq('expense_status', 'approved');
+
+          if (expenseError) throw expenseError;
+
+          totalRecoupableExpenses = (expenses || [])
+            .filter(expense => {
+              // Check the legacy boolean field first
+              if (expense.is_recoupable) return true;
+              
+              // Check the new JSON field if it exists
+              if (expense.expense_flags && typeof expense.expense_flags === 'object') {
+                const flags = expense.expense_flags as { recoupable?: boolean };
+                return flags.recoupable === true;
+              }
+              
+              return false;
+            })
+            .reduce((sum, expense) => sum + expense.amount, 0);
+        }
+      }
+      
       // Calculate previous payments to this client
       const { data: previousPayouts, error: payoutError } = await supabase
         .from('payouts')
@@ -407,13 +468,17 @@ export function usePayouts() {
       const paymentsToDate = previousPayouts?.reduce((sum, p) => sum + (p.amount_due || 0), 0) || 0;
       const royaltiesToDate = previousPayouts?.reduce((sum, p) => sum + (p.gross_royalties || 0), 0) || 0;
 
+      const netRoyalties = grossRoyalties - totalRecoupableExpenses;
+      const netPayable = netRoyalties - paymentsToDate;
+
       const totals = {
         gross_royalties: grossRoyalties,
-        total_expenses: 0, // Will be calculated by the form
-        net_payable: grossRoyalties, // Will be adjusted for expenses
+        total_expenses: totalRecoupableExpenses,
+        net_royalties: netRoyalties,
+        net_payable: netPayable,
         royalties_to_date: royaltiesToDate + grossRoyalties,
         payments_to_date: paymentsToDate,
-        amount_due: grossRoyalties, // Will be adjusted for expenses
+        amount_due: Math.max(0, netPayable), // Don't allow negative amounts
       };
 
       return totals;

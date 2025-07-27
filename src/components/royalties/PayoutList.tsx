@@ -23,7 +23,6 @@ export function PayoutList() {
   const [selectedPayouts, setSelectedPayouts] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [exportingStatement, setExportingStatement] = useState<string | null>(null);
-  const [payoutExpenses, setPayoutExpenses] = useState<{[key: string]: number}>({});
   const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts, getPayoutExpenses } = usePayouts();
 
   const filteredPayouts = payouts.filter(payout => {
@@ -251,81 +250,6 @@ export function PayoutList() {
     }
   };
 
-  // Fetch expenses for all payees by matching contact names
-  useEffect(() => {
-    const fetchAllExpenses = async () => {
-      if (!payouts.length) return;
-      
-      const expensePromises = payouts.map(async (payout) => {
-        try {
-          if (!payout.contacts?.name) {
-            return { clientId: payout.client_id, total: 0 };
-          }
-
-          // Find payees that match this contact's name
-          const { data: matchingPayees, error: payeeError } = await supabase
-            .from('payees')
-            .select('id')
-            .eq('payee_name', payout.contacts.name)
-            .eq('user_id', user?.id);
-
-          if (payeeError) throw payeeError;
-
-          // If no matching payees found, return 0 expenses
-          if (!matchingPayees || matchingPayees.length === 0) {
-            return { clientId: payout.client_id, total: 0 };
-          }
-
-          // Get all payee IDs for this contact name
-          const payeeIds = matchingPayees.map(p => p.id);
-
-          // Fetch all expenses for these payees
-          const { data: expenses, error: expenseError } = await supabase
-            .from('payout_expenses')
-            .select('*')
-            .in('payee_id', payeeIds)
-            .eq('user_id', user?.id);
-
-          if (expenseError) throw expenseError;
-
-          // Calculate total recoupable expenses for this client (only approved expenses)
-          const recoupableTotal = (expenses || [])
-            .filter(expense => {
-              // Only include approved expenses
-              if (expense.expense_status !== 'approved') return false;
-              
-              // Check the legacy boolean field first
-              if (expense.is_recoupable) return true;
-              
-              // Check the new JSON field if it exists
-              if (expense.expense_flags && typeof expense.expense_flags === 'object') {
-                const flags = expense.expense_flags as { recoupable?: boolean };
-                return flags.recoupable === true;
-              }
-              
-              return false;
-            })
-            .reduce((sum, expense) => sum + expense.amount, 0);
-            
-          return { clientId: payout.client_id, total: recoupableTotal };
-        } catch (error) {
-          console.error('Error fetching expenses for payout:', payout.client_id, error);
-          return { clientId: payout.client_id, total: 0 };
-        }
-      });
-      
-      const results = await Promise.all(expensePromises);
-      // Map by client_id to store total recoupable expenses per client
-      const expenseMap = results.reduce((acc, { clientId, total }) => {
-        acc[clientId] = total;
-        return acc;
-      }, {} as {[key: string]: number});
-      
-      setPayoutExpenses(expenseMap);
-    };
-
-    fetchAllExpenses();
-  }, [payouts, user?.id]);
 
   if (loading) {
     return <div className="p-8 text-center">Loading payouts...</div>;
