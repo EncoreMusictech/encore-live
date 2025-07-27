@@ -27,6 +27,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       period_start: payout?.period_start || '',
       period_end: payout?.period_end || '',
       gross_royalties: payout?.gross_royalties || 0,
+      net_royalties: payout?.net_royalties || 0,
       total_expenses: payout?.total_expenses || 0,
       net_payable: payout?.net_payable || 0,
       royalties_to_date: payout?.royalties_to_date || 0,
@@ -173,33 +174,26 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="net_royalties">Net Royalties</Label>
+            <Input
+              id="net_royalties"
+              type="number"
+              step="0.01"
+              {...register('net_royalties', { valueAsNumber: true })}
+              className="bg-muted"
+              readOnly
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="total_expenses">Total Expenses</Label>
             <Input
               id="total_expenses"
               type="number"
               step="0.01"
               {...register('total_expenses', { valueAsNumber: true })}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="net_payable">Net Payable</Label>
-            <Input
-              id="net_payable"
-              type="number"
-              step="0.01"
-              {...register('net_payable', { valueAsNumber: true })}
-              className="font-medium"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="royalties_to_date">Royalties to Date</Label>
-            <Input
-              id="royalties_to_date"
-              type="number"
-              step="0.01"
-              {...register('royalties_to_date', { valueAsNumber: true })}
+              className="bg-muted"
+              readOnly
             />
           </div>
 
@@ -210,6 +204,32 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
               type="number"
               step="0.01"
               {...register('payments_to_date', { valueAsNumber: true })}
+              className="bg-muted"
+              readOnly
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="net_payable">Net Payable</Label>
+            <Input
+              id="net_payable"
+              type="number"
+              step="0.01"
+              {...register('net_payable', { valueAsNumber: true })}
+              className="font-medium bg-muted"
+              readOnly
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="royalties_to_date">Royalties to Date</Label>
+            <Input
+              id="royalties_to_date"
+              type="number"
+              step="0.01"
+              {...register('royalties_to_date', { valueAsNumber: true })}
+              className="bg-muted"
+              readOnly
             />
           </div>
 
@@ -220,7 +240,8 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
               type="number"
               step="0.01"
               {...register('amount_due', { valueAsNumber: true })}
-              className="font-bold text-lg"
+              className="font-bold text-lg bg-muted"
+              readOnly
             />
           </div>
         </CardContent>

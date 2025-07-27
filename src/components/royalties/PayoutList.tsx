@@ -396,7 +396,9 @@ export function PayoutList() {
               <TableHead>Payee Name</TableHead>
               <TableHead>Period</TableHead>
               <TableHead>Gross Royalties</TableHead>
-              <TableHead>Expenses</TableHead>
+              <TableHead>Net Royalties</TableHead>
+              <TableHead>Total Expenses</TableHead>
+              <TableHead>Payments to Date</TableHead>
               <TableHead>Net Payable</TableHead>
               <TableHead>Amount Due</TableHead>
               <TableHead>Payment Method</TableHead>
@@ -417,13 +419,15 @@ export function PayoutList() {
                   {payout.contacts?.name || 'No Contact Assigned'}
                 </TableCell>
                 <TableCell>{payout.period}</TableCell>
-                <TableCell>${payout.gross_royalties.toLocaleString()}</TableCell>
+                <TableCell>${payout.gross_royalties?.toLocaleString() || '0'}</TableCell>
+                <TableCell>${payout.net_royalties?.toLocaleString() || '0'}</TableCell>
                 <TableCell className="text-red-600">
-                  ${(payoutExpenses[payout.client_id] || 0).toLocaleString()}
+                  ${payout.total_expenses?.toLocaleString() || '0'}
                 </TableCell>
-                <TableCell>${payout.net_payable.toLocaleString()}</TableCell>
+                <TableCell>${payout.payments_to_date?.toLocaleString() || '0'}</TableCell>
+                <TableCell>${payout.net_payable?.toLocaleString() || '0'}</TableCell>
                 <TableCell className="font-medium">
-                  ${payout.amount_due.toLocaleString()}
+                  ${payout.amount_due?.toLocaleString() || '0'}
                 </TableCell>
                 <TableCell>
                   {payout.payment_method && (

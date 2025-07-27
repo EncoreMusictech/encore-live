@@ -14,6 +14,7 @@ export interface Payout {
   period_start?: string;
   period_end?: string;
   gross_royalties: number;
+  net_royalties: number;
   total_expenses: number;
   net_payable: number;
   royalties_to_date: number;
