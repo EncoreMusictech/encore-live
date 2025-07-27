@@ -175,44 +175,68 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                    {new Date(batch.date_received).toLocaleDateString()}
                  </TableCell>
                  <TableCell>${batch.total_gross_amount.toLocaleString()}</TableCell>
+                     <TableCell>
+                       <div className="space-y-1 min-w-[120px]">
+                         {(() => {
+                           const royaltyAmount = batch.allocated_amount || 0; // This represents the royalty amount from linked statements
+                           const batchAmount = batch.total_gross_amount || 1; // Avoid division by zero
+                           const progressPercentage = batchAmount > 0 ? (royaltyAmount / batchAmount) * 100 : 0;
+                           const isOverProgress = progressPercentage > 100;
+                           const isComplete = progressPercentage === 100;
+                           const displayProgress = isOverProgress ? Math.min(progressPercentage, 100) : progressPercentage;
+                           
+                           if (isOverProgress) {
+                             const excessAmount = royaltyAmount - batchAmount;
+                             return (
+                               <>
+                                 <div className="flex justify-between text-xs text-muted-foreground">
+                                   <span>Excess: ${excessAmount.toLocaleString()}</span>
+                                   <span className="text-red-600 font-medium">
+                                     {progressPercentage.toFixed(1)}%
+                                   </span>
+                                 </div>
+                                  <Progress 
+                                    value={100} 
+                                    className="h-2 [&>[data-state='complete']]:bg-red-500" 
+                                  />
+                               </>
+                             );
+                           }
+                           
+                           return (
+                             <>
+                               <div className="flex justify-between text-xs text-muted-foreground">
+                                 <span>${royaltyAmount.toLocaleString()}</span>
+                                 <span className={isComplete ? "text-green-600 font-medium" : ""}>
+                                   {progressPercentage.toFixed(1)}%
+                                 </span>
+                               </div>
+                               <Progress 
+                                 value={displayProgress} 
+                                 className={`h-2 ${isComplete ? '[&>[data-state="complete"]]:bg-green-500' : ''}`} 
+                               />
+                             </>
+                           );
+                         })()}
+                       </div>
+                    </TableCell>
                     <TableCell>
-                      <div className="space-y-1 min-w-[120px]">
-                        {(() => {
-                          const royaltyAmount = batch.allocated_amount || 0; // This represents the royalty amount from linked statements
-                          const batchAmount = batch.total_gross_amount || 1; // Avoid division by zero
-                          const progressPercentage = batchAmount > 0 ? (royaltyAmount / batchAmount) * 100 : 0;
-                          const isOverProgress = progressPercentage > 100;
-                          const isComplete = progressPercentage === 100;
-                          const displayProgress = isOverProgress ? Math.min(progressPercentage, 100) : progressPercentage;
-                          
-                          return (
-                            <>
-                              <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>${royaltyAmount.toLocaleString()}</span>
-                                <span className={isOverProgress ? "text-red-600 font-medium" : isComplete ? "text-green-600 font-medium" : ""}>
-                                  {progressPercentage.toFixed(1)}%
-                                </span>
-                              </div>
-                              <Progress 
-                                value={displayProgress} 
-                                className={`h-2 ${
-                                  isOverProgress 
-                                    ? '[&>[data-state="complete"]]:bg-red-500' 
-                                    : isComplete 
-                                      ? '[&>[data-state="complete"]]:bg-green-500' 
-                                      : ''
-                                }`} 
-                              />
-                            </>
-                          );
-                        })()}
-                      </div>
-                   </TableCell>
-                   <TableCell>
-                     <Badge className={getReconciliationStatusColor(batch.reconciliation_status || 'Incomplete')}>
-                       {batch.reconciliation_status || 'Incomplete'}
-                     </Badge>
-                   </TableCell>
+                      {(() => {
+                        const royaltyAmount = batch.allocated_amount || 0;
+                        const batchAmount = batch.total_gross_amount || 1;
+                        const progressPercentage = batchAmount > 0 ? (royaltyAmount / batchAmount) * 100 : 0;
+                        const isOverProgress = progressPercentage > 100;
+                        const isComplete = progressPercentage === 100 && !isOverProgress;
+                        
+                        const status = isComplete ? 'Complete' : 'Incomplete';
+                        
+                        return (
+                          <Badge className={getReconciliationStatusColor(status)}>
+                            {status}
+                          </Badge>
+                        );
+                      })()}
+                    </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {onSelectBatch && (
