@@ -336,8 +336,8 @@ export function PayoutList() {
               <TableHead>Gross Royalties</TableHead>
               <TableHead>Total Expenses</TableHead>
               <TableHead>Net Royalties</TableHead>
-              <TableHead>Payments to Date</TableHead>
               <TableHead>Royalties to Date</TableHead>
+              <TableHead>Payments to Date</TableHead>
               <TableHead>Net Payable</TableHead>
               <TableHead>Amount Due</TableHead>
               <TableHead>Payment Method</TableHead>
@@ -363,8 +363,8 @@ export function PayoutList() {
                   ${payout.total_expenses?.toLocaleString() || '0'}
                 </TableCell>
                 <TableCell>${payout.net_royalties?.toLocaleString() || '0'}</TableCell>
-                <TableCell>${payout.payments_to_date?.toLocaleString() || '0'}</TableCell>
                 <TableCell>${payout.royalties_to_date?.toLocaleString() || '0'}</TableCell>
+                <TableCell>${payout.payments_to_date?.toLocaleString() || '0'}</TableCell>
                 <TableCell>${payout.net_payable?.toLocaleString() || '0'}</TableCell>
                 <TableCell className="font-medium">
                   ${payout.amount_due?.toLocaleString() || '0'}
