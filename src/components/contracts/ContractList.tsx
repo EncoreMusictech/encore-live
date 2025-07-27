@@ -26,6 +26,7 @@ interface Contract {
   version: number;
   template_id?: string;
   original_pdf_url?: string;
+  agreement_id?: string;
 }
 
 interface ContractConnectionCheck {
@@ -434,6 +435,7 @@ export function ContractList({ onEdit }: ContractListProps) {
                   aria-label="Select all contracts"
                 />
               </TableHead>
+              <TableHead>Agreement ID</TableHead>
               <TableHead>Contract</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Counterparty</TableHead>
@@ -453,6 +455,11 @@ export function ContractList({ onEdit }: ContractListProps) {
                     onCheckedChange={(checked) => handleSelectItem(contract.id, checked as boolean)}
                     aria-label={`Select ${contract.title}`}
                   />
+                </TableCell>
+                <TableCell>
+                  <div className="font-mono text-sm font-medium text-muted-foreground">
+                    {contract.agreement_id || 'N/A'}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
