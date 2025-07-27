@@ -251,17 +251,18 @@ export function PayoutList() {
     }
   };
 
-  // Fetch expenses for all payees
+  // Fetch expenses for all payees (writers)
   useEffect(() => {
     const fetchAllExpenses = async () => {
       if (!payouts.length) return;
       
-      // Get unique client IDs from payouts
+      // Get unique client IDs from payouts (these should equal payee_ids in expenses)
       const clientIds = [...new Set(payouts.map(payout => payout.client_id).filter(Boolean))];
       
       const expensePromises = clientIds.map(async (clientId) => {
         try {
-          // Fetch all expenses for this payee (client)
+          // Fetch all expenses for this writer/payee
+          // client_id (from payouts) should equal payee_id (from expenses)
           const { data: expenses, error } = await supabase
             .from('payout_expenses')
             .select('*')
@@ -270,7 +271,7 @@ export function PayoutList() {
 
           if (error) throw error;
 
-          // Calculate total recoupable expenses for this payee
+          // Calculate total recoupable expenses for this writer/payee
           const recoupableTotal = (expenses || [])
             .filter(expense => {
               // Check the legacy boolean field first
@@ -288,12 +289,13 @@ export function PayoutList() {
             
           return { clientId, total: recoupableTotal };
         } catch (error) {
-          console.error('Error fetching expenses for client:', clientId, error);
+          console.error('Error fetching expenses for writer/payee:', clientId, error);
           return { clientId, total: 0 };
         }
       });
       
       const results = await Promise.all(expensePromises);
+      // Map by client_id (which equals payee_id) to store total recoupable expenses per writer
       const expenseMap = results.reduce((acc, { clientId, total }) => {
         acc[clientId] = total;
         return acc;
