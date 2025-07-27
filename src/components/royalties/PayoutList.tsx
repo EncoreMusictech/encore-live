@@ -288,9 +288,12 @@ export function PayoutList() {
 
           if (expenseError) throw expenseError;
 
-          // Calculate total recoupable expenses for this client
+          // Calculate total recoupable expenses for this client (only approved expenses)
           const recoupableTotal = (expenses || [])
             .filter(expense => {
+              // Only include approved expenses
+              if (expense.expense_status !== 'approved') return false;
+              
               // Check the legacy boolean field first
               if (expense.is_recoupable) return true;
               
