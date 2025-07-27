@@ -322,16 +322,25 @@ export function useReconciliationBatches() {
     const selectedYear = year || currentYear;
 
     try {
+      const batch = batches.find(b => b.id === id);
+      if (!batch) {
+        toast({
+          title: "Error",
+          description: "Batch not found",
+          variant: "destructive",
+        });
+        return false;
+      }
+
       // Get all royalty allocations linked to this batch
       const { data: allocations, error: allocError } = await supabase
         .from('royalty_allocations')
-        .select('id, gross_royalty_amount')
+        .select('*')
         .eq('batch_id', id);
 
       if (allocError) throw allocError;
 
       // Also get royalties from linked statement if any
-      const batch = batches.find(b => b.id === id);
       let linkedStatementRoyalties: any[] = [];
       
       if (batch?.linked_statement_id) {
@@ -344,7 +353,7 @@ export function useReconciliationBatches() {
         if (stagingRecord?.statement_id) {
           const { data: statementRoyalties } = await supabase
             .from('royalty_allocations')
-            .select('id, gross_royalty_amount')
+            .select('*')
             .eq('user_id', user.id)
             .eq('statement_id', stagingRecord.statement_id);
 
@@ -354,10 +363,7 @@ export function useReconciliationBatches() {
 
       const allRoyalties = [...(allocations || []), ...linkedStatementRoyalties];
 
-      // Create a payout entry for all the royalties
-      const totalAmount = allRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
-      
-      if (totalAmount <= 0) {
+      if (allRoyalties.length === 0) {
         toast({
           title: "Error",
           description: "No royalties found to process",
@@ -366,39 +372,191 @@ export function useReconciliationBatches() {
         return false;
       }
 
-      // Create the payout with the selected period
-      const { data: payout, error: payoutError } = await supabase
-        .from('payouts')
-        .insert({
-          user_id: user.id,
-          client_id: 'batch-' + id, // Temporary client ID for batch processing
-          period: `Q${selectedQuarter} ${selectedYear}`,
-          period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,
-          period_end: `${selectedYear}-${selectedQuarter * 3}-${selectedQuarter === 4 ? 31 : 30}`,
-          gross_royalties: totalAmount,
-          total_expenses: 0,
-          net_payable: totalAmount,
-          amount_due: totalAmount,
-          status: 'pending',
-          notes: `Auto-generated from reconciliation batch ${batch?.batch_id || id} for Q${selectedQuarter} ${selectedYear}`,
-        })
-        .select()
-        .single();
+      // Group royalties by writer
+      const writerGroups = new Map<string, any[]>();
+      const unmatched: any[] = [];
 
-      if (payoutError) throw payoutError;
+      // Get all writers for matching
+      const { data: writers, error: writersError } = await supabase
+        .from('writers')
+        .select('id, writer_id, writer_name')
+        .eq('user_id', user.id);
 
-      // Link all royalties to the payout
-      const payoutRoyalties = allRoyalties.map(royalty => ({
-        payout_id: payout.id,
-        royalty_id: royalty.id,
-        allocated_amount: royalty.gross_royalty_amount || 0,
-      }));
+      if (writersError) throw writersError;
 
-      const { error: linkError } = await supabase
-        .from('payout_royalties')
-        .insert(payoutRoyalties);
+      const writerNameMap = new Map(
+        (writers || []).map(w => [w.writer_name, w])
+      );
 
-      if (linkError) throw linkError;
+      // Group royalties by matched writers
+      for (const royalty of allRoyalties) {
+        if (royalty.work_writers) {
+          const writer = writerNameMap.get(royalty.work_writers);
+          if (writer) {
+            if (!writerGroups.has(writer.id)) {
+              writerGroups.set(writer.id, []);
+            }
+            writerGroups.get(writer.id)!.push({ ...royalty, writer_info: writer });
+          } else {
+            unmatched.push(royalty);
+          }
+        } else {
+          unmatched.push(royalty);
+        }
+      }
+
+      // Create payouts for each writer group
+      const payoutResults: any[] = [];
+
+      for (const [writerId, writerRoyalties] of writerGroups) {
+        const writer = writerRoyalties[0].writer_info;
+        const totalAmount = writerRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
+
+        if (totalAmount <= 0) continue;
+
+        // Create writer-specific payout
+        const { data: payout, error: payoutError } = await supabase
+          .from('payouts')
+          .insert({
+            user_id: user.id,
+            client_id: writerId, // Use writer UUID as client_id
+            period: `Q${selectedQuarter} ${selectedYear}`,
+            period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,
+            period_end: `${selectedYear}-${selectedQuarter * 3}-${selectedQuarter === 4 ? 31 : 30}`,
+            gross_royalties: totalAmount,
+            total_expenses: 0,
+            net_payable: totalAmount,
+            amount_due: totalAmount,
+            status: 'pending',
+            notes: `Auto-generated for writer ${writer.writer_name} from batch ${batch?.batch_id || id} - Q${selectedQuarter} ${selectedYear}`,
+          })
+          .select()
+          .single();
+
+        if (payoutError) {
+          console.error(`Error creating payout for writer ${writer.writer_name}:`, payoutError);
+          continue;
+        }
+
+        // Link royalties to the payout
+        const payoutRoyalties = writerRoyalties.map(royalty => ({
+          payout_id: payout.id,
+          royalty_id: royalty.id,
+          allocated_amount: royalty.gross_royalty_amount || 0,
+        }));
+
+        const { error: linkError } = await supabase
+          .from('payout_royalties')
+          .insert(payoutRoyalties);
+
+        if (linkError) {
+          console.error(`Error linking royalties for writer ${writer.writer_name}:`, linkError);
+          continue;
+        }
+
+        // Update quarterly balance reports for writer's payees
+        const { data: payees } = await supabase
+          .from('payees')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('writer_id', writerId);
+
+        if (payees && payees.length > 0) {
+          for (const payee of payees) {
+            // Check if quarterly report exists
+            const { data: existingReport } = await supabase
+              .from('quarterly_balance_reports')
+              .select('id, opening_balance')
+              .eq('user_id', user.id)
+              .eq('payee_id', payee.id)
+              .eq('quarter', selectedQuarter)
+              .eq('year', selectedYear)
+              .single();
+
+            if (existingReport) {
+              // Update existing report
+              await supabase
+                .from('quarterly_balance_reports')
+                .update({
+                  royalties_amount: totalAmount,
+                  closing_balance: (existingReport.opening_balance || 0) + totalAmount,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', existingReport.id);
+            } else {
+              // Create new quarterly report
+              await supabase
+                .from('quarterly_balance_reports')
+                .insert({
+                  user_id: user.id,
+                  payee_id: payee.id,
+                  quarter: selectedQuarter,
+                  year: selectedYear,
+                  opening_balance: 0,
+                  royalties_amount: totalAmount,
+                  expenses_amount: 0,
+                  payments_amount: 0,
+                  closing_balance: totalAmount,
+                });
+            }
+          }
+        }
+
+        payoutResults.push({
+          writer_name: writer.writer_name,
+          writer_id: writer.writer_id,
+          payout_id: payout.id,
+          amount: totalAmount,
+          royalty_count: writerRoyalties.length,
+          payee_count: payees?.length || 0,
+        });
+      }
+
+      // Handle unmatched royalties (create a general payout if needed)
+      if (unmatched.length > 0) {
+        const unmatchedTotal = unmatched.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
+        
+        if (unmatchedTotal > 0) {
+          const { data: unmatchedPayout, error: unmatchedError } = await supabase
+            .from('payouts')
+            .insert({
+              user_id: user.id,
+              client_id: 'unmatched-' + id,
+              period: `Q${selectedQuarter} ${selectedYear}`,
+              period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,
+              period_end: `${selectedYear}-${selectedQuarter * 3}-${selectedQuarter === 4 ? 31 : 30}`,
+              gross_royalties: unmatchedTotal,
+              total_expenses: 0,
+              net_payable: unmatchedTotal,
+              amount_due: unmatchedTotal,
+              status: 'pending',
+              notes: `Unmatched royalties from batch ${batch?.batch_id || id} - Q${selectedQuarter} ${selectedYear}`,
+            })
+            .select()
+            .single();
+
+          if (!unmatchedError) {
+            const unmatchedRoyalties = unmatched.map(royalty => ({
+              payout_id: unmatchedPayout.id,
+              royalty_id: royalty.id,
+              allocated_amount: royalty.gross_royalty_amount || 0,
+            }));
+
+            await supabase
+              .from('payout_royalties')
+              .insert(unmatchedRoyalties);
+
+            payoutResults.push({
+              writer_name: 'Unmatched',
+              writer_id: 'unmatched',
+              payout_id: unmatchedPayout.id,
+              amount: unmatchedTotal,
+              royalty_count: unmatched.length,
+              payee_count: 0,
+            });
+          }
+        }
+      }
 
       // Update the batch to mark it as processed
       const { error: updateError } = await supabase
@@ -414,7 +572,7 @@ export function useReconciliationBatches() {
 
       toast({
         title: "Success",
-        description: `Batch processed successfully. Payout created with ${allRoyalties.length} royalties.`,
+        description: `Batch processed successfully. Created ${payoutResults.length} writer-specific payouts.`,
       });
 
       await fetchBatches();
@@ -423,7 +581,7 @@ export function useReconciliationBatches() {
       console.error('Error processing batch:', error);
       toast({
         title: "Error",
-        description: "Failed to process batch to payouts",
+        description: "Failed to process batch to writer payouts",
         variant: "destructive",
       });
       return false;
