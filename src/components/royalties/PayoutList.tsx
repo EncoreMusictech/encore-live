@@ -256,22 +256,39 @@ export function PayoutList() {
     const fetchAllExpenses = async () => {
       if (!payouts.length) return;
       
-      // Get unique client IDs from payouts (these should equal payee_ids in expenses)
+      // Get unique client IDs from payouts (contact IDs)
       const clientIds = [...new Set(payouts.map(payout => payout.client_id).filter(Boolean))];
       
       const expensePromises = clientIds.map(async (clientId) => {
         try {
-          // Fetch all expenses for this writer/payee
-          // client_id (from payouts) should equal payee_id (from expenses)
-          const { data: expenses, error } = await supabase
-            .from('payout_expenses')
-            .select('*')
-            .eq('payee_id', clientId)
+          // First, find the payee record that corresponds to this client (contact)
+          // The payees table links writer_id (contact) to payee_id (expense recipient)
+          const { data: payees, error: payeeError } = await supabase
+            .from('payees')
+            .select('id')
+            .eq('writer_id', clientId)
             .eq('user_id', user?.id);
 
-          if (error) throw error;
+          if (payeeError) throw payeeError;
 
-          // Calculate total recoupable expenses for this writer/payee
+          // If no payee found for this client, return 0 expenses
+          if (!payees || payees.length === 0) {
+            return { clientId, total: 0 };
+          }
+
+          // Get all payee IDs for this client (there might be multiple payees per writer)
+          const payeeIds = payees.map(p => p.id);
+
+          // Fetch all expenses for these payees
+          const { data: expenses, error: expenseError } = await supabase
+            .from('payout_expenses')
+            .select('*')
+            .in('payee_id', payeeIds)
+            .eq('user_id', user?.id);
+
+          if (expenseError) throw expenseError;
+
+          // Calculate total recoupable expenses for this client
           const recoupableTotal = (expenses || [])
             .filter(expense => {
               // Check the legacy boolean field first
@@ -289,13 +306,13 @@ export function PayoutList() {
             
           return { clientId, total: recoupableTotal };
         } catch (error) {
-          console.error('Error fetching expenses for writer/payee:', clientId, error);
+          console.error('Error fetching expenses for client:', clientId, error);
           return { clientId, total: 0 };
         }
       });
       
       const results = await Promise.all(expensePromises);
-      // Map by client_id (which equals payee_id) to store total recoupable expenses per writer
+      // Map by client_id to store total recoupable expenses per client
       const expenseMap = results.reduce((acc, { clientId, total }) => {
         acc[clientId] = total;
         return acc;
