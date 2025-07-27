@@ -331,16 +331,17 @@ export function PayoutList() {
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
-              <TableHead>Payee Name</TableHead>
               <TableHead>Period</TableHead>
+              <TableHead>Payee Name</TableHead>
               <TableHead>Gross Royalties</TableHead>
-              <TableHead>Net Royalties</TableHead>
               <TableHead>Total Expenses</TableHead>
+              <TableHead>Net Royalties</TableHead>
               <TableHead>Payments to Date</TableHead>
+              <TableHead>Royalties to Date</TableHead>
               <TableHead>Net Payable</TableHead>
               <TableHead>Amount Due</TableHead>
               <TableHead>Payment Method</TableHead>
-              <TableHead>Workflow Stage</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -353,16 +354,17 @@ export function PayoutList() {
                     onCheckedChange={(checked) => handleSelectPayout(payout.id, checked as boolean)}
                   />
                 </TableCell>
+                <TableCell>{payout.period}</TableCell>
                 <TableCell className="font-medium">
                   {payout.contacts?.name || 'No Contact Assigned'}
                 </TableCell>
-                <TableCell>{payout.period}</TableCell>
                 <TableCell>${payout.gross_royalties?.toLocaleString() || '0'}</TableCell>
-                <TableCell>${payout.net_royalties?.toLocaleString() || '0'}</TableCell>
                 <TableCell className="text-red-600">
                   ${payout.total_expenses?.toLocaleString() || '0'}
                 </TableCell>
+                <TableCell>${payout.net_royalties?.toLocaleString() || '0'}</TableCell>
                 <TableCell>${payout.payments_to_date?.toLocaleString() || '0'}</TableCell>
+                <TableCell>${payout.royalties_to_date?.toLocaleString() || '0'}</TableCell>
                 <TableCell>${payout.net_payable?.toLocaleString() || '0'}</TableCell>
                 <TableCell className="font-medium">
                   ${payout.amount_due?.toLocaleString() || '0'}
