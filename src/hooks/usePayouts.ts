@@ -543,7 +543,7 @@ export function usePayouts() {
     if (user) {
       executeWithRetry().catch(console.error);
     }
-  }, [user, executeWithRetry]);
+  }, [user]); // Removed executeWithRetry from dependencies to prevent infinite loop
 
   // Memoized computed values for performance
   const memoizedValues = useMemo(() => {
