@@ -8,8 +8,9 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Search, MoreHorizontal, Edit, Trash2, Download, FileText, Upload, RefreshCw } from "lucide-react";
+import { Search, MoreHorizontal, Edit, Trash2, Download, FileText, Upload, RefreshCw, Play, RotateCcw } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { ReconciliationBatchForm } from "./ReconciliationBatchForm";
 
 interface ReconciliationBatchListProps {
@@ -22,7 +23,8 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [reconciliationFilter, setReconciliationFilter] = useState<string>("all");
   const [editingBatch, setEditingBatch] = useState<any>(null);
-  const { batches, loading, deleteBatch, refreshBatches } = useReconciliationBatches();
+  const { batches, loading, deleteBatch, processBatch, unprocessBatch, refreshBatches } = useReconciliationBatches();
+  const { hasRole, isAdmin } = useUserRoles();
 
   const filteredBatches = batches.filter(batch => {
     const batchId = batch.batch_id || '';
@@ -276,29 +278,103 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                             }}
                           />
                         </div>
-                      </DialogContent>
-                    </Dialog>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete the reconciliation batch "{batch.batch_id}" and all associated data.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(batch.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                       </DialogContent>
+                     </Dialog>
+                     
+                     {/* Process Button - Only available when Progress is 100% & Status is 'Complete' */}
+                     {(() => {
+                       const royaltyAmount = batch.allocated_amount || 0;
+                       const batchAmount = batch.total_gross_amount || 1;
+                       const progressPercentage = batchAmount > 0 ? (royaltyAmount / batchAmount) * 100 : 0;
+                       const isComplete = progressPercentage === 100 && progressPercentage <= 100;
+                       const hasBeenProcessed = batch.processed_at && !batch.unprocessed_at;
+                       
+                       return isComplete && !hasBeenProcessed ? (
+                         <AlertDialog>
+                           <AlertDialogTrigger asChild>
+                             <Button 
+                               variant="ghost" 
+                               size="sm" 
+                               title="Process to Payouts"
+                               className="text-green-600 hover:text-green-700"
+                             >
+                               <Play className="h-4 w-4" />
+                             </Button>
+                           </AlertDialogTrigger>
+                           <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>Process Batch to Payouts</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 This will submit all royalties from batch "{batch.batch_id}" to the Payout tab and record a timestamp. This action can only be done once per batch.
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>Cancel</AlertDialogCancel>
+                               <AlertDialogAction onClick={() => processBatch(batch.id)}>
+                                 Process
+                               </AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                         </AlertDialog>
+                       ) : null;
+                     })()}
+
+                     {/* Unprocess Button - Only available for admin users and processed batches */}
+                     {(() => {
+                       const hasBeenProcessed = batch.processed_at && !batch.unprocessed_at;
+                       const canUnprocess = (isAdmin || hasRole('admin')) && hasBeenProcessed;
+                       
+                       return canUnprocess ? (
+                         <AlertDialog>
+                           <AlertDialogTrigger asChild>
+                             <Button 
+                               variant="ghost" 
+                               size="sm" 
+                               title="Unprocess from Payouts (Admin Only)"
+                               className="text-orange-600 hover:text-orange-700"
+                             >
+                               <RotateCcw className="h-4 w-4" />
+                             </Button>
+                           </AlertDialogTrigger>
+                           <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>Unprocess Batch from Payouts</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 This will remove all linked royalties from payouts and record a timestamp. This action requires administrator privileges.
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>Cancel</AlertDialogCancel>
+                               <AlertDialogAction onClick={() => unprocessBatch(batch.id)} className="bg-orange-600 hover:bg-orange-700">
+                                 Unprocess
+                               </AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                         </AlertDialog>
+                       ) : null;
+                     })()}
+
+                     <AlertDialog>
+                       <AlertDialogTrigger asChild>
+                         <Button variant="ghost" size="sm">
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       </AlertDialogTrigger>
+                       <AlertDialogContent>
+                         <AlertDialogHeader>
+                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                           <AlertDialogDescription>
+                             This will permanently delete the reconciliation batch "{batch.batch_id}" and all associated data.
+                           </AlertDialogDescription>
+                         </AlertDialogHeader>
+                         <AlertDialogFooter>
+                           <AlertDialogCancel>Cancel</AlertDialogCancel>
+                           <AlertDialogAction onClick={() => handleDelete(batch.id)}>
+                             Delete
+                           </AlertDialogAction>
+                         </AlertDialogFooter>
+                       </AlertDialogContent>
+                     </AlertDialog>
                   </div>
                 </TableCell>
               </TableRow>

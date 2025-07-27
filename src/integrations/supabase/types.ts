@@ -2050,6 +2050,9 @@ export type Database = {
           id: string
           linked_statement_id: string | null
           notes: string | null
+          processed_at: string | null
+          processed_by_user_id: string | null
+          processing_count: number | null
           source: Database["public"]["Enums"]["royalty_source"]
           statement_file_url: string | null
           statement_period_end: string | null
@@ -2057,6 +2060,8 @@ export type Database = {
           statement_total: number | null
           status: Database["public"]["Enums"]["batch_status"]
           total_gross_amount: number | null
+          unprocessed_at: string | null
+          unprocessed_by_user_id: string | null
           updated_at: string
           user_id: string
         }
@@ -2067,6 +2072,9 @@ export type Database = {
           id?: string
           linked_statement_id?: string | null
           notes?: string | null
+          processed_at?: string | null
+          processed_by_user_id?: string | null
+          processing_count?: number | null
           source: Database["public"]["Enums"]["royalty_source"]
           statement_file_url?: string | null
           statement_period_end?: string | null
@@ -2074,6 +2082,8 @@ export type Database = {
           statement_total?: number | null
           status?: Database["public"]["Enums"]["batch_status"]
           total_gross_amount?: number | null
+          unprocessed_at?: string | null
+          unprocessed_by_user_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -2084,6 +2094,9 @@ export type Database = {
           id?: string
           linked_statement_id?: string | null
           notes?: string | null
+          processed_at?: string | null
+          processed_by_user_id?: string | null
+          processing_count?: number | null
           source?: Database["public"]["Enums"]["royalty_source"]
           statement_file_url?: string | null
           statement_period_end?: string | null
@@ -2091,6 +2104,8 @@ export type Database = {
           statement_total?: number | null
           status?: Database["public"]["Enums"]["batch_status"]
           total_gross_amount?: number | null
+          unprocessed_at?: string | null
+          unprocessed_by_user_id?: string | null
           updated_at?: string
           user_id?: string
         }

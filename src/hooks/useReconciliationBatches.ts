@@ -20,6 +20,11 @@ export interface ReconciliationBatch {
   statement_file_url?: string;
   status: 'Pending' | 'Imported' | 'Processed';
   notes?: string;
+  processed_at?: string;
+  processed_by_user_id?: string;
+  unprocessed_at?: string;
+  unprocessed_by_user_id?: string;
+  processing_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -305,6 +310,177 @@ export function useReconciliationBatches() {
     }
   };
 
+  const processBatch = async (id: string) => {
+    if (!user) return false;
+
+    try {
+      // Get all royalty allocations linked to this batch
+      const { data: allocations, error: allocError } = await supabase
+        .from('royalty_allocations')
+        .select('id, gross_royalty_amount')
+        .eq('batch_id', id);
+
+      if (allocError) throw allocError;
+
+      // Also get royalties from linked statement if any
+      const batch = batches.find(b => b.id === id);
+      let linkedStatementRoyalties: any[] = [];
+      
+      if (batch?.linked_statement_id) {
+        const { data: stagingRecord } = await supabase
+          .from('royalties_import_staging')
+          .select('statement_id')
+          .eq('id', batch.linked_statement_id)
+          .single();
+
+        if (stagingRecord?.statement_id) {
+          const { data: statementRoyalties } = await supabase
+            .from('royalty_allocations')
+            .select('id, gross_royalty_amount')
+            .eq('user_id', user.id)
+            .eq('statement_id', stagingRecord.statement_id);
+
+          linkedStatementRoyalties = statementRoyalties || [];
+        }
+      }
+
+      const allRoyalties = [...(allocations || []), ...linkedStatementRoyalties];
+
+      // Create a payout entry for all the royalties
+      const totalAmount = allRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
+      
+      if (totalAmount <= 0) {
+        toast({
+          title: "Error",
+          description: "No royalties found to process",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Create the payout
+      const { data: payout, error: payoutError } = await supabase
+        .from('payouts')
+        .insert({
+          user_id: user.id,
+          client_id: 'batch-' + id, // Temporary client ID for batch processing
+          period: `Batch ${batch?.batch_id || id}`,
+          gross_royalties: totalAmount,
+          total_expenses: 0,
+          net_payable: totalAmount,
+          amount_due: totalAmount,
+          status: 'pending',
+          notes: `Auto-generated from reconciliation batch ${batch?.batch_id || id}`,
+        })
+        .select()
+        .single();
+
+      if (payoutError) throw payoutError;
+
+      // Link all royalties to the payout
+      const payoutRoyalties = allRoyalties.map(royalty => ({
+        payout_id: payout.id,
+        royalty_id: royalty.id,
+        allocated_amount: royalty.gross_royalty_amount || 0,
+      }));
+
+      const { error: linkError } = await supabase
+        .from('payout_royalties')
+        .insert(payoutRoyalties);
+
+      if (linkError) throw linkError;
+
+      // Update the batch to mark it as processed
+      const { error: updateError } = await supabase
+        .from('reconciliation_batches')
+        .update({
+          processed_at: new Date().toISOString(),
+          processed_by_user_id: user.id,
+          processing_count: (batch?.processing_count || 0) + 1,
+        })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Success",
+        description: `Batch processed successfully. Payout created with ${allRoyalties.length} royalties.`,
+      });
+
+      await fetchBatches();
+      return true;
+    } catch (error: any) {
+      console.error('Error processing batch:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process batch to payouts",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const unprocessBatch = async (id: string) => {
+    if (!user) return false;
+
+    try {
+      // Find all payouts that were created from this batch
+      const batch = batches.find(b => b.id === id);
+      const { data: payouts, error: payoutError } = await supabase
+        .from('payouts')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('notes', `Auto-generated from reconciliation batch ${batch?.batch_id || id}`);
+
+      if (payoutError) throw payoutError;
+
+      if (payouts && payouts.length > 0) {
+        // Delete payout royalty links
+        const { error: deleteLinksError } = await supabase
+          .from('payout_royalties')
+          .delete()
+          .in('payout_id', payouts.map(p => p.id));
+
+        if (deleteLinksError) throw deleteLinksError;
+
+        // Delete the payouts
+        const { error: deletePayoutsError } = await supabase
+          .from('payouts')
+          .delete()
+          .in('id', payouts.map(p => p.id));
+
+        if (deletePayoutsError) throw deletePayoutsError;
+      }
+
+      // Update the batch to mark it as unprocessed
+      const { error: updateError } = await supabase
+        .from('reconciliation_batches')
+        .update({
+          unprocessed_at: new Date().toISOString(),
+          unprocessed_by_user_id: user.id,
+        })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Success",
+        description: "Batch unprocessed successfully. Associated payouts have been removed.",
+      });
+
+      await fetchBatches();
+      return true;
+    } catch (error: any) {
+      console.error('Error unprocessing batch:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unprocess batch",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchBatches();
   }, [user]);
@@ -317,6 +493,8 @@ export function useReconciliationBatches() {
     deleteBatch,
     linkBatchToAllocations,
     unlinkStatement,
+    processBatch,
+    unprocessBatch,
     refreshBatches: fetchBatches,
   };
 }
