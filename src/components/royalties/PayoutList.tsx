@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, Edit, Trash2, Download, FileText, DollarSign, ChevronDown, Play, CheckCircle, AlertCircle, Clock, XCircle } from "lucide-react";
+import { Search, Edit, Trash2, Download, FileText, DollarSign, ChevronDown, Play, CheckCircle, AlertCircle, Clock, XCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePayouts } from "@/hooks/usePayouts";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,7 +23,7 @@ export function PayoutList() {
   const [selectedPayouts, setSelectedPayouts] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [exportingStatement, setExportingStatement] = useState<string | null>(null);
-  const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts, getPayoutExpenses } = usePayouts();
+  const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts, getPayoutExpenses, recalculatePayoutExpenses } = usePayouts();
 
   const filteredPayouts = payouts.filter(payout => {
     const matchesSearch = payout.period?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
@@ -234,6 +234,20 @@ export function PayoutList() {
     }
   };
 
+  const handleRecalculateExpenses = async (payoutId: string) => {
+    try {
+      await recalculatePayoutExpenses(payoutId);
+    } catch (error) {
+      console.error('Error recalculating expenses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to recalculate expenses",
+        variant: "destructive",
+      });
+    }
+  };
+
+
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedPayouts(filteredPayouts.map(p => p.id));
@@ -389,35 +403,27 @@ export function PayoutList() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleExportStatement(payout)}
-                      disabled={exportingStatement === payout.id}
-                      title="Export PDF Statement"
-                    >
-                      {exportingStatement === payout.id ? (
-                        <Download className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <FileText className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" onClick={() => setEditingPayout(payout)}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
                           <Edit className="h-4 w-4" />
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>Edit Payout</DialogTitle>
-                        </DialogHeader>
-                        <PayoutForm
-                          payout={editingPayout}
-                          onCancel={() => setEditingPayout(null)}
-                        />
-                      </DialogContent>
-                    </Dialog>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => setEditingPayout(payout)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Payout
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleRecalculateExpenses(payout.id)}>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Recalculate Expenses
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportStatement(payout)}>
+                          <Download className="h-4 w-4 mr-2" />
+                          {exportingStatement === payout.id ? "Generating..." : "Export Statement"}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="sm">
@@ -453,6 +459,21 @@ export function PayoutList() {
             ? "No payouts found matching your filters."
             : "No payouts found. Create your first payout to get started."}
         </div>
+      )}
+
+      {/* Edit Dialog */}
+      {editingPayout && (
+        <Dialog open={!!editingPayout} onOpenChange={() => setEditingPayout(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Payout</DialogTitle>
+            </DialogHeader>
+            <PayoutForm
+              payout={editingPayout}
+              onCancel={() => setEditingPayout(null)}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

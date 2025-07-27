@@ -617,6 +617,42 @@ export function usePayouts() {
   }, [user]); // Removed executeWithRetry from dependencies to prevent infinite loop
 
   // Memoized computed values for performance
+  // Function to manually recalculate payout expenses (for existing payouts)
+  const recalculatePayoutExpenses = useCallback(async (payoutId: string) => {
+    if (!user) return false;
+
+    try {
+      // First, link any unlinked expenses
+      await supabase.rpc('link_expenses_to_payout', {
+        payout_id_param: payoutId
+      });
+
+      // Then trigger a recalculation by updating the payout
+      const { error } = await supabase
+        .from('payouts')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', payoutId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Payout expenses recalculated",
+      });
+
+      await fetchPayouts();
+      return true;
+    } catch (error: any) {
+      console.error('Error recalculating payout expenses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to recalculate expenses",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [user, fetchPayouts, toast]);
+
   const memoizedValues = useMemo(() => {
     const totalPayouts = payouts.length;
     const pendingPayouts = payouts.filter(p => p.workflow_stage === 'pending_review').length;
@@ -649,6 +685,7 @@ export function usePayouts() {
     updateWorkflowStage,
     bulkUpdatePayouts,
     getWorkflowHistory,
+    recalculatePayoutExpenses,
     refreshPayouts: fetchPayouts,
     retryFetch: executeWithRetry,
   };
