@@ -63,10 +63,10 @@ export function ExpensesTable() {
 
   const formatAmount = (expense: PayoutExpense) => {
     if (expense.is_percentage) {
-      const cap = expense.expense_cap ? ` (cap: $${expense.expense_cap})` : '';
+      const cap = expense.expense_cap ? ` (cap: $${expense.expense_cap.toLocaleString()})` : '';
       return `${expense.percentage_rate}%${cap}`;
     }
-    return `$${expense.amount.toFixed(2)}`;
+    return `$${expense.amount.toLocaleString()}`;
   };
 
   if (loading) {

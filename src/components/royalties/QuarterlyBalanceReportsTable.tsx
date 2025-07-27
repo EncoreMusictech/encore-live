@@ -100,7 +100,7 @@ export function QuarterlyBalanceReportsTable() {
           <TrendingDown className="h-3 w-3 text-red-600" />
         )}
         <span className={`text-xs ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-          ${Math.abs(change).toFixed(2)}
+          ${Math.abs(change).toLocaleString()}
         </span>
       </div>
     );
@@ -328,20 +328,20 @@ export function QuarterlyBalanceReportsTable() {
                         {report.contracts?.title || 'N/A'}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        ${report.opening_balance.toFixed(2)}
+                        ${report.opening_balance.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right font-mono text-green-600">
-                        +${report.royalties_amount.toFixed(2)}
+                        +${report.royalties_amount.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right font-mono text-red-600">
-                        -${report.expenses_amount.toFixed(2)}
+                        -${report.expenses_amount.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right font-mono text-blue-600">
-                        -${report.payments_amount.toFixed(2)}
+                        -${report.payments_amount.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right font-mono font-semibold">
                         <div className="flex items-center justify-end gap-2">
-                          ${report.closing_balance.toFixed(2)}
+                          ${report.closing_balance.toLocaleString()}
                           {hasCalculationMismatch && (
                             <AlertTriangle className="h-4 w-4 text-amber-500" />
                           )}

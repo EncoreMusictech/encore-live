@@ -521,7 +521,7 @@ export function RoyaltyAllocationList() {
                         </div>
                       ) : columnName === 'GROSS' || columnName === 'NET' ? (
                         <span className="font-medium">
-                          ${typeof value === 'number' ? value.toFixed(2) : parseFloat(value || '0').toFixed(2)}
+                          ${typeof value === 'number' ? value.toLocaleString() : parseFloat(value || '0').toLocaleString()}
                         </span>
                       ) : columnName === 'WORK IDENTIFIER' ? (
                         <code className="text-xs bg-muted px-1 py-0.5 rounded">

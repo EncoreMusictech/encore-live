@@ -263,7 +263,7 @@ export function RoyaltiesDiscrepancyReport() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    Showing {filteredDiscrepancies.length} items • Total: ${totalAmount.toFixed(2)}
+                    Showing {filteredDiscrepancies.length} items • Total: ${totalAmount.toLocaleString()}
                   </div>
                 </div>
 
@@ -288,7 +288,7 @@ export function RoyaltiesDiscrepancyReport() {
                           <TableCell>{item.workTitle}</TableCell>
                           <TableCell>{item.source}</TableCell>
                           <TableCell>{item.writers}</TableCell>
-                          <TableCell>${(item.gross || 0).toFixed(2)}</TableCell>
+                          <TableCell>${(item.gross || 0).toLocaleString()}</TableCell>
                           <TableCell>
                             <Badge className={getTypeColor(item.type)}>
                               {item.type.replace('_', ' ')}

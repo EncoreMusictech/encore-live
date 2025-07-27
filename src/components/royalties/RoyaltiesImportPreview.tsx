@@ -443,7 +443,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
                                 {header === 'STATEMENT ID' ? (
                                   String(localRecord.statement_id || '-')
                                 ) : header === 'GROSS' || header === 'NET' 
-                                  ? (typeof row[originalFieldName] === 'number' ? `$${row[originalFieldName].toFixed(2)}` : String(row[originalFieldName] || '-'))
+                                  ? (typeof row[originalFieldName] === 'number' ? `$${row[originalFieldName].toLocaleString()}` : String(row[originalFieldName] || '-'))
                                   : String(row[originalFieldName] || '-')
                                 }
                               </TableCell>

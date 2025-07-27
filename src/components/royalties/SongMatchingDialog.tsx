@@ -492,7 +492,7 @@ export function SongMatchingDialog({
                           <div className={`text-sm font-medium ${
                             match.isMatched ? 'text-emerald-800' : 'text-slate-800'
                           }`}>
-                            ${match.grossAmount.toFixed(2)}
+                            ${match.grossAmount.toLocaleString()}
                           </div>
                           {match.isMatched && match.matchedCopyright && (
                             <div className="mt-2 flex items-center gap-1">
