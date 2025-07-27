@@ -414,29 +414,61 @@ export function useReconciliationBatches() {
 
         if (totalAmount <= 0) continue;
 
-        // Create writer-specific payout
-        const { data: payout, error: payoutError } = await supabase
-          .from('payouts')
-          .insert({
-            user_id: user.id,
-            client_id: writerId, // Use writer UUID as client_id
-            period: `Q${selectedQuarter} ${selectedYear}`,
-            period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,
-            period_end: `${selectedYear}-${selectedQuarter * 3}-${selectedQuarter === 4 ? 31 : 30}`,
-            gross_royalties: totalAmount,
-            total_expenses: 0,
-            net_payable: totalAmount,
-            amount_due: totalAmount,
-            status: 'pending',
-            notes: `Auto-generated for writer ${writer.writer_name} from batch ${batch?.batch_id || id} - Q${selectedQuarter} ${selectedYear}`,
-          })
-          .select()
-          .single();
+        try {
+          // First, ensure a contact exists for this writer
+          let contact;
+          const { data: existingContact } = await supabase
+            .from('contacts')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('name', writer.writer_name)
+            .eq('contact_type', 'writer')
+            .maybeSingle();
 
-        if (payoutError) {
-          console.error(`Error creating payout for writer ${writer.writer_name}:`, payoutError);
-          continue;
-        }
+          if (existingContact) {
+            contact = existingContact;
+          } else {
+            // Create a contact for this writer
+            const { data: newContact, error: contactError } = await supabase
+              .from('contacts')
+              .insert({
+                user_id: user.id,
+                name: writer.writer_name,
+                contact_type: 'writer'
+              })
+              .select('id')
+              .single();
+
+            if (contactError) {
+              console.error(`Error creating contact for writer ${writer.writer_name}:`, contactError);
+              continue;
+            }
+            contact = newContact;
+          }
+
+          // Create writer-specific payout using contact_id
+          const { data: payout, error: payoutError } = await supabase
+            .from('payouts')
+            .insert({
+              user_id: user.id,
+              client_id: contact.id, // Use contact ID instead of writer ID
+              period: `Q${selectedQuarter} ${selectedYear}`,
+              period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,
+              period_end: `${selectedYear}-${selectedQuarter * 3}-${selectedQuarter === 4 ? 31 : 30}`,
+              gross_royalties: totalAmount,
+              total_expenses: 0,
+              net_payable: totalAmount,
+              amount_due: totalAmount,
+              status: 'pending',
+              notes: `Auto-generated for writer ${writer.writer_name} from batch ${batch?.batch_id || id} - Q${selectedQuarter} ${selectedYear}`,
+            })
+            .select()
+            .single();
+
+          if (payoutError) {
+            console.error(`Error creating payout for writer ${writer.writer_name}:`, payoutError);
+            continue;
+          }
 
         // Link royalties to the payout
         const payoutRoyalties = writerRoyalties.map(royalty => ({
@@ -502,14 +534,22 @@ export function useReconciliationBatches() {
           }
         }
 
-        payoutResults.push({
-          writer_name: writer.writer_name,
-          writer_id: writer.writer_id,
-          payout_id: payout.id,
-          amount: totalAmount,
-          royalty_count: writerRoyalties.length,
-          payee_count: payees?.length || 0,
-        });
+          payoutResults.push({
+            writer_name: writer.writer_name,
+            writer_id: writer.writer_id,
+            payout_id: payout.id,
+            amount: totalAmount,
+            royalty_count: writerRoyalties.length,
+            payee_count: payees?.length || 0,
+          });
+        } catch (error) {
+          console.error(`Error processing writer ${writer.writer_name}:`, error);
+          toast({
+            title: "Warning",
+            description: `Failed to create payout for writer ${writer.writer_name}`,
+            variant: "destructive",
+          });
+        }
       }
 
       // Handle unmatched royalties (create a general payout if needed)
@@ -598,7 +638,7 @@ export function useReconciliationBatches() {
         .from('payouts')
         .select('id')
         .eq('user_id', user.id)
-        .eq('notes', `Auto-generated from reconciliation batch ${batch?.batch_id || id}`);
+        .like('notes', `%from batch ${batch?.batch_id || id}%`);
 
       if (payoutError) throw payoutError;
 

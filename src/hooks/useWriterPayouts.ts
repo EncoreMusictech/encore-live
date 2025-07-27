@@ -98,7 +98,7 @@ export const useWriterPayouts = () => {
           .eq('user_id', user.id)
           .eq('name', writerMatch.writer_name)
           .eq('contact_type', 'writer')
-          .single();
+          .maybeSingle();
 
         if (existingContact) {
           contact = existingContact;
