@@ -251,33 +251,33 @@ export function PayoutList() {
     }
   };
 
-  // Fetch expenses for all payees (writers)
+  // Fetch expenses for all payees by matching contact names
   useEffect(() => {
     const fetchAllExpenses = async () => {
       if (!payouts.length) return;
       
-      // Get unique client IDs from payouts (contact IDs)
-      const clientIds = [...new Set(payouts.map(payout => payout.client_id).filter(Boolean))];
-      
-      const expensePromises = clientIds.map(async (clientId) => {
+      const expensePromises = payouts.map(async (payout) => {
         try {
-          // First, find the payee record that corresponds to this client (contact)
-          // The payees table links writer_id (contact) to payee_id (expense recipient)
-          const { data: payees, error: payeeError } = await supabase
+          if (!payout.contacts?.name) {
+            return { clientId: payout.client_id, total: 0 };
+          }
+
+          // Find payees that match this contact's name
+          const { data: matchingPayees, error: payeeError } = await supabase
             .from('payees')
             .select('id')
-            .eq('writer_id', clientId)
+            .eq('payee_name', payout.contacts.name)
             .eq('user_id', user?.id);
 
           if (payeeError) throw payeeError;
 
-          // If no payee found for this client, return 0 expenses
-          if (!payees || payees.length === 0) {
-            return { clientId, total: 0 };
+          // If no matching payees found, return 0 expenses
+          if (!matchingPayees || matchingPayees.length === 0) {
+            return { clientId: payout.client_id, total: 0 };
           }
 
-          // Get all payee IDs for this client (there might be multiple payees per writer)
-          const payeeIds = payees.map(p => p.id);
+          // Get all payee IDs for this contact name
+          const payeeIds = matchingPayees.map(p => p.id);
 
           // Fetch all expenses for these payees
           const { data: expenses, error: expenseError } = await supabase
@@ -304,10 +304,10 @@ export function PayoutList() {
             })
             .reduce((sum, expense) => sum + expense.amount, 0);
             
-          return { clientId, total: recoupableTotal };
+          return { clientId: payout.client_id, total: recoupableTotal };
         } catch (error) {
-          console.error('Error fetching expenses for client:', clientId, error);
-          return { clientId, total: 0 };
+          console.error('Error fetching expenses for payout:', payout.client_id, error);
+          return { clientId: payout.client_id, total: 0 };
         }
       });
       
