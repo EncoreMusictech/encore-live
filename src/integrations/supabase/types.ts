@@ -1817,6 +1817,7 @@ export type Database = {
           gross_royalties: number
           id: string
           net_payable: number
+          net_royalties: number | null
           notes: string | null
           payment_completed_at: string | null
           payment_date: string | null
@@ -1856,6 +1857,7 @@ export type Database = {
           gross_royalties?: number
           id?: string
           net_payable?: number
+          net_royalties?: number | null
           notes?: string | null
           payment_completed_at?: string | null
           payment_date?: string | null
@@ -1895,6 +1897,7 @@ export type Database = {
           gross_royalties?: number
           id?: string
           net_payable?: number
+          net_royalties?: number | null
           notes?: string | null
           payment_completed_at?: string | null
           payment_date?: string | null
