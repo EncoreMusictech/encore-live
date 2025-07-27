@@ -90,12 +90,40 @@ export const useWriterPayouts = () => {
 
     for (const writerMatch of writerMatches) {
       try {
-        // Create payout for this writer
+        // First, ensure a contact exists for this writer
+        let contact;
+        const { data: existingContact } = await supabase
+          .from('contacts')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('name', writerMatch.writer_name)
+          .eq('contact_type', 'writer')
+          .single();
+
+        if (existingContact) {
+          contact = existingContact;
+        } else {
+          // Create a contact for this writer
+          const { data: newContact, error: contactError } = await supabase
+            .from('contacts')
+            .insert({
+              user_id: user.id,
+              name: writerMatch.writer_name,
+              contact_type: 'writer'
+            })
+            .select('id')
+            .single();
+
+          if (contactError) throw contactError;
+          contact = newContact;
+        }
+
+        // Create payout for this writer using the contact_id
         const { data: payout, error: payoutError } = await supabase
           .from('payouts')
           .insert({
             user_id: user.id,
-            client_id: writerMatch.writer_uuid, // Use writer UUID as client_id
+            client_id: contact.id, // Use contact ID
             period: `Q${quarter} ${year}`,
             period_start: `${year}-${(quarter - 1) * 3 + 1}-01`,
             period_end: `${year}-${quarter * 3}-${quarter === 4 ? 31 : 30}`,
