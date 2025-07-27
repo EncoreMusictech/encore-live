@@ -20,6 +20,7 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [reconciliationFilter, setReconciliationFilter] = useState<string>("all");
   const [editingBatch, setEditingBatch] = useState<any>(null);
   const { batches, loading, deleteBatch, refreshBatches } = useReconciliationBatches();
 
@@ -29,7 +30,9 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                          batch.source.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || batch.status === statusFilter;
     const matchesSource = sourceFilter === "all" || batch.source === sourceFilter;
-    return matchesSearch && matchesStatus && matchesSource;
+    const matchesReconciliation = reconciliationFilter === "all" || 
+                                 batch.reconciliation_status === reconciliationFilter;
+    return matchesSearch && matchesStatus && matchesSource && matchesReconciliation;
   });
 
   const getStatusColor = (status: string) => {
@@ -47,6 +50,14 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
       case 'PRO': return 'bg-indigo-100 text-indigo-800';
       case 'YouTube': return 'bg-red-100 text-red-800';
       case 'Other': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getReconciliationStatusColor = (status: 'Complete' | 'Incomplete') => {
+    switch (status) {
+      case 'Complete': return 'bg-green-100 text-green-800';
+      case 'Incomplete': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -119,6 +130,16 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
             <SelectItem value="Other">Other</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={reconciliationFilter} onValueChange={setReconciliationFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Filter by reconciliation" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Reconciliation</SelectItem>
+            <SelectItem value="Complete">Complete</SelectItem>
+            <SelectItem value="Incomplete">Incomplete</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
@@ -132,6 +153,7 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                 <TableHead>Date Received</TableHead>
                 <TableHead>Gross Amount</TableHead>
                 <TableHead>Progress</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
              </TableRow>
            </TableHeader>
@@ -153,39 +175,44 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                    {new Date(batch.date_received).toLocaleDateString()}
                  </TableCell>
                  <TableCell>${batch.total_gross_amount.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1 min-w-[120px]">
+                        {(() => {
+                          const royaltyAmount = batch.allocated_amount || 0; // This represents the royalty amount from linked statements
+                          const batchAmount = batch.total_gross_amount || 1; // Avoid division by zero
+                          const progressPercentage = batchAmount > 0 ? (royaltyAmount / batchAmount) * 100 : 0;
+                          const isOverProgress = progressPercentage > 100;
+                          const isComplete = progressPercentage === 100;
+                          const displayProgress = isOverProgress ? Math.min(progressPercentage, 100) : progressPercentage;
+                          
+                          return (
+                            <>
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>${royaltyAmount.toLocaleString()}</span>
+                                <span className={isOverProgress ? "text-red-600 font-medium" : isComplete ? "text-green-600 font-medium" : ""}>
+                                  {progressPercentage.toFixed(1)}%
+                                </span>
+                              </div>
+                              <Progress 
+                                value={displayProgress} 
+                                className={`h-2 ${
+                                  isOverProgress 
+                                    ? '[&>[data-state="complete"]]:bg-red-500' 
+                                    : isComplete 
+                                      ? '[&>[data-state="complete"]]:bg-green-500' 
+                                      : ''
+                                }`} 
+                              />
+                            </>
+                          );
+                        })()}
+                      </div>
+                   </TableCell>
                    <TableCell>
-                     <div className="space-y-1 min-w-[120px]">
-                       {(() => {
-                         const royaltyAmount = batch.allocated_amount || 0; // This represents the royalty amount from linked statements
-                         const batchAmount = batch.total_gross_amount || 1; // Avoid division by zero
-                         const progressPercentage = batchAmount > 0 ? (royaltyAmount / batchAmount) * 100 : 0;
-                         const isOverProgress = progressPercentage > 100;
-                         const isComplete = progressPercentage === 100;
-                         const displayProgress = isOverProgress ? Math.min(progressPercentage, 100) : progressPercentage;
-                         
-                         return (
-                           <>
-                             <div className="flex justify-between text-xs text-muted-foreground">
-                               <span>${royaltyAmount.toLocaleString()}</span>
-                               <span className={isOverProgress ? "text-red-600 font-medium" : isComplete ? "text-green-600 font-medium" : ""}>
-                                 {progressPercentage.toFixed(1)}%
-                               </span>
-                             </div>
-                             <Progress 
-                               value={displayProgress} 
-                               className={`h-2 ${
-                                 isOverProgress 
-                                   ? '[&>[data-state="complete"]]:bg-red-500' 
-                                   : isComplete 
-                                     ? '[&>[data-state="complete"]]:bg-green-500' 
-                                     : ''
-                               }`} 
-                             />
-                           </>
-                         );
-                       })()}
-                     </div>
-                  </TableCell>
+                     <Badge className={getReconciliationStatusColor(batch.reconciliation_status || 'Incomplete')}>
+                       {batch.reconciliation_status || 'Incomplete'}
+                     </Badge>
+                   </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {onSelectBatch && (
@@ -258,7 +285,7 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
 
       {filteredBatches.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          {searchTerm || statusFilter !== "all" || sourceFilter !== "all"
+          {searchTerm || statusFilter !== "all" || sourceFilter !== "all" || reconciliationFilter !== "all"
             ? "No batches found matching your filters."
             : "No reconciliation batches found. Create your first batch to get started."}
         </div>

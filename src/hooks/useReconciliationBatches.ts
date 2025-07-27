@@ -15,6 +15,7 @@ export interface ReconciliationBatch {
   date_received: string;
   total_gross_amount: number;
   allocated_amount?: number; // Sum of allocated royalties
+  reconciliation_status?: 'Complete' | 'Incomplete'; // Calculated field
   linked_statement_id?: string;
   statement_file_url?: string;
   status: 'Pending' | 'Imported' | 'Processed';
@@ -82,7 +83,12 @@ export function useReconciliationBatches() {
             }
           }
 
-          return { ...batch, allocated_amount };
+          // Calculate reconciliation status
+          const reconciliation_status: 'Complete' | 'Incomplete' = Math.abs(allocated_amount - batch.total_gross_amount) < 0.01 
+            ? 'Complete' 
+            : 'Incomplete';
+
+          return { ...batch, allocated_amount, reconciliation_status };
         })
       );
 
