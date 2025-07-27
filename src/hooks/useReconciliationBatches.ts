@@ -310,8 +310,16 @@ export function useReconciliationBatches() {
     }
   };
 
-  const processBatch = async (id: string) => {
+  const processBatch = async (id: string, quarter?: number, year?: number) => {
     if (!user) return false;
+
+    // Default to current quarter and year if not specified
+    const currentDate = new Date();
+    const currentQuarter = Math.ceil((currentDate.getMonth() + 1) / 3);
+    const currentYear = currentDate.getFullYear();
+    
+    const selectedQuarter = quarter || currentQuarter;
+    const selectedYear = year || currentYear;
 
     try {
       // Get all royalty allocations linked to this batch
@@ -358,19 +366,21 @@ export function useReconciliationBatches() {
         return false;
       }
 
-      // Create the payout
+      // Create the payout with the selected period
       const { data: payout, error: payoutError } = await supabase
         .from('payouts')
         .insert({
           user_id: user.id,
           client_id: 'batch-' + id, // Temporary client ID for batch processing
-          period: `Batch ${batch?.batch_id || id}`,
+          period: `Q${selectedQuarter} ${selectedYear}`,
+          period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,
+          period_end: `${selectedYear}-${selectedQuarter * 3}-${selectedQuarter === 4 ? 31 : 30}`,
           gross_royalties: totalAmount,
           total_expenses: 0,
           net_payable: totalAmount,
           amount_due: totalAmount,
           status: 'pending',
-          notes: `Auto-generated from reconciliation batch ${batch?.batch_id || id}`,
+          notes: `Auto-generated from reconciliation batch ${batch?.batch_id || id} for Q${selectedQuarter} ${selectedYear}`,
         })
         .select()
         .single();

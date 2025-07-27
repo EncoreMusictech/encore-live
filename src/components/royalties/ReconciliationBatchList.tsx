@@ -12,6 +12,7 @@ import { Search, MoreHorizontal, Edit, Trash2, Download, FileText, Upload, Refre
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { ReconciliationBatchForm } from "./ReconciliationBatchForm";
+import { ProcessBatchDialog } from "./ProcessBatchDialog";
 
 interface ReconciliationBatchListProps {
   onSelectBatch?: (batchId: string) => void;
@@ -23,6 +24,7 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [reconciliationFilter, setReconciliationFilter] = useState<string>("all");
   const [editingBatch, setEditingBatch] = useState<any>(null);
+  const [processingBatch, setProcessingBatch] = useState<any>(null);
   const { batches, loading, deleteBatch, processBatch, unprocessBatch, refreshBatches } = useReconciliationBatches();
   const { hasRole, isAdmin } = useUserRoles();
 
@@ -289,34 +291,17 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                        const isComplete = progressPercentage === 100 && progressPercentage <= 100;
                        const hasBeenProcessed = batch.processed_at && !batch.unprocessed_at;
                        
-                       return isComplete && !hasBeenProcessed ? (
-                         <AlertDialog>
-                           <AlertDialogTrigger asChild>
-                             <Button 
-                               variant="ghost" 
-                               size="sm" 
-                               title="Process to Payouts"
-                               className="text-green-600 hover:text-green-700"
-                             >
-                               <Play className="h-4 w-4" />
-                             </Button>
-                           </AlertDialogTrigger>
-                           <AlertDialogContent>
-                             <AlertDialogHeader>
-                               <AlertDialogTitle>Process Batch to Payouts</AlertDialogTitle>
-                               <AlertDialogDescription>
-                                 This will submit all royalties from batch "{batch.batch_id}" to the Payout tab and record a timestamp. This action can only be done once per batch.
-                               </AlertDialogDescription>
-                             </AlertDialogHeader>
-                             <AlertDialogFooter>
-                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                               <AlertDialogAction onClick={() => processBatch(batch.id)}>
-                                 Process
-                               </AlertDialogAction>
-                             </AlertDialogFooter>
-                           </AlertDialogContent>
-                         </AlertDialog>
-                       ) : null;
+                        return isComplete && !hasBeenProcessed ? (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            title="Process to Payouts"
+                            className="text-green-600 hover:text-green-700"
+                            onClick={() => setProcessingBatch(batch)}
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
+                        ) : null;
                      })()}
 
                      {/* Unprocess Button - Only available for admin users and processed batches */}
@@ -390,6 +375,13 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
             : "No reconciliation batches found. Create your first batch to get started."}
         </div>
       )}
+
+      {/* Process Batch Dialog */}
+      <ProcessBatchDialog
+        batch={processingBatch}
+        open={!!processingBatch}
+        onOpenChange={(open) => !open && setProcessingBatch(null)}
+      />
     </div>
   );
 }
