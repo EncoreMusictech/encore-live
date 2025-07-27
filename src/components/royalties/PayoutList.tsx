@@ -313,7 +313,7 @@ export function PayoutList() {
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
-              <TableHead>Client</TableHead>
+              <TableHead>Payee Name</TableHead>
               <TableHead>Period</TableHead>
               <TableHead>Gross Royalties</TableHead>
               <TableHead>Net Payable</TableHead>
