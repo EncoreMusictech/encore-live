@@ -333,7 +333,7 @@ export function PayoutList() {
                   />
                 </TableCell>
                 <TableCell className="font-medium">
-                  Client Name
+                  {payout.contacts?.name || 'No Contact Assigned'}
                 </TableCell>
                 <TableCell>{payout.period}</TableCell>
                 <TableCell>${payout.gross_royalties.toLocaleString()}</TableCell>

@@ -45,6 +45,11 @@ export interface Payout {
   quarterly_report_id?: string;
   created_at: string;
   updated_at: string;
+  // Related data
+  contacts?: {
+    name: string;
+    email: string;
+  };
 }
 
 export interface PayoutExpense {
