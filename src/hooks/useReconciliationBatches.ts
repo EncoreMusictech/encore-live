@@ -557,43 +557,77 @@ export function useReconciliationBatches() {
         const unmatchedTotal = unmatched.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
         
         if (unmatchedTotal > 0) {
-          const { data: unmatchedPayout, error: unmatchedError } = await supabase
-            .from('payouts')
-            .insert({
-              user_id: user.id,
-              client_id: 'unmatched-' + id,
-              period: `Q${selectedQuarter} ${selectedYear}`,
-              period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,
-              period_end: `${selectedYear}-${selectedQuarter * 3}-${selectedQuarter === 4 ? 31 : 30}`,
-              gross_royalties: unmatchedTotal,
-              total_expenses: 0,
-              net_payable: unmatchedTotal,
-              amount_due: unmatchedTotal,
-              status: 'pending',
-              notes: `Unmatched royalties from batch ${batch?.batch_id || id} - Q${selectedQuarter} ${selectedYear}`,
-            })
-            .select()
-            .single();
+          // Create or find an "Unmatched" contact for unmatched royalties
+          let unmatchedContact;
+          const { data: existingUnmatchedContact } = await supabase
+            .from('contacts')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('name', 'Unmatched Royalties')
+            .eq('contact_type', 'other')
+            .maybeSingle();
 
-          if (!unmatchedError) {
-            const unmatchedRoyalties = unmatched.map(royalty => ({
-              payout_id: unmatchedPayout.id,
-              royalty_id: royalty.id,
-              allocated_amount: royalty.gross_royalty_amount || 0,
-            }));
+          if (existingUnmatchedContact) {
+            unmatchedContact = existingUnmatchedContact;
+          } else {
+            const { data: newUnmatchedContact, error: unmatchedContactError } = await supabase
+              .from('contacts')
+              .insert({
+                user_id: user.id,
+                name: 'Unmatched Royalties',
+                contact_type: 'other'
+              })
+              .select('id')
+              .single();
 
-            await supabase
-              .from('payout_royalties')
-              .insert(unmatchedRoyalties);
+            if (unmatchedContactError) {
+              console.error('Error creating unmatched contact:', unmatchedContactError);
+              // Skip unmatched payout creation if contact creation fails
+              unmatchedContact = null;
+            } else {
+              unmatchedContact = newUnmatchedContact;
+            }
+          }
 
-            payoutResults.push({
-              writer_name: 'Unmatched',
-              writer_id: 'unmatched',
-              payout_id: unmatchedPayout.id,
-              amount: unmatchedTotal,
-              royalty_count: unmatched.length,
-              payee_count: 0,
-            });
+          if (unmatchedContact) {
+            const { data: unmatchedPayout, error: unmatchedError } = await supabase
+              .from('payouts')
+              .insert({
+                user_id: user.id,
+                client_id: unmatchedContact.id,
+                period: `Q${selectedQuarter} ${selectedYear}`,
+                period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,
+                period_end: `${selectedYear}-${selectedQuarter * 3}-${selectedQuarter === 4 ? 31 : 30}`,
+                gross_royalties: unmatchedTotal,
+                total_expenses: 0,
+                net_payable: unmatchedTotal,
+                amount_due: unmatchedTotal,
+                status: 'pending',
+                notes: `Unmatched royalties from batch ${batch?.batch_id || id} - Q${selectedQuarter} ${selectedYear}`,
+              })
+              .select()
+              .single();
+
+            if (!unmatchedError) {
+              const unmatchedRoyalties = unmatched.map(royalty => ({
+                payout_id: unmatchedPayout.id,
+                royalty_id: royalty.id,
+                allocated_amount: royalty.gross_royalty_amount || 0,
+              }));
+
+              await supabase
+                .from('payout_royalties')
+                .insert(unmatchedRoyalties);
+
+              payoutResults.push({
+                writer_name: 'Unmatched',
+                writer_id: 'unmatched',
+                payout_id: unmatchedPayout.id,
+                amount: unmatchedTotal,
+                royalty_count: unmatched.length,
+                payee_count: 0,
+              });
+            }
           }
         }
       }
