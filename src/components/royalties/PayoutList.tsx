@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,8 @@ export function PayoutList() {
   const [selectedPayouts, setSelectedPayouts] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [exportingStatement, setExportingStatement] = useState<string | null>(null);
-  const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts } = usePayouts();
+  const [payoutExpenses, setPayoutExpenses] = useState<{[key: string]: number}>({});
+  const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts, getPayoutExpenses } = usePayouts();
 
   const filteredPayouts = payouts.filter(payout => {
     const matchesSearch = payout.period?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
@@ -247,6 +248,43 @@ export function PayoutList() {
     }
   };
 
+  // Fetch expenses for all payouts
+  useEffect(() => {
+    const fetchAllExpenses = async () => {
+      if (!payouts.length) return;
+      
+      const expensePromises = payouts.map(async (payout) => {
+        const expenses = await getPayoutExpenses(payout.id);
+        // Calculate total recoupable expenses
+        const recoupableTotal = expenses
+          .filter(expense => {
+            // Check the legacy boolean field first
+            if (expense.is_recoupable) return true;
+            
+            // Check the new JSON field if it exists
+            if (expense.expense_flags && typeof expense.expense_flags === 'object') {
+              const flags = expense.expense_flags as { recoupable?: boolean };
+              return flags.recoupable === true;
+            }
+            
+            return false;
+          })
+          .reduce((sum, expense) => sum + expense.amount, 0);
+        return { payoutId: payout.id, total: recoupableTotal };
+      });
+      
+      const results = await Promise.all(expensePromises);
+      const expenseMap = results.reduce((acc, { payoutId, total }) => {
+        acc[payoutId] = total;
+        return acc;
+      }, {} as {[key: string]: number});
+      
+      setPayoutExpenses(expenseMap);
+    };
+
+    fetchAllExpenses();
+  }, [payouts, getPayoutExpenses]);
+
   if (loading) {
     return <div className="p-8 text-center">Loading payouts...</div>;
   }
@@ -316,6 +354,7 @@ export function PayoutList() {
               <TableHead>Payee Name</TableHead>
               <TableHead>Period</TableHead>
               <TableHead>Gross Royalties</TableHead>
+              <TableHead>Expenses</TableHead>
               <TableHead>Net Payable</TableHead>
               <TableHead>Amount Due</TableHead>
               <TableHead>Payment Method</TableHead>
@@ -337,6 +376,9 @@ export function PayoutList() {
                 </TableCell>
                 <TableCell>{payout.period}</TableCell>
                 <TableCell>${payout.gross_royalties.toLocaleString()}</TableCell>
+                <TableCell className="text-red-600">
+                  ${(payoutExpenses[payout.id] || 0).toLocaleString()}
+                </TableCell>
                 <TableCell>${payout.net_payable.toLocaleString()}</TableCell>
                 <TableCell className="font-medium">
                   ${payout.amount_due.toLocaleString()}
