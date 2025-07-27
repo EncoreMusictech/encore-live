@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { toast } from "@/hooks/use-toast";
-import { getDemoQuarterlyBalanceReports } from "@/data/demo-quarterly-balance-reports";
 
 export interface QuarterlyBalanceReport {
   id: string;
@@ -53,16 +52,7 @@ export function useQuarterlyBalanceReports() {
 
   const fetchReports = async () => {
     try {
-      if (isDemo) {
-        // Use demo data when in demo mode
-        console.log('Loading demo quarterly balance reports...');
-        const demoData = getDemoQuarterlyBalanceReports();
-        console.log('Demo data loaded:', demoData.length, 'reports');
-        setReports(demoData.sort((a, b) => {
-          if (a.year !== b.year) return b.year - a.year;
-          return b.quarter - a.quarter;
-        }));
-      } else if (user) {
+      if (user) {
         const { data, error } = await supabase
           .from('quarterly_balance_reports')
           .select(`
