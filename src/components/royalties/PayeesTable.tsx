@@ -212,7 +212,6 @@ export function PayeesTable() {
                   <TableHead>Payee Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Hierarchy</TableHead>
-                  <TableHead>Contact</TableHead>
                   <TableHead>Primary</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -245,12 +244,6 @@ export function PayeesTable() {
                           <div>{payee.writer?.original_publisher?.agreement?.title || 'Unknown Agreement'}</div>
                           <div>{payee.writer?.original_publisher?.publisher_name || 'Unknown Publisher'} → {payee.writer?.writer_name || 'Unknown Writer'}</div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{payee.contact_info?.email || '-'}</div>
-                        <div className="text-xs text-muted-foreground">{payee.contact_info?.phone || '-'}</div>
                       </div>
                     </TableCell>
                     <TableCell>
