@@ -46,6 +46,15 @@ interface IndustryBenchmark {
   market_risk_factor: number;
 }
 
+interface RevenueSource {
+  revenue_type: string;
+  revenue_source: string;
+  annual_revenue: number;
+  growth_rate: number;
+  confidence_level: string;
+  is_recurring: boolean;
+}
+
 interface CashFlowProjection {
   year: number;
   revenue: number;
@@ -138,6 +147,75 @@ class ValuationEngine {
     if (dataPoints.artistPopularity > 70) score += 10;
     
     return Math.min(100, score);
+  }
+
+  // Enhanced Valuation with Additional Revenue Sources
+  static calculateEnhancedValuation(
+    baseValuation: number,
+    revenueSources: RevenueSource[]
+  ): { blendedValue: number; additionalValue: number; diversificationBonus: number } {
+    if (!revenueSources.length) {
+      return { blendedValue: baseValuation, additionalValue: 0, diversificationBonus: 0 };
+    }
+
+    // Revenue type multipliers based on industry standards
+    const multipliers: Record<string, number> = {
+      streaming: 12,
+      sync: 8,
+      performance: 10,
+      mechanical: 15,
+      merchandise: 5,
+      touring: 3,
+      publishing: 18,
+      master_licensing: 12,
+      other: 6,
+    };
+
+    // Calculate additional value from revenue sources
+    let additionalValue = 0;
+    const revenueTypes = new Set<string>();
+
+    revenueSources.forEach(source => {
+      const multiplier = multipliers[source.revenue_type] || 6;
+      const confidenceMultiplier = source.confidence_level === 'high' ? 1.1 : 
+                                  source.confidence_level === 'medium' ? 1.0 : 0.8;
+      const recurringMultiplier = source.is_recurring ? 1.0 : 0.6;
+      
+      additionalValue += source.annual_revenue * multiplier * confidenceMultiplier * recurringMultiplier;
+      revenueTypes.add(source.revenue_type);
+    });
+
+    // Diversification bonus (up to 20% for fully diversified portfolio)
+    const diversificationScore = Math.min(revenueTypes.size / 9, 1); // Max 9 revenue types
+    const diversificationBonus = diversificationScore * 0.2;
+
+    // Blend valuations (70% base, 30% additional)
+    const blendedValue = (baseValuation * 0.7) + (additionalValue * 0.3);
+    const finalValue = blendedValue * (1 + diversificationBonus);
+
+    return {
+      blendedValue: finalValue,
+      additionalValue,
+      diversificationBonus: diversificationBonus * 100,
+    };
+  }
+
+  // Enhanced Confidence Score with Additional Revenue Data
+  static calculateEnhancedConfidenceScore(
+    baseScore: number,
+    revenueSources: RevenueSource[]
+  ): number {
+    if (!revenueSources.length) return baseScore;
+    
+    // Base boost from having additional data points
+    const dataBoost = Math.min(revenueSources.length * 5, 25); // Max 25% boost
+    
+    // Quality boost from confidence levels
+    const highConfidenceCount = revenueSources.filter(s => s.confidence_level === 'high').length;
+    const mediumConfidenceCount = revenueSources.filter(s => s.confidence_level === 'medium').length;
+    const qualityBoost = (highConfidenceCount * 3) + (mediumConfidenceCount * 1.5);
+    
+    return Math.min(baseScore + dataBoost + qualityBoost, 100);
   }
 }
 

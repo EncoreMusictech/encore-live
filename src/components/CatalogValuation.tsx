@@ -431,11 +431,12 @@ Actual market values may vary significantly based on numerous factors not captur
       {result && (
         <>
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="analysis">DCF Analysis</TabsTrigger>
               <TabsTrigger value="forecasts">Forecasts</TabsTrigger>
               <TabsTrigger value="comparables">Comparables</TabsTrigger>
+              <TabsTrigger value="revenue-sources">Revenue Sources</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="reports">Reports</TabsTrigger>
             </TabsList>
@@ -1184,6 +1185,39 @@ Actual market values may vary significantly based on numerous factors not captur
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="revenue-sources" className="space-y-6">
+              {/* Back Navigation */}
+              <div className="flex items-center gap-2 mb-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    const overviewTab = document.querySelector('[data-value="overview"]') as HTMLElement;
+                    if (overviewTab) overviewTab.click();
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Overview
+                </Button>
+              </div>
+
+              {/* Revenue Sources Form */}
+              <RevenueSourcesForm 
+                catalogValuationId={catalogValuationId}
+                onMetricsUpdate={setRevenueMetrics}
+              />
+              
+              {/* Enhanced Valuation Engine */}
+              {revenueMetrics && revenueSources.length > 0 && (
+                <EnhancedValuationEngine
+                  baseValuation={result}
+                  revenueSources={revenueSources}
+                  revenueMetrics={revenueMetrics}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="reports" className="space-y-6">

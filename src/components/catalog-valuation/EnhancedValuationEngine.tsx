@@ -8,10 +8,11 @@ import { RevenueSource } from '@/hooks/useCatalogRevenueSources';
 
 interface EnhancedValuationEngineProps {
   baseValuation: {
-    risk_adjusted_value: number;
-    dcf_valuation: number;
-    multiple_valuation: number;
-    confidence_score: number;
+    risk_adjusted_value?: number;
+    dcf_valuation?: number;
+    multiple_valuation?: number;
+    confidence_score?: number;
+    valuation_amount?: number;
   };
   revenueSources: RevenueSource[];
   revenueMetrics: {
@@ -38,8 +39,8 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
     const baseWeight = 0.7; // 70% weight to base valuation
     const additionalWeight = 0.3; // 30% weight to additional revenue
     
-    const blendedValue = (baseValuation.risk_adjusted_value * baseWeight) + 
-                        (additionalValue * additionalWeight);
+    const baseValue = baseValuation.risk_adjusted_value || baseValuation.valuation_amount || 0;
+    const blendedValue = (baseValue * baseWeight) + (additionalValue * additionalWeight);
     
     // Apply diversification bonus
     const finalValue = blendedValue * (1 + diversificationBonus);
@@ -49,6 +50,7 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
       additionalValue,
       diversificationBonus: diversificationBonus * 100,
       confidenceBoost: calculateConfidenceBoost(),
+      baseValue,
     };
   };
 
@@ -104,7 +106,8 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
   };
 
   const blendedResults = calculateBlendedValuation();
-  const enhancedConfidence = Math.min(baseValuation.confidence_score + blendedResults.confidenceBoost, 100);
+  const baseConfidence = baseValuation.confidence_score || 0;
+  const enhancedConfidence = Math.min(baseConfidence + blendedResults.confidenceBoost, 100);
 
   return (
     <Card>
@@ -133,8 +136,10 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
                   </div>
                   <div className="text-sm text-muted-foreground">Enhanced Fair Market Value</div>
                   <Badge variant="secondary" className="mt-2">
-                    {((blendedResults.blendedValue / baseValuation.risk_adjusted_value - 1) * 100).toFixed(1)}% 
-                    vs Base Valuation
+                    {blendedResults.baseValue > 0 ? 
+                      ((blendedResults.blendedValue / blendedResults.baseValue - 1) * 100).toFixed(1) : 
+                      'N/A'
+                    }% vs Base Valuation
                   </Badge>
                 </div>
 
@@ -243,7 +248,7 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span>Base Valuation (70%)</span>
-                    <span className="font-medium">{formatCurrency(baseValuation.risk_adjusted_value)}</span>
+                    <span className="font-medium">{formatCurrency(blendedResults.baseValue)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Additional Revenue (30%)</span>
