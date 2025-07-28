@@ -104,7 +104,7 @@ export const ContactManagement = ({
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <div className="space-y-4" onBlur={onBlur}>
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
