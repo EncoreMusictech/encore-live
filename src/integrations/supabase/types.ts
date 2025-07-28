@@ -89,9 +89,75 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_revenue_sources: {
+        Row: {
+          annual_revenue: number
+          catalog_valuation_id: string
+          confidence_level: string | null
+          created_at: string
+          currency: string
+          end_date: string | null
+          growth_rate: number | null
+          id: string
+          is_recurring: boolean | null
+          notes: string | null
+          revenue_source: string
+          revenue_type: string
+          start_date: string | null
+          supporting_documents: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annual_revenue?: number
+          catalog_valuation_id: string
+          confidence_level?: string | null
+          created_at?: string
+          currency?: string
+          end_date?: string | null
+          growth_rate?: number | null
+          id?: string
+          is_recurring?: boolean | null
+          notes?: string | null
+          revenue_source: string
+          revenue_type: string
+          start_date?: string | null
+          supporting_documents?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annual_revenue?: number
+          catalog_valuation_id?: string
+          confidence_level?: string | null
+          created_at?: string
+          currency?: string
+          end_date?: string | null
+          growth_rate?: number | null
+          id?: string
+          is_recurring?: boolean | null
+          notes?: string | null
+          revenue_source?: string
+          revenue_type?: string
+          start_date?: string | null
+          supporting_documents?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_catalog_valuation"
+            columns: ["catalog_valuation_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_valuations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalog_valuations: {
         Row: {
           artist_name: string
+          blended_valuation: number | null
           cash_flow_projections: Json | null
           catalog_age_years: number | null
           comparable_multiples: Json | null
@@ -102,21 +168,26 @@ export type Database = {
           discount_rate: number | null
           genre: string | null
           growth_assumptions: Json | null
+          has_additional_revenue: boolean | null
           id: string
           ltm_revenue: number | null
           monthly_listeners: number | null
           multiple_valuation: number | null
           popularity_score: number | null
+          revenue_diversification_score: number | null
           risk_adjusted_value: number | null
           top_tracks: Json | null
+          total_additional_revenue: number | null
           total_streams: number | null
           updated_at: string
           user_id: string
           valuation_amount: number | null
           valuation_methodology: string | null
+          valuation_methodology_v2: string | null
         }
         Insert: {
           artist_name: string
+          blended_valuation?: number | null
           cash_flow_projections?: Json | null
           catalog_age_years?: number | null
           comparable_multiples?: Json | null
@@ -127,21 +198,26 @@ export type Database = {
           discount_rate?: number | null
           genre?: string | null
           growth_assumptions?: Json | null
+          has_additional_revenue?: boolean | null
           id?: string
           ltm_revenue?: number | null
           monthly_listeners?: number | null
           multiple_valuation?: number | null
           popularity_score?: number | null
+          revenue_diversification_score?: number | null
           risk_adjusted_value?: number | null
           top_tracks?: Json | null
+          total_additional_revenue?: number | null
           total_streams?: number | null
           updated_at?: string
           user_id: string
           valuation_amount?: number | null
           valuation_methodology?: string | null
+          valuation_methodology_v2?: string | null
         }
         Update: {
           artist_name?: string
+          blended_valuation?: number | null
           cash_flow_projections?: Json | null
           catalog_age_years?: number | null
           comparable_multiples?: Json | null
@@ -152,18 +228,22 @@ export type Database = {
           discount_rate?: number | null
           genre?: string | null
           growth_assumptions?: Json | null
+          has_additional_revenue?: boolean | null
           id?: string
           ltm_revenue?: number | null
           monthly_listeners?: number | null
           multiple_valuation?: number | null
           popularity_score?: number | null
+          revenue_diversification_score?: number | null
           risk_adjusted_value?: number | null
           top_tracks?: Json | null
+          total_additional_revenue?: number | null
           total_streams?: number | null
           updated_at?: string
           user_id?: string
           valuation_amount?: number | null
           valuation_methodology?: string | null
+          valuation_methodology_v2?: string | null
         }
         Relationships: []
       }

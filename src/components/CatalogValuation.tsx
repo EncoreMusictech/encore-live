@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { useDebounce } from "@/hooks/usePerformanceOptimization";
+import { RevenueSourcesForm } from "@/components/catalog-valuation/RevenueSourcesForm";
+import { EnhancedValuationEngine } from "@/components/catalog-valuation/EnhancedValuationEngine";
+import { useCatalogRevenueSources } from "@/hooks/useCatalogRevenueSources";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -116,11 +119,15 @@ const CatalogValuation = memo(() => {
   const [result, setResult] = useState<ValuationResult | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<"pessimistic" | "base" | "optimistic">("base");
   const [showAdvancedInputs, setShowAdvancedInputs] = useState(false);
+  const [catalogValuationId, setCatalogValuationId] = useState<string | null>(null);
+  const [revenueMetrics, setRevenueMetrics] = useState<any>(null);
   const [valuationParams, setValuationParams] = useState<ValuationParams>({
     discountRate: 0.12,
     catalogAge: 5,
     methodology: 'advanced'
   });
+  
+  const { revenueSources, calculateRevenueMetrics } = useCatalogRevenueSources(catalogValuationId);
   
   const { toast } = useToast();
   const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
@@ -182,7 +189,7 @@ const CatalogValuation = memo(() => {
         // Save enhanced data to database (only for authenticated users)
         const { data: user } = await supabase.auth.getUser();
         if (user.user) {
-          const { error: saveError } = await supabase
+          const { data: savedValuation, error: saveError } = await supabase
             .from('catalog_valuations')
             .insert({
               user_id: user.user.id,
@@ -204,10 +211,14 @@ const CatalogValuation = memo(() => {
               valuation_methodology: data.valuation_methodology,
               cash_flow_projections: data.cash_flow_projections,
               comparable_multiples: data.comparable_multiples
-            });
+            })
+            .select()
+            .single();
 
           if (saveError) {
             console.error("Error saving valuation:", saveError);
+          } else if (savedValuation) {
+            setCatalogValuationId(savedValuation.id);
           }
         }
       }
