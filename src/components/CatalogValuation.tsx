@@ -1187,38 +1187,65 @@ Actual market values may vary significantly based on numerous factors not captur
               </Card>
             </TabsContent>
 
-            <TabsContent value="revenue-sources" className="space-y-6">
-              {/* Back Navigation */}
-              <div className="flex items-center gap-2 mb-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => {
-                    const overviewTab = document.querySelector('[data-value="overview"]') as HTMLElement;
-                    if (overviewTab) overviewTab.click();
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Overview
-                </Button>
-              </div>
+             <TabsContent value="revenue-sources" className="space-y-6">
+               {/* Back Navigation */}
+               <div className="flex items-center gap-2 mb-4">
+                 <Button 
+                   variant="ghost" 
+                   size="sm" 
+                   onClick={() => {
+                     const overviewTab = document.querySelector('[data-value="overview"]') as HTMLElement;
+                     if (overviewTab) overviewTab.click();
+                   }}
+                   className="flex items-center gap-2"
+                 >
+                   <ArrowLeft className="h-4 w-4" />
+                   Back to Overview
+                 </Button>
+               </div>
 
-              {/* Revenue Sources Form */}
-              <RevenueSourcesForm 
-                catalogValuationId={catalogValuationId}
-                onMetricsUpdate={setRevenueMetrics}
-              />
-              
-              {/* Enhanced Valuation Engine */}
-              {revenueMetrics && revenueSources.length > 0 && (
-                <EnhancedValuationEngine
-                  baseValuation={result}
-                  revenueSources={revenueSources}
-                  revenueMetrics={revenueMetrics}
-                />
-              )}
-            </TabsContent>
+               {/* Instructions */}
+               {!result && (
+                 <Card>
+                   <CardContent className="p-6">
+                     <div className="text-center space-y-2">
+                       <h3 className="text-lg font-medium">Additional Revenue Analysis</h3>
+                       <p className="text-muted-foreground">
+                         First complete a catalog valuation, then add additional revenue sources for enhanced analysis.
+                       </p>
+                       <Button 
+                         variant="outline" 
+                         onClick={() => {
+                           const overviewTab = document.querySelector('[data-value="overview"]') as HTMLElement;
+                           if (overviewTab) overviewTab.click();
+                         }}
+                       >
+                         Start Catalog Valuation
+                       </Button>
+                     </div>
+                   </CardContent>
+                 </Card>
+               )}
+
+               {/* Revenue Sources Form - Show when we have a valuation result */}
+               {result && (
+                 <>
+                   <RevenueSourcesForm 
+                     catalogValuationId={catalogValuationId}
+                     onMetricsUpdate={setRevenueMetrics}
+                   />
+                   
+                   {/* Enhanced Valuation Engine */}
+                   {revenueMetrics && revenueSources.length > 0 && (
+                     <EnhancedValuationEngine
+                       baseValuation={result}
+                       revenueSources={revenueSources}
+                       revenueMetrics={revenueMetrics}
+                     />
+                   )}
+                 </>
+               )}
+             </TabsContent>
 
             <TabsContent value="reports" className="space-y-6">
               {/* Back Navigation */}
