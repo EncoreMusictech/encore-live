@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Edit, Trash2, Plus } from "lucide-react";
+import { Search, Edit, Trash2, Plus, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -248,7 +248,7 @@ export function PayeesTable() {
                     </TableCell>
                     <TableCell>
                       {payee.is_primary && (
-                        <Badge variant="secondary">Primary</Badge>
+                        <Check className="h-4 w-4 text-green-600" />
                       )}
                     </TableCell>
                     <TableCell>
