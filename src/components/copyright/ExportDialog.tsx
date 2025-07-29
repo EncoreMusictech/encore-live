@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, Code, Table, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useCopyrightExports, ExportOptions } from '@/hooks/useCopyrightExports';
+import { cn } from '@/lib/utils';
 
 interface ExportDialogProps {
   open: boolean;
@@ -190,23 +191,28 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
               </div>
               
               {validationResults && (
-                <Alert className={validationResults.isValid ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                <Alert className={cn(
+                  "border-2",
+                  validationResults.isValid 
+                    ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-950 dark:text-green-100' 
+                    : 'border-red-500 bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-100'
+                )}>
                   <div className="flex items-center gap-2">
                     {validationResults.isValid ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                     ) : (
-                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                      <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
                     )}
-                    <span className="font-medium text-foreground">
+                    <span className="font-medium">
                       {validationResults.isValid ? 'Validation Passed' : 'Validation Issues Found'}
                     </span>
                   </div>
                   {!validationResults.isValid && (
                     <AlertDescription className="mt-2">
                       <div className="max-h-32 overflow-y-auto">
-                        <ul className="list-disc pl-4 space-y-1 text-foreground">
+                        <ul className="list-disc pl-4 space-y-1">
                           {validationResults.errors.map((error, index) => (
-                            <li key={index} className="text-sm text-foreground">{error}</li>
+                            <li key={index} className="text-sm">{error}</li>
                           ))}
                         </ul>
                       </div>
