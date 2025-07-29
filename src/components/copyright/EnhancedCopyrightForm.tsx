@@ -24,6 +24,7 @@ import { ArtistSelector } from './ArtistSelector';
 import { ProRegistrationSection } from './ProRegistrationSection';
 import { ContractIntegrationPanel } from './ContractIntegrationPanel';
 import { CMORegistration, getAllPROs } from '@/data/cmo-territories';
+import { DocumentUpload } from '@/components/ui/document-upload';
 
 interface EnhancedCopyrightFormProps {
   onSuccess?: () => void;
@@ -1127,8 +1128,19 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                     value={formData.notice_date || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, notice_date: e.target.value }))}
                   />
-                </div>
-              </div>
+                 </div>
+               </div>
+               
+               <div className="space-y-2">
+                 <Label htmlFor="sound_recording_certificate">Sound Recording Certificate</Label>
+                 <DocumentUpload
+                   value={formData.sound_recording_certificate_url || ''}
+                   onChange={(url) => setFormData(prev => ({ ...prev, sound_recording_certificate_url: url }))}
+                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                   maxSize={10}
+                   label="Upload Sound Recording Certificate"
+                 />
+               </div>
             </CardContent>
           </CollapsibleContent>
         </Card>
