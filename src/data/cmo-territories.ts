@@ -6,7 +6,7 @@ export interface CMO {
   name: string;
   territory: string;
   rightsType: 'Performance Rights' | 'Mechanical Rights' | 'Neighboring Rights' | 'Performance & Mechanical Rights' | 'Performance & Neighboring Rights';
-  type?: 'PRO' | 'CMO' | 'Both';
+  type?: 'PRO' | 'CMO' | 'MCO' | 'Both';
 }
 
 export const CMO_DATA: CMO[] = [
@@ -16,7 +16,7 @@ export const CMO_DATA: CMO[] = [
   { id: 'sesac', name: 'SESAC', territory: 'USA', rightsType: 'Performance Rights', type: 'PRO' },
   { id: 'gmr', name: 'GMR', territory: 'USA', rightsType: 'Performance Rights', type: 'PRO' },
   { id: 'alltrack', name: 'AllTrack', territory: 'USA', rightsType: 'Performance Rights', type: 'PRO' },
-  { id: 'mlc', name: 'The MLC', territory: 'USA', rightsType: 'Mechanical Rights', type: 'CMO' },
+  { id: 'mlc', name: 'The MLC', territory: 'USA', rightsType: 'Mechanical Rights', type: 'MCO' },
   { id: 'soundexchange', name: 'SoundExchange', territory: 'USA', rightsType: 'Neighboring Rights', type: 'CMO' },
 
   // Canada
