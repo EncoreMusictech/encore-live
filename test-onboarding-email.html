@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Test Onboarding Email</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div style="padding: 20px; font-family: Arial, sans-serif;">
+        <h1>Send Test Onboarding Email</h1>
+        <button id="sendEmail" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Send Sample Email to info@encoremusic.tech
+        </button>
+        <div id="result" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        const supabase = window.supabase.createClient(
+            'https://plxsenykjisqutxcvjeg.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBseHNlbnlramlzcXV0eGN2amVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0OTQ5OTcsImV4cCI6MjA2ODA3MDk5N30.f-luEprJjlx1sN-siFWgAKlHJ3c1aewKxPqwxIb9gtA'
+        );
+
+        document.getElementById('sendEmail').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Sending email...';
+            
+            try {
+                const { data, error } = await supabase.functions.invoke('send-catalog-valuation-onboarding', {
+                    body: {
+                        user_email: 'info@encoremusic.tech',
+                        module_id: 'catalog-valuation',
+                        access_source: 'manual_test'
+                    }
+                });
+                
+                if (error) {
+                    resultDiv.innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div style="color: green;">Email sent successfully! Response: ${JSON.stringify(data)}</div>`;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<div style="color: red;">Error: ${err.message}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>
