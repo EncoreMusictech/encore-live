@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, memo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { useAuth } from "@/hooks/useAuth";
 import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { useDebounce } from "@/hooks/usePerformanceOptimization";
 import { RevenueSourcesForm } from "@/components/catalog-valuation/RevenueSourcesForm";
@@ -106,6 +107,12 @@ interface ValuationResult {
     peer_average_multiple: number;
     market_premium_discount: number;
   };
+  // Enhanced valuation fields
+  has_additional_revenue?: boolean;
+  total_additional_revenue?: number;
+  revenue_diversification_score?: number;
+  blended_valuation?: number;
+  valuation_methodology_v2?: string;
 }
 
 interface ValuationParams {
@@ -131,6 +138,7 @@ const CatalogValuation = memo(() => {
   
   const { toast } = useToast();
   const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
+  const { user } = useAuth();
   const debouncedArtistName = useDebounce(artistName, 300);
   
   const { loading, execute, error } = useAsyncOperation({
@@ -163,7 +171,9 @@ const CatalogValuation = memo(() => {
         const { data, error } = await supabase.functions.invoke('spotify-catalog-valuation', {
           body: { 
             artistName: artistName.trim(),
-            valuationParams
+            valuationParams,
+            catalogValuationId,
+            userId: user?.id
           }
         });
 
@@ -208,9 +218,15 @@ const CatalogValuation = memo(() => {
               multiple_valuation: data.multiple_valuation,
               risk_adjusted_value: data.risk_adjusted_value,
               confidence_score: data.confidence_score,
-              valuation_methodology: data.valuation_methodology,
-              cash_flow_projections: data.cash_flow_projections,
-              comparable_multiples: data.comparable_multiples
+               valuation_methodology: data.valuation_methodology,
+               cash_flow_projections: data.cash_flow_projections,
+               comparable_multiples: data.comparable_multiples,
+               // Enhanced valuation fields
+               has_additional_revenue: data.has_additional_revenue || false,
+               total_additional_revenue: data.total_additional_revenue || 0,
+               revenue_diversification_score: data.revenue_diversification_score || 0,
+               blended_valuation: data.blended_valuation,
+               valuation_methodology_v2: data.valuation_methodology_v2 || 'basic'
             })
             .select()
             .single();
@@ -444,19 +460,41 @@ Actual market values may vary significantly based on numerous factors not captur
             <TabsContent value="overview" className="space-y-6">
               {/* Key Metrics Grid */}
               <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-2">
-                      <Target className="h-4 w-4 text-primary" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">Risk-Adjusted Value</p>
-                        <p className="text-xl font-bold text-primary">
-                          {formatCurrency(result.risk_adjusted_value || result.valuation_amount)}
-                        </p>
+                {/* Enhanced Valuation - Show if available */}
+                {result.blended_valuation && result.has_additional_revenue ? (
+                  <Card className="ring-2 ring-primary/20">
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-2">
+                        <Zap className="h-4 w-4 text-primary" />
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium leading-none">Enhanced Valuation</p>
+                          <p className="text-xl font-bold text-primary">
+                            {formatCurrency(result.blended_valuation)}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {((result.blended_valuation - (result.risk_adjusted_value || result.valuation_amount)) / (result.risk_adjusted_value || result.valuation_amount) * 100).toFixed(1)}% uplift
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-2">
+                        <Target className="h-4 w-4 text-primary" />
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium leading-none">Risk-Adjusted Value</p>
+                          <p className="text-xl font-bold text-primary">
+                            {formatCurrency(result.risk_adjusted_value || result.valuation_amount)}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 <Card>
                   <CardContent className="p-6">
@@ -528,6 +566,44 @@ Actual market values may vary significantly based on numerous factors not captur
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Enhanced Valuation Insights */}
+              {result.has_additional_revenue && (
+                <Card className="col-span-full border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5 text-primary" />
+                      Enhanced Valuation Insights
+                    </CardTitle>
+                    <CardDescription>
+                      Advanced analysis incorporating additional revenue streams
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Revenue Diversification</p>
+                        <div className="flex items-center gap-2">
+                          <Progress value={(result.revenue_diversification_score || 0) * 100} className="flex-1" />
+                          <span className="text-sm font-bold">{((result.revenue_diversification_score || 0) * 100).toFixed(1)}%</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Additional Revenue</p>
+                        <p className="text-lg font-bold text-green-600">
+                          {formatCurrency(result.total_additional_revenue || 0)}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Methodology</p>
+                        <Badge variant="outline" className="text-primary">
+                          {result.valuation_methodology_v2 === 'enhanced' ? 'Enhanced Blended' : 'Traditional DCF'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Confidence Meter */}
               <Card>

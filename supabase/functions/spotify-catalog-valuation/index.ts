@@ -226,7 +226,7 @@ serve(async (req) => {
   }
 
   try {
-    const { artistName, valuationParams } = await req.json();
+    const { artistName, valuationParams, catalogValuationId, userId } = await req.json();
 
     if (!artistName) {
       throw new Error('Artist name is required');
@@ -234,10 +234,31 @@ serve(async (req) => {
 
     console.log(`Advanced valuation for artist: ${artistName}`);
 
-    // Initialize Supabase client for industry benchmarks
+    // Initialize Supabase client for industry benchmarks and revenue sources
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Fetch additional revenue sources if catalogValuationId is provided
+    let revenueSources: RevenueSource[] = [];
+    if (catalogValuationId && userId) {
+      try {
+        const { data: revenueData, error: revenueError } = await supabase
+          .from('catalog_revenue_sources')
+          .select('*')
+          .eq('catalog_valuation_id', catalogValuationId)
+          .eq('user_id', userId);
+        
+        if (revenueError) {
+          console.warn(`Error fetching revenue sources: ${revenueError.message}`);
+        } else {
+          revenueSources = revenueData || [];
+          console.log(`Found ${revenueSources.length} additional revenue sources`);
+        }
+      } catch (error) {
+        console.warn(`Error fetching revenue sources: ${error.message}`);
+      }
+    }
 
     // Get Spotify access token
     const clientId = Deno.env.get('SPOTIFY_CLIENT_ID');
@@ -359,14 +380,25 @@ serve(async (req) => {
       catalogAge
     );
 
-    // Confidence score
-    const confidenceScore = ValuationEngine.calculateConfidenceScore({
+    // Base confidence score
+    const baseConfidenceScore = ValuationEngine.calculateConfidenceScore({
       hasStreamData: true,
       hasFollowerData: artist.followers.total > 0,
       hasGenreData: artist.genres.length > 0,
       trackPopularity: topTracks.reduce((avg, track) => avg + track.popularity, 0) / topTracks.length,
       artistPopularity: artist.popularity
     });
+
+    // Enhanced valuation with additional revenue sources
+    const enhancedValuation = ValuationEngine.calculateEnhancedValuation(riskAdjustedValue, revenueSources);
+    const enhancedConfidenceScore = ValuationEngine.calculateEnhancedConfidenceScore(baseConfidenceScore, revenueSources);
+
+    console.log(`Enhanced valuation: Base: $${riskAdjustedValue}, Enhanced: $${enhancedValuation.blendedValue}, Additional: $${enhancedValuation.additionalValue}`);
+    
+    // Calculate revenue metrics for UI
+    const totalAdditionalRevenue = revenueSources.reduce((sum, source) => sum + source.annual_revenue, 0);
+    const uniqueRevenueTypes = new Set(revenueSources.map(s => s.revenue_type)).size;
+    const revenueDiversificationScore = Math.min(uniqueRevenueTypes / 9, 1); // Max 9 revenue types
 
     // Traditional scenario analysis for comparison
     const scenarios = {
@@ -522,8 +554,15 @@ serve(async (req) => {
       dcf_valuation: dcfValuation,
       multiple_valuation: multipleValuation,
       risk_adjusted_value: riskAdjustedValue,
-      confidence_score: confidenceScore,
-      valuation_methodology: 'advanced_dcf_with_risk_adjustment',
+      confidence_score: enhancedConfidenceScore,
+      valuation_methodology: revenueSources.length > 0 ? 'enhanced_blended_valuation' : 'advanced_dcf_with_risk_adjustment',
+      
+      // Enhanced Valuation Data
+      has_additional_revenue: revenueSources.length > 0,
+      total_additional_revenue: totalAdditionalRevenue,
+      revenue_diversification_score: revenueDiversificationScore,
+      blended_valuation: enhancedValuation.blendedValue,
+      valuation_methodology_v2: revenueSources.length > 0 ? 'enhanced' : 'basic',
       cash_flow_projections: cashFlowProjections.slice(0, 5),
       industry_benchmarks: {
         genre: benchmark.genre,
