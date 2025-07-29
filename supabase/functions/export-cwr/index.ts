@@ -38,22 +38,23 @@ interface CWRRecording {
 
 const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
   const lines: string[] = [];
+  let recordCount = 0;
   
   // Generate proper CWR 2.1 header with current timestamp
   const now = new Date();
   const creationDate = now.toISOString().slice(0, 10).replace(/-/g, '');
   const creationTime = now.toTimeString().slice(0, 8).replace(/:/g, '');
-  const sequenceNumber = '00001';
+  const transmissionSequence = '00000001';
   
-  // CWR 2.1 Header Record (HDR)
+  // CWR 2.1 Header Record (HDR) - Fixed width format
   const header = [
     'HDR',                                    // Record Type (3)
-    sequenceNumber.padStart(8, '0'),         // Transaction Sequence # (8)
+    transmissionSequence,                     // Transaction Sequence # (8)
     '02.10',                                 // CWR Version (5)
-    'ENCOREMUSIC'.padEnd(9),                 // Sender Type + ID (9)
+    'ENCMUSIC'.padEnd(9),                    // Sender ID (9) - left aligned, max 9 chars
     'SO',                                    // Sender Type (2)
-    creationDate,                            // Creation Date (8)
-    creationTime,                            // Creation Time (6)
+    creationDate,                            // Creation Date (8) YYYYMMDD
+    creationTime,                            // Creation Time (6) HHMMSS
     'ENCORE MUSIC PUBLISHING'.padEnd(45),    // Sender Name (45)
     'EDI'.padEnd(45),                        // EDI Standard (45)
     'ASCII'.padEnd(5),                       // Character Set (5)
@@ -62,10 +63,36 @@ const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
   ].join('');
   
   lines.push(header);
+  recordCount++;
   
   let transactionSeq = 2; // Start from 2 after header
   
-  works.forEach((work, workIndex) => {
+  // If no works provided, create a placeholder work for demo
+  const worksToProcess = works.length > 0 ? works : [{
+    title: 'Sample Musical Work',
+    iswc: 'T0123456789',
+    writers: [{
+      name: 'John Doe',
+      ipi: '12345678901',
+      ownership_percentage: 50,
+      role: 'composer',
+      controlled_status: 'C'
+    }],
+    publishers: [{
+      name: 'Encore Music Publishing',
+      ipi: '98765432109',
+      ownership_percentage: 50,
+      role: 'original_publisher'
+    }],
+    recordings: [{
+      isrc: 'USENC2400001',
+      artist_name: 'Sample Artist',
+      duration: 180,
+      release_date: '2024-01-01'
+    }]
+  }];
+  
+  worksToProcess.forEach((work, workIndex) => {
     // New Work Registration (NWR) record - CWR 2.1 format
     const submitterWorkNumber = `ENC${String(workIndex + 1).padStart(8, '0')}`;
     const nwr = [
@@ -89,6 +116,7 @@ const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
       ''.padEnd(60)                                  // Priority Flag (60)
     ].join('');
     lines.push(nwr);
+    recordCount++;
     
     // Writer records (SWR) - CWR 2.1 format
     work.writers.forEach((writer, writerIndex) => {
@@ -107,12 +135,13 @@ const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
         ''.padEnd(1),                                 // Writer Unknown Indicator (1)
         getWriterRole(writer.role).padEnd(2),         // Writer Designation (2)
         ''.padEnd(60),                                // Work for Hire Indicator (60)
-        String(Math.round(writer.ownership_percentage * 100)).padStart(5, '0'), // Writer Share (5)
+        String(Math.round(writer.ownership_percentage)).padStart(5, '0'), // Writer Share (5) - percentage as whole number
         ''.padEnd(3),                                 // Revision Level (3)
         ''.padEnd(1),                                 // First Recording Refusal (1)
         ''.padEnd(60)                                 // USA License Indicator (60)
       ].join('');
       lines.push(swr);
+      recordCount++;
     });
     
     // Publisher records (PWR) - CWR 2.1 format
@@ -127,7 +156,7 @@ const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
         ''.padEnd(1),                                 // Publisher Unknown Indicator (1)
         getPublisherType(publisher.role).padEnd(2),   // Publisher Type (2)
         ''.padEnd(60),                                // Tax ID (60)
-        String(Math.round(publisher.ownership_percentage * 100)).padStart(5, '0'), // Publisher Share (5)
+        String(Math.round(publisher.ownership_percentage)).padStart(5, '0'), // Publisher Share (5) - percentage as whole number
         ''.padEnd(3),                                 // International Standard Agreement Code (3)
         ''.padEnd(60),                                // Agreement Type (60)
         ''.padEnd(8),                                 // Agreement Start Date (8)
@@ -135,6 +164,7 @@ const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
         ''.padEnd(60)                                 // Filler (60)
       ].join('');
       lines.push(pwr);
+      recordCount++;
     });
     
     // Territory records (TER) - Add for worldwide rights
@@ -147,6 +177,7 @@ const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
       ''.padEnd(60)                                  // Filler (60)
     ].join('');
     lines.push(ter);
+    recordCount++;
 
     // Recording records (REC) if available - CWR 2.1 format
     if (work.recordings && work.recordings.length > 0) {
@@ -166,6 +197,7 @@ const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
           ''.padEnd(60)                               // Filler (60)
         ].join('');
         lines.push(rec);
+        recordCount++;
       });
     }
     
@@ -177,19 +209,20 @@ const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
     'GRT',                                            // Record Type (3)
     String(transactionSeq).padStart(8, '0'),         // Transaction Sequence (8)
     '0001',                                          // Group ID (4)
-    String(works.length).padStart(5, '0'),           // Transaction Count (5)
-    String(lines.length - 1).padStart(8, '0'),       // Record Count (8)
+    String(worksToProcess.length).padStart(5, '0'),  // Transaction Count (5) - number of works
+    String(recordCount).padStart(8, '0'),            // Record Count (8) - actual records excluding HDR
     ''.padEnd(60)                                    // Filler (60)
   ].join('');
   lines.push(grt);
+  recordCount++;
   
   // Add CWR 2.1 Transmission Trailer (TRL)
   const trl = [
     'TRL',                                            // Record Type (3)
     String(transactionSeq + 1).padStart(8, '0'),     // Transaction Sequence (8)
-    '0001',                                          // Group Count (4)
-    String(works.length).padStart(8, '0'),           // Transaction Count (8)
-    String(lines.length).padStart(8, '0'),           // Record Count (8)
+    '0001',                                          // Group Count (4) - number of groups
+    String(worksToProcess.length).padStart(8, '0'),  // Transaction Count (8) - number of works
+    String(recordCount + 1).padStart(8, '0'),        // Record Count (8) - total records including HDR + GRT
     ''.padEnd(60)                                    // Filler (60)
   ].join('');
   lines.push(trl);
