@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, Code, Table, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Loader2, FileText, Code, Table, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
 import { useCopyrightExports, ExportOptions } from '@/hooks/useCopyrightExports';
 import { cn } from '@/lib/utils';
 
@@ -33,23 +33,40 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   const [includeRecordings, setIncludeRecordings] = useState(true);
   const [includePublishers, setIncludePublishers] = useState(true);
   const [includeWriters, setIncludeWriters] = useState(true);
-  const [validationResults, setValidationResults] = useState<{ isValid: boolean; errors: string[] } | null>(null);
+  const [validationResults, setValidationResults] = useState<{ isValid: boolean; errors: string[]; lastValidated?: Date } | null>(null);
   const [validating, setValidating] = useState(false);
 
   const handleValidate = async () => {
     setValidating(true);
     try {
       const results = await validateExport(selectedCopyrights);
-      setValidationResults(results);
+      setValidationResults({
+        ...results,
+        lastValidated: new Date()
+      });
     } catch (error) {
       console.error('Validation error:', error);
       setValidationResults({
         isValid: false,
-        errors: ['Failed to validate copyrights']
+        errors: ['Failed to validate copyrights'],
+        lastValidated: new Date()
       });
     } finally {
       setValidating(false);
     }
+  };
+
+  const handleRefreshValidation = async () => {
+    await handleValidate();
+  };
+
+  const formatLastValidated = (date: Date) => {
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const handleExport = async () => {
@@ -173,52 +190,100 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Validation Check</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleValidate}
-                  disabled={validating}
-                >
-                  {validating ? (
-                    <>
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      Validating
-                    </>
+                <div className="flex gap-2">
+                  {!validationResults ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleValidate}
+                      disabled={validating}
+                    >
+                      {validating ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Validating
+                        </>
+                      ) : (
+                        'Validate'
+                      )}
+                    </Button>
                   ) : (
-                    'Validate'
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRefreshValidation}
+                      disabled={validating}
+                    >
+                      {validating ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Refreshing
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Refresh
+                        </>
+                      )}
+                    </Button>
                   )}
-                </Button>
+                </div>
               </div>
               
               {validationResults && (
-                <Alert className={cn(
-                  "border-2",
-                  validationResults.isValid 
-                    ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-950 dark:text-green-100' 
-                    : 'border-red-500 bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-100'
-                )}>
-                  <div className="flex items-center gap-2">
-                    {validationResults.isValid ? (
-                      <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    ) : (
-                      <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                    )}
-                    <span className="font-medium">
-                      {validationResults.isValid ? 'Validation Passed' : 'Validation Issues Found'}
-                    </span>
-                  </div>
-                  {!validationResults.isValid && (
-                    <AlertDescription className="mt-2">
-                      <div className="max-h-32 overflow-y-auto">
-                        <ul className="list-disc pl-4 space-y-1">
-                          {validationResults.errors.map((error, index) => (
-                            <li key={index} className="text-sm">{error}</li>
-                          ))}
-                        </ul>
+                <div className="space-y-2">
+                  <Alert className={cn(
+                    "border-2",
+                    validationResults.isValid 
+                      ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-950 dark:text-green-100' 
+                      : 'border-red-500 bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-100'
+                  )}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {validationResults.isValid ? (
+                          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        )}
+                        <span className="font-medium">
+                          {validationResults.isValid ? 'Validation Passed' : 'Validation Issues Found'}
+                        </span>
                       </div>
-                    </AlertDescription>
-                  )}
-                </Alert>
+                      {validationResults.lastValidated && (
+                        <span className="text-xs text-muted-foreground">
+                          Last checked: {formatLastValidated(validationResults.lastValidated)}
+                        </span>
+                      )}
+                    </div>
+                    {!validationResults.isValid && (
+                      <AlertDescription className="mt-2">
+                        <div className="max-h-32 overflow-y-auto">
+                          <ul className="list-disc pl-4 space-y-1">
+                            {validationResults.errors.map((error, index) => (
+                              <li key={index} className="text-sm">{error}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </AlertDescription>
+                    )}
+                  </Alert>
+                  
+                  {/* Validation help text */}
+                  <div className="text-xs text-muted-foreground">
+                    {validationResults.isValid ? (
+                      `Your ${exportFormat.toUpperCase()} export is ready for submission. All validation checks passed.`
+                    ) : (
+                      `Please fix the validation issues above before exporting. You can refresh validation after making changes to your copyrights.`
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {!validationResults && (
+                <div className="text-xs text-muted-foreground p-3 bg-muted rounded-lg">
+                  Click "Validate" to check if your selected copyrights meet {exportFormat.toUpperCase()} format requirements.
+                  This will verify ownership percentages, required fields, and data integrity.
+                </div>
               )}
             </div>
           )}
