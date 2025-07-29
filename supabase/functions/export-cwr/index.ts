@@ -36,102 +36,188 @@ interface CWRRecording {
   release_date?: string;
 }
 
-const generateCWRFile = (works: CWRWork[]): string => {
+const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
   const lines: string[] = [];
   
-  // Add CWR header
-  lines.push("HDR0000102.10ENCOREMUSIC                 20240101000000                                                                                                ");
+  // Generate proper CWR 2.1 header with current timestamp
+  const now = new Date();
+  const creationDate = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const creationTime = now.toTimeString().slice(0, 8).replace(/:/g, '');
+  const sequenceNumber = '00001';
   
-  let transactionSeq = 1;
+  // CWR 2.1 Header Record (HDR)
+  const header = [
+    'HDR',                                    // Record Type (3)
+    sequenceNumber.padStart(8, '0'),         // Transaction Sequence # (8)
+    '02.10',                                 // CWR Version (5)
+    'ENCOREMUSIC'.padEnd(9),                 // Sender Type + ID (9)
+    'SO',                                    // Sender Type (2)
+    creationDate,                            // Creation Date (8)
+    creationTime,                            // Creation Time (6)
+    'ENCORE MUSIC PUBLISHING'.padEnd(45),    // Sender Name (45)
+    'EDI'.padEnd(45),                        // EDI Standard (45)
+    'ASCII'.padEnd(5),                       // Character Set (5)
+    ''.padEnd(11),                           // Character Set Version (11)
+    ''.padEnd(60)                            // Filler (60)
+  ].join('');
+  
+  lines.push(header);
+  
+  let transactionSeq = 2; // Start from 2 after header
   
   works.forEach((work, workIndex) => {
-    // New Work Registration (NWR) record
+    // New Work Registration (NWR) record - CWR 2.1 format
+    const submitterWorkNumber = `ENC${String(workIndex + 1).padStart(8, '0')}`;
     const nwr = [
-      'NWR',
-      String(transactionSeq).padStart(8, '0'),
-      work.title.substring(0, 60).padEnd(60),
-      work.iswc || ''.padEnd(11),
-      ''.padEnd(14), // Language code
-      ''.padEnd(60), // Submitter work number
-      'ORI', // Work type
-      'U', // Musical work distribution category
-      'Y', // Recorded indicator
-      ''.padEnd(3), // Version type
-      ''.padEnd(60), // Excerpt type
-      ''.padEnd(5), // Composite type
-      ''.padEnd(15), // Composite component count
-      ''.padEnd(3), // Date publication of printed edition
-      ''.padEnd(3), // Exceptional clause
-      'N', // Opus/catalogue number
-      ''.padEnd(5), // Catalogue number
-      ''.padEnd(60), // Priority flag
+      'NWR',                                          // Record Type (3)
+      String(transactionSeq).padStart(8, '0'),       // Transaction Sequence (8)
+      work.title.substring(0, 60).padEnd(60),        // Work Title (60)
+      work.iswc ? work.iswc.replace(/-/g, '').padEnd(11) : ''.padEnd(11), // ISWC (11)
+      'EN'.padEnd(14),                               // Language Code (14)
+      submitterWorkNumber.padEnd(14),                // Submitter Work Number (14)
+      'ORI',                                         // Work Type (3)
+      'U',                                           // Musical Work Distribution Category (1)
+      work.recordings && work.recordings.length > 0 ? 'Y' : 'N', // Recorded Indicator (1)
+      ''.padEnd(3),                                  // Version Type (3)
+      ''.padEnd(60),                                 // Excerpt Type (60)
+      ''.padEnd(5),                                  // Composite Type (5)
+      ''.padEnd(15),                                 // Composite Component Count (15)
+      ''.padEnd(8),                                  // Date Publication First (8)
+      ''.padEnd(3),                                  // Exceptional Clause (3)
+      ''.padEnd(60),                                 // Grand Rights Indicator (60)
+      ''.padEnd(5),                                  // Catalogue Number (5)
+      ''.padEnd(60)                                  // Priority Flag (60)
     ].join('');
     lines.push(nwr);
     
-    // Writer records (SWR)
-    work.writers.forEach((writer) => {
+    // Writer records (SWR) - CWR 2.1 format
+    work.writers.forEach((writer, writerIndex) => {
+      const writerSequence = String(transactionSeq + writerIndex + 1).padStart(8, '0');
+      const nameParts = writer.name.split(' ');
+      const firstName = (nameParts[0] || '').substring(0, 30).padEnd(30);
+      const lastName = (nameParts.slice(1).join(' ') || '').substring(0, 45).padEnd(45);
+      
       const swr = [
-        'SWR',
-        String(transactionSeq).padStart(8, '0'),
-        writer.name.substring(0, 60).padEnd(60),
-        writer.ipi || ''.padEnd(11),
-        writer.controlled_status === 'C' ? 'Y' : 'N',
-        String(writer.ownership_percentage * 100).padStart(5, '0'), // Convert to basis points
-        ''.padEnd(60), // Designation
-        writer.role === 'composer' ? 'CA' : 'A ', // Writer role
-        ''.padEnd(60), // Work for hire
-        ''.padEnd(3), // Revision level
-        ''.padEnd(1), // First recording refusal
-        ''.padEnd(60), // USA license
+        'SWR',                                        // Record Type (3)
+        writerSequence,                               // Transaction Sequence (8)
+        writer.controlled_status === 'C' ? 'Y' : 'N', // Controlled Indicator (1)
+        firstName,                                    // Writer First Name (30)
+        lastName,                                     // Writer Last Name (45)
+        writer.ipi ? writer.ipi.replace(/\D/g, '').padStart(11, '0') : ''.padEnd(11), // IPI Number (11)
+        ''.padEnd(1),                                 // Writer Unknown Indicator (1)
+        getWriterRole(writer.role).padEnd(2),         // Writer Designation (2)
+        ''.padEnd(60),                                // Work for Hire Indicator (60)
+        String(Math.round(writer.ownership_percentage * 100)).padStart(5, '0'), // Writer Share (5)
+        ''.padEnd(3),                                 // Revision Level (3)
+        ''.padEnd(1),                                 // First Recording Refusal (1)
+        ''.padEnd(60)                                 // USA License Indicator (60)
       ].join('');
       lines.push(swr);
     });
     
-    // Publisher records (PWR)
-    work.publishers.forEach((publisher) => {
+    // Publisher records (PWR) - CWR 2.1 format
+    work.publishers.forEach((publisher, publisherIndex) => {
+      const publisherSequence = String(transactionSeq + work.writers.length + publisherIndex + 1).padStart(8, '0');
+      
       const pwr = [
-        'PWR',
-        String(transactionSeq).padStart(8, '0'),
-        publisher.name.substring(0, 60).padEnd(60),
-        publisher.ipi || ''.padEnd(11),
-        'Y', // Controlled
-        String(publisher.ownership_percentage * 100).padStart(5, '0'), // Convert to basis points
-        ''.padEnd(60), // Designation
-        'E ', // Publisher type
-        ''.padEnd(60), // Tax ID
-        ''.padEnd(3), // International standard agreement code
-        ''.padEnd(60), // Agreement type
-        ''.padEnd(8), // Agreement start date
-        ''.padEnd(8), // Agreement end date
+        'PWR',                                        // Record Type (3)
+        publisherSequence,                            // Transaction Sequence (8)
+        publisher.name.substring(0, 45).padEnd(45),   // Publisher Name (45)
+        publisher.ipi ? publisher.ipi.replace(/\D/g, '').padStart(11, '0') : ''.padEnd(11), // IPI Number (11)
+        ''.padEnd(1),                                 // Publisher Unknown Indicator (1)
+        getPublisherType(publisher.role).padEnd(2),   // Publisher Type (2)
+        ''.padEnd(60),                                // Tax ID (60)
+        String(Math.round(publisher.ownership_percentage * 100)).padStart(5, '0'), // Publisher Share (5)
+        ''.padEnd(3),                                 // International Standard Agreement Code (3)
+        ''.padEnd(60),                                // Agreement Type (60)
+        ''.padEnd(8),                                 // Agreement Start Date (8)
+        ''.padEnd(8),                                 // Agreement End Date (8)
+        ''.padEnd(60)                                 // Filler (60)
       ].join('');
       lines.push(pwr);
     });
     
-    // Recording records (REC) if available
+    // Territory records (TER) - Add for worldwide rights
+    const territorySequence = String(transactionSeq + work.writers.length + work.publishers.length + 1).padStart(8, '0');
+    const ter = [
+      'TER',                                          // Record Type (3)
+      territorySequence,                              // Transaction Sequence (8)
+      'I',                                           // Inclusion/Exclusion (1)
+      'WW',                                          // Territory Code (2)
+      ''.padEnd(60)                                  // Filler (60)
+    ].join('');
+    lines.push(ter);
+
+    // Recording records (REC) if available - CWR 2.1 format
     if (work.recordings && work.recordings.length > 0) {
-      work.recordings.forEach((recording) => {
+      work.recordings.forEach((recording, recordingIndex) => {
+        const recordingSequence = String(transactionSeq + work.writers.length + work.publishers.length + recordingIndex + 2).padStart(8, '0');
+        
         const rec = [
-          'REC',
-          String(transactionSeq).padStart(8, '0'),
-          recording.isrc || ''.padEnd(12),
-          recording.artist_name?.substring(0, 60).padEnd(60) || ''.padEnd(60),
-          recording.duration ? String(recording.duration).padStart(6, '0') : ''.padEnd(6),
-          recording.release_date?.replace(/-/g, '').substring(0, 8).padEnd(8) || ''.padEnd(8),
-          ''.padEnd(60), // Record label
-          ''.padEnd(60), // Catalogue number
-          ''.padEnd(5), // Release format
+          'REC',                                      // Record Type (3)
+          recordingSequence,                          // Transaction Sequence (8)
+          recording.isrc ? recording.isrc.replace(/-/g, '').padEnd(12) : ''.padEnd(12), // ISRC (12)
+          recording.artist_name?.substring(0, 60).padEnd(60) || ''.padEnd(60), // Recording Artist (60)
+          recording.duration ? String(recording.duration).padStart(6, '0') : ''.padEnd(6), // Duration (6)
+          recording.release_date?.replace(/-/g, '').substring(0, 8).padEnd(8) || ''.padEnd(8), // Release Date (8)
+          ''.padEnd(60),                              // Record Label (60)
+          ''.padEnd(60),                              // Catalogue Number (60)
+          ''.padEnd(5),                               // Release Format (5)
+          ''.padEnd(60)                               // Filler (60)
         ].join('');
         lines.push(rec);
       });
     }
     
-    transactionSeq++;
+    transactionSeq += work.writers.length + work.publishers.length + 2 + (work.recordings?.length || 0);
   });
   
-  // Add trailer
-  lines.push(`TRL000${String(lines.length + 1).padStart(8, '0')}01000000010`);
+  // Add CWR 2.1 Group Trailer (GRT)
+  const grt = [
+    'GRT',                                            // Record Type (3)
+    String(transactionSeq).padStart(8, '0'),         // Transaction Sequence (8)
+    '0001',                                          // Group ID (4)
+    String(works.length).padStart(5, '0'),           // Transaction Count (5)
+    String(lines.length - 1).padStart(8, '0'),       // Record Count (8)
+    ''.padEnd(60)                                    // Filler (60)
+  ].join('');
+  lines.push(grt);
   
-  return lines.join('\n');
+  // Add CWR 2.1 Transmission Trailer (TRL)
+  const trl = [
+    'TRL',                                            // Record Type (3)
+    String(transactionSeq + 1).padStart(8, '0'),     // Transaction Sequence (8)
+    '0001',                                          // Group Count (4)
+    String(works.length).padStart(8, '0'),           // Transaction Count (8)
+    String(lines.length).padStart(8, '0'),           // Record Count (8)
+    ''.padEnd(60)                                    // Filler (60)
+  ].join('');
+  lines.push(trl);
+  
+  return lines.join('\r\n'); // CWR standard uses CRLF line endings
+};
+
+// Helper functions for CWR field mappings
+const getWriterRole = (role: string): string => {
+  const roleMap: Record<string, string> = {
+    'composer': 'CA',
+    'lyricist': 'A',
+    'author': 'A',
+    'arranger': 'AR',
+    'translator': 'TR',
+    'adapter': 'AD'
+  };
+  return roleMap[role?.toLowerCase()] || 'A';
+};
+
+const getPublisherType = (role: string): string => {
+  const typeMap: Record<string, string> = {
+    'original_publisher': 'E',
+    'sub_publisher': 'ES',
+    'administrator': 'PA',
+    'co_publisher': 'SE'
+  };
+  return typeMap[role?.toLowerCase()] || 'E';
 };
 
 serve(async (req) => {
