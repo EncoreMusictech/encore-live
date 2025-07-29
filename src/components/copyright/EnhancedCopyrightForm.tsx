@@ -22,6 +22,7 @@ import { useWriterContracts } from '@/hooks/useWriterContracts';
 import { WriterAgreementSection } from './WriterAgreementSection';
 import { ArtistSelector } from './ArtistSelector';
 import { ProRegistrationSection } from './ProRegistrationSection';
+import { ContractIntegrationPanel } from './ContractIntegrationPanel';
 import { CMORegistration, getAllPROs } from '@/data/cmo-territories';
 
 interface EnhancedCopyrightFormProps {
@@ -1133,26 +1134,16 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         </Card>
       </Collapsible>
 
-      {/* Contract Link Section */}
-      <Collapsible open={contractLinkOpen} onOpenChange={setContractLinkOpen}>
-        <Card>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-muted/50">
-              <CardTitle className="flex items-center gap-2">
-                <Link2 className="h-5 w-5" />
-                Contract Link
-              </CardTitle>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Dynamic schedules of works will be automatically generated for contracts containing controlled writers from this work.
-              </p>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+      {/* Contract Integration Panel */}
+      {editingCopyright && (
+        <ContractIntegrationPanel
+          copyright={editingCopyright}
+          onContractLinked={(contractId) => {
+            console.log('Contract linked:', contractId);
+            // Could trigger a refresh or show additional options
+          }}
+        />
+      )}
 
       {/* Submit Buttons */}
       <div className="flex justify-end gap-2">

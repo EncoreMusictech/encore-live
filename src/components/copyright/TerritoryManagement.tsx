@@ -18,7 +18,7 @@ import {
   AlertTriangle,
   Info
 } from 'lucide-react';
-import { TERRITORIES as CMO_TERRITORIES } from '@/data/cmo-territories';
+import { TERRITORIES as CMO_TERRITORIES, getCMOsByTerritory, CMO_DATA } from '@/data/cmo-territories';
 
 interface TerritoryRule {
   territory: string;
@@ -46,8 +46,12 @@ export const TerritoryManagement: React.FC<TerritoryManagementProps> = ({
   const [selectedCMO, setSelectedCMO] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Get available territories from CMO data
-  const availableTerritories = CMO_TERRITORIES;
+  // Get available territories from CMO data (create territory objects from CMO data)
+  const availableTerritories = CMO_TERRITORIES.map(territory => ({
+    territory: territory,
+    country: territory.replace('USA', 'United States').replace('UK', 'United Kingdom'),
+    cmos: getCMOsByTerritory(territory)
+  }));
 
   // Filter territories based on search
   const filteredTerritories = availableTerritories.filter(territory =>
@@ -58,8 +62,7 @@ export const TerritoryManagement: React.FC<TerritoryManagementProps> = ({
 
   // Get CMOs for selected territory
   const getCMOsForTerritory = (territoryCode: string) => {
-    const territory = availableTerritories.find(t => t.territory === territoryCode);
-    return territory?.cmos || [];
+    return CMO_DATA.filter(cmo => cmo.territory === territoryCode);
   };
 
   const addTerritory = () => {
@@ -320,9 +323,9 @@ export const TerritoryManagement: React.FC<TerritoryManagementProps> = ({
                                       <Building className="h-4 w-4" />
                                       <div>
                                         <div>{cmo.name}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                          {cmo.type.join(', ')}
-                                        </div>
+                                         <div className="text-xs text-muted-foreground">
+                                           {cmo.type || 'CMO'}
+                                         </div>
                                       </div>
                                     </div>
                                   </SelectItem>
