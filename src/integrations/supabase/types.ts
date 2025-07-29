@@ -1452,6 +1452,51 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_emails: {
+        Row: {
+          clicked_at: string | null
+          delivery_status: string | null
+          email_data: Json | null
+          email_status: string
+          email_subject: string | null
+          email_type: string
+          error_message: string | null
+          id: string
+          module_id: string
+          opened_at: string | null
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          clicked_at?: string | null
+          delivery_status?: string | null
+          email_data?: Json | null
+          email_status?: string
+          email_subject?: string | null
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          module_id: string
+          opened_at?: string | null
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          clicked_at?: string | null
+          delivery_status?: string | null
+          email_data?: Json | null
+          email_status?: string
+          email_subject?: string | null
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          module_id?: string
+          opened_at?: string | null
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       original_publishers: {
         Row: {
           agreement_id: string
