@@ -1226,6 +1226,7 @@ export type Database = {
           sesac_work_id: string | null
           socan_status: string | null
           socan_work_id: string | null
+          sound_recording_certificate_url: string | null
           status: string | null
           submission_date: string | null
           supports_cwr: boolean | null
@@ -1273,6 +1274,7 @@ export type Database = {
           sesac_work_id?: string | null
           socan_status?: string | null
           socan_work_id?: string | null
+          sound_recording_certificate_url?: string | null
           status?: string | null
           submission_date?: string | null
           supports_cwr?: boolean | null
@@ -1320,6 +1322,7 @@ export type Database = {
           sesac_work_id?: string | null
           socan_status?: string | null
           socan_work_id?: string | null
+          sound_recording_certificate_url?: string | null
           status?: string | null
           submission_date?: string | null
           supports_cwr?: boolean | null
