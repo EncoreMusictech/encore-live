@@ -38,7 +38,7 @@ interface CWRRecording {
 
 const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
   const lines: string[] = [];
-  let recordCount = 0;
+  let recordSequenceNumber = 1; // Start from 1 for proper CWR 2.1 sequencing
   
   // Generate proper CWR 2.1 header with current timestamp
   const now = new Date();
@@ -46,26 +46,28 @@ const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
   const creationTime = now.toTimeString().slice(0, 8).replace(/:/g, '');
   const transmissionSequence = '00000001';
   
-  // CWR 2.1 Header Record (HDR) - Fixed width format
-  const header = [
-    'HDR',                                    // Record Type (3)
-    transmissionSequence,                     // Transaction Sequence # (8)
-    '02.10',                                 // CWR Version (5)
-    'ENCMUSIC'.padEnd(9),                    // Sender ID (9) - left aligned, max 9 chars
-    'SO',                                    // Sender Type (2)
-    creationDate,                            // Creation Date (8) YYYYMMDD
-    creationTime,                            // Creation Time (6) HHMMSS
-    'ENCORE MUSIC PUBLISHING'.padEnd(45),    // Sender Name (45)
-    'EDI'.padEnd(45),                        // EDI Standard (45)
-    'ASCII'.padEnd(5),                       // Character Set (5)
-    ''.padEnd(11),                           // Character Set Version (11)
-    ''.padEnd(60)                            // Filler (60)
-  ].join('');
+  // CWR 2.1 Header Record (HDR) - 201 character fixed width
+  const hdrRecordType = 'HDR';                                           // 3 chars
+  const hdrSequence = String(recordSequenceNumber).padStart(8, '0');    // 8 chars
+  const cwrVersion = '02.10';                                            // 5 chars
+  const senderID = 'ENCMUSIC'.padEnd(9);                                 // 9 chars - left aligned
+  const senderType = 'SO';                                               // 2 chars
+  const hdrCreationDate = creationDate;                                  // 8 chars YYYYMMDD
+  const hdrCreationTime = creationTime;                                  // 6 chars HHMMSS
+  const senderName = 'ENCORE MUSIC PUBLISHING'.padEnd(45);              // 45 chars - left aligned
+  const ediStandard = 'EDI'.padEnd(45);                                  // 45 chars - left aligned
+  const characterSet = 'ASCII'.padEnd(5);                                // 5 chars - left aligned
+  const charSetVersion = ''.padEnd(11);                                  // 11 chars
+  const hdrFiller = ''.padEnd(60);                                       // 60 chars
+  
+  const header = hdrRecordType + hdrSequence + cwrVersion + senderID + senderType + 
+                 hdrCreationDate + hdrCreationTime + senderName + ediStandard + 
+                 characterSet + charSetVersion + hdrFiller;
   
   lines.push(header);
-  recordCount++;
+  recordSequenceNumber++;
   
-  let transactionSeq = 2; // Start from 2 after header
+  let groupTransactionCount = 0; // Count transactions (works) in this group
   
   // If no works provided, create a placeholder work for demo
   const worksToProcess = works.length > 0 ? works : [{
@@ -93,138 +95,162 @@ const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
   }];
   
   worksToProcess.forEach((work, workIndex) => {
-    // New Work Registration (NWR) record - CWR 2.1 format
+    groupTransactionCount++; // Increment transaction count for this work
+    
+    // New Work Registration (NWR) record - CWR 2.1 format (318 chars)
     const submitterWorkNumber = `ENC${String(workIndex + 1).padStart(8, '0')}`;
-    const nwr = [
-      'NWR',                                          // Record Type (3)
-      String(transactionSeq).padStart(8, '0'),       // Transaction Sequence (8)
-      work.title.substring(0, 60).padEnd(60),        // Work Title (60)
-      work.iswc ? work.iswc.replace(/-/g, '').padEnd(11) : ''.padEnd(11), // ISWC (11)
-      'EN'.padEnd(14),                               // Language Code (14)
-      submitterWorkNumber.padEnd(14),                // Submitter Work Number (14)
-      'ORI',                                         // Work Type (3)
-      'U',                                           // Musical Work Distribution Category (1)
-      work.recordings && work.recordings.length > 0 ? 'Y' : 'N', // Recorded Indicator (1)
-      ''.padEnd(3),                                  // Version Type (3)
-      ''.padEnd(60),                                 // Excerpt Type (60)
-      ''.padEnd(5),                                  // Composite Type (5)
-      ''.padEnd(15),                                 // Composite Component Count (15)
-      ''.padEnd(8),                                  // Date Publication First (8)
-      ''.padEnd(3),                                  // Exceptional Clause (3)
-      ''.padEnd(60),                                 // Grand Rights Indicator (60)
-      ''.padEnd(5),                                  // Catalogue Number (5)
-      ''.padEnd(60)                                  // Priority Flag (60)
-    ].join('');
+    
+    const nwrRecordType = 'NWR';                                               // 3 chars
+    const nwrSequence = String(recordSequenceNumber).padStart(8, '0');        // 8 chars
+    const workTitle = work.title.substring(0, 60).padEnd(60);                 // 60 chars - left aligned
+    const iswc = work.iswc ? work.iswc.replace(/-/g, '').substring(0, 11).padEnd(11) : ''.padEnd(11); // 11 chars
+    const languageCode = 'EN'.padEnd(14);                                     // 14 chars - left aligned
+    const submitterWorkNum = submitterWorkNumber.substring(0, 14).padEnd(14); // 14 chars - left aligned
+    const workType = 'ORI';                                                   // 3 chars - original work
+    const musicWorkDistCat = 'U';                                             // 1 char - undefined
+    const recordedIndicator = work.recordings && work.recordings.length > 0 ? 'Y' : 'N'; // 1 char
+    const versionType = ''.padEnd(3);                                         // 3 chars
+    const excerptType = ''.padEnd(60);                                        // 60 chars
+    const compositeType = ''.padEnd(5);                                       // 5 chars
+    const compositeComponentCount = ''.padEnd(15);                            // 15 chars
+    const datePublicationFirst = ''.padEnd(8);                               // 8 chars
+    const exceptionalClause = ''.padEnd(3);                                  // 3 chars
+    const grandRightsIndicator = ''.padEnd(60);                              // 60 chars
+    const catalogueNumber = ''.padEnd(5);                                    // 5 chars
+    const nwrFiller = ''.padEnd(60);                                         // 60 chars
+    
+    const nwr = nwrRecordType + nwrSequence + workTitle + iswc + languageCode + 
+                submitterWorkNum + workType + musicWorkDistCat + recordedIndicator + 
+                versionType + excerptType + compositeType + compositeComponentCount + 
+                datePublicationFirst + exceptionalClause + grandRightsIndicator + 
+                catalogueNumber + nwrFiller;
+    
     lines.push(nwr);
-    recordCount++;
+    recordSequenceNumber++;
     
-    // Writer records (SWR) - CWR 2.1 format
+    // Writer records (SWR) - CWR 2.1 format (238 chars)
     work.writers.forEach((writer, writerIndex) => {
-      const writerSequence = String(transactionSeq + writerIndex + 1).padStart(8, '0');
       const nameParts = writer.name.split(' ');
-      const firstName = (nameParts[0] || '').substring(0, 30).padEnd(30);
-      const lastName = (nameParts.slice(1).join(' ') || '').substring(0, 45).padEnd(45);
+      const firstName = (nameParts[0] || '').substring(0, 30).padEnd(30);     // 30 chars - left aligned
+      const lastName = (nameParts.slice(1).join(' ') || '').substring(0, 45).padEnd(45); // 45 chars - left aligned
+      const writerIPI = writer.ipi ? writer.ipi.replace(/\D/g, '').substring(0, 11).padStart(11, '0') : '00000000000'; // 11 chars - right aligned, zero padded
       
-      const swr = [
-        'SWR',                                        // Record Type (3)
-        writerSequence,                               // Transaction Sequence (8)
-        writer.controlled_status === 'C' ? 'Y' : 'N', // Controlled Indicator (1)
-        firstName,                                    // Writer First Name (30)
-        lastName,                                     // Writer Last Name (45)
-        writer.ipi ? writer.ipi.replace(/\D/g, '').padStart(11, '0') : ''.padEnd(11), // IPI Number (11)
-        ''.padEnd(1),                                 // Writer Unknown Indicator (1)
-        getWriterRole(writer.role).padEnd(2),         // Writer Designation (2)
-        ''.padEnd(60),                                // Work for Hire Indicator (60)
-        String(Math.round(writer.ownership_percentage)).padStart(5, '0'), // Writer Share (5) - percentage as whole number
-        ''.padEnd(3),                                 // Revision Level (3)
-        ''.padEnd(1),                                 // First Recording Refusal (1)
-        ''.padEnd(60)                                 // USA License Indicator (60)
-      ].join('');
+      const swrRecordType = 'SWR';                                           // 3 chars
+      const swrSequence = String(recordSequenceNumber).padStart(8, '0');     // 8 chars
+      const controlledIndicator = writer.controlled_status === 'C' ? 'Y' : 'N'; // 1 char
+      const writerFirstName = firstName;                                     // 30 chars
+      const writerLastName = lastName;                                       // 45 chars
+      const ipiNumber = writerIPI;                                           // 11 chars
+      const writerUnknown = ' ';                                             // 1 char
+      const writerDesignation = getWriterRole(writer.role);                  // 2 chars
+      const workForHire = ' ';                                               // 1 char
+      const writerShare = String(Math.round(writer.ownership_percentage * 100)).padStart(5, '0'); // 5 chars - right aligned, zero padded (percentage * 100)
+      const revisionLevel = '   ';                                           // 3 chars
+      const firstRecordingRefusal = ' ';                                     // 1 char
+      const swrFiller = ''.padEnd(127);                                      // 127 chars
+      
+      const swr = swrRecordType + swrSequence + controlledIndicator + writerFirstName + 
+                  writerLastName + ipiNumber + writerUnknown + writerDesignation + 
+                  workForHire + writerShare + revisionLevel + firstRecordingRefusal + swrFiller;
+      
       lines.push(swr);
-      recordCount++;
+      recordSequenceNumber++;
     });
     
-    // Publisher records (PWR) - CWR 2.1 format
+    // Publisher records (PWR) - CWR 2.1 format (288 chars)
     work.publishers.forEach((publisher, publisherIndex) => {
-      const publisherSequence = String(transactionSeq + work.writers.length + publisherIndex + 1).padStart(8, '0');
+      const publisherName = publisher.name.substring(0, 45).padEnd(45);      // 45 chars - left aligned
+      const publisherIPI = publisher.ipi ? publisher.ipi.replace(/\D/g, '').substring(0, 11).padStart(11, '0') : '00000000000'; // 11 chars - right aligned, zero padded
       
-      const pwr = [
-        'PWR',                                        // Record Type (3)
-        publisherSequence,                            // Transaction Sequence (8)
-        publisher.name.substring(0, 45).padEnd(45),   // Publisher Name (45)
-        publisher.ipi ? publisher.ipi.replace(/\D/g, '').padStart(11, '0') : ''.padEnd(11), // IPI Number (11)
-        ''.padEnd(1),                                 // Publisher Unknown Indicator (1)
-        getPublisherType(publisher.role).padEnd(2),   // Publisher Type (2)
-        ''.padEnd(60),                                // Tax ID (60)
-        String(Math.round(publisher.ownership_percentage)).padStart(5, '0'), // Publisher Share (5) - percentage as whole number
-        ''.padEnd(3),                                 // International Standard Agreement Code (3)
-        ''.padEnd(60),                                // Agreement Type (60)
-        ''.padEnd(8),                                 // Agreement Start Date (8)
-        ''.padEnd(8),                                 // Agreement End Date (8)
-        ''.padEnd(60)                                 // Filler (60)
-      ].join('');
+      const pwrRecordType = 'PWR';                                           // 3 chars
+      const pwrSequence = String(recordSequenceNumber).padStart(8, '0');     // 8 chars
+      const pubName = publisherName;                                         // 45 chars
+      const pubIPI = publisherIPI;                                           // 11 chars
+      const publisherUnknown = ' ';                                          // 1 char
+      const publisherType = getPublisherType(publisher.role);                // 2 chars
+      const taxID = ''.padEnd(60);                                           // 60 chars
+      const publisherShare = String(Math.round(publisher.ownership_percentage * 100)).padStart(5, '0'); // 5 chars - right aligned, zero padded (percentage * 100)
+      const agreementCode = '   ';                                           // 3 chars
+      const agreementType = ''.padEnd(60);                                   // 60 chars
+      const agreementStartDate = '        ';                                 // 8 chars
+      const agreementEndDate = '        ';                                   // 8 chars
+      const pwrFiller = ''.padEnd(64);                                       // 64 chars
+      
+      const pwr = pwrRecordType + pwrSequence + pubName + pubIPI + publisherUnknown + 
+                  publisherType + taxID + publisherShare + agreementCode + 
+                  agreementType + agreementStartDate + agreementEndDate + pwrFiller;
+      
       lines.push(pwr);
-      recordCount++;
+      recordSequenceNumber++;
     });
     
-    // Territory records (TER) - Add for worldwide rights
-    const territorySequence = String(transactionSeq + work.writers.length + work.publishers.length + 1).padStart(8, '0');
-    const ter = [
-      'TER',                                          // Record Type (3)
-      territorySequence,                              // Transaction Sequence (8)
-      'I',                                           // Inclusion/Exclusion (1)
-      'WW',                                          // Territory Code (2)
-      ''.padEnd(60)                                  // Filler (60)
-    ].join('');
+    // Territory records (TER) - CWR 2.1 format (14 chars)
+    const terRecordType = 'TER';                                             // 3 chars
+    const terSequence = String(recordSequenceNumber).padStart(8, '0');       // 8 chars
+    const inclusionExclusion = 'I';                                          // 1 char - inclusion
+    const territoryCode = '2136';                                            // 4 chars - worldwide territory code (numeric, right aligned with leading zeros)
+    
+    const ter = terRecordType + terSequence + inclusionExclusion + territoryCode;
+    
     lines.push(ter);
-    recordCount++;
+    recordSequenceNumber++;
 
-    // Recording records (REC) if available - CWR 2.1 format
+    // Recording records (REC) if available - CWR 2.1 format (318 chars)
     if (work.recordings && work.recordings.length > 0) {
       work.recordings.forEach((recording, recordingIndex) => {
-        const recordingSequence = String(transactionSeq + work.writers.length + work.publishers.length + recordingIndex + 2).padStart(8, '0');
+        const recRecordType = 'REC';                                         // 3 chars
+        const recSequence = String(recordSequenceNumber).padStart(8, '0');   // 8 chars
+        const recISRC = recording.isrc ? recording.isrc.replace(/-/g, '').substring(0, 12).padEnd(12) : ''.padEnd(12); // 12 chars - left aligned
+        const recordingArtist = (recording.artist_name || '').substring(0, 60).padEnd(60); // 60 chars - left aligned
+        const recDuration = recording.duration ? String(recording.duration).padStart(6, '0') : '000000'; // 6 chars - right aligned, zero padded
+        const releaseDate = recording.release_date ? recording.release_date.replace(/-/g, '').substring(0, 8) : '00000000'; // 8 chars
+        const recordLabel = ''.padEnd(60);                                   // 60 chars
+        const catNumber = ''.padEnd(60);                                     // 60 chars
+        const releaseFormat = ''.padEnd(5);                                  // 5 chars
+        const recFiller = ''.padEnd(96);                                     // 96 chars
         
-        const rec = [
-          'REC',                                      // Record Type (3)
-          recordingSequence,                          // Transaction Sequence (8)
-          recording.isrc ? recording.isrc.replace(/-/g, '').padEnd(12) : ''.padEnd(12), // ISRC (12)
-          recording.artist_name?.substring(0, 60).padEnd(60) || ''.padEnd(60), // Recording Artist (60)
-          recording.duration ? String(recording.duration).padStart(6, '0') : ''.padEnd(6), // Duration (6)
-          recording.release_date?.replace(/-/g, '').substring(0, 8).padEnd(8) || ''.padEnd(8), // Release Date (8)
-          ''.padEnd(60),                              // Record Label (60)
-          ''.padEnd(60),                              // Catalogue Number (60)
-          ''.padEnd(5),                               // Release Format (5)
-          ''.padEnd(60)                               // Filler (60)
-        ].join('');
+        const rec = recRecordType + recSequence + recISRC + recordingArtist + 
+                    recDuration + releaseDate + recordLabel + catNumber + 
+                    releaseFormat + recFiller;
+        
         lines.push(rec);
-        recordCount++;
+        recordSequenceNumber++;
       });
     }
-    
-    transactionSeq += work.writers.length + work.publishers.length + 2 + (work.recordings?.length || 0);
   });
   
-  // Add CWR 2.1 Group Trailer (GRT)
-  const grt = [
-    'GRT',                                            // Record Type (3)
-    String(transactionSeq).padStart(8, '0'),         // Transaction Sequence (8)
-    '0001',                                          // Group ID (4)
-    String(worksToProcess.length).padStart(5, '0'),  // Transaction Count (5) - number of works
-    String(recordCount).padStart(8, '0'),            // Record Count (8) - actual records excluding HDR
-    ''.padEnd(60)                                    // Filler (60)
-  ].join('');
-  lines.push(grt);
-  recordCount++;
+  // Calculate accurate totals for GRT and TRL
+  const totalRecordsInGroup = recordSequenceNumber - 2; // Excluding HDR and the GRT record itself
+  const totalTransactions = groupTransactionCount; // Number of works processed
   
-  // Add CWR 2.1 Transmission Trailer (TRL)
-  const trl = [
-    'TRL',                                            // Record Type (3)
-    String(transactionSeq + 1).padStart(8, '0'),     // Transaction Sequence (8)
-    '0001',                                          // Group Count (4) - number of groups
-    String(worksToProcess.length).padStart(8, '0'),  // Transaction Count (8) - number of works
-    String(recordCount + 1).padStart(8, '0'),        // Record Count (8) - total records including HDR + GRT
-    ''.padEnd(60)                                    // Filler (60)
-  ].join('');
+  // Add CWR 2.1 Group Trailer (GRT) - 88 character fixed width
+  const grtRecordType = 'GRT';                                               // 3 chars
+  const grtSequence = String(recordSequenceNumber).padStart(8, '0');        // 8 chars
+  const groupID = '0001'.padStart(4, '0');                                   // 4 chars - right aligned, zero padded
+  const transactionCount = String(totalTransactions).padStart(5, '0');      // 5 chars - right aligned, zero padded
+  const recordCountInGroup = String(totalRecordsInGroup).padStart(8, '0');  // 8 chars - right aligned, zero padded
+  const grtFiller = ''.padEnd(60);                                           // 60 chars
+  
+  const grt = grtRecordType + grtSequence + groupID + transactionCount + 
+              recordCountInGroup + grtFiller;
+  
+  lines.push(grt);
+  recordSequenceNumber++;
+  
+  // Calculate accurate totals for TRL
+  const totalRecordsInTransmission = recordSequenceNumber - 1; // Excluding the TRL record itself
+  
+  // Add CWR 2.1 Transmission Trailer (TRL) - 88 character fixed width
+  const trlRecordType = 'TRL';                                               // 3 chars
+  const trlSequence = String(recordSequenceNumber).padStart(8, '0');        // 8 chars
+  const groupCount = '0001'.padStart(4, '0');                                // 4 chars - right aligned, zero padded (number of groups)
+  const totalTransactionCount = String(totalTransactions).padStart(8, '0'); // 8 chars - right aligned, zero padded
+  const totalRecordCount = String(totalRecordsInTransmission).padStart(8, '0'); // 8 chars - right aligned, zero padded
+  const trlFiller = ''.padEnd(57);                                           // 57 chars
+  
+  const trl = trlRecordType + trlSequence + groupCount + totalTransactionCount + 
+              totalRecordCount + trlFiller;
+  
   lines.push(trl);
   
   return lines.join('\r\n'); // CWR standard uses CRLF line endings
