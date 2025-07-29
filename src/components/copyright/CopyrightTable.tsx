@@ -16,9 +16,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink, Edit, Download, Trash2, X } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink, Edit, Download, Trash2, X, FileOutput } from 'lucide-react';
 import { Copyright, CopyrightWriter } from '@/hooks/useCopyright';
 import { AudioPlayer } from './AudioPlayer';
+import { ExportDialog } from './ExportDialog';
 
 interface CopyrightTableProps {
   copyrights: Copyright[];
@@ -38,6 +39,7 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
   const [sortField, setSortField] = useState<SortField>('work_title');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
@@ -346,6 +348,14 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                   <X className="h-4 w-4 mr-1" />
                   Clear Selection
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowExportDialog(true)}
+                >
+                  <FileOutput className="h-4 w-4 mr-1" />
+                  Export Selected
+                </Button>
                 {onBulkDelete && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -633,6 +643,16 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
           )}
         </CardContent>
       </Card>
+      
+      {/* Export Dialog */}
+      <ExportDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        selectedCopyrights={Array.from(selectedItems)}
+        copyrightTitles={Object.fromEntries(
+          copyrights.map(c => [c.id, c.work_title])
+        )}
+      />
     </div>
   );
 };
