@@ -48,17 +48,11 @@ const generateEmailHTML = (userEmail: string, accessSource: string) => {
             margin-bottom: 40px;
         }
         .logo {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
+            width: 80px;
+            height: 80px;
             margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: white;
-            font-weight: bold;
+            display: block;
+            border-radius: 12px;
         }
         h1 {
             color: #1e293b;
@@ -158,17 +152,17 @@ const generateEmailHTML = (userEmail: string, accessSource: string) => {
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">CV</div>
+            <img src="https://plxsenykjisqutxcvjeg.supabase.co/lovable-uploads/1534756f-3290-4c30-81e1-7dfeed0fcac8.png" alt="Encore Music" class="logo">
             <h1>Welcome to Catalog Valuation!</h1>
             <p class="subtitle">Your professional music IP valuation platform</p>
         </div>
 
         <div class="welcome-message">
-            <h2 style="margin-top: 0; color: #1e293b;">Hello ${capitalizedName}! 👋</h2>
+            <h2 style="margin-top: 0; color: #1e293b;">Hello ${capitalizedName}! Welcome</h2>
             <p style="margin-bottom: 0;">You now have access to our industry-leading catalog valuation tools. We're excited to help you make informed decisions about your music investments and catalog acquisitions.</p>
         </div>
 
-        <h3 style="color: #1e293b; margin-bottom: 20px;">🎯 Key Features You Can Use Now</h3>
+        <h3 style="color: #1e293b; margin-bottom: 20px;">▶ Key Features You Can Use Now</h3>
         
         <div class="feature-grid">
             <div class="feature-item">
@@ -182,12 +176,12 @@ const generateEmailHTML = (userEmail: string, accessSource: string) => {
                 <p style="margin: 0; color: #64748b; font-size: 14px;">Comprehensive risk analysis and confidence scoring</p>
             </div>
             <div class="feature-item">
-                <div class="feature-icon">🎵</div>
+                <div class="feature-icon">♪</div>
                 <h4 style="margin: 0 0 8px 0; color: #1e293b;">Spotify Integration</h4>
                 <p style="margin: 0; color: #64748b; font-size: 14px;">Real-time streaming data and popularity metrics</p>
             </div>
             <div class="feature-item">
-                <div class="feature-icon">💰</div>
+                <div class="feature-icon">$</div>
                 <h4 style="margin: 0 0 8px 0; color: #1e293b;">Multiple Valuations</h4>
                 <p style="margin: 0; color: #64748b; font-size: 14px;">Compare DCF, multiple-based, and risk-adjusted values</p>
             </div>
@@ -200,7 +194,7 @@ const generateEmailHTML = (userEmail: string, accessSource: string) => {
         </div>
 
         <div class="getting-started">
-            <h3 style="color: #1e293b; margin-top: 0;">🚀 Getting Started (3 Simple Steps)</h3>
+            <h3 style="color: #1e293b; margin-top: 0;">▶ Getting Started (3 Simple Steps)</h3>
             
             <div class="step">
                 <div class="step-number">1</div>
@@ -228,7 +222,7 @@ const generateEmailHTML = (userEmail: string, accessSource: string) => {
         </div>
 
         <div style="background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); padding: 24px; border-radius: 8px; margin: 30px 0; text-align: center;">
-            <h3 style="color: #1e293b; margin-top: 0;">💡 Pro Tip</h3>
+            <h3 style="color: #1e293b; margin-top: 0;">▶ Pro Tip</h3>
             <p style="margin-bottom: 0; color: #475569;">Start with popular artists to see how our valuation engine compares to known market transactions. This will help you understand our methodology and build confidence in the platform.</p>
         </div>
 
