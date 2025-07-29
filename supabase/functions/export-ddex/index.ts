@@ -12,6 +12,7 @@ interface DDEXWork {
   language?: string;
   contributors: DDEXContributor[];
   recordings?: DDEXRecording[];
+  territories?: string[];
 }
 
 interface DDEXContributor {
@@ -29,6 +30,21 @@ interface DDEXRecording {
   duration?: number;
   releaseDate?: string;
 }
+
+// Territory mapping for DDEX compliance
+const getDDEXTerritoryCode = (uiCode: string): string => {
+  const territoryMap: Record<string, string> = {
+    'WORLD': 'Worldwide',
+    'US': 'US',
+    'CA': 'CA',
+    'GB': 'GB',
+    'FR': 'FR',
+    'DE': 'DE',
+    'JP': 'JP',
+    'AU': 'AU'
+  };
+  return territoryMap[uiCode] || 'Worldwide'; // Default to worldwide
+};
 
 const generateDDEXXML = (works: DDEXWork[]): string => {
   const timestamp = new Date().toISOString();
@@ -75,7 +91,7 @@ const generateDDEXXML = (works: DDEXWork[]): string => {
           </MusicalWorkReferenceId>
         </MusicalWorkReference>
         <MusicalWorkDetailsByTerritory>
-          <TerritoryCode>Worldwide</TerritoryCode>
+          <TerritoryCode>${work.territories?.[0] || 'Worldwide'}</TerritoryCode>
           <Title>
             <TitleText>${work.title}</TitleText>
             <TitleType>OriginalTitle</TitleType>
@@ -209,7 +225,7 @@ serve(async (req) => {
 
     const { copyrightIds } = await req.json();
 
-    // Fetch copyright data with related writers, publishers, and recordings
+    // Fetch copyright data with related writers, publishers, recordings, and contracts
     const { data: copyrights, error: copyrightsError } = await supabase
       .from('copyrights')
       .select(`
@@ -221,12 +237,25 @@ serve(async (req) => {
       .in('id', copyrightIds)
       .eq('user_id', user.id);
 
+    // Fetch linked contract data for territory and additional information
+    const { data: contractLinks } = await supabase
+      .from('contract_schedule_works')
+      .select(`
+        copyright_id,
+        contracts(*)
+      `)
+      .in('copyright_id', copyrightIds);
+
     if (copyrightsError) {
       throw new Error(`Failed to fetch copyrights: ${copyrightsError.message}`);
     }
 
     // Transform data to DDEX format
     const ddexWorks: DDEXWork[] = copyrights.map(copyright => {
+      // Find linked contract data
+      const contractLink = contractLinks?.find(link => link.copyright_id === copyright.id);
+      const contractData = contractLink?.contracts;
+      
       const contributors: DDEXContributor[] = [
         ...copyright.copyright_writers.map((writer: any) => ({
           name: writer.writer_name,
@@ -244,11 +273,15 @@ serve(async (req) => {
         }))
       ];
 
+      // Use territories from contract or copyright, defaulting to worldwide
+      const territories = contractData?.territories || copyright.collection_territories || ['WORLD'];
+
       return {
         title: copyright.work_title,
         iswc: copyright.iswc,
         language: copyright.language_code,
         contributors,
+        territories: territories.map(getDDEXTerritoryCode),
         recordings: copyright.copyright_recordings.map((recording: any) => ({
           isrc: recording.isrc,
           title: recording.recording_title,

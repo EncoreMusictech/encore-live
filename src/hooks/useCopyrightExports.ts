@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  validateCopyrightData, 
+  transformContractData,
+  ValidationResult 
+} from '@/lib/copyright-field-mappings';
 
 export interface ExportOptions {
   format: 'cwr' | 'ddex' | 'csv';
@@ -184,14 +189,16 @@ export const useCopyrightExports = () => {
 
   const validateExport = async (copyrightIds: string[]): Promise<{ isValid: boolean; errors: string[] }> => {
     const errors: string[] = [];
+    const warnings: string[] = [];
 
-    // Fetch copyrights to validate
+    // Fetch copyrights with related data for validation
     const { data: copyrights, error } = await supabase
       .from('copyrights')
       .select(`
         *,
         copyright_writers(*),
-        copyright_publishers(*)
+        copyright_publishers(*),
+        copyright_recordings(*)
       `)
       .in('id', copyrightIds);
 
@@ -200,37 +207,74 @@ export const useCopyrightExports = () => {
       return { isValid: false, errors };
     }
 
+    // Fetch linked contracts for additional validation
+    const { data: contractLinks } = await supabase
+      .from('contract_schedule_works')
+      .select(`
+        copyright_id,
+        contracts(*)
+      `)
+      .in('copyright_id', copyrightIds);
+
     // Validate each copyright
     copyrights.forEach(copyright => {
-      if (!copyright.work_title || copyright.work_title.trim() === '') {
-        errors.push(`Copyright "${copyright.work_id}" is missing a work title`);
-      }
-
-      // Check for writer ownership validation
-      const totalWriterShare = copyright.copyright_writers.reduce(
-        (sum: number, writer: any) => sum + writer.ownership_percentage, 0
-      );
+      // Find linked contract data
+      const contractLink = contractLinks?.find(link => link.copyright_id === copyright.id);
+      const contractData = contractLink?.contracts;
       
-      if (totalWriterShare > 100) {
-        errors.push(`Copyright "${copyright.work_title}" has writer shares exceeding 100%`);
-      }
-
-      // Check for publisher ownership validation
-      const totalPublisherShare = copyright.copyright_publishers.reduce(
-        (sum: number, publisher: any) => sum + publisher.ownership_percentage, 0
-      );
+      // Enhance copyright data with contract information
+      const enhancedData = transformContractData(copyright, contractData);
       
-      if (totalPublisherShare > 100) {
-        errors.push(`Copyright "${copyright.work_title}" has publisher shares exceeding 100%`);
+      // Use enhanced field validation
+      const validationResult: ValidationResult = validateCopyrightData(enhancedData);
+      errors.push(...validationResult.errors);
+      warnings.push(...validationResult.warnings);
+
+      // Additional business rule validation
+      if (copyright.copyright_writers?.length > 0) {
+        const totalWriterShare = copyright.copyright_writers.reduce(
+          (sum: number, writer: any) => sum + (writer.ownership_percentage || 0), 0
+        );
+        
+        if (totalWriterShare > 100) {
+          errors.push(`Copyright "${copyright.work_title}" has writer shares exceeding 100% (${totalWriterShare}%)`);
+        }
+        
+        if (totalWriterShare < 100) {
+          warnings.push(`Copyright "${copyright.work_title}" has writer shares totaling less than 100% (${totalWriterShare}%)`);
+        }
       }
 
-      // Check for required fields for CWR/DDEX compliance
-      if (!copyright.language_code) {
-        errors.push(`Copyright "${copyright.work_title}" is missing language code`);
+      if (copyright.copyright_publishers?.length > 0) {
+        const totalPublisherShare = copyright.copyright_publishers.reduce(
+          (sum: number, publisher: any) => sum + (publisher.ownership_percentage || 0), 0
+        );
+        
+        if (totalPublisherShare > 100) {
+          errors.push(`Copyright "${copyright.work_title}" has publisher shares exceeding 100% (${totalPublisherShare}%)`);
+        }
+      }
+
+      // Territory validation
+      if (copyright.collection_territories?.length === 0) {
+        warnings.push(`Copyright "${copyright.work_title}" has no territories specified, defaulting to worldwide`);
+      }
+
+      // Contract-specific validation
+      if (contractData) {
+        if (!contractData.start_date) {
+          warnings.push(`Contract for "${copyright.work_title}" is missing start date`);
+        }
+        if (contractData.controlled_percentage === null || contractData.controlled_percentage === undefined) {
+          warnings.push(`Contract for "${copyright.work_title}" is missing controlled percentage`);
+        }
       }
     });
 
-    return { isValid: errors.length === 0, errors };
+    return { 
+      isValid: errors.length === 0, 
+      errors: [...errors, ...warnings.map(w => `Warning: ${w}`)] 
+    };
   };
 
   return {

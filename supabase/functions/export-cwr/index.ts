@@ -197,6 +197,21 @@ const generateCWRFile = (works: CWRWork[], headerConfig?: any): string => {
   return lines.join('\r\n'); // CWR standard uses CRLF line endings
 };
 
+// Territory mapping for CWR compliance
+const getCWRTerritoryCode = (uiCode: string): string => {
+  const territoryMap: Record<string, string> = {
+    'WORLD': '2136',
+    'US': '840',
+    'CA': '124',
+    'GB': '826',
+    'FR': '250',
+    'DE': '276',
+    'JP': '392',
+    'AU': '036'
+  };
+  return territoryMap[uiCode] || '2136'; // Default to worldwide
+};
+
 // Helper functions for CWR field mappings
 const getWriterRole = (role: string): string => {
   const roleMap: Record<string, string> = {
