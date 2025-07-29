@@ -29,15 +29,17 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Validate session age (sessions older than 24 hours should be refreshed)
-  const sessionTimestamp = session.expires_at ? new Date(session.expires_at).getTime() : Date.now();
-  if (!isSessionValid(sessionTimestamp, 86400000)) { // 24 hours
-    logSecurityEvent('expired_session_access', {
-      userId: user.id,
-      sessionAge: Date.now() - sessionTimestamp,
-      path: location.pathname
-    });
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+  // Check if session is expired
+  if (session.expires_at) {
+    const expiresAt = new Date(session.expires_at).getTime();
+    if (Date.now() >= expiresAt) {
+      logSecurityEvent('expired_session_access', {
+        userId: user.id,
+        expiresAt: session.expires_at,
+        path: location.pathname
+      });
+      return <Navigate to="/auth" state={{ from: location }} replace />;
+    }
   }
 
   return <>{children}</>;
