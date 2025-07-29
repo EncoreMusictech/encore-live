@@ -92,19 +92,22 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Export Copyrights</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 py-2">
           {/* Selected works summary */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Selected Works ({selectedCopyrights.length})</Label>
-            <div className="max-h-32 overflow-y-auto space-y-1 p-3 bg-muted rounded-md">
+            <div className="max-h-40 overflow-y-auto space-y-1 p-3 bg-muted rounded-md border">
               {selectedCopyrights.map(id => (
-                <div key={id} className="text-sm text-muted-foreground">
-                  {copyrightTitles[id] || `Work ${id.slice(0, 8)}`}
+                <div key={id} className="text-sm text-muted-foreground flex items-center justify-between">
+                  <span className="truncate">{copyrightTitles[id] || `Work ${id.slice(0, 8)}`}</span>
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    {id.slice(0, 8)}
+                  </Badge>
                 </div>
               ))}
             </div>
@@ -200,11 +203,13 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                   </div>
                   {!validationResults.isValid && (
                     <AlertDescription className="mt-2">
-                      <ul className="list-disc pl-4 space-y-1">
-                        {validationResults.errors.map((error, index) => (
-                          <li key={index} className="text-sm">{error}</li>
-                        ))}
-                      </ul>
+                      <div className="max-h-32 overflow-y-auto">
+                        <ul className="list-disc pl-4 space-y-1">
+                          {validationResults.errors.map((error, index) => (
+                            <li key={index} className="text-sm">{error}</li>
+                          ))}
+                        </ul>
+                      </div>
                     </AlertDescription>
                   )}
                 </Alert>
