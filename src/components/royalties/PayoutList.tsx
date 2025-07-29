@@ -366,7 +366,7 @@ export function PayoutList() {
                 <TableCell>${payout.royalties_to_date?.toLocaleString() || '0'}</TableCell>
                 <TableCell>${payout.payments_to_date?.toLocaleString() || '0'}</TableCell>
                 <TableCell>${payout.net_payable?.toLocaleString() || '0'}</TableCell>
-                <TableCell className="font-medium">
+                <TableCell className="font-medium text-green-600">
                   ${payout.amount_due?.toLocaleString() || '0'}
                 </TableCell>
                 <TableCell>
