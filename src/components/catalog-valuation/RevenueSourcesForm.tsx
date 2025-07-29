@@ -15,11 +15,13 @@ import { useToast } from '@/hooks/use-toast';
 interface RevenueSourcesFormProps {
   catalogValuationId?: string;
   onMetricsUpdate?: (metrics: any) => void;
+  onValuationUpdate?: () => void; // New prop to trigger valuation refresh
 }
 
 export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
   catalogValuationId,
   onMetricsUpdate,
+  onValuationUpdate,
 }) => {
   const { toast } = useToast();
   const {
@@ -100,6 +102,14 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
           const metrics = calculateRevenueMetrics();
           onMetricsUpdate(metrics);
         }, 100);
+      }
+      
+      // Trigger enhanced valuation recalculation
+      if (onValuationUpdate) {
+        setTimeout(() => {
+          console.log('Triggering valuation update after revenue source change');
+          onValuationUpdate();
+        }, 200);
       }
     }
   };

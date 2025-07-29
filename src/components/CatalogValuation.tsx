@@ -1306,10 +1306,16 @@ Actual market values may vary significantly based on numerous factors not captur
                {/* Revenue Sources Form - Show when we have a valuation result */}
                {result && (
                  <>
-                   <RevenueSourcesForm 
-                     catalogValuationId={catalogValuationId}
-                     onMetricsUpdate={setRevenueMetrics}
-                   />
+                    <RevenueSourcesForm 
+                      catalogValuationId={catalogValuationId}
+                      onMetricsUpdate={setRevenueMetrics}
+                      onValuationUpdate={() => {
+                        console.log('Revenue source updated, refreshing valuation with enhanced methodology');
+                        if (artistName) {
+                          handleSearch();
+                        }
+                      }}
+                    />
                    
                    {/* Enhanced Valuation Engine */}
                    {revenueMetrics && revenueSources.length > 0 && (
