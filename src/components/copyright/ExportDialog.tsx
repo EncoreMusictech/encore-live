@@ -197,16 +197,16 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                     ) : (
                       <AlertTriangle className="h-4 w-4 text-red-600" />
                     )}
-                    <span className="font-medium">
+                    <span className="font-medium text-foreground">
                       {validationResults.isValid ? 'Validation Passed' : 'Validation Issues Found'}
                     </span>
                   </div>
                   {!validationResults.isValid && (
                     <AlertDescription className="mt-2">
                       <div className="max-h-32 overflow-y-auto">
-                        <ul className="list-disc pl-4 space-y-1">
+                        <ul className="list-disc pl-4 space-y-1 text-foreground">
                           {validationResults.errors.map((error, index) => (
-                            <li key={index} className="text-sm">{error}</li>
+                            <li key={index} className="text-sm text-foreground">{error}</li>
                           ))}
                         </ul>
                       </div>
