@@ -463,6 +463,7 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                       {getSortIcon('registration_status')}
                     </div>
                   </TableHead>
+                  <TableHead>CWR/DDEX</TableHead>
                   <TableHead>Audio</TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50"
@@ -566,20 +567,47 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                               </div>
                             ));
                           })()}
-                        </div>
-                      </TableCell>
-                       <TableCell>
-                         {copyright.mp3_link ? (
-                           <AudioPlayer 
-                             src={copyright.mp3_link}
-                             title={copyright.work_title}
-                             artist={writers[copyright.id]?.[0]?.writer_name || "Unknown Artist"}
-                             className="max-w-[180px]"
-                           />
-                         ) : (
-                           <span className="text-muted-foreground text-sm">-</span>
-                         )}
+                         </div>
                        </TableCell>
+                       <TableCell>
+                         <div className="space-y-1">
+                           {(() => {
+                             const hasRequiredFields = copyright.work_title && copyright.language_code && copyrightWriters.length > 0;
+                             const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
+                             const cwrReady = hasRequiredFields && validShares;
+                             
+                             const hasStructuredData = copyright.work_title && copyright.iswc && copyright.language_code;
+                             const ddexReady = hasStructuredData;
+                             
+                             return (
+                               <div className="flex flex-col gap-1">
+                                 <Badge 
+                                   className={cwrReady ? "bg-green-100 text-green-800 text-xs" : "bg-red-100 text-red-800 text-xs"}
+                                 >
+                                   CWR {cwrReady ? '✓' : '✗'}
+                                 </Badge>
+                                 <Badge 
+                                   className={ddexReady ? "bg-blue-100 text-blue-800 text-xs" : "bg-orange-100 text-orange-800 text-xs"}
+                                 >
+                                   DDEX {ddexReady ? '✓' : '✗'}
+                                 </Badge>
+                               </div>
+                             );
+                           })()}
+                         </div>
+                       </TableCell>
+                        <TableCell>
+                          {copyright.mp3_link ? (
+                            <AudioPlayer 
+                              src={copyright.mp3_link}
+                              title={copyright.work_title}
+                              artist={writers[copyright.id]?.[0]?.writer_name || "Unknown Artist"}
+                              className="max-w-[180px]"
+                            />
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
+                        </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(copyright.created_at).toLocaleDateString()}
                       </TableCell>

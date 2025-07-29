@@ -20,6 +20,7 @@ import { CopyrightTable } from "@/components/copyright/CopyrightTable";
 import { BulkUpload } from "@/components/copyright/BulkUpload";
 import { ActivityLog } from "@/components/copyright/ActivityLog";
 import { CopyrightValidationPanel } from "@/components/copyright/CopyrightValidationPanel";
+import { ExportDialog } from "@/components/copyright/ExportDialog";
 
 
 const CopyrightManagement = () => {
@@ -30,6 +31,8 @@ const CopyrightManagement = () => {
   const [editingCopyright, setEditingCopyright] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("copyrights");
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [selectedCopyrights, setSelectedCopyrights] = useState<any[]>([]);
 
   // Debug logging
   useEffect(() => {
@@ -193,6 +196,7 @@ const CopyrightManagement = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="copyrights">My Copyrights</TabsTrigger>
+            <TabsTrigger value="cwr-ddex-export">CWR/DDEX Export</TabsTrigger>
             <TabsTrigger value="register" disabled={!canAccess('copyrightManagement')}>
               {canAccess('copyrightManagement') ? 'Register New' : 'Demo Limit Reached'}
             </TabsTrigger>
@@ -211,6 +215,142 @@ const CopyrightManagement = () => {
               onDelete={handleDelete}
               onBulkDelete={handleBulkDelete}
             />
+          </TabsContent>
+
+          <TabsContent value="cwr-ddex-export" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  CWR/DDEX Export Center
+                </CardTitle>
+                <CardDescription>
+                  Export your copyright catalog in industry-standard CWR (Common Works Registration) or DDEX (Digital Data Exchange) formats. 
+                  These formats are used for registering works with performing rights organizations and digital music platforms.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Quick Stats */}
+                <div className="grid md:grid-cols-4 gap-4">
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold text-green-600">
+                        {copyrights.filter(c => {
+                          const copyrightWriters = writers[c.id] || [];
+                          const hasRequiredFields = c.work_title && c.language_code && copyrightWriters.length > 0;
+                          const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
+                          return hasRequiredFields && validShares;
+                        }).length}
+                      </div>
+                      <p className="text-sm text-muted-foreground">CWR Ready</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {copyrights.filter(c => {
+                          const hasStructuredData = c.work_title && c.iswc && c.language_code;
+                          return hasStructuredData;
+                        }).length}
+                      </div>
+                      <p className="text-sm text-muted-foreground">DDEX Ready</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold text-orange-600">
+                        {copyrights.filter(c => {
+                          const copyrightWriters = writers[c.id] || [];
+                          const hasIssues = !c.work_title || !c.language_code || copyrightWriters.length === 0 ||
+                                           copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) > 100;
+                          return hasIssues;
+                        }).length}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Need Validation</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold">
+                        {copyrights.length}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Total Works</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Export Actions */}
+                <div className="grid md:grid-cols-3 gap-4">
+                  <Button 
+                    onClick={() => {
+                      setSelectedCopyrights(copyrights.filter(c => {
+                        const copyrightWriters = writers[c.id] || [];
+                        const hasRequiredFields = c.work_title && c.language_code && copyrightWriters.length > 0;
+                        const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
+                        return hasRequiredFields && validShares;
+                      }));
+                      setShowExportDialog(true);
+                    }}
+                    disabled={copyrights.filter(c => {
+                      const copyrightWriters = writers[c.id] || [];
+                      const hasRequiredFields = c.work_title && c.language_code && copyrightWriters.length > 0;
+                      const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
+                      return hasRequiredFields && validShares;
+                    }).length === 0}
+                    size="lg"
+                    className="h-20 flex-col gap-2"
+                  >
+                    <FileText className="w-6 h-6" />
+                    Export CWR Ready Works
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => {
+                      setSelectedCopyrights(copyrights.filter(c => {
+                        const hasStructuredData = c.work_title && c.iswc && c.language_code;
+                        return hasStructuredData;
+                      }));
+                      setShowExportDialog(true);
+                    }}
+                    disabled={copyrights.filter(c => {
+                      const hasStructuredData = c.work_title && c.iswc && c.language_code;
+                      return hasStructuredData;
+                    }).length === 0}
+                    variant="outline"
+                    size="lg"
+                    className="h-20 flex-col gap-2"
+                  >
+                    <FileText className="w-6 h-6" />
+                    Export DDEX Ready Works
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => {
+                      setSelectedCopyrights(copyrights);
+                      setShowExportDialog(true);
+                    }}
+                    disabled={copyrights.length === 0}
+                    variant="outline"
+                    size="lg"
+                    className="h-20 flex-col gap-2"
+                  >
+                    <FileText className="w-6 h-6" />
+                    Export All Works
+                  </Button>
+                </div>
+
+                {/* Compliance Table */}
+                <CopyrightTable 
+                  copyrights={copyrights}
+                  writers={writers}
+                  loading={loading}
+                  realtimeError={realtimeError}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onBulkDelete={handleBulkDelete}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="register">
@@ -361,7 +501,19 @@ const CopyrightManagement = () => {
             <DialogHeader>
               <DialogTitle>Edit Copyright - {editingCopyright?.work_title}</DialogTitle>
             </DialogHeader>
-            <div className="max-h-[75vh] overflow-y-auto pr-2">
+            <div className="max-h-[75vh] overflow-y-auto pr-2 space-y-6">
+              {/* Validation Panel */}
+              {editingCopyright && (
+                <CopyrightValidationPanel
+                  copyright={editingCopyright}
+                  writers={writers[editingCopyright.id] || []}
+                  publishers={[]}
+                  onValidationComplete={(result) => {
+                    console.log('Validation completed:', result);
+                  }}
+                />
+              )}
+              
               <EnhancedCopyrightForm 
                 editingCopyright={editingCopyright}
                 onSuccess={handleEditSuccess}
@@ -370,6 +522,17 @@ const CopyrightManagement = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Export Dialog */}
+        <ExportDialog
+          open={showExportDialog}
+          onOpenChange={setShowExportDialog}
+          selectedCopyrights={selectedCopyrights.map(c => c.id)}
+          copyrightTitles={selectedCopyrights.reduce((acc: { [key: string]: string }, c: any) => {
+            acc[c.id] = c.work_title || 'Untitled';
+            return acc;
+          }, {})}
+        />
       </main>
     </div>
   );
