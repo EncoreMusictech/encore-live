@@ -158,7 +158,7 @@ const CatalogValuation = memo(() => {
   }, []);
   
   const { loading, execute, error } = useAsyncOperation({
-    showToast: false, // Disable to prevent issues in preview
+    showToast: !isPreviewMode, // Only show toasts in full mode
     successMessage: "Catalog valuation completed successfully",
     errorMessage: "Failed to get catalog valuation"
   });
@@ -241,11 +241,12 @@ const CatalogValuation = memo(() => {
       });
 
       console.log("=== EXECUTE COMPLETED ===");
-      console.log("Returned data:", data);
+      console.log("Returned data:", typeof data, data ? "with data" : "empty");
 
       if (data) {
-        console.log("Valuation result:", data);
-        setResult(data);
+        console.log("Setting valuation result:", data.artist_name);
+        // Use functional update to ensure stable state setting
+        setResult(prevResult => data);
 
         // Increment demo usage AFTER successful search
         incrementUsage('catalogValuation');

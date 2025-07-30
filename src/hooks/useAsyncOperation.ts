@@ -25,10 +25,12 @@ export function useAsyncOperation<T = any>(
     error: null,
   });
 
-  // Use ref to track if component is still mounted
+  // Use ref to track if component is still mounted with more stability
   const isMountedRef = useRef(true);
+  const operationIdRef = useRef(0);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
@@ -37,6 +39,11 @@ export function useAsyncOperation<T = any>(
   const execute = useCallback(
     async (asyncFunction: () => Promise<T>) => {
       console.log("=== ASYNC OPERATION STARTED ===");
+      
+      // Generate unique operation ID to track this specific call
+      const currentOperationId = ++operationIdRef.current;
+      console.log("Operation ID:", currentOperationId);
+      
       setState({ data: null, loading: true, error: null });
 
       try {
@@ -52,14 +59,21 @@ export function useAsyncOperation<T = any>(
           timeoutPromise
         ]) as T;
         
-        if (!isMountedRef.current) {
-          console.log("Component unmounted, ignoring result");
+        // Check both mount status and operation ID to prevent race conditions
+        if (!isMountedRef.current || currentOperationId !== operationIdRef.current) {
+          console.log("Component unmounted or superseded, ignoring result. Current:", currentOperationId, "Latest:", operationIdRef.current);
           return;
         }
 
         console.log("=== ASYNC OPERATION SUCCESS ===");
         console.log("Result:", result);
-        setState({ data: result, loading: false, error: null });
+        
+        // Use a more stable state update approach
+        setState(prevState => ({
+          data: result,
+          loading: false,
+          error: null
+        }));
         
         if (options.showToast && options.successMessage) {
           toast({
@@ -74,13 +88,18 @@ export function useAsyncOperation<T = any>(
         console.log("=== ASYNC OPERATION ERROR ===");
         console.error("Error details:", error);
         
-        if (!isMountedRef.current) {
-          console.log("Component unmounted, ignoring error");
+        // Check both mount status and operation ID
+        if (!isMountedRef.current || currentOperationId !== operationIdRef.current) {
+          console.log("Component unmounted or superseded, ignoring error. Current:", currentOperationId, "Latest:", operationIdRef.current);
           return;
         }
 
         const errorObj = error instanceof Error ? error : new Error(String(error));
-        setState({ data: null, loading: false, error: errorObj });
+        setState(prevState => ({
+          data: null,
+          loading: false,
+          error: errorObj
+        }));
         
         if (options.showToast) {
           toast({
