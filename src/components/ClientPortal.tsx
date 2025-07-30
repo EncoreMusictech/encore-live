@@ -6,15 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Users, FileText, Music, DollarSign, Bell, Download, CheckCircle, Calendar, CreditCard } from 'lucide-react';
+import { Loader2, Users, FileText, Music, DollarSign, Bell, Download, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ClientDashboardOverview } from './client-portal/ClientDashboardOverview';
 import { ClientContracts } from './client-portal/ClientContracts';
 import { ClientWorks } from './client-portal/ClientWorks';
 import { ClientSyncDeals } from './client-portal/ClientSyncDeals';
 import { ClientRoyalties } from './client-portal/ClientRoyalties';
-import { ClientAccountBalance } from './client-portal/ClientAccountBalance';
-import { ClientPaymentInfo } from './client-portal/ClientPaymentInfo';
 import { ClientNotifications } from './client-portal/ClientNotifications';
 
 const ClientPortal = () => {
@@ -137,8 +135,6 @@ const ClientPortal = () => {
     { id: 'works', label: 'My Works', icon: Music, enabled: permissions.copyright?.enabled },
     { id: 'sync-deals', label: 'Sync Deals', icon: FileText, enabled: permissions['sync-licensing']?.enabled },
     { id: 'royalties', label: 'Royalties & Payouts', icon: DollarSign, enabled: permissions.royalties?.enabled },
-    { id: 'account-balance', label: 'Account Balance', icon: Calendar, enabled: permissions.royalties?.enabled },
-    { id: 'payment-info', label: 'Payment Info', icon: CreditCard, enabled: true },
     { id: 'notifications', label: 'Notifications & Downloads', icon: Bell, enabled: true }
   ].filter(tab => tab.enabled);
 
@@ -164,7 +160,7 @@ const ClientPortal = () => {
       </div>
 
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid grid-cols-2 lg:grid-cols-8 w-full">
+        <TabsList className="grid grid-cols-2 lg:grid-cols-6 w-full">
           {enabledTabs.map((tab) => (
             <TabsTrigger 
               key={tab.id} 
@@ -204,16 +200,6 @@ const ClientPortal = () => {
             <ClientRoyalties permissions={permissions.royalties} />
           </TabsContent>
         )}
-
-        {permissions.royalties?.enabled && (
-          <TabsContent value="account-balance" className="space-y-6">
-            <ClientAccountBalance permissions={permissions.royalties} />
-          </TabsContent>
-        )}
-
-        <TabsContent value="payment-info" className="space-y-6">
-          <ClientPaymentInfo permissions={permissions} />
-        </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
           <ClientNotifications />
