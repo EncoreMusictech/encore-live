@@ -135,7 +135,7 @@ const Index = () => {
       <section className="py-20 bg-secondary/20">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto space-y-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">C</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Ready to customize your system?</h2>
             <p className="text-xl text-muted-foreground">
               Join thousands of music professionals who trust ENCORE for their rights management needs.
             </p>
