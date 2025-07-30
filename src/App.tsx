@@ -120,11 +120,11 @@ const App = () => {
                <Route path="/contact" element={<ContactPage />} />
                <Route path="/documentation" element={<DocumentationPage />} />
               <Route path="/client-portal" element={
-                <ProtectedRoute>
+                <AdminOrProtectedRoute>
                   <ErrorBoundary>
                     <ClientPortal />
                   </ErrorBoundary>
-                </ProtectedRoute>
+                </AdminOrProtectedRoute>
               } />
               <Route path="/client-admin" element={
                 <ProtectedRoute>
