@@ -1352,16 +1352,6 @@ Actual market values may vary significantly based on numerous factors not captur
                 {/* Revenue Sources Form - Show when we have a valuation result */}
                 {result && (
                   <>
-                    {/* Debug info */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <div className="p-4 bg-muted/50 rounded-lg mb-4 text-sm">
-                        <strong>Debug Info:</strong><br />
-                        catalogValuationId: {catalogValuationId || 'Not set'}<br />
-                        Revenue sources count: {revenueSources.length}<br />
-                        Artist: {result.artist_name}
-                      </div>
-                    )}
-                    
                     <RevenueSourcesForm 
                       catalogValuationId={catalogValuationId}
                       onMetricsUpdate={(metrics) => {
