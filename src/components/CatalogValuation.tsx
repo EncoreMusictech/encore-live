@@ -1349,14 +1349,28 @@ Actual market values may vary significantly based on numerous factors not captur
                  </Card>
                )}
 
-               {/* Revenue Sources Form - Show when we have a valuation result */}
-               {result && (
-                 <>
+                {/* Revenue Sources Form - Show when we have a valuation result */}
+                {result && (
+                  <>
+                    {/* Debug info */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="p-4 bg-muted/50 rounded-lg mb-4 text-sm">
+                        <strong>Debug Info:</strong><br />
+                        catalogValuationId: {catalogValuationId || 'Not set'}<br />
+                        Revenue sources count: {revenueSources.length}<br />
+                        Artist: {result.artist_name}
+                      </div>
+                    )}
+                    
                     <RevenueSourcesForm 
                       catalogValuationId={catalogValuationId}
-                      onMetricsUpdate={setRevenueMetrics}
+                      onMetricsUpdate={(metrics) => {
+                        console.log('Revenue metrics updated:', metrics);
+                        setRevenueMetrics(metrics);
+                      }}
                       onValuationUpdate={() => {
                         console.log('Revenue source updated, refreshing valuation with enhanced methodology');
+                        console.log('Current catalogValuationId:', catalogValuationId);
                         if (artistName) {
                           handleSearch();
                         }
