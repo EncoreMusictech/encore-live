@@ -850,7 +850,7 @@ Actual market values may vary significantly based on numerous factors not captur
                       {result.comparable_artists.map((comp, index) => (
                         <div key={index} className="p-3 border rounded-lg">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-lg">{comp.name || `Industry Peer ${index + 1}`}</h4>
+                            <p className="font-medium">{comp.name}</p>
                             {comp.spotify_id && (
                               <Button
                                 variant="outline"
