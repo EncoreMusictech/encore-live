@@ -148,12 +148,18 @@ const CatalogValuation = memo(() => {
   });
 
   const handleSearch = useCallback(async () => {
+    console.log("=== SEARCH STARTED ===");
+    console.log("Artist name:", artistName);
+    console.log("Can access:", canAccess('catalogValuation'));
+    
     // Check demo access before proceeding
     if (!canAccess('catalogValuation')) {
+      console.log("Demo access denied");
       showUpgradeModalForModule('catalogValuation');
       return;
     }
     if (!artistName.trim()) {
+      console.log("No artist name provided");
       toast({
         title: "Error",
         description: "Please enter an artist name",
@@ -162,32 +168,52 @@ const CatalogValuation = memo(() => {
       return;
     }
 
+    console.log("Clearing previous result");
     setResult(null);
 
     try {
+      console.log("Starting execute function");
       const data = await execute(async () => {
+        console.log("=== INSIDE EXECUTE FUNCTION ===");
         console.log("Calling advanced Spotify catalog valuation function...");
         
+        const requestBody = { 
+          artistName: artistName.trim(),
+          valuationParams,
+          catalogValuationId,
+          userId: user?.id
+        };
+        console.log("Request body:", requestBody);
+        
         const { data, error } = await supabase.functions.invoke('spotify-catalog-valuation', {
-          body: { 
-            artistName: artistName.trim(),
-            valuationParams,
-            catalogValuationId,
-            userId: user?.id
-          }
+          body: requestBody
         });
+
+        console.log("=== API RESPONSE ===");
+        console.log("Data:", data);
+        console.log("Error:", error);
 
         if (error) {
           console.error("Function error:", error);
           throw new Error(error.message || 'Failed to get catalog valuation');
         }
 
-        if (data.error) {
+        if (data && data.error) {
+          console.error("Data error:", data.error);
           throw new Error(data.error);
         }
 
+        if (!data) {
+          console.error("No data returned");
+          throw new Error('No data returned from valuation service');
+        }
+
+        console.log("=== SUCCESS - RETURNING DATA ===");
         return data;
       });
+
+      console.log("=== EXECUTE COMPLETED ===");
+      console.log("Returned data:", data);
 
       if (data) {
         console.log("Valuation result:", data);
@@ -395,6 +421,11 @@ Actual market values may vary significantly based on numerous factors not captur
               )}
               {loading ? "Analyzing..." : "Analyze"}
             </Button>
+            {loading && (
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Reset
+              </Button>
+            )}
           </div>
           
           <div className="flex items-center justify-between">

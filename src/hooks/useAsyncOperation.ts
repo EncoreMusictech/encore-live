@@ -36,13 +36,29 @@ export function useAsyncOperation<T = any>(
 
   const execute = useCallback(
     async (asyncFunction: () => Promise<T>) => {
+      console.log("=== ASYNC OPERATION STARTED ===");
       setState({ data: null, loading: true, error: null });
 
       try {
-        const result = await asyncFunction();
-        
-        if (!isMountedRef.current) return;
+        console.log("Creating timeout promise (30 seconds)");
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Operation timed out after 30 seconds')), 30000);
+        });
 
+        console.log("Starting async function with timeout race");
+        const result = await Promise.race([
+          asyncFunction(),
+          timeoutPromise
+        ]) as T;
+        
+        if (!isMountedRef.current) {
+          console.log("Component unmounted, ignoring result");
+          return;
+        }
+
+        console.log("=== ASYNC OPERATION SUCCESS ===");
+        console.log("Result:", result);
         setState({ data: result, loading: false, error: null });
         
         if (options.showToast && options.successMessage) {
@@ -55,7 +71,13 @@ export function useAsyncOperation<T = any>(
         options.onSuccess?.(result);
         return result;
       } catch (error) {
-        if (!isMountedRef.current) return;
+        console.log("=== ASYNC OPERATION ERROR ===");
+        console.error("Error details:", error);
+        
+        if (!isMountedRef.current) {
+          console.log("Component unmounted, ignoring error");
+          return;
+        }
 
         const errorObj = error instanceof Error ? error : new Error(String(error));
         setState({ data: null, loading: false, error: errorObj });
