@@ -136,7 +136,7 @@ export const SavedScenariosManager: React.FC<SavedScenariosManagerProps> = ({
           <CardContent>
             <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
               <DialogTrigger asChild>
-                <Button className="w-full">
+                <Button className="w-full" data-save-scenario-trigger>
                   <Save className="h-4 w-4 mr-2" />
                   Save Scenario
                 </Button>

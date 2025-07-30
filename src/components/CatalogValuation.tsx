@@ -628,8 +628,12 @@ Actual market values may vary significantly based on numerous factors not captur
                     </div>
                     <Button 
                       onClick={() => {
-                        const savedScenariosTab = document.querySelector('[data-value="saved-scenarios"]') as HTMLElement;
-                        if (savedScenariosTab) savedScenariosTab.click();
+                        setActiveTab("saved-scenarios");
+                        // Small delay to ensure tab is rendered before triggering save dialog
+                        setTimeout(() => {
+                          const saveButton = document.querySelector('[data-save-scenario-trigger]') as HTMLElement;
+                          if (saveButton) saveButton.click();
+                        }, 100);
                       }}
                       className="flex items-center gap-2"
                     >
