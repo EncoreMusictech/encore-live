@@ -7,7 +7,6 @@ import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { useDebounce } from "@/hooks/usePerformanceOptimization";
 import { RevenueSourcesForm } from "@/components/catalog-valuation/RevenueSourcesForm";
 import { EnhancedValuationEngine } from "@/components/catalog-valuation/EnhancedValuationEngine";
-import { SavedScenariosManager } from "@/components/catalog-valuation/SavedScenariosManager";
 import { useCatalogRevenueSources } from "@/hooks/useCatalogRevenueSources";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft, Save } from "lucide-react";
+import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft } from "lucide-react";
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, Area, AreaChart, ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar } from 'recharts';
 import { CatalogValuationSkeleton, AsyncLoading } from "@/components/LoadingStates";
 
@@ -495,13 +494,12 @@ Actual market values may vary significantly based on numerous factors not captur
       {result && (
         <>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="analysis">DCF Analysis</TabsTrigger>
               <TabsTrigger value="forecasts">Forecasts</TabsTrigger>
               <TabsTrigger value="comparables">Comparables</TabsTrigger>
               <TabsTrigger value="revenue-sources">Revenue Sources</TabsTrigger>
-              <TabsTrigger value="saved-scenarios">Saved Scenarios</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="reports">Reports</TabsTrigger>
             </TabsList>
@@ -616,33 +614,6 @@ Actual market values may vary significantly based on numerous factors not captur
                 </Card>
               </div>
 
-              {/* Save Scenario Button */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Save This Valuation</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Save this valuation scenario for future reference and comparison
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={() => {
-                        setActiveTab("saved-scenarios");
-                        // Small delay to ensure tab is rendered before triggering save dialog
-                        setTimeout(() => {
-                          const saveButton = document.querySelector('[data-save-scenario-trigger]') as HTMLElement;
-                          if (saveButton) saveButton.click();
-                        }, 100);
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <Save className="h-4 w-4" />
-                      Save Scenario
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
 
               {/* Enhanced Valuation Insights */}
               {result.has_additional_revenue && (
@@ -1401,28 +1372,6 @@ Actual market values may vary significantly based on numerous factors not captur
                )}
               </TabsContent>
 
-            <TabsContent value="saved-scenarios" className="space-y-6">
-              {/* Back Navigation */}
-              <div className="flex items-center gap-2 mb-4">
-                <Button 
-                   variant="ghost" 
-                   size="sm" 
-                   onClick={() => setActiveTab("overview")}
-                   className="flex items-center gap-2"
-                 >
-                   <ArrowLeft className="h-4 w-4" />
-                   Back to Overview
-                 </Button>
-              </div>
-
-              <SavedScenariosManager 
-                currentValuation={result}
-                onLoadScenario={(scenario) => {
-                  console.log('Loading saved scenario:', scenario);
-                  // Could implement loading a saved scenario back into the current view
-                }}
-              />
-              </TabsContent>
 
             <TabsContent value="reports" className="space-y-6">
               {/* Back Navigation */}
