@@ -202,9 +202,8 @@ const CopyrightManagement = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="copyrights">My Copyrights</TabsTrigger>
-            <TabsTrigger value="sender-codes">Sender Codes</TabsTrigger>
             <TabsTrigger value="cwr-ddex-export">CWR/DDEX Export</TabsTrigger>
             <TabsTrigger value="register" disabled={!canAccess('copyrightManagement')}>
               {canAccess('copyrightManagement') ? 'Register New' : 'Demo Limit Reached'}
@@ -226,9 +225,6 @@ const CopyrightManagement = () => {
             />
           </TabsContent>
 
-          <TabsContent value="sender-codes" className="space-y-6">
-            <SenderCodeOnboarding />
-          </TabsContent>
 
           <TabsContent value="cwr-ddex-export" className="space-y-6">
             <Card>
@@ -243,125 +239,139 @@ const CopyrightManagement = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Quick Stats */}
-                <div className="grid md:grid-cols-4 gap-4">
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold text-green-600">
-                        {copyrights.filter(c => {
+                {/* Nested Tabs for CWR/DDEX functionality */}
+                <Tabs defaultValue="export" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="export">Export Works</TabsTrigger>
+                    <TabsTrigger value="sender-codes">Sender Codes</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="export" className="space-y-6 mt-6">
+                    {/* Quick Stats */}
+                    <div className="grid md:grid-cols-4 gap-4">
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-green-600">
+                            {copyrights.filter(c => {
+                              const copyrightWriters = writers[c.id] || [];
+                              const hasRequiredFields = c.work_title && c.language_code && copyrightWriters.length > 0;
+                              const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
+                              return hasRequiredFields && validShares;
+                            }).length}
+                          </div>
+                          <p className="text-sm text-muted-foreground">CWR Ready</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-blue-600">
+                            {copyrights.filter(c => {
+                              const hasStructuredData = c.work_title && c.iswc && c.language_code;
+                              return hasStructuredData;
+                            }).length}
+                          </div>
+                          <p className="text-sm text-muted-foreground">DDEX Ready</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-orange-600">
+                            {copyrights.filter(c => {
+                              const copyrightWriters = writers[c.id] || [];
+                              const hasIssues = !c.work_title || !c.language_code || copyrightWriters.length === 0 ||
+                                               copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) > 100;
+                              return hasIssues;
+                            }).length}
+                          </div>
+                          <p className="text-sm text-muted-foreground">Need Validation</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold">
+                            {copyrights.length}
+                          </div>
+                          <p className="text-sm text-muted-foreground">Total Works</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Export Actions */}
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <Button 
+                        onClick={() => {
+                          setSelectedCopyrights(copyrights.filter(c => {
+                            const copyrightWriters = writers[c.id] || [];
+                            const hasRequiredFields = c.work_title && c.language_code && copyrightWriters.length > 0;
+                            const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
+                            return hasRequiredFields && validShares;
+                          }));
+                          setShowExportDialog(true);
+                        }}
+                        disabled={copyrights.filter(c => {
                           const copyrightWriters = writers[c.id] || [];
                           const hasRequiredFields = c.work_title && c.language_code && copyrightWriters.length > 0;
                           const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
                           return hasRequiredFields && validShares;
-                        }).length}
-                      </div>
-                      <p className="text-sm text-muted-foreground">CWR Ready</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {copyrights.filter(c => {
+                        }).length === 0}
+                        size="lg"
+                        className="h-20 flex-col gap-2"
+                      >
+                        <FileText className="w-6 h-6" />
+                        Export CWR Ready Works
+                      </Button>
+                      
+                      <Button 
+                        onClick={() => {
+                          setSelectedCopyrights(copyrights.filter(c => {
+                            const hasStructuredData = c.work_title && c.iswc && c.language_code;
+                            return hasStructuredData;
+                          }));
+                          setShowExportDialog(true);
+                        }}
+                        disabled={copyrights.filter(c => {
                           const hasStructuredData = c.work_title && c.iswc && c.language_code;
                           return hasStructuredData;
-                        }).length}
-                      </div>
-                      <p className="text-sm text-muted-foreground">DDEX Ready</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold text-orange-600">
-                        {copyrights.filter(c => {
-                          const copyrightWriters = writers[c.id] || [];
-                          const hasIssues = !c.work_title || !c.language_code || copyrightWriters.length === 0 ||
-                                           copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) > 100;
-                          return hasIssues;
-                        }).length}
-                      </div>
-                      <p className="text-sm text-muted-foreground">Need Validation</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold">
-                        {copyrights.length}
-                      </div>
-                      <p className="text-sm text-muted-foreground">Total Works</p>
-                    </CardContent>
-                  </Card>
-                </div>
+                        }).length === 0}
+                        variant="outline"
+                        size="lg"
+                        className="h-20 flex-col gap-2"
+                      >
+                        <FileText className="w-6 h-6" />
+                        Export DDEX Ready Works
+                      </Button>
+                      
+                      <Button 
+                        onClick={() => {
+                          setSelectedCopyrights(copyrights);
+                          setShowExportDialog(true);
+                        }}
+                        disabled={copyrights.length === 0}
+                        variant="outline"
+                        size="lg"
+                        className="h-20 flex-col gap-2"
+                      >
+                        <FileText className="w-6 h-6" />
+                        Export All Works
+                      </Button>
+                    </div>
 
-                {/* Export Actions */}
-                <div className="grid md:grid-cols-3 gap-4">
-                  <Button 
-                    onClick={() => {
-                      setSelectedCopyrights(copyrights.filter(c => {
-                        const copyrightWriters = writers[c.id] || [];
-                        const hasRequiredFields = c.work_title && c.language_code && copyrightWriters.length > 0;
-                        const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
-                        return hasRequiredFields && validShares;
-                      }));
-                      setShowExportDialog(true);
-                    }}
-                    disabled={copyrights.filter(c => {
-                      const copyrightWriters = writers[c.id] || [];
-                      const hasRequiredFields = c.work_title && c.language_code && copyrightWriters.length > 0;
-                      const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
-                      return hasRequiredFields && validShares;
-                    }).length === 0}
-                    size="lg"
-                    className="h-20 flex-col gap-2"
-                  >
-                    <FileText className="w-6 h-6" />
-                    Export CWR Ready Works
-                  </Button>
+                    {/* Compliance Table */}
+                    <CopyrightTable 
+                      copyrights={copyrights}
+                      writers={writers}
+                      loading={loading}
+                      realtimeError={realtimeError}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onBulkDelete={handleBulkDelete}
+                    />
+                  </TabsContent>
                   
-                  <Button 
-                    onClick={() => {
-                      setSelectedCopyrights(copyrights.filter(c => {
-                        const hasStructuredData = c.work_title && c.iswc && c.language_code;
-                        return hasStructuredData;
-                      }));
-                      setShowExportDialog(true);
-                    }}
-                    disabled={copyrights.filter(c => {
-                      const hasStructuredData = c.work_title && c.iswc && c.language_code;
-                      return hasStructuredData;
-                    }).length === 0}
-                    variant="outline"
-                    size="lg"
-                    className="h-20 flex-col gap-2"
-                  >
-                    <FileText className="w-6 h-6" />
-                    Export DDEX Ready Works
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => {
-                      setSelectedCopyrights(copyrights);
-                      setShowExportDialog(true);
-                    }}
-                    disabled={copyrights.length === 0}
-                    variant="outline"
-                    size="lg"
-                    className="h-20 flex-col gap-2"
-                  >
-                    <FileText className="w-6 h-6" />
-                    Export All Works
-                  </Button>
-                </div>
-
-                {/* Compliance Table */}
-                <CopyrightTable 
-                  copyrights={copyrights}
-                  writers={writers}
-                  loading={loading}
-                  realtimeError={realtimeError}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onBulkDelete={handleBulkDelete}
-                />
+                  <TabsContent value="sender-codes" className="space-y-6 mt-6">
+                    <SenderCodeOnboarding />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>
