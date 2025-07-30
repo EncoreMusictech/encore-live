@@ -452,13 +452,14 @@ serve(async (req) => {
       high: Math.max(valuations.optimistic.current, riskAdjustedValue * 1.2)
     };
 
-    // Find comparable artists (existing logic)
+    // Find comparable artists using multiple search strategies
     let comparableArtists = [];
     
+    // Strategy 1: Search by genre
     if (artist.genres.length > 0) {
       try {
         const genreSearchResponse = await fetch(
-          `https://api.spotify.com/v1/search?q=genre:"${encodeURIComponent(primaryGenre)}"&type=artist&limit=20`,
+          `https://api.spotify.com/v1/search?q=genre:"${encodeURIComponent(primaryGenre)}"&type=artist&limit=50`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`,
@@ -474,13 +475,12 @@ serve(async (req) => {
               .filter((searchArtist: SpotifyArtist) => searchArtist.id !== artist.id)
               .filter((searchArtist: SpotifyArtist) => {
                 const popularityDiff = Math.abs(searchArtist.popularity - artist.popularity);
-                return popularityDiff <= 20 && searchArtist.followers.total > 10000;
+                return popularityDiff <= 30 && searchArtist.followers.total > 1000;
               })
-              .sort((a: SpotifyArtist, b: SpotifyArtist) => b.popularity - a.popularity)
-              .slice(0, 3);
+              .sort((a: SpotifyArtist, b: SpotifyArtist) => b.popularity - a.popularity);
 
-            if (similarArtists.length > 0) {
-              comparableArtists = similarArtists.map((similarArtist: SpotifyArtist) => {
+            similarArtists.forEach((similarArtist: SpotifyArtist) => {
+              if (comparableArtists.length < 10) { // Get more to choose from
                 const similarEstimatedStreams = Math.floor(
                   (similarArtist.followers.total * similarArtist.popularity * 2.5 * genreMultiplier)
                 );
@@ -489,33 +489,156 @@ serve(async (req) => {
                   similarEstimatedStreams * benchmark.streams_to_revenue_ratio * benchmark.revenue_multiple_avg
                 );
                 
-                return {
+                comparableArtists.push({
                   name: similarArtist.name,
                   valuation: similarValuation,
                   followers: similarArtist.followers.total,
                   popularity: similarArtist.popularity,
                   genres: similarArtist.genres,
                   spotify_id: similarArtist.id
-                };
-              });
-            }
+                });
+              }
+            });
           }
         }
       } catch (error) {
-        console.log(`Error searching for similar artists: ${error.message}`);
+        console.log(`Error searching for similar artists by genre: ${error.message}`);
       }
     }
     
-    // Ensure we have 3 comparable artists
-    while (comparableArtists.length < 3) {
-      const index = comparableArtists.length;
-      comparableArtists.push({
-        name: `Industry Peer ${index + 1}`,
-        valuation: Math.floor(fairMarketValue.mid * (0.8 + Math.random() * 0.4)),
-        followers: Math.floor(artist.followers.total * (0.7 + Math.random() * 0.6)),
-        popularity: Math.max(1, Math.min(100, artist.popularity + (Math.random() * 20 - 10))),
-        genres: artist.genres.slice(0, 2)
-      });
+    // Strategy 2: If we still need more artists, search for popular artists in general
+    if (comparableArtists.length < 3) {
+      try {
+        const popularSearchResponse = await fetch(
+          `https://api.spotify.com/v1/search?q=year:2020-2024&type=artist&limit=50`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        if (popularSearchResponse.ok) {
+          const popularSearchData = await popularSearchResponse.json();
+          
+          if (popularSearchData.artists?.items?.length > 0) {
+            const additionalArtists = popularSearchData.artists.items
+              .filter((searchArtist: SpotifyArtist) => 
+                searchArtist.id !== artist.id && 
+                !comparableArtists.some(existing => existing.spotify_id === searchArtist.id)
+              )
+              .filter((searchArtist: SpotifyArtist) => searchArtist.followers.total > 10000)
+              .sort((a: SpotifyArtist, b: SpotifyArtist) => b.followers.total - a.followers.total);
+
+            additionalArtists.forEach((additionalArtist: SpotifyArtist) => {
+              if (comparableArtists.length < 10) {
+                const additionalEstimatedStreams = Math.floor(
+                  (additionalArtist.followers.total * additionalArtist.popularity * 2.5 * genreMultiplier)
+                );
+                
+                const additionalValuation = Math.floor(
+                  additionalEstimatedStreams * benchmark.streams_to_revenue_ratio * benchmark.revenue_multiple_avg
+                );
+                
+                comparableArtists.push({
+                  name: additionalArtist.name,
+                  valuation: additionalValuation,
+                  followers: additionalArtist.followers.total,
+                  popularity: additionalArtist.popularity,
+                  genres: additionalArtist.genres,
+                  spotify_id: additionalArtist.id
+                });
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.log(`Error searching for additional comparable artists: ${error.message}`);
+      }
+    }
+
+    // Strategy 3: Search by related artists if we still need more
+    if (comparableArtists.length < 3) {
+      try {
+        const relatedResponse = await fetch(
+          `https://api.spotify.com/v1/artists/${artist.id}/related-artists`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        if (relatedResponse.ok) {
+          const relatedData = await relatedResponse.json();
+          
+          if (relatedData.artists?.length > 0) {
+            relatedData.artists.forEach((relatedArtist: SpotifyArtist) => {
+              if (comparableArtists.length < 10 && 
+                  !comparableArtists.some(existing => existing.spotify_id === relatedArtist.id)) {
+                const relatedEstimatedStreams = Math.floor(
+                  (relatedArtist.followers.total * relatedArtist.popularity * 2.5 * genreMultiplier)
+                );
+                
+                const relatedValuation = Math.floor(
+                  relatedEstimatedStreams * benchmark.streams_to_revenue_ratio * benchmark.revenue_multiple_avg
+                );
+                
+                comparableArtists.push({
+                  name: relatedArtist.name,
+                  valuation: relatedValuation,
+                  followers: relatedArtist.followers.total,
+                  popularity: relatedArtist.popularity,
+                  genres: relatedArtist.genres,
+                  spotify_id: relatedArtist.id
+                });
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.log(`Error searching for related artists: ${error.message}`);
+      }
+    }
+    
+    // Select the best 3 comparables, ensuring diversity
+    if (comparableArtists.length > 3) {
+      // Sort by similarity to target artist and pick diverse set
+      comparableArtists = comparableArtists
+        .sort((a, b) => {
+          const aSimilarity = Math.abs(a.popularity - artist.popularity) + 
+                             Math.abs(Math.log(a.followers) - Math.log(artist.followers.total));
+          const bSimilarity = Math.abs(b.popularity - artist.popularity) + 
+                             Math.abs(Math.log(b.followers) - Math.log(artist.followers.total));
+          return aSimilarity - bSimilarity;
+        })
+        .slice(0, 3);
+    }
+    
+    // If we still don't have enough real artists, pad with the best ones we found
+    while (comparableArtists.length < 3 && comparableArtists.length > 0) {
+      const lastArtist = comparableArtists[comparableArtists.length - 1];
+      const syntheticArtist = {
+        name: `${lastArtist.name} (Similar Artist)`,
+        valuation: Math.floor(lastArtist.valuation * (0.9 + Math.random() * 0.2)),
+        followers: Math.floor(lastArtist.followers * (0.8 + Math.random() * 0.4)),
+        popularity: Math.max(1, Math.min(100, lastArtist.popularity + (Math.random() * 10 - 5))),
+        genres: lastArtist.genres
+      };
+      comparableArtists.push(syntheticArtist);
+    }
+    
+    // Last resort: create industry benchmarks if we have no real artists
+    if (comparableArtists.length === 0) {
+      for (let i = 0; i < 3; i++) {
+        comparableArtists.push({
+          name: `Industry Benchmark ${i + 1}`,
+          valuation: Math.floor(fairMarketValue.mid * (0.8 + Math.random() * 0.4)),
+          followers: Math.floor(artist.followers.total * (0.7 + Math.random() * 0.6)),
+          popularity: Math.max(1, Math.min(100, artist.popularity + (Math.random() * 20 - 10))),
+          genres: artist.genres.slice(0, 2)
+        });
+      }
     }
 
     const valuationData = {
