@@ -23,6 +23,7 @@ import { ActivityLog } from "@/components/copyright/ActivityLog";
 import { CopyrightValidationPanel } from "@/components/copyright/CopyrightValidationPanel";
 import { ExportDialog } from "@/components/copyright/ExportDialog";
 import { SenderCodeOnboarding } from "@/components/copyright/SenderCodeOnboarding";
+import { TransmissionHistory } from "@/components/copyright/TransmissionHistory";
 
 
 const CopyrightManagement = () => {
@@ -241,8 +242,9 @@ const CopyrightManagement = () => {
               <CardContent className="space-y-6">
                 {/* Nested Tabs for CWR/DDEX functionality */}
                 <Tabs defaultValue="export" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
+                  <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="export">Export Works</TabsTrigger>
+                    <TabsTrigger value="transmission-history">Transmission History</TabsTrigger>
                     <TabsTrigger value="sender-codes">Sender Codes</TabsTrigger>
                   </TabsList>
                   
@@ -366,6 +368,10 @@ const CopyrightManagement = () => {
                       onDelete={handleDelete}
                       onBulkDelete={handleBulkDelete}
                     />
+                  </TabsContent>
+                  
+                  <TabsContent value="transmission-history" className="space-y-6 mt-6">
+                    <TransmissionHistory />
                   </TabsContent>
                   
                   <TabsContent value="sender-codes" className="space-y-6 mt-6">
