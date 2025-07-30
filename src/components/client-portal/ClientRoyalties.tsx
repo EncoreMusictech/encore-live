@@ -21,9 +21,9 @@ export const ClientRoyalties = ({ permissions }: ClientRoyaltiesProps) => {
   const [royalties, setRoyalties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [selectedWork, setSelectedWork] = useState('');
-  const [selectedRightType, setSelectedRightType] = useState('');
-  const [selectedTerritory, setSelectedTerritory] = useState('');
+  const [selectedWork, setSelectedWork] = useState('all');
+  const [selectedRightType, setSelectedRightType] = useState('all');
+  const [selectedTerritory, setSelectedTerritory] = useState('all');
 
   useEffect(() => {
     const fetchRoyalties = async () => {
@@ -61,13 +61,13 @@ export const ClientRoyalties = ({ permissions }: ClientRoyaltiesProps) => {
 
   // Apply filters
   let filteredRoyalties = royalties;
-  if (selectedWork) {
+  if (selectedWork && selectedWork !== 'all') {
     filteredRoyalties = filteredRoyalties.filter(r => r.song_title === selectedWork);
   }
-  if (selectedRightType) {
+  if (selectedRightType && selectedRightType !== 'all') {
     filteredRoyalties = filteredRoyalties.filter(r => r.revenue_source === selectedRightType);
   }
-  if (selectedTerritory) {
+  if (selectedTerritory && selectedTerritory !== 'all') {
     filteredRoyalties = filteredRoyalties.filter(r => r.country === selectedTerritory);
   }
 
@@ -176,7 +176,7 @@ export const ClientRoyalties = ({ permissions }: ClientRoyaltiesProps) => {
                       <SelectValue placeholder="All works" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All works</SelectItem>
+                      <SelectItem value="all">All works</SelectItem>
                       {works.map(work => (
                         <SelectItem key={work} value={work}>{work}</SelectItem>
                       ))}
@@ -191,7 +191,7 @@ export const ClientRoyalties = ({ permissions }: ClientRoyaltiesProps) => {
                       <SelectValue placeholder="All types" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All types</SelectItem>
+                      <SelectItem value="all">All types</SelectItem>
                       {rightTypes.map(type => (
                         <SelectItem key={type} value={type}>{type}</SelectItem>
                       ))}
@@ -206,7 +206,7 @@ export const ClientRoyalties = ({ permissions }: ClientRoyaltiesProps) => {
                       <SelectValue placeholder="All territories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All territories</SelectItem>
+                      <SelectItem value="all">All territories</SelectItem>
                       {territories.map(territory => (
                         <SelectItem key={territory} value={territory}>{territory}</SelectItem>
                       ))}
