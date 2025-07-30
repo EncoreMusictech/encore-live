@@ -1168,45 +1168,6 @@ Actual market values may vary significantly based on numerous factors not captur
                   </CardContent>
                 </Card>
 
-                {/* Confidence Score Breakdown */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-primary" />
-                      Confidence Score Breakdown
-                    </CardTitle>
-                    <CardDescription>Data quality assessment</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <RadialBarChart innerRadius="30%" outerRadius="90%">
-                        <RadialBar
-                          dataKey="value"
-                          data={[
-                            { name: 'Overall Confidence', value: result.confidence_score || 0, fill: '#3b82f6' }
-                          ]}
-                          cornerRadius={10}
-                          fill="#8884d8"
-                        />
-                        <Tooltip formatter={(value) => [`${value}%`, 'Confidence']} />
-                      </RadialBarChart>
-                    </ResponsiveContainer>
-                    <div className="mt-4 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Data Availability</span>
-                        <span className="font-medium">{result.total_streams > 0 ? 'Good' : 'Limited'}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Market Validation</span>
-                        <span className="font-medium">{result.comparable_artists.length >= 3 ? 'Strong' : 'Moderate'}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Revenue Visibility</span>
-                        <span className="font-medium">{(result.ltm_revenue || 0) > 0 ? 'Good' : 'Estimated'}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
 
               {/* Key Insights Section */}
