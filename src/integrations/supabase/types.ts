@@ -1338,6 +1338,104 @@ export type Database = {
         }
         Relationships: []
       }
+      cwr_sender_code_requests: {
+        Row: {
+          created_at: string
+          id: string
+          pro_type: Database["public"]["Enums"]["pro_type"]
+          request_content: string
+          request_sent_at: string
+          response_notes: string | null
+          response_received_at: string | null
+          sender_code_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pro_type: Database["public"]["Enums"]["pro_type"]
+          request_content: string
+          request_sent_at?: string
+          response_notes?: string | null
+          response_received_at?: string | null
+          sender_code_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pro_type?: Database["public"]["Enums"]["pro_type"]
+          request_content?: string
+          request_sent_at?: string
+          response_notes?: string | null
+          response_received_at?: string | null
+          sender_code_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cwr_sender_code_requests_sender_code_id_fkey"
+            columns: ["sender_code_id"]
+            isOneToOne: false
+            referencedRelation: "cwr_sender_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cwr_sender_codes: {
+        Row: {
+          company_name: string
+          contact_email: string
+          created_at: string
+          encrypted_sender_code: string
+          id: string
+          ipi_cae_number: string | null
+          notes: string | null
+          sender_code: string
+          status: Database["public"]["Enums"]["sender_code_status"]
+          status_updated_at: string | null
+          status_updated_by: string | null
+          supporting_document_url: string | null
+          target_pros: Database["public"]["Enums"]["pro_type"][]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_name: string
+          contact_email: string
+          created_at?: string
+          encrypted_sender_code: string
+          id?: string
+          ipi_cae_number?: string | null
+          notes?: string | null
+          sender_code: string
+          status?: Database["public"]["Enums"]["sender_code_status"]
+          status_updated_at?: string | null
+          status_updated_by?: string | null
+          supporting_document_url?: string | null
+          target_pros?: Database["public"]["Enums"]["pro_type"][]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_name?: string
+          contact_email?: string
+          created_at?: string
+          encrypted_sender_code?: string
+          id?: string
+          ipi_cae_number?: string | null
+          notes?: string | null
+          sender_code?: string
+          status?: Database["public"]["Enums"]["sender_code_status"]
+          status_updated_at?: string | null
+          status_updated_by?: string | null
+          supporting_document_url?: string | null
+          target_pros?: Database["public"]["Enums"]["pro_type"][]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deal_scenarios: {
         Row: {
           artist_id: string
@@ -3664,6 +3762,10 @@ export type Database = {
         Args: { contract_id_param: string }
         Returns: Json
       }
+      check_duplicate_sender_code: {
+        Args: { p_sender_code: string; p_user_id?: string }
+        Returns: boolean
+      }
       check_rate_limit: {
         Args: {
           p_identifier: string
@@ -3843,6 +3945,7 @@ export type Database = {
         | "distribution"
       controlled_status: "Controlled" | "Non-Controlled"
       payment_method: "ACH" | "Wire" | "PayPal" | "Check"
+      pro_type: "ASCAP" | "BMI" | "ICE" | "SOCAN" | "PRS" | "OTHER"
       producer_type: "flat_fee" | "points" | "hybrid"
       publishing_type: "admin" | "copub" | "full_pub" | "jv"
       royalty_source:
@@ -3862,6 +3965,7 @@ export type Database = {
         | "SiriusXM"
         | "Test Source"
         | "Shondaland"
+      sender_code_status: "not_submitted" | "submitted" | "verified"
       sync_type: "one_time" | "mfn" | "perpetual" | "term_limited"
     }
     CompositeTypes: {
@@ -4004,6 +4108,7 @@ export const Constants = {
       ],
       controlled_status: ["Controlled", "Non-Controlled"],
       payment_method: ["ACH", "Wire", "PayPal", "Check"],
+      pro_type: ["ASCAP", "BMI", "ICE", "SOCAN", "PRS", "OTHER"],
       producer_type: ["flat_fee", "points", "hybrid"],
       publishing_type: ["admin", "copub", "full_pub", "jv"],
       royalty_source: [
@@ -4024,6 +4129,7 @@ export const Constants = {
         "Test Source",
         "Shondaland",
       ],
+      sender_code_status: ["not_submitted", "submitted", "verified"],
       sync_type: ["one_time", "mfn", "perpetual", "term_limited"],
     },
   },
