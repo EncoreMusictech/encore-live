@@ -127,6 +127,7 @@ const CatalogValuation = memo(() => {
   const [result, setResult] = useState<ValuationResult | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<"pessimistic" | "base" | "optimistic">("base");
   const [showAdvancedInputs, setShowAdvancedInputs] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
   const [catalogValuationId, setCatalogValuationId] = useState<string | null>(null);
   const [revenueMetrics, setRevenueMetrics] = useState<any>(null);
   const [valuationParams, setValuationParams] = useState<ValuationParams>({
@@ -493,7 +494,7 @@ Actual market values may vary significantly based on numerous factors not captur
 
       {result && (
         <>
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="analysis">DCF Analysis</TabsTrigger>
@@ -952,18 +953,15 @@ Actual market values may vary significantly based on numerous factors not captur
             <TabsContent value="analytics" className="space-y-6">
               {/* Back Navigation */}
               <div className="flex items-center gap-2 mb-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => {
-                    const overviewTab = document.querySelector('[data-value="overview"]') as HTMLElement;
-                    if (overviewTab) overviewTab.click();
-                  }}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Overview
-                </Button>
+                 <Button 
+                   variant="ghost" 
+                   size="sm" 
+                   onClick={() => setActiveTab("overview")}
+                   className="text-muted-foreground hover:text-foreground"
+                 >
+                   <ArrowLeft className="h-4 w-4 mr-2" />
+                   Back to Overview
+                 </Button>
               </div>
               
               {/* Comprehensive Analytics Dashboard */}
@@ -1338,13 +1336,10 @@ Actual market values may vary significantly based on numerous factors not captur
              <TabsContent value="revenue-sources" className="space-y-6">
                {/* Back Navigation */}
                <div className="flex items-center gap-2 mb-4">
-                 <Button 
+                  <Button 
                    variant="ghost" 
                    size="sm" 
-                   onClick={() => {
-                     const overviewTab = document.querySelector('[data-value="overview"]') as HTMLElement;
-                     if (overviewTab) overviewTab.click();
-                   }}
+                   onClick={() => setActiveTab("overview")}
                    className="flex items-center gap-2"
                  >
                    <ArrowLeft className="h-4 w-4" />
@@ -1361,15 +1356,12 @@ Actual market values may vary significantly based on numerous factors not captur
                        <p className="text-muted-foreground">
                          First complete a catalog valuation, then add additional revenue sources for enhanced analysis.
                        </p>
-                       <Button 
-                         variant="outline" 
-                         onClick={() => {
-                           const overviewTab = document.querySelector('[data-value="overview"]') as HTMLElement;
-                           if (overviewTab) overviewTab.click();
-                         }}
-                       >
-                         Start Catalog Valuation
-                       </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setActiveTab("overview")}
+                        >
+                          Start Catalog Valuation
+                        </Button>
                      </div>
                    </CardContent>
                  </Card>
@@ -1409,17 +1401,14 @@ Actual market values may vary significantly based on numerous factors not captur
               {/* Back Navigation */}
               <div className="flex items-center gap-2 mb-4">
                 <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => {
-                    const overviewTab = document.querySelector('[data-value="overview"]') as HTMLElement;
-                    if (overviewTab) overviewTab.click();
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Overview
-                </Button>
+                   variant="ghost" 
+                   size="sm" 
+                   onClick={() => setActiveTab("overview")}
+                   className="flex items-center gap-2"
+                 >
+                   <ArrowLeft className="h-4 w-4" />
+                   Back to Overview
+                 </Button>
               </div>
 
               <SavedScenariosManager 
@@ -1435,17 +1424,14 @@ Actual market values may vary significantly based on numerous factors not captur
               {/* Back Navigation */}
               <div className="flex items-center gap-2 mb-4">
                 <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => {
-                    const overviewTab = document.querySelector('[data-value="overview"]') as HTMLElement;
-                    if (overviewTab) overviewTab.click();
-                  }}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Overview
-                </Button>
+                   variant="ghost" 
+                   size="sm" 
+                   onClick={() => setActiveTab("overview")}
+                   className="text-muted-foreground hover:text-foreground"
+                 >
+                   <ArrowLeft className="h-4 w-4 mr-2" />
+                   Back to Overview
+                 </Button>
               </div>
               
               {/* Comprehensive Reporting Suite */}
