@@ -10,6 +10,7 @@ import { usePayouts } from "@/hooks/usePayouts";
 import { Link } from "react-router-dom";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { EnhancedPayoutForm } from "@/components/royalties/EnhancedPayoutForm";
 import { PayoutList } from "@/components/royalties/PayoutList";
 import { PayoutListDemo } from "@/components/royalties/PayoutListDemo";
@@ -25,6 +26,10 @@ export default function PayoutsPage() {
   const { payouts, loading, createPayout } = usePayouts();
   const { expenses } = useExpenses();
   const { user } = useAuth();
+  const { subscribed } = useSubscription();
+  
+  // Only show demo navigation for non-subscribers
+  const showDemoNavigation = !subscribed;
 
   const createDemoData = async () => {
     // First, let's check if we have any contacts to use as clients
@@ -137,20 +142,22 @@ export default function PayoutsPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto py-8 px-4">
-        {/* Back to Demo Modules */}
-        <div className="flex items-center gap-2 mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            asChild
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Link to="/demo-modules">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Demo Modules
-            </Link>
-          </Button>
-        </div>
+        {/* Back to Demo Modules - Only show for non-subscribers */}
+        {showDemoNavigation && (
+          <div className="flex items-center gap-2 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              asChild
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Link to="/demo-modules">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Demo Modules
+              </Link>
+            </Button>
+          </div>
+        )}
 
         <RoyaltiesModuleNav />
         

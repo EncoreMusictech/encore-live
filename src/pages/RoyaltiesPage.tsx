@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, ArrowLeft } from "lucide-react";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { Link } from "react-router-dom";
+import { useSubscription } from "@/hooks/useSubscription";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
@@ -17,34 +18,42 @@ import { RoyaltiesAnalyticsDashboard } from "@/components/royalties/RoyaltiesAna
 export default function RoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState("allocations");
+  const { subscribed } = useSubscription();
 
   useEffect(() => {
     updatePageMetadata('royalties');
   }, []);
+  
   const {
     allocations,
     loading
   } = useRoyaltyAllocations();
+  
+  // Only show demo navigation for non-subscribers
+  const showDemoNavigation = !subscribed;
+  
   const totalRoyalties = allocations.reduce((sum, allocation) => sum + allocation.gross_royalty_amount, 0);
   const controlledWorks = allocations.filter(allocation => allocation.controlled_status === 'Controlled').length;
   const recoupableWorks = allocations.filter(allocation => allocation.recoupable_expenses).length;
   return <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto py-8 px-4">
-        {/* Back to Demo Modules */}
-        <div className="flex items-center gap-2 mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            asChild
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Link to="/demo-modules">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Demo Modules
-            </Link>
-          </Button>
-        </div>
+        {/* Back to Demo Modules - Only show for non-subscribers */}
+        {showDemoNavigation && (
+          <div className="flex items-center gap-2 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              asChild
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Link to="/demo-modules">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Demo Modules
+              </Link>
+            </Button>
+          </div>
+        )}
 
         <RoyaltiesModuleNav />
         

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, BarChart3, Link2, ArrowLeft } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Link } from "react-router-dom";
 import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
 import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
@@ -17,6 +18,10 @@ export default function ReconciliationPage() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState("batches");
   const { refreshBatches } = useReconciliationBatches();
+  const { subscribed } = useSubscription();
+  
+  // Only show demo navigation for non-subscribers
+  const showDemoNavigation = !subscribed;
 
   useEffect(() => {
     updatePageMetadata('reconciliation');
@@ -31,20 +36,22 @@ export default function ReconciliationPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto py-8 px-4">
-        {/* Back to Demo Modules */}
-        <div className="flex items-center gap-2 mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            asChild
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Link to="/demo-modules">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Demo Modules
-            </Link>
-          </Button>
-        </div>
+        {/* Back to Demo Modules - Only show for non-subscribers */}
+        {showDemoNavigation && (
+          <div className="flex items-center gap-2 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              asChild
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Link to="/demo-modules">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Demo Modules
+              </Link>
+            </Button>
+          </div>
+        )}
 
         <RoyaltiesModuleNav />
         

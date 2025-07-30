@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
+import { useSubscription } from "@/hooks/useSubscription";
 import { SyncLicenseForm } from "@/components/sync-licensing/SyncLicenseForm";
 import { SyncLicenseTable } from "@/components/sync-licensing/SyncLicenseTable";
 import { SyncLicenseKanban } from "@/components/sync-licensing/SyncLicenseKanban";
@@ -18,6 +19,10 @@ const SyncLicensingPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "kanban" | "calendar">("table");
   const { data: syncLicenses = [], isLoading } = useSyncLicenses();
+  const { subscribed } = useSubscription();
+  
+  // Only show demo navigation for non-subscribers
+  const showDemoNavigation = !subscribed;
 
   useEffect(() => {
     updatePageMetadata('syncLicensing');
@@ -71,20 +76,22 @@ const SyncLicensingPage = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
-        {/* Back to Demo Modules */}
-        <div className="flex items-center gap-2 mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            asChild
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Link to="/demo-modules">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Demo Modules
-            </Link>
-          </Button>
-        </div>
+        {/* Back to Demo Modules - Only show for non-subscribers */}
+        {showDemoNavigation && (
+          <div className="flex items-center gap-2 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              asChild
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Link to="/demo-modules">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Demo Modules
+              </Link>
+            </Button>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Sync Licensing Tracker</h1>

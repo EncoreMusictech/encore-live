@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { updatePageMetadata } from "@/utils/seo";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { useSubscription } from "@/hooks/useSubscription";
 import Header from "@/components/Header";
 import { TrackSelectorWithSuspense, DealSimulatorWithSuspense } from "@/components/LazyComponents";
 import DealScenarios from "@/components/DealScenarios";
@@ -36,9 +37,13 @@ interface Album {
 
 const DealSimulatorPage = () => {
   const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
+  const { subscribed } = useSubscription();
   const [currentArtist, setCurrentArtist] = useState<Artist | null>(null);
   const [artistName, setArtistName] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // Only show demo navigation for non-subscribers
+  const showDemoNavigation = !subscribed;
 
   useEffect(() => {
     updatePageMetadata('dealSimulator');
@@ -196,20 +201,22 @@ const DealSimulatorPage = () => {
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
-          {/* Back Navigation */}
-          <div className="flex items-center gap-2 mb-6">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              asChild
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Link to="/demo-modules">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Demo Modules
-              </Link>
-            </Button>
-          </div>
+          {/* Back Navigation - Only show for non-subscribers */}
+          {showDemoNavigation && (
+            <div className="flex items-center gap-2 mb-6">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                asChild
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Link to="/demo-modules">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Demo Modules
+                </Link>
+              </Button>
+            </div>
+          )}
           
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">

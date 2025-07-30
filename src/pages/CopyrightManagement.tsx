@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { useCopyright } from "@/hooks/useCopyright";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { useSubscription } from "@/hooks/useSubscription";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { EnhancedCopyrightForm } from "@/components/copyright/EnhancedCopyrightForm";
 import { AudioPlayer } from "@/components/copyright/AudioPlayer";
@@ -27,12 +28,16 @@ const CopyrightManagement = () => {
   const { toast } = useToast();
   const { copyrights, loading, realtimeError, getWritersForCopyright, deleteCopyright, refetch } = useCopyright();
   const { canAccess } = useDemoAccess();
+  const { subscribed } = useSubscription();
   const [writers, setWriters] = useState<{[key: string]: any[]}>({});
   const [editingCopyright, setEditingCopyright] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("copyrights");
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [selectedCopyrights, setSelectedCopyrights] = useState<any[]>([]);
+  
+  // Only show demo navigation for non-subscribers
+  const showDemoNavigation = !subscribed;
 
   // Debug logging
   useEffect(() => {
@@ -169,20 +174,22 @@ const CopyrightManagement = () => {
       <Header />
       
       <main className="container mx-auto px-4 py-8">
-        {/* Back to Demo Modules */}
-        <div className="flex items-center gap-2 mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            asChild
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Link to="/demo-modules">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Demo Modules
-            </Link>
-          </Button>
-        </div>
+        {/* Back to Demo Modules - Only show for non-subscribers */}
+        {showDemoNavigation && (
+          <div className="flex items-center gap-2 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              asChild
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Link to="/demo-modules">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Demo Modules
+              </Link>
+            </Button>
+          </div>
+        )}
         {/* Demo Limit Banner */}
         <DemoLimitBanner module="copyrightManagement" className="mb-6" />
 
