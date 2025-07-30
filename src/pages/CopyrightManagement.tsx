@@ -22,6 +22,7 @@ import { BulkUpload } from "@/components/copyright/BulkUpload";
 import { ActivityLog } from "@/components/copyright/ActivityLog";
 import { CopyrightValidationPanel } from "@/components/copyright/CopyrightValidationPanel";
 import { ExportDialog } from "@/components/copyright/ExportDialog";
+import { SenderCodeOnboarding } from "@/components/copyright/SenderCodeOnboarding";
 
 
 const CopyrightManagement = () => {
@@ -201,8 +202,9 @@ const CopyrightManagement = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="copyrights">My Copyrights</TabsTrigger>
+            <TabsTrigger value="sender-codes">Sender Codes</TabsTrigger>
             <TabsTrigger value="cwr-ddex-export">CWR/DDEX Export</TabsTrigger>
             <TabsTrigger value="register" disabled={!canAccess('copyrightManagement')}>
               {canAccess('copyrightManagement') ? 'Register New' : 'Demo Limit Reached'}
@@ -222,6 +224,10 @@ const CopyrightManagement = () => {
               onDelete={handleDelete}
               onBulkDelete={handleBulkDelete}
             />
+          </TabsContent>
+
+          <TabsContent value="sender-codes" className="space-y-6">
+            <SenderCodeOnboarding />
           </TabsContent>
 
           <TabsContent value="cwr-ddex-export" className="space-y-6">
