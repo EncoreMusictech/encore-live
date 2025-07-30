@@ -2492,6 +2492,105 @@ export type Database = {
           },
         ]
       }
+      saved_valuation_scenarios: {
+        Row: {
+          artist_name: string
+          cash_flow_projections: Json | null
+          catalog_age_years: number | null
+          comparable_artists: Json | null
+          confidence_score: number | null
+          created_at: string | null
+          dcf_valuation: number | null
+          discount_rate: number | null
+          forecasts: Json | null
+          genre: string | null
+          has_additional_revenue: boolean | null
+          id: string
+          industry_benchmarks: Json | null
+          is_favorite: boolean | null
+          ltm_revenue: number | null
+          monthly_listeners: number | null
+          multiple_valuation: number | null
+          notes: string | null
+          popularity_score: number | null
+          revenue_diversification_score: number | null
+          risk_adjusted_value: number | null
+          scenario_name: string
+          tags: string[] | null
+          top_tracks: Json | null
+          total_additional_revenue: number | null
+          total_streams: number | null
+          updated_at: string | null
+          user_id: string
+          valuation_amount: number | null
+          valuation_methodology: string | null
+        }
+        Insert: {
+          artist_name: string
+          cash_flow_projections?: Json | null
+          catalog_age_years?: number | null
+          comparable_artists?: Json | null
+          confidence_score?: number | null
+          created_at?: string | null
+          dcf_valuation?: number | null
+          discount_rate?: number | null
+          forecasts?: Json | null
+          genre?: string | null
+          has_additional_revenue?: boolean | null
+          id?: string
+          industry_benchmarks?: Json | null
+          is_favorite?: boolean | null
+          ltm_revenue?: number | null
+          monthly_listeners?: number | null
+          multiple_valuation?: number | null
+          notes?: string | null
+          popularity_score?: number | null
+          revenue_diversification_score?: number | null
+          risk_adjusted_value?: number | null
+          scenario_name: string
+          tags?: string[] | null
+          top_tracks?: Json | null
+          total_additional_revenue?: number | null
+          total_streams?: number | null
+          updated_at?: string | null
+          user_id: string
+          valuation_amount?: number | null
+          valuation_methodology?: string | null
+        }
+        Update: {
+          artist_name?: string
+          cash_flow_projections?: Json | null
+          catalog_age_years?: number | null
+          comparable_artists?: Json | null
+          confidence_score?: number | null
+          created_at?: string | null
+          dcf_valuation?: number | null
+          discount_rate?: number | null
+          forecasts?: Json | null
+          genre?: string | null
+          has_additional_revenue?: boolean | null
+          id?: string
+          industry_benchmarks?: Json | null
+          is_favorite?: boolean | null
+          ltm_revenue?: number | null
+          monthly_listeners?: number | null
+          multiple_valuation?: number | null
+          notes?: string | null
+          popularity_score?: number | null
+          revenue_diversification_score?: number | null
+          risk_adjusted_value?: number | null
+          scenario_name?: string
+          tags?: string[] | null
+          top_tracks?: Json | null
+          total_additional_revenue?: number | null
+          total_streams?: number | null
+          updated_at?: string | null
+          user_id?: string
+          valuation_amount?: number | null
+          valuation_methodology?: string | null
+        }
+        Relationships: []
+      }
       security_events: {
         Row: {
           created_at: string | null
