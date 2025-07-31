@@ -15,6 +15,8 @@ serve(async (req) => {
     const body = await req.json();
     const { licenseId, customFields } = body;
     
+    console.log('Invoice generation request:', { licenseId, hasCustomFields: !!customFields });
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -22,6 +24,7 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('No authorization header provided');
       throw new Error('No authorization header provided');
     }
     
@@ -29,10 +32,14 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
+      console.error('Authentication failed:', authError);
       throw new Error('Authentication failed');
     }
 
+    console.log('User authenticated:', user.id);
+
     // Fetch license data
+    console.log('Fetching license:', { licenseId, userId: user.id });
     const { data: license, error: licenseError } = await supabaseClient
       .from('sync_licenses')
       .select('*')
@@ -40,9 +47,19 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (licenseError || !license) {
+    console.log('License query result:', { license: !!license, error: licenseError });
+
+    if (licenseError) {
+      console.error('License query error:', licenseError);
+      throw new Error(`License query failed: ${licenseError.message}`);
+    }
+
+    if (!license) {
+      console.error('License not found for:', { licenseId, userId: user.id });
       throw new Error('License not found');
     }
+
+    console.log('License found:', { id: license.id, project_title: license.project_title });
 
     // Generate invoice HTML
     const invoiceHtml = `
