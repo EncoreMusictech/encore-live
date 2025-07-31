@@ -14,12 +14,15 @@ import { SyncLicenseKanban } from "@/components/sync-licensing/SyncLicenseKanban
 import { SyncLicenseCalendar } from "@/components/sync-licensing/SyncLicenseCalendar";
 import { SyncLicenseDashboard } from "@/components/sync-licensing/SyncLicenseDashboard";
 import { useSyncLicenses } from "@/hooks/useSyncLicenses";
+import SyncLicenseFiltersComponent from "@/components/sync-licensing/SyncLicenseFilters";
+import { useSyncLicenseFilters } from "@/hooks/useSyncLicenseFilters";
 
 const SyncLicensingPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "kanban" | "calendar">("table");
   const { data: syncLicenses = [], isLoading } = useSyncLicenses();
   const { subscribed } = useSubscription();
+  const { filters, setFilters, filteredLicenses, activeFiltersCount } = useSyncLicenseFilters(syncLicenses);
   
   // Only show demo navigation for non-subscribers
   const showDemoNavigation = !subscribed;
@@ -114,10 +117,11 @@ const SyncLicensingPage = () => {
             <div className="flex justify-between items-center">
               <CardTitle>Sync Deals</CardTitle>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Filter className="h-4 w-4" />
-                  Filter
-                </Button>
+                <SyncLicenseFiltersComponent
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  activeFiltersCount={activeFiltersCount}
+                />
                 <div className="flex gap-1">
                   <Button
                     variant={viewMode === "table" ? "default" : "outline"}
@@ -146,13 +150,13 @@ const SyncLicensingPage = () => {
           </CardHeader>
           <CardContent>
             {viewMode === "table" && (
-              <SyncLicenseTable licenses={syncLicenses} isLoading={isLoading} />
+              <SyncLicenseTable licenses={filteredLicenses} isLoading={isLoading} />
             )}
             {viewMode === "kanban" && (
-              <SyncLicenseKanban licenses={syncLicenses} isLoading={isLoading} />
+              <SyncLicenseKanban licenses={filteredLicenses} isLoading={isLoading} />
             )}
             {viewMode === "calendar" && (
-              <SyncLicenseCalendar licenses={syncLicenses} isLoading={isLoading} />
+              <SyncLicenseCalendar licenses={filteredLicenses} isLoading={isLoading} />
             )}
           </CardContent>
         </Card>
