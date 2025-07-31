@@ -17,6 +17,11 @@ serve(async (req) => {
     
     console.log('Invoice generation request:', { licenseId, hasCustomFields: !!customFields });
     
+    if (!licenseId) {
+      console.error('No licenseId provided in request body');
+      throw new Error('License ID is required');
+    }
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -31,15 +36,21 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
-    if (authError || !user) {
-      console.error('Authentication failed:', authError);
-      throw new Error('Authentication failed');
+    if (authError) {
+      console.error('Authentication error:', authError);
+      throw new Error(`Authentication failed: ${authError.message}`);
     }
 
-    console.log('User authenticated:', user.id);
+    if (!user) {
+      console.error('No user returned from authentication');
+      throw new Error('Authentication failed - no user');
+    }
 
-    // Fetch license data
-    console.log('Fetching license:', { licenseId, userId: user.id });
+    console.log('User authenticated successfully:', { userId: user.id, email: user.email });
+
+    // Fetch license data with detailed logging
+    console.log('Fetching license with params:', { licenseId, userId: user.id });
+    
     const { data: license, error: licenseError } = await supabaseClient
       .from('sync_licenses')
       .select('*')
@@ -47,19 +58,36 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    console.log('License query result:', { license: !!license, error: licenseError });
+    console.log('License query completed:', { 
+      foundLicense: !!license, 
+      error: licenseError,
+      licenseId: license?.id,
+      licenseTitle: license?.project_title 
+    });
 
     if (licenseError) {
-      console.error('License query error:', licenseError);
+      console.error('License query error details:', licenseError);
       throw new Error(`License query failed: ${licenseError.message}`);
     }
 
     if (!license) {
-      console.error('License not found for:', { licenseId, userId: user.id });
-      throw new Error('License not found');
+      // Let's also try to see if the license exists at all
+      const { data: allLicenses, error: allError } = await supabaseClient
+        .from('sync_licenses')
+        .select('id, user_id, project_title')
+        .eq('id', licenseId);
+      
+      console.log('Debug - checking if license exists at all:', { 
+        allLicenses, 
+        allError,
+        requestedId: licenseId,
+        authenticatedUserId: user.id 
+      });
+      
+      throw new Error(`License not found - ID: ${licenseId}, User: ${user.id}`);
     }
 
-    console.log('License found:', { id: license.id, project_title: license.project_title });
+    console.log('License found successfully:', { id: license.id, project_title: license.project_title });
 
     // Generate invoice HTML
     const invoiceHtml = `
