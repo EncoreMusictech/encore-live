@@ -40,6 +40,18 @@ export const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({
   const [previewHtml, setPreviewHtml] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'generator' | 'templates'>('generator');
   
+  // Reset state when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setGeneratedInvoice(null);
+      setPreviewHtml('');
+      setCustomFields({});
+      setNewFieldKey('');
+      setNewFieldValue('');
+      setActiveTab('generator');
+    }
+  }, [open]);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
