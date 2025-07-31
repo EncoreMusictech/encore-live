@@ -18,7 +18,12 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting invoice generation...');
+    console.log('=== STARTING INVOICE GENERATION ===');
+    console.log('Method:', req.method);
+    console.log('Headers:', Object.fromEntries(req.headers.entries()));
+    
+    const body = await req.json();
+    console.log('Request body:', body);
     
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -29,6 +34,7 @@ serve(async (req) => {
     console.log('Auth header present:', !!authHeader);
     
     if (!authHeader) {
+      console.error('No authorization header provided');
       throw new Error('No authorization header provided');
     }
     
@@ -44,10 +50,12 @@ serve(async (req) => {
     }
     
     if (!user) {
+      console.error('No user found');
       throw new Error('No user found');
     }
 
-    const { licenseId, templateId, customFields }: InvoiceData = await req.json();
+    const { licenseId, templateId, customFields } = body;
+    console.log('Parsed parameters:', { licenseId, templateId, customFields });
 
     // Fetch license data with better error handling
     console.log('Fetching license for ID:', licenseId, 'and user:', user.id);
@@ -59,7 +67,7 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    console.log('License query result:', { license, licenseError });
+    console.log('License query result:', { license: !!license, licenseError });
 
     if (licenseError) {
       console.error('License query error:', licenseError);
@@ -71,33 +79,35 @@ serve(async (req) => {
       throw new Error('License not found');
     }
 
-    // Fetch template or use default
-    let template;
-    if (templateId) {
-      console.log('Fetching template for ID:', templateId, 'and user:', user.id);
-      const { data: templateData, error: templateError } = await supabaseClient
-        .from('invoice_templates')
-        .select('*')
-        .eq('id', templateId)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (templateError) {
-        console.error('Template query error:', templateError);
-      } else {
-        console.log('Template found:', !!templateData);
-      }
-      template = templateData;
-    }
+    console.log('License found:', {
+      id: license.id,
+      project_title: license.project_title,
+      pub_fee: license.pub_fee,
+      master_fee: license.master_fee,
+      currency: license.currency
+    });
 
-    // Generate invoice HTML
-    const invoiceHtml = generateInvoiceHTML(license, template, customFields);
+    // Generate simple HTML for testing
+    const invoiceHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Test Invoice</title>
+      </head>
+      <body>
+        <h1>Test Invoice</h1>
+        <p>Project: ${license.project_title}</p>
+        <p>Total Fee: ${license.currency || 'USD'} ${((license.pub_fee || 0) + (license.master_fee || 0)).toLocaleString()}</p>
+        <p>Generated at: ${new Date().toISOString()}</p>
+      </body>
+      </html>
+    `;
 
     // Generate invoice number
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+    console.log('Generated invoice number:', invoiceNumber);
 
-    // Save invoice record
-    console.log('Preparing to insert invoice...');
+    // Prepare invoice data
     const invoiceData = {
       user_id: user.id,
       license_id: licenseId,
@@ -113,7 +123,7 @@ serve(async (req) => {
       status: 'draft'
     };
     
-    console.log('Invoice data:', {
+    console.log('Attempting to insert invoice with data:', {
       user_id: invoiceData.user_id,
       license_id: invoiceData.license_id,
       invoice_number: invoiceData.invoice_number,
@@ -135,6 +145,7 @@ serve(async (req) => {
       throw new Error(`Failed to save invoice: ${invoiceInsertError.message}`);
     }
 
+    console.log('=== INVOICE GENERATION SUCCESSFUL ===');
     return new Response(
       JSON.stringify({
         success: true,
@@ -148,7 +159,11 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error generating invoice:', error);
+    console.error('=== ERROR GENERATING INVOICE ===');
+    console.error('Error details:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
