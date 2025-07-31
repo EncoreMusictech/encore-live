@@ -39,7 +39,7 @@ export const ContactManagement = ({
   const [activeTab, setActiveTab] = useState<string>("licensor");
 
   const licensorForm = useForm({
-    defaultValues: {
+    defaultValues: licensorData || {
       name: '',
       email: '',
       phone: '',
@@ -50,7 +50,7 @@ export const ContactManagement = ({
   });
 
   const licenseeForm = useForm({
-    defaultValues: {
+    defaultValues: licenseeData || {
       name: '',
       email: '',
       phone: '',
@@ -60,40 +60,26 @@ export const ContactManagement = ({
     mode: "onChange"
   });
 
-  // Initialize forms only once on mount
-  useEffect(() => {
-    if (licensorData && Object.keys(licensorData).length > 0) {
-      licensorForm.reset(licensorData);
-    }
-  }, []);
+  // Watch form changes and sync with parent
+  const licensorValues = licensorForm.watch();
+  const licenseeValues = licenseeForm.watch();
 
   useEffect(() => {
-    if (licenseeData && Object.keys(licenseeData).length > 0) {
-      licenseeForm.reset(licenseeData);
-    }
-  }, []);
+    onLicensorChange(licensorValues);
+  }, [licensorValues, onLicensorChange]);
 
-  // Only sync with parent on blur to avoid re-renders during typing
-  const handleLicensorBlur = useCallback(() => {
-    const formData = licensorForm.getValues();
-    onLicensorChange(formData);
-  }, [onLicensorChange, licensorForm]);
-
-  const handleLicenseeBlur = useCallback(() => {
-    const formData = licenseeForm.getValues();
-    onLicenseeChange(formData);
-  }, [onLicenseeChange, licenseeForm]);
+  useEffect(() => {
+    onLicenseeChange(licenseeValues);
+  }, [licenseeValues, onLicenseeChange]);
 
   const ContactForm = ({ 
     form, 
     title, 
-    icon: Icon,
-    onBlur
+    icon: Icon
   }: { 
     form: any; 
     title: string;
     icon: React.ComponentType<any>;
-    onBlur: () => void;
   }) => (
     <Card>
       <CardHeader>
@@ -225,7 +211,6 @@ export const ContactManagement = ({
             form={licensorForm}
             title="Licensor"
             icon={Building2}
-            onBlur={handleLicensorBlur}
           />
         </TabsContent>
 
@@ -234,7 +219,6 @@ export const ContactManagement = ({
             form={licenseeForm}
             title="Licensee"
             icon={User}
-            onBlur={handleLicenseeBlur}
           />
         </TabsContent>
       </Tabs>
