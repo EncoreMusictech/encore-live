@@ -41,7 +41,7 @@ serve(async (req) => {
       .select('*')
       .eq('id', licenseId)
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     console.log('License query result:', { license, licenseError });
 
