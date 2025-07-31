@@ -18,139 +18,14 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== STARTING INVOICE GENERATION ===');
-    console.log('Method:', req.method);
-    console.log('Headers:', Object.fromEntries(req.headers.entries()));
+    console.log('=== SIMPLE TEST FUNCTION ===');
     
-    const body = await req.json();
-    console.log('Request body:', body);
-    
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    console.log('Auth header present:', !!authHeader);
-    
-    if (!authHeader) {
-      console.error('No authorization header provided');
-      throw new Error('No authorization header provided');
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
-    console.log('Token extracted, length:', token.length);
-    
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    console.log('Auth result:', { user: !!user, userId: user?.id, authError });
-
-    if (authError) {
-      console.error('Auth error:', authError);
-      throw new Error(`Authentication failed: ${authError.message}`);
-    }
-    
-    if (!user) {
-      console.error('No user found');
-      throw new Error('No user found');
-    }
-
-    const { licenseId, templateId, customFields } = body;
-    console.log('Parsed parameters:', { licenseId, templateId, customFields });
-
-    // Fetch license data with better error handling
-    console.log('Fetching license for ID:', licenseId, 'and user:', user.id);
-    
-    const { data: license, error: licenseError } = await supabaseClient
-      .from('sync_licenses')
-      .select('*')
-      .eq('id', licenseId)
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    console.log('License query result:', { license: !!license, licenseError });
-
-    if (licenseError) {
-      console.error('License query error:', licenseError);
-      throw new Error(`License query failed: ${licenseError.message}`);
-    }
-
-    if (!license) {
-      console.error('No license found for ID:', licenseId);
-      throw new Error('License not found');
-    }
-
-    console.log('License found:', {
-      id: license.id,
-      project_title: license.project_title,
-      pub_fee: license.pub_fee,
-      master_fee: license.master_fee,
-      currency: license.currency
-    });
-
-    // Generate simple HTML for testing
-    const invoiceHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Test Invoice</title>
-      </head>
-      <body>
-        <h1>Test Invoice</h1>
-        <p>Project: ${license.project_title}</p>
-        <p>Total Fee: ${license.currency || 'USD'} ${((license.pub_fee || 0) + (license.master_fee || 0)).toLocaleString()}</p>
-        <p>Generated at: ${new Date().toISOString()}</p>
-      </body>
-      </html>
-    `;
-
-    // Generate invoice number
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
-    console.log('Generated invoice number:', invoiceNumber);
-
-    // Prepare invoice data
-    const invoiceData = {
-      user_id: user.id,
-      license_id: licenseId,
-      invoice_number: invoiceNumber,
-      amount: (license.pub_fee || 0) + (license.master_fee || 0),
-      currency: license.currency || 'USD',
-      invoice_data: {
-        html: invoiceHtml,
-        license_data: license,
-        custom_fields: customFields,
-        generated_at: new Date().toISOString()
-      },
-      status: 'draft'
-    };
-    
-    console.log('Attempting to insert invoice with data:', {
-      user_id: invoiceData.user_id,
-      license_id: invoiceData.license_id,
-      invoice_number: invoiceData.invoice_number,
-      amount: invoiceData.amount,
-      currency: invoiceData.currency,
-      status: invoiceData.status
-    });
-    
-    const { data: invoice, error: invoiceInsertError } = await supabaseClient
-      .from('sync_invoices')
-      .insert(invoiceData)
-      .select()
-      .single();
-
-    console.log('Insert result:', { invoice: !!invoice, error: invoiceInsertError });
-
-    if (invoiceInsertError) {
-      console.error('Error saving invoice:', invoiceInsertError);
-      throw new Error(`Failed to save invoice: ${invoiceInsertError.message}`);
-    }
-
-    console.log('=== INVOICE GENERATION SUCCESSFUL ===');
+    // Just return a success response to test if the function itself works
     return new Response(
       JSON.stringify({
         success: true,
-        invoice: invoice,
-        html: invoiceHtml
+        message: 'Function is working',
+        timestamp: new Date().toISOString()
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -159,10 +34,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('=== ERROR GENERATING INVOICE ===');
-    console.error('Error details:', error);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
+    console.error('Error in simple test:', error);
     
     return new Response(
       JSON.stringify({ 
