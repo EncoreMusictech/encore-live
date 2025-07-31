@@ -60,61 +60,27 @@ export const ContactManagement = ({
     mode: "onChange"
   });
 
-  // Use refs to track timeouts for debouncing
-  const licensorTimeoutRef = useRef<NodeJS.Timeout>();
-  const licenseeTimeoutRef = useRef<NodeJS.Timeout>();
+  // Handle form sync only on blur to avoid interrupting typing
+  const handleLicensorBlur = useCallback(() => {
+    const values = licensorForm.getValues();
+    onLicensorChange(values);
+  }, [licensorForm, onLicensorChange]);
 
-  // Debounced sync functions to prevent interrupting user input
-  const debouncedLicensorSync = useCallback((values: ContactData) => {
-    if (licensorTimeoutRef.current) {
-      clearTimeout(licensorTimeoutRef.current);
-    }
-    licensorTimeoutRef.current = setTimeout(() => {
-      onLicensorChange(values);
-    }, 300); // 300ms debounce
-  }, [onLicensorChange]);
-
-  const debouncedLicenseeSync = useCallback((values: ContactData) => {
-    if (licenseeTimeoutRef.current) {
-      clearTimeout(licenseeTimeoutRef.current);
-    }
-    licenseeTimeoutRef.current = setTimeout(() => {
-      onLicenseeChange(values);
-    }, 300); // 300ms debounce
-  }, [onLicenseeChange]);
-
-  // Watch form changes with debounced sync
-  const licensorValues = licensorForm.watch();
-  const licenseeValues = licenseeForm.watch();
-
-  useEffect(() => {
-    debouncedLicensorSync(licensorValues);
-  }, [licensorValues, debouncedLicensorSync]);
-
-  useEffect(() => {
-    debouncedLicenseeSync(licenseeValues);
-  }, [licenseeValues, debouncedLicenseeSync]);
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (licensorTimeoutRef.current) {
-        clearTimeout(licensorTimeoutRef.current);
-      }
-      if (licenseeTimeoutRef.current) {
-        clearTimeout(licenseeTimeoutRef.current);
-      }
-    };
-  }, []);
+  const handleLicenseeBlur = useCallback(() => {
+    const values = licenseeForm.getValues();
+    onLicenseeChange(values);
+  }, [licenseeForm, onLicenseeChange]);
 
   const ContactForm = ({ 
     form, 
     title, 
-    icon: Icon
+    icon: Icon,
+    onBlur
   }: { 
     form: any; 
     title: string;
     icon: React.ComponentType<any>;
+    onBlur: () => void;
   }) => (
     <Card>
       <CardHeader>
@@ -140,7 +106,14 @@ export const ContactManagement = ({
                       Full Name
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} />
+                      <Input 
+                        placeholder="John Doe" 
+                        {...field} 
+                        onBlur={() => {
+                          field.onBlur();
+                          onBlur();
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -154,7 +127,14 @@ export const ContactManagement = ({
                   <FormItem>
                     <FormLabel>Company/Organization</FormLabel>
                     <FormControl>
-                      <Input placeholder="Company Name" {...field} />
+                      <Input 
+                        placeholder="Company Name" 
+                        {...field} 
+                        onBlur={() => {
+                          field.onBlur();
+                          onBlur();
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -177,7 +157,15 @@ export const ContactManagement = ({
                       Email Address
                     </FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="john@company.com" {...field} />
+                      <Input 
+                        type="email" 
+                        placeholder="john@company.com" 
+                        {...field} 
+                        onBlur={() => {
+                          field.onBlur();
+                          onBlur();
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -191,7 +179,14 @@ export const ContactManagement = ({
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="+1 (555) 123-4567" {...field} />
+                      <Input 
+                        placeholder="+1 (555) 123-4567" 
+                        {...field} 
+                        onBlur={() => {
+                          field.onBlur();
+                          onBlur();
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -210,6 +205,10 @@ export const ContactManagement = ({
                       placeholder="123 Main St, City, State, ZIP" 
                       className="min-h-[80px]" 
                       {...field} 
+                      onBlur={() => {
+                        field.onBlur();
+                        onBlur();
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -246,6 +245,7 @@ export const ContactManagement = ({
             form={licensorForm}
             title="Licensor"
             icon={Building2}
+            onBlur={handleLicensorBlur}
           />
         </TabsContent>
 
@@ -254,6 +254,7 @@ export const ContactManagement = ({
             form={licenseeForm}
             title="Licensee"
             icon={User}
+            onBlur={handleLicenseeBlur}
           />
         </TabsContent>
       </Tabs>
