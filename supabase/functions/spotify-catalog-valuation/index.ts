@@ -458,7 +458,7 @@ serve(async (req) => {
     // Find comparable artists using multiple search strategies
     let comparableArtists = [];
     
-    // Strategy 1: Search by genre
+    // Strategy 1: Search by genre (only if artist has genres)
     if (artist.genres.length > 0) {
       try {
         const genreSearchResponse = await fetch(
@@ -507,6 +507,8 @@ serve(async (req) => {
       } catch (error) {
         console.log(`Error searching for similar artists by genre: ${error.message}`);
       }
+    } else {
+      console.log(`Artist has no genres, skipping genre-based search`);
     }
     
     // Strategy 2: If we still need more artists, search for popular artists in general
@@ -604,9 +606,9 @@ serve(async (req) => {
       }
     }
 
-    // Strategy 4: Search for artists with similar follower counts when industry benchmarks aren't available
-    if (!hasCustomBenchmarks && comparableArtists.length < 3) {
-      console.log(`Searching for artists with similar follower counts since industry benchmarks are not available for ${primaryGenre}`);
+    // Strategy 4: Search for artists with similar follower counts (always run if we don't have enough artists)
+    if (comparableArtists.length < 3) {
+      console.log(`Searching for artists with similar follower counts to find real Spotify artists`);
       
       try {
         // Calculate follower range for search (±50% of artist's followers)
@@ -619,7 +621,8 @@ serve(async (req) => {
         // Search multiple queries to find artists with similar follower counts
         const searchQueries = [
           'a', 'e', 'i', 'o', 'u', // Vowel searches tend to return diverse results
-          'the', 'and', 'for', 'you', 'all' // Common words to get variety
+          'the', 'and', 'for', 'you', 'all', // Common words to get variety
+          'new', 'music', 'band', 'singer' // Music-related terms
         ];
         
         for (const query of searchQueries) {
