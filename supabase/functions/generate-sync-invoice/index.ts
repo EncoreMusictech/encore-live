@@ -18,17 +18,33 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting invoice generation...');
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const authHeader = req.headers.get('Authorization')!;
+    const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
+    if (!authHeader) {
+      throw new Error('No authorization header provided');
+    }
+    
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user } } = await supabaseClient.auth.getUser(token);
+    console.log('Token extracted, length:', token.length);
+    
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    console.log('Auth result:', { user: !!user, userId: user?.id, authError });
 
+    if (authError) {
+      console.error('Auth error:', authError);
+      throw new Error(`Authentication failed: ${authError.message}`);
+    }
+    
     if (!user) {
-      throw new Error('Unauthorized');
+      throw new Error('No user found');
     }
 
     const { licenseId, templateId, customFields }: InvoiceData = await req.json();
@@ -81,28 +97,42 @@ serve(async (req) => {
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
 
     // Save invoice record
+    console.log('Preparing to insert invoice...');
+    const invoiceData = {
+      user_id: user.id,
+      license_id: licenseId,
+      invoice_number: invoiceNumber,
+      amount: (license.pub_fee || 0) + (license.master_fee || 0),
+      currency: license.currency || 'USD',
+      invoice_data: {
+        html: invoiceHtml,
+        license_data: license,
+        custom_fields: customFields,
+        generated_at: new Date().toISOString()
+      },
+      status: 'draft'
+    };
+    
+    console.log('Invoice data:', {
+      user_id: invoiceData.user_id,
+      license_id: invoiceData.license_id,
+      invoice_number: invoiceData.invoice_number,
+      amount: invoiceData.amount,
+      currency: invoiceData.currency,
+      status: invoiceData.status
+    });
+    
     const { data: invoice, error: invoiceInsertError } = await supabaseClient
       .from('sync_invoices')
-      .insert({
-        user_id: user.id,
-        license_id: licenseId,
-        invoice_number: invoiceNumber,
-        amount: (license.pub_fee || 0) + (license.master_fee || 0),
-        currency: license.currency || 'USD',
-        invoice_data: {
-          html: invoiceHtml,
-          license_data: license,
-          custom_fields: customFields,
-          generated_at: new Date().toISOString()
-        },
-        status: 'draft'
-      })
+      .insert(invoiceData)
       .select()
       .single();
 
+    console.log('Insert result:', { invoice: !!invoice, error: invoiceInsertError });
+
     if (invoiceInsertError) {
       console.error('Error saving invoice:', invoiceInsertError);
-      throw new Error('Failed to save invoice');
+      throw new Error(`Failed to save invoice: ${invoiceInsertError.message}`);
     }
 
     return new Response(
