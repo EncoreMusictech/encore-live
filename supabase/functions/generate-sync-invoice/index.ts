@@ -58,12 +58,19 @@ serve(async (req) => {
     // Fetch template or use default
     let template;
     if (templateId) {
-      const { data: templateData } = await supabaseClient
+      console.log('Fetching template for ID:', templateId, 'and user:', user.id);
+      const { data: templateData, error: templateError } = await supabaseClient
         .from('invoice_templates')
         .select('*')
         .eq('id', templateId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+      
+      if (templateError) {
+        console.error('Template query error:', templateError);
+      } else {
+        console.log('Template found:', !!templateData);
+      }
       template = templateData;
     }
 
@@ -80,7 +87,7 @@ serve(async (req) => {
         user_id: user.id,
         license_id: licenseId,
         invoice_number: invoiceNumber,
-        amount: license.license_fee || 0,
+        amount: (license.pub_fee || 0) + (license.master_fee || 0),
         currency: license.currency || 'USD',
         invoice_data: {
           html: invoiceHtml,
@@ -280,10 +287,10 @@ function generateInvoiceHTML(license: any, template: any, customFields: any = {}
           <div class="invoice-meta">
             <div class="meta-section">
               <h3>Invoice Details</h3>
-              <div class="meta-item">
-                <span class="meta-label">Invoice #:</span>
-                <span>${license.license_id || 'DRAFT'}</span>
-              </div>
+               <div class="meta-item">
+                 <span class="meta-label">Invoice #:</span>
+                 <span>${license.synch_id || 'DRAFT'}</span>
+               </div>
               <div class="meta-item">
                 <span class="meta-label">Date:</span>
                 <span>${currentDate}</span>
@@ -385,13 +392,13 @@ function generateInvoiceHTML(license: any, template: any, customFields: any = {}
           </table>
           ` : ''}
 
-          <div class="amount-section">
-            <h3>Total License Fee</h3>
-            <div class="total-amount">
-              ${license.currency || 'USD'} ${(license.license_fee || 0).toLocaleString()}
-            </div>
-            <p>All fees are payable upon receipt</p>
-          </div>
+           <div class="amount-section">
+             <h3>Total License Fee</h3>
+             <div class="total-amount">
+               ${license.currency || 'USD'} ${((license.pub_fee || 0) + (license.master_fee || 0)).toLocaleString()}
+             </div>
+             <p>All fees are payable upon receipt</p>
+           </div>
 
           <div class="payment-terms">
             <h4 style="margin-bottom: 10px; color: #856404;">Payment Terms & Conditions</h4>
