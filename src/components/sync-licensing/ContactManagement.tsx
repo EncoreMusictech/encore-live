@@ -39,48 +39,48 @@ export const ContactManagement = ({
   const [activeTab, setActiveTab] = useState<string>("licensor");
 
   const licensorForm = useForm({
-    defaultValues: licensorData || {
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      company: ''
+    defaultValues: {
+      name: licensorData?.name || '',
+      email: licensorData?.email || '',
+      phone: licensorData?.phone || '',
+      address: licensorData?.address || '',
+      company: licensorData?.company || ''
     },
-    mode: "onChange"
+    mode: "onSubmit" // Change to onSubmit to reduce re-renders
   });
 
   const licenseeForm = useForm({
-    defaultValues: licenseeData || {
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      company: ''
+    defaultValues: {
+      name: licenseeData?.name || '',
+      email: licenseeData?.email || '',
+      phone: licenseeData?.phone || '',
+      address: licenseeData?.address || '',
+      company: licenseeData?.company || ''
     },
-    mode: "onChange"
+    mode: "onSubmit" // Change to onSubmit to reduce re-renders
   });
 
-  // Handle form sync only on blur to avoid interrupting typing
-  const handleLicensorBlur = useCallback(() => {
-    const values = licensorForm.getValues();
-    onLicensorChange(values);
-  }, [licensorForm, onLicensorChange]);
-
-  const handleLicenseeBlur = useCallback(() => {
-    const values = licenseeForm.getValues();
-    onLicenseeChange(values);
-  }, [licenseeForm, onLicenseeChange]);
+  // Only sync when user switches tabs or on explicit request
+  const handleTabChange = useCallback((tab: string) => {
+    // Sync current tab data before switching
+    if (activeTab === "licensor") {
+      const values = licensorForm.getValues();
+      onLicensorChange(values);
+    } else if (activeTab === "licensee") {
+      const values = licenseeForm.getValues();
+      onLicenseeChange(values);
+    }
+    setActiveTab(tab);
+  }, [activeTab, licensorForm, licenseeForm, onLicensorChange, onLicenseeChange]);
 
   const ContactForm = ({ 
     form, 
     title, 
-    icon: Icon,
-    onBlur
+    icon: Icon
   }: { 
     form: any; 
     title: string;
     icon: React.ComponentType<any>;
-    onBlur: () => void;
   }) => (
     <Card>
       <CardHeader>
@@ -109,10 +109,6 @@ export const ContactManagement = ({
                       <Input 
                         placeholder="John Doe" 
                         {...field} 
-                        onBlur={() => {
-                          field.onBlur();
-                          onBlur();
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -130,10 +126,6 @@ export const ContactManagement = ({
                       <Input 
                         placeholder="Company Name" 
                         {...field} 
-                        onBlur={() => {
-                          field.onBlur();
-                          onBlur();
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -161,10 +153,6 @@ export const ContactManagement = ({
                         type="email" 
                         placeholder="john@company.com" 
                         {...field} 
-                        onBlur={() => {
-                          field.onBlur();
-                          onBlur();
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -182,10 +170,6 @@ export const ContactManagement = ({
                       <Input 
                         placeholder="+1 (555) 123-4567" 
                         {...field} 
-                        onBlur={() => {
-                          field.onBlur();
-                          onBlur();
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -205,10 +189,6 @@ export const ContactManagement = ({
                       placeholder="123 Main St, City, State, ZIP" 
                       className="min-h-[80px]" 
                       {...field} 
-                      onBlur={() => {
-                        field.onBlur();
-                        onBlur();
-                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -228,7 +208,7 @@ export const ContactManagement = ({
         <h3 className="text-lg font-semibold">Contact Management</h3>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="licensor" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
@@ -245,7 +225,6 @@ export const ContactManagement = ({
             form={licensorForm}
             title="Licensor"
             icon={Building2}
-            onBlur={handleLicensorBlur}
           />
         </TabsContent>
 
@@ -254,7 +233,6 @@ export const ContactManagement = ({
             form={licenseeForm}
             title="Licensee"
             icon={User}
-            onBlur={handleLicenseeBlur}
           />
         </TabsContent>
       </Tabs>
