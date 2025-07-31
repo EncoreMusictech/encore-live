@@ -78,6 +78,7 @@ export const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
             custom_fields: templateData.custom_fields ? JSON.parse(templateData.custom_fields) : {}
           },
           is_default: false
+          // user_id will be set automatically by the trigger
         })
         .select()
         .single();

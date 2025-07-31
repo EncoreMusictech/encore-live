@@ -33,24 +33,25 @@ serve(async (req) => {
 
     const { licenseId, templateId, customFields }: InvoiceData = await req.json();
 
-    // Fetch license data
+    // Fetch license data with better error handling
+    console.log('Fetching license for ID:', licenseId, 'and user:', user.id);
+    
     const { data: license, error: licenseError } = await supabaseClient
       .from('sync_licenses')
-      .select(`
-        *,
-        copyrights (
-          work_title,
-          isrc,
-          iswc,
-          writers (name, ipi_number),
-          publishers (name)
-        )
-      `)
+      .select('*')
       .eq('id', licenseId)
       .eq('user_id', user.id)
       .single();
 
-    if (licenseError || !license) {
+    console.log('License query result:', { license, licenseError });
+
+    if (licenseError) {
+      console.error('License query error:', licenseError);
+      throw new Error(`License query failed: ${licenseError.message}`);
+    }
+
+    if (!license) {
+      console.error('No license found for ID:', licenseId);
       throw new Error('License not found');
     }
 
