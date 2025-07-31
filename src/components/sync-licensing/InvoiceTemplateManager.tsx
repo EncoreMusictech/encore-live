@@ -226,7 +226,7 @@ export const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
               New Template
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create Invoice Template</DialogTitle>
               <DialogDescription>
@@ -378,7 +378,7 @@ export const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Invoice Template</DialogTitle>
             <DialogDescription>
