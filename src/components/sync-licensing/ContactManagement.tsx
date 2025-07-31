@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Plus, Trash2, User, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,17 +60,52 @@ export const ContactManagement = ({
     mode: "onChange"
   });
 
-  // Watch form changes and sync with parent
+  // Use refs to track timeouts for debouncing
+  const licensorTimeoutRef = useRef<NodeJS.Timeout>();
+  const licenseeTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Debounced sync functions to prevent interrupting user input
+  const debouncedLicensorSync = useCallback((values: ContactData) => {
+    if (licensorTimeoutRef.current) {
+      clearTimeout(licensorTimeoutRef.current);
+    }
+    licensorTimeoutRef.current = setTimeout(() => {
+      onLicensorChange(values);
+    }, 300); // 300ms debounce
+  }, [onLicensorChange]);
+
+  const debouncedLicenseeSync = useCallback((values: ContactData) => {
+    if (licenseeTimeoutRef.current) {
+      clearTimeout(licenseeTimeoutRef.current);
+    }
+    licenseeTimeoutRef.current = setTimeout(() => {
+      onLicenseeChange(values);
+    }, 300); // 300ms debounce
+  }, [onLicenseeChange]);
+
+  // Watch form changes with debounced sync
   const licensorValues = licensorForm.watch();
   const licenseeValues = licenseeForm.watch();
 
   useEffect(() => {
-    onLicensorChange(licensorValues);
-  }, [licensorValues, onLicensorChange]);
+    debouncedLicensorSync(licensorValues);
+  }, [licensorValues, debouncedLicensorSync]);
 
   useEffect(() => {
-    onLicenseeChange(licenseeValues);
-  }, [licenseeValues, onLicenseeChange]);
+    debouncedLicenseeSync(licenseeValues);
+  }, [licenseeValues, debouncedLicenseeSync]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (licensorTimeoutRef.current) {
+        clearTimeout(licensorTimeoutRef.current);
+      }
+      if (licenseeTimeoutRef.current) {
+        clearTimeout(licenseeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const ContactForm = ({ 
     form, 
