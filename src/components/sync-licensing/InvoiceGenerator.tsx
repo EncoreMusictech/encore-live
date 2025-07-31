@@ -85,7 +85,7 @@ export const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({
   const updateInvoiceStatusMutation = useMutation({
     mutationFn: async ({ invoiceId, status }: { invoiceId: string; status: string }) => {
       const { data, error } = await supabase
-        .from('sync_invoices')
+        .from('sync_invoices' as any)
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', invoiceId)
         .select()

@@ -49,20 +49,25 @@ export const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
   const { data: templates, isLoading } = useQuery({
     queryKey: ['invoice-templates'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('invoice_templates')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as InvoiceTemplate[];
+      try {
+        const { data, error } = await supabase
+          .from('invoice_templates' as any)
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        return (data || []) as unknown as InvoiceTemplate[];
+      } catch (error) {
+        console.error('Error fetching templates:', error);
+        return [] as InvoiceTemplate[];
+      }
     }
   });
 
   const createTemplateMutation = useMutation({
     mutationFn: async (templateData: any) => {
       const { data, error } = await supabase
-        .from('invoice_templates')
+        .from('invoice_templates' as any)
         .insert({
           name: templateData.name,
           description: templateData.description,
@@ -101,7 +106,7 @@ export const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
   const updateTemplateMutation = useMutation({
     mutationFn: async ({ id, templateData }: { id: string; templateData: any }) => {
       const { data, error } = await supabase
-        .from('invoice_templates')
+        .from('invoice_templates' as any)
         .update({
           name: templateData.name,
           description: templateData.description,
@@ -140,7 +145,7 @@ export const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
   const deleteTemplateMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('invoice_templates')
+        .from('invoice_templates' as any)
         .delete()
         .eq('id', id);
       

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Eye, Edit, Trash2, MoreHorizontal } from "lucide-react";
+import { Eye, Edit, Trash2, MoreHorizontal, Receipt } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,7 @@ import {
 import { SyncLicense, useDeleteSyncLicense } from "@/hooks/useSyncLicenses";
 import { SyncLicenseForm } from "./SyncLicenseForm";
 import { SyncLicenseDetails } from "./SyncLicenseDetails";
+import { InvoiceGenerator } from "./InvoiceGenerator";
 
 interface SyncLicenseTableProps {
   licenses: SyncLicense[];
@@ -29,6 +30,7 @@ interface SyncLicenseTableProps {
 export const SyncLicenseTable = ({ licenses, isLoading }: SyncLicenseTableProps) => {
   const [editingLicense, setEditingLicense] = useState<SyncLicense | null>(null);
   const [viewingLicense, setViewingLicense] = useState<SyncLicense | null>(null);
+  const [invoiceLicense, setInvoiceLicense] = useState<SyncLicense | null>(null);
   const deleteMutation = useDeleteSyncLicense();
 
   const getStatusColor = (status: string) => {
@@ -155,6 +157,10 @@ export const SyncLicenseTable = ({ licenses, isLoading }: SyncLicenseTableProps)
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setInvoiceLicense(license)}>
+                        <Receipt className="h-4 w-4 mr-2" />
+                        Generate Invoice
+                      </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => handleDelete(license.id)}
                         className="text-destructive"
@@ -184,6 +190,15 @@ export const SyncLicenseTable = ({ licenses, isLoading }: SyncLicenseTableProps)
         open={!!viewingLicense}
         onOpenChange={(open) => !open && setViewingLicense(null)}
       />
+
+      {/* Invoice Generator */}
+      {invoiceLicense && (
+        <InvoiceGenerator
+          license={invoiceLicense}
+          open={!!invoiceLicense}
+          onOpenChange={(open) => !open && setInvoiceLicense(null)}
+        />
+      )}
     </>
   );
 };
