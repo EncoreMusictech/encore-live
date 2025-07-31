@@ -342,6 +342,9 @@ serve(async (req) => {
       market_risk_factor: 0.15
     };
 
+    // Check if industry benchmarks are missing or generic
+    const hasCustomBenchmarks = benchmarkData !== null;
+
     // Enhanced stream estimation with genre-specific factors
     const genreMultiplier = benchmark.streams_to_revenue_ratio / 0.003; // Normalize to base rate
     const estimatedTotalStreams = Math.floor(
@@ -598,6 +601,92 @@ serve(async (req) => {
         }
       } catch (error) {
         console.log(`Error searching for related artists: ${error.message}`);
+      }
+    }
+
+    // Strategy 4: Search for artists with similar follower counts when industry benchmarks aren't available
+    if (!hasCustomBenchmarks && comparableArtists.length < 3) {
+      console.log(`Searching for artists with similar follower counts since industry benchmarks are not available for ${primaryGenre}`);
+      
+      try {
+        // Calculate follower range for search (±50% of artist's followers)
+        const targetFollowers = artist.followers.total;
+        const minFollowers = Math.max(1000, Math.floor(targetFollowers * 0.5));
+        const maxFollowers = Math.floor(targetFollowers * 1.5);
+        
+        console.log(`Searching for artists with ${minFollowers} to ${maxFollowers} followers (target: ${targetFollowers})`);
+        
+        // Search multiple queries to find artists with similar follower counts
+        const searchQueries = [
+          'a', 'e', 'i', 'o', 'u', // Vowel searches tend to return diverse results
+          'the', 'and', 'for', 'you', 'all' // Common words to get variety
+        ];
+        
+        for (const query of searchQueries) {
+          if (comparableArtists.length >= 10) break;
+          
+          try {
+            const followerSearchResponse = await fetch(
+              `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=50`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                },
+              }
+            );
+
+            if (followerSearchResponse.ok) {
+              const followerSearchData = await followerSearchResponse.json();
+              
+              if (followerSearchData.artists?.items?.length > 0) {
+                const similarFollowerArtists = followerSearchData.artists.items
+                  .filter((searchArtist: SpotifyArtist) => 
+                    searchArtist.id !== artist.id && 
+                    !comparableArtists.some(existing => existing.spotify_id === searchArtist.id)
+                  )
+                  .filter((searchArtist: SpotifyArtist) => {
+                    const followers = searchArtist.followers.total;
+                    return followers >= minFollowers && followers <= maxFollowers && followers > 0;
+                  })
+                  .sort((a: SpotifyArtist, b: SpotifyArtist) => {
+                    // Sort by how close the follower count is to our target
+                    const aDiff = Math.abs(a.followers.total - targetFollowers);
+                    const bDiff = Math.abs(b.followers.total - targetFollowers);
+                    return aDiff - bDiff;
+                  });
+
+                similarFollowerArtists.forEach((similarArtist: SpotifyArtist) => {
+                  if (comparableArtists.length < 10) {
+                    const similarEstimatedStreams = Math.floor(
+                      (similarArtist.followers.total * similarArtist.popularity * 2.5 * genreMultiplier)
+                    );
+                    
+                    const similarValuation = Math.floor(
+                      similarEstimatedStreams * benchmark.streams_to_revenue_ratio * benchmark.revenue_multiple_avg
+                    );
+                    
+                    comparableArtists.push({
+                      name: similarArtist.name,
+                      valuation: similarValuation,
+                      followers: similarArtist.followers.total,
+                      popularity: similarArtist.popularity,
+                      genres: similarArtist.genres,
+                      spotify_id: similarArtist.id
+                    });
+                    
+                    console.log(`Added similar artist: ${similarArtist.name} (${similarArtist.followers.total} followers)`);
+                  }
+                });
+              }
+            }
+          } catch (error) {
+            console.log(`Error searching for artists with query "${query}": ${error.message}`);
+          }
+        }
+        
+        console.log(`Found ${comparableArtists.length} total comparable artists through follower similarity search`);
+      } catch (error) {
+        console.log(`Error in follower similarity search: ${error.message}`);
       }
     }
     
