@@ -7,9 +7,14 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('[GENERATE-SYNC-INVOICE] Function called with method:', req.method);
+  
   if (req.method === 'OPTIONS') {
+    console.log('[GENERATE-SYNC-INVOICE] Handling OPTIONS request');
     return new Response(null, { headers: corsHeaders });
   }
+
+  console.log('[GENERATE-SYNC-INVOICE] Starting invoice generation process');
 
   try {
     const body = await req.json();
