@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PayeeWithHierarchy {
   id: string;
+  payee_id?: string;
   payee_name: string;
   payee_type: string;
   contact_info: any;
@@ -85,7 +86,14 @@ export function PayeesTable() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPayees(data || []);
+
+      // Add temporary payee_id to each payee - this will be replaced once DB types are updated
+      const payeesWithIds = (data || []).map((payee, index) => ({
+        ...payee,
+        payee_id: `PAY-2025-${String(index + 1).padStart(4, '0')}`
+      }));
+
+      setPayees(payeesWithIds);
     } catch (error: any) {
       console.error('Error fetching payees:', error);
       toast({
@@ -209,6 +217,7 @@ export function PayeesTable() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Payee ID</TableHead>
                   <TableHead>Payee Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Hierarchy</TableHead>
@@ -219,6 +228,11 @@ export function PayeesTable() {
               <TableBody>
                 {filteredPayees.map((payee) => (
                   <TableRow key={payee.id}>
+                    <TableCell className="font-medium">
+                      <Badge variant="outline" className="text-xs">
+                        {payee.payee_id || 'N/A'}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="font-medium">{payee.payee_name}</TableCell>
                     <TableCell>
                       <Badge className={getPayeeTypeColor(payee.payee_type)}>
