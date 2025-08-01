@@ -34,6 +34,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
     defaultValues: {
       song_title: allocation?.song_title || '',
       isrc: allocation?.isrc || '',
+      iswc: allocation?.iswc || '',
       artist: allocation?.artist || '',
       gross_royalty_amount: allocation?.gross_royalty_amount || 0,
       controlled_status: allocation?.controlled_status || 'Non-Controlled',
@@ -63,6 +64,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             id,
             work_title,
             internal_id,
+            iswc,
             copyright_writers (
               id,
               writer_name,
@@ -203,8 +205,9 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
       console.log('Copyright writers:', selectedCopyright?.copyright_writers);
       
       if (selectedCopyright) {
-        // Auto-populate work title from copyright
+        // Auto-populate work title and ISWC from copyright
         setValue('song_title', selectedCopyright.work_title);
+        setValue('iswc', selectedCopyright.iswc || '');
         
         if (selectedCopyright.copyright_writers) {
           // Auto-populate writers from the selected copyright
@@ -235,12 +238,12 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
           if (copyrightWriters.length > 0) {
             toast({
               title: "Copyright Linked",
-              description: `Work title and ${copyrightWriters.length} writers loaded from copyright`,
+              description: `Work title, ISWC, and ${copyrightWriters.length} writers loaded from copyright`,
             });
           } else {
             toast({
               title: "Copyright Linked",
-              description: "Work title loaded. This copyright doesn't have any writers. Add writers in the Copyright Management module first.",
+              description: "Work title and ISWC loaded. This copyright doesn't have any writers. Add writers in the Copyright Management module first.",
               variant: "destructive",
             });
           }
@@ -248,14 +251,15 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
           console.log('No writers found for this copyright');
           toast({
             title: "Copyright Linked",
-            description: "Work title loaded. This copyright doesn't have any writers associated with it",
+            description: "Work title and ISWC loaded. This copyright doesn't have any writers associated with it",
             variant: "destructive",
           });
         }
       }
     } else {
-      // Clear work title and writers when no copyright is selected
+      // Clear work title, ISWC, and writers when no copyright is selected
       setValue('song_title', '');
+      setValue('iswc', '');
       setWriters([]);
     }
   };
@@ -433,6 +437,22 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             placeholder="USRC17607839"
             {...register('isrc')}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="iswc">ISWC</Label>
+          <Input
+            id="iswc"
+            placeholder="T-034.524.680-1"
+            {...register('iswc')}
+            readOnly={!!watch('copyright_id')}
+            className={watch('copyright_id') ? 'bg-muted/50' : ''}
+          />
+          {watch('copyright_id') && (
+            <p className="text-xs text-muted-foreground">
+              ISWC auto-populated from linked copyright
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
