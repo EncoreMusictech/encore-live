@@ -572,8 +572,8 @@ export function SongMatchingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-6xl h-[95vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Music className="h-5 w-5" />
             Song Matching
@@ -583,7 +583,8 @@ export function SongMatchingDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 mb-4">
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-4 pb-4">
           {/* Main Controls */}
           <div className="flex gap-4">
             <Card className="flex-1">
@@ -827,6 +828,7 @@ export function SongMatchingDialog({
             </CardContent>
           </Card>
         </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
