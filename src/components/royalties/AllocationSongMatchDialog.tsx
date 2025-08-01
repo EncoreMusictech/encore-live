@@ -3,10 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Link2, Music } from "lucide-react";
+import { Search, Link2, Music, Brain } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { findPotentialMatches, getConfidenceBadgeVariant } from "@/lib/song-matching-utils";
 
 interface AllocationSongMatchDialogProps {
   open: boolean;
@@ -20,8 +22,11 @@ interface Copyright {
   id: string;
   work_title: string;
   work_id: string;
+  internal_id: string;
   iswc: string;
   created_at: string;
+  confidence?: number;
+  matchType?: 'exact' | 'high' | 'medium' | 'low';
 }
 
 export function AllocationSongMatchDialog({ 
@@ -35,6 +40,7 @@ export function AllocationSongMatchDialog({
   const [copyrights, setCopyrights] = useState<Copyright[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCopyright, setSelectedCopyright] = useState<string>("");
+  const [aiMatching, setAiMatching] = useState(false);
 
   const searchCopyrights = async () => {
     if (!searchTerm.trim()) return;
@@ -43,13 +49,45 @@ export function AllocationSongMatchDialog({
     try {
       const { data, error } = await supabase
         .from('copyrights')
-        .select('id, work_title, work_id, iswc, created_at')
+        .select(`
+          id, 
+          work_title, 
+          work_id, 
+          internal_id,
+          iswc, 
+          created_at,
+          akas,
+          copyright_writers (
+            writer_name,
+            ownership_percentage,
+            writer_role
+          )
+        `)
         .ilike('work_title', `%${searchTerm}%`)
         .order('work_title')
         .limit(20);
 
       if (error) throw error;
-      setCopyrights(data || []);
+
+      // Calculate confidence scores for search results
+      const copyrightsWithConfidence = (data || []).map(copyright => {
+        const matches = findPotentialMatches(
+          { songTitle: currentSongTitle, artist: '' },
+          [copyright],
+          0.0
+        );
+        
+        return {
+          ...copyright,
+          confidence: matches.length > 0 ? matches[0].confidence : 0,
+          matchType: matches.length > 0 ? matches[0].matchType : 'low' as const
+        };
+      });
+
+      // Sort by confidence descending
+      copyrightsWithConfidence.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+      
+      setCopyrights(copyrightsWithConfidence);
     } catch (error) {
       console.error('Error searching copyrights:', error);
       toast({
@@ -157,6 +195,7 @@ export function AllocationSongMatchDialog({
                     <TableRow>
                       <TableHead className="w-12">Select</TableHead>
                       <TableHead>Work Title</TableHead>
+                      <TableHead>Confidence</TableHead>
                       <TableHead>Work ID</TableHead>
                       <TableHead>ISWC</TableHead>
                       <TableHead>Created</TableHead>
@@ -183,6 +222,13 @@ export function AllocationSongMatchDialog({
                             <Music className="h-4 w-4" />
                             {copyright.work_title}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {copyright.confidence !== undefined && (
+                            <Badge variant={getConfidenceBadgeVariant(copyright.confidence)} className="text-xs">
+                              {Math.round(copyright.confidence * 100)}%
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <code className="text-xs bg-muted px-1 py-0.5 rounded">

@@ -6,11 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Music, CheckCircle, AlertCircle, Plus } from "lucide-react";
+import { Search, Music, CheckCircle, AlertCircle, Plus, Brain, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSongMatchHistory } from "@/hooks/useSongMatchHistory";
+import { findPotentialMatches, getConfidenceColor, getConfidenceBadgeVariant, getConfidenceDescription } from "@/lib/song-matching-utils";
 
 interface SongMatch {
   songTitle: string;
@@ -23,6 +24,9 @@ interface SongMatch {
     internal_id: string;
   };
   isMatched: boolean;
+  confidenceLevel?: number;
+  matchType?: 'exact' | 'high' | 'medium' | 'low';
+  aiReasoning?: string;
 }
 
 interface SongMatchingDialogProps {
@@ -49,6 +53,7 @@ export function SongMatchingDialog({
   const [availableCopyrights, setAvailableCopyrights] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [aiMatching, setAiMatching] = useState(false);
   const { user } = useAuth();
   const { getSavedMatches, saveMultipleMatches } = useSongMatchHistory();
 
@@ -174,58 +179,174 @@ export function SongMatchingDialog({
     }
   };
 
-  const handleAutoMatch = () => {
-    const updatedMatches = songMatches.map((match) => {
-      if (match.isMatched) return match;
+  const handleAutoMatch = async () => {
+    setLoading(true);
+    
+    try {
+      const updatedMatches = songMatches.map((match) => {
+        if (match.isMatched) return match;
 
-      // Try to find matching copyright by title
-      const matchedCopyright = availableCopyrights.find((copyright) => {
-        const workTitle = copyright.work_title.toLowerCase();
-        const songTitle = match.songTitle.toLowerCase();
-        
-        // Exact match
-        if (workTitle === songTitle) return true;
-        
-        // Check if AKAs include the song title
-        if (copyright.akas && Array.isArray(copyright.akas)) {
-          return copyright.akas.some((aka: string) => 
-            aka.toLowerCase() === songTitle
-          );
+        // Use the song matching utility for better confidence calculation
+        const potentialMatches = findPotentialMatches(
+          {
+            songTitle: match.songTitle,
+            artist: match.artist,
+            grossAmount: match.grossAmount
+          },
+          availableCopyrights,
+          0.6 // Minimum confidence threshold for auto-matching
+        );
+
+        if (potentialMatches.length > 0) {
+          const bestMatch = potentialMatches[0];
+          return {
+            ...match,
+            matchedCopyright: bestMatch.copyright,
+            isMatched: true,
+            confidenceLevel: bestMatch.confidence,
+            matchType: bestMatch.matchType,
+          };
         }
-        
-        // Partial match (contains)
-        return workTitle.includes(songTitle) || songTitle.includes(workTitle);
+
+        return match;
       });
 
-      if (matchedCopyright) {
-        return {
-          ...match,
-          matchedCopyright,
-          isMatched: true,
-        };
-      }
-
-      return match;
-    });
-
-    setSongMatches(updatedMatches);
-    
-    const matchedCount = updatedMatches.filter(m => m.isMatched).length;
-    toast({
-      title: "Auto-match Complete",
-      description: `${matchedCount} songs automatically matched`,
-    });
+      setSongMatches(updatedMatches);
+      
+      const matchedCount = updatedMatches.filter(m => m.isMatched).length;
+      toast({
+        title: "Auto-match Complete",
+        description: `${matchedCount} songs automatically matched with confidence scores`,
+      });
+    } catch (error) {
+      console.error('Error during auto-match:', error);
+      toast({
+        title: "Error",
+        description: "Failed to perform auto-matching",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleManualMatch = (songIndex: number, copyrightId: string) => {
+  const handleAIMatch = async () => {
+    if (!user) return;
+    
+    setAiMatching(true);
+    
+    try {
+      const unmatchedSongs = songMatches.filter(match => !match.isMatched);
+      
+      if (unmatchedSongs.length === 0) {
+        toast({
+          title: "No Songs to Match",
+          description: "All songs are already matched",
+        });
+        return;
+      }
+
+      // Process songs in batches to avoid overwhelming the AI
+      const batchSize = 5;
+      const updatedMatches = [...songMatches];
+      
+      for (let i = 0; i < unmatchedSongs.length; i += batchSize) {
+        const batch = unmatchedSongs.slice(i, i + batchSize);
+        
+        for (const song of batch) {
+          try {
+            const response = await supabase.functions.invoke('calculate-song-match-confidence', {
+              body: {
+                songTitle: song.songTitle,
+                artist: song.artist,
+                copyrights: availableCopyrights,
+                useAI: true
+              }
+            });
+
+            if (response.data?.results && response.data.results.length > 0) {
+              const bestMatch = response.data.results[0];
+              
+              // Only auto-match if confidence is high enough
+              if (bestMatch.confidence >= 0.7) {
+                const matchedCopyright = availableCopyrights.find(c => c.id === bestMatch.copyrightId);
+                if (matchedCopyright) {
+                  const matchIndex = updatedMatches.findIndex(m => 
+                    m.songTitle === song.songTitle && m.artist === song.artist
+                  );
+                  
+                  if (matchIndex >= 0) {
+                    updatedMatches[matchIndex] = {
+                      ...updatedMatches[matchIndex],
+                      matchedCopyright,
+                      isMatched: true,
+                      confidenceLevel: bestMatch.confidence,
+                      matchType: bestMatch.matchType,
+                      aiReasoning: bestMatch.reasoning,
+                    };
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Error processing song ${song.songTitle}:`, error);
+          }
+        }
+        
+        // Update UI after each batch
+        setSongMatches([...updatedMatches]);
+        
+        // Small delay between batches to be nice to the API
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      const finalMatchedCount = updatedMatches.filter(m => m.isMatched).length;
+      const newMatches = finalMatchedCount - songMatches.filter(m => m.isMatched).length;
+      
+      toast({
+        title: "AI Matching Complete",
+        description: `Found ${newMatches} additional high-confidence matches using AI analysis`,
+      });
+      
+    } catch (error) {
+      console.error('Error during AI matching:', error);
+      toast({
+        title: "Error",
+        description: "Failed to perform AI matching",
+        variant: "destructive",
+      });
+    } finally {
+      setAiMatching(false);
+    }
+  };
+
+  const handleManualMatch = async (songIndex: number, copyrightId: string) => {
     const copyright = availableCopyrights.find(c => c.id === copyrightId);
     if (!copyright) return;
+
+    const song = songMatches[songIndex];
+    
+    // Calculate confidence for manual match
+    const potentialMatches = findPotentialMatches(
+      {
+        songTitle: song.songTitle,
+        artist: song.artist,
+        grossAmount: song.grossAmount
+      },
+      [copyright],
+      0.0 // No minimum threshold for manual match
+    );
+
+    const confidence = potentialMatches.length > 0 ? potentialMatches[0].confidence : 0.5; // Default to 50% for manual matches
+    const matchType = potentialMatches.length > 0 ? potentialMatches[0].matchType : 'medium';
 
     const updatedMatches = [...songMatches];
     updatedMatches[songIndex] = {
       ...updatedMatches[songIndex],
       matchedCopyright: copyright,
       isMatched: true,
+      confidenceLevel: confidence,
+      matchType: matchType,
     };
     setSongMatches(updatedMatches);
   };
@@ -236,6 +357,9 @@ export function SongMatchingDialog({
       ...updatedMatches[songIndex],
       matchedCopyright: undefined,
       isMatched: false,
+      confidenceLevel: undefined,
+      matchType: undefined,
+      aiReasoning: undefined,
     };
     setSongMatches(updatedMatches);
   };
@@ -344,8 +468,8 @@ export function SongMatchingDialog({
               song_title: match.songTitle,
               artist_name: match.artist,
               copyright_id: match.matchedCopyright!.id,
-              match_confidence: 1.0,
-              match_type: 'manual'
+              match_confidence: match.confidenceLevel || 1.0,
+              match_type: match.aiReasoning ? 'ai_enhanced' : 'manual'
             }));
 
           if (matchesToSave.length > 0) {
@@ -440,8 +564,13 @@ export function SongMatchingDialog({
           </Card>
 
           <div className="flex flex-col gap-2">
-            <Button onClick={handleAutoMatch} variant="outline" disabled={loading}>
-              Auto-Match Songs
+            <Button onClick={handleAutoMatch} variant="outline" disabled={loading || aiMatching}>
+              <Zap className="h-4 w-4 mr-2" />
+              {loading ? "Matching..." : "Auto-Match Songs"}
+            </Button>
+            <Button onClick={handleAIMatch} variant="outline" disabled={loading || aiMatching}>
+              <Brain className="h-4 w-4 mr-2" />
+              {aiMatching ? "AI Matching..." : "AI Enhanced Match"}
             </Button>
             <Button 
               onClick={handleCreateRoyaltyAllocations} 
@@ -495,11 +624,33 @@ export function SongMatchingDialog({
                             ${match.grossAmount.toLocaleString()}
                           </div>
                           {match.isMatched && match.matchedCopyright && (
-                            <div className="mt-2 flex items-center gap-1">
-                              <CheckCircle className="h-4 w-4 text-emerald-600" />
-                              <span className="text-sm text-emerald-700 font-medium">
-                                Matched: {match.matchedCopyright.work_title}
-                              </span>
+                            <div className="mt-2 space-y-1">
+                              <div className="flex items-center gap-1">
+                                <CheckCircle className="h-4 w-4 text-emerald-600" />
+                                <span className="text-sm text-emerald-700 font-medium">
+                                  Matched: {match.matchedCopyright.work_title}
+                                </span>
+                              </div>
+                              {match.confidenceLevel && (
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    variant={getConfidenceBadgeVariant(match.confidenceLevel)}
+                                    className="text-xs"
+                                  >
+                                    {Math.round(match.confidenceLevel * 100)}% Confidence
+                                  </Badge>
+                                  {match.matchType && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {match.matchType.charAt(0).toUpperCase() + match.matchType.slice(1)} Match
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                              {match.aiReasoning && (
+                                <div className="text-xs text-muted-foreground italic">
+                                  AI: {match.aiReasoning}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
