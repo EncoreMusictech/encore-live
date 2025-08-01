@@ -23,6 +23,7 @@ interface SongMatch {
     internal_id: string;
   };
   isMatched: boolean;
+  matchConfidence?: number; // Confidence score 0-1
 }
 
 interface SongMatchingDialogProps {
@@ -174,34 +175,62 @@ export function SongMatchingDialog({
     }
   };
 
+  const calculateMatchConfidence = (songTitle: string, workTitle: string, akas?: string[]): number => {
+    const song = songTitle.toLowerCase().trim();
+    const work = workTitle.toLowerCase().trim();
+    
+    // Exact match = 100% confidence
+    if (song === work) return 1.0;
+    
+    // Check AKAs for exact match
+    if (akas && Array.isArray(akas)) {
+      const exactAkaMatch = akas.some((aka: string) => aka.toLowerCase().trim() === song);
+      if (exactAkaMatch) return 0.95;
+    }
+    
+    // Partial matches with different confidence levels
+    if (work.includes(song) || song.includes(work)) {
+      const longer = song.length > work.length ? song : work;
+      const shorter = song.length <= work.length ? song : work;
+      const ratio = shorter.length / longer.length;
+      
+      // Higher confidence for better length ratios
+      if (ratio > 0.8) return 0.85;
+      if (ratio > 0.6) return 0.75;
+      if (ratio > 0.4) return 0.65;
+      return 0.55;
+    }
+    
+    return 0;
+  };
+
   const handleAutoMatch = () => {
     const updatedMatches = songMatches.map((match) => {
       if (match.isMatched) return match;
 
-      // Try to find matching copyright by title
-      const matchedCopyright = availableCopyrights.find((copyright) => {
-        const workTitle = copyright.work_title.toLowerCase();
-        const songTitle = match.songTitle.toLowerCase();
+      let bestMatch: any = null;
+      let bestConfidence = 0;
+
+      // Find the best matching copyright with confidence score
+      availableCopyrights.forEach((copyright) => {
+        const confidence = calculateMatchConfidence(
+          match.songTitle, 
+          copyright.work_title, 
+          copyright.akas
+        );
         
-        // Exact match
-        if (workTitle === songTitle) return true;
-        
-        // Check if AKAs include the song title
-        if (copyright.akas && Array.isArray(copyright.akas)) {
-          return copyright.akas.some((aka: string) => 
-            aka.toLowerCase() === songTitle
-          );
+        if (confidence > bestConfidence && confidence >= 0.55) { // Minimum 55% confidence
+          bestMatch = copyright;
+          bestConfidence = confidence;
         }
-        
-        // Partial match (contains)
-        return workTitle.includes(songTitle) || songTitle.includes(workTitle);
       });
 
-      if (matchedCopyright) {
+      if (bestMatch) {
         return {
           ...match,
-          matchedCopyright,
+          matchedCopyright: bestMatch,
           isMatched: true,
+          matchConfidence: bestConfidence,
         };
       }
 
@@ -221,11 +250,19 @@ export function SongMatchingDialog({
     const copyright = availableCopyrights.find(c => c.id === copyrightId);
     if (!copyright) return;
 
+    const currentMatch = songMatches[songIndex];
+    const confidence = calculateMatchConfidence(
+      currentMatch.songTitle,
+      copyright.work_title,
+      copyright.akas
+    );
+
     const updatedMatches = [...songMatches];
     updatedMatches[songIndex] = {
       ...updatedMatches[songIndex],
       matchedCopyright: copyright,
       isMatched: true,
+      matchConfidence: Math.max(confidence, 0.9), // Manual matches get at least 90% confidence
     };
     setSongMatches(updatedMatches);
   };
@@ -495,11 +532,29 @@ export function SongMatchingDialog({
                             ${match.grossAmount.toLocaleString()}
                           </div>
                           {match.isMatched && match.matchedCopyright && (
-                            <div className="mt-2 flex items-center gap-1">
-                              <CheckCircle className="h-4 w-4 text-emerald-600" />
-                              <span className="text-sm text-emerald-700 font-medium">
-                                Matched: {match.matchedCopyright.work_title}
-                              </span>
+                            <div className="mt-2 space-y-1">
+                              <div className="flex items-center gap-1">
+                                <CheckCircle className="h-4 w-4 text-emerald-600" />
+                                <span className="text-sm text-emerald-700 font-medium">
+                                  Matched: {match.matchedCopyright.work_title}
+                                </span>
+                              </div>
+                              {match.matchConfidence && (
+                                <div className="flex items-center gap-1">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs px-2 py-0.5 ${
+                                      match.matchConfidence >= 0.9 
+                                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700' 
+                                        : match.matchConfidence >= 0.75 
+                                        ? 'bg-blue-50 border-blue-300 text-blue-700'
+                                        : 'bg-yellow-50 border-yellow-300 text-yellow-700'
+                                    }`}
+                                  >
+                                    {Math.round(match.matchConfidence * 100)}% confidence
+                                  </Badge>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
