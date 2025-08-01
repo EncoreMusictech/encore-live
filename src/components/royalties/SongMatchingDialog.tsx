@@ -195,61 +195,11 @@ export function SongMatchingDialog({
     }
   };
 
-  const handleAutoMatch = async () => {
+  const handleSmartMatch = async () => {
+    if (!user) return;
+    
     setLoading(true);
-    
-    try {
-      const updatedMatches = songMatches.map((match) => {
-        if (match.isMatched) return match;
-
-        // Use the song matching utility for better confidence calculation
-        const potentialMatches = findPotentialMatches(
-          {
-            songTitle: match.songTitle,
-            artist: match.artist,
-            grossAmount: match.grossAmount
-          },
-          availableCopyrights,
-          0.6 // Minimum confidence threshold for auto-matching
-        );
-
-        if (potentialMatches.length > 0) {
-          const bestMatch = potentialMatches[0];
-          return {
-            ...match,
-            matchedCopyright: bestMatch.copyright,
-            isMatched: true,
-            confidenceLevel: bestMatch.confidence,
-            matchType: bestMatch.matchType,
-          };
-        }
-
-        return match;
-      });
-
-      setSongMatches(updatedMatches);
-      
-      const matchedCount = updatedMatches.filter(m => m.isMatched).length;
-      toast({
-        title: "Auto-match Complete",
-        description: `${matchedCount} songs automatically matched with confidence scores`,
-      });
-    } catch (error) {
-      console.error('Error during auto-match:', error);
-      toast({
-        title: "Error",
-        description: "Failed to perform auto-matching",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAIMatch = async () => {
-    if (!user || !aiPreferences.enableAI) return;
-    
-    setAiMatching(true);
+    setAiMatching(false);
     setProcessingProgress(0);
     
     try {
@@ -263,99 +213,152 @@ export function SongMatchingDialog({
         return;
       }
 
-      const startTime = Date.now();
-      const maxTime = aiPreferences.maxProcessingTime * 1000; // Convert to milliseconds
-      const batchSize = aiPreferences.batchSize;
-      const batches = Math.ceil(unmatchedSongs.length / batchSize);
+      let updatedMatches = [...songMatches];
       
-      setTotalBatches(batches);
-      setCurrentProcessingBatch(0);
+      // Phase 1: Quick Algorithmic Matching (High Confidence)
+      console.log('Starting Phase 1: Quick algorithmic matching...');
+      let algorithmicMatches = 0;
       
-      const updatedMatches = [...songMatches];
-      let processedCount = 0;
-      
-      for (let i = 0; i < unmatchedSongs.length && (Date.now() - startTime) < maxTime; i += batchSize) {
-        const batch = unmatchedSongs.slice(i, i + batchSize);
-        setCurrentProcessingBatch(Math.floor(i / batchSize) + 1);
-        
-        for (const song of batch) {
-          // Check time limit before each song
-          if ((Date.now() - startTime) >= maxTime) {
-            console.log('AI matching stopped due to time limit');
-            break;
-          }
-          
-          try {
-            const response = await supabase.functions.invoke('calculate-song-match-confidence', {
-              body: {
-                songTitle: song.songTitle,
-                artist: song.artist,
-                copyrights: availableCopyrights,
-                useAI: aiPreferences.includeSemanticAnalysis
-              }
-            });
+      for (const song of unmatchedSongs) {
+        const potentialMatches = findPotentialMatches(
+          {
+            songTitle: song.songTitle,
+            artist: song.artist,
+            grossAmount: song.grossAmount
+          },
+          availableCopyrights,
+          0.85 // High confidence threshold for algorithmic matches
+        );
 
-            if (response.data?.results && response.data.results.length > 0) {
-              const bestMatch = response.data.results[0];
-              
-              // Use the configured threshold, but be more conservative in conservative mode
-              const threshold = aiPreferences.conservativeMode 
-                ? Math.max(aiPreferences.autoMatchThreshold, 0.8)
-                : aiPreferences.autoMatchThreshold;
-              
-              if (bestMatch.confidence >= threshold) {
-                const matchedCopyright = availableCopyrights.find(c => c.id === bestMatch.copyrightId);
-                if (matchedCopyright) {
-                  const matchIndex = updatedMatches.findIndex(m => 
-                    m.songTitle === song.songTitle && m.artist === song.artist
-                  );
-                  
-                  if (matchIndex >= 0) {
-                    updatedMatches[matchIndex] = {
-                      ...updatedMatches[matchIndex],
-                      matchedCopyright,
-                      isMatched: true,
-                      confidenceLevel: bestMatch.confidence,
-                      matchType: bestMatch.matchType,
-                      aiReasoning: bestMatch.reasoning,
-                    };
+        if (potentialMatches.length > 0) {
+          const bestMatch = potentialMatches[0];
+          const matchIndex = updatedMatches.findIndex(m => 
+            m.songTitle === song.songTitle && m.artist === song.artist
+          );
+          
+          if (matchIndex >= 0) {
+            updatedMatches[matchIndex] = {
+              ...updatedMatches[matchIndex],
+              matchedCopyright: bestMatch.copyright,
+              isMatched: true,
+              confidenceLevel: bestMatch.confidence,
+              matchType: bestMatch.matchType,
+            };
+            algorithmicMatches++;
+          }
+        }
+      }
+      
+      setSongMatches([...updatedMatches]);
+      
+      toast({
+        title: "Phase 1 Complete",
+        description: `Found ${algorithmicMatches} high-confidence matches algorithmically`,
+      });
+
+      // Phase 2: AI-Enhanced Matching (if enabled and there are still unmatched songs)
+      const remainingUnmatched = updatedMatches.filter(match => !match.isMatched);
+      
+      if (aiPreferences.enableAI && remainingUnmatched.length > 0) {
+        console.log('Starting Phase 2: AI-enhanced matching...');
+        setAiMatching(true);
+        setLoading(false);
+        
+        const startTime = Date.now();
+        const maxTime = aiPreferences.maxProcessingTime * 1000;
+        const batchSize = aiPreferences.batchSize;
+        const batches = Math.ceil(remainingUnmatched.length / batchSize);
+        
+        setTotalBatches(batches);
+        setCurrentProcessingBatch(0);
+        
+        let processedCount = 0;
+        let aiMatches = 0;
+        
+        for (let i = 0; i < remainingUnmatched.length && (Date.now() - startTime) < maxTime; i += batchSize) {
+          const batch = remainingUnmatched.slice(i, i + batchSize);
+          setCurrentProcessingBatch(Math.floor(i / batchSize) + 1);
+          
+          for (const song of batch) {
+            if ((Date.now() - startTime) >= maxTime) {
+              console.log('AI matching stopped due to time limit');
+              break;
+            }
+            
+            try {
+              const response = await supabase.functions.invoke('calculate-song-match-confidence', {
+                body: {
+                  songTitle: song.songTitle,
+                  artist: song.artist,
+                  copyrights: availableCopyrights,
+                  useAI: aiPreferences.includeSemanticAnalysis
+                }
+              });
+
+              if (response.data?.results && response.data.results.length > 0) {
+                const bestMatch = response.data.results[0];
+                
+                const threshold = aiPreferences.conservativeMode 
+                  ? Math.max(aiPreferences.autoMatchThreshold, 0.7)
+                  : aiPreferences.autoMatchThreshold;
+                
+                if (bestMatch.confidence >= threshold) {
+                  const matchedCopyright = availableCopyrights.find(c => c.id === bestMatch.copyrightId);
+                  if (matchedCopyright) {
+                    const matchIndex = updatedMatches.findIndex(m => 
+                      m.songTitle === song.songTitle && m.artist === song.artist
+                    );
+                    
+                    if (matchIndex >= 0) {
+                      updatedMatches[matchIndex] = {
+                        ...updatedMatches[matchIndex],
+                        matchedCopyright,
+                        isMatched: true,
+                        confidenceLevel: bestMatch.confidence,
+                        matchType: bestMatch.matchType,
+                        aiReasoning: bestMatch.reasoning,
+                      };
+                      aiMatches++;
+                    }
                   }
                 }
               }
+            } catch (error) {
+              console.error(`Error processing song ${song.songTitle}:`, error);
             }
-          } catch (error) {
-            console.error(`Error processing song ${song.songTitle}:`, error);
+            
+            processedCount++;
+            setProcessingProgress((processedCount / remainingUnmatched.length) * 100);
           }
           
-          processedCount++;
-          setProcessingProgress((processedCount / unmatchedSongs.length) * 100);
+          setSongMatches([...updatedMatches]);
+          
+          const delay = aiPreferences.conservativeMode ? 1000 : 500;
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
         
-        // Update UI after each batch
-        setSongMatches([...updatedMatches]);
+        const timeSpent = Math.round((Date.now() - startTime) / 1000);
         
-        // Adaptive delay based on batch size and preferences
-        const delay = aiPreferences.conservativeMode ? 1000 : 500;
-        await new Promise(resolve => setTimeout(resolve, delay));
+        toast({
+          title: "Smart Match Complete",
+          description: `Total matches: ${algorithmicMatches + aiMatches} (${algorithmicMatches} algorithmic + ${aiMatches} AI-enhanced in ${timeSpent}s)`,
+        });
+      } else {
+        toast({
+          title: "Smart Match Complete",
+          description: `Found ${algorithmicMatches} matches using algorithmic matching${!aiPreferences.enableAI ? ' (AI disabled)' : ''}`,
+        });
       }
       
-      const finalMatchedCount = updatedMatches.filter(m => m.isMatched).length;
-      const newMatches = finalMatchedCount - songMatches.filter(m => m.isMatched).length;
-      const timeSpent = Math.round((Date.now() - startTime) / 1000);
-      
-      toast({
-        title: "AI Matching Complete",
-        description: `Found ${newMatches} additional matches in ${timeSpent}s using AI analysis (${processedCount}/${unmatchedSongs.length} processed)`,
-      });
-      
     } catch (error) {
-      console.error('Error during AI matching:', error);
+      console.error('Error during smart matching:', error);
       toast({
         title: "Error",
-        description: "Failed to perform AI matching",
+        description: "Failed to perform smart matching",
         variant: "destructive",
       });
     } finally {
+      setLoading(false);
       setAiMatching(false);
       setProcessingProgress(0);
       setCurrentProcessingBatch(0);
@@ -619,13 +622,9 @@ export function SongMatchingDialog({
                 <Settings className="h-4 w-4 mr-2" />
                 AI Settings
               </Button>
-              <Button onClick={handleAutoMatch} variant="outline" disabled={loading || aiMatching}>
-                <Zap className="h-4 w-4 mr-2" />
-                {loading ? "Matching..." : "Auto-Match Songs"}
-              </Button>
-              <Button onClick={handleAIMatch} variant="outline" disabled={loading || aiMatching || !aiPreferences.enableAI}>
-                <Brain className="h-4 w-4 mr-2" />
-                {aiMatching ? "AI Matching..." : "AI Enhanced Match"}
+              <Button onClick={handleSmartMatch} variant="outline" disabled={loading || aiMatching}>
+                <TrendingUp className="h-4 w-4 mr-2" />
+                {loading || aiMatching ? "Smart Matching..." : "Smart Match Songs"}
               </Button>
               <Button 
                 onClick={handleCreateRoyaltyAllocations} 
@@ -645,7 +644,7 @@ export function SongMatchingDialog({
                     <div className="flex items-center gap-2">
                       <Brain className="h-4 w-4 text-blue-600 animate-pulse" />
                       <span className="text-sm font-medium text-blue-900">
-                        AI Enhanced Matching in Progress...
+                        {loading ? "Phase 1: Algorithmic Matching..." : "Phase 2: AI Enhanced Matching..."}
                       </span>
                     </div>
                     <span className="text-sm text-blue-700">
