@@ -6,12 +6,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Music, CheckCircle, AlertCircle, Plus, Brain, Zap } from "lucide-react";
+import { Search, Music, CheckCircle, AlertCircle, Plus, Brain, Zap, Settings, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSongMatchHistory } from "@/hooks/useSongMatchHistory";
 import { findPotentialMatches, getConfidenceColor, getConfidenceBadgeVariant, getConfidenceDescription } from "@/lib/song-matching-utils";
+import { AIMatchingPreferences, type AIMatchingPreferences as AIPrefsType } from "./AIMatchingPreferences";
+import { ConfidenceVisualization } from "./ConfidenceVisualization";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Progress } from "@/components/ui/progress";
 
 interface SongMatch {
   songTitle: string;
@@ -54,6 +58,18 @@ export function SongMatchingDialog({
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [aiMatching, setAiMatching] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [aiPreferences, setAiPreferences] = useState<AIPrefsType>({
+    enableAI: true,
+    autoMatchThreshold: 0.8,
+    batchSize: 5,
+    conservativeMode: true,
+    includeSemanticAnalysis: true,
+    maxProcessingTime: 30,
+  });
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [currentProcessingBatch, setCurrentProcessingBatch] = useState(0);
+  const [totalBatches, setTotalBatches] = useState(0);
   const { user } = useAuth();
   const { getSavedMatches, saveMultipleMatches } = useSongMatchHistory();
 
@@ -231,9 +247,10 @@ export function SongMatchingDialog({
   };
 
   const handleAIMatch = async () => {
-    if (!user) return;
+    if (!user || !aiPreferences.enableAI) return;
     
     setAiMatching(true);
+    setProcessingProgress(0);
     
     try {
       const unmatchedSongs = songMatches.filter(match => !match.isMatched);
@@ -246,29 +263,47 @@ export function SongMatchingDialog({
         return;
       }
 
-      // Process songs in batches to avoid overwhelming the AI
-      const batchSize = 5;
-      const updatedMatches = [...songMatches];
+      const startTime = Date.now();
+      const maxTime = aiPreferences.maxProcessingTime * 1000; // Convert to milliseconds
+      const batchSize = aiPreferences.batchSize;
+      const batches = Math.ceil(unmatchedSongs.length / batchSize);
       
-      for (let i = 0; i < unmatchedSongs.length; i += batchSize) {
+      setTotalBatches(batches);
+      setCurrentProcessingBatch(0);
+      
+      const updatedMatches = [...songMatches];
+      let processedCount = 0;
+      
+      for (let i = 0; i < unmatchedSongs.length && (Date.now() - startTime) < maxTime; i += batchSize) {
         const batch = unmatchedSongs.slice(i, i + batchSize);
+        setCurrentProcessingBatch(Math.floor(i / batchSize) + 1);
         
         for (const song of batch) {
+          // Check time limit before each song
+          if ((Date.now() - startTime) >= maxTime) {
+            console.log('AI matching stopped due to time limit');
+            break;
+          }
+          
           try {
             const response = await supabase.functions.invoke('calculate-song-match-confidence', {
               body: {
                 songTitle: song.songTitle,
                 artist: song.artist,
                 copyrights: availableCopyrights,
-                useAI: true
+                useAI: aiPreferences.includeSemanticAnalysis
               }
             });
 
             if (response.data?.results && response.data.results.length > 0) {
               const bestMatch = response.data.results[0];
               
-              // Only auto-match if confidence is high enough
-              if (bestMatch.confidence >= 0.7) {
+              // Use the configured threshold, but be more conservative in conservative mode
+              const threshold = aiPreferences.conservativeMode 
+                ? Math.max(aiPreferences.autoMatchThreshold, 0.8)
+                : aiPreferences.autoMatchThreshold;
+              
+              if (bestMatch.confidence >= threshold) {
                 const matchedCopyright = availableCopyrights.find(c => c.id === bestMatch.copyrightId);
                 if (matchedCopyright) {
                   const matchIndex = updatedMatches.findIndex(m => 
@@ -291,21 +326,26 @@ export function SongMatchingDialog({
           } catch (error) {
             console.error(`Error processing song ${song.songTitle}:`, error);
           }
+          
+          processedCount++;
+          setProcessingProgress((processedCount / unmatchedSongs.length) * 100);
         }
         
         // Update UI after each batch
         setSongMatches([...updatedMatches]);
         
-        // Small delay between batches to be nice to the API
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Adaptive delay based on batch size and preferences
+        const delay = aiPreferences.conservativeMode ? 1000 : 500;
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
       
       const finalMatchedCount = updatedMatches.filter(m => m.isMatched).length;
       const newMatches = finalMatchedCount - songMatches.filter(m => m.isMatched).length;
+      const timeSpent = Math.round((Date.now() - startTime) / 1000);
       
       toast({
         title: "AI Matching Complete",
-        description: `Found ${newMatches} additional high-confidence matches using AI analysis`,
+        description: `Found ${newMatches} additional matches in ${timeSpent}s using AI analysis (${processedCount}/${unmatchedSongs.length} processed)`,
       });
       
     } catch (error) {
@@ -317,6 +357,9 @@ export function SongMatchingDialog({
       });
     } finally {
       setAiMatching(false);
+      setProcessingProgress(0);
+      setCurrentProcessingBatch(0);
+      setTotalBatches(0);
     }
   };
 
@@ -540,45 +583,94 @@ export function SongMatchingDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex gap-4 mb-4">
-          <Card className="flex-1">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Matching Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-green-600">{matchedCount}</div>
-                  <div className="text-xs text-muted-foreground">Matched</div>
+        <div className="space-y-4 mb-4">
+          {/* Main Controls */}
+          <div className="flex gap-4">
+            <Card className="flex-1">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Matching Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">{matchedCount}</div>
+                    <div className="text-xs text-muted-foreground">Matched</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-yellow-600">{unmatchedCount}</div>
+                    <div className="text-xs text-muted-foreground">Unmatched</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold">{songMatches.length}</div>
+                    <div className="text-xs text-muted-foreground">Total Songs</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-yellow-600">{unmatchedCount}</div>
-                  <div className="text-xs text-muted-foreground">Unmatched</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{songMatches.length}</div>
-                  <div className="text-xs text-muted-foreground">Total Songs</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <div className="flex flex-col gap-2">
-            <Button onClick={handleAutoMatch} variant="outline" disabled={loading || aiMatching}>
-              <Zap className="h-4 w-4 mr-2" />
-              {loading ? "Matching..." : "Auto-Match Songs"}
-            </Button>
-            <Button onClick={handleAIMatch} variant="outline" disabled={loading || aiMatching}>
-              <Brain className="h-4 w-4 mr-2" />
-              {aiMatching ? "AI Matching..." : "AI Enhanced Match"}
-            </Button>
-            <Button 
-              onClick={handleCreateRoyaltyAllocations} 
-              disabled={processing || songMatches.length === 0}
-            >
-              {processing ? "Creating..." : "Create Royalties"}
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button 
+                onClick={() => setShowPreferences(!showPreferences)} 
+                variant="outline" 
+                size="sm"
+                disabled={loading || aiMatching}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                AI Settings
+              </Button>
+              <Button onClick={handleAutoMatch} variant="outline" disabled={loading || aiMatching}>
+                <Zap className="h-4 w-4 mr-2" />
+                {loading ? "Matching..." : "Auto-Match Songs"}
+              </Button>
+              <Button onClick={handleAIMatch} variant="outline" disabled={loading || aiMatching || !aiPreferences.enableAI}>
+                <Brain className="h-4 w-4 mr-2" />
+                {aiMatching ? "AI Matching..." : "AI Enhanced Match"}
+              </Button>
+              <Button 
+                onClick={handleCreateRoyaltyAllocations} 
+                disabled={processing || songMatches.length === 0}
+              >
+                {processing ? "Creating..." : "Create Royalties"}
+              </Button>
+            </div>
           </div>
+
+          {/* AI Processing Progress */}
+          {aiMatching && (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="pt-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-4 w-4 text-blue-600 animate-pulse" />
+                      <span className="text-sm font-medium text-blue-900">
+                        AI Enhanced Matching in Progress...
+                      </span>
+                    </div>
+                    <span className="text-sm text-blue-700">
+                      Batch {currentProcessingBatch} of {totalBatches}
+                    </span>
+                  </div>
+                  <Progress value={processingProgress} className="h-2" />
+                  <div className="text-xs text-blue-600">
+                    Processing with {aiPreferences.conservativeMode ? 'conservative' : 'balanced'} settings
+                    • Threshold: {Math.round(aiPreferences.autoMatchThreshold * 100)}%
+                    • Batch size: {aiPreferences.batchSize}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AI Preferences Panel */}
+          <Collapsible open={showPreferences} onOpenChange={setShowPreferences}>
+            <CollapsibleContent>
+              <AIMatchingPreferences
+                onPreferencesChange={setAiPreferences}
+                initialPreferences={aiPreferences}
+              />
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
@@ -631,25 +723,13 @@ export function SongMatchingDialog({
                                   Matched: {match.matchedCopyright.work_title}
                                 </span>
                               </div>
-                              {match.confidenceLevel && (
-                                <div className="flex items-center gap-2">
-                                  <Badge 
-                                    variant={getConfidenceBadgeVariant(match.confidenceLevel)}
-                                    className="text-xs"
-                                  >
-                                    {Math.round(match.confidenceLevel * 100)}% Confidence
-                                  </Badge>
-                                  {match.matchType && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {match.matchType.charAt(0).toUpperCase() + match.matchType.slice(1)} Match
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
-                              {match.aiReasoning && (
-                                <div className="text-xs text-muted-foreground italic">
-                                  AI: {match.aiReasoning}
-                                </div>
+                              {(match.confidenceLevel || match.matchType) && (
+                                <ConfidenceVisualization
+                                  confidence={match.confidenceLevel || 0.5}
+                                  matchType={match.matchType || 'medium'}
+                                  aiReasoning={match.aiReasoning}
+                                  showDetails={false}
+                                />
                               )}
                             </div>
                           )}
