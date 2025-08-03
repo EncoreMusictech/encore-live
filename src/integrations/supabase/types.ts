@@ -2981,6 +2981,7 @@ export type Database = {
           publishers: Json | null
           registration_gaps: string[] | null
           search_id: string
+          search_key: string | null
           song_title: string
           songwriter_name: string
           source_data: Json | null
@@ -3000,6 +3001,7 @@ export type Database = {
           publishers?: Json | null
           registration_gaps?: string[] | null
           search_id: string
+          search_key?: string | null
           song_title: string
           songwriter_name: string
           source_data?: Json | null
@@ -3019,6 +3021,7 @@ export type Database = {
           publishers?: Json | null
           registration_gaps?: string[] | null
           search_id?: string
+          search_key?: string | null
           song_title?: string
           songwriter_name?: string
           source_data?: Json | null

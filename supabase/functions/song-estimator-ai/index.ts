@@ -321,17 +321,17 @@ Use context: ${JSON.stringify(additionalContext)}`;
           let verificationStatus = 'ai_generated';
           let completenessScore = 0.6; // Base score for AI-only data
           
-          try {
-            console.log(`Looking up BMI data for: ${songTitle} by ${songwriterName}`);
-            
-            // Use enhanced BMI agent for better accuracy
-            const { data: bmiResponse, error: bmiError } = await supabase.functions.invoke('enhanced-bmi-agent', {
-              body: { 
-                workTitle: songTitle, 
-                writerName: songwriterName,
-                artistName: (song.CoWriters || song.co_writers)?.[0] // Use first co-writer as artist if available
-              }
-            });
+            try {
+              console.log(`Looking up BMI data for: ${songTitle} by ${songwriterName}`);
+              
+              // Use enhanced BMI agent for better accuracy
+              const { data: bmiResponse, error: bmiError } = await supabase.functions.invoke('enhanced-bmi-agent', {
+                body: { 
+                  workTitle: songTitle, 
+                  writerName: songwriterName,
+                  artistName: (song.CoWriters || song.co_writers)?.[0] // Use first co-writer as artist if available
+                }
+              });
             
             if (!bmiError && bmiResponse?.found) {
               bmiData = bmiResponse;
@@ -408,6 +408,8 @@ Use context: ${JSON.stringify(additionalContext)}`;
               registration_gaps: registrationGaps,
               metadata_completeness_score: completenessScore,
               verification_status: verificationStatus,
+              search_key: `${songTitle}|${songwriterName}|`,
+              last_verified_at: new Date().toISOString(),
               source_data: { 
                 ai_session: session.id, 
                 confidence: parsedResponse.ConfidenceAssessment?.DataReliabilityScore || parsedResponse.confidence_score || 7,
