@@ -369,18 +369,17 @@ Use context: ${JSON.stringify(additionalContext)}`;
               }
             }
             
-            // Prioritize BMI ISWC data over AI-generated data
+            // Prioritize verified ISWC data - NO MORE AI-GENERATED ISWCs
             let finalIswc = null;
             let iswcSource = null;
             
             if (bmiData?.iswc) {
               finalIswc = bmiData.iswc;
-              iswcSource = bmiData.iswcSource || 'bmi';
+              iswcSource = bmiData.iswcSource || 'verified';
               console.log(`Using verified ISWC from ${iswcSource}: ${finalIswc} for song: ${songTitle}`);
-            } else if (song.ISWC || song.iswc) {
-              finalIswc = song.ISWC || song.iswc;
-              iswcSource = 'ai_generated';
-              console.log(`Using AI-generated ISWC: ${finalIswc} for song: ${songTitle} (BMI verification failed)`);
+            } else {
+              // Do NOT generate fake ISWCs - leave null if no verified data available
+              console.log(`No verified ISWC available for song: ${songTitle} - keeping null to avoid hallucination`);
             }
             
             // Check for registration gaps
