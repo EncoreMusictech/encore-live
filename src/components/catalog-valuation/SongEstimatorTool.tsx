@@ -300,40 +300,9 @@ export function SongEstimatorTool() {
                     {currentSearch.ai_research_summary.career_overview && (
                       <div className="p-4 border rounded-lg bg-muted/50">
                         <h5 className="font-medium mb-2">Career Overview</h5>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <p>
-                            <strong>Active Years:</strong> {currentSearch.ai_research_summary.career_overview.active_years || 'Unknown'}
-                          </p>
-                          <p>
-                            <strong>Genres:</strong> {currentSearch.ai_research_summary.career_overview.genres?.join(', ') || 'Unknown'}
-                          </p>
-                          <p>
-                            <strong>Catalog Size:</strong> ~{currentSearch.ai_research_summary.career_overview.total_songs_estimate || 0} songs estimated
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {currentSearch.ai_research_summary.royalty_pipeline && (
-                      <div className="p-4 border rounded-lg bg-primary/10">
-                        <h5 className="font-medium mb-2 text-primary">Pipeline Estimates</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Performance:</span>
-                            <div className="font-semibold">{formatCurrency(currentSearch.ai_research_summary.royalty_pipeline.annual_performance || 0)}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Mechanical:</span>
-                            <div className="font-semibold">{formatCurrency(currentSearch.ai_research_summary.royalty_pipeline.mechanical || 0)}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Sync:</span>
-                            <div className="font-semibold">{formatCurrency(currentSearch.ai_research_summary.royalty_pipeline.sync || 0)}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Uncollected:</span>
-                            <div className="font-semibold text-warning">{formatCurrency(currentSearch.ai_research_summary.royalty_pipeline.uncollected || 0)}</div>
-                          </div>
-                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {currentSearch.ai_research_summary.career_overview.summary}
+                        </p>
                       </div>
                     )}
                   </div>
