@@ -255,11 +255,18 @@ Use context: ${JSON.stringify(additionalContext)}`;
         if (parsedResponse.raw_response && typeof parsedResponse.raw_response === 'string') {
           try {
             let cleanRawResponse = parsedResponse.raw_response.trim();
-            if (cleanRawResponse.startsWith('```json') && cleanRawResponse.endsWith('```')) {
-              cleanRawResponse = cleanRawResponse.slice(7, -3).trim();
-            } else if (cleanRawResponse.startsWith('```') && cleanRawResponse.endsWith('```')) {
-              cleanRawResponse = cleanRawResponse.slice(3, -3).trim();
+            
+            // More comprehensive markdown removal
+            const jsonMatch = cleanRawResponse.match(/```json\s*\n([\s\S]*?)\n```/);
+            if (jsonMatch) {
+              cleanRawResponse = jsonMatch[1].trim();
+            } else if (cleanRawResponse.startsWith('```json') && cleanRawResponse.includes('```')) {
+              cleanRawResponse = cleanRawResponse.replace(/^```json\s*\n?/, '').replace(/\n?```$/, '').trim();
+            } else if (cleanRawResponse.startsWith('```') && cleanRawResponse.includes('```')) {
+              cleanRawResponse = cleanRawResponse.replace(/^```\s*\n?/, '').replace(/\n?```$/, '').trim();
             }
+            
+            console.log('Attempting to parse cleaned raw response:', cleanRawResponse.substring(0, 200));
             const reparsedResponse = JSON.parse(cleanRawResponse);
             console.log('Successfully reparsed raw_response');
             console.log('Reparsed structure:', Object.keys(reparsedResponse));
