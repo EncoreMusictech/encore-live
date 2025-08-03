@@ -180,11 +180,20 @@ Use context: ${JSON.stringify(additionalContext)}`;
     // Parse AI response if it's JSON
     let parsedResponse;
     try {
-      parsedResponse = JSON.parse(aiResponse);
+      // Handle cases where AI wraps JSON in markdown code blocks
+      let cleanResponse = aiResponse.trim();
+      if (cleanResponse.startsWith('```json') && cleanResponse.endsWith('```')) {
+        cleanResponse = cleanResponse.slice(7, -3).trim();
+      } else if (cleanResponse.startsWith('```') && cleanResponse.endsWith('```')) {
+        cleanResponse = cleanResponse.slice(3, -3).trim();
+      }
+      
+      parsedResponse = JSON.parse(cleanResponse);
       console.log('Successfully parsed AI response as JSON');
+      console.log('Parsed response structure:', Object.keys(parsedResponse));
     } catch (parseError) {
       console.error('Failed to parse AI response as JSON:', parseError);
-      console.log('Raw AI response:', aiResponse.substring(0, 1000));
+      console.log('Raw AI response first 1000 chars:', aiResponse.substring(0, 1000));
       parsedResponse = { raw_response: aiResponse };
     }
 
