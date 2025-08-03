@@ -151,10 +151,7 @@ export function useSongEstimator() {
           description: data.summary,
         });
 
-        // If this was initial search, process the results
-        if (sessionType === 'initial_search' && data.aiResponse) {
-          await processInitialSearchResults(searchId, data.aiResponse);
-        }
+        // Results are now processed directly by the edge function
 
         await fetchSearches();
         return data;

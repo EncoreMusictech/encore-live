@@ -194,6 +194,90 @@ Use context: ${JSON.stringify(additionalContext)}`;
       console.error('Failed to update research session:', updateError);
     }
 
+    // Process and update song catalog search for initial_search
+    if (sessionType === 'initial_search') {
+      console.log('Processing initial search results...');
+      
+      // Extract songs from the AI response
+      const knownSongs = parsedResponse.CatalogAnalysis?.KnownSongs || 
+                        parsedResponse.catalog_analysis?.songs || 
+                        parsedResponse.known_songs || [];
+      
+      const totalSongs = knownSongs.length;
+      console.log(`Found ${totalSongs} songs to process`);
+
+      // Create song metadata entries
+      if (knownSongs.length > 0) {
+        const songMetadata = knownSongs.map((song: any) => ({
+          search_id: searchId,
+          user_id: user.id,
+          song_title: song.Title || song.title || song.name,
+          songwriter_name: songwriterName,
+          co_writers: song.CoWriters || song.co_writers || [],
+          publishers: song.Publisher ? [song.Publisher] : (song.publishers || []),
+          pro_registrations: {},
+          iswc: song.ISWC || song.iswc,
+          estimated_splits: {},
+          registration_gaps: [],
+          metadata_completeness_score: 0.8, // Default high score for AI-generated data
+          verification_status: 'ai_generated',
+          source_data: { 
+            ai_session: session.id, 
+            confidence: parsedResponse.ConfidenceAssessment?.DataReliabilityScore || parsedResponse.confidence_score || 7,
+            ai_response: song
+          }
+        }));
+
+        const { error: metadataError } = await supabase
+          .from('song_metadata_cache')
+          .insert(songMetadata);
+
+        if (metadataError) {
+          console.error('Error inserting song metadata:', metadataError);
+        } else {
+          console.log(`Successfully inserted ${songMetadata.length} song metadata records`);
+        }
+      }
+
+      // Calculate pipeline estimate
+      const pipelineEstimate = parsedResponse.RoyaltyPipelineAssessment?.UncollectedRoyaltyEstimates || 
+                              parsedResponse.royalty_pipeline?.total_estimate || 
+                              0;
+
+      // Parse pipeline estimate if it's a string like "$500,000 - $1 million"
+      let estimateValue = 0;
+      if (typeof pipelineEstimate === 'string') {
+        // Extract numbers from strings like "$500,000 - $1 million"
+        const matches = pipelineEstimate.match(/\$?([0-9,]+)/g);
+        if (matches && matches.length > 0) {
+          // Take the first number found
+          const numStr = matches[0].replace(/[$,]/g, '');
+          estimateValue = parseInt(numStr) || 0;
+        }
+      } else if (typeof pipelineEstimate === 'number') {
+        estimateValue = pipelineEstimate;
+      }
+
+      // Update the song catalog search record
+      const { error: searchUpdateError } = await supabase
+        .from('song_catalog_searches')
+        .update({
+          search_status: 'completed',
+          total_songs_found: totalSongs,
+          metadata_complete_count: Math.floor(totalSongs * 0.8), // Assume 80% completeness for AI data
+          pipeline_estimate_total: estimateValue,
+          last_refreshed_at: new Date().toISOString(),
+          ai_research_summary: parsedResponse
+        })
+        .eq('id', searchId);
+
+      if (searchUpdateError) {
+        console.error('Error updating song catalog search:', searchUpdateError);
+      } else {
+        console.log('Successfully updated song catalog search record');
+      }
+    }
+
     console.log(`AI research completed. Tokens used: ${tokensUsed}, Time: ${processingTime}ms`);
 
     return new Response(JSON.stringify({
