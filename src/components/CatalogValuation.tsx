@@ -7,6 +7,7 @@ import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { useDebounce } from "@/hooks/usePerformanceOptimization";
 import { RevenueSourcesForm } from "@/components/catalog-valuation/RevenueSourcesForm";
 import { EnhancedValuationEngine } from "@/components/catalog-valuation/EnhancedValuationEngine";
+import { SongEstimatorTool } from "@/components/catalog-valuation/SongEstimatorTool";
 import { useCatalogRevenueSources } from "@/hooks/useCatalogRevenueSources";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_research_sessions: {
+        Row: {
+          ai_response: Json | null
+          confidence_assessment: number | null
+          created_at: string
+          findings_summary: string | null
+          id: string
+          processing_time_ms: number | null
+          research_query: string
+          search_id: string
+          session_status: string | null
+          session_type: string
+          sources_checked: string[] | null
+          tokens_used: number | null
+          user_id: string
+        }
+        Insert: {
+          ai_response?: Json | null
+          confidence_assessment?: number | null
+          created_at?: string
+          findings_summary?: string | null
+          id?: string
+          processing_time_ms?: number | null
+          research_query: string
+          search_id: string
+          session_status?: string | null
+          session_type: string
+          sources_checked?: string[] | null
+          tokens_used?: number | null
+          user_id: string
+        }
+        Update: {
+          ai_response?: Json | null
+          confidence_assessment?: number | null
+          created_at?: string
+          findings_summary?: string | null
+          id?: string
+          processing_time_ms?: number | null
+          research_query?: string
+          search_id?: string
+          session_status?: string | null
+          session_type?: string
+          sources_checked?: string[] | null
+          tokens_used?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_research_sessions_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "song_catalog_searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       artist_discography: {
         Row: {
           albums: Json
@@ -1678,6 +1734,7 @@ export type Database = {
           created_at: string
           id: string
           is_primary: boolean | null
+          payee_id: string | null
           payee_name: string
           payee_type: string
           payment_info: Json | null
@@ -1690,6 +1747,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_primary?: boolean | null
+          payee_id?: string | null
           payee_name: string
           payee_type: string
           payment_info?: Json | null
@@ -1702,6 +1760,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_primary?: boolean | null
+          payee_id?: string | null
           payee_name?: string
           payee_type?: string
           payment_info?: Json | null
@@ -2575,6 +2634,62 @@ export type Database = {
           },
         ]
       }
+      royalty_pipeline_estimates: {
+        Row: {
+          annual_estimate: number | null
+          calculation_details: Json | null
+          calculation_method: string | null
+          confidence_level: string | null
+          created_at: string
+          estimate_type: string
+          factors_considered: Json | null
+          id: string
+          missing_registrations_impact: number | null
+          potential_upside: number | null
+          song_metadata_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annual_estimate?: number | null
+          calculation_details?: Json | null
+          calculation_method?: string | null
+          confidence_level?: string | null
+          created_at?: string
+          estimate_type: string
+          factors_considered?: Json | null
+          id?: string
+          missing_registrations_impact?: number | null
+          potential_upside?: number | null
+          song_metadata_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annual_estimate?: number | null
+          calculation_details?: Json | null
+          calculation_method?: string | null
+          confidence_level?: string | null
+          created_at?: string
+          estimate_type?: string
+          factors_considered?: Json | null
+          id?: string
+          missing_registrations_impact?: number | null
+          potential_upside?: number | null
+          song_metadata_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "royalty_pipeline_estimates_song_metadata_id_fkey"
+            columns: ["song_metadata_id"]
+            isOneToOne: false
+            referencedRelation: "song_metadata_cache"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       royalty_writers: {
         Row: {
           contact_id: string
@@ -2761,6 +2876,51 @@ export type Database = {
         }
         Relationships: []
       }
+      song_catalog_searches: {
+        Row: {
+          ai_research_summary: Json | null
+          created_at: string
+          id: string
+          last_refreshed_at: string | null
+          metadata_complete_count: number | null
+          pipeline_estimate_total: number | null
+          search_parameters: Json | null
+          search_status: string
+          songwriter_name: string
+          total_songs_found: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_research_summary?: Json | null
+          created_at?: string
+          id?: string
+          last_refreshed_at?: string | null
+          metadata_complete_count?: number | null
+          pipeline_estimate_total?: number | null
+          search_parameters?: Json | null
+          search_status?: string
+          songwriter_name: string
+          total_songs_found?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_research_summary?: Json | null
+          created_at?: string
+          id?: string
+          last_refreshed_at?: string | null
+          metadata_complete_count?: number | null
+          pipeline_estimate_total?: number | null
+          search_parameters?: Json | null
+          search_status?: string
+          songwriter_name?: string
+          total_songs_found?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       song_match_history: {
         Row: {
           artist_name: string | null
@@ -2807,6 +2967,125 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      song_metadata_cache: {
+        Row: {
+          co_writers: string[] | null
+          created_at: string
+          estimated_splits: Json | null
+          id: string
+          iswc: string | null
+          last_verified_at: string | null
+          metadata_completeness_score: number | null
+          pro_registrations: Json | null
+          publishers: Json | null
+          registration_gaps: string[] | null
+          search_id: string
+          song_title: string
+          songwriter_name: string
+          source_data: Json | null
+          updated_at: string
+          user_id: string
+          verification_status: string | null
+        }
+        Insert: {
+          co_writers?: string[] | null
+          created_at?: string
+          estimated_splits?: Json | null
+          id?: string
+          iswc?: string | null
+          last_verified_at?: string | null
+          metadata_completeness_score?: number | null
+          pro_registrations?: Json | null
+          publishers?: Json | null
+          registration_gaps?: string[] | null
+          search_id: string
+          song_title: string
+          songwriter_name: string
+          source_data?: Json | null
+          updated_at?: string
+          user_id: string
+          verification_status?: string | null
+        }
+        Update: {
+          co_writers?: string[] | null
+          created_at?: string
+          estimated_splits?: Json | null
+          id?: string
+          iswc?: string | null
+          last_verified_at?: string | null
+          metadata_completeness_score?: number | null
+          pro_registrations?: Json | null
+          publishers?: Json | null
+          registration_gaps?: string[] | null
+          search_id?: string
+          song_title?: string
+          songwriter_name?: string
+          source_data?: Json | null
+          updated_at?: string
+          user_id?: string
+          verification_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_metadata_cache_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "song_catalog_searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      songwriter_profiles: {
+        Row: {
+          ai_profile_summary: string | null
+          career_period_end: string | null
+          career_period_start: string | null
+          confidence_score: number | null
+          created_at: string
+          estimated_catalog_size: number | null
+          id: string
+          known_aliases: string[] | null
+          primary_genres: string[] | null
+          pro_affiliations: Json | null
+          songwriter_name: string
+          updated_at: string
+          user_id: string
+          verified_writer_codes: Json | null
+        }
+        Insert: {
+          ai_profile_summary?: string | null
+          career_period_end?: string | null
+          career_period_start?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          estimated_catalog_size?: number | null
+          id?: string
+          known_aliases?: string[] | null
+          primary_genres?: string[] | null
+          pro_affiliations?: Json | null
+          songwriter_name: string
+          updated_at?: string
+          user_id: string
+          verified_writer_codes?: Json | null
+        }
+        Update: {
+          ai_profile_summary?: string | null
+          career_period_end?: string | null
+          career_period_start?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          estimated_catalog_size?: number | null
+          id?: string
+          known_aliases?: string[] | null
+          primary_genres?: string[] | null
+          pro_affiliations?: Json | null
+          songwriter_name?: string
+          updated_at?: string
+          user_id?: string
+          verified_writer_codes?: Json | null
+        }
+        Relationships: []
       }
       source_mapping_config: {
         Row: {
@@ -3898,6 +4177,10 @@ export type Database = {
         Returns: string
       }
       generate_op_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_payee_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
