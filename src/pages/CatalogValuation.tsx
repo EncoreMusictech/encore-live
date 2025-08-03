@@ -170,7 +170,7 @@ const CatalogValuationPage = () => {
 
             <Button 
               variant="outline"
-              className="w-full group-hover:shadow-lg transition-shadow border-accent text-accent-foreground hover:bg-accent/10"
+              className="w-full group-hover:shadow-lg transition-shadow border-accent text-foreground hover:bg-accent/10"
               onClick={() => setSelectedModule('song-estimator')}
               disabled={!canAccess('catalogValuation')}
             >
