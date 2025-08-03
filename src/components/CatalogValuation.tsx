@@ -502,7 +502,7 @@ Actual market values may vary significantly based on numerous factors not captur
               <TabsTrigger value="comparables">Comparables</TabsTrigger>
               <TabsTrigger value="revenue-sources">Revenue Sources</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="reports">Reports</TabsTrigger>
+              <TabsTrigger value="song-estimator">Song Estimator</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
