@@ -324,10 +324,12 @@ Use context: ${JSON.stringify(additionalContext)}`;
           try {
             console.log(`Looking up BMI data for: ${songTitle} by ${songwriterName}`);
             
-            const { data: bmiResponse, error: bmiError } = await supabase.functions.invoke('bmi-lookup', {
+            // Use enhanced BMI agent for better accuracy
+            const { data: bmiResponse, error: bmiError } = await supabase.functions.invoke('enhanced-bmi-agent', {
               body: { 
                 workTitle: songTitle, 
-                writerName: songwriterName 
+                writerName: songwriterName,
+                artistName: (song.CoWriters || song.co_writers)?.[0] // Use first co-writer as artist if available
               }
             });
             

@@ -9,5 +9,8 @@ verify_jwt = false
 [functions.bmi-lookup]
 verify_jwt = false
 
+[functions.enhanced-bmi-agent]
+verify_jwt = false
+
 [functions.bulk-bmi-lookup]
 verify_jwt = false
