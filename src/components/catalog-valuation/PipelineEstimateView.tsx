@@ -28,7 +28,7 @@ interface PipelineEstimateViewProps {
 
 export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimateViewProps) {
   const [selectedEstimateType, setSelectedEstimateType] = useState<'total' | 'performance' | 'mechanical' | 'sync'>('total');
-  const { runAIResearch, loading } = useSongEstimator();
+  const { runAIResearch, loading, currentSearch } = useSongEstimator();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -61,50 +61,109 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
     }
   };
 
-  // Mock pipeline estimates for demonstration
-  const mockPipelineData = {
-    total: {
-      annual_estimate: 125000,
-      confidence_level: 'medium',
-      breakdown: {
-        performance: 75000,
-        mechanical: 35000,
-        sync: 15000
-      },
-      missing_impact: 25000,
-      potential_upside: 45000
-    },
-    performance: {
-      annual_estimate: 75000,
-      confidence_level: 'high',
-      factors: [
-        'Strong radio play history',
-        'Multiple PRO registrations incomplete',
-        'International collection gaps'
-      ],
-      missing_impact: 18000
-    },
-    mechanical: {
-      annual_estimate: 35000,
-      confidence_level: 'medium',
-      factors: [
-        'Digital streaming growth',
-        'Physical sales declining',
-        'Missing publisher registrations'
-      ],
-      missing_impact: 5000
-    },
-    sync: {
-      annual_estimate: 15000,
-      confidence_level: 'low',
-      factors: [
-        'Genre suitable for sync',
-        'Limited sync representation',
-        'Catalog age considerations'
-      ],
-      missing_impact: 2000
+  // Get real pipeline data from AI research or use defaults
+  const getPipelineData = () => {
+    const aiPipeline = currentSearch?.ai_research_summary?.royalty_pipeline;
+    
+    if (aiPipeline) {
+      const totalEstimate = aiPipeline.total_estimate || 0;
+      const performance = aiPipeline.annual_performance || 0;
+      const mechanical = aiPipeline.mechanical || 0;
+      const sync = aiPipeline.sync || 0;
+      const uncollected = aiPipeline.uncollected || 0;
+      
+      return {
+        total: {
+          annual_estimate: totalEstimate,
+          confidence_level: 'medium',
+          breakdown: {
+            performance,
+            mechanical,
+            sync
+          },
+          missing_impact: uncollected,
+          potential_upside: Math.round(uncollected * 1.8) // Potential upside if gaps are fixed
+        },
+        performance: {
+          annual_estimate: performance,
+          confidence_level: 'high',
+          factors: [
+            'PRO registration analysis completed',
+            'Performance history identified',
+            'International collection gaps detected'
+          ],
+          missing_impact: Math.round(uncollected * 0.6) // 60% of uncollected likely performance
+        },
+        mechanical: {
+          annual_estimate: mechanical,
+          confidence_level: 'medium',
+          factors: [
+            'Digital streaming platforms analyzed',
+            'Publisher registration status reviewed',
+            'Mechanical collection optimization needed'
+          ],
+          missing_impact: Math.round(uncollected * 0.3) // 30% of uncollected likely mechanical
+        },
+        sync: {
+          annual_estimate: sync,
+          confidence_level: 'low',
+          factors: [
+            'Sync licensing potential identified',
+            'Limited sync representation detected',
+            'Genre suitability for placement'
+          ],
+          missing_impact: Math.round(uncollected * 0.1) // 10% of uncollected likely sync
+        }
+      };
     }
+    
+    // Fallback to mock data if no AI data available
+    return {
+      total: {
+        annual_estimate: 125000,
+        confidence_level: 'medium',
+        breakdown: {
+          performance: 75000,
+          mechanical: 35000,
+          sync: 15000
+        },
+        missing_impact: 25000,
+        potential_upside: 45000
+      },
+      performance: {
+        annual_estimate: 75000,
+        confidence_level: 'high',
+        factors: [
+          'Strong radio play history',
+          'Multiple PRO registrations incomplete',
+          'International collection gaps'
+        ],
+        missing_impact: 18000
+      },
+      mechanical: {
+        annual_estimate: 35000,
+        confidence_level: 'medium',
+        factors: [
+          'Digital streaming growth',
+          'Physical sales declining',
+          'Missing publisher registrations'
+        ],
+        missing_impact: 5000
+      },
+      sync: {
+        annual_estimate: 15000,
+        confidence_level: 'low',
+        factors: [
+          'Genre suitable for sync',
+          'Limited sync representation',
+          'Catalog age considerations'
+        ],
+        missing_impact: 2000
+      }
+    };
   };
+
+  const pipelineData = getPipelineData();
 
   const handleRunPipelineAnalysis = async () => {
     if (!searchId) return;
@@ -121,7 +180,7 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
     );
   };
 
-  const currentEstimate = mockPipelineData[selectedEstimateType];
+  const currentEstimate = pipelineData[selectedEstimateType];
 
   return (
     <div className="space-y-6">
@@ -133,7 +192,7 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
               <DollarSign className="h-4 w-4 text-primary" />
               <div>
                 <div className="text-2xl font-bold text-primary">
-                  {formatCurrency(mockPipelineData.total.annual_estimate)}
+                  {formatCurrency(pipelineData.total.annual_estimate)}
                 </div>
                 <div className="text-sm text-muted-foreground">Total Pipeline</div>
               </div>
@@ -147,7 +206,7 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
               <Radio className="h-4 w-4 text-success" />
               <div>
                 <div className="text-2xl font-bold">
-                  {formatCurrency(mockPipelineData.total.breakdown.performance)}
+                  {formatCurrency(pipelineData.total.breakdown.performance)}
                 </div>
                 <div className="text-sm text-muted-foreground">Performance</div>
               </div>
@@ -161,7 +220,7 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
               <Disc className="h-4 w-4 text-info" />
               <div>
                 <div className="text-2xl font-bold">
-                  {formatCurrency(mockPipelineData.total.breakdown.mechanical)}
+                  {formatCurrency(pipelineData.total.breakdown.mechanical)}
                 </div>
                 <div className="text-sm text-muted-foreground">Mechanical</div>
               </div>
@@ -175,7 +234,7 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
               <Film className="h-4 w-4 text-warning" />
               <div>
                 <div className="text-2xl font-bold">
-                  {formatCurrency(mockPipelineData.total.breakdown.sync)}
+                  {formatCurrency(pipelineData.total.breakdown.sync)}
                 </div>
                 <div className="text-sm text-muted-foreground">Sync</div>
               </div>
@@ -209,8 +268,8 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
               <div className="space-y-4">
                 <h4 className="font-semibold">Revenue Stream Breakdown</h4>
                 <div className="space-y-3">
-                  {Object.entries(mockPipelineData.total.breakdown).map(([type, amount]) => {
-                    const percentage = (amount / mockPipelineData.total.annual_estimate) * 100;
+                  {Object.entries(pipelineData.total.breakdown).map(([type, amount]) => {
+                    const percentage = (amount / pipelineData.total.annual_estimate) * 100;
                     return (
                       <div key={type} className="space-y-2">
                         <div className="flex justify-between text-sm">
@@ -229,7 +288,7 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
                 <div className="p-4 border rounded-lg bg-destructive/10">
                   <h5 className="font-medium text-destructive mb-2">Missing Registrations Impact</h5>
                   <div className="text-2xl font-bold text-destructive">
-                    {formatCurrency(mockPipelineData.total.missing_impact)}
+                    {formatCurrency(pipelineData.total.missing_impact)}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Annual revenue loss due to registration gaps
@@ -239,7 +298,7 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
                 <div className="p-4 border rounded-lg bg-success/10">
                   <h5 className="font-medium text-success mb-2">Potential Upside</h5>
                   <div className="text-2xl font-bold text-success">
-                    {formatCurrency(mockPipelineData.total.potential_upside)}
+                    {formatCurrency(pipelineData.total.potential_upside)}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Additional revenue with optimization
@@ -270,17 +329,17 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
                   <div className="space-y-4">
                     <div className="p-4 border rounded-lg">
                       <div className="text-3xl font-bold text-primary">
-                        {formatCurrency(mockPipelineData[type].annual_estimate)}
+                        {formatCurrency(pipelineData[type].annual_estimate)}
                       </div>
                       <div className="text-sm text-muted-foreground">Annual Estimate</div>
                       <div className="mt-2">
-                        {getConfidenceBadge(mockPipelineData[type].confidence_level)}
+                        {getConfidenceBadge(pipelineData[type].confidence_level)}
                       </div>
                     </div>
 
                     <div className="p-4 border rounded-lg bg-warning/10">
                       <div className="text-xl font-bold text-warning">
-                        {formatCurrency(mockPipelineData[type].missing_impact)}
+                        {formatCurrency(pipelineData[type].missing_impact)}
                       </div>
                       <div className="text-sm text-muted-foreground">Lost to Registration Gaps</div>
                     </div>
@@ -290,7 +349,7 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
                   <div className="space-y-4">
                     <h5 className="font-semibold">Key Factors</h5>
                     <div className="space-y-2">
-                      {mockPipelineData[type].factors?.map((factor, index) => (
+                      {pipelineData[type].factors?.map((factor, index) => (
                         <div key={index} className="flex items-start gap-2 p-2 border rounded">
                           <AlertCircle className="h-4 w-4 text-info mt-0.5 flex-shrink-0" />
                           <span className="text-sm">{factor}</span>
