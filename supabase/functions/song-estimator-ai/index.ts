@@ -240,6 +240,7 @@ Use context: ${JSON.stringify(additionalContext)}`;
         if (Array.isArray(path) && path.length > 0) {
           knownSongs = path;
           console.log(`Found songs using path with ${knownSongs.length} songs`);
+          console.log('First song structure:', JSON.stringify(path[0], null, 2));
           break;
         }
       }
@@ -363,9 +364,13 @@ Use context: ${JSON.stringify(additionalContext)}`;
       }
 
       // Calculate pipeline estimate
+      console.log('Calculating pipeline estimate...');
       const pipelineEstimate = parsedResponse.RoyaltyPipelineAssessment?.UncollectedRoyaltyEstimates || 
                               parsedResponse.royalty_pipeline?.total_estimate || 
                               0;
+      
+      console.log('Pipeline estimate raw value:', pipelineEstimate);
+      console.log('Pipeline estimate type:', typeof pipelineEstimate);
 
       // Parse pipeline estimate if it's a string like "$500,000 - $1 million"
       let estimateValue = 0;
@@ -376,10 +381,14 @@ Use context: ${JSON.stringify(additionalContext)}`;
           // Take the first number found
           const numStr = matches[0].replace(/[$,]/g, '');
           estimateValue = parseInt(numStr) || 0;
+          console.log('Parsed estimate value from string:', estimateValue);
         }
       } else if (typeof pipelineEstimate === 'number') {
         estimateValue = pipelineEstimate;
+        console.log('Using numeric estimate value:', estimateValue);
       }
+      
+      console.log('Final estimate value:', estimateValue);
 
       // Update the song catalog search record
       const { error: searchUpdateError } = await supabase
