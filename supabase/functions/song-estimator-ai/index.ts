@@ -107,7 +107,18 @@ Provide confidence scores for each finding and cite sources where possible.`;
    - Sources used
    - Recommendations for further research
 
-Format your response as structured JSON with clear sections for each category.`;
+CRITICAL: Format your response as structured JSON with this exact structure:
+{
+  "career_overview": { "active_years": "", "genres": [], "total_songs_estimate": 0 },
+  "catalog_analysis": {
+    "known_songs": [
+      { "title": "Song Title", "co_writers": ["Writer Name"], "publisher": "Publisher Name", "iswc": "ISWC Code" }
+    ]
+  },
+  "pro_registration": { "affiliations": [], "completeness": "high/medium/low" },
+  "royalty_pipeline": { "total_estimate": 0, "annual_performance": 0, "mechanical": 0, "sync": 0 },
+  "confidence_score": 8
+}`;
         break;
 
       case 'metadata_enhancement':
@@ -170,7 +181,10 @@ Use context: ${JSON.stringify(additionalContext)}`;
     let parsedResponse;
     try {
       parsedResponse = JSON.parse(aiResponse);
-    } catch {
+      console.log('Successfully parsed AI response as JSON');
+    } catch (parseError) {
+      console.error('Failed to parse AI response as JSON:', parseError);
+      console.log('Raw AI response:', aiResponse.substring(0, 1000));
       parsedResponse = { raw_response: aiResponse };
     }
 
@@ -198,10 +212,34 @@ Use context: ${JSON.stringify(additionalContext)}`;
     if (sessionType === 'initial_search') {
       console.log('Processing initial search results...');
       
-      // Extract songs from the AI response
-      const knownSongs = parsedResponse.CatalogAnalysis?.KnownSongs || 
-                        parsedResponse.catalog_analysis?.songs || 
-                        parsedResponse.known_songs || [];
+      // Extract songs from the AI response with comprehensive parsing
+      let knownSongs = [];
+      
+      // Try all possible variations of song data structure
+      const possiblePaths = [
+        parsedResponse.catalog_analysis?.known_songs,  // New expected format
+        parsedResponse.CatalogAnalysis?.KnownSongs,    // Legacy format 1
+        parsedResponse.catalog_analysis?.songs,        // Legacy format 2
+        parsedResponse.known_songs,                    // Direct array
+        parsedResponse.songs,                          // Simple array
+        parsedResponse.CatalogAnalysis?.songs,         // Alternative format
+        parsedResponse.catalog?.known_songs,           // Alternative format
+        parsedResponse.catalog?.songs                  // Alternative format
+      ];
+      
+      for (const path of possiblePaths) {
+        if (Array.isArray(path) && path.length > 0) {
+          knownSongs = path;
+          console.log(`Found songs using path with ${knownSongs.length} songs`);
+          break;
+        }
+      }
+      
+      // If still no songs found, log the full response structure for debugging
+      if (knownSongs.length === 0) {
+        console.log('No songs found in any expected path. Full response structure:');
+        console.log(JSON.stringify(parsedResponse, null, 2));
+      }
       
       const totalSongs = knownSongs.length;
       console.log(`Found ${totalSongs} songs to process`);
