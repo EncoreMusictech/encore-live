@@ -249,10 +249,46 @@ Use context: ${JSON.stringify(additionalContext)}`;
       if (knownSongs.length === 0) {
         console.log('No songs found in any expected path. Full response structure:');
         console.log(JSON.stringify(parsedResponse, null, 2));
+        console.log('Checking if response has raw_response:', !!parsedResponse.raw_response);
+        
+        // Try to parse raw_response if it exists
+        if (parsedResponse.raw_response && typeof parsedResponse.raw_response === 'string') {
+          try {
+            let cleanRawResponse = parsedResponse.raw_response.trim();
+            if (cleanRawResponse.startsWith('```json') && cleanRawResponse.endsWith('```')) {
+              cleanRawResponse = cleanRawResponse.slice(7, -3).trim();
+            } else if (cleanRawResponse.startsWith('```') && cleanRawResponse.endsWith('```')) {
+              cleanRawResponse = cleanRawResponse.slice(3, -3).trim();
+            }
+            const reparsedResponse = JSON.parse(cleanRawResponse);
+            console.log('Successfully reparsed raw_response');
+            console.log('Reparsed structure:', Object.keys(reparsedResponse));
+            
+            // Retry song extraction with reparsed data
+            const reparsedPaths = [
+              reparsedResponse.catalog_analysis?.known_songs,
+              reparsedResponse.CatalogAnalysis?.KnownSongs,
+              reparsedResponse.catalog_analysis?.songs,
+              reparsedResponse.known_songs,
+              reparsedResponse.songs
+            ];
+            
+            for (const path of reparsedPaths) {
+              if (Array.isArray(path) && path.length > 0) {
+                knownSongs = path;
+                parsedResponse = reparsedResponse; // Update the main parsed response
+                console.log(`Found songs after reparsing with ${knownSongs.length} songs`);
+                break;
+              }
+            }
+          } catch (reparseError) {
+            console.error('Failed to reparse raw_response:', reparseError);
+          }
+        }
       }
       
       const totalSongs = knownSongs.length;
-      console.log(`Found ${totalSongs} songs to process`);
+      console.log(`Final count: Found ${totalSongs} songs to process`);
 
       // Create song metadata entries with BMI lookups
       if (knownSongs.length > 0) {
