@@ -235,18 +235,31 @@ export function useSongEstimator() {
     }
   };
 
-  // Fetch song metadata for a search
+  // Fetch song metadata for a search - prioritize most recent verified data
   const fetchSongMetadata = async (searchId: string) => {
     try {
       const { data, error } = await supabase
         .from('song_metadata_cache')
         .select('*')
         .eq('search_id', searchId)
+        .order('last_verified_at', { ascending: false })
         .order('metadata_completeness_score', { ascending: false });
 
       if (error) throw error;
-      setSongMetadata(data || []);
-      return data;
+      
+      // Filter to get only the most recent entry per song
+      const uniqueSongs = new Map();
+      for (const song of data || []) {
+        const key = `${song.song_title.toLowerCase()}_${song.songwriter_name.toLowerCase()}`;
+        if (!uniqueSongs.has(key) || 
+            (song.verification_status === 'bmi_verified' && uniqueSongs.get(key).verification_status !== 'bmi_verified')) {
+          uniqueSongs.set(key, song);
+        }
+      }
+      
+      const uniqueData = Array.from(uniqueSongs.values());
+      setSongMetadata(uniqueData);
+      return uniqueData;
     } catch (err) {
       console.error('Error fetching song metadata:', err);
       setError(err.message);
@@ -459,6 +472,69 @@ export function useSongEstimator() {
     }
   }, [user]);
 
+  // Refresh cache for a search - clean up old entries and prioritize verified data
+  const refreshCacheForSearch = async (searchId: string) => {
+    try {
+      // Get all cache entries for this search
+      const { data: allEntries, error: fetchError } = await supabase
+        .from('song_metadata_cache')
+        .select('*')
+        .eq('search_id', searchId);
+
+      if (fetchError) throw fetchError;
+
+      // Group by song title and songwriter
+      const songGroups = new Map();
+      for (const entry of allEntries || []) {
+        const key = `${entry.song_title.toLowerCase()}_${entry.songwriter_name.toLowerCase()}`;
+        if (!songGroups.has(key)) {
+          songGroups.set(key, []);
+        }
+        songGroups.get(key).push(entry);
+      }
+
+      // For each song, keep only the most recent verified entry and delete duplicates
+      for (const [songKey, entries] of songGroups) {
+        if (entries.length <= 1) continue;
+
+        // Sort by verification status and date
+        entries.sort((a, b) => {
+          if (a.verification_status === 'bmi_verified' && b.verification_status !== 'bmi_verified') return -1;
+          if (b.verification_status === 'bmi_verified' && a.verification_status !== 'bmi_verified') return 1;
+          return new Date(b.last_verified_at || b.created_at).getTime() - new Date(a.last_verified_at || a.created_at).getTime();
+        });
+
+        // Keep the best entry, delete the rest
+        const entriesToDelete = entries.slice(1);
+        const idsToDelete = entriesToDelete.map(e => e.id);
+
+        if (idsToDelete.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('song_metadata_cache')
+            .delete()
+            .in('id', idsToDelete);
+
+          if (deleteError) {
+            console.error('Error cleaning up duplicate entries:', deleteError);
+          }
+        }
+      }
+
+      toast({
+        title: "Cache Refreshed",
+        description: "Cleaned up duplicate entries and prioritized verified data",
+      });
+
+    } catch (err) {
+      console.error('Error refreshing cache:', err);
+      toast({
+        title: "Cache Refresh Error",
+        description: "Failed to refresh cache",
+        variant: "destructive"
+      });
+    }
+  };
+
   return {
     // State
     searches,
@@ -478,6 +554,7 @@ export function useSongEstimator() {
     deleteSearch,
     runBulkBMIVerification,
     verifySongWithBMI,
+    refreshCacheForSearch,
     setCurrentSearch,
     refetch: fetchSearches
   };

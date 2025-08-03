@@ -363,17 +363,42 @@ Always prioritize verified database information over training data.`;
   }
 }
 
-// Cache management
+// Enhanced cache management with cleanup logic
 async function getCachedResult(searchKey: string, supabase: any): Promise<BMISearchResult | null> {
   try {
+    // First, get the most recent verified entry
     const { data, error } = await supabase
       .from('song_metadata_cache')
       .select('*')
       .eq('search_key', searchKey)
-      .eq('verification_status', 'verified')
+      .eq('verification_status', 'bmi_verified')
+      .order('last_verified_at', { ascending: false })
+      .limit(1)
       .single();
 
-    if (error || !data) return null;
+    if (error || !data) {
+      // Also check for any verified entries with ISWC data
+      const { data: iswcData, error: iswcError } = await supabase
+        .from('song_metadata_cache')
+        .select('*')
+        .eq('search_key', searchKey)
+        .not('iswc', 'is', null)
+        .order('last_verified_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (iswcError || !iswcData) return null;
+      
+      return {
+        writers: iswcData.enhanced_writers || [],
+        publishers: iswcData.enhanced_publishers || [],
+        iswc: iswcData.iswc,
+        found: true,
+        source: 'cache',
+        confidence: iswcData.verification_confidence || 85,
+        iswcSource: 'verified_cache'
+      };
+    }
 
     return {
       writers: data.enhanced_writers || [],
@@ -381,7 +406,8 @@ async function getCachedResult(searchKey: string, supabase: any): Promise<BMISea
       iswc: data.iswc,
       found: data.bmi_verified || false,
       source: 'cache',
-      confidence: data.verification_confidence || 0
+      confidence: data.verification_confidence || 0,
+      iswcSource: data.metadata_source || 'cache'
     };
   } catch (error) {
     console.error('Cache lookup error:', error);
@@ -391,6 +417,9 @@ async function getCachedResult(searchKey: string, supabase: any): Promise<BMISea
 
 async function cacheResult(searchKey: string, result: BMISearchResult, supabase: any): Promise<void> {
   try {
+    // Clean up old entries before adding new one
+    await cleanupOldCacheEntries(searchKey, supabase);
+    
     await supabase
       .from('song_metadata_cache')
       .upsert({
@@ -402,12 +431,45 @@ async function cacheResult(searchKey: string, result: BMISearchResult, supabase:
         enhanced_publishers: result.publishers,
         bmi_verified: result.found,
         verification_confidence: result.confidence,
-        verification_status: result.confidence > 70 ? 'verified' : 'needs_review',
+        verification_status: result.found && result.confidence > 70 ? 'bmi_verified' : 'needs_review',
         metadata_source: result.source,
         last_verified_at: new Date().toISOString()
       });
   } catch (error) {
     console.error('Cache save error:', error);
+  }
+}
+
+// Clean up older cache entries for the same search key
+async function cleanupOldCacheEntries(searchKey: string, supabase: any): Promise<void> {
+  try {
+    // Keep only the 3 most recent entries for each search key
+    const { data: allEntries, error: fetchError } = await supabase
+      .from('song_metadata_cache')
+      .select('id, last_verified_at')
+      .eq('search_key', searchKey)
+      .order('last_verified_at', { ascending: false });
+
+    if (fetchError || !allEntries || allEntries.length <= 3) return;
+
+    // Delete entries beyond the 3 most recent
+    const entriesToDelete = allEntries.slice(3);
+    const idsToDelete = entriesToDelete.map(entry => entry.id);
+
+    if (idsToDelete.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('song_metadata_cache')
+        .delete()
+        .in('id', idsToDelete);
+
+      if (deleteError) {
+        console.error('Error cleaning up old cache entries:', deleteError);
+      } else {
+        console.log(`Cleaned up ${idsToDelete.length} old cache entries for search key: ${searchKey}`);
+      }
+    }
+  } catch (error) {
+    console.error('Cache cleanup error:', error);
   }
 }
 

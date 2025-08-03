@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Music, Users, Building, AlertTriangle, CheckCircle, Search, Shield, Loader2 } from 'lucide-react';
+import { Music, Users, Building, AlertTriangle, CheckCircle, Search, Shield, Loader2, RefreshCw } from 'lucide-react';
 import { useSongEstimator } from '@/hooks/useSongEstimator';
 
 interface SongMetadata {
@@ -30,7 +30,8 @@ interface SongMetadataViewProps {
 export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewProps) {
   const [selectedSong, setSelectedSong] = useState<SongMetadata | null>(null);
   const [verifyingBMI, setVerifyingBMI] = useState<string | null>(null);
-  const { verifySongWithBMI, fetchSongMetadata } = useSongEstimator();
+  const [refreshingCache, setRefreshingCache] = useState(false);
+  const { verifySongWithBMI, fetchSongMetadata, refreshCacheForSearch } = useSongEstimator();
 
   const getCompletenessColor = (score: number) => {
     if (score >= 0.8) return 'text-success';
@@ -68,6 +69,16 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
       }
     } finally {
       setVerifyingBMI(null);
+    }
+  };
+
+  const handleCacheRefresh = async () => {
+    setRefreshingCache(true);
+    try {
+      await refreshCacheForSearch(searchId);
+      await fetchSongMetadata(searchId);
+    } finally {
+      setRefreshingCache(false);
     }
   };
 
@@ -143,10 +154,27 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
       {/* Songs Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Song Catalog Metadata</CardTitle>
-          <CardDescription>
-            Detailed metadata for each song in the catalog with completeness scores and registration status
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Song Catalog Metadata</CardTitle>
+              <CardDescription>
+                Detailed metadata for each song in the catalog with completeness scores and registration status
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCacheRefresh}
+              disabled={refreshingCache}
+            >
+              {refreshingCache ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Refresh Cache
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {songMetadata.length === 0 ? (

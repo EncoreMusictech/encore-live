@@ -89,7 +89,7 @@ Provide confidence scores for each finding and cite sources where possible.`;
    - List of known songs (at least 10-20 if available)
    - Co-writers for each song
    - Publisher information
-   - ISWC codes where available
+   - DO NOT include ISWC codes (these will be verified separately)
 
 3. PRO Registration Status:
    - Current PRO affiliations
@@ -107,12 +107,12 @@ Provide confidence scores for each finding and cite sources where possible.`;
    - Sources used
    - Recommendations for further research
 
-CRITICAL: Format your response as structured JSON with this exact structure:
+CRITICAL: Format your response as structured JSON with this exact structure. DO NOT include ISWC codes in your response - they will be verified separately:
 {
   "career_overview": { "active_years": "", "genres": [], "total_songs_estimate": 0 },
   "catalog_analysis": {
     "known_songs": [
-      { "title": "Song Title", "co_writers": ["Writer Name"], "publisher": "Publisher Name", "iswc": "ISWC Code" }
+      { "title": "Song Title", "co_writers": ["Writer Name"], "publisher": "Publisher Name" }
     ]
   },
   "pro_registration": { "affiliations": [], "completeness": "high/medium/low" },
