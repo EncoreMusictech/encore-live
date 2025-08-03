@@ -30,6 +30,13 @@ export function SongEstimatorTool() {
     setCurrentSearch
   } = useSongEstimator();
 
+  // Automatically fetch song metadata when currentSearch changes
+  React.useEffect(() => {
+    if (currentSearch) {
+      fetchSongMetadata(currentSearch.id);
+    }
+  }, [currentSearch, fetchSongMetadata]);
+
   const handleCreateSearch = async () => {
     if (!songwriterName.trim()) return;
     
