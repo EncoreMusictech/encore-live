@@ -393,7 +393,7 @@ export function useSongEstimator() {
   // Single song BMI verification
   const verifySongWithBMI = async (songId: string, songTitle: string, writerName: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('bmi-lookup', {
+      const { data, error } = await supabase.functions.invoke('enhanced-bmi-agent', {
         body: { 
           workTitle: songTitle, 
           writerName: writerName 
@@ -415,11 +415,15 @@ export function useSongEstimator() {
               iswc: data.iswc,
               lookup_date: new Date().toISOString()
             }
-          }
+          },
+          last_verified_at: new Date().toISOString()
         };
 
         if (data.publishers?.length > 0) {
-          updateData.publishers = data.publishers;
+          updateData.publishers = data.publishers.reduce((acc: any, pub: any) => {
+            acc[pub.name] = pub.share || 0;
+            return acc;
+          }, {});
         }
 
         if (data.writers?.length > 0) {
