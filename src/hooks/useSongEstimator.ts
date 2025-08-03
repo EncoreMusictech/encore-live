@@ -48,6 +48,7 @@ export function useSongEstimator() {
   const [songMetadata, setSongMetadata] = useState<SongMetadata[]>([]);
   const [pipelineEstimates, setPipelineEstimates] = useState<PipelineEstimate[]>([]);
   const [loading, setLoading] = useState(false);
+  const [bmiVerificationLoading, setBmiVerificationLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
@@ -303,6 +304,155 @@ export function useSongEstimator() {
     }
   };
 
+  // Bulk BMI verification for a search
+  const runBulkBMIVerification = async (searchId: string) => {
+    setBmiVerificationLoading(true);
+    try {
+      // Get all songs for this search
+      const { data: songs, error: fetchError } = await supabase
+        .from('song_metadata_cache')
+        .select('*')
+        .eq('search_id', searchId);
+
+      if (fetchError) throw fetchError;
+
+      if (!songs || songs.length === 0) {
+        toast({
+          title: "No songs found",
+          description: "No songs available for BMI verification",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Prepare songs for bulk lookup
+      const songsForLookup = songs.map(song => ({
+        id: song.id,
+        songTitle: song.song_title,
+        writerName: song.songwriter_name
+      }));
+
+      const { data, error } = await supabase.functions.invoke('bulk-bmi-lookup', {
+        body: {
+          songs: songsForLookup,
+          batchSize: 5,
+          delayMs: 1000
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "BMI Verification Complete",
+          description: `${data.bmi_matches_found}/${data.total_processed} songs verified with BMI (${data.summary.verification_rate}% success rate)`,
+        });
+
+        // Refresh the song metadata
+        await fetchSongMetadata(searchId);
+        
+        // Update search metadata complete count
+        const verifiedCount = data.bmi_matches_found;
+        await supabase
+          .from('song_catalog_searches')
+          .update({ 
+            metadata_complete_count: verifiedCount,
+            last_refreshed_at: new Date().toISOString()
+          })
+          .eq('id', searchId);
+
+        await fetchSearches();
+      } else {
+        throw new Error(data.error || 'BMI verification failed');
+      }
+    } catch (err) {
+      console.error('Error running BMI verification:', err);
+      toast({
+        title: "BMI Verification Error",
+        description: err.message || "Failed to verify songs with BMI",
+        variant: "destructive"
+      });
+    } finally {
+      setBmiVerificationLoading(false);
+    }
+  };
+
+  // Single song BMI verification
+  const verifySongWithBMI = async (songId: string, songTitle: string, writerName: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('bmi-lookup', {
+        body: { 
+          workTitle: songTitle, 
+          writerName: writerName 
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.found) {
+        // Update song metadata with BMI data
+        const updateData: any = {
+          verification_status: 'bmi_verified',
+          metadata_completeness_score: 0.95,
+          pro_registrations: {
+            bmi: {
+              verified: true,
+              publishers: data.publishers || [],
+              writers: data.writers || [],
+              iswc: data.iswc,
+              lookup_date: new Date().toISOString()
+            }
+          }
+        };
+
+        if (data.publishers?.length > 0) {
+          updateData.publishers = data.publishers;
+        }
+
+        if (data.writers?.length > 0) {
+          updateData.co_writers = data.writers.map((w: any) => w.name);
+          updateData.estimated_splits = data.writers.reduce((acc: any, writer: any) => {
+            acc[writer.name] = writer.share || 0;
+            return acc;
+          }, {});
+        }
+
+        if (data.iswc) {
+          updateData.iswc = data.iswc;
+        }
+
+        const { error: updateError } = await supabase
+          .from('song_metadata_cache')
+          .update(updateData)
+          .eq('id', songId);
+
+        if (updateError) throw updateError;
+
+        toast({
+          title: "BMI Verification Success",
+          description: `${songTitle} verified with BMI data`,
+        });
+
+        return true;
+      } else {
+        toast({
+          title: "No BMI Data Found",
+          description: `No BMI registration found for ${songTitle}`,
+          variant: "destructive"
+        });
+        return false;
+      }
+    } catch (err) {
+      console.error('Error verifying song with BMI:', err);
+      toast({
+        title: "BMI Verification Error",
+        description: `Failed to verify ${songTitle} with BMI`,
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchSearches();
@@ -316,6 +466,7 @@ export function useSongEstimator() {
     songMetadata,
     pipelineEstimates,
     loading,
+    bmiVerificationLoading,
     error,
 
     // Actions
@@ -325,6 +476,8 @@ export function useSongEstimator() {
     fetchPipelineEstimates,
     refreshSearch,
     deleteSearch,
+    runBulkBMIVerification,
+    verifySongWithBMI,
     setCurrentSearch,
     refetch: fetchSearches
   };

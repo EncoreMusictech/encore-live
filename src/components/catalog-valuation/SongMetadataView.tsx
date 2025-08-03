@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Music, Users, Building, AlertTriangle, CheckCircle, Search } from 'lucide-react';
+import { Music, Users, Building, AlertTriangle, CheckCircle, Search, Shield, Loader2 } from 'lucide-react';
+import { useSongEstimator } from '@/hooks/useSongEstimator';
 
 interface SongMetadata {
   id: string;
@@ -28,6 +29,8 @@ interface SongMetadataViewProps {
 
 export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewProps) {
   const [selectedSong, setSelectedSong] = useState<SongMetadata | null>(null);
+  const [verifyingBMI, setVerifyingBMI] = useState<string | null>(null);
+  const { verifySongWithBMI, fetchSongMetadata } = useSongEstimator();
 
   const getCompletenessColor = (score: number) => {
     if (score >= 0.8) return 'text-success';
@@ -37,14 +40,34 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
 
   const getVerificationBadge = (status: string) => {
     switch (status) {
-      case 'verified':
-        return <Badge className="bg-success text-success-foreground">Verified</Badge>;
+      case 'bmi_verified':
+        return (
+          <Badge className="bg-success text-success-foreground">
+            <Shield className="h-3 w-3 mr-1" />
+            BMI Verified
+          </Badge>
+        );
       case 'ai_generated':
         return <Badge className="bg-info text-info-foreground">AI Generated</Badge>;
+      case 'bmi_checked':
+        return <Badge className="bg-warning text-warning-foreground">BMI Checked</Badge>;
       case 'partial':
         return <Badge className="bg-warning text-warning-foreground">Partial</Badge>;
       default:
         return <Badge className="bg-muted text-muted-foreground">Unverified</Badge>;
+    }
+  };
+
+  const handleBMIVerification = async (song: SongMetadata) => {
+    setVerifyingBMI(song.id);
+    try {
+      const success = await verifySongWithBMI(song.id, song.song_title, song.songwriter_name);
+      if (success) {
+        // Refresh the metadata to show updated verification status
+        await fetchSongMetadata(searchId);
+      }
+    } finally {
+      setVerifyingBMI(null);
     }
   };
 
@@ -195,13 +218,29 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
                         )}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedSong(song)}
-                        >
-                          <Search className="h-3 w-3" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedSong(song)}
+                          >
+                            <Search className="h-3 w-3" />
+                          </Button>
+                          {song.verification_status !== 'bmi_verified' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleBMIVerification(song)}
+                              disabled={verifyingBMI === song.id}
+                            >
+                              {verifyingBMI === song.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Shield className="h-3 w-3" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -294,7 +333,28 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
               </div>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+              <div>
+                {selectedSong.verification_status !== 'bmi_verified' && (
+                  <Button
+                    variant="default"
+                    onClick={() => handleBMIVerification(selectedSong)}
+                    disabled={verifyingBMI === selectedSong.id}
+                  >
+                    {verifyingBMI === selectedSong.id ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Verifying with BMI...
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="h-4 w-4 mr-2" />
+                        Verify with BMI
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
               <Button variant="outline" onClick={() => setSelectedSong(null)}>
                 Close Details
               </Button>

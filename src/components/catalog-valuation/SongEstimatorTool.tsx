@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Loader2, Music, DollarSign, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
+import { Search, Loader2, Music, DollarSign, AlertCircle, RefreshCw, Trash2, Shield, CheckCircle } from 'lucide-react';
 import { useSongEstimator } from '@/hooks/useSongEstimator';
 import { SongMetadataView } from './SongMetadataView';
 import { PipelineEstimateView } from './PipelineEstimateView';
@@ -19,12 +19,14 @@ export function SongEstimatorTool() {
     currentSearch,
     songMetadata,
     loading,
+    bmiVerificationLoading,
     error,
     createSearch,
     runAIResearch,
     fetchSongMetadata,
     refreshSearch,
     deleteSearch,
+    runBulkBMIVerification,
     setCurrentSearch
   } = useSongEstimator();
 
@@ -240,6 +242,55 @@ export function SongEstimatorTool() {
                       {formatCurrency(currentSearch.pipeline_estimate_total)}
                     </div>
                     <div className="text-sm text-muted-foreground">Estimated Pipeline</div>
+                  </div>
+                </div>
+
+                {/* BMI Verification Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      BMI Verification
+                    </h4>
+                    <Button
+                      onClick={() => runBulkBMIVerification(currentSearch.id)}
+                      disabled={bmiVerificationLoading || !songMetadata.length}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {bmiVerificationLoading ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-3 w-3 mr-2" />
+                          Verify All with BMI
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-3 border rounded-lg bg-card">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">BMI Verified Songs</span>
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                          {songMetadata.filter(song => song.verification_status === 'bmi_verified').length}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="p-3 border rounded-lg bg-card">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Verification Rate</span>
+                        <Badge variant="outline">
+                          {songMetadata.length > 0 ? 
+                            Math.round((songMetadata.filter(song => song.verification_status === 'bmi_verified').length / songMetadata.length) * 100) 
+                            : 0}%
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

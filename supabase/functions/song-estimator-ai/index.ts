@@ -206,27 +206,103 @@ Use context: ${JSON.stringify(additionalContext)}`;
       const totalSongs = knownSongs.length;
       console.log(`Found ${totalSongs} songs to process`);
 
-      // Create song metadata entries
+      // Create song metadata entries with BMI lookups
       if (knownSongs.length > 0) {
-        const songMetadata = knownSongs.map((song: any) => ({
-          search_id: searchId,
-          user_id: user.id,
-          song_title: song.Title || song.title || song.name,
-          songwriter_name: songwriterName,
-          co_writers: song.CoWriters || song.co_writers || [],
-          publishers: song.Publisher ? [song.Publisher] : (song.publishers || []),
-          pro_registrations: {},
-          iswc: song.ISWC || song.iswc,
-          estimated_splits: {},
-          registration_gaps: [],
-          metadata_completeness_score: 0.8, // Default high score for AI-generated data
-          verification_status: 'ai_generated',
-          source_data: { 
-            ai_session: session.id, 
-            confidence: parsedResponse.ConfidenceAssessment?.DataReliabilityScore || parsedResponse.confidence_score || 7,
-            ai_response: song
+        console.log('Starting BMI lookups for discovered songs...');
+        
+        const songMetadata = [];
+        let bmiVerifiedCount = 0;
+        
+        for (const song of knownSongs) {
+          const songTitle = song.Title || song.title || song.name;
+          console.log(`Processing song: ${songTitle}`);
+          
+          // Perform BMI lookup for each song
+          let bmiData = null;
+          let verificationStatus = 'ai_generated';
+          let completenessScore = 0.6; // Base score for AI-only data
+          
+          try {
+            console.log(`Looking up BMI data for: ${songTitle} by ${songwriterName}`);
+            
+            const { data: bmiResponse, error: bmiError } = await supabase.functions.invoke('bmi-lookup', {
+              body: { 
+                workTitle: songTitle, 
+                writerName: songwriterName 
+              }
+            });
+            
+            if (!bmiError && bmiResponse?.found) {
+              bmiData = bmiResponse;
+              verificationStatus = 'bmi_verified';
+              completenessScore = 0.95; // High score for BMI-verified data
+              bmiVerifiedCount++;
+              console.log(`BMI verification successful for: ${songTitle}`);
+            } else {
+              console.log(`No BMI data found for: ${songTitle}`);
+            }
+            
+            // Small delay to avoid overwhelming BMI lookup
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+          } catch (bmiError) {
+            console.error(`BMI lookup failed for ${songTitle}:`, bmiError);
           }
-        }));
+          
+          // Merge AI and BMI data
+          const mergedPublishers = [];
+          const proRegistrations: any = {};
+          const registrationGaps = [];
+          
+          if (bmiData?.publishers?.length > 0) {
+            mergedPublishers.push(...bmiData.publishers);
+            proRegistrations.bmi = {
+              verified: true,
+              publishers: bmiData.publishers,
+              writers: bmiData.writers
+            };
+          } else {
+            // Use AI-discovered publishers
+            const aiPublishers = song.Publisher ? [song.Publisher] : (song.publishers || []);
+            mergedPublishers.push(...aiPublishers);
+            if (aiPublishers.length === 0) {
+              registrationGaps.push('no_publisher_information');
+            }
+          }
+          
+          // Check for other registration gaps
+          if (!bmiData?.iswc && !(song.ISWC || song.iswc)) {
+            registrationGaps.push('missing_iswc');
+          }
+          if (!bmiData?.writers?.length && !(song.CoWriters || song.co_writers)?.length) {
+            registrationGaps.push('incomplete_writer_information');
+          }
+          
+          songMetadata.push({
+            search_id: searchId,
+            user_id: user.id,
+            song_title: songTitle,
+            songwriter_name: songwriterName,
+            co_writers: bmiData?.writers?.map(w => w.name) || song.CoWriters || song.co_writers || [],
+            publishers: mergedPublishers,
+            pro_registrations: proRegistrations,
+            iswc: bmiData?.iswc || song.ISWC || song.iswc,
+            estimated_splits: bmiData?.writers?.reduce((acc, writer) => {
+              acc[writer.name] = writer.share || 0;
+              return acc;
+            }, {}) || {},
+            registration_gaps: registrationGaps,
+            metadata_completeness_score: completenessScore,
+            verification_status: verificationStatus,
+            source_data: { 
+              ai_session: session.id, 
+              confidence: parsedResponse.ConfidenceAssessment?.DataReliabilityScore || parsedResponse.confidence_score || 7,
+              ai_response: song,
+              bmi_data: bmiData,
+              bmi_verified: !!bmiData?.found
+            }
+          });
+        }
 
         const { error: metadataError } = await supabase
           .from('song_metadata_cache')
@@ -235,7 +311,7 @@ Use context: ${JSON.stringify(additionalContext)}`;
         if (metadataError) {
           console.error('Error inserting song metadata:', metadataError);
         } else {
-          console.log(`Successfully inserted ${songMetadata.length} song metadata records`);
+          console.log(`Successfully inserted ${songMetadata.length} song metadata records (${bmiVerifiedCount} BMI-verified)`);
         }
       }
 
