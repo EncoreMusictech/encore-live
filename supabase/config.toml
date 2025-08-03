@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.artist-discography]
 verify_jwt = false
+
+[functions.bmi-lookup]
+verify_jwt = false
