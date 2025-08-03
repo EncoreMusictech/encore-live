@@ -182,10 +182,18 @@ Use context: ${JSON.stringify(additionalContext)}`;
     try {
       // Handle cases where AI wraps JSON in markdown code blocks
       let cleanResponse = aiResponse.trim();
-      if (cleanResponse.startsWith('```json') && cleanResponse.endsWith('```')) {
-        cleanResponse = cleanResponse.slice(7, -3).trim();
-      } else if (cleanResponse.startsWith('```') && cleanResponse.endsWith('```')) {
-        cleanResponse = cleanResponse.slice(3, -3).trim();
+      
+      // More comprehensive markdown removal
+      const jsonMatch = cleanResponse.match(/```json\s*\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        cleanResponse = jsonMatch[1].trim();
+        console.log('Extracted JSON from markdown wrapper');
+      } else if (cleanResponse.startsWith('```json') && cleanResponse.includes('```')) {
+        cleanResponse = cleanResponse.replace(/^```json\s*\n?/, '').replace(/\n?```$/, '').trim();
+        console.log('Cleaned markdown wrapper from response');
+      } else if (cleanResponse.startsWith('```') && cleanResponse.includes('```')) {
+        cleanResponse = cleanResponse.replace(/^```\s*\n?/, '').replace(/\n?```$/, '').trim();
+        console.log('Cleaned generic markdown wrapper from response');
       }
       
       parsedResponse = JSON.parse(cleanResponse);
