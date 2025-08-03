@@ -348,59 +348,74 @@ Use context: ${JSON.stringify(additionalContext)}`;
             console.error(`BMI lookup failed for ${songTitle}:`, bmiError);
           }
           
-          // Merge AI and BMI data
-          const mergedPublishers = [];
-          const proRegistrations: any = {};
-          const registrationGaps = [];
-          
-          if (bmiData?.publishers?.length > 0) {
-            mergedPublishers.push(...bmiData.publishers);
-            proRegistrations.bmi = {
-              verified: true,
-              publishers: bmiData.publishers,
-              writers: bmiData.writers
-            };
-          } else {
-            // Use AI-discovered publishers
-            const aiPublishers = song.Publisher ? [song.Publisher] : (song.publishers || []);
-            mergedPublishers.push(...aiPublishers);
-            if (aiPublishers.length === 0) {
-              registrationGaps.push('no_publisher_information');
+            // Merge AI and BMI data - prioritize BMI data
+            const mergedPublishers = [];
+            const proRegistrations: any = {};
+            const registrationGaps = [];
+            
+            if (bmiData?.publishers?.length > 0) {
+              mergedPublishers.push(...bmiData.publishers);
+              proRegistrations.bmi = {
+                verified: true,
+                publishers: bmiData.publishers,
+                writers: bmiData.writers
+              };
+            } else {
+              // Use AI-discovered publishers
+              const aiPublishers = song.Publisher ? [song.Publisher] : (song.publishers || []);
+              mergedPublishers.push(...aiPublishers);
+              if (aiPublishers.length === 0) {
+                registrationGaps.push('no_publisher_information');
+              }
             }
-          }
-          
-          // Check for other registration gaps
-          if (!bmiData?.iswc && !(song.ISWC || song.iswc)) {
-            registrationGaps.push('missing_iswc');
-          }
-          if (!bmiData?.writers?.length && !(song.CoWriters || song.co_writers)?.length) {
-            registrationGaps.push('incomplete_writer_information');
-          }
-          
-          songMetadata.push({
-            search_id: searchId,
-            user_id: user.id,
-            song_title: songTitle,
-            songwriter_name: songwriterName,
-            co_writers: bmiData?.writers?.map(w => w.name) || song.CoWriters || song.co_writers || [],
-            publishers: mergedPublishers,
-            pro_registrations: proRegistrations,
-            iswc: bmiData?.iswc || song.ISWC || song.iswc,
-            estimated_splits: bmiData?.writers?.reduce((acc, writer) => {
-              acc[writer.name] = writer.share || 0;
-              return acc;
-            }, {}) || {},
-            registration_gaps: registrationGaps,
-            metadata_completeness_score: completenessScore,
-            verification_status: verificationStatus,
-            source_data: { 
-              ai_session: session.id, 
-              confidence: parsedResponse.ConfidenceAssessment?.DataReliabilityScore || parsedResponse.confidence_score || 7,
-              ai_response: song,
-              bmi_data: bmiData,
-              bmi_verified: !!bmiData?.found
+            
+            // Prioritize BMI ISWC data over AI-generated data
+            let finalIswc = null;
+            let iswcSource = null;
+            
+            if (bmiData?.iswc) {
+              finalIswc = bmiData.iswc;
+              iswcSource = bmiData.iswcSource || 'bmi';
+              console.log(`Using verified ISWC from ${iswcSource}: ${finalIswc} for song: ${songTitle}`);
+            } else if (song.ISWC || song.iswc) {
+              finalIswc = song.ISWC || song.iswc;
+              iswcSource = 'ai_generated';
+              console.log(`Using AI-generated ISWC: ${finalIswc} for song: ${songTitle} (BMI verification failed)`);
             }
-          });
+            
+            // Check for registration gaps
+            if (!finalIswc) {
+              registrationGaps.push('missing_iswc');
+            }
+            if (!bmiData?.writers?.length && !(song.CoWriters || song.co_writers)?.length) {
+              registrationGaps.push('incomplete_writer_information');
+            }
+            
+            songMetadata.push({
+              search_id: searchId,
+              user_id: user.id,
+              song_title: songTitle,
+              songwriter_name: songwriterName,
+              co_writers: bmiData?.writers?.map(w => w.name) || song.CoWriters || song.co_writers || [],
+              publishers: mergedPublishers,
+              pro_registrations: proRegistrations,
+              iswc: finalIswc,
+              estimated_splits: bmiData?.writers?.reduce((acc, writer) => {
+                acc[writer.name] = writer.share || 0;
+                return acc;
+              }, {}) || {},
+              registration_gaps: registrationGaps,
+              metadata_completeness_score: completenessScore,
+              verification_status: verificationStatus,
+              source_data: { 
+                ai_session: session.id, 
+                confidence: parsedResponse.ConfidenceAssessment?.DataReliabilityScore || parsedResponse.confidence_score || 7,
+                ai_response: song,
+                bmi_data: bmiData,
+                bmi_verified: !!bmiData?.found,
+                iswc_source: iswcSource
+              }
+            });
         }
 
         const { error: metadataError } = await supabase

@@ -29,6 +29,50 @@ interface BMIResult {
   found: boolean;
 }
 
+// Helper function to search MusicBrainz for ISWC
+async function searchMusicBrainz(workTitle: string, artistName?: string): Promise<string | null> {
+  try {
+    console.log(`Searching MusicBrainz for: ${workTitle} by ${artistName}`);
+    
+    let query = `work:"${workTitle}"`;
+    if (artistName) {
+      query += ` AND artist:"${artistName}"`;
+    }
+    
+    const url = `https://musicbrainz.org/ws/2/work?query=${encodeURIComponent(query)}&fmt=json&limit=5`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'EncoreMusicApp/1.0 (contact@encoremusic.tech)'
+      }
+    });
+    
+    if (!response.ok) {
+      console.log(`MusicBrainz API error: ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    if (data.works && data.works.length > 0) {
+      // Look for works with ISWC
+      for (const work of data.works) {
+        if (work.iswcs && work.iswcs.length > 0) {
+          const iswc = work.iswcs[0];
+          console.log(`Found ISWC in MusicBrainz: ${iswc}`);
+          return iswc;
+        }
+      }
+    }
+    
+    console.log('No ISWC found in MusicBrainz');
+    return null;
+  } catch (error) {
+    console.error('MusicBrainz search error:', error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -57,14 +101,14 @@ serve(async (req) => {
 
     console.log('Searching BMI for:', { workTitle, writerName, publisherName });
 
-    // Construct search query for BMI
+    // Construct search query for BMI with emphasis on ISWC accuracy
     let searchQuery = 'Search the BMI Repertoire database at https://repertoire.bmi.com for ';
     
     if (workTitle) searchQuery += `work title: "${workTitle}" `;
     if (writerName) searchQuery += `writer: "${writerName}" `;
     if (publisherName) searchQuery += `publisher: "${publisherName}" `;
     
-    searchQuery += `. Extract the following information if found: writer names with IPI numbers and ownership percentages, publisher names with ownership percentages, and ISWC code. Return the data in a structured JSON format with exact percentages and IPI numbers as they appear in BMI. If no exact matches are found, indicate that clearly.`;
+    searchQuery += `. CRITICAL: Extract the EXACT ISWC code as displayed in BMI Songview. Also extract writer names with IPI numbers and ownership percentages, publisher names with ownership percentages. Return the data in a structured JSON format with exact percentages and IPI numbers as they appear in BMI. Pay special attention to getting the correct ISWC format (e.g., T0700835206, not T0101986149). If no exact matches are found, indicate that clearly.`;
 
     console.log('Making OpenAI API call with query:', searchQuery);
 
@@ -75,11 +119,13 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
-            content: `You are a data extraction specialist with access to real-time web search capabilities. When searching BMI Repertoire at https://repertoire.bmi.com, extract exact writer and publisher information including IPI numbers and ownership percentages. 
+            content: `You are a data extraction specialist with access to real-time web search capabilities. When searching BMI Repertoire at https://repertoire.bmi.com, extract exact writer and publisher information including IPI numbers and ownership percentages.
+
+CRITICAL: Pay special attention to extracting the correct ISWC code exactly as it appears in BMI Songview. The ISWC should be in format like T0700835206, T1234567890, etc. Do not confuse or mix up ISWC codes.
 
 Return data in this exact JSON format:
 {
@@ -168,7 +214,7 @@ If no exact matches are found, return found: false with empty arrays.`
         }
         
         if (lowerLine.includes('iswc')) {
-          const iswcMatch = line.match(/ISWC[:\s]*([T-]\d+[-\d]+)/i);
+          const iswcMatch = line.match(/ISWC[:\s]*([T]\d+)/i);
           if (iswcMatch) {
             result.iswc = iswcMatch[1];
             result.found = true;
@@ -177,9 +223,21 @@ If no exact matches are found, return found: false with empty arrays.`
       }
     }
 
+    // If no ISWC found in BMI, try MusicBrainz as fallback
+    if (!result.iswc && workTitle) {
+      console.log('No ISWC found in BMI, trying MusicBrainz...');
+      const musicBrainzIswc = await searchMusicBrainz(workTitle, writerName);
+      if (musicBrainzIswc) {
+        result.iswc = musicBrainzIswc;
+        result.found = true;
+        console.log(`Using ISWC from MusicBrainz: ${musicBrainzIswc}`);
+      }
+    }
+
     return new Response(JSON.stringify({
       ...result,
-      rawResponse: extractedText
+      rawResponse: extractedText,
+      iswcSource: result.iswc ? (extractedText.toLowerCase().includes('iswc') ? 'bmi' : 'musicbrainz') : null
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
