@@ -2,16 +2,17 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { updatePageMetadata } from "@/utils/seo";
 import { CatalogValuationWithSuspense } from "@/components/LazyComponents";
+import { SongEstimatorTool } from "@/components/catalog-valuation/SongEstimatorTool";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, ArrowRight, Brain, Target, ArrowLeft } from "lucide-react";
+import { Calculator, TrendingUp, ArrowRight, Brain, Target, ArrowLeft, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CatalogValuationPage = () => {
-  const [selectedModule, setSelectedModule] = useState<'selection' | 'valuation' | 'deals'>('selection');
+  const [selectedModule, setSelectedModule] = useState<'selection' | 'valuation' | 'deals' | 'song-estimator'>('selection');
   const { canAccess } = useDemoAccess();
   const { subscribed } = useSubscription();
 
@@ -33,7 +34,7 @@ const CatalogValuationPage = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
         {/* Catalog Valuation Module */}
         <Card className="border-2 border-primary/20 hover:border-primary/40 transition-colors cursor-pointer group">
           <CardHeader className="pb-4">
@@ -129,6 +130,55 @@ const CatalogValuationPage = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Song Estimator Module */}
+        <Card className="border-2 border-accent/20 hover:border-accent/40 transition-colors cursor-pointer group">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                <Search className="h-6 w-6 text-accent-foreground" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Song Estimator</CardTitle>
+                <CardDescription>AI-powered songwriter catalog research</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              Research songwriter catalogs, analyze metadata completeness, and estimate uncollected royalty pipeline income.
+            </p>
+            
+            <div className="space-y-2">
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Target className="h-4 w-4 mr-2 text-purple-600" />
+                AI-powered catalog research
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Target className="h-4 w-4 mr-2 text-purple-600" />
+                Metadata completeness analysis
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Target className="h-4 w-4 mr-2 text-purple-600" />
+                Pipeline income estimation
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Target className="h-4 w-4 mr-2 text-purple-600" />
+                Registration gap identification
+              </div>
+            </div>
+
+            <Button 
+              variant="outline"
+              className="w-full group-hover:shadow-lg transition-shadow border-accent text-accent-foreground hover:bg-accent/10"
+              onClick={() => setSelectedModule('song-estimator')}
+              disabled={!canAccess('catalogValuation')}
+            >
+              {canAccess('catalogValuation') ? 'Launch Song Estimator' : 'Demo Limit Reached'}
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Access Section */}
@@ -143,6 +193,13 @@ const CatalogValuationPage = () => {
             onClick={() => setSelectedModule('valuation')}
           >
             Quick Valuation
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setSelectedModule('song-estimator')}
+          >
+            Song Research
           </Button>
           <Button 
             variant="outline" 
@@ -207,6 +264,36 @@ const CatalogValuationPage = () => {
                 </p>
               </div>
               <CatalogValuationWithSuspense />
+            </>
+          )}
+
+          {selectedModule === 'song-estimator' && (
+            <>
+              {/* Back Navigation */}
+              <div className="flex items-center gap-2 mb-6">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setSelectedModule('selection')}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+                  Back to Module Selection
+                </Button>
+              </div>
+
+              {/* Demo Limit Banner */}
+              <DemoLimitBanner module="catalogValuation" className="mb-6" />
+
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-2">
+                  Song Estimator Tool
+                </h1>
+                <p className="text-muted-foreground">
+                  Research songwriter catalogs, analyze metadata completeness, and estimate uncollected royalty pipeline income using AI-powered analysis.
+                </p>
+              </div>
+              <SongEstimatorTool />
             </>
           )}
         </div>

@@ -7,7 +7,6 @@ import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { useDebounce } from "@/hooks/usePerformanceOptimization";
 import { RevenueSourcesForm } from "@/components/catalog-valuation/RevenueSourcesForm";
 import { EnhancedValuationEngine } from "@/components/catalog-valuation/EnhancedValuationEngine";
-import { SongEstimatorTool } from "@/components/catalog-valuation/SongEstimatorTool";
 import { useCatalogRevenueSources } from "@/hooks/useCatalogRevenueSources";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -495,14 +494,13 @@ Actual market values may vary significantly based on numerous factors not captur
       {result && (
         <>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="analysis">DCF Analysis</TabsTrigger>
               <TabsTrigger value="forecasts">Forecasts</TabsTrigger>
               <TabsTrigger value="comparables">Comparables</TabsTrigger>
               <TabsTrigger value="revenue-sources">Revenue Sources</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="song-estimator">Song Estimator</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -1335,8 +1333,11 @@ Actual market values may vary significantly based on numerous factors not captur
               </TabsContent>
 
 
-            <TabsContent value="song-estimator" className="space-y-6">
-              <SongEstimatorTool />
+            <TabsContent value="analytics" className="space-y-6">
+              {/* Analytics content placeholder */}
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Advanced analytics dashboard coming soon...</p>
+              </div>
             </TabsContent>
           </Tabs>
         </>
