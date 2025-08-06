@@ -78,14 +78,6 @@ export function SongEstimatorTool() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-foreground">Song Estimator Tool</h2>
-        <p className="text-muted-foreground">
-          Research songwriter catalogs, analyze metadata completeness, and estimate uncollected royalty pipeline income using AI-powered analysis.
-        </p>
-      </div>
-
       {/* Search Form */}
       <Card>
         <CardHeader>
