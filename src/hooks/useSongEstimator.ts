@@ -14,6 +14,10 @@ interface SongCatalogSearch {
   created_at: string;
   search_parameters: any;
   ai_research_summary: any;
+  webhook_status?: string;
+  webhook_sent_at?: string;
+  webhook_response?: string;
+  webhook_error?: string;
 }
 
 interface SongMetadata {
@@ -92,7 +96,8 @@ export function useSongEstimator() {
           user_id: user.id,
           songwriter_name: songwriterName,
           search_status: 'pending',
-          search_parameters: searchParameters
+          search_parameters: searchParameters,
+          webhook_status: 'pending'
         })
         .select()
         .single();
@@ -103,6 +108,28 @@ export function useSongEstimator() {
         title: "Search created",
         description: `Started research for ${songwriterName}`,
       });
+
+      // Trigger n8n webhook
+      try {
+        const { error: webhookError } = await supabase.functions.invoke('trigger-n8n-webhook', {
+          body: {
+            searchId: data.id,
+            songwriterName,
+            searchData: searchParameters
+          }
+        });
+
+        if (webhookError) {
+          console.error('Webhook error:', webhookError);
+          toast({
+            title: "Webhook Warning",
+            description: "Search created but n8n notification failed",
+            variant: "default",
+          });
+        }
+      } catch (webhookError) {
+        console.error('Failed to trigger webhook:', webhookError);
+      }
 
       await fetchSearches();
       return data;
