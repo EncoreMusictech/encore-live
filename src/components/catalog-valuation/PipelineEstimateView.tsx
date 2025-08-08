@@ -123,14 +123,14 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
 
   const currentEstimate = mockPipelineData[selectedEstimateType];
 
-  // Memoize song estimates to prevent glitching
+  // Memoize song estimates to prevent glitching - only depend on song IDs
   const songEstimates = useMemo(() => {
     return songMetadata.map((song) => ({
       id: song.id,
       estimate: Math.floor(Math.random() * 8000) + 2000,
       confidence: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)]
     }));
-  }, [songMetadata]);
+  }, [songMetadata.map(song => song.id).join(',')]);
 
   return (
     <div className="space-y-6">
