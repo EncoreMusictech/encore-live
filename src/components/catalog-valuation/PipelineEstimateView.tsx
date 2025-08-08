@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -122,6 +122,15 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
   };
 
   const currentEstimate = mockPipelineData[selectedEstimateType];
+
+  // Memoize song estimates to prevent glitching
+  const songEstimates = useMemo(() => {
+    return songMetadata.map((song) => ({
+      id: song.id,
+      estimate: Math.floor(Math.random() * 8000) + 2000,
+      confidence: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)]
+    }));
+  }, [songMetadata]);
 
   return (
     <div className="space-y-6">
@@ -322,9 +331,7 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
           ) : (
             <div className="space-y-3">
               {songMetadata.slice(0, 10).map((song, index) => {
-                // Mock individual song estimates
-                const songEstimate = Math.floor(Math.random() * 8000) + 2000;
-                const confidence = ['high', 'medium', 'low'][Math.floor(Math.random() * 3)];
+                const songData = songEstimates.find(s => s.id === song.id) || { estimate: 0, confidence: 'low' };
                 
                 return (
                   <div key={song.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -340,9 +347,9 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
                       </div>
                     </div>
                     <div className="text-right space-y-1">
-                      <div className="font-semibold">{formatCurrency(songEstimate)}</div>
+                      <div className="font-semibold">{formatCurrency(songData.estimate)}</div>
                       <div className="text-sm">
-                        {getConfidenceBadge(confidence)}
+                        {getConfidenceBadge(songData.confidence)}
                       </div>
                     </div>
                   </div>
