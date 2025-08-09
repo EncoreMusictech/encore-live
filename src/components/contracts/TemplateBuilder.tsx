@@ -90,8 +90,9 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
 
     if (!destination) return;
 
+    // Only handle moves into or within selected-fields
     if (destination.droppableId === 'selected-fields' && source.droppableId === 'available-fields') {
-      const field = availableFields.find(f => f.id === draggableId);
+      const field = (FIELD_TEMPLATES[selectedContractType] || []).find(f => f.id === draggableId);
       if (field && !selectedFields.find(f => f.id === field.id)) {
         setSelectedFields(prev => [...prev, field]);
       }
@@ -101,7 +102,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
       newFields.splice(destination.index, 0, removed);
       setSelectedFields(newFields);
     }
-  }, [availableFields, selectedFields]);
+  }, [selectedFields, selectedContractType]);
 
   const removeField = (fieldId: string) => {
     setSelectedFields(prev => prev.filter(f => f.id !== fieldId));
@@ -241,47 +242,47 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
 
         {/* Builder Tab */}
         <TabsContent value="builder" className="flex-1 p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-            {/* Template Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Template Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="templateName">Template Name</Label>
-                  <Input
-                    id="templateName"
-                    value={templateName}
-                    onChange={(e) => setTemplateName(e.target.value)}
-                    placeholder="e.g., Standard Recording Agreement"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="contractType">Contract Type</Label>
-                  <Select value={selectedContractType} onValueChange={handleContractTypeChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="artist_recording">Artist Recording Contract</SelectItem>
-                      <SelectItem value="publishing">Publishing Agreement</SelectItem>
-                      <SelectItem value="distribution">Distribution Agreement</SelectItem>
-                      <SelectItem value="licensing">Licensing Agreement</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+              {/* Template Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Template Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="templateName">Template Name</Label>
+                    <Input
+                      id="templateName"
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      placeholder="e.g., Standard Recording Agreement"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contractType">Contract Type</Label>
+                    <Select value={selectedContractType} onValueChange={handleContractTypeChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="artist_recording">Artist Recording Contract</SelectItem>
+                        <SelectItem value="publishing">Publishing Agreement</SelectItem>
+                        <SelectItem value="distribution">Distribution Agreement</SelectItem>
+                        <SelectItem value="licensing">Licensing Agreement</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
 
-            {/* Available Fields */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Available Fields</CardTitle>
-                <p className="text-sm text-muted-foreground">Drag fields to build your template</p>
-              </CardHeader>
-              <CardContent>
-                <DragDropContext onDragEnd={onDragEnd}>
+              {/* Available Fields */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Available Fields</CardTitle>
+                  <p className="text-sm text-muted-foreground">Drag fields to build your template</p>
+                </CardHeader>
+                <CardContent>
                   <Droppable droppableId="available-fields">
                     {(provided) => (
                       <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
@@ -313,18 +314,16 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
                       </div>
                     )}
                   </Droppable>
-                </DragDropContext>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Selected Fields */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Template Fields</CardTitle>
-                <p className="text-sm text-muted-foreground">Fields in your template</p>
-              </CardHeader>
-              <CardContent>
-                <DragDropContext onDragEnd={onDragEnd}>
+              {/* Selected Fields */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Template Fields</CardTitle>
+                  <p className="text-sm text-muted-foreground">Fields in your template</p>
+                </CardHeader>
+                <CardContent>
                   <Droppable droppableId="selected-fields">
                     {(provided) => (
                       <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
@@ -362,10 +361,10 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
                       </div>
                     )}
                   </Droppable>
-                </DragDropContext>
-              </CardContent>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+            </div>
+          </DragDropContext>
         </TabsContent>
 
         {/* Preview Tab */}
