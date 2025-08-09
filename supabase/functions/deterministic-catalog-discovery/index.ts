@@ -1,0 +1,188 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-assistant-secret',
+};
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const sharedSecret = Deno.env.get('ASSISTANT_SHARED_SECRET') || '';
+
+const supabase = createClient(supabaseUrl, serviceKey);
+
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+async function fetchJSON(url: string) {
+  const resp = await fetch(url, {
+    headers: {
+      'User-Agent': 'EncoreMusicIP/1.0 (support@encore.local)',
+      'Accept': 'application/json'
+    }
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
+  return await resp.json();
+}
+
+async function findArtistMBID(writerName: string): Promise<string | null> {
+  try {
+    const q = encodeURIComponent(`${writerName}`);
+    const data = await fetchJSON(`https://musicbrainz.org/ws/2/artist?query=artist:${q}%20AND%20(type:person%20OR%20type:group)&fmt=json&limit=5`);
+    const artists = data?.artists || [];
+    if (!artists.length) return null;
+    // pick closest name match
+    const exact = artists.find((a: any) => (a.name || '').toLowerCase() === writerName.toLowerCase());
+    return (exact || artists[0])?.id || null;
+  } catch (_e) {
+    return null;
+  }
+}
+
+async function browseWorksByArtist(artistId: string, limit = 50): Promise<any[]> {
+  try {
+    const data = await fetchJSON(`https://musicbrainz.org/ws/2/work?artist=${artistId}&fmt=json&limit=${limit}`);
+    return data?.works || [];
+  } catch (_e) {
+    return [];
+  }
+}
+
+async function searchWorksByWriterName(writerName: string, limit = 50): Promise<any[]> {
+  try {
+    const q = encodeURIComponent(`writer:"${writerName}" OR artist:"${writerName}"`);
+    const data = await fetchJSON(`https://musicbrainz.org/ws/2/work?query=${q}&fmt=json&limit=${limit}`);
+    return data?.works || [];
+  } catch (_e) {
+    return [];
+  }
+}
+
+async function getWorkDetails(workId: string): Promise<any | null> {
+  try {
+    const data = await fetchJSON(`https://musicbrainz.org/ws/2/work/${workId}?inc=artist-rels+iswcs&fmt=json`);
+    return data || null;
+  } catch (_e) {
+    return null;
+  }
+}
+
+async function callProAgent(title: string, writerName: string) {
+  try {
+    // Use internal invoke to call our pro-repertoire-agent
+    const { data, error } = await supabase.functions.invoke('pro-repertoire-agent', {
+      body: { workTitle: title, writerName },
+      headers: sharedSecret ? { 'x-assistant-secret': sharedSecret } : undefined,
+    });
+    if (error) throw error;
+    return data || null;
+  } catch (_e) {
+    return null;
+  }
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  try {
+    const { searchId, writerName, userId, maxSongs = 20 } = await req.json();
+    if (!searchId || !writerName || !userId) {
+      return json({ error: 'searchId, writerName, and userId are required' }, 400);
+    }
+
+    // Mark search as processing
+    await supabase
+      .from('song_catalog_searches')
+      .update({ search_status: 'processing', last_refreshed_at: new Date().toISOString() })
+      .eq('id', searchId)
+      .eq('user_id', userId);
+
+    // Discover works
+    const artistId = await findArtistMBID(writerName);
+    let works: any[] = [];
+    if (artistId) {
+      works = await browseWorksByArtist(artistId, Math.min(50, maxSongs * 2));
+    }
+    if (!works.length) {
+      works = await searchWorksByWriterName(writerName, Math.min(50, maxSongs * 2));
+    }
+
+    // Enrich each work with details and (optionally) PRO agent
+    const selected = works.slice(0, maxSongs);
+    const rows: any[] = [];
+
+    for (const w of selected) {
+      const workId = w.id;
+      const details = await getWorkDetails(workId);
+      const title = details?.title || w.title;
+      const iswc = (details?.iswcs && details.iswcs[0]) || w.iswc || null;
+      const rels = details?.relations || [];
+      const writerRels = rels.filter((r: any) => ['writer', 'composer', 'lyricist'].includes(r.type));
+      const coWriters = writerRels.map((r: any) => r.artist?.name).filter(Boolean);
+
+      // Try PRO agent for authoritative verification
+      let proData: any = null;
+      if (sharedSecret) {
+        proData = await callProAgent(title, writerName);
+      }
+
+      const publishers = Array.isArray(proData?.publishers)
+        ? proData.publishers.reduce((acc: any, p: any) => { if (p?.name) acc[p.name] = typeof p.share === 'number' ? p.share : 0; return acc; }, {})
+        : {};
+      const finalISWC = proData?.iswc || iswc || null;
+
+      rows.push({
+        search_id: searchId,
+        user_id: userId,
+        song_title: title || 'Untitled',
+        songwriter_name: writerName,
+        co_writers: proData?.writers?.map((w: any) => w.name).filter(Boolean) || coWriters || [],
+        publishers,
+        pro_registrations: proData ? { merged: proData } : {},
+        iswc: finalISWC,
+        estimated_splits: {},
+        registration_gaps: finalISWC ? [] : ['missing_iswc'],
+        metadata_completeness_score: finalISWC ? 0.8 : 0.6,
+        verification_status: proData ? 'pro_verified' : 'discovered',
+        last_verified_at: new Date().toISOString(),
+        source_data: { source: 'musicbrainz', work_id: workId }
+      });
+    }
+
+    let insertedCount = 0;
+    if (rows.length) {
+      const { data, error } = await supabase
+        .from('song_metadata_cache')
+        .insert(rows)
+        .select('id');
+      if (error) throw error;
+      insertedCount = data?.length || 0;
+    }
+
+    const metaCompleteCount = rows.filter((r) => (r.metadata_completeness_score ?? 0) >= 0.7).length;
+
+    await supabase
+      .from('song_catalog_searches')
+      .update({
+        total_songs_found: insertedCount,
+        metadata_complete_count: metaCompleteCount,
+        pipeline_estimate_total: 0,
+        last_refreshed_at: new Date().toISOString(),
+        search_status: 'completed',
+        ai_research_summary: { source: 'deterministic', discovered: insertedCount }
+      })
+      .eq('id', searchId)
+      .eq('user_id', userId);
+
+    return json({ success: true, discovered: insertedCount, meta_complete: metaCompleteCount });
+  } catch (e) {
+    console.error('deterministic-catalog-discovery error', e);
+    return json({ error: (e as Error).message || 'Unexpected error' }, 500);
+  }
+});

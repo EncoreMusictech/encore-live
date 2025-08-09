@@ -142,29 +142,27 @@ export function useSongEstimator() {
         .update({ search_status: 'processing' })
         .eq('id', searchId);
 
-      const { data, error } = await supabase.functions.invoke('song-estimator-ai', {
+      const { data, error } = await supabase.functions.invoke('deterministic-catalog-discovery', {
         body: {
-          songwriterName,
-          sessionType,
           searchId,
-          additionalContext
+          writerName: songwriterName,
+          userId: user?.id,
+          maxSongs: 20
         }
       });
 
       if (error) throw error;
 
-      if (data.success) {
+      if (data?.success) {
         toast({
-          title: "AI Research Complete",
-          description: data.summary,
+          title: "Discovery Complete",
+          description: `${data.discovered} songs discovered and inserted`,
         });
-
-        // Results are now processed directly by the edge function
 
         await fetchSearches();
         return data;
       } else {
-        throw new Error(data.error || 'AI research failed');
+        throw new Error(data?.error || 'Discovery failed');
       }
     } catch (err) {
       console.error('Error running AI research:', err);

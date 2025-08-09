@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.pro-repertoire-agent]
 verify_jwt = false
+
+[functions.deterministic-catalog-discovery]
+verify_jwt = false
