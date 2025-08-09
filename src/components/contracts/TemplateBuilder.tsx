@@ -647,39 +647,15 @@ template_data: {
               <CardTitle>Contract Edits Review</CardTitle>
               <p className="text-muted-foreground">Review all changes made to the contract</p>
             </CardHeader>
-<CardContent>
-              {(edits.length === 0 && clauseEdits.length === 0) ? (
+            <CardContent>
+              {(clauseEdits.length === 0) ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Edit3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No edits have been made yet</p>
-                  <p className="text-sm">Changes made in the preview or clause editor will appear here</p>
+                  <p>No clause edits have been made yet</p>
+                  <p className="text-sm">Changes made in the clause editor will appear here</p>
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {edits.length > 0 && (
-                    <div className="space-y-4">
-                      <h4 className="font-semibold">Field Value Changes</h4>
-                      {edits.map((edit, index) => (
-                        <div key={index} className="p-4 border rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium">{selectedFields.find(f => f.id === edit.field)?.label || edit.field}</span>
-                            <span className="text-xs text-muted-foreground">{edit.timestamp.toLocaleString()}</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Old Value:</span>
-                              <div className="p-2 bg-destructive/10 rounded mt-1">{edit.oldValue || <em>Empty</em>}</div>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">New Value:</span>
-                              <div className="p-2 bg-primary/10 rounded mt-1">{edit.newValue || <em>Empty</em>}</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
                   {clauseEdits.length > 0 && (
                     <div className="space-y-4">
                       <h4 className="font-semibold">Custom Clause Changes</h4>
