@@ -219,16 +219,19 @@ const bundledPlans = [
     id: "enterprise",
     name: "Enterprise Suite",
     audience: "Large catalogs/admins", 
-    price: 849,
-    annualPrice: 7999,
+    price: 0,
+    annualPrice: 0,
+    custom: true,
     modules: ["royalties", "copyright", "contracts", "sync", "valuation", "dashboard"],
     features: [
       "All modules included",
+      "White-label branding & custom theming",
+      "Custom integrations & SLAs",
       "Complete workflow automation",
       "Multi-tier client portal access", 
       "Advanced analytics & reporting",
       "Dedicated account manager",
-      "Priority support"
+      "24/7 priority support"
     ],
     icon: Building
   }
@@ -563,6 +566,7 @@ const modulesArray = Array.from(selectedModules);
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 {bundledPlans.map((plan) => {
                 const IconComponent = plan.icon;
+                const isCustom = (plan as any).custom || plan.id === 'enterprise';
                 const regularMonthly = plan.modules.reduce((sum, moduleId) => {
                   const mod = moduleData.find((m) => m.id === moduleId);
                   return sum + (mod?.price || 0);
@@ -571,13 +575,13 @@ const modulesArray = Array.from(selectedModules);
                   const mod = moduleData.find((m) => m.id === moduleId);
                   return sum + (mod?.annualPrice || 0);
                 }, 0);
-                const selectedPrice = billingInterval === 'month' ? plan.price : plan.annualPrice;
+                const selectedPrice = isCustom ? null : (billingInterval === 'month' ? plan.price : plan.annualPrice);
                 const selectedRegular = billingInterval === 'month' ? regularMonthly : regularAnnual;
-                const savingsPercent = Math.max(
+                const savingsPercent = isCustom ? 0 : Math.max(
                   0,
-                  Math.round(((selectedRegular - selectedPrice) / (selectedRegular || 1)) * 100)
+                  Math.round(((selectedRegular - ((selectedPrice ?? 0))) / (selectedRegular || 1)) * 100)
                 );
-                const annualSavingsVsModules = Math.max(0, regularAnnual - (plan.annualPrice || plan.price * 12));
+                const annualSavingsVsModules = isCustom ? 0 : Math.max(0, regularAnnual - ((plan.annualPrice as any) || (plan.price as any) * 12));
                 
                 return (
                   <Card 
@@ -600,27 +604,37 @@ const modulesArray = Array.from(selectedModules);
                         <div className="bg-gradient-primary rounded-lg p-3">
                           <IconComponent className="h-6 w-6 text-primary-foreground" />
                         </div>
-                        <Badge variant="secondary" className="bg-gradient-primary/10">
-                          Save {savingsPercent}%
-                        </Badge>
+                        {isCustom ? (
+                          <Badge variant="secondary" className="bg-gradient-primary/10">Custom Pricing</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="bg-gradient-primary/10">Save {savingsPercent}%</Badge>
+                        )}
                       </div>
                       
                       <CardTitle className="text-xl">{plan.name}</CardTitle>
                       <p className="text-sm text-muted-foreground mb-4">Ideal for {plan.audience}</p>
                       
                       <div className="text-center">
-                        <div className="text-sm text-muted-foreground line-through">
-                          ${selectedRegular.toLocaleString()}/{billingInterval === 'month' ? 'mo' : 'yr'}
-                        </div>
-                        <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                          ${selectedPrice.toLocaleString()}
-                          <span className="text-lg text-muted-foreground">/{billingInterval === 'month' ? 'month' : 'year'}</span>
-                        </div>
-                        {billingInterval === 'month' && (
-                          <div className="text-xs text-muted-foreground mt-1">or ${plan.annualPrice}/yr</div>
-                        )}
-                        {billingInterval === 'year' && annualSavingsVsModules > 0 && (
-                          <div className="text-xs text-muted-foreground mt-1">Save ${annualSavingsVsModules.toLocaleString()}/yr vs modules</div>
+                        {isCustom ? (
+                          <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                            Custom pricing
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-sm text-muted-foreground line-through">
+                              ${selectedRegular.toLocaleString()}/{billingInterval === 'month' ? 'mo' : 'yr'}
+                            </div>
+                            <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                              ${selectedPrice!.toLocaleString()}
+                              <span className="text-lg text-muted-foreground">/{billingInterval === 'month' ? 'month' : 'year'}</span>
+                            </div>
+                            {billingInterval === 'month' && (
+                              <div className="text-xs text-muted-foreground mt-1">or ${plan.annualPrice}/yr</div>
+                            )}
+                            {billingInterval === 'year' && annualSavingsVsModules > 0 && (
+                              <div className="text-xs text-muted-foreground mt-1">Save ${annualSavingsVsModules.toLocaleString()}/yr vs modules</div>
+                            )}
+                          </>
                         )}
                       </div>
                     </CardHeader>
@@ -659,6 +673,10 @@ const modulesArray = Array.from(selectedModules);
 <Button 
                         className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
                         onClick={() => {
+                          if ((plan as any).custom || plan.id === 'enterprise') {
+                            window.location.href = '/contact';
+                            return;
+                          }
                           if (!user) {
                             window.location.href = '/auth';
                             return;
@@ -667,7 +685,7 @@ const modulesArray = Array.from(selectedModules);
                         }}
                         disabled={loading}
                       >
-                        {!user ? 'Sign In to Subscribe' : 'Subscribe to Plan'}
+                        {(plan as any).custom || plan.id === 'enterprise' ? 'Contact Sales' : (!user ? 'Sign In to Subscribe' : 'Subscribe to Plan')}
                       </Button>
                     </CardContent>
                   </Card>
@@ -693,7 +711,7 @@ const modulesArray = Array.from(selectedModules);
                       <TableHead key={plan.id} className="text-center min-w-32">
 <div className="space-y-1">
                           <div className="font-bold">{plan.name}</div>
-                          <div className="text-lg font-bold text-primary">${(billingInterval === 'month' ? plan.price : plan.annualPrice)}/{billingInterval === 'month' ? 'mo' : 'yr'}</div>
+                          <div className="text-lg font-bold text-primary">{(plan as any).custom || plan.id === 'enterprise' ? 'Custom' : `$${(billingInterval === 'month' ? plan.price : plan.annualPrice)}/${billingInterval === 'month' ? 'mo' : 'yr'}`}</div>
                         </div>
                       </TableHead>
                     ))}
