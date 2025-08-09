@@ -135,7 +135,7 @@ const CatalogValuation = memo(() => {
     methodology: 'advanced'
   });
   
-  const { revenueSources, calculateRevenueMetrics } = useCatalogRevenueSources(catalogValuationId);
+  const { revenueSources, calculateRevenueMetrics, refetch } = useCatalogRevenueSources(catalogValuationId);
   
   const { toast } = useToast();
   const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
@@ -236,37 +236,78 @@ const CatalogValuation = memo(() => {
         try {
           const { data: user } = await supabase.auth.getUser();
           if (user.user) {
-            const { data: savedValuation, error: saveError } = await supabase
-              .from('catalog_valuations')
-              .insert({
-                user_id: user.user.id,
-                artist_name: data.artist_name,
-                total_streams: data.total_streams,
-                monthly_listeners: data.monthly_listeners,
-                top_tracks: data.top_tracks,
-                valuation_amount: data.risk_adjusted_value || data.valuation_amount,
-                currency: data.currency,
-                ltm_revenue: data.ltm_revenue,
-                catalog_age_years: data.catalog_age_years,
-                genre: data.genre,
-                popularity_score: data.popularity_score,
-                discount_rate: data.discount_rate,
-                dcf_valuation: data.dcf_valuation,
-                multiple_valuation: data.multiple_valuation,
-                risk_adjusted_value: data.risk_adjusted_value,
-                confidence_score: data.confidence_score,
-                 valuation_methodology: data.valuation_methodology,
-                 cash_flow_projections: data.cash_flow_projections,
-                 comparable_multiples: data.comparable_multiples,
-                 // Enhanced valuation fields
-                 has_additional_revenue: data.has_additional_revenue || false,
-                 total_additional_revenue: data.total_additional_revenue || 0,
-                 revenue_diversification_score: data.revenue_diversification_score || 0,
-                 blended_valuation: data.blended_valuation,
-                 valuation_methodology_v2: data.valuation_methodology_v2 || 'basic'
-              })
-              .select()
-              .maybeSingle();
+            let savedValuation = null as any;
+            let saveError = null as any;
+            if (catalogValuationId) {
+              const { data: updated, error: updateError } = await supabase
+                .from('catalog_valuations')
+                .update({
+                  user_id: user.user.id,
+                  artist_name: data.artist_name,
+                  total_streams: data.total_streams,
+                  monthly_listeners: data.monthly_listeners,
+                  top_tracks: data.top_tracks,
+                  valuation_amount: data.risk_adjusted_value || data.valuation_amount,
+                  currency: data.currency,
+                  ltm_revenue: data.ltm_revenue,
+                  catalog_age_years: data.catalog_age_years,
+                  genre: data.genre,
+                  popularity_score: data.popularity_score,
+                  discount_rate: data.discount_rate,
+                  dcf_valuation: data.dcf_valuation,
+                  multiple_valuation: data.multiple_valuation,
+                  risk_adjusted_value: data.risk_adjusted_value,
+                  confidence_score: data.confidence_score,
+                  valuation_methodology: data.valuation_methodology,
+                  cash_flow_projections: data.cash_flow_projections,
+                  comparable_multiples: data.comparable_multiples,
+                  // Enhanced valuation fields
+                  has_additional_revenue: data.has_additional_revenue || false,
+                  total_additional_revenue: data.total_additional_revenue || 0,
+                  revenue_diversification_score: data.revenue_diversification_score || 0,
+                  blended_valuation: data.blended_valuation,
+                  valuation_methodology_v2: data.valuation_methodology_v2 || 'basic'
+                })
+                .eq('id', catalogValuationId)
+                .select()
+                .maybeSingle();
+              savedValuation = updated;
+              saveError = updateError;
+            } else {
+              const { data: inserted, error: insertError } = await supabase
+                .from('catalog_valuations')
+                .insert({
+                  user_id: user.user.id,
+                  artist_name: data.artist_name,
+                  total_streams: data.total_streams,
+                  monthly_listeners: data.monthly_listeners,
+                  top_tracks: data.top_tracks,
+                  valuation_amount: data.risk_adjusted_value || data.valuation_amount,
+                  currency: data.currency,
+                  ltm_revenue: data.ltm_revenue,
+                  catalog_age_years: data.catalog_age_years,
+                  genre: data.genre,
+                  popularity_score: data.popularity_score,
+                  discount_rate: data.discount_rate,
+                  dcf_valuation: data.dcf_valuation,
+                  multiple_valuation: data.multiple_valuation,
+                  risk_adjusted_value: data.risk_adjusted_value,
+                  confidence_score: data.confidence_score,
+                  valuation_methodology: data.valuation_methodology,
+                  cash_flow_projections: data.cash_flow_projections,
+                  comparable_multiples: data.comparable_multiples,
+                  // Enhanced valuation fields
+                  has_additional_revenue: data.has_additional_revenue || false,
+                  total_additional_revenue: data.total_additional_revenue || 0,
+                  revenue_diversification_score: data.revenue_diversification_score || 0,
+                  blended_valuation: data.blended_valuation,
+                  valuation_methodology_v2: data.valuation_methodology_v2 || 'basic'
+                })
+                .select()
+                .maybeSingle();
+              savedValuation = inserted;
+              saveError = insertError;
+            }
 
             if (saveError) {
               console.error("Error saving valuation:", saveError);
@@ -1314,6 +1355,12 @@ Actual market values may vary significantly based on numerous factors not captur
                       onValuationUpdate={() => {
                         console.log('Revenue source updated, refreshing valuation with enhanced methodology');
                         console.log('Current catalogValuationId:', catalogValuationId);
+                        // First refresh parent revenue sources, then recompute valuation
+                        try {
+                          refetch?.();
+                        } catch (e) {
+                          console.warn('Refetch revenue sources failed', e);
+                        }
                         if (artistName) {
                           handleSearch();
                         }
