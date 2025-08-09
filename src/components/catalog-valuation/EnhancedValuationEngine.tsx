@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { TrendingUp, PieChart, Calculator, Target } from 'lucide-react';
 import { RevenueSource } from '@/hooks/useCatalogRevenueSources';
-
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 interface EnhancedValuationEngineProps {
   baseValuation: {
     risk_adjusted_value?: number;
@@ -285,6 +285,42 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
                   })}
                 </div>
               </div>
+            </div>
+
+            <div className="mt-4">
+              <h4 className="font-medium mb-3">All Additional Revenue Sources</h4>
+              {revenueSources.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No additional revenue sources added yet.</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead className="text-right">Annual Revenue</TableHead>
+                      <TableHead className="text-right">Growth</TableHead>
+                      <TableHead>Confidence</TableHead>
+                      <TableHead>Recurring</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {revenueSources.map((s) => {
+                      const growth = typeof s.growth_rate === 'number' ? s.growth_rate : 0;
+                      const growthPct = growth <= 1 ? growth * 100 : growth;
+                      return (
+                        <TableRow key={s.id || `${s.revenue_type}-${s.revenue_source}`}>
+                          <TableCell className="capitalize">{s.revenue_type.replace('_', ' ')}</TableCell>
+                          <TableCell>{s.revenue_source}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(s.annual_revenue)}</TableCell>
+                          <TableCell className="text-right">{growthPct.toFixed(1)}%</TableCell>
+                          <TableCell className="capitalize">{s.confidence_level}</TableCell>
+                          <TableCell>{s.is_recurring ? 'Yes' : 'No'}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </div>
           </TabsContent>
 
