@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DollarSign, TrendingUp, AlertCircle, Music2, Radio, Disc, Film, BarChart3 } from 'lucide-react';
 import { useSongEstimator } from '@/hooks/useSongEstimator';
+import { computeCatalogPipeline, defaultPipelineConfig } from '@/utils/pipelineValuation';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SongMetadata {
   id: string;
@@ -28,7 +30,8 @@ interface PipelineEstimateViewProps {
 
 export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimateViewProps) {
   const [selectedEstimateType, setSelectedEstimateType] = useState<'total' | 'performance' | 'mechanical' | 'sync'>('total');
-  const { runAIResearch, loading } = useSongEstimator();
+  const { loading } = useSongEstimator();
+  const lastSavedTotalRef = useRef<number>(0);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -37,15 +40,6 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
-
-  const getConfidenceColor = (level: string) => {
-    switch (level) {
-      case 'high': return 'text-success';
-      case 'medium': return 'text-warning';
-      case 'low': return 'text-destructive';
-      default: return 'text-muted-foreground';
-    }
   };
 
   const getConfidenceBadge = (level: string) => {
@@ -61,76 +55,80 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
     }
   };
 
-  // Mock pipeline estimates for demonstration
+  // Deterministic rules-based calculation
+  const catalog = useMemo(() => computeCatalogPipeline(songMetadata as any, defaultPipelineConfig), [songMetadata]);
+  const confidenceLevel = useMemo(() => (catalog.confidenceScore >= 80 ? 'high' : catalog.confidenceScore >= 60 ? 'medium' : 'low'), [catalog.confidenceScore]);
+  const totalBasePipeline = useMemo(() => catalog.songResults.reduce((s, r) => s + r.basePipeline, 0), [catalog.songResults]);
+  const missingImpact = Math.max(0, totalBasePipeline - catalog.total);
+  const potentialUpside = catalog.total * 0.2;
+
+  // Build deterministic data for UI (replaces previous mock data)
+  const computeFactors = () => {
+    const missingISWC = songMetadata.filter(s => !s.iswc).length;
+    const verifiedCount = songMetadata.filter(s => ['pro_verified','bmi_verified'].includes((s.verification_status || '').toLowerCase())).length;
+    const avgCompleteness = songMetadata.length ? songMetadata.reduce((sum, s) => sum + (s.metadata_completeness_score || 0), 0) / songMetadata.length : 0;
+    return [
+      `${missingISWC} works missing ISWC`,
+      `${verifiedCount}/${songMetadata.length} verified with PRO/BMI`,
+      `Avg completeness ${(avgCompleteness * 100).toFixed(0)}%`
+    ];
+  };
+
   const mockPipelineData = {
     total: {
-      annual_estimate: 125000,
-      confidence_level: 'medium',
-      breakdown: {
-        performance: 75000,
-        mechanical: 35000,
-        sync: 15000
-      },
-      missing_impact: 25000,
-      potential_upside: 45000
+      annual_estimate: Math.round(catalog.total),
+      confidence_level: confidenceLevel,
+      breakdown: catalog.breakdown,
+      missing_impact: Math.round(missingImpact),
+      potential_upside: Math.round(potentialUpside)
     },
     performance: {
-      annual_estimate: 75000,
-      confidence_level: 'high',
-      factors: [
-        'Strong radio play history',
-        'Multiple PRO registrations incomplete',
-        'International collection gaps'
-      ],
-      missing_impact: 18000
+      annual_estimate: Math.round((catalog.breakdown as any).performance || 0),
+      confidence_level: confidenceLevel,
+      factors: computeFactors(),
+      missing_impact: Math.round(catalog.total ? missingImpact * ((catalog.breakdown as any).performance || 0) / catalog.total : 0)
     },
     mechanical: {
-      annual_estimate: 35000,
-      confidence_level: 'medium',
-      factors: [
-        'Digital streaming growth',
-        'Physical sales declining',
-        'Missing publisher registrations'
-      ],
-      missing_impact: 5000
+      annual_estimate: Math.round((catalog.breakdown as any).mechanical || 0),
+      confidence_level: confidenceLevel,
+      factors: computeFactors(),
+      missing_impact: Math.round(catalog.total ? missingImpact * ((catalog.breakdown as any).mechanical || 0) / catalog.total : 0)
     },
     sync: {
-      annual_estimate: 15000,
-      confidence_level: 'low',
-      factors: [
-        'Genre suitable for sync',
-        'Limited sync representation',
-        'Catalog age considerations'
-      ],
-      missing_impact: 2000
+      annual_estimate: Math.round((catalog.breakdown as any).sync || 0),
+      confidence_level: confidenceLevel,
+      factors: computeFactors(),
+      missing_impact: Math.round(catalog.total ? missingImpact * ((catalog.breakdown as any).sync || 0) / catalog.total : 0)
     }
-  };
+  } as const;
+
+  const songEstimates = useMemo(() => {
+    const byId: Record<string, { estimate: number; confidence: 'high' | 'medium' | 'low' }> = {};
+    for (const r of catalog.songResults) {
+      byId[r.songId] = { estimate: Math.round(r.collectiblePipeline), confidence: r.confidence };
+    }
+    return songMetadata.map((s) => ({ id: s.id, ...(byId[s.id] || { estimate: 0, confidence: 'low' as const }) }));
+  }, [catalog.songResults, songMetadata]);
 
   const handleRunPipelineAnalysis = async () => {
-    if (!searchId) return;
-    
-    await runAIResearch(
-      searchId,
-      songMetadata[0]?.songwriter_name || 'Unknown',
-      'pipeline_analysis',
-      {
-        song_count: songMetadata.length,
-        average_completeness: songMetadata.reduce((sum, song) => sum + song.metadata_completeness_score, 0) / songMetadata.length,
-        registration_gaps: songMetadata.reduce((total, song) => total + (song.registration_gaps?.length || 0), 0)
-      }
-    );
+    // Deterministic mode: recalculates automatically from current data
+    return;
   };
 
-  const currentEstimate = mockPipelineData[selectedEstimateType];
-
-  // Memoize song estimates to prevent glitching - only depend on song IDs
-  const songEstimates = useMemo(() => {
-    return songMetadata.map((song) => ({
-      id: song.id,
-      estimate: Math.floor(Math.random() * 8000) + 2000,
-      confidence: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)]
-    }));
-  }, [songMetadata.map(song => song.id).join(',')]);
+  // Persist total to search record (lightweight sync)
+  useEffect(() => {
+    const persist = async () => {
+      const rounded = Math.round(catalog.total);
+      if (!searchId) return;
+      if (lastSavedTotalRef.current === rounded) return;
+      await supabase
+        .from('song_catalog_searches')
+        .update({ pipeline_estimate_total: rounded, last_refreshed_at: new Date().toISOString() })
+        .eq('id', searchId);
+      lastSavedTotalRef.current = rounded;
+    };
+    persist();
+  }, [catalog.total, searchId]);
 
   return (
     <div className="space-y-6">
