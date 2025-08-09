@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { samplePDFs } from "./SamplePDFData";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ContractCustomizationProps {
   template: any;
@@ -43,6 +44,7 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof customizationSchema>>({
     resolver: zodResolver(customizationSchema),
@@ -161,7 +163,7 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
         .from('contract_change_logs')
         .insert({
           contract_id: contractId,
-          user_id: 'placeholder-user-id', // This will be replaced with actual auth
+          user_id: user?.id,
           change_type: changeType,
           field_name: fieldName,
           old_value: oldValue,
@@ -196,7 +198,7 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
           },
           template_id: template.id,
           signature_status: 'draft',
-          user_id: 'placeholder-user-id', // This will be replaced with actual auth
+          user_id: user?.id,
         })
         .select()
         .single();

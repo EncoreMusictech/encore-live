@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Download, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DocuSignImportProps {
   onBack: () => void;
@@ -41,6 +42,7 @@ export function DocuSignImport({ onBack, onSuccess }: DocuSignImportProps) {
   const [title, setTitle] = useState<string>("");
   const [counterpartyName, setCounterpartyName] = useState<string>("");
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const authenticate = async () => {
     setIsLoading(true);
@@ -141,12 +143,12 @@ export function DocuSignImport({ onBack, onSuccess }: DocuSignImportProps) {
           accessToken: accessToken,
           envelopeId: selectedEnvelope.envelopeId,
           documentId: selectedDocument.documentId,
-          contractData: {
-            title,
-            counterparty_name: counterpartyName,
-            contract_type: contractType,
-            user_id: 'placeholder-user-id' // This will be replaced with actual auth
-          }
+            contractData: {
+              title,
+              counterparty_name: counterpartyName,
+              contract_type: contractType,
+              user_id: user?.id
+            }
         }
       });
 

@@ -20,6 +20,7 @@ import { ArtistForm } from "./forms/ArtistForm";
 import { ProducerForm } from "./forms/ProducerForm";
 import { SyncForm } from "./forms/SyncForm";
 import { DistributionForm } from "./forms/DistributionForm";
+import { useAuth } from "@/hooks/useAuth";
 
 const baseSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -41,6 +42,7 @@ export function ContractForm({ contractType, onCancel, onSuccess }: ContractForm
   const [endDate, setEndDate] = useState<Date>();
   const [contractData, setContractData] = useState({});
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof baseSchema>>({
     resolver: zodResolver(baseSchema),
@@ -65,7 +67,7 @@ export function ContractForm({ contractType, onCancel, onSuccess }: ContractForm
           end_date: endDate?.toISOString().split('T')[0] || null,
           notes: values.notes || null,
           contract_data: contractData,
-          user_id: 'placeholder-user-id', // This will be replaced with actual auth
+          user_id: user?.id,
         });
 
       if (error) {
