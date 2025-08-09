@@ -134,6 +134,15 @@ export function useSongEstimator() {
     sessionType: 'initial_search' | 'metadata_enhancement' | 'pipeline_analysis',
     additionalContext = {}
   ) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to run research",
+        variant: "destructive"
+      });
+      return null;
+    }
+
     setLoading(true);
     try {
       // Update search status to processing
@@ -146,7 +155,7 @@ export function useSongEstimator() {
         body: {
           searchId,
           writerName: songwriterName,
-          userId: user?.id,
+          userId: user.id, // ensure we always pass a valid user id
           maxSongs: 500
         }
       });
@@ -164,12 +173,12 @@ export function useSongEstimator() {
       } else {
         throw new Error(data?.error || 'Discovery failed');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error running AI research:', err);
       setError(err.message);
       toast({
         title: "Error",
-        description: "AI research failed",
+        description: err?.message || "AI research failed",
         variant: "destructive"
       });
 
