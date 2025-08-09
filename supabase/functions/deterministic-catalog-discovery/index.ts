@@ -203,115 +203,239 @@ serve(async (req) => {
       works = await searchWorksByWriterName(writerName, Math.min(1000, maxSongs));
     }
 
-    // Supplement with ASCAP Songview (via Perplexity) to catch missing works
-    let ascapWorks: Array<{ title: string; iswc?: string; writers?: any[]; publishers?: any[] }> = [];
+    // Supplement with PRO repertoires (ASCAP, BMI, SESAC) via Perplexity to catch missing works
+    let proWorks: Array<{ title: string; iswc?: string; writers?: any[]; publishers?: any[]; source: 'ascap'|'bmi'|'sesac' }> = [];
     if (perplexityKey) {
       try {
-        const resp = await fetch('https://api.perplexity.ai/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${perplexityKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'llama-3.1-sonar-large-128k-online',
+        const fetchProDomain = async (domain: 'ascap'|'bmi'|'sesac') => {
+          const model = 'llama-3.1-sonar-large-128k-online';
+          const site = domain === 'ascap' ? 'ascap.com' : (domain === 'bmi' ? 'bmi.com' : 'sesac.com');
+          const system = `You extract structured data from official ${domain.toUpperCase()} repertoire. Return STRICT JSON only. Shape: {"works":[{"title":"string","iswc":"string?","writers":[{"name":"string","ipi":"string?","share":number?}],"publishers":[{"name":"string","share":number?}]}]}. Prefer official capitalization. Return up to 300 unique works for the writer provided.`;
+          const body = {
+            model,
             messages: [
-              { role: 'system', content: 'You extract structured data from ASCAP Songview (repertory.ascap.com). Return STRICT JSON. No prose. Shape: {"works":[{"title":"string","iswc":"string?","writers":[{"name":"string","ipi":"string?","share":number?}],"publishers":[{"name":"string","share":number?}]}]}. Prefer official capitalization. Return up to 300 unique works for the writer provided.' },
-              { role: 'user', content: `List all works for writer \"${writerName}\" using ASCAP Songview. Include ISWC when shown and writers/publishers with percentages if listed. Output JSON only.` }
+              { role: 'system', content: system },
+              { role: 'user', content: `List all works for writer "${writerName}" from the official ${domain.toUpperCase()} repertoire. Include ISWC when shown and writers/publishers with percentages if listed. Output JSON only.` }
             ],
             temperature: 0.1,
             top_p: 0.9,
             max_tokens: 2000,
-            search_domain_filter: ['ascap.com'],
+            search_domain_filter: [site],
             search_recency_filter: 'year'
-          })
-        });
-        if (resp.ok) {
+          } as any;
+          const resp = await fetch('https://api.perplexity.ai/chat/completions', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${perplexityKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          if (!resp.ok) return [] as any[];
           const data = await resp.json();
           const content = data?.choices?.[0]?.message?.content || '';
           let parsed: any = null;
           try {
             const match = content.match(/```json\s*([\s\S]*?)```/);
             parsed = JSON.parse(match ? match[1] : content);
-          } catch(_e) {
-            parsed = null;
-          }
-          if (parsed?.works && Array.isArray(parsed.works)) {
-            ascapWorks = parsed.works.slice(0, maxSongs * 2);
-          }
-        }
+          } catch { parsed = null; }
+          const works = Array.isArray(parsed?.works) ? parsed.works : [];
+          return works.map((w: any) => ({ ...w, source: domain })).slice(0, maxSongs * 2);
+        };
+        const [ascap, bmi, sesac] = await Promise.all([
+          fetchProDomain('ascap'),
+          fetchProDomain('bmi'),
+          fetchProDomain('sesac'),
+        ]);
+        proWorks = [...ascap, ...bmi, ...sesac];
       } catch(_e) { /* ignore */ }
     }
 
-    // Build unified candidate list
-    const byTitle = new Map<string, { id?: string; title: string; source: 'musicbrainz' | 'ascap'; iswc?: string; writers?: any[]; publishers?: any[] }>();
+    // Build unified candidate list with PRO-first merging
+    const candidates = new Map<string, { id?: string; title: string; sources: Array<'musicbrainz'|'ascap'|'bmi'|'sesac'>; iswc?: string; proDetails?: Record<string, any> }>();
+
+    // Seed with MusicBrainz discoveries
     for (const w of works) {
       const title = (w.title || '').trim();
       if (!title) continue;
-      const key = title.toLowerCase();
-      if (!byTitle.has(key)) byTitle.set(key, { id: w.id, title, source: 'musicbrainz', iswc: (w.iswc || (w.iswcs && w.iswcs[0])) });
+      const mbIswc = (w.iswc || (w.iswcs && w.iswcs[0]));
+      const key = mbIswc ? `iswc:${mbIswc}` : `title:${title.toLowerCase()}`;
+      if (!candidates.has(key)) {
+        candidates.set(key, { id: w.id, title, sources: ['musicbrainz'], iswc: mbIswc || undefined, proDetails: {} });
+      } else {
+        const existing = candidates.get(key)!;
+        if (!existing.sources.includes('musicbrainz')) existing.sources.push('musicbrainz');
+        if (!existing.iswc && mbIswc) existing.iswc = mbIswc;
+      }
     }
-    for (const w of ascapWorks) {
+
+    // Merge in PRO results (ASCAP/BMI/SESAC)
+    for (const w of proWorks) {
       const title = (w.title || '').trim();
       if (!title) continue;
-      const key = title.toLowerCase();
-      if (!byTitle.has(key)) byTitle.set(key, { title, source: 'ascap', iswc: w.iswc, writers: w.writers, publishers: w.publishers });
+      const domain = w.source; // 'ascap' | 'bmi' | 'sesac'
+      const keyIswc = w.iswc ? `iswc:${w.iswc}` : null;
+      const keyTitle = `title:${title.toLowerCase()}`;
+      const key = keyIswc && candidates.has(keyIswc) ? keyIswc : (keyIswc || keyTitle);
+      const existing = candidates.get(key);
+      if (!existing) {
+        candidates.set(key, {
+          title,
+          sources: [domain],
+          iswc: w.iswc || undefined,
+          proDetails: { [domain]: { writers: w.writers || [], publishers: w.publishers || [], iswc: w.iswc || null } }
+        });
+      } else {
+        if (!existing.sources.includes(domain)) existing.sources.push(domain);
+        if (!existing.iswc && w.iswc) existing.iswc = w.iswc;
+        existing.proDetails = existing.proDetails || {};
+        (existing.proDetails as any)[domain] = { writers: w.writers || [], publishers: w.publishers || [], iswc: w.iswc || null };
+      }
     }
 
-    const selected = Array.from(byTitle.values()).slice(0, maxSongs);
+    // Keep compatibility with later code
+    const byTitle = candidates as any;
+
+    const selected = Array.from(byTitle.values())
+      .sort((a: any, b: any) => {
+        const proCountA = Array.isArray(a.sources) ? a.sources.filter((s: string) => s !== 'musicbrainz').length : 0;
+        const proCountB = Array.isArray(b.sources) ? b.sources.filter((s: string) => s !== 'musicbrainz').length : 0;
+        if (proCountA !== proCountB) return proCountB - proCountA;
+        const iswcA = a.iswc ? 1 : 0, iswcB = b.iswc ? 1 : 0;
+        if (iswcA !== iswcB) return iswcB - iswcA;
+        return 0;
+      })
+      .slice(0, maxSongs);
     const rows: any[] = [];
 
-for (const w of selected) {
+    for (const w of selected) {
       // Respect rate limits
       await new Promise((res) => setTimeout(res, 300));
 
       let title = (w.title || 'Untitled');
-      let iswc: string | null = (w.iswc as string) || null;
-      let coWriters: string[] = Array.isArray(w.writers) ? w.writers.map((x: any) => x?.name).filter(Boolean) : [];
+      let finalISWC: string | null = (w.iswc as string) || null;
+      let coWritersMB: string[] = [];
 
       if (w.id) {
         const details = await getWorkDetails(w.id);
         if (details) {
           title = details?.title || title;
-          iswc = (details?.iswcs && details.iswcs[0]) || iswc;
+          finalISWC = (details?.iswcs && details.iswcs[0]) || finalISWC;
           const rels = details?.relations || [];
-          const writerRels = rels.filter((r: any) => ['writer', 'composer', 'lyricist'].includes(r.type));
+          const writerRels = rels.filter((r: any) => ['writer', 'composer', 'lyricist', 'author'].includes((r.type || '').toLowerCase()));
           const extra = writerRels.map((r: any) => r.artist?.name).filter(Boolean);
-          if (extra?.length) coWriters = extra;
+          if (extra?.length) coWritersMB = extra;
         }
       }
 
-      // Try PRO agent for authoritative verification
+      const proDetails = (w.proDetails || {}) as Record<string, any>;
+      const proOrder = ['ascap','bmi','sesac'];
+      const chosen = proOrder.find((k) => !!proDetails[k]) || null;
+      const chosenDetails = chosen ? proDetails[chosen] : null;
+
+      // Co-writers and publishers from PRO first, fallback to MB
+      const coWritersPRO: string[] = chosenDetails?.writers?.map((x: any) => x?.name).filter(Boolean) || [];
+      const coWriters = (coWritersPRO.length ? coWritersPRO : coWritersMB);
+
+      const publishersObj: Record<string, number> = {};
+      if (chosenDetails?.publishers?.length) {
+        for (const p of chosenDetails.publishers) {
+          if (!p?.name) continue;
+          const share = typeof p.share === 'number' ? p.share : 0;
+          publishersObj[p.name] = share;
+        }
+      }
+
+      if (!finalISWC) {
+        // try to take ISWC from any PRO source
+        for (const k of proOrder) {
+          const v = proDetails[k]?.iswc;
+          if (v && !finalISWC) { finalISWC = v; break; }
+        }
+      }
+
+      // Try PRO agent for authoritative verification (optional)
       let proData: any = null;
       if (sharedSecret) {
         proData = await callProAgent(title, writerName);
+        if (proData?.iswc && !finalISWC) finalISWC = proData.iswc;
       }
 
-      const publishers = Array.isArray(proData?.publishers)
-        ? proData.publishers.reduce((acc: any, p: any) => { if (p?.name) acc[p.name] = typeof p.share === 'number' ? p.share : 0; return acc; }, {})
-        : {};
-      const finalISWC = proData?.iswc || iswc || null;
-      const estimatedSplits = Array.isArray(proData?.writers)
-        ? proData.writers.reduce((acc: any, w: any) => { if (w?.name) acc[w.name] = typeof w.share === 'number' ? w.share : 0; return acc; }, {})
-        : {};
+      // Estimated splits prefer chosen PRO details, fallback to agent
+      let estimatedSplits: Record<string, number> = {};
+      const fromChosenSplits = Array.isArray(chosenDetails?.writers) ? chosenDetails.writers : null;
+      if (fromChosenSplits) {
+        estimatedSplits = fromChosenSplits.reduce((acc: any, ww: any) => {
+          if (ww?.name) acc[ww.name] = typeof ww.share === 'number' ? ww.share : 0;
+          return acc;
+        }, {});
+      } else if (Array.isArray(proData?.writers)) {
+        estimatedSplits = proData.writers.reduce((acc: any, ww: any) => {
+          if (ww?.name) acc[ww.name] = typeof ww.share === 'number' ? ww.share : 0;
+          return acc;
+        }, {});
+      }
+
+      // PRO flags
       const proFlags = {
-        ASCAP: !!(proData?.sources?.ascap?.found ?? proData?.ascap?.found ?? proData?.ascap),
-        BMI:   !!(proData?.sources?.bmi?.found   ?? proData?.bmi?.found   ?? proData?.bmi),
-        SESAC: !!(proData?.sources?.sesac?.found ?? proData?.sesac?.found ?? proData?.sesac),
+        ASCAP: !!proDetails.ascap || !!(proData?.sources?.ascap?.found ?? proData?.ascap),
+        BMI:   !!proDetails.bmi   || !!(proData?.sources?.bmi?.found   ?? proData?.bmi),
+        SESAC: !!proDetails.sesac || !!(proData?.sources?.sesac?.found ?? proData?.sesac),
       };
+
+      // Gap detection
+      const registration_gaps: string[] = [];
+      if (!finalISWC) registration_gaps.push('missing_iswc');
+
+      // MB author present but no PRO registration
+      const hasMB = Array.isArray(w.sources) && w.sources.includes('musicbrainz');
+      const hasAnyPRO = proFlags.ASCAP || proFlags.BMI || proFlags.SESAC;
+      if (hasMB && !hasAnyPRO) registration_gaps.push('unregistered_in_pros');
+
+      // Conflicts across PRO sources
+      const presentPROs = proOrder.filter((k) => !!proDetails[k]);
+      if (presentPROs.length >= 2) {
+        // writers conflict
+        const sets = presentPROs.map((k) => new Set((proDetails[k].writers || []).map((x: any) => (x?.name || '').toLowerCase()).filter(Boolean)));
+        const union = new Set<string>(); sets.forEach((s) => s.forEach((v) => union.add(v)));
+        const allEqual = sets.every((s) => s.size === union.size && Array.from(s).every((v) => union.has(v)));
+        if (!allEqual) registration_gaps.push('conflicting_writers');
+
+        // splits conflict
+        const shares: Record<string, Set<number>> = {};
+        for (const k of presentPROs) {
+          for (const ww of (proDetails[k].writers || [])) {
+            const name = (ww?.name || '').toLowerCase(); if (!name) continue;
+            const share = typeof ww?.share === 'number' ? ww.share : NaN;
+            if (!shares[name]) shares[name] = new Set<number>();
+            if (!Number.isNaN(share)) shares[name].add(share);
+          }
+        }
+        const splitConflict = Object.values(shares).some((set) => set.size > 1);
+        if (splitConflict) registration_gaps.push('conflicting_splits');
+
+        // publishers conflict
+        const pubSets = presentPROs.map((k) => new Set((proDetails[k].publishers || []).map((p: any) => (p?.name || '').toLowerCase()).filter(Boolean)));
+        const pubUnion = new Set<string>(); pubSets.forEach((s) => s.forEach((v) => pubUnion.add(v)));
+        const pubsAllEqual = pubSets.every((s) => s.size === pubUnion.size && Array.from(s).every((v) => pubUnion.has(v)));
+        if (!pubsAllEqual) registration_gaps.push('conflicting_publishers');
+      }
+
+      const metadataScore = finalISWC ? 0.9 : 0.6;
+      const verification_status = hasAnyPRO ? 'pro_verified' : 'discovered';
 
       rows.push({
         search_id: searchId,
         user_id: userId,
         song_title: title || 'Untitled',
         songwriter_name: writerName,
-        co_writers: proData?.writers?.map((w: any) => w.name).filter(Boolean) || coWriters || [],
-        publishers,
-        pro_registrations: proData ? { ...proFlags, merged: proData } : {},
+        co_writers: coWriters || [],
+        publishers: Object.keys(publishersObj).length ? publishersObj : (Array.isArray(proData?.publishers) ? proData.publishers.reduce((acc: any, p: any) => { if (p?.name) acc[p.name] = typeof p.share === 'number' ? p.share : 0; return acc; }, {}) : {}),
+        pro_registrations: { ...proFlags, merged: { pro_details: proDetails, agent: proData || null } },
         iswc: finalISWC,
-        estimated_splits: estimatedSplits,
-        registration_gaps: finalISWC ? [] : ['missing_iswc'],
-        metadata_completeness_score: finalISWC ? 0.85 : 0.6,
-        verification_status: proData ? 'pro_verified' : 'discovered',
+        estimated_splits,
+        registration_gaps,
+        metadata_completeness_score: metadataScore,
+        verification_status,
         last_verified_at: new Date().toISOString(),
-        source_data: { source: w.source, work_id: w.id || null, primary_territory: primaryTerritory }
+        source_data: { source: Array.isArray(w.sources) ? (w.sources[0] || 'merged') : 'merged', work_id: w.id || null, primary_territory: primaryTerritory }
       });
     }
 
