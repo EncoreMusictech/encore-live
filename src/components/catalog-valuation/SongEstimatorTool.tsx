@@ -244,16 +244,16 @@ export function SongEstimatorTool() {
                   </div>
                   <div className="p-4 border rounded-lg bg-card">
                     <div className={`text-2xl font-bold ${
-                      currentSearch?.webhook_status === 'sent' ? 'text-success' :
-                      currentSearch?.webhook_status === 'failed' ? 'text-destructive' :
-                      currentSearch?.webhook_status === 'sending' ? 'text-warning' :
+                      currentSearch?.search_status === 'completed' ? 'text-success' :
+                      currentSearch?.search_status === 'error' ? 'text-destructive' :
+                      currentSearch?.search_status === 'processing' ? 'text-warning' :
                       'text-muted-foreground'
                     }`}>
-                      {currentSearch?.webhook_status === 'sent' ? '✓' :
-                       currentSearch?.webhook_status === 'failed' ? '✗' :
-                       currentSearch?.webhook_status === 'sending' ? '⏳' : '⏸'}
+                      {currentSearch?.search_status === 'completed' ? '✓' :
+                       currentSearch?.search_status === 'error' ? '✗' :
+                       currentSearch?.search_status === 'processing' ? '⏳' : '⏸'}
                     </div>
-                    <div className="text-sm text-muted-foreground">n8n Status</div>
+                    <div className="text-sm text-muted-foreground">Agent Status</div>
                   </div>
                 </div>
 
