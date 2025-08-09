@@ -417,9 +417,6 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold mb-4">Pick Your Tools</h2>
               <p className="text-muted-foreground mb-2">Choose individual modules that fit your workflow</p>
-              <p className="text-sm text-muted-foreground">
-                No a la carte discounts. For savings, choose a bundle.
-              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
