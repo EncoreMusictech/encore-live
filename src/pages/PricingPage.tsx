@@ -573,7 +573,6 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                       Client Dashboard requires at least one other module for new subscribers.
                     </p>
                   )}
-                  </div>
                 </CardContent>
               </Card>
             )}
