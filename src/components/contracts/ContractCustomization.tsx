@@ -93,6 +93,29 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
   }, [template]);
 
   const loadTemplateContent = () => {
+    // Prefer user-created template data when available
+    const tplData = (template && template.template_data) || null;
+    const fields = tplData?.fields || [];
+    const clauses = tplData?.clauses || {};
+
+    if (fields.length > 0 && Object.keys(clauses).length > 0) {
+      // Build content from saved clauses, converting {{fieldId}} -> [FIELD LABEL]
+      let built = fields
+        .map((f: any) => clauses[f.id] ?? `${f.label}: {{${f.id}}}`)
+        .join("\n\n");
+
+      built = built.replace(/\{\{([^}]+)\}\}/g, (_m: string, id: string) => {
+        const field = fields.find((ff: any) => ff.id === id);
+        const label = (field?.label || id).toString();
+        return `[${label.toUpperCase()}]`;
+      });
+
+      setContractContent(built);
+      extractBracketedFields(built);
+      return;
+    }
+
+    // Fallback to sample content by contract type
     const sampleData = samplePDFs.find(pdf => pdf.contractType === template.contract_type);
     if (sampleData) {
       setContractContent(sampleData.content);
