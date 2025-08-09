@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { 
   Table, 
   TableBody, 
@@ -249,6 +250,7 @@ const comparisonFeatures = [
 
 const PricingPage = () => {
   const [selectedModules, setSelectedModules] = useState<Set<string>>(new Set());
+  const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month');
   const { user } = useAuth();
   const { subscribed, subscription_tier, loading, createCheckout, openCustomerPortal } = useSubscription();
   const { createTrialCheckout } = useFreeTrial();
@@ -268,10 +270,10 @@ const PricingPage = () => {
   };
 
   const calculateModulesTotal = () => {
-    return Array.from(selectedModules).reduce((total, moduleId) => {
-      const module = moduleData.find(m => m.id === moduleId);
-      return total + (module?.price || 0);
-    }, 0);
+return Array.from(selectedModules).reduce((total, moduleId) => {
+  const module = moduleData.find(m => m.id === moduleId);
+  return total + (module ? (billingInterval === 'month' ? module.price : module.annualPrice) : 0);
+}, 0);
   };
 
   const calculateSavings = () => {
@@ -380,9 +382,26 @@ const PricingPage = () => {
               <Calculator className="w-4 h-4" />
               Compare
             </TabsTrigger>
-          </TabsList>
+</TabsList>
 
-          {/* Modular Pricing */}
+{/* Billing Interval Toggle */}
+<div className="flex items-center justify-center mb-8">
+  <div className="flex items-center gap-3 rounded-full bg-secondary/30 px-4 py-2">
+    <span className={billingInterval === 'month' ? 'text-foreground text-sm font-medium' : 'text-muted-foreground text-sm'}>
+      Monthly
+    </span>
+    <Switch
+      checked={billingInterval === 'year'}
+      onCheckedChange={(checked) => setBillingInterval(checked ? 'year' : 'month')}
+      aria-label="Toggle billing interval"
+    />
+    <span className={billingInterval === 'year' ? 'text-foreground text-sm font-medium' : 'text-muted-foreground text-sm'}>
+      Annual
+    </span>
+  </div>
+</div>
+
+{/* Modular Pricing */}
           <TabsContent value="modules">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold mb-4">Pick Your Tools</h2>
@@ -410,11 +429,10 @@ const PricingPage = () => {
                         <div className="bg-gradient-primary rounded-lg p-3">
                           <IconComponent className="h-6 w-6 text-primary-foreground" />
                         </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold">${module.price}</div>
-                          <div className="text-sm text-muted-foreground">/month</div>
-                          <div className="text-xs text-muted-foreground">or ${module.annualPrice}/yr</div>
-                        </div>
+<div className="text-right">
+  <div className="text-2xl font-bold">${billingInterval === 'month' ? module.price : module.annualPrice}</div>
+  <div className="text-sm text-muted-foreground">/{billingInterval === 'month' ? 'month' : 'year'}</div>
+</div>
                       </div>
                       <CardTitle className="text-xl">{module.name}</CardTitle>
                       <CardDescription>{module.description}</CardDescription>
@@ -443,7 +461,7 @@ const PricingPage = () => {
                             window.location.href = '/auth';
                             return;
                           }
-                          createCheckout('module', module.id);
+createCheckout('module', module.id, billingInterval);
                         }}
                         disabled={loading}
                       >
@@ -467,15 +485,15 @@ const PricingPage = () => {
                           ${calculateModulesTotal()}
                         </div>
                       )}
-                      <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                        ${(calculateModulesTotal() - calculateSavings()).toFixed(0)}
-                        <span className="text-sm text-muted-foreground">/month</span>
-                      </div>
-                      {calculateSavings() > 0 && (
-                        <Badge className="bg-gradient-primary text-primary-foreground">
-                          Save ${calculateSavings().toFixed(0)}/mo
-                        </Badge>
-                      )}
+<div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+  ${(calculateModulesTotal() - calculateSavings()).toFixed(0)}
+  <span className="text-sm text-muted-foreground">/{billingInterval === 'month' ? 'month' : 'year'}</span>
+</div>
+{calculateSavings() > 0 && (
+  <Badge className="bg-gradient-primary text-primary-foreground">
+    Save ${calculateSavings().toFixed(0)}/{billingInterval === 'month' ? 'mo' : 'yr'}
+  </Badge>
+)}
                     </div>
                   </CardTitle>
                 </CardHeader>
@@ -490,8 +508,8 @@ const PricingPage = () => {
                           return;
                         }
                         // Start free trial for custom selected modules
-                        const modulesArray = Array.from(selectedModules);
-                        createTrialCheckout('custom', 'custom', modulesArray);
+const modulesArray = Array.from(selectedModules);
+                        createTrialCheckout('custom', 'custom', modulesArray, billingInterval);
                       }}
                       disabled={loading || selectedModules.size === 0}
                     >
@@ -517,11 +535,17 @@ const PricingPage = () => {
                   const mod = moduleData.find((m) => m.id === moduleId);
                   return sum + (mod?.price || 0);
                 }, 0);
+                const regularAnnual = plan.modules.reduce((sum, moduleId) => {
+                  const mod = moduleData.find((m) => m.id === moduleId);
+                  return sum + (mod?.annualPrice || 0);
+                }, 0);
+                const selectedPrice = billingInterval === 'month' ? plan.price : plan.annualPrice;
+                const selectedRegular = billingInterval === 'month' ? regularMonthly : regularAnnual;
                 const savingsPercent = Math.max(
                   0,
-                  Math.round(((regularMonthly - plan.price) / (regularMonthly || 1)) * 100)
+                  Math.round(((selectedRegular - selectedPrice) / (selectedRegular || 1)) * 100)
                 );
-                const annualSavingsVsModules = Math.max(0, regularMonthly * 12 - (plan.annualPrice || plan.price * 12));
+                const annualSavingsVsModules = Math.max(0, regularAnnual - (plan.annualPrice || plan.price * 12));
                 
                 return (
                   <Card 
@@ -554,17 +578,17 @@ const PricingPage = () => {
                       
                       <div className="text-center">
                         <div className="text-sm text-muted-foreground line-through">
-                          ${regularMonthly}/mo
+                          ${selectedRegular.toLocaleString()}/{billingInterval === 'month' ? 'mo' : 'yr'}
                         </div>
                         <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                          ${plan.price}
-                          <span className="text-lg text-muted-foreground">/month</span>
+                          ${selectedPrice.toLocaleString()}
+                          <span className="text-lg text-muted-foreground">/{billingInterval === 'month' ? 'month' : 'year'}</span>
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          or ${plan.annualPrice}/yr
-                        </div>
-                        {annualSavingsVsModules > 0 && (
-                          <div className="text-xs text-muted-foreground">Save ${annualSavingsVsModules.toLocaleString()}/yr vs modules</div>
+                        {billingInterval === 'month' && (
+                          <div className="text-xs text-muted-foreground mt-1">or ${plan.annualPrice}/yr</div>
+                        )}
+                        {billingInterval === 'year' && annualSavingsVsModules > 0 && (
+                          <div className="text-xs text-muted-foreground mt-1">Save ${annualSavingsVsModules.toLocaleString()}/yr vs modules</div>
                         )}
                       </div>
                     </CardHeader>
@@ -596,14 +620,14 @@ const PricingPage = () => {
                         ))}
                       </ul>
 
-                      <Button 
+<Button 
                         className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
                         onClick={() => {
                           if (!user) {
                             window.location.href = '/auth';
                             return;
                           }
-                          createCheckout('bundle', plan.id);
+                          createCheckout('bundle', plan.id, billingInterval);
                         }}
                         disabled={loading}
                       >
@@ -631,9 +655,9 @@ const PricingPage = () => {
                     <TableHead className="w-48">Feature</TableHead>
                     {bundledPlans.map((plan) => (
                       <TableHead key={plan.id} className="text-center min-w-32">
-                        <div className="space-y-1">
+<div className="space-y-1">
                           <div className="font-bold">{plan.name}</div>
-                          <div className="text-lg font-bold text-primary">${plan.price}/mo</div>
+                          <div className="text-lg font-bold text-primary">${(billingInterval === 'month' ? plan.price : plan.annualPrice)}/{billingInterval === 'month' ? 'mo' : 'yr'}</div>
                         </div>
                       </TableHead>
                     ))}
