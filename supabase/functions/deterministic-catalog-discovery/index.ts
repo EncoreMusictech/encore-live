@@ -46,16 +46,25 @@ async function findArtistMBID(writerName: string): Promise<string | null> {
 }
 
 async function fetchAllWorksByArtist(artistId: string, max = 200): Promise<any[]> {
+  // MusicBrainz "work" browse by artist isn't reliable; prefer search using arid and paginate
   const results: any[] = [];
+  const seen = new Set<string>();
   let offset = 0;
-  const pageSize = 100; // MusicBrainz allows up to 100 per page
+  const pageSize = 100;
   while (results.length < max) {
     const limit = Math.min(pageSize, max - results.length);
     try {
-      const data = await fetchJSON(`https://musicbrainz.org/ws/2/work?artist=${artistId}&fmt=json&limit=${limit}&offset=${offset}`);
+      const q = encodeURIComponent(`arid:${artistId}`);
+      const data = await fetchJSON(`https://musicbrainz.org/ws/2/work?query=${q}&fmt=json&limit=${limit}&offset=${offset}`);
       const works = data?.works || [];
-      results.push(...works);
-      if (!works.length || results.length >= (data["work-count"] || results.length)) break;
+      for (const w of works) {
+        if (w?.id && !seen.has(w.id)) {
+          seen.add(w.id);
+          results.push(w);
+        }
+      }
+      const total = data?.['work-count'] ?? works.length;
+      if (!works.length || results.length >= total) break;
       offset += works.length;
     } catch (_e) {
       break;
@@ -65,13 +74,37 @@ async function fetchAllWorksByArtist(artistId: string, max = 200): Promise<any[]
 }
 
 async function searchWorksByWriterName(writerName: string, limit = 50): Promise<any[]> {
-  try {
-    const q = encodeURIComponent(`writer:"${writerName}" OR artist:"${writerName}"`);
-    const data = await fetchJSON(`https://musicbrainz.org/ws/2/work?query=${q}&fmt=json&limit=${limit}`);
-    return data?.works || [];
-  } catch (_e) {
-    return [];
+  const results: any[] = [];
+  const seen = new Set<string>();
+  const queries = [
+    `writer:"${writerName}"`,
+    `artistname:"${writerName}"`,
+    `artist:"${writerName}"`
+  ];
+  for (const base of queries) {
+    let offset = 0;
+    while (results.length < limit) {
+      const page = Math.min(100, limit - results.length);
+      try {
+        const q = encodeURIComponent(base);
+        const data = await fetchJSON(`https://musicbrainz.org/ws/2/work?query=${q}&fmt=json&limit=${page}&offset=${offset}`);
+        const works = data?.works || [];
+        for (const w of works) {
+          if (w?.id && !seen.has(w.id)) {
+            seen.add(w.id);
+            results.push(w);
+          }
+        }
+        const total = data?.['work-count'] ?? works.length;
+        if (!works.length || (offset + works.length) >= total) break;
+        offset += works.length;
+      } catch (_e) {
+        break;
+      }
+    }
+    if (results.length >= limit) break;
   }
+  return results;
 }
 
 async function getWorkDetails(workId: string): Promise<any | null> {
@@ -173,7 +206,9 @@ serve(async (req) => {
     const selected = works.slice(0, maxSongs);
     const rows: any[] = [];
 
-    for (const w of selected) {
+for (const w of selected) {
+      // Respect MusicBrainz rate limits to avoid throttling
+      await new Promise((res) => setTimeout(res, 300));
       const workId = w.id;
       const details = await getWorkDetails(workId);
       const title = details?.title || w.title;
