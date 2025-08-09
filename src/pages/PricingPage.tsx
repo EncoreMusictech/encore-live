@@ -307,7 +307,7 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
       return planId === "enterprise";
     }
     if (featureName === "24/7 Support") {
-      return ["publishing-pro", "licensing-pro", "growth", "enterprise"].includes(planId);
+      return true;
     }
 
     return feature.modules.some(moduleId => plan.modules.includes(moduleId));
