@@ -149,6 +149,18 @@ serve(async (req) => {
 
     // Discover works
     const artistId = await findArtistMBID(writerName);
+    let artistDetails: any = null;
+    let primaryTerritory = 'Worldwide';
+    let wikiTitle: string | null = null;
+    let wikiSummary: string | null = null;
+    if (artistId) {
+      artistDetails = await getArtistDetails(artistId);
+      primaryTerritory = artistDetails?.area?.name || artistDetails?.country || 'Worldwide';
+      wikiTitle = extractWikipediaTitleFromRels(artistDetails?.relations || []);
+      if (wikiTitle) {
+        wikiSummary = await fetchWikipediaSummary(wikiTitle);
+      }
+    }
     let works: any[] = [];
     if (artistId) {
       works = await fetchAllWorksByArtist(artistId, Math.min(1000, maxSongs));
@@ -183,6 +195,11 @@ serve(async (req) => {
       const estimatedSplits = Array.isArray(proData?.writers)
         ? proData.writers.reduce((acc: any, w: any) => { if (w?.name) acc[w.name] = typeof w.share === 'number' ? w.share : 0; return acc; }, {})
         : {};
+      const proFlags = {
+        ASCAP: !!(proData?.sources?.ascap?.found ?? proData?.ascap?.found ?? proData?.ascap),
+        BMI:   !!(proData?.sources?.bmi?.found   ?? proData?.bmi?.found   ?? proData?.bmi),
+        SESAC: !!(proData?.sources?.sesac?.found ?? proData?.sesac?.found ?? proData?.sesac),
+      };
 
       rows.push({
         search_id: searchId,
@@ -191,14 +208,14 @@ serve(async (req) => {
         songwriter_name: writerName,
         co_writers: proData?.writers?.map((w: any) => w.name).filter(Boolean) || coWriters || [],
         publishers,
-        pro_registrations: proData ? { merged: proData } : {},
+        pro_registrations: proData ? { ...proFlags, merged: proData } : {},
         iswc: finalISWC,
         estimated_splits: estimatedSplits,
         registration_gaps: finalISWC ? [] : ['missing_iswc'],
         metadata_completeness_score: finalISWC ? 0.85 : 0.6,
         verification_status: proData ? 'pro_verified' : 'discovered',
         last_verified_at: new Date().toISOString(),
-        source_data: { source: 'musicbrainz', work_id: workId }
+        source_data: { source: 'musicbrainz', work_id: workId, primary_territory: primaryTerritory }
       });
     }
 
@@ -213,6 +230,21 @@ serve(async (req) => {
     }
 
     const metaCompleteCount = rows.filter((r) => (r.metadata_completeness_score ?? 0) >= 0.7).length;
+    const iswcCount = rows.filter((r) => !!r.iswc).length;
+    const proVerifiedCount = rows.filter((r) => r.verification_status === 'pro_verified').length;
+    const verificationRate = insertedCount ? Math.round((proVerifiedCount / insertedCount) * 100) : 0;
+    const descriptor = verificationRate >= 50 ? 'strong' : verificationRate >= 20 ? 'moderate' : 'modest';
+
+    const careerOverview = {
+      summary: wikiSummary || `Songwriter profile for ${writerName}.`,
+      primary_territory: primaryTerritory,
+      source: wikiSummary ? 'wikipedia' : (artistId ? 'musicbrainz' : 'unknown')
+    };
+
+    const pipelineSummary = {
+      summary: `We discovered ${insertedCount} songs for ${writerName}. ${metaCompleteCount} have strong metadata and ${iswcCount} include ISWC codes. Registration checks matched ${proVerifiedCount} songs across PROs. Based on current data, near-term collections outlook appears ${descriptor}.`,
+      counts: { total: insertedCount, meta_complete: metaCompleteCount, iswc: iswcCount, pro_verified: proVerifiedCount, verification_rate: verificationRate }
+    };
 
     await supabase
       .from('song_catalog_searches')
@@ -222,12 +254,12 @@ serve(async (req) => {
         pipeline_estimate_total: 0,
         last_refreshed_at: new Date().toISOString(),
         search_status: 'completed',
-        ai_research_summary: { source: 'deterministic', discovered: insertedCount }
+        ai_research_summary: { source: 'deterministic', discovered: insertedCount, career_overview: careerOverview, pipeline_summary: pipelineSummary }
       })
       .eq('id', searchId)
       .eq('user_id', userId);
 
-    return json({ success: true, discovered: insertedCount, meta_complete: metaCompleteCount });
+    return json({ success: true, discovered: insertedCount, meta_complete: metaCompleteCount, verification_rate: verificationRate });
   } catch (e) {
     console.error('deterministic-catalog-discovery error', e);
     return json({ error: (e as Error).message || 'Unexpected error' }, 500);

@@ -297,6 +297,7 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
                   <div><strong>Title:</strong> {selectedSong.song_title}</div>
                   <div><strong>Primary Writer:</strong> {selectedSong.songwriter_name}</div>
                   <div><strong>ISWC:</strong> {selectedSong.iswc || 'Not available'}</div>
+                  <div><strong>Primary Territory:</strong> {selectedSong.source_data?.primary_territory || 'Worldwide'}</div>
                   <div>
                     <strong>Co-Writers:</strong> {
                       selectedSong.co_writers?.length > 0 
