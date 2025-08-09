@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.song-research-assistant]
 verify_jwt = false
+
+[functions.pro-repertoire-agent]
+verify_jwt = false
