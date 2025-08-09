@@ -2890,6 +2890,7 @@ export type Database = {
           total_songs_found: number | null
           updated_at: string
           user_id: string
+          webhook_status: string | null
         }
         Insert: {
           ai_research_summary?: Json | null
@@ -2904,6 +2905,7 @@ export type Database = {
           total_songs_found?: number | null
           updated_at?: string
           user_id: string
+          webhook_status?: string | null
         }
         Update: {
           ai_research_summary?: Json | null
@@ -2918,6 +2920,7 @@ export type Database = {
           total_songs_found?: number | null
           updated_at?: string
           user_id?: string
+          webhook_status?: string | null
         }
         Relationships: []
       }
