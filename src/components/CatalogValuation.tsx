@@ -136,7 +136,7 @@ const CatalogValuation = memo(() => {
   });
   
   const { revenueSources, calculateRevenueMetrics, refetch } = useCatalogRevenueSources(catalogValuationId);
-  
+  const computedRevenueMetrics = useMemo(() => calculateRevenueMetrics(), [revenueSources]);
   const { toast } = useToast();
   const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
   const { user } = useAuth();
@@ -1372,7 +1372,7 @@ Actual market values may vary significantly based on numerous factors not captur
                      <EnhancedValuationEngine
                        baseValuation={result}
                        revenueSources={revenueSources}
-                       revenueMetrics={revenueMetrics}
+                       revenueMetrics={computedRevenueMetrics}
                      />
                    )}
                  </>
