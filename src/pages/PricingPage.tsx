@@ -142,9 +142,9 @@ const bundledPlans = [
     annualPrice: 799,
     modules: ["copyright", "contracts"],
     features: [
-      "ISRC/ISWC/IPI tracking",
+      "Metadata management (no CWR/DDEX export)",
       "Writer/publisher splits",
-      "Upload & organize contracts",
+      "Basic contract templates (no uploads)",
       "Auto-tag by deal type",
       "Email support"
     ],
@@ -282,6 +282,7 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
   const getUpsellPlanId = (): string | null => {
     const key = Array.from(selectedModules).sort().join('+');
     const mapping: Record<string, string> = {
+      'contracts+copyright': 'starter',
       'contracts+copyright+valuation': 'essentials',
       'contracts+copyright+royalties': 'publishing-pro',
       'dashboard+royalties+sync': 'licensing-pro',
@@ -517,6 +518,11 @@ createCheckout('module', module.id, billingInterval);
                                 Switch to {plan.name} — ${price.toLocaleString()}/{billingInterval === 'month' ? 'mo' : 'yr'}
                               </Button>
                             </div>
+                            {plan.id === 'starter' && (
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Note: Starter Creator uses lite modules — no CWR/DDEX export and no contract uploads.
+                              </p>
+                            )}
                           </div>
                         );
                       })()}
@@ -627,10 +633,14 @@ const modulesArray = Array.from(selectedModules);
                           {plan.modules.map((moduleId) => {
                             const ModuleIcon = getModuleIcon(moduleId);
                             const moduleName = moduleData.find(m => m.id === moduleId)?.name || moduleId;
+                            const baseLabel = moduleName.replace(' Module', '').replace(' Manager', '').replace(' Tool', '').replace(' Tracker', '');
+                            const label = plan.id === 'starter' && (moduleId === 'copyright' || moduleId === 'contracts')
+                              ? `${baseLabel} (Lite)`
+                              : baseLabel;
                             return (
                               <div key={moduleId} className="flex items-center gap-1 text-xs bg-secondary/50 rounded px-2 py-1">
                                 <ModuleIcon className="w-3 h-3" />
-                                <span className="truncate">{moduleName.replace(' Module', '').replace(' Manager', '').replace(' Tool', '').replace(' Tracker', '')}</span>
+                                <span className="truncate">{label}</span>
                               </div>
                             );
                           })}
