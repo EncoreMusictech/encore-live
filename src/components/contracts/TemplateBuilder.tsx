@@ -32,6 +32,11 @@ interface TemplateBuilderProps {
 
 const FIELD_TEMPLATES: Record<string, ContractField[]> = {
   'artist_recording': [
+    // Header
+    { id: 'document_title', type: 'text', label: 'Document Title', required: false, category: 'header' },
+    { id: 'effective_date', type: 'date', label: 'Effective Date', required: true, category: 'header' },
+
+    // Core
     { id: 'artist_name', type: 'text', label: 'Artist Name', required: true, category: 'parties' },
     { id: 'label_name', type: 'text', label: 'Record Label', required: true, category: 'parties' },
     { id: 'album_title', type: 'text', label: 'Album/EP Title', required: true, category: 'work' },
@@ -40,8 +45,20 @@ const FIELD_TEMPLATES: Record<string, ContractField[]> = {
     { id: 'term_duration', type: 'select', label: 'Contract Term', required: true, options: ['1 Year', '2 Years', '3 Years', '5 Years'], category: 'terms' },
     { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'North America', 'Europe', 'Specific Territories'], category: 'terms' },
     { id: 'delivery_date', type: 'date', label: 'Delivery Date', required: true, category: 'schedule' },
+
+    // Signatures
+    { id: 'party_one_name', type: 'text', label: 'Party One Name', required: true, category: 'signatures' },
+    { id: 'party_one_title', type: 'text', label: 'Party One Title', required: false, category: 'signatures' },
+    { id: 'party_two_name', type: 'text', label: 'Party Two Name', required: true, category: 'signatures' },
+    { id: 'party_two_title', type: 'text', label: 'Party Two Title', required: false, category: 'signatures' },
+    { id: 'signature_date', type: 'date', label: 'Signature Date', required: false, category: 'signatures' },
   ],
   'publishing': [
+    // Header
+    { id: 'document_title', type: 'text', label: 'Document Title', required: false, category: 'header' },
+    { id: 'effective_date', type: 'date', label: 'Effective Date', required: true, category: 'header' },
+
+    // Core
     { id: 'songwriter_name', type: 'text', label: 'Songwriter Name', required: true, category: 'parties' },
     { id: 'publisher_name', type: 'text', label: 'Publisher Name', required: true, category: 'parties' },
     { id: 'composition_title', type: 'text', label: 'Composition Title', required: true, category: 'work' },
@@ -50,8 +67,20 @@ const FIELD_TEMPLATES: Record<string, ContractField[]> = {
     { id: 'performance_split', type: 'select', label: 'Performance Split', required: true, options: ['50/50', '60/40', '70/30', '80/20'], category: 'financial' },
     { id: 'sync_approval', type: 'select', label: 'Sync Approval Rights', required: true, options: ['Mutual Approval', 'Publisher Approval', 'Writer Approval'], category: 'terms' },
     { id: 'term_length', type: 'select', label: 'Term Length', required: true, options: ['Life of Copyright', '10 Years', '15 Years', '20 Years'], category: 'terms' },
+
+    // Signatures
+    { id: 'party_one_name', type: 'text', label: 'Party One Name', required: true, category: 'signatures' },
+    { id: 'party_one_title', type: 'text', label: 'Party One Title', required: false, category: 'signatures' },
+    { id: 'party_two_name', type: 'text', label: 'Party Two Name', required: true, category: 'signatures' },
+    { id: 'party_two_title', type: 'text', label: 'Party Two Title', required: false, category: 'signatures' },
+    { id: 'signature_date', type: 'date', label: 'Signature Date', required: false, category: 'signatures' },
   ],
   'distribution': [
+    // Header
+    { id: 'document_title', type: 'text', label: 'Document Title', required: false, category: 'header' },
+    { id: 'effective_date', type: 'date', label: 'Effective Date', required: true, category: 'header' },
+
+    // Core
     { id: 'artist_label', type: 'text', label: 'Artist/Label Name', required: true, category: 'parties' },
     { id: 'distributor_name', type: 'text', label: 'Distributor Name', required: true, category: 'parties' },
     { id: 'product_title', type: 'text', label: 'Product Title', required: true, category: 'work' },
@@ -59,8 +88,20 @@ const FIELD_TEMPLATES: Record<string, ContractField[]> = {
     { id: 'platforms', type: 'select', label: 'Distribution Platforms', required: true, options: ['All Digital', 'Spotify/Apple Only', 'Physical Only', 'Custom Selection'], category: 'terms' },
     { id: 'territory_dist', type: 'select', label: 'Distribution Territory', required: true, options: ['Worldwide', 'Digital Worldwide', 'North America Only'], category: 'terms' },
     { id: 'term_years', type: 'select', label: 'Agreement Term', required: true, options: ['2 Years', '3 Years', '5 Years', 'Indefinite'], category: 'terms' },
+
+    // Signatures
+    { id: 'party_one_name', type: 'text', label: 'Party One Name', required: true, category: 'signatures' },
+    { id: 'party_one_title', type: 'text', label: 'Party One Title', required: false, category: 'signatures' },
+    { id: 'party_two_name', type: 'text', label: 'Party Two Name', required: true, category: 'signatures' },
+    { id: 'party_two_title', type: 'text', label: 'Party Two Title', required: false, category: 'signatures' },
+    { id: 'signature_date', type: 'date', label: 'Signature Date', required: false, category: 'signatures' },
   ],
   'licensing': [
+    // Header
+    { id: 'document_title', type: 'text', label: 'Document Title', required: false, category: 'header' },
+    { id: 'effective_date', type: 'date', label: 'Effective Date', required: true, category: 'header' },
+
+    // Core
     { id: 'licensor_name', type: 'text', label: 'Licensor Name', required: true, category: 'parties' },
     { id: 'licensee_name', type: 'text', label: 'Licensee Name', required: true, category: 'parties' },
     { id: 'track_title', type: 'text', label: 'Track Title', required: true, category: 'work' },
@@ -69,6 +110,13 @@ const FIELD_TEMPLATES: Record<string, ContractField[]> = {
     { id: 'license_fee', type: 'number', label: 'License Fee ($)', required: true, category: 'financial' },
     { id: 'territory_license', type: 'select', label: 'Licensed Territory', required: true, options: ['Worldwide', 'North America', 'Europe', 'Specific Country'], category: 'terms' },
     { id: 'duration', type: 'select', label: 'License Duration', required: true, options: ['1 Year', '2 Years', '3 Years', 'Perpetual'], category: 'terms' },
+
+    // Signatures
+    { id: 'party_one_name', type: 'text', label: 'Party One Name', required: true, category: 'signatures' },
+    { id: 'party_one_title', type: 'text', label: 'Party One Title', required: false, category: 'signatures' },
+    { id: 'party_two_name', type: 'text', label: 'Party Two Name', required: true, category: 'signatures' },
+    { id: 'party_two_title', type: 'text', label: 'Party Two Title', required: false, category: 'signatures' },
+    { id: 'signature_date', type: 'date', label: 'Signature Date', required: false, category: 'signatures' },
   ]
 };
 
@@ -521,6 +569,18 @@ template_data: {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
+                {selectedFields.some(f => f.category === 'header') && (
+                  <div className="text-center space-y-1">
+                    <h2 className="text-2xl font-bold">
+                      {previewData.document_title || templateName || 'Contract Template'}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Effective Date: {previewData.effective_date || '—'}
+                    </p>
+                    <Separator className="mt-4" />
+                  </div>
+                )}
+
                 {Object.entries(groupedFields).map(([category, fields]) => (
                   <div key={category}>
                     <h3 className="text-lg font-semibold mb-4 capitalize">{category.replace('_', ' ')}</h3>
@@ -550,6 +610,31 @@ template_data: {
                     </div>
                   </CardContent>
                 </Card>
+
+                {selectedFields.some(f => f.category === 'signatures') && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Signatures</CardTitle>
+                      <p className="text-muted-foreground">Preview of signature section</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                          <div className="h-10 border-b mb-2" />
+                          <div className="font-medium">{previewData.party_one_name || 'Party One Name'}</div>
+                          <div className="text-sm text-muted-foreground">{previewData.party_one_title || 'Title'}</div>
+                          <div className="text-sm text-muted-foreground mt-2">Date: {previewData.signature_date || previewData.effective_date || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="h-10 border-b mb-2" />
+                          <div className="font-medium">{previewData.party_two_name || 'Party Two Name'}</div>
+                          <div className="text-sm text-muted-foreground">{previewData.party_two_title || 'Title'}</div>
+                          <div className="text-sm text-muted-foreground mt-2">Date: {previewData.signature_date || previewData.effective_date || '—'}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </CardContent>
             </Card>
           </div>
