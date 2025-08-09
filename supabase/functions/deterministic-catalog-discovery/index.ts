@@ -430,7 +430,7 @@ serve(async (req) => {
         publishers: Object.keys(publishersObj).length ? publishersObj : (Array.isArray(proData?.publishers) ? proData.publishers.reduce((acc: any, p: any) => { if (p?.name) acc[p.name] = typeof p.share === 'number' ? p.share : 0; return acc; }, {}) : {}),
         pro_registrations: { ...proFlags, merged: { pro_details: proDetails, agent: proData || null } },
         iswc: finalISWC,
-        estimated_splits,
+        estimated_splits: estimatedSplits,
         registration_gaps,
         metadata_completeness_score: metadataScore,
         verification_status,
