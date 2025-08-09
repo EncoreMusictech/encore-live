@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.bulk-bmi-lookup]
 verify_jwt = false
+
+[functions.song-research-assistant]
+verify_jwt = false
