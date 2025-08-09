@@ -317,6 +317,21 @@ export function SongEstimatorTool() {
                         </p>
                       </div>
                     )}
+                    {currentSearch.ai_research_summary.pipeline_summary && (
+                      <div className="p-4 border rounded-lg bg-card">
+                        <h5 className="font-medium mb-2">Pipeline Summary</h5>
+                        <p className="text-sm text-muted-foreground">
+                          {currentSearch.ai_research_summary.pipeline_summary.summary}
+                        </p>
+                        <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-2 text-xs text-muted-foreground">
+                          <div>Total: {currentSearch.ai_research_summary.pipeline_summary.counts?.total ?? 0}</div>
+                          <div>Meta Complete: {currentSearch.ai_research_summary.pipeline_summary.counts?.meta_complete ?? 0}</div>
+                          <div>ISWC: {currentSearch.ai_research_summary.pipeline_summary.counts?.iswc ?? 0}</div>
+                          <div>PRO Verified: {currentSearch.ai_research_summary.pipeline_summary.counts?.pro_verified ?? 0}</div>
+                          <div>Verification Rate: {currentSearch.ai_research_summary.pipeline_summary.counts?.verification_rate ?? 0}%</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
