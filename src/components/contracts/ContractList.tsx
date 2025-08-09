@@ -289,52 +289,49 @@ export function ContractList({ onEdit }: ContractListProps) {
       return;
     }
     
-    // Clear current operations and add delete operations
-    clearOperations();
-    addOperations(
-      contractsToDelete.map(contract => ({
-        type: 'delete' as const,
-        data: contract
-      }))
-    );
+    // Attempt single bulk delete for eligible contracts
+    try {
+      const ids = contractsToDelete.map(c => c.id);
+      const { data: deletedRows, error } = await supabase
+        .from('contracts')
+        .delete()
+        .in('id', ids)
+        .select('id');
 
-    // Process deletions
-    await processOperations(async (operations) => {
-      const results = [];
-      
-      for (const operation of operations) {
-        try {
-          const { error } = await supabase
-            .from('contracts')
-            .delete()
-            .eq('id', operation.data.id);
-
-          if (error) throw error;
-          
-          results.push({ success: true, id: operation.data.id });
-        } catch (error) {
-          console.error(`Failed to delete contract ${operation.data.id}:`, error);
-          results.push({ success: false, id: operation.data.id, error });
+      if (error) {
+        console.error('Bulk delete error:', error);
+        toast({
+          title: "Bulk Delete Failed",
+          description: "We couldn't delete the selected contracts. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        const deletedCount = deletedRows?.length || 0;
+        const skippedCount = contractsWithConnections.length;
+        if (deletedCount > 0) {
+          toast({
+            title: "Bulk Delete Complete",
+            description: `Successfully deleted ${deletedCount} contract(s)${skippedCount > 0 ? `, ${skippedCount} skipped (have royalty connections)` : ''}`,
+          });
+        } else {
+          toast({
+            title: "No Contracts Deleted",
+            description: "No eligible contracts were deleted. They may be protected by permissions.",
+            variant: "destructive",
+          });
         }
+        await fetchContracts();
       }
-      
-      return results;
-    });
-
-    // Show success message and refresh
-    const deletedCount = statistics.completed;
-    const failedCount = statistics.failed;
-    const skippedCount = contractsWithConnections.length;
-    
-    if (deletedCount > 0) {
+    } catch (err) {
+      console.error('Unexpected bulk delete error:', err);
       toast({
-        title: "Bulk Delete Complete",
-        description: `Successfully deleted ${deletedCount} contract(s)${failedCount > 0 ? `, ${failedCount} failed` : ''}${skippedCount > 0 ? `, ${skippedCount} skipped (have royalty connections)` : ''}`,
+        title: "Bulk Delete Failed",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
       });
-      fetchContracts();
+    } finally {
+      clearSelection();
     }
-    
-    clearSelection();
   };
 
   if (isLoading) {
