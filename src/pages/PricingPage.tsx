@@ -41,10 +41,11 @@ import {
 const moduleData = [
   {
     id: "royalties",
-    name: "Royalties Processing",
+    name: "Royalties Module",
     icon: Music,
     price: 199,
-    description: "Complete royalty management from reconciliation to payouts",
+    annualPrice: 2388,
+    description: "Royalty splits, recoupment, statements, and payouts",
     features: [
       "Bulk import royalty statements",
       "Work-to-rightsholder mapping",
@@ -55,10 +56,11 @@ const moduleData = [
   },
   {
     id: "copyright",
-    name: "Copyright Management", 
+    name: "Copyright Module",
     icon: Copyright,
     price: 99,
-    description: "Register and track copyrights with split assignments",
+    annualPrice: 1188,
+    description: "Metadata registration, DDEX/CWR export, PRO status tracking",
     features: [
       "ISRC/ISWC/IPI tracking",
       "Writer/publisher splits",
@@ -69,10 +71,11 @@ const moduleData = [
   },
   {
     id: "contracts",
-    name: "Contract Management",
+    name: "Contract Manager",
     icon: FileText,
     price: 59,
-    description: "Centralized contract storage with smart tagging and alerts",
+    annualPrice: 708,
+    description: "Deal templates, rights ownership, contract workflow",
     features: [
       "Upload & organize contracts",
       "Auto-tag by deal type",
@@ -86,7 +89,8 @@ const moduleData = [
     name: "Sync Licensing Tracker",
     icon: Zap,
     price: 149,
-    description: "Comprehensive sync deal pipeline with pitch tracking",
+    annualPrice: 1788,
+    description: "Sync requests, license terms, deal approvals",
     features: [
       "Pitch status tracking",
       "Media type categorization",
@@ -97,10 +101,11 @@ const moduleData = [
   },
   {
     id: "valuation",
-    name: "Catalog Valuation",
+    name: "Catalog Valuation Tool",
     icon: TrendingUp,
     price: 99,
-    description: "AI-powered catalog assessment with deal simulation tools",
+    annualPrice: 1188,
+    description: "Revenue forecasting, growth modeling, terminal value estimates",
     features: [
       "Revenue history analysis",
       "Growth modeling (CAGR)",
@@ -111,10 +116,11 @@ const moduleData = [
   },
   {
     id: "dashboard",
-    name: "Client Portal",
+    name: "Client Dashboard",
     icon: Users,
     price: 149,
-    description: "Secure tier-based access for artists, managers, and vendors",
+    annualPrice: 1788,
+    description: "Artist/manager portal for real-time visibility & statements",
     features: [
       "Artist earnings dashboard",
       "Manager deal oversight",
@@ -132,8 +138,7 @@ const bundledPlans = [
     name: "Starter Creator",
     audience: "Indie songwriters",
     price: 79,
-    regularPrice: 158,
-    savings: 50,
+    annualPrice: 799,
     modules: ["copyright", "contracts"],
     features: [
       "ISRC/ISWC/IPI tracking",
@@ -147,10 +152,9 @@ const bundledPlans = [
   {
     id: "essentials",
     name: "Essentials",
-    audience: "Small rights holders", 
+    audience: "Small rights owners", 
     price: 149,
-    regularPrice: 257,
-    savings: 42,
+    annualPrice: 1499,
     modules: ["copyright", "contracts", "valuation"],
     features: [
       "Full copyright management",
@@ -166,8 +170,7 @@ const bundledPlans = [
     name: "Publishing Pro",
     audience: "Indie publishers",
     price: 299,
-    regularPrice: 357,
-    savings: 16,
+    annualPrice: 2999,
     modules: ["royalties", "copyright", "contracts"],
     features: [
       "Complete royalty processing",
@@ -182,10 +185,9 @@ const bundledPlans = [
   {
     id: "licensing-pro", 
     name: "Licensing Pro",
-    audience: "Sync agents, labels",
+    audience: "Sync teams, labels",
     price: 349,
-    regularPrice: 497,
-    savings: 30,
+    annualPrice: 3499,
     modules: ["sync", "royalties", "dashboard"],
     features: [
       "Pitch status tracking",
@@ -199,10 +201,9 @@ const bundledPlans = [
   {
     id: "growth",
     name: "Growth Bundle", 
-    audience: "Scaling admins",
-    price: 449,
-    regularPrice: 556,
-    savings: 19,
+    audience: "Scaling publishers",
+    price: 399,
+    annualPrice: 4499,
     modules: ["royalties", "copyright", "contracts", "valuation"],
     features: [
       "Full royalty management suite",
@@ -216,10 +217,9 @@ const bundledPlans = [
   {
     id: "enterprise",
     name: "Enterprise Suite",
-    audience: "Enterprise users", 
+    audience: "Large catalogs/admins", 
     price: 849,
-    regularPrice: 1145,
-    savings: 26,
+    annualPrice: 7999,
     modules: ["royalties", "copyright", "contracts", "sync", "valuation", "dashboard"],
     features: [
       "All modules included",
@@ -413,6 +413,7 @@ const PricingPage = () => {
                         <div className="text-right">
                           <div className="text-2xl font-bold">${module.price}</div>
                           <div className="text-sm text-muted-foreground">/month</div>
+                          <div className="text-xs text-muted-foreground">or ${module.annualPrice}/yr</div>
                         </div>
                       </div>
                       <CardTitle className="text-xl">{module.name}</CardTitle>
@@ -510,17 +511,26 @@ const PricingPage = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {bundledPlans.map((plan) => {
+{bundledPlans.map((plan) => {
                 const IconComponent = plan.icon;
+                const regularMonthly = plan.modules.reduce((sum, moduleId) => {
+                  const mod = moduleData.find((m) => m.id === moduleId);
+                  return sum + (mod?.price || 0);
+                }, 0);
+                const savingsPercent = Math.max(
+                  0,
+                  Math.round(((regularMonthly - plan.price) / (regularMonthly || 1)) * 100)
+                );
+                const annualSavingsVsModules = Math.max(0, regularMonthly * 12 - (plan.annualPrice || plan.price * 12));
                 
                 return (
                   <Card 
                     key={plan.id}
                     className={`relative transition-all duration-300 hover:shadow-elegant ${
-                      plan.popular ? 'ring-2 ring-primary shadow-glow scale-105' : ''
+                      (plan as any).popular ? 'ring-2 ring-primary shadow-glow scale-105' : ''
                     }`}
                   >
-                    {plan.popular && (
+                    {(plan as any).popular && (
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                         <Badge className="bg-gradient-primary text-primary-foreground">
                           <Star className="w-3 h-3 mr-1" />
@@ -535,7 +545,7 @@ const PricingPage = () => {
                           <IconComponent className="h-6 w-6 text-primary-foreground" />
                         </div>
                         <Badge variant="secondary" className="bg-gradient-primary/10">
-                          Save {plan.savings}%
+                          Save {savingsPercent}%
                         </Badge>
                       </div>
                       
@@ -544,12 +554,18 @@ const PricingPage = () => {
                       
                       <div className="text-center">
                         <div className="text-sm text-muted-foreground line-through">
-                          ${plan.regularPrice}/mo
+                          ${regularMonthly}/mo
                         </div>
                         <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                           ${plan.price}
                           <span className="text-lg text-muted-foreground">/month</span>
                         </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          or ${plan.annualPrice}/yr
+                        </div>
+                        {annualSavingsVsModules > 0 && (
+                          <div className="text-xs text-muted-foreground">Save ${annualSavingsVsModules.toLocaleString()}/yr vs modules</div>
+                        )}
                       </div>
                     </CardHeader>
 
