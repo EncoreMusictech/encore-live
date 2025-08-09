@@ -29,44 +29,86 @@ interface BMIResult {
   found: boolean;
 }
 
-// Helper function to search MusicBrainz for ISWC
-async function searchMusicBrainz(workTitle: string, artistName?: string): Promise<string | null> {
+// Helper function to search MusicBrainz for the most likely ISWC using writer-aware scoring
+async function searchMusicBrainz(workTitle: string, artistOrWriter?: string): Promise<string | null> {
   try {
-    console.log(`Searching MusicBrainz for: ${workTitle} by ${artistName}`);
-    
-    let query = `work:"${workTitle}"`;
-    if (artistName) {
-      query += ` AND artist:"${artistName}"`;
-    }
-    
-    const url = `https://musicbrainz.org/ws/2/work?query=${encodeURIComponent(query)}&fmt=json&limit=5`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'EncoreMusicApp/1.0 (contact@encoremusic.tech)'
-      }
-    });
-    
-    if (!response.ok) {
-      console.log(`MusicBrainz API error: ${response.status}`);
-      return null;
-    }
-    
-    const data = await response.json();
-    
-    if (data.works && data.works.length > 0) {
-      // Look for works with ISWC
-      for (const work of data.works) {
-        if (work.iswcs && work.iswcs.length > 0) {
-          const iswc = work.iswcs[0];
-          console.log(`Found ISWC in MusicBrainz: ${iswc}`);
-          return iswc;
+    const ua = 'EncoreMusicApp/1.0 (contact@encoremusic.tech)';
+
+    const normalize = (s: string) =>
+      (s || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const hasBadDisambig = (d?: string) =>
+      !!(d && /(remix|karaoke|instrumental|tv version|live|demo)/i.test(d));
+
+    const titleNorm = normalize(workTitle);
+    const writerNorm = normalize(artistOrWriter || '');
+
+    const queries = [
+      `work:"${workTitle}"`,
+      artistOrWriter ? `work:"${workTitle}" AND artist:"${artistOrWriter}"` : null,
+      `title:"${workTitle}"`,
+      `title:${workTitle.replace(/[^a-zA-Z0-9\s]/g, '')}`,
+    ].filter(Boolean) as string[];
+
+    let bestISWC: string | null = null;
+    let bestScore = -Infinity;
+
+    for (const q of queries) {
+      const url = `https://musicbrainz.org/ws/2/work?query=${encodeURIComponent(q)}&fmt=json&limit=10`;
+      const resp = await fetch(url, { headers: { 'User-Agent': ua } });
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      const works = Array.isArray(data?.works) ? data.works : [];
+
+      // Fetch details for top few candidates to evaluate writers
+      const top = works.slice(0, 5);
+      for (const w of top) {
+        try {
+          const detResp = await fetch(
+            `https://musicbrainz.org/ws/2/work/${w.id}?inc=artist-rels+iswcs&fmt=json`,
+            { headers: { 'User-Agent': ua } }
+          );
+          if (!detResp.ok) continue;
+          const details = await detResp.json();
+          const iswcs: string[] = details?.iswcs || [];
+          const rels: any[] = details?.relations || [];
+          const writers = rels
+            .filter((r: any) => /^(writer|composer|lyricist|author)$/i.test(r?.type || ''))
+            .map((r: any) => normalize(r?.artist?.name || ''))
+            .filter(Boolean);
+
+const wTitleNorm = normalize(details?.title || w?.title || '');
+const titleExact = wTitleNorm === titleNorm ? 2 : (wTitleNorm.includes(titleNorm) || titleNorm.includes(wTitleNorm) ? 1 : 0);
+const writerMatch = writerNorm && writers.some((n) => n === writerNorm || n.includes(writerNorm) || writerNorm.includes(n)) ? 3 : 0;
+if (writerNorm && writerMatch === 0) {
+  // Require a writer match when writer is provided to avoid wrong-title collisions
+  continue;
+}
+const penalty = hasBadDisambig(w?.disambiguation) ? -2 : 0;
+const score = titleExact + writerMatch + (iswcs.length ? 1 : 0) + penalty;
+
+if (score > bestScore && iswcs.length) {
+  bestScore = score;
+  bestISWC = iswcs[0];
+}
+        } catch (_e) {
+          // ignore candidate errors
         }
+        // be nice to MB rate limits
+        await new Promise((r) => setTimeout(r, 150));
       }
+
+      // gentle pacing between queries
+      await new Promise((r) => setTimeout(r, 250));
     }
-    
-    console.log('No ISWC found in MusicBrainz');
-    return null;
+
+    return bestISWC;
   } catch (error) {
     console.error('MusicBrainz search error:', error);
     return null;

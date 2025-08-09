@@ -45,66 +45,92 @@ interface BMISearchResult {
   verification_notes?: string;
 }
 
-// Enhanced MusicBrainz search with multiple query strategies
+// Enhanced MusicBrainz search with writer-aware scoring and remix filtering
 async function searchMusicBrainzEnhanced(workTitle: string, artistName?: string, writerName?: string): Promise<MusicBrainzWork | null> {
   const baseUrl = 'https://musicbrainz.org/ws/2/work';
   const userAgent = 'EncoreMusicTech/1.0.0 ( info@encoremusic.tech )';
-  
+
+  const normalize = (s: string) =>
+    (s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const titleNorm = normalize(workTitle);
+  const writerNorm = normalize(writerName || artistName || '');
+  const hasBadDisambig = (d?: string) => !!(d && /(remix|karaoke|instrumental|tv version|live|demo)/i.test(d));
+
   // Multiple search strategies
   const searchQueries = [
-    // Exact title match
     `title:"${workTitle}"`,
-    // Title with artist
     artistName ? `title:"${workTitle}" AND artist:"${artistName}"` : null,
-    // Title with writer
     writerName ? `title:"${workTitle}" AND artist:"${writerName}"` : null,
-    // Fuzzy title match
+    `work:"${workTitle}"`,
     `title:${workTitle.replace(/[^a-zA-Z0-9\s]/g, '')}`,
-    // Simplified title search
-    workTitle.split(' ').length > 1 ? `title:${workTitle.split(' ')[0]}` : null
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
+
+  let best: { work: MusicBrainzWork; score: number } | null = null;
 
   for (const query of searchQueries) {
     try {
       console.log(`MusicBrainz search: ${query}`);
-      
       const response = await fetch(
-        `${baseUrl}?query=${encodeURIComponent(query!)}&fmt=json&limit=5`,
-        {
-          headers: {
-            'User-Agent': userAgent,
-            'Accept': 'application/json'
-          }
-        }
+        `${baseUrl}?query=${encodeURIComponent(query)}&fmt=json&limit=10`,
+        { headers: { 'User-Agent': userAgent, 'Accept': 'application/json' } }
       );
-
-      if (!response.ok) {
-        console.log(`MusicBrainz API error: ${response.status} for query: ${query}`);
-        continue;
-      }
-
+      if (!response.ok) { console.log(`MusicBrainz API error: ${response.status} for query: ${query}`); continue; }
       const data = await response.json();
-      
-      if (data.works && data.works.length > 0) {
-        // Find best match based on title similarity
-        const bestMatch = data.works.find((work: MusicBrainzWork) => 
-          work.title.toLowerCase().includes(workTitle.toLowerCase()) ||
-          workTitle.toLowerCase().includes(work.title.toLowerCase())
-        ) || data.works[0];
-        
-        console.log(`Found MusicBrainz work: ${bestMatch.title} (${bestMatch.id})`);
-        return bestMatch;
+      const works: MusicBrainzWork[] = data?.works || [];
+      const candidates = works.slice(0, 6);
+
+      for (const w of candidates) {
+        // fetch details to evaluate writers and ISWC presence
+        const det = await fetch(
+          `https://musicbrainz.org/ws/2/work/${w.id}?inc=artist-rels+iswcs&fmt=json`,
+          { headers: { 'User-Agent': userAgent, 'Accept': 'application/json' } }
+        );
+        if (!det.ok) continue;
+        const work = await det.json();
+        const iswcs: string[] = work?.iswcs || [];
+        const rels: any[] = work?.relations || [];
+        const writers = rels
+          .filter((r: any) => /^(writer|composer|lyricist|author)$/i.test(r?.type || ''))
+          .map((r: any) => normalize(r?.artist?.name || ''))
+          .filter(Boolean);
+
+const wTitleNorm = normalize(work?.title || w.title);
+const titleExact = wTitleNorm === titleNorm ? 2 : (wTitleNorm.includes(titleNorm) || titleNorm.includes(wTitleNorm) ? 1 : 0);
+const writerMatch = writerNorm && writers.some((n) => n === writerNorm || n.includes(writerNorm) || writerNorm.includes(n)) ? 3 : 0;
+if (writerNorm && writerMatch === 0) {
+  // Require writer match when provided to avoid same-title collisions
+  continue;
+}
+const penalty = hasBadDisambig(w.disambiguation) ? -2 : 0;
+const score = titleExact + writerMatch + (iswcs.length ? 1 : 0) + penalty;
+
+if (!best || score > best.score) {
+  best = { work: { ...w, relations: work?.relations || [], 'attribute-lists': w['attribute-lists'] }, score };
+}
+        // be polite to MB
+        await new Promise((r) => setTimeout(r, 150));
       }
-      
-      // Rate limiting - wait between requests
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
+      // pacing between queries
+      await new Promise((r) => setTimeout(r, 250));
     } catch (error) {
       console.error(`MusicBrainz search error for query "${query}":`, error);
       continue;
     }
   }
-  
+
+  if (best) {
+    console.log(`Found MusicBrainz work: ${best.work.title} (${best.work.id}) with score ${best.score}`);
+    return best.work;
+  }
+
   return null;
 }
 
