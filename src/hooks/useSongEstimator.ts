@@ -147,7 +147,7 @@ export function useSongEstimator() {
           searchId,
           writerName: songwriterName,
           userId: user?.id,
-          maxSongs: 20
+          maxSongs: 500
         }
       });
 

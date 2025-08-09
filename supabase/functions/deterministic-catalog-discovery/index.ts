@@ -45,13 +45,23 @@ async function findArtistMBID(writerName: string): Promise<string | null> {
   }
 }
 
-async function browseWorksByArtist(artistId: string, limit = 50): Promise<any[]> {
-  try {
-    const data = await fetchJSON(`https://musicbrainz.org/ws/2/work?artist=${artistId}&fmt=json&limit=${limit}`);
-    return data?.works || [];
-  } catch (_e) {
-    return [];
+async function fetchAllWorksByArtist(artistId: string, max = 200): Promise<any[]> {
+  const results: any[] = [];
+  let offset = 0;
+  const pageSize = 100; // MusicBrainz allows up to 100 per page
+  while (results.length < max) {
+    const limit = Math.min(pageSize, max - results.length);
+    try {
+      const data = await fetchJSON(`https://musicbrainz.org/ws/2/work?artist=${artistId}&fmt=json&limit=${limit}&offset=${offset}`);
+      const works = data?.works || [];
+      results.push(...works);
+      if (!works.length || results.length >= (data["work-count"] || results.length)) break;
+      offset += works.length;
+    } catch (_e) {
+      break;
+    }
   }
+  return results;
 }
 
 async function searchWorksByWriterName(writerName: string, limit = 50): Promise<any[]> {
@@ -68,6 +78,40 @@ async function getWorkDetails(workId: string): Promise<any | null> {
   try {
     const data = await fetchJSON(`https://musicbrainz.org/ws/2/work/${workId}?inc=artist-rels+iswcs&fmt=json`);
     return data || null;
+  } catch (_e) {
+    return null;
+  }
+}
+
+async function getArtistDetails(artistId: string): Promise<any | null> {
+  try {
+    const data = await fetchJSON(`https://musicbrainz.org/ws/2/artist/${artistId}?inc=url-rels+tags&fmt=json`);
+    return data || null;
+  } catch (_e) {
+    return null;
+  }
+}
+
+function extractWikipediaTitleFromRels(rels: any[] = []): string | null {
+  const wikiRel = rels.find((r: any) => (r.type || '').toLowerCase() === 'wikipedia' && r.url?.resource);
+  if (wikiRel?.url?.resource) {
+    try {
+      const url = new URL(wikiRel.url.resource);
+      if (url.hostname.includes('wikipedia.org')) {
+        const parts = url.pathname.split('/');
+        return decodeURIComponent(parts[parts.length - 1]);
+      }
+    } catch (_e) { /* ignore */ }
+  }
+  return null;
+}
+
+async function fetchWikipediaSummary(title: string): Promise<string | null> {
+  try {
+    const resp = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.extract || null;
   } catch (_e) {
     return null;
   }
@@ -107,10 +151,10 @@ serve(async (req) => {
     const artistId = await findArtistMBID(writerName);
     let works: any[] = [];
     if (artistId) {
-      works = await browseWorksByArtist(artistId, Math.min(50, maxSongs * 2));
+      works = await fetchAllWorksByArtist(artistId, Math.min(1000, maxSongs));
     }
     if (!works.length) {
-      works = await searchWorksByWriterName(writerName, Math.min(50, maxSongs * 2));
+      works = await searchWorksByWriterName(writerName, Math.min(100, maxSongs));
     }
 
     // Enrich each work with details and (optionally) PRO agent
@@ -136,6 +180,9 @@ serve(async (req) => {
         ? proData.publishers.reduce((acc: any, p: any) => { if (p?.name) acc[p.name] = typeof p.share === 'number' ? p.share : 0; return acc; }, {})
         : {};
       const finalISWC = proData?.iswc || iswc || null;
+      const estimatedSplits = Array.isArray(proData?.writers)
+        ? proData.writers.reduce((acc: any, w: any) => { if (w?.name) acc[w.name] = typeof w.share === 'number' ? w.share : 0; return acc; }, {})
+        : {};
 
       rows.push({
         search_id: searchId,
@@ -146,9 +193,9 @@ serve(async (req) => {
         publishers,
         pro_registrations: proData ? { merged: proData } : {},
         iswc: finalISWC,
-        estimated_splits: {},
+        estimated_splits: estimatedSplits,
         registration_gaps: finalISWC ? [] : ['missing_iswc'],
-        metadata_completeness_score: finalISWC ? 0.8 : 0.6,
+        metadata_completeness_score: finalISWC ? 0.85 : 0.6,
         verification_status: proData ? 'pro_verified' : 'discovered',
         last_verified_at: new Date().toISOString(),
         source_data: { source: 'musicbrainz', work_id: workId }
