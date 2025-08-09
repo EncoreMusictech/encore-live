@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, Eye, Send, Save, Plus, Trash2, GripVertical, Edit3 } from 'lucide-react';
 import { toast } from "sonner";
 
@@ -77,15 +78,23 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
   const [availableFields] = useState<ContractField[]>(FIELD_TEMPLATES[contractType] || []);
   const [currentView, setCurrentView] = useState<'builder' | 'preview' | 'edits'>('builder');
   const [previewData, setPreviewData] = useState<Record<string, any>>({});
-  const [edits, setEdits] = useState<Array<{ field: string; oldValue: string; newValue: string; timestamp: Date }>>([]);
+const [edits, setEdits] = useState<Array<{ field: string; oldValue: string; newValue: string; timestamp: Date }>>([]);
+  const [clausesById, setClausesById] = useState<Record<string, string>>({});
+  const [editingField, setEditingField] = useState<ContractField | null>(null);
+  const [clauseDraft, setClauseDraft] = useState("");
+  const [clauseEdits, setClauseEdits] = useState<Array<{ field: string; oldClause: string; newClause: string; timestamp: Date }>>([]);
 
-  const handleContractTypeChange = (newType: string) => {
+  const getDefaultClause = useCallback((field: ContractField) => `${field.label}: {{${field.id}}}`,[ ]);
+
+const handleContractTypeChange = (newType: string) => {
     setSelectedContractType(newType);
     setSelectedFields([]);
     setPreviewData({});
+    setClausesById({});
+    setClauseEdits([]);
   };
 
-  const onDragEnd = useCallback((result: DropResult) => {
+const onDragEnd = useCallback((result: DropResult) => {
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
@@ -95,6 +104,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
       const field = (FIELD_TEMPLATES[selectedContractType] || []).find(f => f.id === draggableId);
       if (field && !selectedFields.find(f => f.id === field.id)) {
         setSelectedFields(prev => [...prev, field]);
+        setClausesById(prev => ({ ...prev, [field.id]: prev[field.id] ?? getDefaultClause(field) }));
       }
     } else if (destination.droppableId === 'selected-fields' && source.droppableId === 'selected-fields') {
       const newFields = Array.from(selectedFields);
@@ -102,10 +112,20 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
       newFields.splice(destination.index, 0, removed);
       setSelectedFields(newFields);
     }
-  }, [selectedFields, selectedContractType]);
+  }, [selectedFields, selectedContractType, getDefaultClause]);
 
-  const removeField = (fieldId: string) => {
+const removeField = (fieldId: string) => {
     setSelectedFields(prev => prev.filter(f => f.id !== fieldId));
+    setClausesById(prev => {
+      const next = { ...prev };
+      delete next[fieldId];
+      return next;
+    });
+    setPreviewData(prev => {
+      const next = { ...prev };
+      delete next[fieldId];
+      return next;
+    });
   };
 
   const handlePreviewDataChange = (fieldId: string, value: any) => {
@@ -135,9 +155,10 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
     const template = {
       template_name: templateName,
       contract_type: selectedContractType,
-      template_data: {
+template_data: {
         fields: selectedFields,
-        layout: 'standard'
+        layout: 'standard',
+        clauses: clausesById
       }
     };
 
@@ -208,7 +229,19 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
     if (!acc[field.category]) acc[field.category] = [];
     acc[field.category].push(field);
     return acc;
-  }, {} as Record<string, ContractField[]>);
+}, {} as Record<string, ContractField[]>);
+
+  const compileClauseText = useCallback(() => {
+    return selectedFields.map((field) => {
+      const clause = (clausesById[field.id] ?? getDefaultClause(field));
+      return clause.replace(/\{\{(\w+)\}\}/g, (_match, key) => {
+        const val = previewData[key];
+        if (val !== undefined && val !== "") return String(val);
+        const label = (FIELD_TEMPLATES[selectedContractType] || []).find(f => f.id === key)?.label || key;
+        return `[${label}]`;
+      });
+    }).join("\n\n");
+  }, [selectedFields, clausesById, previewData, selectedContractType, getDefaultClause]);
 
   return (
     <div className="h-full flex flex-col">
@@ -345,13 +378,26 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
                                       <div className="text-xs text-muted-foreground">{field.type}</div>
                                     </div>
                                   </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeField(field.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+<div className="flex items-center gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEditingField(field);
+                                        setClauseDraft(clausesById[field.id] ?? getDefaultClause(field));
+                                      }}
+                                      className="gap-2"
+                                    >
+                                      <Edit3 className="h-4 w-4" /> Edit
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeField(field.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -365,13 +411,64 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
               </Card>
             </div>
           </DragDropContext>
+
+          <Dialog open={!!editingField} onOpenChange={(open) => setEditingField(open ? editingField : null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingField ? `Edit Clause: ${editingField.label}` : 'Edit Clause'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2">
+                <Label>Clause Text</Label>
+                <Textarea
+                  value={clauseDraft}
+                  onChange={(e) => setClauseDraft(e.target.value)}
+                  rows={8}
+                  placeholder={editingField ? getDefaultClause(editingField) : 'Enter clause text...'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {"Use tokens like {{field_id}} to insert values. Example: "}
+                  {editingField ? `{{${editingField.id}}}` : "{{field_id}}"}
+                </p>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (editingField) {
+                      const def = getDefaultClause(editingField);
+                      setClauseDraft(def);
+                    }
+                  }}
+                >
+                  Reset to Default
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!editingField) return;
+                    const oldClause = clausesById[editingField.id] ?? getDefaultClause(editingField);
+                    const newClause = clauseDraft;
+                    if (oldClause !== newClause) {
+                      setClauseEdits(prev => [...prev, { field: editingField.id, oldClause, newClause, timestamp: new Date() }]);
+                    }
+                    setClausesById(prev => ({ ...prev, [editingField.id]: newClause }));
+                    setEditingField(null);
+                    toast.success('Clause saved');
+                  }}
+                >
+                  Save Clause
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Preview Tab */}
         <TabsContent value="preview" className="flex-1 p-6">
           <div className="max-w-4xl mx-auto">
             <Card>
-              <CardHeader>
+<CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>{templateName || 'Contract Template'}</CardTitle>
@@ -409,6 +506,18 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
                     <Separator className="mt-6" />
                   </div>
                 ))}
+
+                <Card className="mt-2">
+                  <CardHeader>
+                    <CardTitle>Contract Language Preview</CardTitle>
+                    <p className="text-muted-foreground">Generated from selected fields and custom clauses</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-muted/30 p-4 rounded-lg">
+                      <pre className="text-sm font-mono whitespace-pre-wrap text-muted-foreground">{compileClauseText() || 'Add fields and clauses to see the preview.'}</pre>
+                    </div>
+                  </CardContent>
+                </Card>
               </CardContent>
             </Card>
           </div>
@@ -421,48 +530,68 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contra
               <CardTitle>Contract Edits Review</CardTitle>
               <p className="text-muted-foreground">Review all changes made to the contract</p>
             </CardHeader>
-            <CardContent>
-              {edits.length === 0 ? (
+<CardContent>
+              {(edits.length === 0 && clauseEdits.length === 0) ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Edit3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No edits have been made yet</p>
-                  <p className="text-sm">Changes made in the preview will appear here</p>
+                  <p className="text-sm">Changes made in the preview or clause editor will appear here</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {edits.map((edit, index) => (
-                    <div key={index} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">
-                          {selectedFields.find(f => f.id === edit.field)?.label || edit.field}
-                        </h4>
-                        <span className="text-xs text-muted-foreground">
-                          {edit.timestamp.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Old Value:</span>
-                          <div className="p-2 bg-destructive/10 rounded mt-1">
-                            {edit.oldValue || <em>Empty</em>}
+                <div className="space-y-6">
+                  {edits.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="font-semibold">Field Value Changes</h4>
+                      {edits.map((edit, index) => (
+                        <div key={index} className="p-4 border rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium">{selectedFields.find(f => f.id === edit.field)?.label || edit.field}</span>
+                            <span className="text-xs text-muted-foreground">{edit.timestamp.toLocaleString()}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Old Value:</span>
+                              <div className="p-2 bg-destructive/10 rounded mt-1">{edit.oldValue || <em>Empty</em>}</div>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">New Value:</span>
+                              <div className="p-2 bg-primary/10 rounded mt-1">{edit.newValue || <em>Empty</em>}</div>
+                            </div>
                           </div>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">New Value:</span>
-                          <div className="p-2 bg-primary/10 rounded mt-1">
-                            {edit.newValue || <em>Empty</em>}
-                          </div>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setEdits([])}>
+                  )}
+
+                  {clauseEdits.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="font-semibold">Custom Clause Changes</h4>
+                      {clauseEdits.map((edit, index) => (
+                        <div key={index} className="p-4 border rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium">{selectedFields.find(f => f.id === edit.field)?.label || edit.field}</span>
+                            <span className="text-xs text-muted-foreground">{edit.timestamp.toLocaleString()}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Default:</span>
+                              <div className="p-2 bg-muted/50 rounded mt-1 whitespace-pre-wrap">{edit.oldClause}</div>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Custom:</span>
+                              <div className="p-2 bg-primary/10 rounded mt-1 whitespace-pre-wrap">{edit.newClause}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" onClick={() => { setEdits([]); setClauseEdits([]); }}>
                       Clear All Edits
                     </Button>
-                    <Button onClick={() => toast.success("All edits approved!")}>
-                      Approve All Changes
-                    </Button>
+                    <Button onClick={() => toast.success("All edits approved!")}>Approve All Changes</Button>
                   </div>
                 </div>
               )}
