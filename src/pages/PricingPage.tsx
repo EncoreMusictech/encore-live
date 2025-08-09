@@ -276,11 +276,18 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
 }, 0);
   };
 
-  const calculateSavings = () => {
-    if (selectedModules.size >= 3) {
-      return calculateModulesTotal() * 0.25;
-    }
-    return 0;
+  const calculateSavings = () => 0;
+
+  // Upsell mapping based on specific a la carte selections (order-insensitive)
+  const getUpsellPlanId = (): string | null => {
+    const key = Array.from(selectedModules).sort().join('+');
+    const mapping: Record<string, string> = {
+      'contracts+copyright+valuation': 'essentials',
+      'contracts+copyright+royalties': 'publishing-pro',
+      'dashboard+royalties+sync': 'licensing-pro',
+      'contracts+copyright+royalties+valuation': 'growth',
+    };
+    return mapping[key] || null;
   };
 
   const getModuleIcon = (moduleId: string) => {
@@ -406,9 +413,9 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold mb-4">Pick Your Tools</h2>
               <p className="text-muted-foreground mb-2">Choose individual modules that fit your workflow</p>
-              <Badge variant="secondary" className="bg-gradient-primary/10">
-                Save 25% when bundling 3 or more modules
-              </Badge>
+              <p className="text-sm text-muted-foreground">
+                No a la carte discounts. For savings, choose a bundle.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -480,20 +487,39 @@ createCheckout('module', module.id, billingInterval);
                   <CardTitle className="flex items-center justify-between">
                     <span>Your Custom Plan ({selectedModules.size} modules)</span>
                     <div className="text-right">
-                      {calculateSavings() > 0 && (
-                        <div className="text-sm text-muted-foreground line-through">
-                          ${calculateModulesTotal()}
-                        </div>
-                      )}
-<div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-  ${(calculateModulesTotal() - calculateSavings()).toFixed(0)}
-  <span className="text-sm text-muted-foreground">/{billingInterval === 'month' ? 'month' : 'year'}</span>
-</div>
-{calculateSavings() > 0 && (
-  <Badge className="bg-gradient-primary text-primary-foreground">
-    Save ${calculateSavings().toFixed(0)}/{billingInterval === 'month' ? 'mo' : 'yr'}
-  </Badge>
-)}
+                      <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                        ${calculateModulesTotal().toFixed(0)}
+                        <span className="text-sm text-muted-foreground">/{billingInterval === 'month' ? 'month' : 'year'}</span>
+                      </div>
+                      {(() => {
+                        const upsellId = getUpsellPlanId();
+                        if (!upsellId) return null;
+                        const plan = bundledPlans.find(p => p.id === upsellId);
+                        if (!plan) return null;
+                        const regular = calculateModulesTotal();
+                        const price = billingInterval === 'month' ? plan.price : plan.annualPrice;
+                        const savingsPercent = Math.max(0, Math.round(((regular - price) / (regular || 1)) * 100));
+                        return (
+                          <div className="mt-2 text-left">
+                            <Badge variant="secondary" className="bg-gradient-primary/10">
+                              Save {savingsPercent}% with {plan.name}
+                            </Badge>
+                            <div className="mt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  if (!user) { window.location.href = '/auth'; return; }
+                                  createCheckout('bundle', plan.id, billingInterval);
+                                }}
+                                disabled={loading}
+                              >
+                                Switch to {plan.name} — ${price.toLocaleString()}/{billingInterval === 'month' ? 'mo' : 'yr'}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </CardTitle>
                 </CardHeader>
