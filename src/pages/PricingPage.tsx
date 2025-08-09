@@ -472,12 +472,25 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                             window.location.href = '/auth';
                             return;
                           }
-createCheckout('module', module.id, billingInterval);
+                          // Restrict Client Dashboard purchase for new subscribers
+                          if (module.id === 'dashboard' && !subscribed) {
+                            return; // blocked; show note below
+                          }
+                          createCheckout('module', module.id, billingInterval);
                         }}
-                        disabled={loading}
+                        disabled={loading || (module.id === 'dashboard' && !subscribed)}
                       >
-                        {!user ? 'Sign In to Subscribe' : (isSelected ? 'Added to Plan' : 'Subscribe')}
+                        {!user
+                          ? 'Sign In to Subscribe'
+                          : (module.id === 'dashboard' && !subscribed)
+                            ? 'Requires another module'
+                            : (isSelected ? 'Added to Plan' : 'Subscribe')}
                       </Button>
+                      {(module.id === 'dashboard' && !subscribed) && (
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                          New subscribers must purchase another module before adding Client Dashboard. Consider a bundle.
+                        </p>
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -543,13 +556,23 @@ createCheckout('module', module.id, billingInterval);
                           return;
                         }
                         // Start free trial for custom selected modules
-const modulesArray = Array.from(selectedModules);
+                        const modulesArray = Array.from(selectedModules);
                         createTrialCheckout('custom', 'custom', modulesArray, billingInterval);
                       }}
-                      disabled={loading || selectedModules.size === 0}
+                      disabled={
+                        loading ||
+                        selectedModules.size === 0 ||
+                        (!subscribed && selectedModules.size === 1 && selectedModules.has('dashboard'))
+                      }
                     >
                       {!user ? 'Sign In to Start Trial' : 'Start 14-Day Free Trial'}
                     </Button>
+                  </div>
+                  {(!subscribed && selectedModules.size === 1 && selectedModules.has('dashboard')) && (
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                      Client Dashboard requires at least one other module for new subscribers.
+                    </p>
+                  )}
                   </div>
                 </CardContent>
               </Card>
