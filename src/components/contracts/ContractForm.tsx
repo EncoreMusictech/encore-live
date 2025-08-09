@@ -21,6 +21,7 @@ import { ProducerForm } from "./forms/ProducerForm";
 import { SyncForm } from "./forms/SyncForm";
 import { DistributionForm } from "./forms/DistributionForm";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 
 const baseSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -43,6 +44,7 @@ export function ContractForm({ contractType, onCancel, onSuccess }: ContractForm
   const [contractData, setContractData] = useState({});
   const { toast } = useToast();
   const { user } = useAuth();
+  const { canAccess, incrementUsage, showUpgradeModalForModule, isDemo } = useDemoAccess();
 
   const form = useForm<z.infer<typeof baseSchema>>({
     resolver: zodResolver(baseSchema),
@@ -56,6 +58,13 @@ export function ContractForm({ contractType, onCancel, onSuccess }: ContractForm
   const handleSubmit = async (values: z.infer<typeof baseSchema>) => {
     setIsLoading(true);
     
+    // Demo gating: only 1 submission in demo
+    if (!canAccess('contractManagement')) {
+      showUpgradeModalForModule('contractManagement');
+      toast({ title: 'Demo limit reached', description: 'Sign up to create more contracts.' });
+      setIsLoading(false);
+      return;
+    }
     try {
       const { error } = await supabase
         .from('contracts')
@@ -84,6 +93,11 @@ export function ContractForm({ contractType, onCancel, onSuccess }: ContractForm
         title: "Success",
         description: "Contract created successfully",
       });
+
+      if (isDemo) {
+        incrementUsage('contractManagement');
+        showUpgradeModalForModule('contractManagement');
+      }
       
       onSuccess();
     } catch (error) {

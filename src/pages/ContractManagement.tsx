@@ -29,12 +29,12 @@ import { useContracts } from "@/hooks/useContracts";
 
 const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
-  const { canAccess } = useDemoAccess();
+  const { canAccess, isDemo, showUpgradeModal, setShowUpgradeModal } = useDemoAccess();
   const { contracts, loading } = useContracts();
   const { subscribed } = useSubscription();
   
-  // Only show demo navigation for non-subscribers
-  const showDemoNavigation = !subscribed;
+  // Only show demo navigation for demo users
+  const showDemoNavigation = isDemo;
 
   useEffect(() => {
     updatePageMetadata('contractManagement');
@@ -499,9 +499,9 @@ const ContractManagement = () => {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${isDemo ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="contracts">Contracts</TabsTrigger>
-            <TabsTrigger value="demos">Demos</TabsTrigger>
+            {isDemo && <TabsTrigger value="demos">Demos</TabsTrigger>}
             <TabsTrigger value="templates">Templates</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
@@ -525,22 +525,25 @@ const ContractManagement = () => {
             <ContractList onEdit={handleEditContract} />
           </TabsContent>
 
-          <TabsContent value="demos">
-            <DemoContracts 
-              onLoadDemo={(demoContract: DemoPublishingContract | DemoArtistContract) => {
-                // Store the demo data and open the form
-                setSelectedDemoData(demoContract);
-                // Determine contract type based on agreement type
-                if (demoContract.agreementType === "artist" || demoContract.agreementType === "distribution") {
-                  setSelectedContractType(demoContract.agreementType);
-                } else {
-                  setSelectedContractType("publishing");
-                }
-                setCreationMethod("new");
-                setIsCreateDialogOpen(true);
-              }}
-            />
-          </TabsContent>
+          {isDemo && (
+            <TabsContent value="demos">
+              <DemoContracts 
+                onLoadDemo={(demoContract: DemoPublishingContract | DemoArtistContract) => {
+                  // Store the demo data and open the form
+                  setSelectedDemoData(demoContract);
+                  // Determine contract type based on agreement type
+                  if (demoContract.agreementType === "artist" || demoContract.agreementType === "distribution") {
+                    setSelectedContractType(demoContract.agreementType);
+                  } else {
+                    setSelectedContractType("publishing");
+                  }
+                  setCreationMethod("new");
+                  setIsCreateDialogOpen(true);
+                }}
+              />
+            </TabsContent>
+          )}
+
 
           <TabsContent value="templates">
             <TemplateLibrary />

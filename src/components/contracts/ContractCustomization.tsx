@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { samplePDFs } from "./SamplePDFData";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 
 interface ContractCustomizationProps {
   template: any;
@@ -45,6 +46,7 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
   const [endDate, setEndDate] = useState<Date>();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { canAccess, incrementUsage, showUpgradeModalForModule, isDemo } = useDemoAccess();
 
   const form = useForm<z.infer<typeof customizationSchema>>({
     resolver: zodResolver(customizationSchema),
@@ -177,7 +179,14 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
 
   const handleSaveContract = async (values: z.infer<typeof customizationSchema>) => {
     setIsLoading(true);
-    
+
+    // Demo gating: only allow 1 submission in demo
+    if (!canAccess('contractManagement')) {
+      showUpgradeModalForModule('contractManagement');
+      toast({ title: 'Demo limit reached', description: 'Sign up to create more contracts.' });
+      setIsLoading(false);
+      return;
+    }
     try {
       const finalContent = generateFinalContract();
       
@@ -216,6 +225,11 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
         title: "Contract Saved",
         description: "Contract has been saved as draft successfully.",
       });
+
+      if (isDemo) {
+        incrementUsage('contractManagement');
+        showUpgradeModalForModule('contractManagement');
+      }
       
       setShowSendOptions(true);
     } catch (error) {

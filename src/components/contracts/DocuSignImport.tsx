@@ -9,6 +9,7 @@ import { FileText, Download, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 
 interface DocuSignImportProps {
   onBack: () => void;
@@ -43,6 +44,7 @@ export function DocuSignImport({ onBack, onSuccess }: DocuSignImportProps) {
   const [counterpartyName, setCounterpartyName] = useState<string>("");
   const { toast } = useToast();
   const { user } = useAuth();
+  const { canAccess, incrementUsage, showUpgradeModalForModule, isDemo } = useDemoAccess();
 
   const authenticate = async () => {
     setIsLoading(true);
@@ -136,6 +138,14 @@ export function DocuSignImport({ onBack, onSuccess }: DocuSignImportProps) {
     }
 
     setIsLoading(true);
+    
+    // Demo gating: only 1 submission in demo
+    if (!canAccess('contractManagement')) {
+      showUpgradeModalForModule('contractManagement');
+      toast({ title: 'Demo limit reached', description: 'Sign up to import more contracts.' });
+      setIsLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase.functions.invoke('docusign-import', {
         body: {
@@ -159,6 +169,10 @@ export function DocuSignImport({ onBack, onSuccess }: DocuSignImportProps) {
           title: "Success",
           description: "Contract imported successfully from DocuSign!",
         });
+        if (isDemo) {
+          incrementUsage('contractManagement');
+          showUpgradeModalForModule('contractManagement');
+        }
         onSuccess();
       }
     } catch (error) {
