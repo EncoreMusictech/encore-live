@@ -157,7 +157,7 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
 
   if (showTemplateBuilder) {
     return (
-      <TemplateBuilder onBack={() => setShowTemplateBuilder(false)} />
+      <TemplateBuilder onBack={() => { setShowTemplateBuilder(false); fetchTemplates(); }} />
     );
   }
 
@@ -315,7 +315,7 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
                 <p className="text-muted-foreground mb-4">
                   Create reusable contract templates to streamline your workflow.
                 </p>
-                <Button className="gap-2">
+                <Button className="gap-2" onClick={() => setShowTemplateBuilder(true)}>
                   <Plus className="h-4 w-4" />
                   Create Your First Template
                 </Button>

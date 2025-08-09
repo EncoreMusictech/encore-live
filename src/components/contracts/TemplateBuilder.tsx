@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { ArrowLeft, Eye, Send, Save, Plus, Trash2, GripVertical, Edit3, Sparkles } from 'lucide-react';
 import { toast } from "sonner";
 import { useClauseAI } from "@/hooks/useClauseAI";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContractField {
   id: string;
@@ -197,7 +198,7 @@ const removeField = (fieldId: string) => {
       toast.error("Please enter a template name");
       return;
     }
-    
+
     if (selectedFields.length === 0) {
       toast.error("Please add at least one field to the template");
       return;
@@ -206,16 +207,23 @@ const removeField = (fieldId: string) => {
     const template = {
       template_name: templateName,
       contract_type: selectedContractType,
-template_data: {
+      template_data: {
         fields: selectedFields,
         layout: 'standard',
         clauses: clausesById
-      }
-    };
+      },
+      is_public: false
+    } as const;
 
-    // Here you would save to your backend
-    console.log('Saving template:', template);
+    const { error } = await supabase.from('contract_templates').insert(template as any);
+    if (error) {
+      console.error('Error saving template:', error);
+      toast.error('Failed to save template');
+      return;
+    }
+
     toast.success("Template saved successfully!");
+    onBack?.();
   };
 
   const sendContract = (method: 'docusign' | 'email') => {
