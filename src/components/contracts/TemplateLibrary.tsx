@@ -33,6 +33,7 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
   const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
   const [customizeTemplate, setCustomizeTemplate] = useState<any | null>(null);
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -157,7 +158,7 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
 
   if (showTemplateBuilder) {
     return (
-      <TemplateBuilder onBack={() => { setShowTemplateBuilder(false); fetchTemplates(); }} />
+      <TemplateBuilder onBack={() => { setShowTemplateBuilder(false); setEditingTemplate(null); fetchTemplates(); }} existingTemplate={editingTemplate || undefined} />
     );
   }
 
@@ -200,7 +201,7 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button className="gap-2" onClick={() => setShowTemplateBuilder(true)}>
+        <Button className="gap-2" onClick={() => { setEditingTemplate(null); setShowTemplateBuilder(true); }}>
           <Plus className="h-4 w-4" />
           Create Template
         </Button>
@@ -315,7 +316,7 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
                 <p className="text-muted-foreground mb-4">
                   Create reusable contract templates to streamline your workflow.
                 </p>
-                <Button className="gap-2" onClick={() => setShowTemplateBuilder(true)}>
+                <Button className="gap-2" onClick={() => { setEditingTemplate(null); setShowTemplateBuilder(true); }}>
                   <Plus className="h-4 w-4" />
                   Create Your First Template
                 </Button>
@@ -342,11 +343,11 @@ export function TemplateLibrary({ selectionMode = false, onTemplateSelect }: Tem
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 gap-2" onClick={() => { setEditingTemplate(template); setShowTemplateBuilder(true); }}>
                       <Eye className="h-4 w-4" />
                       Edit
                     </Button>
-                    <Button size="sm" className="flex-1 gap-2">
+                    <Button size="sm" className="flex-1 gap-2" onClick={() => setCustomizeTemplate(template)}>
                       <Download className="h-4 w-4" />
                       Use
                     </Button>

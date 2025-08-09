@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +29,12 @@ interface ContractField {
 interface TemplateBuilderProps {
   onBack: () => void;
   contractType?: string;
+  existingTemplate?: {
+    id: string;
+    template_name: string;
+    contract_type: string;
+    template_data?: any;
+  };
 }
 
 const FIELD_TEMPLATES: Record<string, ContractField[]> = {
@@ -121,7 +127,7 @@ const FIELD_TEMPLATES: Record<string, ContractField[]> = {
   ]
 };
 
-export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contractType = 'artist_recording' }) => {
+export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contractType = 'artist_recording', existingTemplate }) => {
   const [templateName, setTemplateName] = useState('');
   const [selectedContractType, setSelectedContractType] = useState(contractType);
   const [selectedFields, setSelectedFields] = useState<ContractField[]>([]);
@@ -135,6 +141,17 @@ const [edits, setEdits] = useState<Array<{ field: string; oldValue: string; newV
   const [clauseEdits, setClauseEdits] = useState<Array<{ field: string; oldClause: string; newClause: string; timestamp: Date }>>([]);
 
   const { loading: aiLoading, generateClause } = useClauseAI();
+
+  useEffect(() => {
+    if (existingTemplate) {
+      setTemplateName(existingTemplate.template_name || '');
+      setSelectedContractType(existingTemplate.contract_type || contractType);
+      const fields = existingTemplate.template_data?.fields || [];
+      setSelectedFields(fields);
+      const clauses = existingTemplate.template_data?.clauses || {};
+      setClausesById(clauses);
+    }
+  }, [existingTemplate]);
 
   const getDefaultClause = useCallback((field: ContractField) => `${field.label}: {{${field.id}}}`,[ ]);
 
@@ -204,7 +221,7 @@ const removeField = (fieldId: string) => {
       return;
     }
 
-    const template = {
+    const payload = {
       template_name: templateName,
       contract_type: selectedContractType,
       template_data: {
@@ -215,14 +232,23 @@ const removeField = (fieldId: string) => {
       is_public: false
     } as const;
 
-    const { error } = await supabase.from('contract_templates').insert(template as any);
+    let error;
+    if (existingTemplate?.id) {
+      ({ error } = await supabase
+        .from('contract_templates')
+        .update(payload as any)
+        .eq('id', existingTemplate.id));
+    } else {
+      ({ error } = await supabase.from('contract_templates').insert(payload as any));
+    }
+
     if (error) {
       console.error('Error saving template:', error);
       toast.error('Failed to save template');
       return;
     }
 
-    toast.success("Template saved successfully!");
+    toast.success(existingTemplate?.id ? 'Template updated successfully!' : 'Template saved successfully!');
     onBack?.();
   };
 
