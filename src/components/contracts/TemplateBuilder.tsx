@@ -11,8 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Eye, Send, Save, Plus, Trash2, GripVertical, Edit3 } from 'lucide-react';
+import { ArrowLeft, Eye, Send, Save, Plus, Trash2, GripVertical, Edit3, Sparkles } from 'lucide-react';
 import { toast } from "sonner";
+import { useClauseAI } from "@/hooks/useClauseAI";
 
 interface ContractField {
   id: string;
@@ -84,9 +85,11 @@ const [edits, setEdits] = useState<Array<{ field: string; oldValue: string; newV
   const [clauseDraft, setClauseDraft] = useState("");
   const [clauseEdits, setClauseEdits] = useState<Array<{ field: string; oldClause: string; newClause: string; timestamp: Date }>>([]);
 
+  const { loading: aiLoading, generateClause } = useClauseAI();
+
   const getDefaultClause = useCallback((field: ContractField) => `${field.label}: {{${field.id}}}`,[ ]);
 
-const handleContractTypeChange = (newType: string) => {
+  const handleContractTypeChange = (newType: string) => {
     setSelectedContractType(newType);
     setSelectedFields([]);
     setPreviewData({});
@@ -443,6 +446,35 @@ template_data: {
                   }}
                 >
                   Reset to Default
+                </Button>
+                <Button
+                  variant="secondary"
+                  disabled={aiLoading || !editingField}
+                  onClick={async () => {
+                    if (!editingField) return;
+                    try {
+                      const suggestion = await generateClause({
+                        fieldId: editingField.id,
+                        fieldLabel: editingField.label,
+                        fieldType: editingField.type,
+                        contractType: selectedContractType,
+                        currentClause: clauseDraft,
+                        values: previewData,
+                        tone: 'standard',
+                      });
+                      if (suggestion) {
+                        setClauseDraft(suggestion);
+                        toast.success('AI suggestion generated');
+                      } else {
+                        toast.error('No suggestion generated');
+                      }
+                    } catch (e) {
+                      toast.error('Failed to generate with AI');
+                    }
+                  }}
+                  className="gap-2"
+                >
+                  <Sparkles className="h-4 w-4" /> {aiLoading ? 'Generating…' : 'Generate with AI'}
                 </Button>
                 <Button
                   onClick={() => {
