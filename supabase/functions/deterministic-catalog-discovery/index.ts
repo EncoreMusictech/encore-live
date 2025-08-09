@@ -10,6 +10,7 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const sharedSecret = Deno.env.get('ASSISTANT_SHARED_SECRET') || '';
+const perplexityKey = Deno.env.get('PERPLEXITY_API_KEY') || '';
 
 const supabase = createClient(supabaseUrl, serviceKey);
 
@@ -199,23 +200,83 @@ serve(async (req) => {
       works = await fetchAllWorksByArtist(artistId, Math.min(1000, maxSongs));
     }
     if (!works.length) {
-      works = await searchWorksByWriterName(writerName, Math.min(100, maxSongs));
+      works = await searchWorksByWriterName(writerName, Math.min(1000, maxSongs));
     }
 
-    // Enrich each work with details and (optionally) PRO agent
-    const selected = works.slice(0, maxSongs);
+    // Supplement with ASCAP Songview (via Perplexity) to catch missing works
+    let ascapWorks: Array<{ title: string; iswc?: string; writers?: any[]; publishers?: any[] }> = [];
+    if (perplexityKey) {
+      try {
+        const resp = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${perplexityKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'llama-3.1-sonar-large-128k-online',
+            messages: [
+              { role: 'system', content: 'You extract structured data from ASCAP Songview (repertory.ascap.com). Return STRICT JSON. No prose. Shape: {"works":[{"title":"string","iswc":"string?","writers":[{"name":"string","ipi":"string?","share":number?}],"publishers":[{"name":"string","share":number?}]}]}. Prefer official capitalization. Return up to 300 unique works for the writer provided.' },
+              { role: 'user', content: `List all works for writer \"${writerName}\" using ASCAP Songview. Include ISWC when shown and writers/publishers with percentages if listed. Output JSON only.` }
+            ],
+            temperature: 0.1,
+            top_p: 0.9,
+            max_tokens: 2000,
+            search_domain_filter: ['ascap.com'],
+            search_recency_filter: 'year'
+          })
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const content = data?.choices?.[0]?.message?.content || '';
+          let parsed: any = null;
+          try {
+            const match = content.match(/```json\s*([\s\S]*?)```/);
+            parsed = JSON.parse(match ? match[1] : content);
+          } catch(_e) {
+            parsed = null;
+          }
+          if (parsed?.works && Array.isArray(parsed.works)) {
+            ascapWorks = parsed.works.slice(0, maxSongs * 2);
+          }
+        }
+      } catch(_e) { /* ignore */ }
+    }
+
+    // Build unified candidate list
+    const byTitle = new Map<string, { id?: string; title: string; source: 'musicbrainz' | 'ascap'; iswc?: string; writers?: any[]; publishers?: any[] }>();
+    for (const w of works) {
+      const title = (w.title || '').trim();
+      if (!title) continue;
+      const key = title.toLowerCase();
+      if (!byTitle.has(key)) byTitle.set(key, { id: w.id, title, source: 'musicbrainz', iswc: (w.iswc || (w.iswcs && w.iswcs[0])) });
+    }
+    for (const w of ascapWorks) {
+      const title = (w.title || '').trim();
+      if (!title) continue;
+      const key = title.toLowerCase();
+      if (!byTitle.has(key)) byTitle.set(key, { title, source: 'ascap', iswc: w.iswc, writers: w.writers, publishers: w.publishers });
+    }
+
+    const selected = Array.from(byTitle.values()).slice(0, maxSongs);
     const rows: any[] = [];
 
 for (const w of selected) {
-      // Respect MusicBrainz rate limits to avoid throttling
+      // Respect rate limits
       await new Promise((res) => setTimeout(res, 300));
-      const workId = w.id;
-      const details = await getWorkDetails(workId);
-      const title = details?.title || w.title;
-      const iswc = (details?.iswcs && details.iswcs[0]) || w.iswc || null;
-      const rels = details?.relations || [];
-      const writerRels = rels.filter((r: any) => ['writer', 'composer', 'lyricist'].includes(r.type));
-      const coWriters = writerRels.map((r: any) => r.artist?.name).filter(Boolean);
+
+      let title = (w.title || 'Untitled');
+      let iswc: string | null = (w.iswc as string) || null;
+      let coWriters: string[] = Array.isArray(w.writers) ? w.writers.map((x: any) => x?.name).filter(Boolean) : [];
+
+      if (w.id) {
+        const details = await getWorkDetails(w.id);
+        if (details) {
+          title = details?.title || title;
+          iswc = (details?.iswcs && details.iswcs[0]) || iswc;
+          const rels = details?.relations || [];
+          const writerRels = rels.filter((r: any) => ['writer', 'composer', 'lyricist'].includes(r.type));
+          const extra = writerRels.map((r: any) => r.artist?.name).filter(Boolean);
+          if (extra?.length) coWriters = extra;
+        }
+      }
 
       // Try PRO agent for authoritative verification
       let proData: any = null;
@@ -250,7 +311,7 @@ for (const w of selected) {
         metadata_completeness_score: finalISWC ? 0.85 : 0.6,
         verification_status: proData ? 'pro_verified' : 'discovered',
         last_verified_at: new Date().toISOString(),
-        source_data: { source: 'musicbrainz', work_id: workId, primary_territory: primaryTerritory }
+        source_data: { source: w.source, work_id: w.id || null, primary_territory: primaryTerritory }
       });
     }
 
