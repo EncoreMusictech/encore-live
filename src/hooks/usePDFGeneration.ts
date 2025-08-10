@@ -18,10 +18,11 @@ export const usePDFGeneration = () => {
   const { toast } = useToast();
 
   const buildPrintHTML = (inner: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><style>
-    html,body{margin:0;padding:0;background:#fff;color:#000;font-family:Inter,system-ui,Arial,sans-serif}
-    .print-root{box-sizing:border-box;width:794px;max-width:794px;padding:32px 40px;margin:0 auto}
-    h1,h2,h3{margin:0 0 12px}
-    p{margin:0 0 10px;line-height:1.5}
+    html,body{margin:0;padding:0;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif}
+    /* Safer typography for canvas rendering */
+    .print-root{box-sizing:border-box;width:794px;max-width:794px;padding:40px 48px;margin:0 auto;line-height:1.6;letter-spacing:0;word-spacing:0.06em;font-kerning:none;font-feature-settings:'liga' 0, 'kern' 0;white-space:normal;word-break:normal}
+    h1,h2,h3{margin:0 0 14px;letter-spacing:0}
+    p,li{margin:0 0 12px;line-height:1.6;letter-spacing:0;word-spacing:0.06em}
     section{page-break-inside:avoid}
     table{width:100%;border-collapse:collapse}
     table,th,td{border:1px solid #ddd}
@@ -96,7 +97,7 @@ export const usePDFGeneration = () => {
       target.style.background = '#ffffff';
       target.style.width = '794px';
 
-      const canvas = await html2canvas(target, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+      const canvas = await html2canvas(target, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff', letterRendering: true, foreignObjectRendering: true } as any);
 
       const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -150,7 +151,7 @@ export const usePDFGeneration = () => {
       target.style.background = '#ffffff';
       target.style.width = '794px';
 
-      const canvas = await html2canvas(target, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+      const canvas = await html2canvas(target, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff', letterRendering: true, foreignObjectRendering: true } as any);
 
       const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
