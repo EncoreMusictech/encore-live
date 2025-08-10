@@ -250,7 +250,7 @@ export const useClientPortal = () => {
     }
   };
 
-  // Create data association
+  // Create data association (idempotent)
   const createDataAssociation = async (
     clientUserId: string,
     dataType: 'copyright' | 'contract' | 'royalty_allocation' | 'sync_license',
@@ -259,6 +259,20 @@ export const useClientPortal = () => {
     if (!user) return null;
 
     try {
+      // Idempotency: skip if this link already exists
+      const { data: existing } = await supabase
+        .from('client_data_associations')
+        .select('id')
+        .eq('subscriber_user_id', user.id)
+        .eq('client_user_id', clientUserId)
+        .eq('data_type', dataType)
+        .eq('data_id', dataId)
+        .maybeSingle();
+
+      if (existing) {
+        return { ...existing, alreadyLinked: true } as any;
+      }
+
       const { data, error } = await supabase
         .from('client_data_associations')
         .insert({
