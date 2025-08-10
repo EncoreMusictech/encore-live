@@ -57,9 +57,8 @@ export function useQuarterlyBalanceReports() {
       // Fetch paid payouts for this user
       const { data: payouts, error: payoutsError } = await supabase
         .from('payouts')
-        .select('id, client_id, gross_royalties, total_expenses, amount_due, status, created_at')
-        .eq('user_id', user.id)
-        .eq('status', 'paid');
+        .select('id, client_id, gross_royalties, total_expenses, amount_due, status, created_at, period_start, period_end, period')
+        .eq('user_id', user.id);
 
       if (payoutsError || !payouts || payouts.length === 0) return [];
 
@@ -94,7 +93,8 @@ export function useQuarterlyBalanceReports() {
       const periodLabel = (year: number, quarter: number) => `Q${quarter} ${year}`;
 
       for (const p of payouts) {
-        const d = new Date(p.created_at);
+        const periodDate = (p as any).period_start || p.created_at;
+        const d = new Date(periodDate);
         const year = d.getFullYear();
         const quarter = Math.ceil((d.getMonth() + 1) / 3);
         const contact = p.client_id ? contactsMap.get(p.client_id) : undefined;
@@ -129,7 +129,7 @@ export function useQuarterlyBalanceReports() {
         const acc = groups.get(key)!;
         acc.royalties_amount += Number(p.gross_royalties || 0);
         acc.expenses_amount += Number(p.total_expenses || 0);
-        acc.payments_amount += Number(p.amount_due || 0);
+        acc.payments_amount += (String(p.status || '').toLowerCase() === 'paid') ? Number(p.amount_due || 0) : 0;
       }
 
       // Compute opening/closing balances per payee chronologically
