@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { PlayCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useClientPortal } from '@/hooks/useClientPortal';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -18,6 +19,7 @@ const Auth = () => {
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isClient } = useClientPortal();
 
   // Update page metadata
   useEffect(() => {
@@ -26,14 +28,24 @@ const Auth = () => {
 
   // Redirect authenticated users to appropriate page
   useEffect(() => {
-    if (user) {
-      // Check if this is the demo account
+    if (!user) return;
+    (async () => {
+      const ADMIN_EMAIL = 'info@encoremusic.tech';
+      try {
+        const hasPortal = await isClient();
+        if (hasPortal && user.email !== ADMIN_EMAIL) {
+          navigate('/client-portal', { replace: true });
+          return;
+        }
+      } catch (e) {
+        // ignore and fallback
+      }
       const isDemoAccount = user.email === 'demo@encoremusic.tech';
       const defaultRedirect = isDemoAccount ? '/demo-modules' : '/';
-      const from = location.state?.from?.pathname || defaultRedirect;
+      const from = (location.state as any)?.from?.pathname || defaultRedirect;
       navigate(from, { replace: true });
-    }
-  }, [user, navigate, location]);
+    })();
+  }, [user, navigate, location, isClient]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
