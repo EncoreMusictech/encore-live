@@ -36,6 +36,9 @@ const ClientPortal = () => {
         if (token) {
           // Try to accept the invitation
           const access = await acceptInvitation(token);
+
+          // Remove token from URL regardless to prevent repeated attempts
+          window.history.replaceState({}, '', '/client-portal');
           
           if (access) {
             setInvitationAccepted(true);
@@ -43,20 +46,24 @@ const ClientPortal = () => {
               title: 'Welcome!',
               description: 'Invitation accepted successfully. Welcome to the client portal!',
             });
-            
-            // Remove token from URL
-            window.history.replaceState({}, '', '/client-portal');
-            
-            // Set client access and permissions from the accepted invitation
             setClientAccess(true);
             const clientPermissions = await getClientPermissions();
             setPermissions((clientPermissions as Record<string, any>) || {});
           } else {
-            toast({
-              title: 'Invalid Invitation',
-              description: 'The invitation link is invalid or has expired.',
-              variant: 'destructive'
-            });
+            // Fallback: if access already exists, proceed
+            const isClientUser = await isClient();
+            setClientAccess(isClientUser);
+            if (isClientUser) {
+              const clientPermissions = await getClientPermissions();
+              setPermissions((clientPermissions as Record<string, any>) || {});
+              toast({ title: 'Access active', description: 'Your client portal access is already active.' });
+            } else {
+              toast({
+                title: 'Invalid Invitation',
+                description: 'The invitation link is invalid or has expired.',
+                variant: 'destructive'
+              });
+            }
           }
         } else {
           // No token, check existing client access

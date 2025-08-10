@@ -143,6 +143,20 @@ export const useClientPortal = () => {
       return access;
     } catch (error: any) {
       console.error('Error accepting invitation:', error);
+
+      // Fallback: if invite is invalid/expired, user might already have access
+      const { data: existingAccess } = await supabase
+        .from('client_portal_access')
+        .select('*')
+        .eq('client_user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (existingAccess) {
+        toast({ title: 'Already has access', description: 'Your client portal access is already active.' });
+        return existingAccess as any;
+      }
+
       toast({
         variant: "destructive",
         title: "Error",
