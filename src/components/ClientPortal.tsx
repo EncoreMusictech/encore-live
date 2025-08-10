@@ -154,6 +154,18 @@ const ClientPortal = () => {
     { id: 'notifications', label: 'Notifications & Downloads', icon: Bell, enabled: true }
   ].filter(tab => tab.enabled);
 
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast({ title: 'Signed out', description: 'You have been signed out successfully.' });
+      window.location.href = '/auth';
+    } catch (err: any) {
+      console.error('Sign out error:', err);
+      toast({ title: 'Sign out failed', description: err?.message || 'Please try again.', variant: 'destructive' });
+    }
+  };
+
   const defaultTab = enabledTabs[0]?.id || 'overview';
 
   return (
@@ -201,6 +213,14 @@ const ClientPortal = () => {
             <Badge className="bg-background/80 text-foreground flex items-center gap-1">
               <ShieldCheck className="h-4 w-4" /> Secured Client Access
             </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSignOut}
+              aria-label="Sign out of Client Portal"
+            >
+              Sign Out
+            </Button>
             <img
               src="/lovable-uploads/1f2a630f-1957-40bc-b85b-49b8950660a7.png"
               alt="Spinning vinyl record illustration for Client Portal"
