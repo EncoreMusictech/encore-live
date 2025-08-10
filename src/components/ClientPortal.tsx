@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Users, FileText, Music, DollarSign, Bell, Download, CheckCircle } from 'lucide-react';
+import { Loader2, Users, FileText, Music, DollarSign, Bell, Download, CheckCircle, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ClientDashboardOverview } from './client-portal/ClientDashboardOverview';
 import { ClientContracts } from './client-portal/ClientContracts';
@@ -16,8 +16,9 @@ import { ClientRoyalties } from './client-portal/ClientRoyalties';
 import { ClientNotifications } from './client-portal/ClientNotifications';
 import { ShieldCheck } from 'lucide-react';
 import { updatePageMetadata } from '@/utils/seo';
-
-
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
+import { ClientProfileForm } from './client-portal/ClientProfileForm';
 const ClientPortal = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -27,7 +28,8 @@ const ClientPortal = () => {
   const [permissions, setPermissions] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [invitationAccepted, setInvitationAccepted] = useState(false);
-
+  const [profile, setProfile] = useState<Record<string, any> | null>(null);
+  const [greeting, setGreeting] = useState<string>('');
   useEffect(() => {
     const handleInvitationAndAccess = async () => {
       if (!user) return;
@@ -98,6 +100,18 @@ const ClientPortal = () => {
     updatePageMetadata('clientPortal');
   }, []);
 
+  // Load profile and set greeting
+  useEffect(() => {
+    if (!user) return;
+    const fetchProfile = async () => {
+      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      if (data) setProfile(data as any);
+      const firstName = (data?.first_name as string) || (user.user_metadata?.first_name as string) || (user.email?.split('@')[0] ?? 'there');
+      const msg = data?.onboarding_complete ? `Welcome back, ${firstName}` : `Hello, ${firstName}!`;
+      setGreeting(msg);
+    };
+    fetchProfile();
+  }, [user]);
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -131,6 +145,7 @@ const ClientPortal = () => {
 
   const enabledTabs = [
     { id: 'overview', label: 'Dashboard Overview', icon: Users, enabled: true },
+    { id: 'profile', label: 'My Profile', icon: User, enabled: true },
     { id: 'contracts', label: 'My Contracts', icon: FileText, enabled: permissions.contracts?.enabled },
     { id: 'works', label: 'My Works', icon: Music, enabled: permissions.copyright?.enabled },
     { id: 'sync-deals', label: 'Sync Deals', icon: FileText, enabled: permissions['sync-licensing']?.enabled },
@@ -153,6 +168,13 @@ const ClientPortal = () => {
       )}
       
       <header className="mb-6 brand-hero rounded-xl p-6 brand-hero-ring overflow-hidden">
+        <div className="flex flex-col items-center text-center gap-2 mb-4">
+          <Avatar className="h-20 w-20 shadow-md">
+            <AvatarImage src={profile?.avatar_url || undefined} alt="Client avatar" loading="lazy" />
+            <AvatarFallback>{((profile?.first_name?.[0] || user?.email?.[0] || 'U') as string).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <div className="text-lg font-medium">{greeting}</div>
+        </div>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-headline">Client Portal</h1>
@@ -179,7 +201,7 @@ const ClientPortal = () => {
       </header>
 
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid grid-cols-2 lg:grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-2 lg:grid-cols-7 w-full">
           {enabledTabs.map((tab) => (
             <TabsTrigger 
               key={tab.id} 
@@ -194,6 +216,18 @@ const ClientPortal = () => {
 
         <TabsContent value="overview" className="space-y-6">
           <ClientDashboardOverview permissions={permissions} />
+        </TabsContent>
+
+        <TabsContent value="profile" className="space-y-6">
+          <ClientProfileForm
+            profile={profile as any}
+            userEmail={user?.email || ''}
+            onSaved={(p) => {
+              setProfile(p as any);
+              const name = (p.first_name as string) || (user?.email?.split('@')[0] ?? 'there');
+              setGreeting(`Welcome back, ${name}`);
+            }}
+          />
         </TabsContent>
 
         {permissions.contracts?.enabled && (
