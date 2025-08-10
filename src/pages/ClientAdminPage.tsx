@@ -63,6 +63,75 @@ export default function ClientAdminPage() {
     { dataType: 'copyright', dataId: '' }
   );
 
+  // Resolved names for associations (type:id -> label)
+  const [nameMap, setNameMap] = useState<Record<string, string>>({});
+  const getDataLabel = (a: any) => nameMap[`${a.data_type}:${a.data_id}`] || a.data_id;
+
+  useEffect(() => {
+    const loadLabels = async () => {
+      if (!dataAssociations || dataAssociations.length === 0) {
+        setNameMap({});
+        return;
+      }
+      try {
+        const map: Record<string, string> = {};
+        const byType = {
+          copyright: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'copyright').map((x: any) => x.data_id))).filter(Boolean),
+          contract: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'contract').map((x: any) => x.data_id))).filter(Boolean),
+          royalty_allocation: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'royalty_allocation').map((x: any) => x.data_id))).filter(Boolean),
+          sync_license: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'sync_license').map((x: any) => x.data_id))).filter(Boolean),
+        } as const;
+
+        const tasks: Promise<void>[] = [];
+        if (byType.copyright.length) {
+          tasks.push((async () => {
+            const { data } = await supabase
+              .from('copyrights')
+              .select('id, work_title')
+              .in('id', byType.copyright as any);
+            (data || []).forEach((r: any) => { map[`copyright:${r.id}`] = r.work_title || r.id; });
+          })());
+        }
+        if (byType.contract.length) {
+          tasks.push((async () => {
+            const { data } = await supabase
+              .from('contracts')
+              .select('id, title')
+              .in('id', byType.contract as any);
+            (data || []).forEach((r: any) => { map[`contract:${r.id}`] = r.title || r.id; });
+          })());
+        }
+        if (byType.royalty_allocation.length) {
+          tasks.push((async () => {
+            const { data } = await supabase
+              .from('royalty_allocations')
+              .select('id, song_title, artist')
+              .in('id', byType.royalty_allocation as any);
+            (data || []).forEach((r: any) => {
+              const label = r.song_title ? `${r.song_title}${r.artist ? ' — ' + r.artist : ''}` : r.id;
+              map[`royalty_allocation:${r.id}`] = label;
+            });
+          })());
+        }
+        if (byType.sync_license.length) {
+          tasks.push((async () => {
+            const { data } = await supabase
+              .from('sync_licenses')
+              .select('id, project_title')
+              .in('id', byType.sync_license as any);
+            (data || []).forEach((r: any) => { map[`sync_license:${r.id}`] = r.project_title || r.id; });
+          })());
+        }
+
+        await Promise.all(tasks);
+        setNameMap(map);
+      } catch (err) {
+        console.error('Failed to load association labels', err);
+      }
+    };
+    loadLabels();
+  }, [dataAssociations]);
+
   const handleCreateInvitation = async () => {
     if (!inviteEmail) {
       toast({
@@ -448,7 +517,7 @@ export default function ClientAdminPage() {
                     <TableRow>
                       <TableHead>Client</TableHead>
                       <TableHead>Data Type</TableHead>
-                      <TableHead>Data ID</TableHead>
+                      <TableHead>Data</TableHead>
                       <TableHead className="w-[140px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -486,7 +555,7 @@ export default function ClientAdminPage() {
                               placeholder="UUID"
                             />
                           ) : (
-                            <code className="text-xs">{a.data_id}</code>
+                            <span className="text-sm">{getDataLabel(a)}</span>
                           )}
                         </TableCell>
                         <TableCell>
