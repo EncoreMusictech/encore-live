@@ -195,11 +195,17 @@ async function generateWithOpenAI(payload: any): Promise<string> {
   let content = data.choices?.[0]?.message?.content || '';
 
   // Strip markdown code fences that models often add (```html ... ```)
-  content = content
-    .replace(/^\s*```(?:html|HTML)?\s*/i, '')
-    .replace(/\s*```\s*$/i, '')
-    .replace(/```/g, '')
-    .trim();
+  content = content.replace(/^\uFEFF/, '');
+  // Remove up to three leading code-fence lines like ```html or ``` HTML
+  for (let i = 0; i < 3; i++) {
+    content = content.replace(/^\s*```\s*[a-zA-Z]*\s*\r?\n?/, '');
+  }
+  // In case a lone 'html' label is left after removal
+  content = content.replace(/^\s*html\s*\r?\n/i, '');
+  // Trim trailing closing fences
+  content = content.replace(/\r?\n?\s*```+\s*$/i, '').replace(/```/g, '');
+  content = content.trim();
+
 
   // If the model returned a full HTML document, use it as-is. Otherwise, wrap it.
   const isFullDoc = /<html[\s>]|<!doctype/i.test(content);
