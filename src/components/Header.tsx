@@ -53,7 +53,7 @@ const Header = () => {
                     {modules.map((module) => (
                       <NavigationMenuLink key={module.id} asChild>
                         <Link
-                          to={`/features/${module.id}`}
+                          to={module.subModules?.[0]?.path || "/modules"}
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-electric-lavender/10 hover:text-electric-lavender focus:bg-electric-lavender/10 focus:text-electric-lavender"
                         >
                           <div className="flex items-center gap-3">

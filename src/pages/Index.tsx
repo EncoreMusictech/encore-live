@@ -23,7 +23,8 @@ const Index = () => {
     updatePageMetadata('home');
   }, []);
   const handleGetStarted = (moduleId: string) => {
-    navigate(`/features/${moduleId}`);
+    const mod = modules.find(m => m.id === moduleId);
+    navigate(mod?.subModules?.[0]?.path || "/modules");
   };
   const pricingTiers = [{
     name: "Starter Creator",
