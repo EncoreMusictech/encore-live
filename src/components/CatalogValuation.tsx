@@ -1813,7 +1813,7 @@ Actual market values may vary significantly based on numerous factors not captur
                   </CardContent>
                 </Card>
 
-                <Card className="border-electric-lavender/40">
+                <Card className="border-music-blue/40">
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <Calculator className="h-5 w-5 text-primary" />
