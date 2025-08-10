@@ -17,6 +17,16 @@ export const usePDFGeneration = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
+  const buildPrintHTML = (inner: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><style>
+    html,body{margin:0;padding:0;background:#fff;color:#000;font-family:Inter,system-ui,Arial,sans-serif}
+    .print-root{box-sizing:border-box;width:794px;max-width:794px;padding:32px 40px;margin:0 auto}
+    h1,h2,h3{margin:0 0 12px}
+    p{margin:0 0 10px;line-height:1.5}
+    section{page-break-inside:avoid}
+    table{width:100%;border-collapse:collapse}
+    table,th,td{border:1px solid #ddd}
+    img{max-width:100%;height:auto}
+  </style></head><body><div class="print-root">${inner}</div></body></html>`;
   const generatePDF = async (contractId: string): Promise<PDFGenerationResult | null> => {
     if (!contractId) {
       toast({
@@ -76,9 +86,9 @@ export const usePDFGeneration = () => {
       document.body.appendChild(iframe);
       const doc = iframe.contentDocument!;
       doc.open();
-      doc.write(htmlContent);
+      doc.write(buildPrintHTML(htmlContent));
       doc.close();
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 120));
       // Wait for fonts if supported
       try { await (doc as any).fonts?.ready; } catch {}
 
@@ -91,10 +101,11 @@ export const usePDFGeneration = () => {
       const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 36;
+      const margin = 48;
       const imgWidth = pageWidth - margin * 2;
       const scale = imgWidth / canvas.width;
       const pageHeightPx = Math.floor((pageHeight - margin * 2) / scale);
+      const overlap = 8; // px overlap to avoid cutting lines
 
       let y = 0;
       let pageIndex = 0;
@@ -108,7 +119,7 @@ export const usePDFGeneration = () => {
         const imgData = pageCanvas.toDataURL('image/png');
         if (pageIndex > 0) pdf.addPage();
         pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, sliceHeight * scale, undefined, 'FAST');
-        y += sliceHeight;
+        y += (y + sliceHeight >= canvas.height) ? sliceHeight : (sliceHeight - overlap);
         pageIndex++;
       }
 
@@ -130,9 +141,9 @@ export const usePDFGeneration = () => {
       document.body.appendChild(iframe);
       const docNode = iframe.contentDocument!;
       docNode.open();
-      docNode.write(htmlContent);
+      docNode.write(buildPrintHTML(htmlContent));
       docNode.close();
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 120));
       try { await (docNode as any).fonts?.ready; } catch {}
 
       const target = docNode.body as HTMLElement;
@@ -144,10 +155,11 @@ export const usePDFGeneration = () => {
       const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 36;
+      const margin = 48;
       const imgWidth = pageWidth - margin * 2;
       const scale = imgWidth / canvas.width;
       const pageHeightPx = Math.floor((pageHeight - margin * 2) / scale);
+      const overlap = 8;
 
       let y = 0;
       let pageIndex = 0;
@@ -161,7 +173,7 @@ export const usePDFGeneration = () => {
         const imgData = pageCanvas.toDataURL('image/png');
         if (pageIndex > 0) pdf.addPage();
         pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, sliceHeight * scale, undefined, 'FAST');
-        y += sliceHeight;
+        y += (y + sliceHeight >= canvas.height) ? sliceHeight : (sliceHeight - overlap);
         pageIndex++;
       }
 
