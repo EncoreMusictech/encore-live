@@ -67,6 +67,30 @@ export const useClientPortal = () => {
     }
   };
 
+  // Fetch data associations
+  const fetchDataAssociations = async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('client_data_associations')
+        .select('*')
+        .eq('subscriber_user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setDataAssociations(data || []);
+    } catch (error: any) {
+      console.error('Error fetching data associations:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load data associations',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Create invitation
   const createInvitation = async (
     email: string,
@@ -253,6 +277,7 @@ export const useClientPortal = () => {
         description: "Data association created successfully"
       });
 
+      await fetchDataAssociations();
       return data;
     } catch (error: any) {
       console.error('Error creating data association:', error);
@@ -265,6 +290,56 @@ export const useClientPortal = () => {
     }
   };
 
+  // Update data association
+  const updateDataAssociation = async (
+    id: string,
+    updates: Partial<Pick<ClientDataAssociation, 'data_type' | 'data_id'>>
+  ) => {
+    if (!user) return null;
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('client_data_associations')
+        .update(updates as any)
+        .eq('id', id)
+        .eq('subscriber_user_id', user.id)
+        .select()
+        .single();
+      if (error) throw error;
+      toast({ title: 'Updated', description: 'Association updated successfully' });
+      await fetchDataAssociations();
+      return data;
+    } catch (error: any) {
+      console.error('Error updating data association:', error);
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to update association' });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete data association
+  const deleteDataAssociation = async (id: string) => {
+    if (!user) return false;
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('client_data_associations')
+        .delete()
+        .eq('id', id)
+        .eq('subscriber_user_id', user.id);
+      if (error) throw error;
+      await fetchDataAssociations();
+      toast({ title: 'Removed', description: 'Association removed' });
+      return true;
+    } catch (error: any) {
+      console.error('Error deleting data association:', error);
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to remove association' });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
   // Check if current user is a client
   const isClient = async () => {
     if (!user) return false;
@@ -385,6 +460,7 @@ export const useClientPortal = () => {
     if (user) {
       fetchClientAccess();
       fetchInvitations();
+      fetchDataAssociations();
     }
   }, [user]);
 
@@ -397,6 +473,8 @@ export const useClientPortal = () => {
     acceptInvitation,
     revokeClientAccess,
     createDataAssociation,
+    updateDataAssociation,
+    deleteDataAssociation,
     isClient,
     getClientPermissions,
     triggerInvitationMaintenance,
@@ -405,6 +483,7 @@ export const useClientPortal = () => {
     refreshData: () => {
       fetchClientAccess();
       fetchInvitations();
+      fetchDataAssociations();
     }
   };
 };

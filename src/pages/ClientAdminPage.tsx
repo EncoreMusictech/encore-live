@@ -10,10 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useClientPortal } from "@/hooks/useClientPortal";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Mail, Users, Database, Clock, AlertTriangle, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Mail, Users, Database, Clock, AlertTriangle, CheckCircle, XCircle, RefreshCw, Pencil, Trash2, Check, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ClientPortalTestHelper } from "@/components/ClientPortalTestHelper";
 import { NameLinker } from "@/components/client-portal/NameLinker";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function ClientAdminPage() {
   const { toast } = useToast();
@@ -25,9 +26,12 @@ export default function ClientAdminPage() {
   const { 
     clientAccess, 
     invitations,
+    dataAssociations,
     createInvitation, 
     revokeClientAccess, 
     createDataAssociation, 
+    updateDataAssociation,
+    deleteDataAssociation,
     triggerInvitationMaintenance,
     removeInvitations,
     getInvitationStatus,
@@ -48,6 +52,16 @@ export default function ClientAdminPage() {
     dataType: "copyright" as "copyright" | "contract" | "royalty_allocation" | "sync_license",
     dataId: ""
   });
+
+  // Filters & inline edit state for associations manager
+  const [typeFilter, setTypeFilter] = useState<'all' | 'copyright' | 'contract' | 'royalty_allocation' | 'sync_license'>(
+    'all'
+  );
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{ dataType: 'copyright' | 'contract' | 'royalty_allocation' | 'sync_license'; dataId: string}>(
+    { dataType: 'copyright', dataId: '' }
+  );
 
   const handleCreateInvitation = async () => {
     if (!inviteEmail) {
@@ -126,6 +140,30 @@ export default function ClientAdminPage() {
         description: "Failed to create data association",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleStartEdit = (assoc: any) => {
+    setEditingId(assoc.id);
+    setEditForm({ dataType: assoc.data_type, dataId: assoc.data_id });
+  };
+
+  const handleSaveAssociationEdit = async () => {
+    if (!editingId) return;
+    const updated = await updateDataAssociation(editingId, {
+      data_type: editForm.dataType as any,
+      data_id: editForm.dataId,
+    } as any);
+    if (updated) {
+      toast({ title: 'Updated', description: 'Association updated' });
+      setEditingId(null);
+    }
+  };
+
+  const handleDeleteAssociation = async (id: string) => {
+    const ok = await deleteDataAssociation(id);
+    if (ok) {
+      toast({ title: 'Removed', description: 'Association removed' });
     }
   };
 
@@ -223,6 +261,13 @@ export default function ClientAdminPage() {
     }
     return undefined;
   };
+
+  const filteredAssociations = dataAssociations.filter((a: any) => {
+    const typeMatch = typeFilter === 'all' || a.data_type === typeFilter;
+    const email = getClientEmail(a.client_user_id) || '';
+    const clientMatch = !searchTerm || a.client_user_id?.includes(searchTerm) || email.toLowerCase().includes(searchTerm.toLowerCase());
+    return typeMatch && clientMatch;
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -367,6 +412,112 @@ export default function ClientAdminPage() {
           </Card>
 
           <NameLinker />
+
+          {/* Data Associations Manager */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Data Associations</CardTitle>
+              <CardDescription>View, filter, edit, or remove client data links</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Filter by client email or ID"
+                />
+                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+                  <SelectTrigger className="sm:w-48">
+                    <SelectValue placeholder="Data type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="copyright">Copyright</SelectItem>
+                    <SelectItem value="contract">Contract</SelectItem>
+                    <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
+                    <SelectItem value="sync_license">Sync License</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {filteredAssociations.length === 0 ? (
+                <p className="text-muted-foreground">No associations found.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Data Type</TableHead>
+                      <TableHead>Data ID</TableHead>
+                      <TableHead className="w-[140px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAssociations.map((a: any) => (
+                      <TableRow key={a.id}>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{getClientEmail(a.client_user_id) ?? 'Unknown'}</span>
+                            <span className="text-xs text-muted-foreground">{a.client_user_id}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {editingId === a.id ? (
+                            <Select value={editForm.dataType} onValueChange={(v) => setEditForm((p) => ({ ...p, dataType: v as any }))}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="copyright">Copyright</SelectItem>
+                                <SelectItem value="contract">Contract</SelectItem>
+                                <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
+                                <SelectItem value="sync_license">Sync License</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="uppercase text-xs">{a.data_type}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === a.id ? (
+                            <Input
+                              value={editForm.dataId}
+                              onChange={(e) => setEditForm((p) => ({ ...p, dataId: e.target.value }))}
+                              placeholder="UUID"
+                            />
+                          ) : (
+                            <code className="text-xs">{a.data_id}</code>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingId === a.id ? (
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={handleSaveAssociationEdit}>
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" onClick={() => handleStartEdit(a)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleDeleteAssociation(a.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableCaption>Showing {filteredAssociations.length} association(s)</TableCaption>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Invitation Lifecycle Management */}
 
