@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileText, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
+import { buildPdfFileName } from '@/lib/utils';
 interface PDFViewerProps {
   pdfUrl: string;
   fileName?: string;
@@ -13,7 +13,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pdfUrl, fileName }) => {
   const handleDownload = () => {
     const link = document.createElement('a');
     link.href = pdfUrl;
-    link.download = fileName || 'contract.pdf';
+    const base = buildPdfFileName({ kind: 'document', title: fileName || 'contract', date: new Date() });
+    link.download = `${base}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

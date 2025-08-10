@@ -28,3 +28,32 @@ export function getQuarterFromDate(dateString: string): string {
     return 'N/A';
   }
 }
+
+// Standardize and build safe filenames for downloads (no extension)
+export function sanitizeFileBaseName(name: string): string {
+  if (!name) return 'document';
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-') // non-alphanumerics to dashes
+    .replace(/-{2,}/g, '-') // collapse multiple dashes
+    .replace(/^-+|-+$/g, '') // trim dashes
+    .slice(0, 120); // keep it reasonable
+}
+
+export function formatYMD(date: Date | string = new Date()): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const da = String(d.getDate()).padStart(2, '0');
+  return `${y}${m}${da}`;
+}
+
+export function buildPdfFileName(opts: { kind?: string; title?: string; id?: string | number; date?: Date | string; }): string {
+  const parts: string[] = [];
+  if (opts.kind) parts.push(sanitizeFileBaseName(String(opts.kind)));
+  if (opts.title) parts.push(sanitizeFileBaseName(String(opts.title)));
+  if (opts.id) parts.push(sanitizeFileBaseName(String(opts.id)));
+  parts.push(formatYMD(opts.date));
+  return parts.filter(Boolean).join('-');
+}
+

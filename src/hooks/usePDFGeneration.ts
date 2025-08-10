@@ -1,9 +1,9 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { buildPdfFileName, sanitizeFileBaseName } from '@/lib/utils';
 
 interface PDFGenerationResult {
   success: boolean;
@@ -124,9 +124,10 @@ export const usePDFGeneration = () => {
         pageIndex++;
       }
 
-      pdf.save(`${fileName}.pdf`);
+      const standardizedBase = buildPdfFileName({ kind: 'agreement', title: fileName, date: new Date() });
+      pdf.save(`${standardizedBase}.pdf`);
       document.body.removeChild(iframe);
-      toast({ title: 'Downloaded', description: `${fileName}.pdf has been downloaded` });
+      toast({ title: 'Downloaded', description: `${standardizedBase}.pdf has been downloaded` });
     } catch (error) {
       console.error('Download error:', error);
       toast({ title: 'Download Error', description: 'Failed to generate PDF', variant: 'destructive' });
