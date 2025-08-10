@@ -16,7 +16,7 @@ import { ClientRoyalties } from './client-portal/ClientRoyalties';
 import { ClientNotifications } from './client-portal/ClientNotifications';
 import { ShieldCheck } from 'lucide-react';
 import { updatePageMetadata } from '@/utils/seo';
-import musicHero from '@/assets/music-hero-graphic.png';
+import musicHero from '@/assets/music-hero-record.png';
 
 const ClientPortal = () => {
   const { user } = useAuth();
