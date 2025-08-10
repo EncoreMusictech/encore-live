@@ -122,8 +122,6 @@ function buildAgreementPayload(contract: any, subtype: AgreementSubtype) {
       agreement_id: contract.agreement_id,
       title: contract.title,
       contract_type: contract.contract_type,
-      version: contract.version,
-      status: contract.contract_status,
     },
     dates: {
       start_date: contract.start_date || cd.effective_date || null,
@@ -166,7 +164,15 @@ function buildAgreementPayload(contract: any, subtype: AgreementSubtype) {
 
 async function generateWithOpenAI(payload: any): Promise<string> {
   const model = 'gpt-4.1-2025-04-14';
-  const system = `You are a senior music attorney and world-class legal drafter. Generate a professional, production-ready HTML agreement using semantic HTML with inline styles kept minimal. Use headings, sections, and tables. Include a signature block and Exhibits: Exhibit A (Parties) and Exhibit B (Schedule of Works). Tailor to the subtype and populate with provided data. Do NOT hallucinate unknown numbers—leave bracketed placeholders like [Commission %] where missing.`;
+  const system = `You are a senior music attorney and world-class legal drafter.
+  Requirements:
+  - Produce clean, production-ready HTML (semantic tags; minimal inline styles)
+  - Include Exhibits: A (Parties) and B (Schedule of Works)
+  - Do NOT include any Version or Status metadata anywhere
+  - Title the signature section exactly: "Signatures" (not "Signature Block")
+  - Do NOT draw boxes/borders around the signatures; just two signature lines
+  - Never hallucinate numbers; when unknown, use [Placeholder]
+  `;
 
   const user = JSON.stringify(payload);
 
@@ -206,6 +212,10 @@ async function generateWithOpenAI(payload: any): Promise<string> {
   content = content.replace(/\r?\n?\s*```+\s*$/i, '').replace(/```/g, '');
   content = content.trim();
 
+  // Normalize output
+  content = content.replace(/Signature\s*Block/gi, 'Signatures');
+  // Remove Version/Status lines
+  content = content.replace(/(?:Version|Status)\s*:\s*[^<\n\r]+/gi, '');
 
   // If the model returned a full HTML document, use it as-is. Otherwise, wrap it.
   const isFullDoc = /<html[\s>]|<!doctype/i.test(content);
@@ -277,7 +287,7 @@ function deterministicTemplate(payload: any): string {
 
 function wrapHtml(inner: string, title: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${escapeHtml(title)}</title>
-  <style>body{font-family:Inter,system-ui,Arial,sans-serif;line-height:1.5;padding:24px;color:#111} h1{font-size:24px;margin:0 0 8px} h2{font-size:18px;margin:20px 0 8px} header{margin-bottom:16px} table{border-collapse:collapse} th,td{border:1px solid #ccc}</style>
+  <style>body{font-family:Inter,system-ui,Arial,sans-serif;line-height:1.5;padding:24px;color:#111} h1{font-size:24px;margin:0 0 8px} h2{font-size:18px;margin:20px 0 8px} header{margin-bottom:16px} table{border-collapse:collapse} th,td{border:1px solid #ccc} [class*="signature"],[id*="signature"]{border:none!important;box-shadow:none!important;outline:none!important}</style>
   </head><body>${inner}</body></html>`;
 }
 
