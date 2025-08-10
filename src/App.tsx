@@ -10,6 +10,7 @@ import AdminOrProtectedRoute from "@/components/AdminOrProtectedRoute";
 import DemoUpgradeModal from "@/components/DemoUpgradeModal";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { SecurityProvider } from "@/components/SecurityProvider";
+import EmailRestrictedRoute from "@/components/EmailRestrictedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -128,9 +129,11 @@ const App = () => {
               } />
               <Route path="/client-admin" element={
                 <ProtectedRoute>
-                  <ErrorBoundary>
-                    <ClientAdminPage />
-                  </ErrorBoundary>
+                  <EmailRestrictedRoute allowedEmails={["info@encoremusic.tech"]}>
+                    <ErrorBoundary>
+                      <ClientAdminPage />
+                    </ErrorBoundary>
+                  </EmailRestrictedRoute>
                 </ProtectedRoute>
               } />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
