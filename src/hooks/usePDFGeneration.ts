@@ -69,29 +69,52 @@ export const usePDFGeneration = () => {
 
   const downloadPDF = async (htmlContent: string, fileName: string) => {
     try {
-      // Mount HTML in a hidden container for rendering
-      const container = document.createElement('div');
-      container.style.position = 'fixed';
-      container.style.left = '-9999px';
-      container.style.top = '0';
-      container.style.width = '794px'; // ~A4 width at 96 DPI
-      container.style.background = '#ffffff';
-      container.innerHTML = htmlContent;
-      document.body.appendChild(container);
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '0';
+      document.body.appendChild(iframe);
+      const doc = iframe.contentDocument!;
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
+      await new Promise((r) => setTimeout(r, 100));
+      // Wait for fonts if supported
+      try { await (doc as any).fonts?.ready; } catch {}
 
-      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-      // jsPDF's html() uses html2canvas under the hood
-      await doc.html(container, {
-        callback: (d) => {
-          d.save(`${fileName}.pdf`);
-          document.body.removeChild(container);
-          toast({ title: 'Downloaded', description: `${fileName}.pdf has been downloaded` });
-        },
-        margin: [36, 36, 36, 36],
-        autoPaging: 'text',
-        html2canvas: { scale: 0.9, useCORS: true, logging: false },
-        windowWidth: 794,
-      });
+      const target = doc.body as HTMLElement;
+      target.style.background = '#ffffff';
+      target.style.width = '794px';
+
+      const canvas = await html2canvas(target, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+
+      const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 36;
+      const imgWidth = pageWidth - margin * 2;
+      const scale = imgWidth / canvas.width;
+      const pageHeightPx = Math.floor((pageHeight - margin * 2) / scale);
+
+      let y = 0;
+      let pageIndex = 0;
+      while (y < canvas.height) {
+        const sliceHeight = Math.min(pageHeightPx, canvas.height - y);
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
+        const ctx = pageCanvas.getContext('2d')!;
+        ctx.drawImage(canvas, 0, y, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+        const imgData = pageCanvas.toDataURL('image/png');
+        if (pageIndex > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, sliceHeight * scale, undefined, 'FAST');
+        y += sliceHeight;
+        pageIndex++;
+      }
+
+      pdf.save(`${fileName}.pdf`);
+      document.body.removeChild(iframe);
+      toast({ title: 'Downloaded', description: `${fileName}.pdf has been downloaded` });
     } catch (error) {
       console.error('Download error:', error);
       toast({ title: 'Download Error', description: 'Failed to generate PDF', variant: 'destructive' });
@@ -100,28 +123,53 @@ export const usePDFGeneration = () => {
 
   const openPDFInNewWindow = async (htmlContent: string, contractTitle: string) => {
     try {
-      const container = document.createElement('div');
-      container.style.position = 'fixed';
-      container.style.left = '-9999px';
-      container.style.top = '0';
-      container.style.width = '794px';
-      container.style.background = '#ffffff';
-      container.innerHTML = htmlContent;
-      document.body.appendChild(container);
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '0';
+      document.body.appendChild(iframe);
+      const docNode = iframe.contentDocument!;
+      docNode.open();
+      docNode.write(htmlContent);
+      docNode.close();
+      await new Promise((r) => setTimeout(r, 100));
+      try { await (docNode as any).fonts?.ready; } catch {}
 
-      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-      await doc.html(container, {
-        callback: (d) => {
-          const url = d.output('bloburl');
-          window.open(url, '_blank');
-          document.body.removeChild(container);
-          toast({ title: 'PDF Opened', description: 'Agreement opened in a new tab' });
-        },
-        margin: [36, 36, 36, 36],
-        autoPaging: 'text',
-        html2canvas: { scale: 0.9, useCORS: true, logging: false },
-        windowWidth: 794,
-      });
+      const target = docNode.body as HTMLElement;
+      target.style.background = '#ffffff';
+      target.style.width = '794px';
+
+      const canvas = await html2canvas(target, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+
+      const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 36;
+      const imgWidth = pageWidth - margin * 2;
+      const scale = imgWidth / canvas.width;
+      const pageHeightPx = Math.floor((pageHeight - margin * 2) / scale);
+
+      let y = 0;
+      let pageIndex = 0;
+      while (y < canvas.height) {
+        const sliceHeight = Math.min(pageHeightPx, canvas.height - y);
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
+        const ctx = pageCanvas.getContext('2d')!;
+        ctx.drawImage(canvas, 0, y, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+        const imgData = pageCanvas.toDataURL('image/png');
+        if (pageIndex > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, sliceHeight * scale, undefined, 'FAST');
+        y += sliceHeight;
+        pageIndex++;
+      }
+
+      const blob = pdf.output('blob');
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      document.body.removeChild(iframe);
+      toast({ title: 'PDF Opened', description: 'Agreement opened in a new tab' });
     } catch (error) {
       console.error('Error opening PDF:', error);
       toast({ title: 'Error', description: 'Failed to open PDF in new window', variant: 'destructive' });
