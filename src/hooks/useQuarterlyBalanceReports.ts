@@ -163,13 +163,15 @@ export function useQuarterlyBalanceReports() {
   const fetchReports = async () => {
     try {
       if (user) {
-        // Detect if current user is a client (with royalties access)
-        const { data: isClient } = await supabase.rpc('has_client_portal_access', {
-          _user_id: user.id,
-          _module: 'royalties'
-        });
+        // Detect if current user is a client by checking active portal access
+        const { data: portalAccess } = await supabase
+          .from('client_portal_access')
+          .select('id')
+          .eq('client_user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
 
-        if (isClient === true) {
+        if (portalAccess) {
           // Client mode: use secure RPC that aggregates client-visible balances (incl. paid amounts)
           const { data: clientRows, error: clientErr } = await supabase.rpc('get_client_quarterly_balances');
           if (clientErr) throw clientErr;
