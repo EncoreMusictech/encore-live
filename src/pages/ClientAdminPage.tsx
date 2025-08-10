@@ -137,7 +137,8 @@ export default function ClientAdminPage() {
   };
 
   const handleManualMaintenance = async (action: 'expire_invitations' | 'cleanup_expired' | 'send_reminders' | 'expire_access' | 'full_maintenance') => {
-    const result = await triggerInvitationMaintenance(action);
+    const forceAll = action === 'cleanup_expired';
+    const result = await triggerInvitationMaintenance(action, { forceAll });
     
     if (result.success) {
       toast({

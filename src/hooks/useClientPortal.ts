@@ -260,10 +260,13 @@ export const useClientPortal = () => {
   };
 
   // Function to trigger invitation lifecycle maintenance
-  const triggerInvitationMaintenance = async (action: 'expire_invitations' | 'cleanup_expired' | 'send_reminders' | 'expire_access' | 'full_maintenance' = 'full_maintenance') => {
+  const triggerInvitationMaintenance = async (
+    action: 'expire_invitations' | 'cleanup_expired' | 'send_reminders' | 'expire_access' | 'full_maintenance' = 'full_maintenance',
+    options?: { forceAll?: boolean }
+  ) => {
     try {
       const { data, error } = await supabase.functions.invoke('client-invitation-lifecycle', {
-        body: { action }
+        body: { action, force_all: options?.forceAll === true }
       });
       
       if (error) {

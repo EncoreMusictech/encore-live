@@ -9,6 +9,7 @@ const corsHeaders = {
 
 interface LifecycleRequest {
   action: 'expire_invitations' | 'cleanup_expired' | 'send_reminders' | 'expire_access' | 'full_maintenance';
+  force_all?: boolean;
 }
 
 interface InvitationReminder {
@@ -37,9 +38,11 @@ const handler = async (req: Request): Promise<Response> => {
     let action: string = 'full_maintenance';
     
     // Handle both GET (cron) and POST (manual) requests
+    let forceAll = false;
     if (req.method === 'POST') {
       const body: LifecycleRequest = await req.json();
       action = body.action;
+      forceAll = !!body.force_all;
     }
 
     console.log(`Starting client invitation lifecycle action: ${action}`);
@@ -137,15 +140,30 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Cleanup old expired invitations
+    // Cleanup expired invitations
     if (action === 'cleanup_expired' || action === 'full_maintenance') {
-      const { data: cleanedCount, error: cleanupError } = await supabase.rpc('cleanup_expired_invitations');
-      if (cleanupError) {
-        console.error('Error cleaning up invitations:', cleanupError);
-        results.results.cleanup_error = cleanupError.message;
+      if (action === 'cleanup_expired' && forceAll) {
+        // Admin-forced cleanup: remove all expired regardless of age
+        const { error: forceCleanupError, count } = await supabase
+          .from('client_invitations')
+          .delete({ count: 'exact' })
+          .eq('status', 'expired');
+        if (forceCleanupError) {
+          console.error('Error force cleaning invitations:', forceCleanupError);
+          results.results.cleanup_error = forceCleanupError.message;
+        } else {
+          console.log(`Force cleaned ${count || 0} expired invitations`);
+          results.results.cleaned_invitations = count || 0;
+        }
       } else {
-        console.log(`Cleaned up ${cleanedCount} old invitations`);
-        results.results.cleaned_invitations = cleanedCount;
+        const { data: cleanedCount, error: cleanupError } = await supabase.rpc('cleanup_expired_invitations');
+        if (cleanupError) {
+          console.error('Error cleaning up invitations:', cleanupError);
+          results.results.cleanup_error = cleanupError.message;
+        } else {
+          console.log(`Cleaned up ${cleanedCount} old invitations`);
+          results.results.cleaned_invitations = cleanedCount;
+        }
       }
     }
 
