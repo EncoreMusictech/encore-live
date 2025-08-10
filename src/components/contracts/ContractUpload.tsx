@@ -90,7 +90,18 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
 
   // Transform parsed data from edge function format to component format
   const transformParsedData = (rawData: any): ParsedContractData => {
-    const parties = [];
+    const normalizeContractType = (t?: string) => {
+      if (!t) return 'other';
+      const s = String(t).toLowerCase().replace(/[^a-z]/g, ' ');
+      if (s.includes('publish')) return 'publishing';
+      if (s.includes('producer')) return 'producer';
+      if (s.includes('sync') || s.includes('license')) return 'sync';
+      if (s.includes('distrib') || s.includes('label services')) return 'distribution';
+      if (s.includes('artist') || s.includes('record') || s.includes('label')) return 'artist';
+      return 'other';
+    };
+
+    const parties = [] as any[];
     
     // Add administrator if available
     if (rawData.administrator_name) {
@@ -130,7 +141,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
     }
 
     return {
-      contract_type: rawData.contract_type || 'other',
+      contract_type: normalizeContractType(rawData.contract_type),
       parties,
       financial_terms: {
         advance_amount: rawData.advance_amount || 0,
@@ -285,16 +296,43 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       setConfidence(result.confidence);
       setUploadProgress(75);
 
-      // Auto-fill form fields from parsed data
+      // Prepare quick fields
       if (result.parsed_data.counterparty_name || result.parsed_data.parties?.[1]?.party_name) {
         setCounterpartyName(result.parsed_data.counterparty_name || result.parsed_data.parties[1].party_name);
       }
 
+      // Build form data for auto-population
+      const mainParty = transformedData.parties?.find(p => p.role !== 'administrator') || transformedData.parties?.[0];
+      const formData = {
+        title: `${transformedData.contract_type?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} Agreement`,
+        counterparty_name: mainParty?.name || '',
+        contract_type: transformedData.contract_type || 'other',
+        start_date: transformedData.key_dates?.start_date || null,
+        end_date: transformedData.key_dates?.end_date || null,
+        advance_amount: transformedData.financial_terms?.advance_amount || 0,
+        commission_percentage: transformedData.financial_terms?.commission_percentage ? (transformedData.financial_terms?.commission_percentage * 100) : 0,
+        territories: transformedData.territory ? [transformedData.territory] : [],
+        financial_terms: transformedData.financial_terms || {},
+        royalty_splits: transformedData.financial_terms?.royalty_rates || {},
+        notes: [
+          transformedData.payment_terms && `Payment Terms: ${transformedData.payment_terms}`,
+          transformedData.recoupment_status && `Recoupment: ${transformedData.recoupment_status}`,
+          transformedData.termination_clauses && `Termination: ${transformedData.termination_clauses}`,
+          transformedData.additional_terms && `Additional Terms: ${transformedData.additional_terms}`
+        ].filter(Boolean).join('\n\n'),
+        contact_name: mainParty?.name || '',
+        contact_phone: mainParty?.contact_info?.phone || '',
+        contact_address: mainParty?.contact_info?.address || '',
+        recipient_email: mainParty?.contact_info?.email || ''
+      };
+
       setUploadProgress(100);
       setUploadStatus('completed');
 
-      // Show auto-populator if confidence is reasonable
-      if (result.confidence >= 0.4) {
+      // Auto-populate on medium/high confidence, otherwise show review helper
+      if (result.confidence >= 0.6) {
+        handleAutoPopulate(formData);
+      } else if (result.confidence >= 0.4) {
         setShowAutoPopulator(true);
       }
 

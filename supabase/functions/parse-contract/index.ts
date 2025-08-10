@@ -207,7 +207,8 @@ REQUIRED JSON STRUCTURE:
   "lead_sheets_delivered": "boolean or null",
   "lyrics_delivered": "boolean or null",
   "masters_delivered": "boolean or null",
-  "contract_type": "string",
+  "contract_type": "one of: publishing | artist | producer | sync | distribution",
+  "contract_subtype": "string or null (e.g., administration, co_publishing, full_publishing, 360, label_services, distribution_only, blanket_sync)",
   "works": [
     {
       "work_title": "string or null",
@@ -355,7 +356,8 @@ function getFallbackData() {
     lead_sheets_delivered: null,
     lyrics_delivered: null,
     masters_delivered: null,
-    contract_type: "publishing_administration",
+    contract_type: "publishing",
+    contract_subtype: "administration",
     works: [],
     parties: [
       {
