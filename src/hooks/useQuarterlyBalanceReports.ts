@@ -163,6 +163,42 @@ export function useQuarterlyBalanceReports() {
   const fetchReports = async () => {
     try {
       if (user) {
+        // Detect if current user is a client (with royalties access)
+        const { data: isClient } = await supabase.rpc('has_client_portal_access', {
+          _user_id: user.id,
+          _module: 'royalties'
+        });
+
+        if (isClient === true) {
+          // Client mode: use secure RPC that aggregates client-visible balances (incl. paid amounts)
+          const { data: clientRows, error: clientErr } = await supabase.rpc('get_client_quarterly_balances');
+          if (clientErr) throw clientErr;
+
+          const mapped = (clientRows || []).map((row: any) => ({
+            id: `client-${row.year}-Q${row.quarter}`,
+            user_id: user.id,
+            payee_id: `client-${user.id}`,
+            contact_id: undefined,
+            agreement_id: undefined,
+            year: row.year,
+            quarter: row.quarter,
+            period_label: row.period_label,
+            opening_balance: Number(row.opening_balance || 0),
+            royalties_amount: Number(row.royalties_amount || 0),
+            expenses_amount: Number(row.expenses_amount || 0),
+            payments_amount: Number(row.payments_amount || 0),
+            closing_balance: Number(row.closing_balance || 0),
+            is_calculated: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            contacts: row.contact_name ? { name: row.contact_name } : undefined,
+            contracts: undefined,
+          })) as QuarterlyBalanceReport[];
+
+          setReports(mapped);
+          return;
+        }
+
         const { data, error } = await supabase
           .from('quarterly_balance_reports')
           .select(`

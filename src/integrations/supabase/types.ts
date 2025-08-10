@@ -4261,6 +4261,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_client_quarterly_balances: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          year: number
+          quarter: number
+          period_label: string
+          contact_name: string
+          opening_balance: number
+          royalties_amount: number
+          expenses_amount: number
+          payments_amount: number
+          closing_balance: number
+        }[]
+      }
       get_client_subscriber: {
         Args: { _client_user_id: string }
         Returns: string
@@ -4390,6 +4404,7 @@ export type Database = {
         | "SiriusXM"
         | "Test Source"
         | "Shondaland"
+        | "NBC"
       sender_code_status: "not_submitted" | "submitted" | "verified"
       sync_type: "one_time" | "mfn" | "perpetual" | "term_limited"
     }
@@ -4553,6 +4568,7 @@ export const Constants = {
         "SiriusXM",
         "Test Source",
         "Shondaland",
+        "NBC",
       ],
       sender_code_status: ["not_submitted", "submitted", "verified"],
       sync_type: ["one_time", "mfn", "perpetual", "term_limited"],

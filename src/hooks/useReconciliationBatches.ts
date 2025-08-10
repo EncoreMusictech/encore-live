@@ -9,7 +9,7 @@ export interface ReconciliationBatch {
   id: string;
   user_id: string;
   batch_id: string | null;
-  source: 'DSP' | 'PRO' | 'YouTube' | 'BMI' | 'ASCAP' | 'SESAC' | 'SOCAN' | 'Spotify' | 'Apple Music' | 'Amazon Music' | 'Tidal' | 'Pandora' | 'SiriusXM' | 'Test Source' | 'Shondaland' | 'Other';
+  source: 'DSP' | 'PRO' | 'YouTube' | 'BMI' | 'ASCAP' | 'SESAC' | 'SOCAN' | 'Spotify' | 'Apple Music' | 'Amazon Music' | 'Tidal' | 'Pandora' | 'SiriusXM' | 'Test Source' | 'Shondaland' | 'NBC' | 'Other';
   statement_period_start?: string;
   statement_period_end?: string;
   date_received: string;
