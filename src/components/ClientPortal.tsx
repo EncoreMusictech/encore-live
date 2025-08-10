@@ -16,7 +16,7 @@ import { ClientRoyalties } from './client-portal/ClientRoyalties';
 import { ClientNotifications } from './client-portal/ClientNotifications';
 import { ShieldCheck } from 'lucide-react';
 import { updatePageMetadata } from '@/utils/seo';
-import musicHero from '@/assets/music-hero-headphones.png';
+
 
 const ClientPortal = () => {
   const { user } = useAuth();
@@ -166,12 +166,13 @@ const ClientPortal = () => {
               <ShieldCheck className="h-4 w-4" /> Secured Client Access
             </Badge>
             <img
-              src={musicHero}
-              alt="Whimsical headphones illustration for Client Portal"
+              src="/lovable-uploads/1f2a630f-1957-40bc-b85b-49b8950660a7.png"
+              alt="Spinning vinyl record illustration for Client Portal"
               loading="lazy"
               width={96}
               height={96}
-              className="hidden sm:block w-24 h-24 object-contain opacity-90"
+              className="hidden sm:block w-24 h-24 object-contain opacity-90 animate-spin"
+              style={{ animationDuration: '12s' }}
             />
           </div>
         </div>
