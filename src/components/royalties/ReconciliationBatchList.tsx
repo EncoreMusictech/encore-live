@@ -147,10 +147,10 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
       </div>
 
       {/* Table */}
-      <div className="border rounded-md">
+      <div className="border rounded-md bg-card text-card-foreground">
         <Table>
            <TableHeader>
-             <TableRow>
+             <TableRow className="bg-muted/40">
                 <TableHead>Batch ID</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead>Period</TableHead>
@@ -163,7 +163,7 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
            </TableHeader>
            <TableBody>
              {filteredBatches.map((batch) => (
-               <TableRow key={batch.id}>
+               <TableRow key={batch.id} className="hover:bg-muted/40">
                  <TableCell className="font-medium">{batch.batch_id || 'Generating...'}</TableCell>
                  <TableCell>
                    <Badge className={getSourceColor(batch.source)}>
@@ -266,7 +266,7 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
                           <Edit className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card text-card-foreground">
                         <DialogHeader>
                           <DialogTitle>Edit Reconciliation Batch</DialogTitle>
                         </DialogHeader>
