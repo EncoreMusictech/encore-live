@@ -114,7 +114,7 @@ async function callOpenAI(systemPrompt: string, userPrompt: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4.1-2025-04-14',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt + '\nNote: You do not have browsing. Do not invent citations; include a Limitations section explaining this.' },
         { role: 'user', content: userPrompt },
@@ -149,10 +149,21 @@ serve(async (req) => {
     const systemPrompt = buildSystemPrompt(section, minWords);
     const userPrompt = buildUserPrompt(section, valuation, queries);
 
-    let html: string;
+    let html: string = '';
     if (perplexityApiKey) {
-      html = await callPerplexity(systemPrompt, userPrompt);
+      try {
+        console.log('generate-report: using Perplexity');
+        html = await callPerplexity(systemPrompt, userPrompt);
+      } catch (e) {
+        console.error('Perplexity call failed, falling back to OpenAI:', e);
+        if (openAIApiKey) {
+          html = await callOpenAI(systemPrompt, userPrompt);
+        } else {
+          throw e;
+        }
+      }
     } else if (openAIApiKey) {
+      console.log('generate-report: using OpenAI');
       html = await callOpenAI(systemPrompt, userPrompt);
     } else {
       return new Response(JSON.stringify({ error: 'No AI keys configured. Please set PERPLEXITY_API_KEY or OPENAI_API_KEY.' }), {
@@ -161,6 +172,9 @@ serve(async (req) => {
       });
     }
 
+    if (!html || typeof html !== 'string') {
+      html = '<p>AI generation returned empty content. Please try again.</p>';
+    }
     // Ensure we return HTML fragment only
     return new Response(JSON.stringify({ html }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
