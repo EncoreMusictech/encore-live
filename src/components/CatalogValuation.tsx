@@ -1563,7 +1563,7 @@ Actual market values may vary significantly based on numerous factors not captur
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
-                <Card className="">
+                <Card className="border-electric-lavender/40">
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <Eye className="h-5 w-5 text-primary" />
@@ -1578,7 +1578,7 @@ Actual market values may vary significantly based on numerous factors not captur
                       <div className="flex justify-between"><span>Confidence</span><span className="font-semibold">{result.confidence_score || 0}/100</span></div>
                     </div>
                     <div className="mt-4">
-                      <Button onClick={() => handleGenerateSectionReport('executive')} className="w-full sm:w-auto">
+                      <Button variant="outline" onClick={() => handleGenerateSectionReport('executive')} className="w-full sm:w-auto">
                         <Download className="h-4 w-4 mr-2" />
                         Generate Report
                       </Button>
@@ -1586,7 +1586,7 @@ Actual market values may vary significantly based on numerous factors not captur
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="border-electric-lavender/40">
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <Calculator className="h-5 w-5 text-primary" />
@@ -1601,7 +1601,7 @@ Actual market values may vary significantly based on numerous factors not captur
                       <div className="flex justify-between"><span>Discount Rate</span><span className="font-semibold">{((result.discount_rate || 0.12) * 100).toFixed(1)}%</span></div>
                     </div>
                     <div className="mt-4">
-                      <Button onClick={() => handleGenerateSectionReport('technical')} className="w-full sm:w-auto">
+                      <Button variant="outline" onClick={() => handleGenerateSectionReport('technical')} className="w-full sm:w-auto">
                         <Download className="h-4 w-4 mr-2" />
                         Generate Report
                       </Button>
@@ -1609,10 +1609,10 @@ Actual market values may vary significantly based on numerous factors not captur
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="border-success/40">
                   <CardHeader>
                     <div className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5 text-primary" />
+                      <BarChart3 className="h-5 w-5 text-success" />
                       <CardTitle>Market Analysis</CardTitle>
                     </div>
                     <CardDescription>Competitive landscape & positioning</CardDescription>
@@ -1624,7 +1624,7 @@ Actual market values may vary significantly based on numerous factors not captur
                       <div className="flex justify-between"><span>Genre</span><span className="font-semibold">{result.genre || result.industry_benchmarks?.genre || 'N/A'}</span></div>
                     </div>
                     <div className="mt-4">
-                      <Button onClick={() => handleGenerateSectionReport('market')} className="w-full sm:w-auto">
+                      <Button variant="outline" onClick={() => handleGenerateSectionReport('market')} className="w-full sm:w-auto">
                         <Download className="h-4 w-4 mr-2" />
                         Generate Report
                       </Button>
@@ -1648,7 +1648,7 @@ Actual market values may vary significantly based on numerous factors not captur
                     <Button variant="outline" onClick={exportJSON}>Export JSON</Button>
                     <Button variant="outline" onClick={exportXML}>Export XML</Button>
                     <div className="flex-1" />
-                    <Button onClick={handleFullPDFReport}>Full PDF Report</Button>
+                    <Button variant="fader" onClick={handleFullPDFReport}>Full PDF Report</Button>
                   </div>
                 </CardContent>
               </Card>
