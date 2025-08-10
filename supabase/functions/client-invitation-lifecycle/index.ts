@@ -143,16 +143,23 @@ const handler = async (req: Request): Promise<Response> => {
     // Cleanup expired invitations
     if (action === 'cleanup_expired' || action === 'full_maintenance') {
       if (action === 'cleanup_expired' && forceAll) {
-        // Admin-forced cleanup: remove all expired regardless of age
+        // First mark any past-due invites as expired
+        await supabase
+          .from('client_invitations')
+          .update({ status: 'expired', auto_cleanup_scheduled_at: new Date().toISOString() })
+          .lt('expires_at', new Date().toISOString())
+          .neq('status', 'accepted');
+
+        // Then hard-delete all that are expired or past expiration
         const { error: forceCleanupError, count } = await supabase
           .from('client_invitations')
           .delete({ count: 'exact' })
-          .eq('status', 'expired');
+          .or(`status.eq.expired,expires_at.lt.${new Date().toISOString()}`);
         if (forceCleanupError) {
           console.error('Error force cleaning invitations:', forceCleanupError);
           results.results.cleanup_error = forceCleanupError.message;
         } else {
-          console.log(`Force cleaned ${count || 0} expired invitations`);
+          console.log(`Force cleaned ${count || 0} expired/past-due invitations`);
           results.results.cleaned_invitations = count || 0;
         }
       } else {
