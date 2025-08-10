@@ -28,6 +28,7 @@ export default function ClientAdminPage() {
     revokeClientAccess, 
     createDataAssociation, 
     triggerInvitationMaintenance,
+    removeInvitations,
     getInvitationStatus,
     refreshData 
   } = useClientPortal();
@@ -161,6 +162,15 @@ export default function ClientAdminPage() {
         description: err?.message || 'Please try again or copy the link manually.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleRemovePendingAndExpired = async () => {
+    const result = await removeInvitations(true);
+    if (result.success) {
+      toast({ title: 'Removed', description: 'All pending and expired invitations have been deleted.' });
+    } else {
+      toast({ title: 'Error', description: result.error || 'Failed to remove invitations.', variant: 'destructive' });
     }
   };
 
@@ -384,6 +394,14 @@ export default function ClientAdminPage() {
                   Full Maintenance
                 </Button>
               </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full"
+                onClick={handleRemovePendingAndExpired}
+              >
+                Remove All Pending + Expired
+              </Button>
             </CardContent>
           </Card>
 

@@ -327,6 +327,37 @@ export const useClientPortal = () => {
       return { success: false, error: error.message };
     }
   };
+  
+  // Remove invitations by status (expired, pending)
+  const removeInvitations = async (includePending: boolean = false) => {
+    if (!user) return { success: false, error: 'Not authenticated' };
+    try {
+      setLoading(true);
+      const statuses = includePending ? ['expired', 'pending'] : ['expired'];
+      const { error } = await supabase
+        .from('client_invitations')
+        .delete()
+        .eq('subscriber_user_id', user.id)
+        .in('status', statuses as any);
+      if (error) throw error;
+      await fetchInvitations();
+      toast({
+        title: 'Invitations removed',
+        description: includePending ? 'Pending and expired invitations deleted.' : 'Expired invitations deleted.'
+      });
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error removing invitations:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'Failed to remove invitations'
+      });
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Function to get invitation status with expiry information
   const getInvitationStatus = (invitation: ClientInvitation) => {
@@ -369,6 +400,7 @@ export const useClientPortal = () => {
     isClient,
     getClientPermissions,
     triggerInvitationMaintenance,
+    removeInvitations,
     getInvitationStatus,
     refreshData: () => {
       fetchClientAccess();
