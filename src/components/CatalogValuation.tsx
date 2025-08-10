@@ -21,6 +21,7 @@ import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Mu
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, Area, AreaChart, ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar } from 'recharts';
 import { CatalogValuationSkeleton, AsyncLoading } from "@/components/LoadingStates";
 import { usePDFGeneration } from "@/hooks/usePDFGeneration";
+import { useReportAI } from "@/hooks/useReportAI";
 
 interface TopTrack {
   name: string;
@@ -148,6 +149,7 @@ const CatalogValuation = memo(() => {
     successMessage: "Catalog valuation completed successfully",
     errorMessage: "Failed to get catalog valuation"
   });
+  const { loading: aiLoading, generateReport } = useReportAI();
 
   const handleSearch = useCallback(async () => {
     console.log("=== SEARCH STARTED ===");
@@ -667,7 +669,7 @@ Actual market values may vary significantly based on numerous factors not captur
       </html>`;
   }, []);
 
-  const handleGenerateSectionReport = useCallback((section: ReportSection) => {
+  const handleGenerateSectionReport = useCallback(async (section: ReportSection) => {
     if (!result) {
       toast({ title: 'No data', description: 'Run a valuation first.' });
       return;
@@ -677,14 +679,32 @@ Actual market values may vary significantly based on numerous factors not captur
       technical: 'Technical Analysis',
       market: 'Market Analysis',
     };
-    const body = `
+
+    try {
+      toast({ title: 'Generating AI report', description: 'Fetching sourced analysis (this may take up to a few minutes)...' });
+      const aiHtml = await generateReport({ section, valuation: result, minWords: 2500 });
+
+      const body = `
       <h1>${sectionTitleMap[section]}</h1>
       <div class="muted">Artist: ${result.artist_name}</div>
       ${buildSectionHTML(section)}
+      <h2 class="section">AI-Sourced Narrative</h2>
+      ${aiHtml || '<p>No AI content generated.</p>'}
     `;
-    const html = buildPageHTML(`${result.artist_name} - ${sectionTitleMap[section]}`, body);
-    openPDFInNewWindow(html, `${result.artist_name} - ${section} report`);
-  }, [result, buildSectionHTML, buildPageHTML, openPDFInNewWindow, toast]);
+      const html = buildPageHTML(`${result.artist_name} - ${sectionTitleMap[section]}`, body);
+      openPDFInNewWindow(html, `${result.artist_name} - ${section} report`);
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'AI generation failed', description: 'Showing structured report without AI narrative.' });
+      const body = `
+        <h1>${sectionTitleMap[section]}</h1>
+        <div class="muted">Artist: ${result.artist_name}</div>
+        ${buildSectionHTML(section)}
+      `;
+      const htmlFallback = buildPageHTML(`${result.artist_name} - ${sectionTitleMap[section]}`, body);
+      openPDFInNewWindow(htmlFallback, `${result.artist_name} - ${section} report`);
+    }
+  }, [result, buildSectionHTML, buildPageHTML, openPDFInNewWindow, toast, generateReport]);
 
   const exportJSON = useCallback(() => {
     if (!result) {
@@ -760,24 +780,54 @@ Actual market values may vary significantly based on numerous factors not captur
     URL.revokeObjectURL(url);
   }, [result, toast]);
 
-  const handleFullPDFReport = useCallback(() => {
+  const handleFullPDFReport = useCallback(async () => {
     if (!result) {
       toast({ title: 'No data', description: 'Run a valuation first.' });
       return;
     }
-    const body = `
-      <h1>Full Valuation Report</h1>
-      <div class="muted">Artist: ${result.artist_name}</div>
-      <h2>Executive Summary</h2>
-      ${buildSectionHTML('executive')}
-      <h2>Technical Analysis</h2>
-      ${buildSectionHTML('technical')}
-      <h2>Market Analysis</h2>
-      ${buildSectionHTML('market')}
-    `;
-    const html = buildPageHTML(`${result.artist_name} - Full Valuation Report`, body);
-    openPDFInNewWindow(html, `${result.artist_name} - Full Valuation Report`);
-  }, [result, buildSectionHTML, buildPageHTML, openPDFInNewWindow, toast]);
+    try {
+      toast({ title: 'Generating full AI report', description: 'Fetching sourced narratives for all sections...' });
+      const [execHtml, techHtml, marketHtml] = await Promise.all([
+        generateReport({ section: 'executive', valuation: result, minWords: 2500 }),
+        generateReport({ section: 'technical', valuation: result, minWords: 2500 }),
+        generateReport({ section: 'market', valuation: result, minWords: 2500 }),
+      ]);
+
+      const body = `
+        <h1>Full Valuation Report</h1>
+        <div class="muted">Artist: ${result.artist_name}</div>
+        <h2>Executive Summary</h2>
+        ${buildSectionHTML('executive')}
+        <h3>AI-Sourced Narrative</h3>
+        ${execHtml || ''}
+        <h2>Technical Analysis</h2>
+        ${buildSectionHTML('technical')}
+        <h3>AI-Sourced Narrative</h3>
+        ${techHtml || ''}
+        <h2>Market Analysis</h2>
+        ${buildSectionHTML('market')}
+        <h3>AI-Sourced Narrative</h3>
+        ${marketHtml || ''}
+      `;
+      const html = buildPageHTML(`${result.artist_name} - Full Valuation Report`, body);
+      openPDFInNewWindow(html, `${result.artist_name} - Full Valuation Report`);
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'AI generation failed', description: 'Showing structured report without AI narratives.' });
+      const body = `
+        <h1>Full Valuation Report</h1>
+        <div class="muted">Artist: ${result.artist_name}</div>
+        <h2>Executive Summary</h2>
+        ${buildSectionHTML('executive')}
+        <h2>Technical Analysis</h2>
+        ${buildSectionHTML('technical')}
+        <h2>Market Analysis</h2>
+        ${buildSectionHTML('market')}
+      `;
+      const html = buildPageHTML(`${result.artist_name} - Full Valuation Report`, body);
+      openPDFInNewWindow(html, `${result.artist_name} - Full Valuation Report`);
+    }
+  }, [result, buildSectionHTML, buildPageHTML, openPDFInNewWindow, toast, generateReport]);
 
   return (
     <AsyncLoading 
