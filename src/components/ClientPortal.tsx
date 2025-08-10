@@ -109,7 +109,7 @@ const ClientPortal = () => {
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
       if (data) setProfile(data as any);
       const firstName = (data?.first_name as string) || (user.user_metadata?.first_name as string) || (user.email?.split('@')[0] ?? 'there');
-      const msg = data?.onboarding_complete ? `Welcome back, ${firstName}` : `Hello, ${firstName}!`;
+      const msg = data?.onboarding_complete ? `Welcome Back, ${firstName}!` : `Hello, ${firstName}!`;
       setGreeting(msg);
     };
     fetchProfile();
@@ -225,7 +225,7 @@ const ClientPortal = () => {
             onSaved={(p) => {
               setProfile(p as any);
               const name = (p.first_name as string) || (user?.email?.split('@')[0] ?? 'there');
-              setGreeting(`Welcome back, ${name}`);
+              setGreeting(`Welcome Back, ${name}!`);
               setProfileOpen(false);
             }}
           />
