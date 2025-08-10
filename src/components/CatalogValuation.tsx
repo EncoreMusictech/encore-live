@@ -428,6 +428,180 @@ Actual market values may vary significantly based on numerous factors not captur
     });
   }, [result, formatCurrency, formatNumber, toast]);
 
+  const { openPDFInNewWindow, downloadPDF } = usePDFGeneration();
+
+  type ReportSection = 'executive' | 'technical' | 'market';
+
+  const buildSectionHTML = useCallback((section: ReportSection) => {
+    if (!result) return '<div>No data available</div>';
+    const titleMap: Record<ReportSection, string> = {
+      executive: 'Executive Summary',
+      technical: 'Technical Analysis',
+      market: 'Market Analysis',
+    };
+    const sectionBody = {
+      executive: `
+        <ul>
+          <li><strong>Risk-Adjusted Valuation:</strong> ${formatCurrency(result.risk_adjusted_value || result.valuation_amount)}</li>
+          <li><strong>5Y CAGR (Base):</strong> ${result.valuations?.base?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 0) * 100) / 100}%`}</li>
+          <li><strong>Confidence:</strong> ${result.confidence_score || 0}/100</li>
+        </ul>
+      `,
+      technical: `
+        <ul>
+          <li><strong>DCF Valuation:</strong> ${formatCurrency(result.dcf_valuation || 0)}</li>
+          <li><strong>Multiple Valuation:</strong> ${formatCurrency(result.multiple_valuation || 0)}</li>
+          <li><strong>Discount Rate:</strong> ${((result.discount_rate || 0.12) * 100).toFixed(1)}%</li>
+        </ul>
+      `,
+      market: `
+        <ul>
+          <li><strong>Comparables:</strong> ${result.comparable_artists?.length || 0}</li>
+          <li><strong>Market Multiple:</strong> ${result.industry_benchmarks?.revenue_multiple || result.growth_metrics?.base_multiple || 0}x</li>
+          <li><strong>Genre:</strong> ${result.genre || result.industry_benchmarks?.genre || 'N/A'}</li>
+        </ul>
+      `,
+    }[section];
+
+    return `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>${result.artist_name} - ${titleMap[section]}</title>
+          <style>
+            body { font-family: Inter, ui-sans-serif, system-ui; padding: 24px; }
+            h1 { margin: 0 0 8px; }
+            h2 { margin: 16px 0 8px; }
+            ul { margin: 8px 0 0 16px; }
+            .muted { color: #666; }
+            .section { margin-top: 16px; }
+          </style>
+        </head>
+        <body>
+          <h1>${titleMap[section]}</h1>
+          <div class="muted">Artist: ${result.artist_name}</div>
+          <div class="section">${sectionBody}</div>
+        </body>
+      </html>`;
+  }, [result, formatCurrency]);
+
+  const handleGenerateSectionReport = useCallback((section: ReportSection) => {
+    if (!result) {
+      toast({ title: 'No data', description: 'Run a valuation first.' });
+      return;
+    }
+    const html = buildSectionHTML(section);
+    openPDFInNewWindow(html, `${result.artist_name} - ${section} report`);
+  }, [result, buildSectionHTML, openPDFInNewWindow, toast]);
+
+  const exportJSON = useCallback(() => {
+    if (!result) {
+      toast({ title: 'No data', description: 'Run a valuation first.' });
+      return;
+    }
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${result.artist_name.replace(/\s+/g, '_')}_valuation.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [result, toast]);
+
+  const exportCSV = useCallback(() => {
+    if (!result) {
+      toast({ title: 'No data', description: 'Run a valuation first.' });
+      return;
+    }
+    const rows: Array<string[]> = [];
+    rows.push(['Artist', 'Valuation', 'Confidence', 'Total Streams', 'Monthly Listeners', 'Genre', 'Popularity']);
+    rows.push([
+      result.artist_name,
+      String(result.risk_adjusted_value || result.valuation_amount || 0),
+      String(result.confidence_score || 0),
+      String(result.total_streams || 0),
+      String(result.monthly_listeners || 0),
+      result.genre || (result.industry_benchmarks?.genre || ''),
+      String(result.popularity_score || result.spotify_data?.popularity || 0),
+    ]);
+    rows.push([]);
+    rows.push(['Top Tracks']);
+    rows.push(['Name', 'Popularity', 'Spotify URL']);
+    (result.top_tracks || []).forEach(t => rows.push([t.name, String(t.popularity), t.spotify_url]));
+
+    const csv = rows.map(r => r.map(v => `"${(v ?? '').toString().replace(/"/g, '""')}` + '"').join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${result.artist_name.replace(/\s+/g, '_')}_valuation.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [result, toast]);
+
+  const exportXML = useCallback(() => {
+    if (!result) {
+      toast({ title: 'No data', description: 'Run a valuation first.' });
+      return;
+    }
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<valuation>
+  <artist>${result.artist_name}</artist>
+  <valuationAmount>${result.risk_adjusted_value || result.valuation_amount || 0}</valuationAmount>
+  <confidence>${result.confidence_score || 0}</confidence>
+  <totalStreams>${result.total_streams || 0}</totalStreams>
+  <monthlyListeners>${result.monthly_listeners || 0}</monthlyListeners>
+  <genre>${result.genre || result.industry_benchmarks?.genre || ''}</genre>
+</valuation>`;
+    const blob = new Blob([xml], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${result.artist_name.replace(/\s+/g, '_')}_valuation.xml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [result, toast]);
+
+  const handleFullPDFReport = useCallback(() => {
+    if (!result) {
+      toast({ title: 'No data', description: 'Run a valuation first.' });
+      return;
+    }
+    const html = `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>${result.artist_name} - Full Valuation Report</title>
+          <style>
+            body { font-family: Inter, ui-sans-serif, system-ui; padding: 24px; }
+            h1 { margin: 0 0 8px; }
+            h2 { margin: 24px 0 8px; }
+            ul { margin: 8px 0 0 16px; }
+            .muted { color: #666; }
+          </style>
+        </head>
+        <body>
+          <h1>Full Valuation Report</h1>
+          <div class="muted">Artist: ${result.artist_name}</div>
+          <h2>Executive Summary</h2>
+          ${buildSectionHTML('executive')}
+          <h2>Technical Analysis</h2>
+          ${buildSectionHTML('technical')}
+          <h2>Market Analysis</h2>
+          ${buildSectionHTML('market')}
+        </body>
+      </html>`;
+    openPDFInNewWindow(html, `${result.artist_name} - Full Valuation Report`);
+  }, [result, buildSectionHTML, openPDFInNewWindow, toast]);
+
   return (
     <AsyncLoading 
       isLoading={loading} 
