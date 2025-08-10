@@ -50,6 +50,116 @@ export function useQuarterlyBalanceReports() {
   const { user } = useAuth();
   const { isDemo } = useDemoAccess();
 
+  const buildEphemeralFromPayouts = async (): Promise<QuarterlyBalanceReport[]> => {
+    if (!user) return [];
+
+    try {
+      // Fetch paid payouts for this user
+      const { data: payouts, error: payoutsError } = await supabase
+        .from('payouts')
+        .select('id, client_id, gross_royalties, total_expenses, amount_due, status, created_at')
+        .eq('user_id', user.id)
+        .eq('status', 'paid');
+
+      if (payoutsError || !payouts || payouts.length === 0) return [];
+
+      // Collect unique client (contact) ids
+      const clientIds = Array.from(new Set(payouts.map(p => p.client_id).filter(Boolean)));
+
+      // Load contacts for name/email mapping
+      const contactsMap = new Map<string, { name: string; email?: string }>();
+      if (clientIds.length > 0) {
+        const { data: contacts } = await supabase
+          .from('contacts')
+          .select('id, name, email')
+          .in('id', clientIds as string[])
+          .eq('user_id', user.id);
+        contacts?.forEach(c => contactsMap.set(c.id, { name: c.name, email: c.email ?? undefined }));
+      }
+
+      // Load payees to map by name -> id
+      const { data: payees } = await supabase
+        .from('payees')
+        .select('id, payee_name')
+        .eq('user_id', user.id);
+      const payeeByName = new Map<string, string>(
+        (payees || []).map(p => [String(p.payee_name || '').toLowerCase().trim(), p.id])
+      );
+
+      // Group by payee/year/quarter
+      type Acc = QuarterlyBalanceReport & { _sortKey: number };
+      const groups = new Map<string, Acc>();
+
+      const periodKey = (year: number, quarter: number) => `${year}-Q${quarter}`;
+      const periodLabel = (year: number, quarter: number) => `Q${quarter} ${year}`;
+
+      for (const p of payouts) {
+        const d = new Date(p.created_at);
+        const year = d.getFullYear();
+        const quarter = Math.ceil((d.getMonth() + 1) / 3);
+        const contact = p.client_id ? contactsMap.get(p.client_id) : undefined;
+        const contactName = contact?.name || 'Unknown';
+        const payeeId = payeeByName.get(contactName.toLowerCase()) || `demo-${contactName}`;
+        const key = `${payeeId}-${periodKey(year, quarter)}`;
+
+        if (!groups.has(key)) {
+          groups.set(key, {
+            id: `demo-${key}`,
+            user_id: user.id,
+            payee_id: payeeId,
+            contact_id: p.client_id || undefined,
+            agreement_id: undefined,
+            year,
+            quarter,
+            period_label: periodLabel(year, quarter),
+            opening_balance: 0,
+            royalties_amount: 0,
+            expenses_amount: 0,
+            payments_amount: 0,
+            closing_balance: 0,
+            is_calculated: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            contacts: contact ? { name: contact.name, email: contact.email } : undefined,
+            contracts: undefined,
+            _sortKey: year * 10 + quarter,
+          });
+        }
+
+        const acc = groups.get(key)!;
+        acc.royalties_amount += Number(p.gross_royalties || 0);
+        acc.expenses_amount += Number(p.total_expenses || 0);
+        acc.payments_amount += Number(p.amount_due || 0);
+      }
+
+      // Compute opening/closing balances per payee chronologically
+      const byPayee = new Map<string, Acc[]>();
+      for (const row of groups.values()) {
+        if (!byPayee.has(row.payee_id)) byPayee.set(row.payee_id, []);
+        byPayee.get(row.payee_id)!.push(row);
+      }
+
+      const results: QuarterlyBalanceReport[] = [];
+      for (const [, rows] of byPayee) {
+        rows.sort((a, b) => a._sortKey - b._sortKey);
+        let prevClosing = 0;
+        for (const r of rows) {
+          r.opening_balance = prevClosing;
+          r.closing_balance = Number((r.opening_balance + r.royalties_amount - r.expenses_amount - r.payments_amount).toFixed(2));
+          prevClosing = r.closing_balance;
+          results.push({ ...r });
+        }
+      }
+
+      // Return most recent first to match default ordering
+      results.sort((a, b) => (b.year - a.year) || (b.quarter - a.quarter));
+      return results;
+    } catch (e) {
+      console.error('Error building demo quarterly reports from payouts:', e);
+      return [];
+    }
+  };
+
   const fetchReports = async () => {
     try {
       if (user) {
@@ -65,7 +175,13 @@ export function useQuarterlyBalanceReports() {
           .order('quarter', { ascending: false });
 
         if (error) throw error;
-        setReports(data || []);
+
+        if (data && data.length > 0 && !isDemo) {
+          setReports(data);
+        } else {
+          const demoData = await buildEphemeralFromPayouts();
+          setReports(demoData);
+        }
       }
     } catch (error: any) {
       console.error('Error fetching quarterly balance reports:', error);
