@@ -16,6 +16,7 @@ import { ClientRoyalties } from './client-portal/ClientRoyalties';
 import { ClientNotifications } from './client-portal/ClientNotifications';
 import { ShieldCheck } from 'lucide-react';
 import { updatePageMetadata } from '@/utils/seo';
+import musicHero from '@/assets/music-hero-graphic.png';
 
 const ClientPortal = () => {
   const { user } = useAuth();
@@ -151,7 +152,7 @@ const ClientPortal = () => {
         </div>
       )}
       
-      <header className="mb-6 brand-hero rounded-xl p-6 brand-hero-ring">
+      <header className="mb-6 brand-hero rounded-xl p-6 brand-hero-ring overflow-hidden">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-headline">Client Portal</h1>
@@ -160,9 +161,19 @@ const ClientPortal = () => {
               <p className="text-xs opacity-80 mt-2">Signed in as <span className="font-medium">{user.email}</span></p>
             )}
           </div>
-          <Badge className="bg-background/80 text-foreground flex items-center gap-1">
-            <ShieldCheck className="h-4 w-4" /> Secured Client Access
-          </Badge>
+          <div className="flex items-start gap-4">
+            <Badge className="bg-background/80 text-foreground flex items-center gap-1">
+              <ShieldCheck className="h-4 w-4" /> Secured Client Access
+            </Badge>
+            <img
+              src={musicHero}
+              alt="Vinyl record illustration for Client Portal"
+              loading="lazy"
+              width={96}
+              height={96}
+              className="hidden sm:block w-24 h-24 object-contain opacity-90"
+            />
+          </div>
         </div>
       </header>
 
