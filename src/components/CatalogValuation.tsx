@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft } from "lucide-react";
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, Area, AreaChart, ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar } from 'recharts';
 import { CatalogValuationSkeleton, AsyncLoading } from "@/components/LoadingStates";
+import { usePDFGeneration } from "@/hooks/usePDFGeneration";
 
 interface TopTrack {
   name: string;
@@ -1382,21 +1383,114 @@ Actual market values may vary significantly based on numerous factors not captur
 
 
             <TabsContent value="reports" className="space-y-6">
+              <div className="space-y-2">
+                <h2 className="text-2xl font-semibold">Professional Reports Suite</h2>
+                <p className="text-muted-foreground">Generate detailed reports for different stakeholders</p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card className="">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-5 w-5 text-primary" />
+                      <CardTitle>Executive Summary</CardTitle>
+                    </div>
+                    <CardDescription>High-level overview for investors</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between"><span>Valuation</span><span className="font-semibold">{formatCurrency(result.risk_adjusted_value || result.valuation_amount)}</span></div>
+                      <div className="flex justify-between"><span>5Y CAGR</span><span className="font-semibold">{result.valuations?.base?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 0) * 100) / 100}%`}</span></div>
+                      <div className="flex justify-between"><span>Confidence</span><span className="font-semibold">{result.confidence_score || 0}/100</span></div>
+                    </div>
+                    <div className="mt-4">
+                      <Button onClick={() => handleGenerateSectionReport('executive')} className="w-full sm:w-auto">
+                        <Download className="h-4 w-4 mr-2" />
+                        Generate Report
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Calculator className="h-5 w-5 text-primary" />
+                      <CardTitle>Technical Analysis</CardTitle>
+                    </div>
+                    <CardDescription>Detailed DCF and methodology</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between"><span>DCF Value</span><span className="font-semibold">{formatCurrency(result.dcf_valuation || 0)}</span></div>
+                      <div className="flex justify-between"><span>Multiple Value</span><span className="font-semibold">{formatCurrency(result.multiple_valuation || 0)}</span></div>
+                      <div className="flex justify-between"><span>Discount Rate</span><span className="font-semibold">{((result.discount_rate || 0.12) * 100).toFixed(1)}%</span></div>
+                    </div>
+                    <div className="mt-4">
+                      <Button onClick={() => handleGenerateSectionReport('technical')} className="w-full sm:w-auto">
+                        <Download className="h-4 w-4 mr-2" />
+                        Generate Report
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                      <CardTitle>Market Analysis</CardTitle>
+                    </div>
+                    <CardDescription>Competitive landscape & positioning</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between"><span>Comparables</span><span className="font-semibold">{result.comparable_artists?.length || 0} artists</span></div>
+                      <div className="flex justify-between"><span>Market Multiple</span><span className="font-semibold">{result.industry_benchmarks?.revenue_multiple || result.growth_metrics?.base_multiple || 0}x</span></div>
+                      <div className="flex justify-between"><span>Genre</span><span className="font-semibold">{result.genre || result.industry_benchmarks?.genre || 'N/A'}</span></div>
+                    </div>
+                    <div className="mt-4">
+                      <Button onClick={() => handleGenerateSectionReport('market')} className="w-full sm:w-auto">
+                        <Download className="h-4 w-4 mr-2" />
+                        Generate Report
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
               <Card>
                 <CardHeader>
-                  <CardTitle>Reports & Exports</CardTitle>
-                  <CardDescription>Download comprehensive valuation outputs</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Data Export Options</CardTitle>
+                      <CardDescription>Export valuation data in various formats</CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col sm:flex-row gap-3">
+                    <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
+                    <Button variant="outline" onClick={exportJSON}>Export JSON</Button>
+                    <Button variant="outline" onClick={exportXML}>Export XML</Button>
+                    <div className="flex-1" />
+                    <Button onClick={handleFullPDFReport}>Full PDF Report</Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Professional Valuation Report</CardTitle>
+                  <CardDescription>Comprehensive analysis with DCF modeling, risk factors, and investment recommendations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-end">
                     <Button onClick={generateAdvancedReport}>
                       <Download className="h-4 w-4 mr-2" />
                       Download Advanced Report
                     </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-4">
-                    Generates a professional TXT report including DCF, multiples, risk adjustments, confidence, and comparables.
-                  </p>
                 </CardContent>
               </Card>
             </TabsContent>
