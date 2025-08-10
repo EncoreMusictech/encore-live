@@ -29,10 +29,16 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Check if session is expired
+  // Check if session is expired (handle both seconds and ISO string)
   if (session.expires_at) {
-    const expiresAt = new Date(session.expires_at).getTime();
-    if (Date.now() >= expiresAt) {
+    const exp: any = session.expires_at as any;
+    const expiresAtMs = typeof exp === 'number'
+      ? exp * 1000
+      : typeof exp === 'string' && /^\d+$/.test(exp)
+        ? parseInt(exp, 10) * 1000
+        : new Date(exp).getTime();
+
+    if (!Number.isNaN(expiresAtMs) && Date.now() >= expiresAtMs) {
       logSecurityEvent('expired_session_access', {
         userId: user.id,
         expiresAt: session.expires_at,
