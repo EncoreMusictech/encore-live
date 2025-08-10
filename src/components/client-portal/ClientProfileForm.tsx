@@ -94,7 +94,7 @@ export const ClientProfileForm: React.FC<ClientProfileFormProps> = ({ profile, u
   };
 
   return (
-    <Card className="max-w-2xl mx-auto">
+    <Card className="max-w-md w-full mx-auto">
       <CardHeader>
         <CardTitle>My Profile</CardTitle>
         <CardDescription>Update your personal information and avatar</CardDescription>

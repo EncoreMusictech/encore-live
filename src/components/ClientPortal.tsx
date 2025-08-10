@@ -178,7 +178,7 @@ const ClientPortal = () => {
                 <p className="text-xs opacity-80 mt-2">Signed in as <span className="font-medium">{user.email}</span></p>
                 <button
                   onClick={() => setProfileOpen(true)}
-                  className="text-xs mt-1 opacity-80 hover:opacity-100 underline-offset-2 hover:underline story-link"
+                  className="text-sm font-semibold mt-1 opacity-90 hover:opacity-100 underline-offset-4 hover:underline"
                   aria-label="Open My Profile"
                 >
                   My Profile
@@ -215,7 +215,7 @@ const ClientPortal = () => {
       </header>
 
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[95vw] sm:max-w-md max-w-[520px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>My Profile</DialogTitle>
           </DialogHeader>
