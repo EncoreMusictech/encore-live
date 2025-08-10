@@ -4267,12 +4267,12 @@ export type Database = {
           year: number
           quarter: number
           period_label: string
-          contact_name: string
           opening_balance: number
           royalties_amount: number
           expenses_amount: number
           payments_amount: number
           closing_balance: number
+          contact_name: string
         }[]
       }
       get_client_subscriber: {
