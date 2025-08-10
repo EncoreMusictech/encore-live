@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Users, FileText, Music, DollarSign, Bell, Download, CheckCircle, User } from 'lucide-react';
+import { Loader2, Users, FileText, Music, DollarSign, Bell, Download, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ClientDashboardOverview } from './client-portal/ClientDashboardOverview';
 import { ClientContracts } from './client-portal/ClientContracts';
@@ -19,6 +19,7 @@ import { updatePageMetadata } from '@/utils/seo';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientProfileForm } from './client-portal/ClientProfileForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 const ClientPortal = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -30,6 +31,7 @@ const ClientPortal = () => {
   const [invitationAccepted, setInvitationAccepted] = useState(false);
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
   const [greeting, setGreeting] = useState<string>('');
+  const [profileOpen, setProfileOpen] = useState(false);
   useEffect(() => {
     const handleInvitationAndAccess = async () => {
       if (!user) return;
@@ -145,7 +147,6 @@ const ClientPortal = () => {
 
   const enabledTabs = [
     { id: 'overview', label: 'Dashboard Overview', icon: Users, enabled: true },
-    { id: 'profile', label: 'My Profile', icon: User, enabled: true },
     { id: 'contracts', label: 'My Contracts', icon: FileText, enabled: permissions.contracts?.enabled },
     { id: 'works', label: 'My Works', icon: Music, enabled: permissions.copyright?.enabled },
     { id: 'sync-deals', label: 'Sync Deals', icon: FileText, enabled: permissions['sync-licensing']?.enabled },
@@ -173,7 +174,16 @@ const ClientPortal = () => {
             <h1 className="text-3xl font-headline">Client Portal</h1>
             <p className="text-sm opacity-90 mt-1">Manage your works, contracts, and royalties</p>
             {user?.email && (
-              <p className="text-xs opacity-80 mt-2">Signed in as <span className="font-medium">{user.email}</span></p>
+              <>
+                <p className="text-xs opacity-80 mt-2">Signed in as <span className="font-medium">{user.email}</span></p>
+                <button
+                  onClick={() => setProfileOpen(true)}
+                  className="text-xs mt-1 opacity-80 hover:opacity-100 underline-offset-2 hover:underline story-link"
+                  aria-label="Open My Profile"
+                >
+                  My Profile
+                </button>
+              </>
             )}
           </div>
 
@@ -204,8 +214,26 @@ const ClientPortal = () => {
         </div>
       </header>
 
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>My Profile</DialogTitle>
+          </DialogHeader>
+          <ClientProfileForm
+            profile={profile as any}
+            userEmail={user?.email || ''}
+            onSaved={(p) => {
+              setProfile(p as any);
+              const name = (p.first_name as string) || (user?.email?.split('@')[0] ?? 'there');
+              setGreeting(`Welcome back, ${name}`);
+              setProfileOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid grid-cols-2 lg:grid-cols-7 w-full">
+        <TabsList className="grid grid-cols-2 lg:grid-cols-6 w-full">
           {enabledTabs.map((tab) => (
             <TabsTrigger 
               key={tab.id} 
@@ -222,17 +250,6 @@ const ClientPortal = () => {
           <ClientDashboardOverview permissions={permissions} />
         </TabsContent>
 
-        <TabsContent value="profile" className="space-y-6">
-          <ClientProfileForm
-            profile={profile as any}
-            userEmail={user?.email || ''}
-            onSaved={(p) => {
-              setProfile(p as any);
-              const name = (p.first_name as string) || (user?.email?.split('@')[0] ?? 'there');
-              setGreeting(`Welcome back, ${name}`);
-            }}
-          />
-        </TabsContent>
 
         {permissions.contracts?.enabled && (
           <TabsContent value="contracts" className="space-y-6">
