@@ -16,7 +16,7 @@ import { ClientRoyalties } from './client-portal/ClientRoyalties';
 import { ClientNotifications } from './client-portal/ClientNotifications';
 import { ShieldCheck } from 'lucide-react';
 import { updatePageMetadata } from '@/utils/seo';
-import musicHero from '@/assets/music-hero-record.png';
+import musicHero from '@/assets/music-hero-headphones.png';
 
 const ClientPortal = () => {
   const { user } = useAuth();
@@ -167,7 +167,7 @@ const ClientPortal = () => {
             </Badge>
             <img
               src={musicHero}
-              alt="Vinyl record illustration for Client Portal"
+              alt="Whimsical headphones illustration for Client Portal"
               loading="lazy"
               width={96}
               height={96}
