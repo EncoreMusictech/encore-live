@@ -168,14 +168,7 @@ const ClientPortal = () => {
       )}
       
       <header className="mb-6 brand-hero rounded-xl p-6 brand-hero-ring overflow-hidden">
-        <div className="flex flex-col items-center text-center gap-2 mb-4">
-          <Avatar className="h-20 w-20 shadow-md">
-            <AvatarImage src={profile?.avatar_url || undefined} alt="Client avatar" loading="lazy" />
-            <AvatarFallback>{((profile?.first_name?.[0] || user?.email?.[0] || 'U') as string).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="text-lg font-medium">{greeting}</div>
-        </div>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center justify-between gap-6">
           <div>
             <h1 className="text-3xl font-headline">Client Portal</h1>
             <p className="text-sm opacity-90 mt-1">Manage your works, contracts, and royalties</p>
@@ -183,7 +176,18 @@ const ClientPortal = () => {
               <p className="text-xs opacity-80 mt-2">Signed in as <span className="font-medium">{user.email}</span></p>
             )}
           </div>
-          <div className="flex items-start gap-4">
+
+          <div className="flex items-center gap-3">
+            <Avatar className="h-14 w-14 shadow-md">
+              <AvatarImage src={profile?.avatar_url || undefined} alt="Client avatar" loading="lazy" />
+              <AvatarFallback>{((profile?.first_name?.[0] || user?.email?.[0] || 'U') as string).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="text-base sm:text-lg font-medium leading-tight text-center">
+              {greeting}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
             <Badge className="bg-background/80 text-foreground flex items-center gap-1">
               <ShieldCheck className="h-4 w-4" /> Secured Client Access
             </Badge>
