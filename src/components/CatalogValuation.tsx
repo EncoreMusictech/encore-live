@@ -535,12 +535,13 @@ Actual market values may vary significantly based on numerous factors not captur
       {result && (
         <>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="analysis">DCF Analysis</TabsTrigger>
               <TabsTrigger value="forecasts">Forecasts</TabsTrigger>
               <TabsTrigger value="comparables">Comparables</TabsTrigger>
               <TabsTrigger value="revenue-sources">Revenue Sources</TabsTrigger>
+              <TabsTrigger value="reports">Reports</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
 
@@ -1379,6 +1380,26 @@ Actual market values may vary significantly based on numerous factors not captur
                )}
               </TabsContent>
 
+
+            <TabsContent value="reports" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Reports & Exports</CardTitle>
+                  <CardDescription>Download comprehensive valuation outputs</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button onClick={generateAdvancedReport}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Advanced Report
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-4">
+                    Generates a professional TXT report including DCF, multiples, risk adjustments, confidence, and comparables.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">
               {/* Analytics content placeholder */}
