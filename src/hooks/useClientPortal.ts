@@ -161,6 +161,13 @@ export const useClientPortal = () => {
         throw new Error('Invitation has expired');
       }
 
+      // Enforce email match between invitation and signed-in user
+      const invitedEmail = (invitation.email || '').trim().toLowerCase();
+      const currentEmail = (user.email || '').trim().toLowerCase();
+      if (!currentEmail || invitedEmail !== currentEmail) {
+        throw new Error(`This invite is for ${invitation.email}. Please sign in with that email to accept.`);
+      }
+
       // Create client portal access
       const { data: access, error: accessError } = await supabase
         .from('client_portal_access')
