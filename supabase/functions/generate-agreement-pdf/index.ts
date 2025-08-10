@@ -192,8 +192,18 @@ async function generateWithOpenAI(payload: any): Promise<string> {
     throw new Error(`OpenAI error: ${res.status} ${txt}`);
   }
   const data = await res.json();
-  const html = data.choices?.[0]?.message?.content || '';
-  return wrapHtml(html, payload.meta?.title || 'Agreement');
+  let content = data.choices?.[0]?.message?.content || '';
+
+  // Strip markdown code fences that models often add (```html ... ```)
+  content = content
+    .replace(/^\s*```(?:html|HTML)?\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .replace(/```/g, '')
+    .trim();
+
+  // If the model returned a full HTML document, use it as-is. Otherwise, wrap it.
+  const isFullDoc = /<html[\s>]|<!doctype/i.test(content);
+  return isFullDoc ? content : wrapHtml(content, payload.meta?.title || 'Agreement');
 }
 
 function deterministicTemplate(payload: any): string {
