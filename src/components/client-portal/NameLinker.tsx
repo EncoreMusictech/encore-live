@@ -13,7 +13,7 @@ import { Search, LinkIcon } from "lucide-react";
 
 interface MatchItem {
   id: string;
-  data_type: "copyright" | "contract" | "royalty_allocation" | "sync_license";
+  data_type: "copyright" | "contract" | "royalty_allocation" | "sync_license" | "payee";
   label: string;
   meta?: Record<string, any>;
 }
@@ -29,12 +29,13 @@ export function NameLinker() {
     contracts: true,
     royalties: true,
     sync_licenses: true,
+    payees: true,
   });
   const [scopes, setScopes] = useState({
     writer: true,
     publisher: true,
     interested_party: true,
-    payee: true, // reserved for future (payees table)
+    payee: true,
     artist: true,
   });
 
@@ -148,6 +149,20 @@ export function NameLinker() {
         })());
       }
 
+      if (searchTypes.payees && scopes.payee) {
+        queries.push((async () => {
+          const items: MatchItem[] = [];
+          const { data } = await supabase
+            .from("payees")
+            .select("id, payee_name, payee_type, payee_id")
+            .or(`payee_name.ilike.${term},payee_id.ilike.${term}`);
+          (data || []).forEach((row: any) =>
+            items.push({ id: row.id, data_type: "payee", label: `Payee: ${row.payee_name} (${row.payee_type})` })
+          );
+          return items;
+        })());
+      }
+
       if (searchTypes.sync_licenses) {
         queries.push((async () => {
           const items: MatchItem[] = [];
@@ -232,7 +247,7 @@ export function NameLinker() {
           Link by Name (No UUIDs)
         </CardTitle>
         <CardDescription>
-          Search by writer, publisher, artist, or interested party, then link matching contracts, works, royalties, and licenses to a client.
+          Search by writer, publisher, payee, artist, or interested party, then link matching contracts, works, royalties, and licenses to a client.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -285,7 +300,7 @@ export function NameLinker() {
                   <Label htmlFor={`scope-${key}`} className="capitalize">{key.replace("_", " ")}</Label>
                 </div>
               ))}
-              <p className="text-xs text-muted-foreground">We match across writers, publishers, interested parties, artists, project titles, and work titles.</p>
+              <p className="text-xs text-muted-foreground">We match across writers, publishers, payees, interested parties, artists, project titles, and work titles.</p>
             </div>
           </div>
         </div>

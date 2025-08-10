@@ -253,7 +253,7 @@ export const useClientPortal = () => {
   // Create data association (idempotent)
   const createDataAssociation = async (
     clientUserId: string,
-    dataType: 'copyright' | 'contract' | 'royalty_allocation' | 'sync_license',
+    dataType: 'copyright' | 'contract' | 'royalty_allocation' | 'sync_license' | 'payee',
     dataId: string
   ) => {
     if (!user) return null;

@@ -49,17 +49,17 @@ export default function ClientAdminPage() {
 
   const [associationForm, setAssociationForm] = useState({
     clientUserId: "",
-    dataType: "copyright" as "copyright" | "contract" | "royalty_allocation" | "sync_license",
+    dataType: "copyright" as "copyright" | "contract" | "royalty_allocation" | "sync_license" | "payee",
     dataId: ""
   });
 
   // Filters & inline edit state for associations manager
-  const [typeFilter, setTypeFilter] = useState<'all' | 'copyright' | 'contract' | 'royalty_allocation' | 'sync_license'>(
+  const [typeFilter, setTypeFilter] = useState<'all' | 'copyright' | 'contract' | 'royalty_allocation' | 'sync_license' | 'payee'>(
     'all'
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<{ dataType: 'copyright' | 'contract' | 'royalty_allocation' | 'sync_license'; dataId: string}>(
+  const [editForm, setEditForm] = useState<{ dataType: 'copyright' | 'contract' | 'royalty_allocation' | 'sync_license' | 'payee'; dataId: string}>(
     { dataType: 'copyright', dataId: '' }
   );
 
@@ -75,12 +75,13 @@ export default function ClientAdminPage() {
       }
       try {
         const map: Record<string, string> = {};
-        const byType = {
-          copyright: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'copyright').map((x: any) => x.data_id))).filter(Boolean),
-          contract: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'contract').map((x: any) => x.data_id))).filter(Boolean),
-          royalty_allocation: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'royalty_allocation').map((x: any) => x.data_id))).filter(Boolean),
-          sync_license: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'sync_license').map((x: any) => x.data_id))).filter(Boolean),
-        } as const;
+          const byType = {
+            copyright: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'copyright').map((x: any) => x.data_id))).filter(Boolean),
+            contract: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'contract').map((x: any) => x.data_id))).filter(Boolean),
+            royalty_allocation: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'royalty_allocation').map((x: any) => x.data_id))).filter(Boolean),
+            sync_license: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'sync_license').map((x: any) => x.data_id))).filter(Boolean),
+            payee: Array.from(new Set(dataAssociations.filter((x: any) => x.data_type === 'payee').map((x: any) => x.data_id))).filter(Boolean),
+          } as const;
 
         const tasks: Promise<void>[] = [];
         if (byType.copyright.length) {
@@ -120,6 +121,15 @@ export default function ClientAdminPage() {
               .select('id, project_title')
               .in('id', byType.sync_license as any);
             (data || []).forEach((r: any) => { map[`sync_license:${r.id}`] = r.project_title || r.id; });
+          })());
+        }
+        if (byType.payee.length) {
+          tasks.push((async () => {
+            const { data } = await supabase
+              .from('payees')
+              .select('id, payee_name, payee_type')
+              .in('id', byType.payee as any);
+            (data || []).forEach((r: any) => { map[`payee:${r.id}`] = `${r.payee_name} (${r.payee_type})`; });
           })());
         }
 
@@ -459,6 +469,7 @@ export default function ClientAdminPage() {
                     <SelectItem value="contract">Contract</SelectItem>
                     <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
                     <SelectItem value="sync_license">Sync License</SelectItem>
+                    <SelectItem value="payee">Payee</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -499,13 +510,14 @@ export default function ClientAdminPage() {
                   <SelectTrigger className="sm:w-48">
                     <SelectValue placeholder="Data type" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="copyright">Copyright</SelectItem>
-                    <SelectItem value="contract">Contract</SelectItem>
-                    <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
-                    <SelectItem value="sync_license">Sync License</SelectItem>
-                  </SelectContent>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="copyright">Copyright</SelectItem>
+                      <SelectItem value="contract">Contract</SelectItem>
+                      <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
+                      <SelectItem value="sync_license">Sync License</SelectItem>
+                      <SelectItem value="payee">Payee</SelectItem>
+                    </SelectContent>
                 </Select>
               </div>
 
@@ -541,6 +553,7 @@ export default function ClientAdminPage() {
                                 <SelectItem value="contract">Contract</SelectItem>
                                 <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
                                 <SelectItem value="sync_license">Sync License</SelectItem>
+                                <SelectItem value="payee">Payee</SelectItem>
                               </SelectContent>
                             </Select>
                           ) : (
