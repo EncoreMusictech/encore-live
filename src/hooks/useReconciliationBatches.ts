@@ -372,7 +372,7 @@ export function useReconciliationBatches() {
         return false;
       }
 
-      // Group royalties by writer
+      // Group royalties by writer (supports multi-writer strings)
       const writerGroups = new Map<string, any[]>();
       const unmatched: any[] = [];
 
@@ -381,24 +381,37 @@ export function useReconciliationBatches() {
         .from('writers')
         .select('id, writer_id, writer_name')
         .eq('user_id', user.id);
-
       if (writersError) throw writersError;
 
+      const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+
+      // Map of normalized writer name -> writer record
       const writerNameMap = new Map(
-        (writers || []).map(w => [w.writer_name, w])
+        (writers || []).map((w) => [normalize(w.writer_name), w])
       );
 
-      // Group royalties by matched writers
+      const splitWriters = (s: string): string[] =>
+        s
+          .split(/;|,|\&|\/|\band\b/gi)
+          .map((t) => t.trim())
+          .filter(Boolean);
+
       for (const royalty of allRoyalties) {
-        if (royalty.work_writers) {
-          const writer = writerNameMap.get(royalty.work_writers);
-          if (writer) {
-            if (!writerGroups.has(writer.id)) {
-              writerGroups.set(writer.id, []);
-            }
-            writerGroups.get(writer.id)!.push({ ...royalty, writer_info: writer });
-          } else {
-            unmatched.push(royalty);
+        const gross = royalty.gross_royalty_amount || 0;
+        const names = royalty.work_writers ? splitWriters(royalty.work_writers) : [];
+        const matches = names
+          .map((n: string) => writerNameMap.get(normalize(n)))
+          .filter((w): w is { id: string; writer_name: string; writer_id: string } => Boolean(w));
+
+        if (matches.length === 1) {
+          const w = matches[0]!;
+          if (!writerGroups.has(w.id)) writerGroups.set(w.id, []);
+          writerGroups.get(w.id)!.push({ ...royalty, writer_info: w, allocated_amount: gross });
+        } else if (matches.length > 1) {
+          const perWriter = gross / matches.length;
+          for (const w of matches) {
+            if (!writerGroups.has(w.id)) writerGroups.set(w.id, []);
+            writerGroups.get(w.id)!.push({ ...royalty, writer_info: w, allocated_amount: perWriter });
           }
         } else {
           unmatched.push(royalty);
@@ -410,7 +423,7 @@ export function useReconciliationBatches() {
 
       for (const [writerId, writerRoyalties] of writerGroups) {
         const writer = writerRoyalties[0].writer_info;
-        const totalAmount = writerRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
+        const totalAmount = writerRoyalties.reduce((sum, r) => sum + (r.allocated_amount ?? r.gross_royalty_amount ?? 0), 0);
 
         if (totalAmount <= 0) continue;
 
@@ -470,11 +483,11 @@ export function useReconciliationBatches() {
             continue;
           }
 
-        // Link royalties to the payout
+        // Link royalties to the payout (use allocated_amount when provided)
         const payoutRoyalties = writerRoyalties.map(royalty => ({
           payout_id: payout.id,
           royalty_id: royalty.id,
-          allocated_amount: royalty.gross_royalty_amount || 0,
+          allocated_amount: royalty.allocated_amount ?? (royalty.gross_royalty_amount || 0),
         }));
 
         const { error: linkError } = await supabase
