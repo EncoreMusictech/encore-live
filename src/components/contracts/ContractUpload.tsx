@@ -69,6 +69,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedText, setExtractedText] = useState<string>('');
   const [parsedData, setParsedData] = useState<ParsedContractData | null>(null);
+  const [rawParsedData, setRawParsedData] = useState<any>(null);
   const [parsingResultId, setParsingResultId] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
@@ -361,6 +362,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       console.log('Client-side extracted text length:', clientText?.length || 0);
       const result = await extractTextFromPDF(publicUrl, clientText);
       setExtractedText(result.extractedText);
+      setRawParsedData(result.parsed_data);
       
       // Transform the parsed data to match the expected format
       const transformedData = transformParsedData(result.parsed_data);
@@ -463,6 +465,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       setAutoPopulatedData(null);
       // Clear previous parsing results when new file is selected
       setParsedData(null);
+      setRawParsedData(null);
       setParsingResultId(null);
       setExtractedText('');
       setConfidence(0);
@@ -737,6 +740,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
                           setSelectedFile(null);
                           setUploadStatus('idle');
                           setParsedData(null);
+                          setRawParsedData(null);
                           setError(null);
                           setShowAutoPopulator(false);
                           setAutoPopulatedData(null);
@@ -774,7 +778,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
               {/* Full Analysis Tab */}
               <TabsContent value="analysis">
                 <ContractDetailsView 
-                  parsedData={parsedData} 
+                  parsedData={rawParsedData || {}} 
                   confidence={confidence} 
                 />
               </TabsContent>

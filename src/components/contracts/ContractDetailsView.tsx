@@ -448,18 +448,24 @@ export const ContractDetailsView: React.FC<ContractDetailsViewProps> = ({
                     <h4 className="font-semibold">Catalog Works ({parsedData.works.length})</h4>
                   </div>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {parsedData.works.map((work: any, index: number) => (
-                      <div key={index} className="border rounded-lg p-3">
-                        <div className="font-medium">{work.title || `Work ${index + 1}`}</div>
-                        {work.artist && (
-                          <div className="text-sm text-muted-foreground">Artist: {work.artist}</div>
-                        )}
-                        <div className="flex gap-4 text-xs text-muted-foreground mt-1">
-                          {work.isrc && <span>ISRC: {work.isrc}</span>}
-                          {work.iswc && <span>ISWC: {work.iswc}</span>}
+                    {parsedData.works.map((work: any, index: number) => {
+                      const title = work.work_title || work.title || work.work_id || `Work ${index + 1}`;
+                      const artist = work.artist_name || work.album_title || work.artist;
+                      const isrc = work.isrc || work.recording_isrc;
+                      const iswc = work.iswc_number || work.iswc;
+                      return (
+                        <div key={index} className="border rounded-lg p-3">
+                          <div className="font-medium">{title}</div>
+                          {artist && (
+                            <div className="text-sm text-muted-foreground">Artist/Album: {artist}</div>
+                          )}
+                          <div className="flex gap-4 text-xs text-muted-foreground mt-1">
+                            {isrc && <span>ISRC: {isrc}</span>}
+                            {iswc && <span>ISWC: {iswc}</span>}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
