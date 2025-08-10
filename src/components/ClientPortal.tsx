@@ -14,6 +14,8 @@ import { ClientWorks } from './client-portal/ClientWorks';
 import { ClientSyncDeals } from './client-portal/ClientSyncDeals';
 import { ClientRoyalties } from './client-portal/ClientRoyalties';
 import { ClientNotifications } from './client-portal/ClientNotifications';
+import { ShieldCheck } from 'lucide-react';
+import { updatePageMetadata } from '@/utils/seo';
 
 const ClientPortal = () => {
   const { user } = useAuth();
@@ -90,6 +92,11 @@ const ClientPortal = () => {
     handleInvitationAndAccess();
   }, [user, searchParams, isClient, getClientPermissions, acceptInvitation, toast]);
 
+  // SEO metadata
+  useEffect(() => {
+    updatePageMetadata('clientPortal');
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -144,12 +151,20 @@ const ClientPortal = () => {
         </div>
       )}
       
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Client Portal</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your works, contracts, and royalties
-        </p>
-      </div>
+      <header className="mb-6 brand-hero rounded-xl p-6 brand-hero-ring">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-headline">Client Portal</h1>
+            <p className="text-sm opacity-90 mt-1">Manage your works, contracts, and royalties</p>
+            {user?.email && (
+              <p className="text-xs opacity-80 mt-2">Signed in as <span className="font-medium">{user.email}</span></p>
+            )}
+          </div>
+          <Badge className="bg-background/80 text-foreground flex items-center gap-1">
+            <ShieldCheck className="h-4 w-4" /> Secured Client Access
+          </Badge>
+        </div>
+      </header>
 
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid grid-cols-2 lg:grid-cols-6 w-full">
