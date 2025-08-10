@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.deterministic-catalog-discovery]
 verify_jwt = false
+
+[functions.generate-report]
+verify_jwt = false
