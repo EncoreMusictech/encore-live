@@ -39,15 +39,23 @@ const AdminOrProtectedRoute = ({ children }: AdminOrProtectedRouteProps) => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Validate session age for authenticated non-admin users
-  const sessionTimestamp = session.expires_at ? new Date(session.expires_at).getTime() : Date.now();
-  if (!isSessionValid(sessionTimestamp, 86400000)) { // 24 hours
-    logSecurityEvent('expired_session_access', {
-      userId: user.id,
-      sessionAge: Date.now() - sessionTimestamp,
-      path: location.pathname
-    });
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+  // Check if session is expired (handle both seconds and ISO string)
+  if (session.expires_at) {
+    const exp: any = session.expires_at as any;
+    const expiresAtMs = typeof exp === 'number'
+      ? exp * 1000
+      : typeof exp === 'string' && /^\d+$/.test(exp)
+        ? parseInt(exp, 10) * 1000
+        : new Date(exp).getTime();
+
+    if (!Number.isNaN(expiresAtMs) && Date.now() >= expiresAtMs) {
+      logSecurityEvent('expired_session_access', {
+        userId: user.id,
+        expiresAt: session.expires_at,
+        path: location.pathname
+      });
+      return <Navigate to="/auth" state={{ from: location }} replace />;
+    }
   }
 
   return <>{children}</>;
