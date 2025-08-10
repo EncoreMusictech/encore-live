@@ -575,7 +575,7 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
                     Link Royalties
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-6xl max-h-[90vh]">
+                <DialogContent className="max-w-6xl max-h-[90vh] bg-card text-card-foreground">
                   <DialogHeader>
                     <DialogTitle>Link Royalties to Batch</DialogTitle>
                   </DialogHeader>
@@ -628,7 +628,7 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
                             View
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card text-card-foreground">
                           <DialogHeader>
                             <DialogTitle>View Royalty Allocation</DialogTitle>
                           </DialogHeader>

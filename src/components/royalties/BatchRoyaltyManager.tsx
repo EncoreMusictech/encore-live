@@ -146,10 +146,10 @@ export function BatchRoyaltyManager({ batchId, onLinkComplete, embedded = false 
   };
 
   const renderAllocationTable = (allocationsList: typeof allocations, showUnlinkAction = false) => (
-    <div className="border rounded-md">
+    <div className="border rounded-md bg-card text-card-foreground">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-muted/40">
             <TableHead className="w-12">
               <Checkbox
                 checked={selectedAllocations.length === allocationsList.length && allocationsList.length > 0}
@@ -164,7 +164,7 @@ export function BatchRoyaltyManager({ batchId, onLinkComplete, embedded = false 
         </TableHeader>
         <TableBody>
           {allocationsList.map((allocation) => (
-            <TableRow key={allocation.id}>
+            <TableRow key={allocation.id} className="hover:bg-muted/40">
               <TableCell>
                 <Checkbox
                   checked={selectedAllocations.includes(allocation.id)}
