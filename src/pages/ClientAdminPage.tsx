@@ -136,6 +136,34 @@ export default function ClientAdminPage() {
     });
   };
 
+  const handleResendEmail = async (invitation: any) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-client-invitation', {
+        body: {
+          invitee_email: invitation.email,
+          token: invitation.invitation_token,
+          subscriber_name: 'ENCORE',
+          site_url: window.location.origin,
+          support_email: 'support@encoremusic.tech',
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Email sent',
+        description: `Invitation email resent to ${invitation.email}`,
+      });
+    } catch (err: any) {
+      console.error('Resend email error:', err);
+      toast({
+        title: 'Could not resend email',
+        description: err?.message || 'Please try again or copy the link manually.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleManualMaintenance = async (action: 'expire_invitations' | 'cleanup_expired' | 'send_reminders' | 'expire_access' | 'full_maintenance') => {
     const forceAll = action === 'cleanup_expired';
     const result = await triggerInvitationMaintenance(action, { forceAll });
@@ -386,13 +414,21 @@ export default function ClientAdminPage() {
                         </p>
                       </div>
                       {invitation.status === 'pending' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyInvitationLink(invitation.invitation_token)}
-                        >
-                          Copy Link
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyInvitationLink(invitation.invitation_token)}
+                          >
+                            Copy Link
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleResendEmail(invitation)}
+                          >
+                            Resend Email
+                          </Button>
+                        </div>
                       )}
                     </div>
                   ))}
