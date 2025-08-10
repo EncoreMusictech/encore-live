@@ -100,6 +100,14 @@ All colors MUST be HSL.
     text-transform: uppercase;
     letter-spacing: 0.1em;
   }
+
+  /* Ensure global contrast and proper theming */
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 @layer components {
