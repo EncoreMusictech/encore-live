@@ -90,6 +90,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
   });
 
   // Transform parsed data from edge function format to component format
+  // Transform parsed data from edge function format to component format
   const transformParsedData = (rawData: any): ParsedContractData => {
     const normalizeContractType = (t?: string) => {
       if (!t) return 'other';
@@ -159,11 +160,24 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
         renewal_terms: rawData.renewal_options ? 'Automatic renewal' : undefined
       },
       territory: rawData.territory || undefined,
-      works_covered: rawData.works || [],
-      payment_terms: rawData.payment_terms || `${rawData.payment_terms_days || 'Net'} ${rawData.royalty_frequency || 'quarterly'}`,
+      works_covered: Array.isArray(rawData.works)
+        ? rawData.works.map((w: any) => ({
+            title: w.work_title || w.title || w.work_id || '',
+            artist: w.artist_name || w.album_title || undefined,
+            isrc: w.isrc || undefined,
+            iswc: w.iswc_number || w.iswc || undefined
+          }))
+        : [],
+      payment_terms:
+        rawData.payment_terms ||
+        `${rawData.payment_terms_days || 'Net'} ${rawData.royalty_frequency || 'quarterly'}`,
       recoupment_status: rawData.recoupable ? 'Recoupable' : 'Non-recoupable',
       termination_clauses: rawData.termination_notice_days ? `${rawData.termination_notice_days} days notice required` : undefined,
-      additional_terms: rawData.notes || undefined
+      additional_terms: [
+        rawData.delivery_requirement && `Delivery Requirement: ${rawData.delivery_requirement}`,
+        rawData.delivery_commitment && `Delivery Commitment: ${rawData.delivery_commitment}`,
+        rawData.approval_terms && `Approval Terms: ${rawData.approval_terms}`
+      ].filter(Boolean).join(' | ') || undefined
     };
   };
 
@@ -353,6 +367,9 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       setParsedData(transformedData);
       setParsingResultId(result.parsing_result_id);
       setConfidence(result.confidence);
+      if (result.parsed_data.agreement_title) {
+        setContractTitle(result.parsed_data.agreement_title);
+      }
       setUploadProgress(75);
 
       // Prepare quick fields
@@ -362,22 +379,25 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
 
       // Build form data for auto-population
       const mainParty = transformedData.parties?.find(p => p.role !== 'administrator') || transformedData.parties?.[0];
+      const derivedTitle = (result.parsed_data.agreement_title && String(result.parsed_data.agreement_title).trim().length > 0)
+        ? result.parsed_data.agreement_title
+        : `${transformedData.contract_type?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} Agreement`;
       const formData = {
-        title: `${transformedData.contract_type?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} Agreement`,
+        title: derivedTitle,
         counterparty_name: mainParty?.name || '',
         contract_type: transformedData.contract_type || 'other',
         start_date: transformedData.key_dates?.start_date || null,
         end_date: transformedData.key_dates?.end_date || null,
         advance_amount: transformedData.financial_terms?.advance_amount || 0,
-        commission_percentage: transformedData.financial_terms?.commission_percentage ? (transformedData.financial_terms?.commission_percentage * 100) : 0,
+        commission_percentage: transformedData.financial_terms?.commission_percentage ? (transformedData.financial_terms.commission_percentage * 100) : 0,
         territories: transformedData.territory ? [transformedData.territory] : [],
         financial_terms: transformedData.financial_terms || {},
         royalty_splits: transformedData.financial_terms?.royalty_rates || {},
         notes: [
-          transformedData.payment_terms && `Payment Terms: ${transformedData.payment_terms}`,
+          transformedData.payment_terms && `Payment Terms / Frequency: ${transformedData.payment_terms}`,
           transformedData.recoupment_status && `Recoupment: ${transformedData.recoupment_status}`,
           transformedData.termination_clauses && `Termination: ${transformedData.termination_clauses}`,
-          transformedData.additional_terms && `Additional Terms: ${transformedData.additional_terms}`
+          transformedData.additional_terms && `Delivery & Approvals: ${transformedData.additional_terms}`
         ].filter(Boolean).join('\n\n'),
         contact_name: mainParty?.name || '',
         contact_phone: mainParty?.contact_info?.phone || '',

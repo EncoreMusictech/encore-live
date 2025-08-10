@@ -100,7 +100,8 @@ export const ContractReviewView: React.FC<ContractReviewViewProps> = ({
         body: {
           fileUrl: pdfUrl,
           fileName: fileName,
-          userId: user.id
+          userId: user.id,
+          rawText: parsingResult?.original_text
         }
       });
 
