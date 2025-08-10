@@ -18,6 +18,7 @@ import { ContractAutoPopulator } from './ContractAutoPopulator';
 import { ContractDetailsView } from './ContractDetailsView';
 import { PDFViewer } from './PDFViewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 
 interface ContractUploadProps {
   onBack: () => void;
@@ -166,14 +167,72 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
     };
   };
 
-  const extractTextFromPDF = async (fileUrl: string) => {
+  const extractTextClientside = async (file: File): Promise<string> => {
+    try {
+      // Initialize PDF.js worker once
+      try {
+        const anyGlobal: any = GlobalWorkerOptions as any;
+        if (!(anyGlobal as any).__workerInitialized) {
+          const worker = new Worker(new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url), { type: 'module' });
+          (GlobalWorkerOptions as any).workerPort = worker as any;
+          (anyGlobal as any).__workerInitialized = true;
+        }
+      } catch (e) {
+        console.warn('PDF worker init failed (running on main thread):', e);
+      }
+
+      const buffer = await file.arrayBuffer();
+      const pdf: any = await (getDocument({ data: buffer }) as any).promise;
+      let fullText = '';
+      const pageLimit = Math.min(pdf.numPages || 0, 50);
+      for (let p = 1; p <= pageLimit; p++) {
+        const page = await pdf.getPage(p);
+        const content: any = await page.getTextContent();
+        const text = (content.items || []).map((it: any) => it.str || '').join(' ');
+        fullText += text + '\n';
+      }
+      fullText = fullText.replace(/\s+/g, ' ').trim();
+      if (fullText.length >= 200) return fullText;
+
+      // OCR fallback for scanned PDFs (first 2 pages)
+      try {
+        let ocrText = '';
+        const pagesToOcr = Math.min(pdf.numPages || 0, 2);
+        for (let p = 1; p <= pagesToOcr; p++) {
+          const page = await pdf.getPage(p);
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d')!;
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: ctx as any, viewport } as any).promise;
+          const dataUrl = canvas.toDataURL('image/png');
+          const Tesseract: any = await import('tesseract.js');
+          const res: any = await Tesseract.recognize(dataUrl, 'eng');
+          ocrText += ' ' + (res?.data?.text || '');
+        }
+        ocrText = ocrText.replace(/\s+/g, ' ').trim();
+        if (ocrText.length > fullText.length) return ocrText;
+      } catch (ocrErr) {
+        console.warn('OCR fallback failed:', ocrErr);
+      }
+
+      return fullText;
+    } catch (err) {
+      console.error('Client-side PDF extraction failed:', err);
+      return '';
+    }
+  };
+
+  const extractTextFromPDF = async (fileUrl: string, rawText?: string) => {
     if (!user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase.functions.invoke('parse-contract', {
       body: {
         fileUrl: fileUrl,
         fileName: selectedFile?.name || 'unknown.pdf',
-        userId: user.id
+        userId: user.id,
+        rawText: rawText || undefined,
       }
     });
 
@@ -193,7 +252,6 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       confidence: data.confidence
     };
   };
-
   const createContractFromParsedData = async (formData?: any) => {
     if (!user || !parsedData) return;
 
@@ -283,10 +341,11 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       // Extract text and parse contract using edge function
       console.log('Processing contract with AI...');
       setUploadStatus('parsing');
-      const result = await extractTextFromPDF(publicUrl);
-      console.log('Contract processed successfully:', result);
-      
-      // Set all the extracted data
+      // Client-side PDF extraction for higher fidelity (with OCR fallback)
+      setUploadProgress(35);
+      const clientText = await extractTextClientside(selectedFile);
+      console.log('Client-side extracted text length:', clientText?.length || 0);
+      const result = await extractTextFromPDF(publicUrl, clientText);
       setExtractedText(result.extractedText);
       
       // Transform the parsed data to match the expected format

@@ -445,32 +445,39 @@ serve(async (req) => {
   }
 
   try {
-    const { fileUrl, fileName, userId } = await req.json();
+    const { fileUrl, fileName, userId, rawText } = await req.json();
     
-    console.log('Processing file:', fileName);
+    console.log('Processing file:', fileName, 'rawText provided:', !!rawText);
     
     if (!userId) {
       throw new Error('Missing userId');
     }
 
-    if (!fileUrl) {
-      throw new Error('Missing fileUrl');
+    if (!fileUrl && !(rawText && rawText.trim().length > 0)) {
+      throw new Error('Missing fileUrl or rawText');
     }
 
-    // Fetch the PDF file
-    console.log('Fetching PDF from:', fileUrl);
-    const pdfResponse = await fetch(fileUrl);
-    if (!pdfResponse.ok) {
-      throw new Error(`Failed to fetch PDF: ${pdfResponse.statusText}`);
+    let extractedText = '';
+
+    if (rawText && typeof rawText === 'string' && rawText.trim().length > 0) {
+      extractedText = rawText.trim();
+      console.log('Using client-provided extracted text, length:', extractedText.length);
+    } else {
+      // Fetch the PDF file
+      console.log('Fetching PDF from:', fileUrl);
+      const pdfResponse = await fetch(fileUrl);
+      if (!pdfResponse.ok) {
+        throw new Error(`Failed to fetch PDF: ${pdfResponse.statusText}`);
+      }
+      
+      const pdfBuffer = await pdfResponse.arrayBuffer();
+      console.log('PDF downloaded, size:', pdfBuffer.byteLength);
+      
+      // Extract text from PDF
+      console.log('Extracting text from PDF...');
+      extractedText = await extractTextFromPDF(pdfBuffer);
+      console.log('Text extracted, length:', extractedText.length);
     }
-    
-    const pdfBuffer = await pdfResponse.arrayBuffer();
-    console.log('PDF downloaded, size:', pdfBuffer.byteLength);
-    
-    // Extract text from PDF
-    console.log('Extracting text from PDF...');
-    const extractedText = await extractTextFromPDF(pdfBuffer);
-    console.log('Text extracted, length:', extractedText.length);
     
     // Analyze with OpenAI
     console.log('Analyzing with OpenAI...');
