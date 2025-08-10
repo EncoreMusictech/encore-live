@@ -4120,6 +4120,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_client_invitation: {
+        Args: { p_token: string; p_accepter: string; p_accepter_email: string }
+        Returns: {
+          client_user_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          permissions: Json
+          role: Database["public"]["Enums"]["client_role"]
+          status: string
+          subscriber_user_id: string
+          updated_at: string
+        }
+      }
       add_royalty_source_if_not_exists: {
         Args: { new_source: string }
         Returns: undefined

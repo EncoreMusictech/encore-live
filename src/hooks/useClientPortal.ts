@@ -121,78 +121,19 @@ export const useClientPortal = () => {
     try {
       setLoading(true);
       
-      console.log('Looking for invitation with token:', token);
-      
-      // First, check if any invitation exists with this token (without status filter)
-      const { data: anyInvitation, error: anyError } = await supabase
-        .from('client_invitations')
-        .select('*')
-        .eq('invitation_token', token)
-        .maybeSingle();
-
-      console.log('Any invitation found:', anyInvitation);
-      console.log('Any error:', anyError);
-      
-      // Now get the invitation with status filter
-      const { data: invitation, error: inviteError } = await supabase
-        .from('client_invitations')
-        .select('*')
-        .eq('invitation_token', token)
-        .eq('status', 'pending')
-        .maybeSingle();
-
-      console.log('Pending invitation found:', invitation);
-      console.log('Invite error:', inviteError);
-
-      if (inviteError) {
-        console.error('Database error:', inviteError);
-        throw new Error('Database error occurred');
-      }
-
-      if (!invitation) {
-        if (anyInvitation) {
-          throw new Error(`Invitation found but status is: ${anyInvitation.status}`);
+      // Accept via secure RPC to bypass RLS safely and enforce email match
+      const { data: access, error: rpcError } = await supabase.rpc(
+        'accept_client_invitation',
+        {
+          p_token: token,
+          p_accepter: user.id,
+          p_accepter_email: user.email as string
         }
-        throw new Error('Invalid or expired invitation');
+      );
+
+      if (rpcError) {
+        throw new Error(rpcError.message);
       }
-
-      // Check if invitation is expired
-      if (new Date(invitation.expires_at) < new Date()) {
-        throw new Error('Invitation has expired');
-      }
-
-      // Enforce email match between invitation and signed-in user
-      const invitedEmail = (invitation.email || '').trim().toLowerCase();
-      const currentEmail = (user.email || '').trim().toLowerCase();
-      if (!currentEmail || invitedEmail !== currentEmail) {
-        throw new Error(`This invite is for ${invitation.email}. Please sign in with that email to accept.`);
-      }
-
-      // Create client portal access
-      const { data: access, error: accessError } = await supabase
-        .from('client_portal_access')
-        .insert({
-          subscriber_user_id: invitation.subscriber_user_id,
-          client_user_id: user.id,
-          role: invitation.role,
-          permissions: invitation.permissions
-        })
-        .select()
-        .single();
-
-      if (accessError) throw accessError;
-
-      // Update invitation status
-      const { error: updateError } = await supabase
-        .from('client_invitations')
-        .update({
-          status: 'accepted',
-          accepted_at: new Date().toISOString(),
-          accepted_by_user_id: user.id
-        })
-        .eq('id', invitation.id);
-
-      if (updateError) throw updateError;
 
       toast({
         title: "Success",
