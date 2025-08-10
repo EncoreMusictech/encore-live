@@ -434,66 +434,257 @@ Actual market values may vary significantly based on numerous factors not captur
 
   const buildSectionHTML = useCallback((section: ReportSection) => {
     if (!result) return '<div>No data available</div>';
-    const titleMap: Record<ReportSection, string> = {
-      executive: 'Executive Summary',
-      technical: 'Technical Analysis',
-      market: 'Market Analysis',
-    };
-    const sectionBody = {
-      executive: `
+
+    // Helper formatters
+    const pct = (v?: number) => v !== undefined && v !== null ? `${(v * 100).toFixed(1)}%` : 'N/A';
+
+    // Build section bodies as HTML fragments (no <html>/<body> wrappers)
+    if (section === 'executive') {
+      const fmw = result.fair_market_value || { low: 0, mid: 0, high: 0 };
+      const comp = result.valuations?.base;
+      const cagr = comp?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 0) * 100) / 100}%`;
+
+      return `
+        <section>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+            <div>
+              <h3>Key KPIs</h3>
+              <ul>
+                <li><strong>Risk-Adjusted Valuation:</strong> ${formatCurrency(result.risk_adjusted_value || result.valuation_amount)}</li>
+                <li><strong>DCF Valuation:</strong> ${formatCurrency(result.dcf_valuation || 0)}</li>
+                <li><strong>Multiple Valuation:</strong> ${formatCurrency(result.multiple_valuation || 0)}</li>
+                <li><strong>Confidence:</strong> ${result.confidence_score || 0}/100</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Catalog Snapshot</h3>
+              <ul>
+                <li><strong>Total Streams:</strong> ${formatNumber(result.total_streams || 0)}</li>
+                <li><strong>Monthly Listeners:</strong> ${formatNumber(result.monthly_listeners || 0)}</li>
+                <li><strong>Genre:</strong> ${result.genre || result.industry_benchmarks?.genre || 'N/A'}</li>
+                <li><strong>Popularity:</strong> ${result.popularity_score || result.spotify_data?.popularity || 0}/100</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 style="margin-top:16px">Fair Market Value Range</h3>
+          <ul>
+            <li><strong>Low:</strong> ${formatCurrency(fmw.low)}</li>
+            <li><strong>Mid:</strong> ${formatCurrency(fmw.mid)}</li>
+            <li><strong>High:</strong> ${formatCurrency(fmw.high)}</li>
+          </ul>
+
+          <h3 style="margin-top:16px">Scenario Valuations</h3>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="text-align:left;border-bottom:1px solid #ddd;padding:6px;">Scenario</th>
+                <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">Current</th>
+                <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">Year 5</th>
+                <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">CAGR</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${['pessimistic','base','optimistic'].map((k) => {
+                const row = (result.valuations as any)?.[k] || {};
+                return `<tr>
+                  <td style="padding:6px;">${k[0].toUpperCase()}${k.slice(1)}</td>
+                  <td style="padding:6px;text-align:right;">${row.current ? formatCurrency(row.current) : 'N/A'}</td>
+                  <td style="padding:6px;text-align:right;">${row.year5 ? formatCurrency(row.year5) : 'N/A'}</td>
+                  <td style="padding:6px;text-align:right;">${row.cagr || (k==='base' ? cagr : 'N/A')}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <h3 style="margin-top:16px">Highlights</h3>
+          <ul>
+            ${result.has_additional_revenue ? `<li>Diversified revenue present; score ${result.revenue_diversification_score ?? 0}/100</li>` : ''}
+            ${result.blended_valuation ? `<li>Enhanced blended valuation: ${formatCurrency(result.blended_valuation)}</li>` : ''}
+            <li>Benchmark multiple: ${(result.industry_benchmarks?.revenue_multiple || result.growth_metrics?.base_multiple || 0)}x</li>
+          </ul>
+        </section>
+      `;
+    }
+
+    if (section === 'technical') {
+      return `
+        <section>
+          <h3>Methodology & Assumptions</h3>
+          <ul>
+            <li><strong>Method:</strong> ${result.valuation_methodology_v2 || result.valuation_methodology || 'Advanced (DCF + Risk)'}</li>
+            <li><strong>Discount Rate:</strong> ${((result.discount_rate || 0.12) * 100).toFixed(1)}%</li>
+            <li><strong>Catalog Age:</strong> ${result.catalog_age_years ?? 5} years</li>
+            <li><strong>LTM Revenue:</strong> ${formatCurrency(result.ltm_revenue || 0)}</li>
+          </ul>
+
+          <h3 style="margin-top:16px">DCF Cash Flow Projections</h3>
+          ${Array.isArray(result.cash_flow_projections) && result.cash_flow_projections.length ? `
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr>
+                  <th style="text-align:left;border-bottom:1px solid #ddd;padding:6px;">Year</th>
+                  <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">Revenue</th>
+                  <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">Growth</th>
+                  <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">PV</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${result.cash_flow_projections.map(cf => `
+                  <tr>
+                    <td style="padding:6px;">${cf.year}</td>
+                    <td style="padding:6px;text-align:right;">${formatCurrency(cf.revenue)}</td>
+                    <td style="padding:6px;text-align:right;">${cf.growth?.toFixed(1)}%</td>
+                    <td style="padding:6px;text-align:right;">${formatCurrency(cf.discountedValue)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<div>Cash flow projections not available.</div>'}
+
+          <h3 style="margin-top:16px">Benchmarks & Multiples</h3>
+          <ul>
+            <li><strong>Genre:</strong> ${result.industry_benchmarks?.genre || result.genre || 'N/A'}</li>
+            <li><strong>Revenue Multiple:</strong> ${(result.industry_benchmarks?.revenue_multiple || result.growth_metrics?.base_multiple || 0)}x</li>
+            <li><strong>Risk Factor:</strong> ${pct(result.industry_benchmarks?.risk_factor)}</li>
+            <li><strong>Growth Assumption:</strong> ${pct(result.industry_benchmarks?.growth_assumption)}</li>
+          </ul>
+
+          ${result.comparable_multiples ? `
+            <h3 style="margin-top:16px">Comparable Multiples</h3>
+            <ul>
+              <li><strong>EV/Revenue:</strong> ${result.comparable_multiples.ev_revenue_multiple}x</li>
+              <li><strong>Peer Average:</strong> ${result.comparable_multiples.peer_average_multiple}x</li>
+              <li><strong>Market Premium/Discount:</strong> ${result.comparable_multiples.market_premium_discount}x</li>
+            </ul>
+          ` : ''}
+
+          <h3 style="margin-top:16px">Data Quality</h3>
+          <ul>
+            <li><strong>Confidence Score:</strong> ${result.confidence_score || 0}/100</li>
+            <li><strong>Top Tracks Count:</strong> ${(result.top_tracks || []).length}</li>
+          </ul>
+        </section>
+      `;
+    }
+
+    // market
+    const comps = result.comparable_artists || [];
+    const topTracks = result.top_tracks || [];
+    const popularitySum = topTracks.reduce((s, t) => s + (t.popularity || 0), 0) || 1;
+    const topShare = topTracks.length ? Math.round((topTracks[0].popularity || 0) / popularitySum * 100) : 0;
+
+    return `
+      <section>
+        <h3>Positioning</h3>
         <ul>
-          <li><strong>Risk-Adjusted Valuation:</strong> ${formatCurrency(result.risk_adjusted_value || result.valuation_amount)}</li>
-          <li><strong>5Y CAGR (Base):</strong> ${result.valuations?.base?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 0) * 100) / 100}%`}</li>
-          <li><strong>Confidence:</strong> ${result.confidence_score || 0}/100</li>
-        </ul>
-      `,
-      technical: `
-        <ul>
-          <li><strong>DCF Valuation:</strong> ${formatCurrency(result.dcf_valuation || 0)}</li>
-          <li><strong>Multiple Valuation:</strong> ${formatCurrency(result.multiple_valuation || 0)}</li>
-          <li><strong>Discount Rate:</strong> ${((result.discount_rate || 0.12) * 100).toFixed(1)}%</li>
-        </ul>
-      `,
-      market: `
-        <ul>
-          <li><strong>Comparables:</strong> ${result.comparable_artists?.length || 0}</li>
-          <li><strong>Market Multiple:</strong> ${result.industry_benchmarks?.revenue_multiple || result.growth_metrics?.base_multiple || 0}x</li>
+          <li><strong>Followers:</strong> ${formatNumber(result.spotify_data?.followers || 0)}</li>
+          <li><strong>Popularity:</strong> ${result.popularity_score || result.spotify_data?.popularity || 0}/100</li>
           <li><strong>Genre:</strong> ${result.genre || result.industry_benchmarks?.genre || 'N/A'}</li>
         </ul>
-      `,
-    }[section];
 
+        <h3 style="margin-top:16px">Comparable Artists</h3>
+        ${comps.length ? `
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="text-align:left;border-bottom:1px solid #ddd;padding:6px;">Artist</th>
+                <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">Valuation</th>
+                <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">Followers</th>
+                <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">Popularity</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${comps.map(c => `
+                <tr>
+                  <td style="padding:6px;">${c.name}</td>
+                  <td style="padding:6px;text-align:right;">${formatCurrency(c.valuation || 0)}</td>
+                  <td style="padding:6px;text-align:right;">${formatNumber(c.followers || 0)}</td>
+                  <td style="padding:6px;text-align:right;">${c.popularity || 0}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : '<div>No comparable artists available.</div>'}
+
+        <h3 style="margin-top:16px">Catalog Concentration</h3>
+        <ul>
+          <li><strong>Top Track Share (by popularity):</strong> ${topShare}%</li>
+          <li><strong>Top Tracks Analyzed:</strong> ${topTracks.length}</li>
+        </ul>
+
+        <h3 style="margin-top:16px">Forecast Summary (Base)</h3>
+        ${Array.isArray(result.forecasts?.base) && result.forecasts.base.length ? `
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="text-align:left;border-bottom:1px solid #ddd;padding:6px;">Year</th>
+                <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">Streams</th>
+                <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">Revenue</th>
+                <th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">Valuation</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${result.forecasts.base.map(y => `
+                <tr>
+                  <td style="padding:6px;">${y.year}</td>
+                  <td style="padding:6px;text-align:right;">${formatNumber(y.streams || 0)}</td>
+                  <td style="padding:6px;text-align:right;">${formatCurrency(y.revenue || 0)}</td>
+                  <td style="padding:6px;text-align:right;">${formatCurrency(y.valuation || 0)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : '<div>No forecast data available.</div>'}
+
+        <p style="margin-top:16px;color:#666;">Note: Market conditions and platform policies may impact future performance.</p>
+      </section>
+    `;
+  }, [result, formatCurrency, formatNumber]);
+
+  const buildPageHTML = useCallback((pageTitle: string, body: string) => {
+    const safeBody = body || '<div>No content</div>';
     return `
       <html>
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>${result.artist_name} - ${titleMap[section]}</title>
+          <title>${pageTitle}</title>
           <style>
             body { font-family: Inter, ui-sans-serif, system-ui; padding: 24px; }
             h1 { margin: 0 0 8px; }
             h2 { margin: 16px 0 8px; }
-            ul { margin: 8px 0 0 16px; }
+            h3 { margin: 12px 0 6px; }
+            ul { margin: 6px 0 0 16px; }
+            table { font-size: 14px; }
             .muted { color: #666; }
             .section { margin-top: 16px; }
           </style>
         </head>
         <body>
-          <h1>${titleMap[section]}</h1>
-          <div class="muted">Artist: ${result.artist_name}</div>
-          <div class="section">${sectionBody}</div>
+          ${safeBody}
         </body>
       </html>`;
-  }, [result, formatCurrency]);
+  }, []);
 
   const handleGenerateSectionReport = useCallback((section: ReportSection) => {
     if (!result) {
       toast({ title: 'No data', description: 'Run a valuation first.' });
       return;
     }
-    const html = buildSectionHTML(section);
+    const sectionTitleMap: Record<ReportSection, string> = {
+      executive: 'Executive Summary',
+      technical: 'Technical Analysis',
+      market: 'Market Analysis',
+    };
+    const body = `
+      <h1>${sectionTitleMap[section]}</h1>
+      <div class="muted">Artist: ${result.artist_name}</div>
+      ${buildSectionHTML(section)}
+    `;
+    const html = buildPageHTML(`${result.artist_name} - ${sectionTitleMap[section]}`, body);
     openPDFInNewWindow(html, `${result.artist_name} - ${section} report`);
-  }, [result, buildSectionHTML, openPDFInNewWindow, toast]);
+  }, [result, buildSectionHTML, buildPageHTML, openPDFInNewWindow, toast]);
 
   const exportJSON = useCallback(() => {
     if (!result) {
@@ -574,33 +765,19 @@ Actual market values may vary significantly based on numerous factors not captur
       toast({ title: 'No data', description: 'Run a valuation first.' });
       return;
     }
-    const html = `
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>${result.artist_name} - Full Valuation Report</title>
-          <style>
-            body { font-family: Inter, ui-sans-serif, system-ui; padding: 24px; }
-            h1 { margin: 0 0 8px; }
-            h2 { margin: 24px 0 8px; }
-            ul { margin: 8px 0 0 16px; }
-            .muted { color: #666; }
-          </style>
-        </head>
-        <body>
-          <h1>Full Valuation Report</h1>
-          <div class="muted">Artist: ${result.artist_name}</div>
-          <h2>Executive Summary</h2>
-          ${buildSectionHTML('executive')}
-          <h2>Technical Analysis</h2>
-          ${buildSectionHTML('technical')}
-          <h2>Market Analysis</h2>
-          ${buildSectionHTML('market')}
-        </body>
-      </html>`;
+    const body = `
+      <h1>Full Valuation Report</h1>
+      <div class="muted">Artist: ${result.artist_name}</div>
+      <h2>Executive Summary</h2>
+      ${buildSectionHTML('executive')}
+      <h2>Technical Analysis</h2>
+      ${buildSectionHTML('technical')}
+      <h2>Market Analysis</h2>
+      ${buildSectionHTML('market')}
+    `;
+    const html = buildPageHTML(`${result.artist_name} - Full Valuation Report`, body);
     openPDFInNewWindow(html, `${result.artist_name} - Full Valuation Report`);
-  }, [result, buildSectionHTML, openPDFInNewWindow, toast]);
+  }, [result, buildSectionHTML, buildPageHTML, openPDFInNewWindow, toast]);
 
   return (
     <AsyncLoading 
