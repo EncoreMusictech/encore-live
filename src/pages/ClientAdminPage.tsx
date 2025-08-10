@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Plus, Mail, Users, Database, Clock, AlertTriangle, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ClientPortalTestHelper } from "@/components/ClientPortalTestHelper";
+import { NameLinker } from "@/components/client-portal/NameLinker";
 
 export default function ClientAdminPage() {
   const { toast } = useToast();
@@ -352,7 +353,10 @@ export default function ClientAdminPage() {
             </CardContent>
           </Card>
 
+          <NameLinker />
+
           {/* Invitation Lifecycle Management */}
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
