@@ -7,29 +7,50 @@ import { Input } from '@/components/ui/input';
 import { Download, Search, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-
+import { useClientPortal } from '@/hooks/useClientPortal';
 interface ClientContractsProps {
   permissions: Record<string, any>;
 }
 
 export const ClientContracts = ({ permissions }: ClientContractsProps) => {
   const { user } = useAuth();
+  const { isClient } = useClientPortal();
   const [contracts, setContracts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
+useEffect(() => {
     const fetchContracts = async () => {
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
-          .from('contracts')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setContracts(data || []);
+        const clientMode = await isClient();
+        if (clientMode) {
+          const { data: assoc, error: assocError } = await supabase
+            .from('client_data_associations')
+            .select('data_id')
+            .eq('client_user_id', user.id)
+            .eq('data_type', 'contract');
+          if (assocError) throw assocError;
+          const ids = (assoc || []).map((a: any) => a.data_id);
+          if (!ids.length) {
+            setContracts([]);
+          } else {
+            const { data, error } = await supabase
+              .from('contracts')
+              .select('*')
+              .in('id', ids)
+              .order('created_at', { ascending: false });
+            if (error) throw error;
+            setContracts(data || []);
+          }
+        } else {
+          const { data, error } = await supabase
+            .from('contracts')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+          setContracts(data || []);
+        }
       } catch (error) {
         console.error('Error fetching contracts:', error);
       } finally {
@@ -38,7 +59,7 @@ export const ClientContracts = ({ permissions }: ClientContractsProps) => {
     };
 
     fetchContracts();
-  }, [user]);
+  }, [user, isClient]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {

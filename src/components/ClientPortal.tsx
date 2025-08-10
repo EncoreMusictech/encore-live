@@ -27,18 +27,6 @@ const ClientPortal = () => {
 
   useEffect(() => {
     const handleInvitationAndAccess = async () => {
-      // For demo purposes, set mock permissions to show all tabs
-      setPermissions({
-        contracts: { enabled: true },
-        copyright: { enabled: true },
-        'sync-licensing': { enabled: true },
-        royalties: { enabled: true }
-      });
-      setLoading(false);
-      return;
-      
-      // Original authentication logic (commented out for demo)
-      /*
       if (!user) return;
       
       try {
@@ -46,16 +34,14 @@ const ClientPortal = () => {
         const token = searchParams.get('token');
         
         if (token) {
-          console.log('Processing invitation token:', token);
-          
           // Try to accept the invitation
           const access = await acceptInvitation(token);
           
           if (access) {
             setInvitationAccepted(true);
             toast({
-              title: "Welcome!",
-              description: "Invitation accepted successfully. Welcome to the client portal!",
+              title: 'Welcome!',
+              description: 'Invitation accepted successfully. Welcome to the client portal!',
             });
             
             // Remove token from URL
@@ -67,9 +53,9 @@ const ClientPortal = () => {
             setPermissions((clientPermissions as Record<string, any>) || {});
           } else {
             toast({
-              title: "Invalid Invitation",
-              description: "The invitation link is invalid or has expired.",
-              variant: "destructive"
+              title: 'Invalid Invitation',
+              description: 'The invitation link is invalid or has expired.',
+              variant: 'destructive'
             });
           }
         } else {
@@ -85,14 +71,13 @@ const ClientPortal = () => {
       } catch (error) {
         console.error('Error handling invitation or checking client access:', error);
         toast({
-          title: "Error",
-          description: "An error occurred while processing your request.",
-          variant: "destructive"
+          title: 'Error',
+          description: 'An error occurred while processing your request.',
+          variant: 'destructive'
         });
       } finally {
         setLoading(false);
       }
-      */
     };
 
     handleInvitationAndAccess();
@@ -107,7 +92,7 @@ const ClientPortal = () => {
   }
 
   // Temporarily bypass authentication for UI demo
-  const showDemo = true; // Set to false to re-enable authentication
+  const showDemo = false; // Authentication enabled
   
   if (!showDemo && !clientAccess) {
     return (

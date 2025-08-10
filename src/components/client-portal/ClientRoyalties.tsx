@@ -11,32 +11,53 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ClientAccountBalance } from './ClientAccountBalance';
 import { ClientPaymentInfo } from './ClientPaymentInfo';
-
+import { useClientPortal } from '@/hooks/useClientPortal';
 interface ClientRoyaltiesProps {
   permissions: Record<string, any>;
 }
 
 export const ClientRoyalties = ({ permissions }: ClientRoyaltiesProps) => {
   const { user } = useAuth();
+  const { isClient } = useClientPortal();
   const [royalties, setRoyalties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [selectedWork, setSelectedWork] = useState('all');
   const [selectedRightType, setSelectedRightType] = useState('all');
   const [selectedTerritory, setSelectedTerritory] = useState('all');
-
-  useEffect(() => {
+useEffect(() => {
     const fetchRoyalties = async () => {
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
-          .from('royalty_allocations')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setRoyalties(data || []);
+        const clientMode = await isClient();
+        if (clientMode) {
+          const { data: assoc, error: assocError } = await supabase
+            .from('client_data_associations')
+            .select('data_id')
+            .eq('client_user_id', user.id)
+            .eq('data_type', 'royalty_allocation');
+          if (assocError) throw assocError;
+          const ids = (assoc || []).map((a: any) => a.data_id);
+          if (!ids.length) {
+            setRoyalties([]);
+          } else {
+            const { data, error } = await supabase
+              .from('royalty_allocations')
+              .select('*')
+              .in('id', ids)
+              .order('created_at', { ascending: false });
+            if (error) throw error;
+            setRoyalties(data || []);
+          }
+        } else {
+          const { data, error } = await supabase
+            .from('royalty_allocations')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+          setRoyalties(data || []);
+        }
       } catch (error) {
         console.error('Error fetching royalties:', error);
       } finally {
@@ -45,7 +66,7 @@ export const ClientRoyalties = ({ permissions }: ClientRoyaltiesProps) => {
     };
 
     fetchRoyalties();
-  }, [user]);
+  }, [user, isClient]);
 
   // Calculate totals
   const totalEarnings = royalties.reduce((sum, royalty) => sum + (royalty.gross_royalty_amount || 0), 0);

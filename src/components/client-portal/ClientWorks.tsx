@@ -7,29 +7,50 @@ import { Input } from '@/components/ui/input';
 import { Music, Search, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-
+import { useClientPortal } from '@/hooks/useClientPortal';
 interface ClientWorksProps {
   permissions: Record<string, any>;
 }
 
 export const ClientWorks = ({ permissions }: ClientWorksProps) => {
   const { user } = useAuth();
+  const { isClient } = useClientPortal();
   const [works, setWorks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
+useEffect(() => {
     const fetchWorks = async () => {
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
-          .from('copyrights')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setWorks(data || []);
+        const clientMode = await isClient();
+        if (clientMode) {
+          const { data: assoc, error: assocError } = await supabase
+            .from('client_data_associations')
+            .select('data_id')
+            .eq('client_user_id', user.id)
+            .eq('data_type', 'copyright');
+          if (assocError) throw assocError;
+          const ids = (assoc || []).map((a: any) => a.data_id);
+          if (!ids.length) {
+            setWorks([]);
+          } else {
+            const { data, error } = await supabase
+              .from('copyrights')
+              .select('*')
+              .in('id', ids)
+              .order('created_at', { ascending: false });
+            if (error) throw error;
+            setWorks(data || []);
+          }
+        } else {
+          const { data, error } = await supabase
+            .from('copyrights')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+          setWorks(data || []);
+        }
       } catch (error) {
         console.error('Error fetching works:', error);
       } finally {
@@ -38,7 +59,7 @@ export const ClientWorks = ({ permissions }: ClientWorksProps) => {
     };
 
     fetchWorks();
-  }, [user]);
+  }, [user, isClient]);
 
   const getApprovalBadge = (status: string) => {
     const variants: Record<string, any> = {
