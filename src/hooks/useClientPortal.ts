@@ -94,10 +94,39 @@ export const useClientPortal = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Invitation created successfully"
-      });
+      // After creating the invitation, send the email via Edge Function (best-effort)
+      try {
+        const { error: sendError } = await supabase.functions.invoke('send-client-invitation', {
+          body: {
+            invitee_email: email,
+            // Optionally pass a name if you collect it elsewhere
+            invitee_name: undefined,
+            token: (data as any).invitation_token,
+            subscriber_name: 'ENCORE',
+            site_url: window.location.origin,
+            support_email: 'support@encoremusic.tech',
+          },
+        });
+
+        if (sendError) {
+          console.error('Invitation email send error:', sendError);
+          toast({
+            title: 'Invitation created',
+            description: 'Email could not be sent automatically. You can copy the invite link from the list.',
+          });
+        } else {
+          toast({
+            title: 'Success',
+            description: `Invitation email sent to ${email}`,
+          });
+        }
+      } catch (err) {
+        console.error('Unexpected error sending invitation email:', err);
+        toast({
+          title: 'Invitation created',
+          description: 'Email delivery could not be confirmed. You can copy the invite link from the list.',
+        });
+      }
 
       await fetchInvitations();
       return data;
