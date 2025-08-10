@@ -211,6 +211,19 @@ export default function ClientAdminPage() {
     return <Badge variant="secondary" className="flex items-center gap-1"><Clock className="h-3 w-3" />Pending ({status.daysUntilExpiry}d)</Badge>;
   };
 
+  const getClientEmail = (clientUserId: string) => {
+    const matches = invitations
+      .filter((inv: any) => inv.accepted_by_user_id === clientUserId);
+    if (matches.length > 0) {
+      matches.sort((a: any, b: any) =>
+        new Date(b.accepted_at || b.created_at).getTime() -
+        new Date(a.accepted_at || a.created_at).getTime()
+      );
+      return matches[0]?.email as string | undefined;
+    }
+    return undefined;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6">
@@ -479,6 +492,7 @@ export default function ClientAdminPage() {
                     <div key={access.id} className="flex items-center justify-between p-3 border rounded">
                       <div>
                         <p className="font-medium">Client ID: {access.client_user_id}</p>
+                        <p className="text-sm text-muted-foreground">Email: {getClientEmail(access.client_user_id) ?? 'Unknown'}</p>
                         <p className="text-sm text-muted-foreground">
                           Role: {access.role} • Status: {access.status}
                         </p>
