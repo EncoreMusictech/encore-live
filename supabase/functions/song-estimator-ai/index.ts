@@ -27,6 +27,14 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
+    const allowedEmail = 'info@encoremusic.tech';
+    if ((user.email || '').toLowerCase() !== allowedEmail) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Forbidden: Song Estimator is restricted' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }

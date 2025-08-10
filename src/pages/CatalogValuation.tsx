@@ -6,6 +6,8 @@ import { SongEstimatorTool } from "@/components/catalog-valuation/SongEstimatorT
 import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calculator, TrendingUp, ArrowRight, Brain, Target, ArrowLeft, Search } from "lucide-react";
@@ -15,6 +17,9 @@ const CatalogValuationPage = () => {
   const [selectedModule, setSelectedModule] = useState<'selection' | 'valuation' | 'deals' | 'song-estimator'>('selection');
   const { canAccess } = useDemoAccess();
   const { subscribed } = useSubscription();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const isAllowedSongEstimator = (user?.email?.toLowerCase() === 'info@encoremusic.tech');
 
   // Only show demo navigation for non-subscribers
   const showDemoNavigation = !subscribed;
@@ -171,7 +176,13 @@ const CatalogValuationPage = () => {
             <Button 
               variant="outline"
               className="w-full group-hover:shadow-lg transition-shadow border-accent text-foreground hover:bg-accent/10"
-              onClick={() => setSelectedModule('song-estimator')}
+              onClick={() => {
+                if (!isAllowedSongEstimator) {
+                  toast({ title: 'Access restricted', description: 'Song Estimator is currently limited to a single test user.', variant: 'destructive' });
+                  return;
+                }
+                setSelectedModule('song-estimator');
+              }}
               disabled={!canAccess('catalogValuation')}
             >
               {canAccess('catalogValuation') ? 'Launch Song Estimator' : 'Demo Limit Reached'}
@@ -197,7 +208,13 @@ const CatalogValuationPage = () => {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => setSelectedModule('song-estimator')}
+            onClick={() => {
+              if (!isAllowedSongEstimator) {
+                toast({ title: 'Access restricted', description: 'Song Estimator is currently limited to a single test user.', variant: 'destructive' });
+                return;
+              }
+              setSelectedModule('song-estimator');
+            }}
           >
             Song Research
           </Button>
@@ -293,7 +310,19 @@ const CatalogValuationPage = () => {
                   Research songwriter catalogs, analyze metadata completeness, and estimate uncollected royalty pipeline income using AI-powered analysis.
                 </p>
               </div>
-              <SongEstimatorTool />
+              {isAllowedSongEstimator ? (
+                <SongEstimatorTool />
+              ) : (
+                <Card className="border-destructive/30">
+                  <CardHeader>
+                    <CardTitle>Access Restricted</CardTitle>
+                    <CardDescription>Song Estimator is currently limited to a single test user.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">If you believe this is a mistake, please contact support.</p>
+                  </CardContent>
+                </Card>
+              )}
             </>
           )}
         </div>
