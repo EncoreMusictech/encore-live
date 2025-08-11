@@ -36,7 +36,10 @@ export const useCopyright = () => {
       console.log('Fetching copyrights...');
       const { data, error } = await supabase
         .from('copyrights')
-        .select('*')
+        .select(`
+          *,
+          copyright_writers(*)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
