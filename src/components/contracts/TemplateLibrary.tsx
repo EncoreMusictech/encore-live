@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { FileText, Search, Star, Eye, Download, Edit, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TemplateBuilder } from "./TemplateBuilder";
+import { useNavigate } from "react-router-dom";
 
 interface TemplateLibraryProps {
   onTemplateSelect?: (template: any) => void;
@@ -16,6 +17,7 @@ interface TemplateLibraryProps {
 
 const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLibraryProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentView, setCurrentView] = useState<'library' | 'builder'>('library');
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
@@ -32,6 +34,19 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
       isCustom: true,
       keyFeatures: [],
       contract_type: "distribution",
+      template_data: {
+        fields: [
+          { id: 'effective_date', type: 'date', label: 'Effective Date', required: true, category: 'header' },
+          { id: 'artist_label', type: 'text', label: 'Artist/Label Name', required: true, category: 'parties' },
+          { id: 'distributor_name', type: 'text', label: 'Distributor Name', required: true, category: 'parties' },
+          { id: 'product_title', type: 'text', label: 'Product Title', required: true, category: 'work' },
+          { id: 'distribution_fee', type: 'select', label: 'Distribution Fee', required: true, options: ['15%', '20%', '25%', '30%'], category: 'financial' },
+          { id: 'platforms', type: 'select', label: 'Distribution Platforms', required: true, options: ['All Digital', 'Spotify/Apple Only', 'Physical Only', 'Custom Selection'], category: 'terms' },
+          { id: 'territory_dist', type: 'select', label: 'Distribution Territory', required: true, options: ['Worldwide', 'Digital Worldwide', 'North America Only'], category: 'terms' },
+          { id: 'term_years', type: 'select', label: 'Agreement Term', required: true, options: ['2 Years', '3 Years', '5 Years', 'Indefinite'], category: 'terms' },
+          { id: 'signature_date', type: 'date', label: 'Signature Date', required: false, category: 'signatures' },
+        ]
+      }
     },
   ]);
 
@@ -106,9 +121,17 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
     if (onTemplateSelect) {
       onTemplateSelect(template);
     } else {
+      // Navigate to contract creation with template data
+      navigate('/contract-management', { 
+        state: { 
+          selectedTemplate: template,
+          mode: 'create',
+          templateFields: template.template_data?.fields || []
+        } 
+      });
       toast({
         title: "Template Selected",
-        description: `Using template: ${template.title}`,
+        description: `Creating new contract from template: ${template.title}`,
       });
     }
   };
@@ -136,6 +159,35 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
     setEditingTemplate(null);
   };
 
+  const handleTemplateSaved = (savedTemplate: any) => {
+    if (editingTemplate) {
+      // Update existing template
+      setYourTemplates(prev => 
+        prev.map(t => t.id === editingTemplate.id ? { ...savedTemplate, id: editingTemplate.id, isCustom: true } : t)
+      );
+      toast({
+        title: "Template Updated",
+        description: "Your template has been successfully updated",
+      });
+    } else {
+      // Add new template
+      const newTemplate = {
+        ...savedTemplate,
+        id: `custom-${Date.now()}`,
+        isCustom: true,
+        rating: null,
+        keyFeatures: []
+      };
+      setYourTemplates(prev => [...prev, newTemplate]);
+      toast({
+        title: "Template Created",
+        description: "Your new template has been successfully created",
+      });
+    }
+    setCurrentView('library');
+    setEditingTemplate(null);
+  };
+
   const getRatingColor = (rating: string | null) => {
     switch (rating) {
       case "High":
@@ -154,6 +206,7 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
         onBack={handleBackToLibrary}
         contractType={editingTemplate?.contract_type || 'artist_recording'}
         existingTemplate={editingTemplate}
+        onTemplateSaved={handleTemplateSaved}
       />
     );
   }

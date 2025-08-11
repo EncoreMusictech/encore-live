@@ -35,6 +35,7 @@ interface TemplateBuilderProps {
     contract_type: string;
     template_data?: any;
   };
+  onTemplateSaved?: (template: any) => void;
 }
 
 const FIELD_TEMPLATES: Record<string, ContractField[]> = {
@@ -127,14 +128,19 @@ const FIELD_TEMPLATES: Record<string, ContractField[]> = {
   ]
 };
 
-export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ onBack, contractType = 'artist_recording', existingTemplate }) => {
+export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({ 
+  onBack, 
+  contractType = 'artist_recording', 
+  existingTemplate,
+  onTemplateSaved 
+}) => {
   const [templateName, setTemplateName] = useState('');
   const [selectedContractType, setSelectedContractType] = useState(contractType);
   const [selectedFields, setSelectedFields] = useState<ContractField[]>([]);
   const [availableFields] = useState<ContractField[]>(FIELD_TEMPLATES[contractType] || []);
   const [currentView, setCurrentView] = useState<'builder' | 'preview' | 'edits'>('builder');
   const [previewData, setPreviewData] = useState<Record<string, any>>({});
-const [edits, setEdits] = useState<Array<{ field: string; oldValue: string; newValue: string; timestamp: Date }>>([]);
+  const [edits, setEdits] = useState<Array<{ field: string; oldValue: string; newValue: string; timestamp: Date }>>([]);
   const [clausesById, setClausesById] = useState<Record<string, string>>({});
   const [editingField, setEditingField] = useState<ContractField | null>(null);
   const [clauseDraft, setClauseDraft] = useState("");
@@ -163,7 +169,7 @@ const [edits, setEdits] = useState<Array<{ field: string; oldValue: string; newV
     setClauseEdits([]);
   };
 
-const onDragEnd = useCallback((result: DropResult) => {
+  const onDragEnd = useCallback((result: DropResult) => {
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
@@ -183,7 +189,7 @@ const onDragEnd = useCallback((result: DropResult) => {
     }
   }, [selectedFields, selectedContractType, getDefaultClause]);
 
-const removeField = (fieldId: string) => {
+  const removeField = (fieldId: string) => {
     setSelectedFields(prev => prev.filter(f => f.id !== fieldId));
     setClausesById(prev => {
       const next = { ...prev };
@@ -221,7 +227,7 @@ const removeField = (fieldId: string) => {
       return;
     }
 
-    const payload = {
+    const templateData = {
       template_name: templateName,
       contract_type: selectedContractType,
       template_data: {
@@ -230,26 +236,38 @@ const removeField = (fieldId: string) => {
         clauses: clausesById
       },
       is_public: false
-    } as const;
+    };
 
-    let error;
-    if (existingTemplate?.id) {
-      ({ error } = await supabase
-        .from('contract_templates')
-        .update(payload as any)
-        .eq('id', existingTemplate.id));
-    } else {
-      ({ error } = await supabase.from('contract_templates').insert(payload as any));
-    }
+    try {
+      if (existingTemplate?.id) {
+        const { error } = await supabase
+          .from('contract_templates')
+          .update(templateData as any)
+          .eq('id', existingTemplate.id);
+        
+        if (error) throw error;
+        
+        toast.success('Template updated successfully!');
+      } else {
+        const { error } = await supabase
+          .from('contract_templates')
+          .insert(templateData as any);
+        
+        if (error) throw error;
+        
+        toast.success('Template saved successfully!');
+      }
 
-    if (error) {
+      // Call the onTemplateSaved callback if provided
+      if (onTemplateSaved) {
+        onTemplateSaved(templateData);
+      } else {
+        onBack?.();
+      }
+    } catch (error) {
       console.error('Error saving template:', error);
       toast.error('Failed to save template');
-      return;
     }
-
-    toast.success(existingTemplate?.id ? 'Template updated successfully!' : 'Template saved successfully!');
-    onBack?.();
   };
 
   const sendContract = (method: 'docusign' | 'email') => {
@@ -314,7 +332,7 @@ const removeField = (fieldId: string) => {
     if (!acc[field.category]) acc[field.category] = [];
     acc[field.category].push(field);
     return acc;
-}, {} as Record<string, ContractField[]>);
+  }, {} as Record<string, ContractField[]>);
 
   const compileClauseText = useCallback(() => {
     return selectedFields.map((field) => {
@@ -463,7 +481,7 @@ const removeField = (fieldId: string) => {
                                       <div className="text-xs text-muted-foreground">{field.type}</div>
                                     </div>
                                   </div>
-<div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2">
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -582,7 +600,7 @@ const removeField = (fieldId: string) => {
         <TabsContent value="preview" className="flex-1 p-6">
           <div className="max-w-4xl mx-auto">
             <Card>
-<CardHeader>
+              <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>{templateName || 'Contract Template'}</CardTitle>
