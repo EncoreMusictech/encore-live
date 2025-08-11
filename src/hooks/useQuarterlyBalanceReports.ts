@@ -54,7 +54,26 @@ export function useQuarterlyBalanceReports() {
     if (!user) return [];
 
     try {
-      console.log('Building quarterly balance reports from payouts...');
+      console.log('Checking for processed batches before building quarterly balance reports...');
+      
+      // First check if there are any processed batches
+      const { data: batches, error: batchError } = await supabase
+        .from('reconciliation_batches')
+        .select('id, status')
+        .eq('user_id', user.id)
+        .eq('status', 'Processed');
+
+      if (batchError) {
+        console.error('Error checking batches:', batchError);
+        return [];
+      }
+
+      if (!batches || batches.length === 0) {
+        console.log('No processed batches found - no quarterly balance reports should exist');
+        return [];
+      }
+
+      console.log(`Found ${batches.length} processed batches, building quarterly balance reports...`);
       
       // Fetch all payouts for this user, including paid ones
       const { data: payouts, error: payoutsError } = await supabase
@@ -256,8 +275,8 @@ export function useQuarterlyBalanceReports() {
           console.log(`Using ${data.length} stored quarterly balance reports`);
           setReports(data);
         } else {
-          // Generate ephemeral reports from payouts
-          console.log('Generating ephemeral quarterly balance reports from payouts');
+          // Generate ephemeral reports from payouts only if there are processed batches
+          console.log('Checking for processed batches before generating quarterly balance reports');
           const demoData = await buildEphemeralFromPayouts();
           setReports(demoData);
         }
