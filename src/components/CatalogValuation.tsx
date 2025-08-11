@@ -1864,7 +1864,7 @@ Actual market values may vary significantly based on numerous factors not captur
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle>Data Export Options</CardTitle>
+                      <CardTitle>Professional Valuation Report</CardTitle>
                       <CardDescription>Export valuation data in various formats</CardDescription>
                     </div>
                   </div>
@@ -1880,20 +1880,6 @@ Actual market values may vary significantly based on numerous factors not captur
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Professional Valuation Report</CardTitle>
-                  <CardDescription>Comprehensive analysis with DCF modeling, risk factors, and investment recommendations</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-end">
-                    <Button onClick={generateAdvancedReport}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Advanced Report
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">
