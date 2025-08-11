@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { toast } from "@/hooks/use-toast";
 interface AllocationSongMatchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  allocationId: string;
+  allocationId?: string; // Made optional for new allocations
   currentSongTitle: string;
   onMatch: (copyrightId: string, workTitle: string) => void;
 }
@@ -27,7 +28,7 @@ interface Copyright {
 export function AllocationSongMatchDialog({ 
   open, 
   onOpenChange, 
-  allocationId, 
+  allocationId, // Optional now
   currentSongTitle,
   onMatch 
 }: AllocationSongMatchDialogProps) {
@@ -76,24 +77,33 @@ export function AllocationSongMatchDialog({
       const selectedWork = copyrights.find(c => c.id === selectedCopyright);
       if (!selectedWork) return;
 
-      const { error } = await supabase
-        .from('royalty_allocations')
-        .update({
-          copyright_id: selectedCopyright,
-          song_title: selectedWork.work_title,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', allocationId);
+      // If we have an allocationId, update the existing allocation
+      if (allocationId) {
+        const { error } = await supabase
+          .from('royalty_allocations')
+          .update({
+            copyright_id: selectedCopyright,
+            song_title: selectedWork.work_title,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', allocationId);
 
-      if (error) throw error;
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: `Successfully matched to "${selectedWork.work_title}"`,
+        });
+      } else {
+        // For new allocations, just pass the copyright info back to the form
+        toast({
+          title: "Success",
+          description: `Selected "${selectedWork.work_title}" for matching`,
+        });
+      }
 
       onMatch(selectedCopyright, selectedWork.work_title);
       onOpenChange(false);
-      
-      toast({
-        title: "Success",
-        description: `Successfully matched to "${selectedWork.work_title}"`,
-      });
     } catch (error) {
       console.error('Error matching song:', error);
       toast({
@@ -217,7 +227,7 @@ export function AllocationSongMatchDialog({
               className="gap-2"
             >
               <Link2 className="h-4 w-4" />
-              Match Selected Song
+              {allocationId ? "Match Selected Song" : "Select Song"}
             </Button>
           </div>
         </div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -332,7 +331,7 @@ export function RoyaltyAllocationForm({ allocation, onCancel }: RoyaltyAllocatio
         <AllocationSongMatchDialog
           open={showSongMatch}
           onOpenChange={setShowSongMatch}
-          allocationId={allocation?.id}
+          allocationId={allocation?.id} // Only pass ID for existing allocations
           currentSongTitle={watch("song_title")}
           onMatch={handleCopyrightLink}
         />
