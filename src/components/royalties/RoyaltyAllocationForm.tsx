@@ -1,819 +1,621 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, Music } from "lucide-react";
-import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Trash2, User, Building, Link2, Unlink2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { useRoyaltyAllocations, RoyaltyAllocationInsert } from "@/hooks/useRoyaltyAllocations";
+import { useCopyright } from "@/hooks/useCopyright";
 import { useContacts } from "@/hooks/useContacts";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { AllocationSongMatchDialog } from "./AllocationSongMatchDialog";
+
+const royaltySchema = z.object({
+  song_title: z.string().min(1, "Song title is required"),
+  artist: z.string().optional(),
+  isrc: z.string().optional(),
+  gross_royalty_amount: z.number().min(0, "Amount must be positive"),
+  controlled_status: z.enum(["Controlled", "Non-Controlled"]),
+  recoupable_expenses: z.boolean(),
+  comments: z.string().optional(),
+  // ENCORE Standard Fields
+  quarter: z.string().optional(),
+  source: z.string().optional(),
+  revenue_source: z.string().optional(),
+  work_identifier: z.string().optional(),
+  share: z.string().optional(),
+  media_type: z.string().optional(),
+  media_sub_type: z.string().optional(),
+  country: z.string().optional(),
+  quantity: z.string().optional(),
+  net_amount: z.number().optional(),
+  iswc: z.string().optional(),
+  statement_id: z.string().optional(),
+  batch_id: z.string().optional(),
+  copyright_id: z.string().optional(),
+});
+
+type RoyaltyFormData = z.infer<typeof royaltySchema>;
 
 interface RoyaltyAllocationFormProps {
-  onCancel: () => void;
   allocation?: any;
+  onCancel: () => void;
 }
 
-export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocationFormProps) {
+export function RoyaltyAllocationForm({ allocation, onCancel }: RoyaltyAllocationFormProps) {
   const [writers, setWriters] = useState<any[]>([]);
+  const [loadingWriters, setLoadingWriters] = useState(false);
+  const [showSongMatch, setShowSongMatch] = useState(false);
   const [availableCopyrights, setAvailableCopyrights] = useState<any[]>([]);
-  const [loadingCopyrights, setLoadingCopyrights] = useState(false);
+  
   const { createAllocation, updateAllocation } = useRoyaltyAllocations();
+  const { copyrights } = useCopyright();
   const { contacts } = useContacts();
   const { batches } = useReconciliationBatches();
-  const { user } = useAuth();
-  
-  // Track initialization to prevent infinite loops
-  const initializationRef = useRef({
-    hasLoadedCopyrights: false,
-    hasInitializedWriters: false,
-    currentAllocationId: null as string | null,
-  });
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+    reset
+  } = useForm<RoyaltyFormData>({
+    resolver: zodResolver(royaltySchema),
     defaultValues: {
-      song_title: allocation?.song_title || '',
-      isrc: allocation?.isrc || '',
-      iswc: allocation?.iswc || '',
-      artist: allocation?.artist || '',
-      gross_royalty_amount: allocation?.gross_royalty_amount || 0,
-      controlled_status: allocation?.controlled_status || 'Non-Controlled',
-      recoupable_expenses: allocation?.recoupable_expenses || false,
-      batch_id: allocation?.batch_id || '',
-      copyright_id: allocation?.copyright_id || '',
-      comments: allocation?.comments || '',
-      media_type: allocation?.media_type || '',
-      quantity: allocation?.quantity || '',
-      country: allocation?.country || '',
+      controlled_status: "Controlled",
+      recoupable_expenses: false,
+      gross_royalty_amount: 0,
+      ...allocation
     }
   });
 
-  // Stable memoized data
-  const availableContacts = useMemo(() => 
-    contacts.filter(c => c.contact_type === 'writer'), 
-    [contacts]
-  );
-  
-  const processedBatches = useMemo(() => 
-    batches.filter(b => b.status === 'Processed'), 
-    [batches]
-  );
+  const selectedCopyrightId = watch("copyright_id");
 
-  // Load copyrights once on mount
+  // Load writers when allocation or copyright changes
   useEffect(() => {
-    if (!user || initializationRef.current.hasLoadedCopyrights) return;
-    
-    console.log('Loading copyrights...');
-    setLoadingCopyrights(true);
-    initializationRef.current.hasLoadedCopyrights = true;
-    
-    const loadCopyrights = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('copyrights')
-          .select(`
-            id,
-            work_title,
-            internal_id,
-            iswc,
-            copyright_writers (
-              id,
-              writer_name,
-              ownership_percentage,
-              performance_share,
-              mechanical_share,
-              synchronization_share,
-              ipi_number,
-              pro_affiliation,
-              writer_role,
-              controlled_status
-            )
-          `)
-          .eq('user_id', user.id)
-          .order('work_title');
+    const loadWriters = async () => {
+      if (!allocation && !selectedCopyrightId) {
+        setWriters([]);
+        return;
+      }
 
-        if (error) throw error;
-        console.log('Loaded copyrights:', data?.length || 0);
-        setAvailableCopyrights(data || []);
+      setLoadingWriters(true);
+      try {
+        let writersToLoad: any[] = [];
+
+        // For existing allocations, load from ownership_splits
+        if (allocation?.ownership_splits) {
+          console.log("Loaded writers from existing allocation ownership_splits:", allocation.ownership_splits);
+          
+          writersToLoad = Object.entries(allocation.ownership_splits).map(([key, split]: [string, any]) => {
+            if (key.startsWith('copyright_writer_')) {
+              return {
+                id: key,
+                name: split.writer_name || key,
+                writer_share: split.writer_share || 0,
+                performance_share: split.performance_share || 0,
+                mechanical_share: split.mechanical_share || 0,
+                synchronization_share: split.synchronization_share || 0,
+                type: 'copyright_writer'
+              };
+            } else {
+              const contact = contacts.find(c => c.id === key);
+              return {
+                id: key,
+                name: contact?.name || key,
+                writer_share: split.writer_share || 0,
+                performance_share: split.performance_share || 0,
+                mechanical_share: split.mechanical_share || 0,
+                synchronization_share: split.synchronization_share || 0,
+                type: 'contact'
+              };
+            }
+          });
+        }
+        
+        // For linked copyright, load from copyright writers
+        else if (selectedCopyrightId || allocation?.copyright_id) {
+          const copyrightId = selectedCopyrightId || allocation?.copyright_id;
+          const linkedCopyright = copyrights.find(c => c.id === copyrightId);
+          
+          if (linkedCopyright?.writers) {
+            console.log("Loaded writers from linked copyright:", linkedCopyright.writers);
+            
+            writersToLoad = linkedCopyright.writers.map((writer: any) => ({
+              id: `copyright_writer_${writer.id}`,
+              name: writer.name,
+              writer_share: writer.writer_share || 0,
+              performance_share: writer.performance_share || 0,
+              mechanical_share: writer.mechanical_share || 0,
+              synchronization_share: writer.synchronization_share || 0,
+              type: 'copyright_writer',
+              copyright_writer_id: writer.id
+            }));
+          }
+        }
+
+        setWriters(writersToLoad);
+        console.log("Writer loading effect triggered:", {
+          allocation: allocation?.id,
+          hasOwnershipSplits: !!allocation?.ownership_splits,
+          copyrightId: selectedCopyrightId || allocation?.copyright_id,
+          availableCopyrightsCount: copyrights.length,
+          availableCopyrights: copyrights,
+          loadedWriters: writersToLoad
+        });
+        
       } catch (error) {
-        console.error('Error loading copyrights:', error);
+        console.error("Error loading writers:", error);
         toast({
           title: "Error",
-          description: "Failed to load copyrights",
+          description: "Failed to load writers",
           variant: "destructive",
         });
       } finally {
-        setLoadingCopyrights(false);
+        setLoadingWriters(false);
       }
     };
 
-    loadCopyrights();
-  }, [user?.id]);
+    loadWriters();
+  }, [allocation, selectedCopyrightId, copyrights, contacts]);
 
-  // Initialize writers once when allocation data is available
+  // Set available copyrights
   useEffect(() => {
-    const currentAllocationId = allocation?.id || 'new';
-    
-    // Check if we need to initialize writers
-    if (
-      initializationRef.current.hasInitializedWriters && 
-      initializationRef.current.currentAllocationId === currentAllocationId
-    ) {
-      return;
-    }
+    setAvailableCopyrights(copyrights || []);
+  }, [copyrights]);
 
-    console.log('Initializing writers for allocation:', currentAllocationId);
-    
-    // Mark as initialized
-    initializationRef.current.hasInitializedWriters = true;
-    initializationRef.current.currentAllocationId = currentAllocationId;
-
-    if (!allocation) {
-      // For new allocations, start with empty writers
-      console.log('New allocation - starting with empty writers');
-      setWriters([]);
-      return;
-    }
-
-    // Initialize writers from existing allocation
-    if (allocation.ownership_splits && Object.keys(allocation.ownership_splits).length > 0) {
-      console.log('Loading writers from ownership_splits');
-      
-      const extractedWriters = Object.entries(allocation.ownership_splits).map(([key, value]: [string, any]) => {
-        if (key.startsWith('copyright_writer_')) {
-          return {
-            id: Date.now() + Math.random(),
-            contact_id: '',
-            writer_name: value.writer_name || 'Unknown Writer',
-            writer_ipi: '',
-            pro_affiliation: '',
-            writer_role: 'composer',
-            controlled_status: 'NC',
-            writer_share_percentage: value.writer_share || 0,
-            performance_share: value.performance_share || 0,
-            mechanical_share: value.mechanical_share || 0,
-            synchronization_share: value.synchronization_share || 0,
-          };
-        } else {
-          const contact = availableContacts.find(c => c.id === key);
-          return {
-            id: Date.now() + Math.random(),
-            contact_id: key,
-            writer_name: contact?.name || 'Unknown Writer',
-            writer_ipi: '',
-            pro_affiliation: '',
-            writer_role: 'composer',
-            controlled_status: 'NC',
-            writer_share_percentage: value.writer_share || 0,
-            performance_share: value.performance_share || 0,
-            mechanical_share: value.mechanical_share || 0,
-            synchronization_share: value.synchronization_share || 0,
-          };
-        }
-      });
-      
-      setWriters(extractedWriters);
-      return;
-    }
-    
-    // Try to load from copyright if linked
-    if (allocation.copyright_id && availableCopyrights.length > 0) {
-      const linkedCopyright = availableCopyrights.find(c => c.id === allocation.copyright_id);
-      console.log('Loading writers from linked copyright:', linkedCopyright);
-      
-      if (linkedCopyright?.copyright_writers?.length > 0) {
-        const mappedWriters = linkedCopyright.copyright_writers.map((writer: any) => {
-          const matchingContact = availableContacts.find(contact => 
-            contact.name?.toLowerCase().trim() === writer.writer_name?.toLowerCase().trim()
-          );
-          
-          return {
-            id: Date.now() + Math.random(),
-            contact_id: matchingContact?.id || '',
-            writer_name: writer.writer_name || '',
-            writer_ipi: writer.ipi_number || '',
-            pro_affiliation: writer.pro_affiliation || '',
-            writer_role: writer.writer_role || 'composer',
-            controlled_status: writer.controlled_status || 'NC',
-            writer_share_percentage: writer.ownership_percentage || 0,
-            performance_share: writer.performance_share || 0,
-            mechanical_share: writer.mechanical_share || 0,
-            synchronization_share: writer.synchronization_share || 0,
-          };
-        });
-        
-        setWriters(mappedWriters);
-      } else {
-        setWriters([]);
-      }
-    } else {
-      setWriters([]);
-    }
-  }, [allocation?.id, allocation?.copyright_id, allocation?.ownership_splits, availableCopyrights.length, availableContacts.length]);
-
-  // Handle copyright selection
-  const handleCopyrightChange = useCallback((copyrightId: string) => {
-    setValue('copyright_id', copyrightId === 'none' ? '' : copyrightId);
-    
-    if (copyrightId && copyrightId !== 'none') {
-      const selectedCopyright = availableCopyrights.find(c => c.id === copyrightId);
-      
-      if (selectedCopyright) {
-        setValue('song_title', selectedCopyright.work_title);
-        setValue('iswc', selectedCopyright.iswc || '');
-        
-        if (selectedCopyright.copyright_writers) {
-          const copyrightWriters = selectedCopyright.copyright_writers.map((writer: any) => {
-            const matchingContact = availableContacts.find(contact => 
-              contact.name?.toLowerCase().trim() === writer.writer_name?.toLowerCase().trim()
-            );
-            
-            return {
-              id: Date.now() + Math.random(),
-              contact_id: matchingContact?.id || '',
-              writer_name: writer.writer_name,
-              writer_ipi: writer.ipi_number || '',
-              pro_affiliation: writer.pro_affiliation || '',
-              writer_role: writer.writer_role || '',
-              controlled_status: writer.controlled_status || '',
-              writer_share_percentage: writer.ownership_percentage || 0,
-              performance_share: writer.performance_share || 0,
-              mechanical_share: writer.mechanical_share || 0,
-              synchronization_share: writer.synchronization_share || 0,
-            };
-          });
-          
-          setWriters(copyrightWriters);
-          
-          if (copyrightWriters.length > 0) {
-            toast({
-              title: "Copyright Linked",
-              description: `Work title, ISWC, and ${copyrightWriters.length} writers loaded from copyright`,
-            });
-          }
-        }
-      }
-    } else {
-      setValue('song_title', '');
-      setValue('iswc', '');
-      setWriters([]);
-    }
-  }, [availableCopyrights, availableContacts, setValue]);
-
-  const onSubmit = async (data: any) => {
-    try {
-      console.log('🚀 FORM SUBMISSION STARTED');
-      console.log('Form submission data:', data);
-      
-      const baseData = {
-        ...data,
-        batch_id: data.batch_id && data.batch_id !== '' ? data.batch_id : null,
-        copyright_id: data.copyright_id && data.copyright_id !== '' ? data.copyright_id : null,
-        controlled_status: undefined,
-      };
-
-      if (allocation) {
-        const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
-        const cleanedData = {
-          ...baseData,
-          ownership_splits: validWriters.length > 0 ? validWriters.reduce((acc, writer) => {
-            acc[writer.contact_id] = {
-              writer_share: writer.writer_share_percentage || 0,
-              performance_share: writer.performance_share || 0,
-              mechanical_share: writer.mechanical_share || 0,
-              synchronization_share: writer.synchronization_share || 0,
-            };
-            return acc;
-          }, {}) : {},
-        };
-        await updateAllocation(allocation.id, cleanedData);
-      } else {
-        const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
-        const copyrightWriters = writers.filter(writer => !writer.contact_id || writer.contact_id === '' || writer.contact_id === 'none');
-        
-        const controlledValidWriters = validWriters.filter(writer => writer.controlled_status === 'C');
-        const controlledCopyrightWriters = copyrightWriters.filter(writer => writer.controlled_status === 'C');
-        
-        if (baseData.copyright_id && (controlledValidWriters.length > 0 || controlledCopyrightWriters.length > 0)) {
-          const grossAmount = parseFloat(data.gross_royalty_amount) || 0;
-          const allControlledWritersToProcess = [...controlledValidWriters, ...controlledCopyrightWriters];
-          
-          for (const writer of allControlledWritersToProcess) {
-            const writerShare = writer.writer_share_percentage || 0;
-            const writerAmount = (grossAmount * writerShare) / 100;
-            
-            const writerAllocationData = {
-              ...baseData,
-              gross_royalty_amount: writerAmount,
-              work_writers: writer.writer_name,
-              share: `${writerShare}%`,
-              ownership_splits: writer.contact_id ? {
-                [writer.contact_id]: {
-                  writer_share: writerShare,
-                  performance_share: writer.performance_share || 0,
-                  mechanical_share: writer.mechanical_share || 0,
-                  synchronization_share: writer.synchronization_share || 0,
-                }
-              } : {
-                [`copyright_writer_${writer.id}`]: {
-                  writer_share: writerShare,
-                  writer_name: writer.writer_name,
-                  performance_share: writer.performance_share || 0,
-                  mechanical_share: writer.mechanical_share || 0,
-                  synchronization_share: writer.synchronization_share || 0,
-                }
-              }
-            };
-            
-            await createAllocation(writerAllocationData);
-          }
-        } else {
-          const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
-          const cleanedData = {
-            ...baseData,
-            ownership_splits: validWriters.length > 0 ? validWriters.reduce((acc, writer) => {
-              acc[writer.contact_id] = {
-                writer_share: writer.writer_share_percentage || 0,
-                performance_share: writer.performance_share || 0,
-                mechanical_share: writer.mechanical_share || 0,
-                synchronization_share: writer.synchronization_share || 0,
-              };
-              return acc;
-            }, {}) : {},
-          };
-          await createAllocation(cleanedData);
-        }
-      }
-      onCancel();
-    } catch (error) {
-      console.error('Error saving allocation:', error);
-    }
-  };
-
-  const addWriter = useCallback(() => {
-    setWriters(prev => [...prev, {
-      id: Date.now(),
-      contact_id: '',
-      writer_name: '',
-      writer_ipi: '',
-      pro_affiliation: '',
-      writer_role: 'composer',
-      controlled_status: 'NC',
-      writer_share_percentage: 0,
+  const addWriter = () => {
+    const newWriter = {
+      id: `writer_${Date.now()}`,
+      name: "",
+      writer_share: 0,
       performance_share: 0,
       mechanical_share: 0,
       synchronization_share: 0,
-    }]);
-  }, []);
+      type: 'manual'
+    };
+    setWriters([...writers, newWriter]);
+  };
 
-  const removeWriter = useCallback((index: number) => {
-    setWriters(prev => prev.filter((_, i) => i !== index));
-  }, []);
+  const removeWriter = (writerId: string) => {
+    setWriters(writers.filter(w => w.id !== writerId));
+  };
 
-  const updateWriter = useCallback((index: number, field: string, value: any) => {
-    setWriters(prev => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
+  const updateWriter = (writerId: string, field: string, value: any) => {
+    setWriters(writers.map(w => 
+      w.id === writerId ? { ...w, [field]: value } : w
+    ));
+  };
+
+  const handleCopyrightLink = async (copyrightId: string, workTitle: string) => {
+    setValue("copyright_id", copyrightId);
+    setShowSongMatch(false);
+    
+    toast({
+      title: "Success",
+      description: `Linked to copyright "${workTitle}"`,
     });
-  }, []);
+  };
 
-  const totalWriterShares = useMemo(() => 
-    writers.reduce((sum, writer) => sum + (writer.writer_share_percentage || 0), 0),
-    [writers]
-  );
+  const handleCopyrightUnlink = () => {
+    setValue("copyright_id", "");
+    setWriters([]);
+    
+    toast({
+      title: "Success",
+      description: "Unlinked from copyright",
+    });
+  };
 
-  if (loadingCopyrights) {
-    return (
-      <div className="space-y-6 p-6">
-        <div className="text-center">
-          <p className="text-muted-foreground">Loading copyrights...</p>
-        </div>
-      </div>
-    );
-  }
+  const onSubmit = async (data: RoyaltyFormData) => {
+    try {
+      // Calculate ownership splits from writers
+      const ownership_splits: Record<string, any> = {};
+      
+      writers.forEach(writer => {
+        ownership_splits[writer.id] = {
+          writer_name: writer.name,
+          writer_share: writer.writer_share || 0,
+          performance_share: writer.performance_share || 0,
+          mechanical_share: writer.mechanical_share || 0,
+          synchronization_share: writer.synchronization_share || 0,
+        };
+      });
+
+      const royaltyData: RoyaltyAllocationInsert = {
+        ...data,
+        ownership_splits,
+      };
+
+      if (allocation) {
+        await updateAllocation(allocation.id, royaltyData);
+        toast({
+          title: "Success",
+          description: "Royalty updated successfully",
+        });
+      } else {
+        await createAllocation(royaltyData);
+        toast({
+          title: "Success",
+          description: "Royalty created successfully",
+        });
+      }
+      
+      onCancel();
+    } catch (error) {
+      console.error("Error saving royalty:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save royalty",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const linkedCopyright = selectedCopyrightId ? 
+    availableCopyrights.find(c => c.id === selectedCopyrightId) : null;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="song_title">
-            Work Title{!watch('copyright_id') && ' *'}
-          </Label>
-          <Input
-            id="song_title"
-            {...register('song_title', { 
-              required: !watch('copyright_id') ? 'Work title is required' : false 
-            })}
-            readOnly={!!watch('copyright_id')}
-            className={watch('copyright_id') ? 'bg-muted/50' : ''}
-          />
-          {errors.song_title && (
-            <p className="text-sm text-red-600">{String(errors.song_title.message)}</p>
-          )}
-        </div>
+    <div className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="basic">Basic Info</TabsTrigger>
+            <TabsTrigger value="writers">Writers & Splits</TabsTrigger>
+            <TabsTrigger value="advanced">Advanced</TabsTrigger>
+          </TabsList>
 
-        <div className="space-y-2">
-          <Label htmlFor="isrc">ISRC</Label>
-          <Input
-            id="isrc"
-            placeholder="USRC17607839"
-            {...register('isrc')}
-          />
-        </div>
+          <TabsContent value="basic" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+                <CardDescription>
+                  Core details about the royalty allocation
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Copyright Linking Section */}
+                <div className="space-y-3">
+                  <Label>Copyright Link</Label>
+                  {linkedCopyright ? (
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50">
+                      <div className="flex items-center gap-2">
+                        <Link2 className="h-4 w-4 text-green-600" />
+                        <div>
+                          <p className="font-medium">{linkedCopyright.work_title}</p>
+                          <p className="text-sm text-muted-foreground">ID: {linkedCopyright.work_id}</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCopyrightUnlink}
+                      >
+                        <Unlink2 className="h-4 w-4 mr-1" />
+                        Unlink
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowSongMatch(true)}
+                      className="w-full"
+                    >
+                      <Link2 className="h-4 w-4 mr-2" />
+                      Link to Copyright
+                    </Button>
+                  )}
+                </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="iswc">ISWC</Label>
-          <Input
-            id="iswc"
-            placeholder="T-034.524.680-1"
-            {...register('iswc')}
-            readOnly={!!watch('copyright_id')}
-            className={watch('copyright_id') ? 'bg-muted/50' : ''}
-          />
-        </div>
+                <Separator />
 
-        <div className="space-y-2">
-          <Label htmlFor="gross_royalty_amount">Royalty Amount</Label>
-          <Input
-            id="gross_royalty_amount"
-            type="number"
-            step="0.01"
-            {...register('gross_royalty_amount', { valueAsNumber: true })}
-          />
-        </div>
-
-        {(processedBatches.length > 0 || watch('batch_id')) && (
-          <div className="space-y-2">
-            <Label htmlFor="batch_id">Source Batch</Label>
-            <Select onValueChange={(value) => setValue('batch_id', value)} defaultValue={watch('batch_id')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select batch" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border shadow-md z-50">
-                {processedBatches.map((batch) => (
-                  <SelectItem key={batch.id} value={batch.id}>
-                    {batch.batch_id} - {batch.source}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          <Label htmlFor="copyright_id">Linked Copyright</Label>
-          <Select 
-            onValueChange={handleCopyrightChange} 
-            defaultValue={watch('copyright_id')}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a copyright" />
-            </SelectTrigger>
-            <SelectContent className="bg-background border shadow-md z-50">
-              <SelectItem value="none">No copyright linked</SelectItem>
-              {availableCopyrights.map((copyright) => (
-                <SelectItem key={copyright.id} value={copyright.id}>
-                  <div className="flex items-center gap-2">
-                    <Music className="h-4 w-4" />
-                    <span>{copyright.work_title}</span>
-                    {copyright.internal_id && (
-                      <Badge variant="outline" className="text-xs">
-                        {copyright.internal_id}
-                      </Badge>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="song_title">Song Title *</Label>
+                    <Input
+                      id="song_title"
+                      {...register("song_title")}
+                      placeholder="Enter song title"
+                    />
+                    {errors.song_title && (
+                      <p className="text-sm text-destructive mt-1">
+                        {errors.song_title.message}
+                      </p>
                     )}
                   </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
 
-      {(!allocation || !allocation?.statement_id) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="media_type">Media Type</Label>
-            <Select onValueChange={(value) => setValue('media_type', value)} defaultValue={watch('media_type')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select media type" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border shadow-md z-50">
-                <SelectItem value="PERF">PERF - Performance Rights</SelectItem>
-                <SelectItem value="MECH">MECH - Mechanical Rights</SelectItem>
-                <SelectItem value="SYNCH">SYNCH - Synchronization Rights</SelectItem>
-                <SelectItem value="PRINT">PRINT - Print Rights</SelectItem>
-                <SelectItem value="OTHER">OTHER - Other Rights</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+                  <div>
+                    <Label htmlFor="artist">Artist</Label>
+                    <Input
+                      id="artist"
+                      {...register("artist")}
+                      placeholder="Enter artist name"
+                    />
+                  </div>
+                </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="quantity">Quantity</Label>
-            <Input
-              id="quantity"
-              placeholder="e.g., 1000 units, 50,000 streams"
-              {...register('quantity')}
-            />
-          </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="gross_royalty_amount">Gross Amount *</Label>
+                    <Input
+                      id="gross_royalty_amount"
+                      type="number"
+                      step="0.01"
+                      {...register("gross_royalty_amount", { valueAsNumber: true })}
+                      placeholder="0.00"
+                    />
+                    {errors.gross_royalty_amount && (
+                      <p className="text-sm text-destructive mt-1">
+                        {errors.gross_royalty_amount.message}
+                      </p>
+                    )}
+                  </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="country">Territory</Label>
-            <Select onValueChange={(value) => setValue('country', value)} defaultValue={watch('country')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select territory" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border shadow-md z-50">
-                <SelectItem value="US">United States</SelectItem>
-                <SelectItem value="CA">Canada</SelectItem>
-                <SelectItem value="GB">United Kingdom</SelectItem>
-                <SelectItem value="AU">Australia</SelectItem>
-                <SelectItem value="DE">Germany</SelectItem>
-                <SelectItem value="FR">France</SelectItem>
-                <SelectItem value="JP">Japan</SelectItem>
-                <SelectItem value="BR">Brazil</SelectItem>
-                <SelectItem value="MX">Mexico</SelectItem>
-                <SelectItem value="Worldwide">Worldwide</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
+                  <div>
+                    <Label htmlFor="controlled_status">Status</Label>
+                    <Select 
+                      onValueChange={(value) => setValue("controlled_status", value as "Controlled" | "Non-Controlled")}
+                      defaultValue={watch("controlled_status")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Controlled">Controlled</SelectItem>
+                        <SelectItem value="Non-Controlled">Non-Controlled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Writers & Shares</h3>
-          <Button type="button" onClick={addWriter} size="sm" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Writer
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="recoupable_expenses"
+                    {...register("recoupable_expenses")}
+                  />
+                  <Label htmlFor="recoupable_expenses">Recoupable Expenses</Label>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="writers" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Writers & Ownership Splits</CardTitle>
+                    <CardDescription>
+                      {loadingWriters ? "Loading writers..." : "Manage writer ownership and revenue splits"}
+                    </CardDescription>
+                  </div>
+                  <Button type="button" onClick={addWriter} size="sm">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Writer
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingWriters ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Loading writers...</p>
+                  </div>
+                ) : writers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No writers added yet.</p>
+                    <Button type="button" onClick={addWriter} variant="outline" className="mt-2">
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add First Writer
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {writers.map((writer, index) => (
+                      <div key={writer.id} className="p-4 border rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            <span className="font-medium">Writer {index + 1}</span>
+                            {writer.type === 'copyright_writer' && (
+                              <Badge variant="outline">From Copyright</Badge>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeWriter(writer.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>Writer Name</Label>
+                            <Input
+                              value={writer.name}
+                              onChange={(e) => updateWriter(writer.id, 'name', e.target.value)}
+                              placeholder="Enter writer name"
+                              disabled={writer.type === 'copyright_writer'}
+                            />
+                          </div>
+                          <div>
+                            <Label>Writer Share (%)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={writer.writer_share}
+                              onChange={(e) => updateWriter(writer.id, 'writer_share', parseFloat(e.target.value) || 0)}
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <Label>Performance (%)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={writer.performance_share}
+                              onChange={(e) => updateWriter(writer.id, 'performance_share', parseFloat(e.target.value) || 0)}
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div>
+                            <Label>Mechanical (%)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={writer.mechanical_share}
+                              onChange={(e) => updateWriter(writer.id, 'mechanical_share', parseFloat(e.target.value) || 0)}
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div>
+                            <Label>Sync (%)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={writer.synchronization_share}
+                              onChange={(e) => updateWriter(writer.id, 'synchronization_share', parseFloat(e.target.value) || 0)}
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="advanced" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Advanced Fields</CardTitle>
+                <CardDescription>
+                  Additional metadata and ENCORE standard fields
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="quarter">Quarter</Label>
+                    <Input
+                      id="quarter"
+                      {...register("quarter")}
+                      placeholder="e.g., Q1 2024"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="source">Source</Label>
+                    <Input
+                      id="source"
+                      {...register("source")}
+                      placeholder="e.g., Spotify, ASCAP"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="revenue_source">Revenue Source</Label>
+                    <Input
+                      id="revenue_source"
+                      {...register("revenue_source")}
+                      placeholder="e.g., Streaming, Performance"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="media_type">Media Type</Label>
+                    <Input
+                      id="media_type"
+                      {...register("media_type")}
+                      placeholder="e.g., Digital, Physical"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="country">Territory</Label>
+                    <Input
+                      id="country"
+                      {...register("country")}
+                      placeholder="e.g., US, UK, Global"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="batch_id">Batch</Label>
+                    <Select onValueChange={(value) => setValue("batch_id", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select batch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {batches.map((batch) => (
+                          <SelectItem key={batch.id} value={batch.id}>
+                            {batch.batch_id} - {batch.source}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="comments">Comments</Label>
+                  <Textarea
+                    id="comments"
+                    {...register("comments")}
+                    placeholder="Additional notes about this royalty..."
+                    rows={3}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : allocation ? "Update Royalty" : "Create Royalty"}
           </Button>
         </div>
+      </form>
 
-        {totalWriterShares > 100 && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-800">
-              Warning: Total writer shares exceed 100% ({totalWriterShares}%)
-            </p>
-          </div>
-        )}
-
-        {writers.map((writer, index) => (
-          <Card key={writer.id || index}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Writer {index + 1}</CardTitle>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeWriter(index)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {watch('copyright_id') && writer.writer_name ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Writer Name *</Label>
-                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
-                        <span className="text-sm">{writer.writer_name}</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Writer IPI</Label>
-                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
-                        <span className="text-sm text-muted-foreground">
-                          {writer.writer_ipi || 'Not provided'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Writer Share %</Label>
-                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
-                        <span className="text-sm font-medium">{writer.writer_share_percentage}%</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">PRO Affiliation</Label>
-                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
-                        <span className="text-sm">
-                          {writer.pro_affiliation || 'Not provided'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Performance Share %</Label>
-                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
-                        <span className="text-sm">{writer.performance_share}%</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Mechanical Share %</Label>
-                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
-                        <span className="text-sm">{writer.mechanical_share}%</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Controlled?</Label>
-                      <div className="px-3 py-2 bg-muted/50 border rounded-md">
-                        <span className="text-sm">
-                          {writer.controlled_status === 'C' ? 'C (Controlled)' : 'NC (Non-Controlled)'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Link to Contact (for payments)</Label>
-                      <Select
-                        value={writer.contact_id || "none"}
-                        onValueChange={(value) => updateWriter(index, 'contact_id', value === "none" ? "" : value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select contact for payments" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border shadow-md z-50">
-                          <SelectItem value="none">No contact linked</SelectItem>
-                          {availableContacts.map((contact) => (
-                            <SelectItem key={contact.id} value={contact.id}>
-                              {contact.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Writer Name *</Label>
-                      <Input
-                        value={writer.writer_name || ''}
-                        onChange={(e) => updateWriter(index, 'writer_name', e.target.value)}
-                        placeholder="Enter writer name"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Writer IPI</Label>
-                      <Input
-                        value={writer.writer_ipi || ''}
-                        onChange={(e) => updateWriter(index, 'writer_ipi', e.target.value)}
-                        placeholder="IPI Number"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Writer Share %</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        max="100"
-                        value={writer.writer_share_percentage}
-                        onChange={(e) => updateWriter(index, 'writer_share_percentage', parseFloat(e.target.value) || 0)}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">PRO Affiliation</Label>
-                      <Select
-                        value={writer.pro_affiliation || ""}
-                        onValueChange={(value) => updateWriter(index, 'pro_affiliation', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select PRO" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border shadow-md z-50">
-                          <SelectItem value="ASCAP">ASCAP</SelectItem>
-                          <SelectItem value="BMI">BMI</SelectItem>
-                          <SelectItem value="SESAC">SESAC</SelectItem>
-                          <SelectItem value="SOCAN">SOCAN</SelectItem>
-                          <SelectItem value="PRS">PRS</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Performance Share %</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        max="100"
-                        value={writer.performance_share}
-                        onChange={(e) => updateWriter(index, 'performance_share', parseFloat(e.target.value) || 0)}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Mechanical Share %</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        max="100"
-                        value={writer.mechanical_share}
-                        onChange={(e) => updateWriter(index, 'mechanical_share', parseFloat(e.target.value) || 0)}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Controlled?</Label>
-                      <Select
-                        value={writer.controlled_status || "NC"}
-                        onValueChange={(value) => updateWriter(index, 'controlled_status', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border shadow-md z-50">
-                          <SelectItem value="C">C (Controlled)</SelectItem>
-                          <SelectItem value="NC">NC (Non-Controlled)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Link to Contact (for payments)</Label>
-                      <Select
-                        value={writer.contact_id || "none"}
-                        onValueChange={(value) => updateWriter(index, 'contact_id', value === "none" ? "" : value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select contact for payments" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border shadow-md z-50">
-                          <SelectItem value="none">No contact linked</SelectItem>
-                          {availableContacts.map((contact) => (
-                            <SelectItem key={contact.id} value={contact.id}>
-                              {contact.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        Link this writer to an existing contact for royalty payments
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-
-        {writers.length === 0 && (
-          <div className="text-center py-8 border-2 border-dashed border-muted-foreground/25 rounded-md">
-            <p className="text-muted-foreground">No writers added yet</p>
-            <Button type="button" onClick={addWriter} size="sm" className="mt-2">
-              Add First Writer
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="comments">Comments</Label>
-        <Textarea
-          id="comments"
-          placeholder="Add any additional notes..."
-          {...register('comments')}
+      {/* Song Matching Dialog */}
+      {showSongMatch && (
+        <AllocationSongMatchDialog
+          open={showSongMatch}
+          onOpenChange={setShowSongMatch}
+          allocationId={allocation?.id}
+          currentSongTitle={watch("song_title")}
+          onMatch={handleCopyrightLink}
         />
-      </div>
-
-      <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit">
-          {allocation ? 'Update Royalty' : 'Create Royalty'}
-        </Button>
-      </div>
-    </form>
+      )}
+    </div>
   );
 }
