@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ const DEMO_TEMPLATES: Template[] = [
   },
 ];
 
-export const TemplateLibrary: React.FC<TemplateLibraryProps> = ({ onBack, onUseTemplate }) => {
+const TemplateLibrary: React.FC<TemplateLibraryProps> = ({ onBack, onUseTemplate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [currentView, setCurrentView] = useState<'library' | 'builder' | 'preview' | 'customize'>('library');
@@ -127,6 +128,7 @@ export const TemplateLibrary: React.FC<TemplateLibraryProps> = ({ onBack, onUseT
   };
 
   const handleTemplateSaved = async (savedTemplate: any) => {
+    console.log('Template saved callback triggered:', savedTemplate);
     // Refresh the templates list
     await loadTemplates();
     setCurrentView('library');
@@ -176,7 +178,7 @@ export const TemplateLibrary: React.FC<TemplateLibraryProps> = ({ onBack, onUseT
   if (currentView === 'preview') {
     return (
       <TemplatePreview
-        template={previewTemplate!}
+        contractType={previewTemplate?.contract_type || ''}
         onBack={() => setCurrentView('library')}
         onUse={() => handleUseTemplate(previewTemplate!)}
       />
@@ -384,3 +386,5 @@ export const TemplateLibrary: React.FC<TemplateLibraryProps> = ({ onBack, onUseT
     </div>
   );
 };
+
+export default TemplateLibrary;
