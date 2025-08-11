@@ -15,7 +15,7 @@ export function usePayees() {
       const { data: batches, error: batchError } = await supabase
         .from('reconciliation_batches')
         .select('id')
-        .eq('status', 'processed')
+        .eq('status', 'Processed')
         .limit(1);
 
       if (batchError) {
