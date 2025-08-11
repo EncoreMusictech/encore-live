@@ -239,7 +239,7 @@ const ContractManagement = () => {
                       <div className="bg-gradient-primary rounded-lg p-3 w-fit mx-auto mb-2">
                         <FileText className="h-6 w-6 text-primary-foreground" />
                       </div>
-                      <CardTitle className="text-lg">Use Template</CardTitle>
+                      <CardTitle className="text-lg">Use Custom Template</CardTitle>
                       <CardDescription className="text-sm">
                         Start with a pre-built industry standard template
                       </CardDescription>
@@ -502,7 +502,7 @@ const ContractManagement = () => {
           <TabsList className={`grid w-full ${isDemo ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="contracts">Contracts</TabsTrigger>
             {isDemo && <TabsTrigger value="demos">Demos</TabsTrigger>}
-            <TabsTrigger value="templates">Templates</TabsTrigger>
+            <TabsTrigger value="templates">My Templates</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
