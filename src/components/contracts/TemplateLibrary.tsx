@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { FileText, Search, Star, Eye, Download, Edit } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { FileText, Search, Star, Eye, Download, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface TemplateLibraryProps {
@@ -17,7 +17,7 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
   const [searchTerm, setSearchTerm] = useState("");
 
   // Your Templates (Custom templates)
-  const yourTemplates = [
+  const [yourTemplates, setYourTemplates] = useState([
     {
       id: "custom-1",
       title: "So Saucy Records Distribution Agreement",
@@ -29,7 +29,7 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
       keyFeatures: [],
       contract_type: "distribution",
     },
-  ];
+  ]);
 
   // Popular Templates (Pre-built templates)
   const popularTemplates = [
@@ -109,6 +109,14 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
     }
   };
 
+  const handleDeleteTemplate = (templateId: string) => {
+    setYourTemplates(prev => prev.filter(template => template.id !== templateId));
+    toast({
+      title: "Template Deleted",
+      description: "Template has been successfully deleted",
+    });
+  };
+
   const getRatingColor = (rating: string | null) => {
     switch (rating) {
       case "High":
@@ -182,6 +190,32 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
             <Download className="h-4 w-4 mr-1" />
             Use
           </Button>
+          {template.isCustom && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{template.title}"? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => handleDeleteTemplate(template.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </CardContent>
     </Card>
