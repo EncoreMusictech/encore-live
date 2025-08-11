@@ -120,8 +120,8 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
   });
 
   const handleEditTemplate = (template: any) => {
-    setSelectedTemplate(template);
-    setCurrentView('customize');
+    setEditingTemplate(template);
+    setCurrentView('builder');
   };
 
   const handleUseTemplate = (template: any) => {
