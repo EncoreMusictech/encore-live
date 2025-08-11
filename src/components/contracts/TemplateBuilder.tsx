@@ -150,7 +150,6 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
 
   useEffect(() => {
     if (existingTemplate) {
-      console.log('Loading existing template:', existingTemplate);
       setTemplateName(existingTemplate.template_name || '');
       setSelectedContractType(existingTemplate.contract_type || contractType);
       const fields = existingTemplate.template_data?.fields || [];
@@ -158,7 +157,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
       const clauses = existingTemplate.template_data?.clauses || {};
       setClausesById(clauses);
     }
-  }, [existingTemplate, contractType]);
+  }, [existingTemplate]);
 
   const getDefaultClause = useCallback((field: ContractField) => `${field.label}: {{${field.id}}}`,[ ]);
 
@@ -240,49 +239,28 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
     };
 
     try {
-      let savedTemplate;
-      
-      if (existingTemplate?.id && existingTemplate.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
-        // Update existing template only if it has a valid UUID
-        console.log('Updating existing template:', existingTemplate.id);
-        const { data, error } = await supabase
+      if (existingTemplate?.id) {
+        const { error } = await supabase
           .from('contract_templates')
           .update(templateData as any)
-          .eq('id', existingTemplate.id)
-          .select()
-          .single();
+          .eq('id', existingTemplate.id);
         
-        if (error) {
-          console.error('Update error:', error);
-          throw error;
-        }
-        savedTemplate = data;
+        if (error) throw error;
         
         toast.success('Template updated successfully!');
       } else {
-        // Create new template
-        console.log('Creating new template');
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('contract_templates')
-          .insert(templateData as any)
-          .select()
-          .single();
+          .insert(templateData as any);
         
-        if (error) {
-          console.error('Insert error:', error);
-          throw error;
-        }
-        savedTemplate = data;
+        if (error) throw error;
         
         toast.success('Template saved successfully!');
       }
 
       // Call the onTemplateSaved callback if provided
       if (onTemplateSaved) {
-        onTemplateSaved({
-          ...savedTemplate,
-          isCustom: true
-        });
+        onTemplateSaved(templateData);
       } else {
         onBack?.();
       }
