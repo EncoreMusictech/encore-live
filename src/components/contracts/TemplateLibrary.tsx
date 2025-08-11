@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Plus, Search, Filter, Eye, FileText, Edit, Trash2, Settings } from 'lucide-react';
 import { TemplateBuilder } from './TemplateBuilder';
 import { TemplatePreview } from './TemplatePreview';
@@ -261,150 +262,154 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
         </div>
       </div>
 
-      {/* Templates */}
-      <div className="flex-1 overflow-auto">
+      {/* Templates with proper scrolling */}
+      <div className="flex-1 min-h-0">
         <Tabs defaultValue="public" className="h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-2 mx-6 mt-4">
             <TabsTrigger value="public">Public Templates</TabsTrigger>
             <TabsTrigger value="custom">Your Templates</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="public" className="flex-1 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPublicTemplates.map(template => (
-                <Card key={template.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{template.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {template.description}
-                        </p>
+          <TabsContent value="public" className="flex-1 min-h-0 mt-4">
+            <ScrollArea className="h-full px-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
+                {filteredPublicTemplates.map(template => (
+                  <Card key={template.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{template.title}</CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {template.description}
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="ml-2">
+                          {template.contract_type?.replace('_', ' ') || 'Contract'}
+                        </Badge>
                       </div>
-                      <Badge variant="secondary" className="ml-2">
-                        {template.contract_type?.replace('_', ' ') || 'Contract'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex gap-2">
-                      {!selectionMode && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setPreviewTemplate(template);
-                              setCurrentView('preview');
-                            }}
-                            className="gap-2"
-                          >
-                            <Eye className="h-4 w-4" />
-                            Preview
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toast.success('PDF generation coming soon!')}
-                            className="gap-2"
-                          >
-                            <FileText className="h-4 w-4" />
-                            PDF
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        size="sm"
-                        onClick={() => handleUseTemplate(template)}
-                        className="gap-2"
-                      >
-                        <Settings className="h-4 w-4" />
-                        {selectionMode ? 'Select' : 'Use'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {filteredPublicTemplates.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No public templates found matching your criteria.</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex gap-2">
+                        {!selectionMode && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setPreviewTemplate(template);
+                                setCurrentView('preview');
+                              }}
+                              className="gap-2"
+                            >
+                              <Eye className="h-4 w-4" />
+                              Preview
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toast.success('PDF generation coming soon!')}
+                              className="gap-2"
+                            >
+                              <FileText className="h-4 w-4" />
+                              PDF
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => handleUseTemplate(template)}
+                          className="gap-2"
+                        >
+                          <Settings className="h-4 w-4" />
+                          {selectionMode ? 'Select' : 'Use'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            )}
+
+              {filteredPublicTemplates.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No public templates found matching your criteria.</p>
+                </div>
+              )}
+            </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="custom" className="flex-1 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCustomTemplates.map(template => (
-                <Card key={template.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{template.template_name || 'Untitled Template'}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Custom {template.contract_type?.replace('_', ' ') || 'contract'} template
-                        </p>
+          <TabsContent value="custom" className="flex-1 min-h-0 mt-4">
+            <ScrollArea className="h-full px-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
+                {filteredCustomTemplates.map(template => (
+                  <Card key={template.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{template.template_name || 'Untitled Template'}</CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Custom {template.contract_type?.replace('_', ' ') || 'contract'} template
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="ml-2">
+                          Custom
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className="ml-2">
-                        Custom
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex gap-2">
-                      {!selectionMode && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditTemplate(template)}
-                            className="gap-2"
-                          >
-                            <Edit className="h-4 w-4" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteTemplate(template.id)}
-                            className="gap-2 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        size="sm"
-                        onClick={() => handleUseTemplate(template)}
-                        className="gap-2"
-                      >
-                        <Settings className="h-4 w-4" />
-                        {selectionMode ? 'Select' : 'Use'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {filteredCustomTemplates.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">
-                  {customTemplates.length === 0 
-                    ? "You haven't created any templates yet."
-                    : "No custom templates found matching your criteria."
-                  }
-                </p>
-                {!selectionMode && (
-                  <Button onClick={() => setCurrentView('builder')} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Your First Template
-                  </Button>
-                )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex gap-2">
+                        {!selectionMode && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditTemplate(template)}
+                              className="gap-2"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteTemplate(template.id)}
+                              className="gap-2 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => handleUseTemplate(template)}
+                          className="gap-2"
+                        >
+                          <Settings className="h-4 w-4" />
+                          {selectionMode ? 'Select' : 'Use'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            )}
+
+              {filteredCustomTemplates.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground mb-4">
+                    {customTemplates.length === 0 
+                      ? "You haven't created any templates yet."
+                      : "No custom templates found matching your criteria."
+                    }
+                  </p>
+                  {!selectionMode && (
+                    <Button onClick={() => setCurrentView('builder')} className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create Your First Template
+                    </Button>
+                  )}
+                </div>
+              )}
+            </ScrollArea>
           </TabsContent>
         </Tabs>
       </div>
