@@ -3,12 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Tabs removed per layout update
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Plus, Search, Filter, Eye, FileText, Edit, Trash2, Settings } from 'lucide-react';
 import { TemplateBuilder } from './TemplateBuilder';
-import { TemplatePreview } from './TemplatePreview';
+// import { TemplatePreview } from './TemplatePreview'; // removed
 import { CustomizeContractForm } from './CustomizeContractForm';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,8 +72,7 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const [currentView, setCurrentView] = useState<'library' | 'builder' | 'preview' | 'customize'>('library');
-  const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [currentView, setCurrentView] = useState<'library' | 'builder' | 'customize'>('library');
   const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
   const [customTemplates, setCustomTemplates] = useState<any[]>([]);
   const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
@@ -120,13 +119,8 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
   });
 
   const handleEditTemplate = (template: any) => {
-    setEditingTemplate({
-      id: template.id,
-      template_name: template.template_name,
-      contract_type: template.contract_type,
-      template_data: template.template_data
-    });
-    setCurrentView('builder');
+    setSelectedTemplate(template);
+    setCurrentView('customize');
   };
 
   const handleUseTemplate = (template: any) => {
@@ -187,15 +181,7 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
     );
   }
 
-  if (currentView === 'preview') {
-    return (
-      <TemplatePreview
-        contractType={previewTemplate?.contract_type || ''}
-        onBack={() => setCurrentView('library')}
-        onUse={() => handleUseTemplate(previewTemplate!)}
-      />
-    );
-  }
+// Preview view removed per new flow
 
   if (currentView === 'customize') {
     return (
@@ -291,29 +277,15 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
                     <CardContent>
                       <div className="flex gap-2">
                         {!selectionMode && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setPreviewTemplate(template);
-                                setCurrentView('preview');
-                              }}
-                              className="gap-2"
-                            >
-                              <Eye className="h-4 w-4" />
-                              Preview
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toast.success('PDF generation coming soon!')}
-                              className="gap-2"
-                            >
-                              <FileText className="h-4 w-4" />
-                              PDF
-                            </Button>
-                          </>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toast.success('PDF generation coming soon!')}
+                            className="gap-2"
+                          >
+                            <FileText className="h-4 w-4" />
+                            PDF
+                          </Button>
                         )}
                         <Button
                           size="sm"

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Send, Eye } from 'lucide-react';
+import { ArrowLeft, Send } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 interface ContractField {
@@ -41,18 +41,8 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
 }) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState<Record<string, any>>({});
-  const [currentView, setCurrentView] = useState<'form' | 'preview'>('form');
-
+  // Single-view form; preview removed per updated UX
   const fields = template.template_data?.fields || [];
-
-  useEffect(() => {
-    // Initialize form data with default values
-    const initialData: Record<string, any> = {};
-    fields.forEach(field => {
-      initialData[field.id] = '';
-    });
-    setFormData(initialData);
-  }, [fields]);
 
   const handleFieldChange = (fieldId: string, value: any) => {
     setFormData(prev => ({
@@ -185,131 +175,103 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => setCurrentView(currentView === 'form' ? 'preview' : 'form')}
-            className="gap-2"
-          >
-            <Eye className="h-4 w-4" />
-            {currentView === 'form' ? 'Preview' : 'Edit'}
-          </Button>
-          <Button onClick={handleSave} className="gap-2">
-            <Send className="h-4 w-4" />
-            Create Contract
-          </Button>
-        </div>
+        <div className="flex items-center gap-2"></div>
       </div>
 
       <div className="flex-1 overflow-auto">
-        {currentView === 'form' ? (
-          <div className="max-w-4xl mx-auto p-6">
-            {/* Contract Details */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Contract Details</CardTitle>
-                <p className="text-sm text-muted-foreground">Basic information about this contract</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Contract Title</Label>
-                    <Input
-                      value={formData.contract_title || template.title}
-                      onChange={(e) => handleFieldChange('contract_title', e.target.value)}
-                      placeholder="Contract title"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Counterparty Name</Label>
-                    <Input
-                      value={formData.counterparty_name || ''}
-                      onChange={(e) => handleFieldChange('counterparty_name', e.target.value)}
-                      placeholder="Name of the other party"
-                    />
-                  </div>
+        <div className="max-w-4xl mx-auto p-6">
+          {/* Contract Details */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Contract Details</CardTitle>
+              <p className="text-sm text-muted-foreground">Basic information about this contract</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Contract Title</Label>
+                  <Input
+                    value={formData.contract_title || template.title}
+                    onChange={(e) => handleFieldChange('contract_title', e.target.value)}
+                    placeholder="Contract title"
+                  />
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Recipient Email</Label>
-                    <Input
-                      type="email"
-                      value={formData.recipient_email || ''}
-                      onChange={(e) => handleFieldChange('recipient_email', e.target.value)}
-                      placeholder="Email address for sending contract"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Notes</Label>
-                    <Textarea
-                      value={formData.notes || ''}
-                      onChange={(e) => handleFieldChange('notes', e.target.value)}
-                      placeholder="Additional notes or instructions..."
-                      rows={3}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Counterparty Name</Label>
+                  <Input
+                    value={formData.counterparty_name || ''}
+                    onChange={(e) => handleFieldChange('counterparty_name', e.target.value)}
+                    placeholder="Name of the other party"
+                  />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Recipient Email</Label>
+                  <Input
+                    type="email"
+                    value={formData.recipient_email || ''}
+                    onChange={(e) => handleFieldChange('recipient_email', e.target.value)}
+                    placeholder="Email address for sending contract"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Notes</Label>
+                  <Textarea
+                    value={formData.notes || ''}
+                    onChange={(e) => handleFieldChange('notes', e.target.value)}
+                    placeholder="Additional notes or instructions..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Template Fields */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Template Fields</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Fill in the specific details for your contract. Required fields are marked in the template.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {Object.entries(groupedFields).map(([category, categoryFields]) => (
-                  <div key={category}>
-                    <h4 className="text-lg font-semibold mb-4 capitalize">
-                      {category.replace('_', ' ')}
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {categoryFields.map(field => (
-                        <div key={field.id} className="space-y-2">
-                          <Label htmlFor={field.id}>
-                            {field.label}
-                            {field.required && <span className="text-destructive ml-1">*</span>}
-                          </Label>
-                          {renderFieldInput(field)}
-                        </div>
-                      ))}
-                    </div>
-                    <Separator className="mt-6" />
+          {/* Template Fields */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Template Fields</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Fill in the specific details for your contract. Required fields are marked in the template.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {Object.entries(groupedFields).map(([category, categoryFields]) => (
+                <div key={category}>
+                  <h4 className="text-lg font-semibold mb-4 capitalize">
+                    {category.replace('_', ' ')}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {categoryFields.map(field => (
+                      <div key={field.id} className="space-y-2">
+                        <Label htmlFor={field.id}>
+                          {field.label}
+                          {field.required && <span className="text-destructive ml-1">*</span>}
+                        </Label>
+                        {renderFieldInput(field)}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          <div className="max-w-4xl mx-auto p-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Contract Preview</CardTitle>
-                <p className="text-sm text-muted-foreground">Preview of your customized contract</p>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold">
-                    {formData.contract_title || template.title}
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Effective Date: {formData.effective_date || '—'}
-                  </p>
-                  <Separator className="mt-4" />
+                  <Separator className="mt-6" />
                 </div>
-                
-                <div className="bg-muted/30 p-6 rounded-lg">
-                  <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
-                    {generatePreviewText() || 'Fill in the template fields to see the preview.'}
-                  </pre>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              ))}
+
+              {/* Action buttons at bottom */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-end pt-2">
+                <Button variant="outline" onClick={() => toast({ title: 'Email sent', description: 'Send Email flow coming soon' })}>
+                  Send Email
+                </Button>
+                <Button variant="outline" onClick={() => toast({ title: 'DocuSign', description: 'Send via DocuSign coming soon' })}>
+                  Send via DocuSign
+                </Button>
+                <Button onClick={handleSave}>
+                  Save Contract
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
