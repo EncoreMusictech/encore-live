@@ -228,9 +228,13 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
       return;
     }
 
+    const mappedType = selectedContractType === 'artist_recording'
+      ? 'artist'
+      : (selectedContractType === 'licensing' ? 'sync' : selectedContractType);
+
     const templateData = {
       template_name: templateName,
-      contract_type: selectedContractType,
+      contract_type: mappedType,
       template_data: {
         fields: selectedFields,
         layout: 'standard',
