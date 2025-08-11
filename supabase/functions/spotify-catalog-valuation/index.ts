@@ -63,6 +63,37 @@ interface CashFlowProjection {
   terminalValue?: number;
 }
 
+// Helper to resolve a primary genre without normalizing
+async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): Promise<string | undefined> {
+  if (artist.genres && artist.genres.length > 0) return artist.genres[0];
+  try {
+    const resp = await fetch(`https://api.spotify.com/v1/artists/${artist.id}/related-artists`, {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    });
+    if (!resp.ok) return undefined;
+    const data = await resp.json();
+    const genreCounts: Record<string, number> = {};
+    const related = Array.isArray(data?.artists) ? data.artists : [];
+    for (const ra of related) {
+      const genres: string[] = Array.isArray(ra?.genres) ? ra.genres : [];
+      for (const g of genres) {
+        genreCounts[g] = (genreCounts[g] || 0) + 1;
+      }
+    }
+    let selected: string | undefined;
+    let max = 0;
+    for (const [g, count] of Object.entries(genreCounts)) {
+      if (count > max) {
+        max = count;
+        selected = g;
+      }
+    }
+    return selected;
+  } catch (_e) {
+    return undefined;
+  }
+}
+
 // Advanced mathematical models
 class ValuationEngine {
   // Exponential Decay Forecast Model
@@ -324,13 +355,14 @@ serve(async (req) => {
     const topTracksData = await topTracksResponse.json();
     const topTracks: SpotifyTrack[] = topTracksData.tracks.slice(0, 10);
 
-    // Get industry benchmarks
-    const primaryGenre = artist.genres[0] || 'pop';
-    const { data: benchmarkData } = await supabase
-      .from('industry_benchmarks')
-      .select('*')
-      .eq('genre', primaryGenre)
-      .single();
+// Resolve primary genre (use Spotify genres directly when available; fallback to related artists)
+const resolvedGenre = await resolvePrimaryGenre(accessToken, artist);
+const primaryGenre = resolvedGenre ?? 'pop';
+const { data: benchmarkData } = await supabase
+  .from('industry_benchmarks')
+  .select('*')
+  .eq('genre', primaryGenre)
+  .single();
 
     const benchmark: IndustryBenchmark = benchmarkData || {
       genre: 'pop',
@@ -459,10 +491,10 @@ serve(async (req) => {
     let comparableArtists = [];
     console.log(`Starting comparable artist search. Artist genres: ${JSON.stringify(artist.genres)}`);
     
-    // Strategy 1: Search by genre (only if artist has genres)
-    if (artist.genres.length > 0) {
-      console.log(`Strategy 1: Starting genre-based search for genre: ${primaryGenre}`);
-      try {
+// Strategy 1: Search by genre
+if (primaryGenre) {
+  console.log(`Strategy 1: Starting genre-based search for genre: ${primaryGenre}`);
+  try {
         const genreSearchResponse = await fetch(
           `https://api.spotify.com/v1/search?q=genre:"${encodeURIComponent(primaryGenre)}"&type=artist&limit=50`,
           {
@@ -780,12 +812,13 @@ serve(async (req) => {
         industry_growth: benchmark.growth_rate_assumption * 100,
         base_multiple: benchmark.revenue_multiple_avg
       },
-      // Advanced valuation metrics
-      ltm_revenue: Math.floor(ltmRevenue),
-      catalog_age_years: catalogAge,
-      genre: primaryGenre,
-      popularity_score: artist.popularity,
-      discount_rate: valuationParams?.discountRate || 0.12,
+// Advanced valuation metrics
+ltm_revenue: Math.floor(ltmRevenue),
+catalog_age_years: catalogAge,
+genre: primaryGenre,
+primary_genre: primaryGenre,
+popularity_score: artist.popularity,
+discount_rate: valuationParams?.discountRate || 0.12,
       dcf_valuation: dcfValuation,
       multiple_valuation: multipleValuation,
       risk_adjusted_value: riskAdjustedValue,
