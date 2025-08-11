@@ -239,28 +239,42 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
     };
 
     try {
-      if (existingTemplate?.id) {
-        const { error } = await supabase
+      let savedTemplate;
+      
+      if (existingTemplate?.id && existingTemplate.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+        // Update existing template only if it has a valid UUID
+        const { data, error } = await supabase
           .from('contract_templates')
           .update(templateData as any)
-          .eq('id', existingTemplate.id);
+          .eq('id', existingTemplate.id)
+          .select()
+          .single();
         
         if (error) throw error;
+        savedTemplate = data;
         
         toast.success('Template updated successfully!');
       } else {
-        const { error } = await supabase
+        // Create new template
+        const { data, error } = await supabase
           .from('contract_templates')
-          .insert(templateData as any);
+          .insert(templateData as any)
+          .select()
+          .single();
         
         if (error) throw error;
+        savedTemplate = data;
         
         toast.success('Template saved successfully!');
       }
 
       // Call the onTemplateSaved callback if provided
       if (onTemplateSaved) {
-        onTemplateSaved(templateData);
+        onTemplateSaved({
+          ...templateData,
+          id: savedTemplate.id,
+          isCustom: true
+        });
       } else {
         onBack?.();
       }
