@@ -1,11 +1,13 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { FileText, Search, Star, Eye, Download, Edit, Trash2 } from "lucide-react";
+import { FileText, Search, Star, Eye, Download, Edit, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { TemplateBuilder } from "./TemplateBuilder";
 
 interface TemplateLibraryProps {
   onTemplateSelect?: (template: any) => void;
@@ -15,6 +17,8 @@ interface TemplateLibraryProps {
 const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLibraryProps) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentView, setCurrentView] = useState<'library' | 'builder'>('library');
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
 
   // Your Templates (Custom templates)
   const [yourTemplates, setYourTemplates] = useState([
@@ -117,6 +121,21 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
     });
   };
 
+  const handleEditTemplate = (template: any) => {
+    setEditingTemplate(template);
+    setCurrentView('builder');
+  };
+
+  const handleCreateTemplate = () => {
+    setEditingTemplate(null);
+    setCurrentView('builder');
+  };
+
+  const handleBackToLibrary = () => {
+    setCurrentView('library');
+    setEditingTemplate(null);
+  };
+
   const getRatingColor = (rating: string | null) => {
     switch (rating) {
       case "High":
@@ -127,6 +146,17 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
         return "text-gray-400";
     }
   };
+
+  // Show Template Builder if in builder view
+  if (currentView === 'builder') {
+    return (
+      <TemplateBuilder
+        onBack={handleBackToLibrary}
+        contractType={editingTemplate?.contract_type || 'artist_recording'}
+        existingTemplate={editingTemplate}
+      />
+    );
+  }
 
   const renderTemplateCard = (template: any) => (
     <Card key={template.id} className="group hover:shadow-lg transition-shadow">
@@ -191,30 +221,39 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
             Use
           </Button>
           {template.isCustom && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Template</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete "{template.title}"? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={() => handleDeleteTemplate(template.id)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleEditTemplate(template)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{template.title}"? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={() => handleDeleteTemplate(template.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           )}
         </div>
       </CardContent>
@@ -223,6 +262,18 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
 
   return (
     <div className="space-y-6">
+      {/* Header with Create Template Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Contract Templates</h2>
+          <p className="text-muted-foreground">Create and manage your contract templates</p>
+        </div>
+        <Button onClick={handleCreateTemplate} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Create Template
+        </Button>
+      </div>
+
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -251,7 +302,7 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
             <p className="text-muted-foreground mb-4">
               Create your first custom template to see it here
             </p>
-            <Button>Create Template</Button>
+            <Button onClick={handleCreateTemplate}>Create Template</Button>
           </Card>
         )}
       </div>
