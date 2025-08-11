@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -12,13 +11,8 @@ export type CopyrightPublisher = Tables<'copyright_publishers'>;
 export type CopyrightRecording = Tables<'copyright_recordings'>;
 export type CopyrightInsert = TablesInsert<'copyrights'>;
 
-// Extended type for copyright with joined writers
-export type CopyrightWithWriters = Copyright & {
-  copyright_writers?: CopyrightWriter[];
-};
-
 export const useCopyright = () => {
-  const [copyrights, setCopyrights] = useState<CopyrightWithWriters[]>([]);
+  const [copyrights, setCopyrights] = useState<Copyright[]>([]);
   const [loading, setLoading] = useState(true);
   const [realtimeError, setRealtimeError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -30,7 +24,7 @@ export const useCopyright = () => {
     confirmUpdate, 
     revertUpdate,
     clearAllPending 
-  } = useOptimisticUpdates<CopyrightWithWriters>([]);
+  } = useOptimisticUpdates<Copyright>([]);
 
   // Sync optimistic data with server data whenever copyrights change
   useEffect(() => {
@@ -42,10 +36,7 @@ export const useCopyright = () => {
       console.log('Fetching copyrights...');
       const { data, error } = await supabase
         .from('copyrights')
-        .select(`
-          *,
-          copyright_writers(*)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -65,13 +56,13 @@ export const useCopyright = () => {
   }, [toast, clearAllPending]);
 
   const createCopyright = async (copyrightData: CopyrightInsert) => {
-    const tempCopyright: CopyrightWithWriters = {
+    const tempCopyright: Copyright = {
       id: `temp-${Date.now()}`,
       user_id: 'temp',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       ...copyrightData
-    } as CopyrightWithWriters;
+    } as Copyright;
 
     // Add optimistic update
     const updateId = addOptimisticUpdate('create', tempCopyright);
@@ -305,7 +296,7 @@ export const useCopyright = () => {
                 const exists = prev.some(c => c.id === payload.new.id);
                 if (!exists) {
                   console.log('Adding new copyright from real-time:', payload.new);
-                  return [payload.new as CopyrightWithWriters, ...prev];
+                  return [payload.new as Copyright, ...prev];
                 }
                 return prev;
               });
@@ -314,7 +305,7 @@ export const useCopyright = () => {
             case 'UPDATE':
               setCopyrights(prev => {
                 const updated = prev.map(c => 
-                  c.id === payload.new.id ? payload.new as CopyrightWithWriters : c
+                  c.id === payload.new.id ? payload.new as Copyright : c
                 );
                 console.log('Updated copyright from real-time:', payload.new);
                 console.log('PRO Status in real-time update:', {
