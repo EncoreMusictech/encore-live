@@ -19,7 +19,7 @@ import { StandardizedProducerForm } from "@/components/contracts/StandardizedPro
 import { StandardizedSyncForm } from "@/components/contracts/StandardizedSyncForm";
 import { StandardizedDistributionForm } from "@/components/contracts/StandardizedDistributionForm";
 import { EditContractForm } from "@/components/contracts/EditContractForm";
-import { TemplateLibrary } from "@/components/contracts/TemplateLibrary";
+import TemplateLibrary from "@/components/contracts/TemplateLibrary";
 import { DocuSignImport } from "@/components/contracts/DocuSignImport";
 import { ContractUpload } from "@/components/contracts/ContractUpload";
 import { DemoContracts } from "@/components/contracts/DemoContracts";
