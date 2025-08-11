@@ -297,6 +297,7 @@ const ContractManagement = () => {
                   </Button>
                   <TemplateLibrary 
                     selectionMode={true}
+                    onBack={() => setCreationMethod(null)}
                     onTemplateSelect={(template) => {
                       setSelectedContractType(template.contract_type);
                       // Pre-fill form with template data
@@ -546,7 +547,7 @@ const ContractManagement = () => {
 
 
           <TabsContent value="templates">
-            <TemplateLibrary />
+            <TemplateLibrary onBack={() => {}} />
           </TabsContent>
 
           <TabsContent value="analytics">
