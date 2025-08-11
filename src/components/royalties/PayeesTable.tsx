@@ -202,7 +202,7 @@ export function PayeesTable() {
         <PayeeFormDialog
           open={showForm}
           onOpenChange={handleCloseForm}
-          payee={editingPayee}
+          editingPayee={editingPayee}
         />
       </CardContent>
     </Card>
