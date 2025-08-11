@@ -7,7 +7,12 @@ import { Input } from "@/components/ui/input";
 import { FileText, Search, Star, Eye, Download, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const TemplateLibrary = ({ onTemplateSelect }: { onTemplateSelect?: (template: any) => void }) => {
+interface TemplateLibraryProps {
+  onTemplateSelect?: (template: any) => void;
+  selectionMode?: boolean;
+}
+
+const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLibraryProps) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -22,6 +27,7 @@ const TemplateLibrary = ({ onTemplateSelect }: { onTemplateSelect?: (template: a
       rating: null,
       isCustom: true,
       keyFeatures: [],
+      contract_type: "distribution",
     },
   ];
 
@@ -36,6 +42,7 @@ const TemplateLibrary = ({ onTemplateSelect }: { onTemplateSelect?: (template: a
       rating: "High",
       isCustom: false,
       keyFeatures: ["50/50 songwriter/publisher split", "Worldwide territory"],
+      contract_type: "publishing",
     },
     {
       id: "artist-1", 
@@ -46,6 +53,7 @@ const TemplateLibrary = ({ onTemplateSelect }: { onTemplateSelect?: (template: a
       rating: "High",
       isCustom: false,
       keyFeatures: ["$25K advance example", "18% royalty rate"],
+      contract_type: "artist",
     },
     {
       id: "producer-1",
@@ -56,6 +64,7 @@ const TemplateLibrary = ({ onTemplateSelect }: { onTemplateSelect?: (template: a
       rating: "Medium",
       isCustom: false,
       keyFeatures: ["$3K per track fee", "3% producer points"],
+      contract_type: "producer",
     },
     {
       id: "sync-1",
@@ -66,6 +75,7 @@ const TemplateLibrary = ({ onTemplateSelect }: { onTemplateSelect?: (template: a
       rating: "Medium",
       isCustom: false,
       keyFeatures: ["$8K license fee example", "3-year term"],
+      contract_type: "sync",
     },
     {
       id: "dist-1",
@@ -76,6 +86,7 @@ const TemplateLibrary = ({ onTemplateSelect }: { onTemplateSelect?: (template: a
       rating: "High",
       isCustom: false,
       keyFeatures: ["85/15 revenue split", "100+ platforms"],
+      contract_type: "distribution",
     },
   ];
 
