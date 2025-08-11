@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,13 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
   const { batches } = useReconciliationBatches();
   const { user } = useAuth();
   
+  // Use refs to track initialization to prevent infinite loops
+  const initializationRef = useRef({
+    allocationId: null as string | null,
+    copyrightId: null as string | null,
+    hasInitialized: false
+  });
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
       song_title: allocation?.song_title || '',
@@ -108,13 +116,33 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
     loadCopyrights();
   }, [user?.id]);
 
-  // Initialize writers - simplified logic that always shows writer data
+  // Initialize writers once when allocation or copyright data becomes available
   useEffect(() => {
-    console.log('Initializing writers for allocation:', allocation?.id);
+    const currentAllocationId = allocation?.id || 'new';
+    const currentCopyrightId = allocation?.copyright_id || '';
+    
+    // Check if we need to initialize or reinitialize
+    const needsInitialization = 
+      !initializationRef.current.hasInitialized ||
+      initializationRef.current.allocationId !== currentAllocationId ||
+      initializationRef.current.copyrightId !== currentCopyrightId;
+    
+    if (!needsInitialization || loadingCopyrights || availableCopyrights.length === 0) {
+      return;
+    }
+
+    console.log('Initializing writers for allocation:', currentAllocationId);
+    
+    // Update refs to prevent re-initialization
+    initializationRef.current = {
+      allocationId: currentAllocationId,
+      copyrightId: currentCopyrightId,
+      hasInitialized: true
+    };
+    
+    setIsLoadingWriters(true);
     
     const initializeWriters = () => {
-      setIsLoadingWriters(true);
-      
       if (!allocation) {
         // For new allocations, start with empty writers
         setWriters([]);
@@ -122,16 +150,15 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         return;
       }
 
-      // Always try to load writers from existing allocation first
+      // Try to load writers from existing allocation first
       if (allocation.ownership_splits && Object.keys(allocation.ownership_splits).length > 0) {
         console.log('Loading writers from ownership_splits:', allocation.ownership_splits);
         
         const extractedWriters = Object.entries(allocation.ownership_splits).map(([key, value]: [string, any]) => {
-          // Check if this is a copyright writer (temporary identifier)
           if (key.startsWith('copyright_writer_')) {
             return {
               id: Date.now() + Math.random(),
-              contact_id: '', // No contact for copyright writers
+              contact_id: '',
               writer_name: value.writer_name || 'Unknown Writer',
               writer_ipi: '',
               pro_affiliation: '',
@@ -143,7 +170,6 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
               synchronization_share: value.synchronization_share || 0,
             };
           } else {
-            // This is a contact-based writer
             const contact = availableContacts.find(c => c.id === key);
             return {
               id: Date.now() + Math.random(),
@@ -164,23 +190,22 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         setWriters(extractedWriters);
         setIsLoadingWriters(false);
         return;
-      } 
+      }
       
       // If no ownership_splits, try to load from copyright
-      if (allocation.copyright_id && availableCopyrights.length > 0) {
+      if (allocation.copyright_id) {
         const linkedCopyright = availableCopyrights.find(c => c.id === allocation.copyright_id);
         console.log('Loading writers from linked copyright:', linkedCopyright);
         
         if (linkedCopyright?.copyright_writers?.length > 0) {
           const mappedWriters = linkedCopyright.copyright_writers.map((writer: any) => {
-            // Try to find a matching contact by name
             const matchingContact = availableContacts.find(contact => 
               contact.name?.toLowerCase().trim() === writer.writer_name?.toLowerCase().trim()
             );
             
             return {
-              id: Date.now() + Math.random(), // Temporary ID for form
-              contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
+              id: Date.now() + Math.random(),
+              contact_id: matchingContact?.id || '',
               writer_name: writer.writer_name || '',
               writer_ipi: writer.ipi_number || '',
               pro_affiliation: writer.pro_affiliation || '',
@@ -204,9 +229,11 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
       setIsLoadingWriters(false);
     };
 
-    // Always initialize writers when allocation or dependencies change
-    initializeWriters();
-  }, [allocation?.id, allocation?.ownership_splits, allocation?.copyright_id, availableCopyrights, availableContacts]);
+    // Use setTimeout to ensure this runs after the current render cycle
+    const timeoutId = setTimeout(initializeWriters, 0);
+    
+    return () => clearTimeout(timeoutId);
+  }, [allocation?.id, allocation?.copyright_id, allocation?.ownership_splits, loadingCopyrights, availableCopyrights.length > 0]);
 
   // Handle copyright selection and auto-populate writers
   const handleCopyrightChange = useCallback((copyrightId: string) => {
@@ -216,21 +243,18 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
       const selectedCopyright = availableCopyrights.find(c => c.id === copyrightId);
       
       if (selectedCopyright) {
-        // Auto-populate work title and ISWC from copyright
         setValue('song_title', selectedCopyright.work_title);
         setValue('iswc', selectedCopyright.iswc || '');
         
         if (selectedCopyright.copyright_writers) {
-          // Auto-populate writers from the selected copyright
           const copyrightWriters = selectedCopyright.copyright_writers.map((writer: any) => {
-            // Try to find a matching contact by name
             const matchingContact = availableContacts.find(contact => 
               contact.name?.toLowerCase().trim() === writer.writer_name?.toLowerCase().trim()
             );
             
             return {
-              id: Date.now() + Math.random(), // Temporary ID for form
-              contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
+              id: Date.now() + Math.random(),
+              contact_id: matchingContact?.id || '',
               writer_name: writer.writer_name,
               writer_ipi: writer.ipi_number || '',
               pro_affiliation: writer.pro_affiliation || '',
@@ -266,7 +290,6 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         }
       }
     } else {
-      // Clear work title, ISWC, and writers when no copyright is selected
       setValue('song_title', '');
       setValue('iswc', '');
       setWriters([]);
