@@ -289,9 +289,10 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
                               size="sm"
                               onClick={() => handleDeleteTemplate(template.id)}
                               className="gap-2 text-destructive hover:text-destructive"
+                              aria-label="Delete template"
+                              title="Delete"
                             >
                               <Trash2 className="h-4 w-4" />
-                              Delete
                             </Button>
                           </>
                         )}
