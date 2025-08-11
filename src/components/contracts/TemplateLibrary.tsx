@@ -24,8 +24,6 @@ interface Template {
 interface TemplateLibraryProps {
   onBack: () => void;
   onUseTemplate?: (contractData: any) => void;
-  selectionMode?: boolean;
-  onTemplateSelect?: (template: any) => void;
 }
 
 const DEMO_TEMPLATES: Template[] = [
@@ -63,12 +61,7 @@ const DEMO_TEMPLATES: Template[] = [
   },
 ];
 
-const TemplateLibrary: React.FC<TemplateLibraryProps> = ({ 
-  onBack, 
-  onUseTemplate, 
-  selectionMode = false,
-  onTemplateSelect 
-}) => {
+export const TemplateLibrary: React.FC<TemplateLibraryProps> = ({ onBack, onUseTemplate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [currentView, setCurrentView] = useState<'library' | 'builder' | 'preview' | 'customize'>('library');
@@ -129,17 +122,11 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
   };
 
   const handleUseTemplate = (template: any) => {
-    if (selectionMode && onTemplateSelect) {
-      onTemplateSelect(template);
-      return;
-    }
-    
     setSelectedTemplate(template);
     setCurrentView('customize');
   };
 
   const handleTemplateSaved = async (savedTemplate: any) => {
-    console.log('Template saved callback triggered:', savedTemplate);
     // Refresh the templates list
     await loadTemplates();
     setCurrentView('library');
@@ -189,7 +176,7 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
   if (currentView === 'preview') {
     return (
       <TemplatePreview
-        contractType={previewTemplate?.contract_type || ''}
+        template={previewTemplate!}
         onBack={() => setCurrentView('library')}
         onUse={() => handleUseTemplate(previewTemplate!)}
       />
@@ -220,17 +207,13 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Contract Templates</h1>
-            <p className="text-muted-foreground">
-              {selectionMode ? "Select a template to use" : "Choose from public templates or create your own"}
-            </p>
+            <p className="text-muted-foreground">Choose from public templates or create your own</p>
           </div>
         </div>
-        {!selectionMode && (
-          <Button onClick={() => setCurrentView('builder')} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Template
-          </Button>
-        )}
+        <Button onClick={() => setCurrentView('builder')} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Create Template
+        </Button>
       </div>
 
       {/* Search and Filters */}
@@ -288,38 +271,34 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
                   </CardHeader>
                   <CardContent>
                     <div className="flex gap-2">
-                      {!selectionMode && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setPreviewTemplate(template);
-                              setCurrentView('preview');
-                            }}
-                            className="gap-2"
-                          >
-                            <Eye className="h-4 w-4" />
-                            Preview
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toast.success('PDF generation coming soon!')}
-                            className="gap-2"
-                          >
-                            <FileText className="h-4 w-4" />
-                            PDF
-                          </Button>
-                        </>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setPreviewTemplate(template);
+                          setCurrentView('preview');
+                        }}
+                        className="gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Preview
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toast.success('PDF generation coming soon!')}
+                        className="gap-2"
+                      >
+                        <FileText className="h-4 w-4" />
+                        PDF
+                      </Button>
                       <Button
                         size="sm"
                         onClick={() => handleUseTemplate(template)}
                         className="gap-2"
                       >
                         <Settings className="h-4 w-4" />
-                        {selectionMode ? 'Select' : 'Use'}
+                        Use
                       </Button>
                     </div>
                   </CardContent>
@@ -353,35 +332,31 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
                   </CardHeader>
                   <CardContent>
                     <div className="flex gap-2">
-                      {!selectionMode && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditTemplate(template)}
-                            className="gap-2"
-                          >
-                            <Edit className="h-4 w-4" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteTemplate(template.id)}
-                            className="gap-2 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </Button>
-                        </>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditTemplate(template)}
+                        className="gap-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Edit
+                      </Button>
                       <Button
                         size="sm"
                         onClick={() => handleUseTemplate(template)}
                         className="gap-2"
                       >
                         <Settings className="h-4 w-4" />
-                        {selectionMode ? 'Select' : 'Use'}
+                        Use
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteTemplate(template.id)}
+                        className="gap-2 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
                       </Button>
                     </div>
                   </CardContent>
@@ -397,12 +372,10 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
                     : "No custom templates found matching your criteria."
                   }
                 </p>
-                {!selectionMode && (
-                  <Button onClick={() => setCurrentView('builder')} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Your First Template
-                  </Button>
-                )}
+                <Button onClick={() => setCurrentView('builder')} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Your First Template
+                </Button>
               </div>
             )}
           </TabsContent>
@@ -411,5 +384,3 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
     </div>
   );
 };
-
-export default TemplateLibrary;
