@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Send } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-
+import { supabase } from "@/integrations/supabase/client";
 interface ContractField {
   id: string;
   type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox';
@@ -52,7 +51,7 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate required fields (robust to non-string values)
     const missingFields = fields
       .filter(field => {
@@ -73,24 +72,57 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
       return;
     }
 
-    const contractData = {
-      title: formData.contract_title || template.title,
-      contract_type: template.contract_type,
+    // Ensure user is authenticated for RLS-enabled insert
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) {
+      toast({
+        title: "Not signed in",
+        description: "Please sign in to save contracts.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Map UI types to DB enum values
+    const mappedType = (
+      template.contract_type === 'artist_recording'
+        ? 'artist'
+        : (template.contract_type === 'licensing' ? 'sync' : template.contract_type)
+    ) as 'publishing' | 'artist' | 'producer' | 'sync' | 'distribution';
+
+    const title = (formData.contract_title && String(formData.contract_title).trim()) || template.title || 'Untitled Contract';
+    const counterparty = (formData.counterparty_name && String(formData.counterparty_name).trim()) || 'Unknown Counterparty';
+
+    const insertData = {
+      user_id: userData.user.id,
+      title,
+      counterparty_name: counterparty,
+      contract_type: mappedType,
+      contract_status: 'draft' as const,
       template_id: template.id,
       contract_data: formData,
-      counterparty_name: formData.counterparty_name || '',
-      start_date: formData.start_date || formData.effective_date,
-      end_date: formData.end_date,
-      contract_status: 'draft'
+      recipient_email: formData.recipient_email || null,
+      start_date: formData.start_date || formData.effective_date || null,
+      end_date: formData.end_date || null,
+      notes: formData.notes || null,
     };
 
+    const { data: inserted, error } = await supabase
+      .from('contracts')
+      .insert(insertData)
+      .select('*')
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error saving contract:', error);
+      toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    toast({ title: 'Contract saved', description: 'Saved to My Contracts.' });
+
     if (onSave) {
-      onSave(contractData);
-    } else {
-      toast({
-        title: "Contract Created",
-        description: "Your contract has been created successfully",
-      });
+      onSave(inserted ?? insertData);
     }
   };
 
