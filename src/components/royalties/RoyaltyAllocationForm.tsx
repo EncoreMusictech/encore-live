@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,11 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
   const { batches } = useReconciliationBatches();
   const { user } = useAuth();
   
+  // Use refs to track initialization to prevent duplicate loading
+  const copyrightsLoadedRef = useRef(false);
+  const writersInitializedRef = useRef(false);
+  const previousAllocationIdRef = useRef<string | null>(null);
+  
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
       song_title: allocation?.song_title || '',
@@ -49,7 +54,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
     }
   });
 
-  // Memoize filtered data to prevent unnecessary re-renders
+  // Memoize filtered data with stable references
   const availableContacts = useMemo(() => 
     contacts.filter(c => c.contact_type === 'writer'), 
     [contacts]
@@ -60,142 +65,159 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
     [batches]
   );
 
-  // Stabilized callback for loading copyrights
-  const loadCopyrights = useCallback(async () => {
-    if (!user) return;
-    
-    setLoadingCopyrights(true);
-    try {
-      const { data, error } = await supabase
-        .from('copyrights')
-        .select(`
-          id,
-          work_title,
-          internal_id,
-          iswc,
-          copyright_writers (
+  // Load copyrights only once when component mounts
+  useEffect(() => {
+    const loadCopyrights = async () => {
+      if (!user || copyrightsLoadedRef.current) return;
+      
+      setLoadingCopyrights(true);
+      copyrightsLoadedRef.current = true;
+      
+      try {
+        const { data, error } = await supabase
+          .from('copyrights')
+          .select(`
             id,
-            writer_name,
-            ownership_percentage,
-            performance_share,
-            mechanical_share,
-            synchronization_share,
-            ipi_number,
-            pro_affiliation,
-            writer_role,
-            controlled_status
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('work_title');
+            work_title,
+            internal_id,
+            iswc,
+            copyright_writers (
+              id,
+              writer_name,
+              ownership_percentage,
+              performance_share,
+              mechanical_share,
+              synchronization_share,
+              ipi_number,
+              pro_affiliation,
+              writer_role,
+              controlled_status
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('work_title');
 
-      if (error) throw error;
-      setAvailableCopyrights(data || []);
-    } catch (error) {
-      console.error('Error loading copyrights:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load copyrights",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingCopyrights(false);
-    }
-  }, [user]);
+        if (error) throw error;
+        setAvailableCopyrights(data || []);
+      } catch (error) {
+        console.error('Error loading copyrights:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load copyrights",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingCopyrights(false);
+      }
+    };
 
-  // Load available copyrights - only when user changes
-  useEffect(() => {
     loadCopyrights();
-  }, [loadCopyrights]);
+  }, [user?.id]); // Only depend on user.id
 
-  // Stabilized writer loading effect with proper dependencies
+  // Initialize writers only when allocation changes or copyrights are loaded for the first time
   useEffect(() => {
-    if (!allocation) {
-      // For new allocations, start with empty writers
-      setWriters([]);
-      return;
-    }
-
+    const allocationId = allocation?.id;
+    const hasAllocationChanged = previousAllocationIdRef.current !== allocationId;
+    previousAllocationIdRef.current = allocationId;
+    
+    // Only initialize if allocation changed, copyrights are loaded, and not already initialized for this allocation
+    if (!hasAllocationChanged && writersInitializedRef.current) return;
+    if (availableCopyrights.length === 0 && allocation?.copyright_id) return;
+    
     setIsLoadingWriters(true);
+    writersInitializedRef.current = true;
     
-    // Load writers from existing allocation's ownership_splits when editing
-    if (allocation.ownership_splits && Object.keys(allocation.ownership_splits).length > 0) {
-      const extractedWriters = Object.entries(allocation.ownership_splits).map(([key, value]: [string, any]) => {
-        // Check if this is a copyright writer (temporary identifier)
-        if (key.startsWith('copyright_writer_')) {
-          return {
-            id: Date.now() + Math.random(),
-            contact_id: '', // No contact for copyright writers
-            writer_name: value.writer_name || 'Unknown Writer',
-            writer_ipi: '',
-            pro_affiliation: '',
-            writer_role: 'composer',
-            controlled_status: 'NC',
-            writer_share_percentage: value.writer_share || 0,
-            performance_share: value.performance_share || 0,
-            mechanical_share: value.mechanical_share || 0,
-            synchronization_share: value.synchronization_share || 0,
-          };
-        } else {
-          // This is a contact-based writer
-          const contact = availableContacts.find(c => c.id === key);
-          return {
-            id: Date.now() + Math.random(),
-            contact_id: key,
-            writer_name: contact?.name || 'Unknown Writer',
-            writer_ipi: '',
-            pro_affiliation: '',
-            writer_role: 'composer',
-            controlled_status: 'NC',
-            writer_share_percentage: value.writer_share || 0,
-            performance_share: value.performance_share || 0,
-            mechanical_share: value.mechanical_share || 0,
-            synchronization_share: value.synchronization_share || 0,
-          };
-        }
-      });
-      
-      setWriters(extractedWriters);
-      setIsLoadingWriters(false);
-      return;
-    } 
-    
-    // Try to load from copyright if we have a copyright_id
-    if (allocation.copyright_id && availableCopyrights.length > 0) {
-      const linkedCopyright = availableCopyrights.find(c => c.id === allocation.copyright_id);
-      
-      if (linkedCopyright?.copyright_writers?.length > 0) {
-        const mappedWriters = linkedCopyright.copyright_writers.map((writer: any) => {
-          // Try to find a matching contact by name
-          const matchingContact = availableContacts.find(contact => 
-            contact.name?.toLowerCase().trim() === writer.writer_name?.toLowerCase().trim()
-          );
-          
-          return {
-            id: Date.now() + Math.random(), // Temporary ID for form
-            contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
-            writer_name: writer.writer_name || '',
-            writer_ipi: writer.ipi_number || '',
-            pro_affiliation: writer.pro_affiliation || '',
-            writer_role: writer.writer_role || 'composer',
-            controlled_status: writer.controlled_status || 'NC',
-            writer_share_percentage: writer.ownership_percentage || 0,
-            performance_share: writer.performance_share || 0,
-            mechanical_share: writer.mechanical_share || 0,
-            synchronization_share: writer.synchronization_share || 0,
-          };
+    const initializeWriters = () => {
+      if (!allocation) {
+        // For new allocations, start with empty writers
+        setWriters([]);
+        setIsLoadingWriters(false);
+        return;
+      }
+
+      // Load writers from existing allocation's ownership_splits when editing
+      if (allocation.ownership_splits && Object.keys(allocation.ownership_splits).length > 0) {
+        const extractedWriters = Object.entries(allocation.ownership_splits).map(([key, value]: [string, any]) => {
+          // Check if this is a copyright writer (temporary identifier)
+          if (key.startsWith('copyright_writer_')) {
+            return {
+              id: Date.now() + Math.random(),
+              contact_id: '', // No contact for copyright writers
+              writer_name: value.writer_name || 'Unknown Writer',
+              writer_ipi: '',
+              pro_affiliation: '',
+              writer_role: 'composer',
+              controlled_status: 'NC',
+              writer_share_percentage: value.writer_share || 0,
+              performance_share: value.performance_share || 0,
+              mechanical_share: value.mechanical_share || 0,
+              synchronization_share: value.synchronization_share || 0,
+            };
+          } else {
+            // This is a contact-based writer
+            const contact = availableContacts.find(c => c.id === key);
+            return {
+              id: Date.now() + Math.random(),
+              contact_id: key,
+              writer_name: contact?.name || 'Unknown Writer',
+              writer_ipi: '',
+              pro_affiliation: '',
+              writer_role: 'composer',
+              controlled_status: 'NC',
+              writer_share_percentage: value.writer_share || 0,
+              performance_share: value.performance_share || 0,
+              mechanical_share: value.mechanical_share || 0,
+              synchronization_share: value.synchronization_share || 0,
+            };
+          }
         });
         
-        setWriters(mappedWriters);
+        setWriters(extractedWriters);
+        setIsLoadingWriters(false);
+        return;
+      } 
+      
+      // Try to load from copyright if we have a copyright_id
+      if (allocation.copyright_id && availableCopyrights.length > 0) {
+        const linkedCopyright = availableCopyrights.find(c => c.id === allocation.copyright_id);
+        
+        if (linkedCopyright?.copyright_writers?.length > 0) {
+          const mappedWriters = linkedCopyright.copyright_writers.map((writer: any) => {
+            // Try to find a matching contact by name
+            const matchingContact = availableContacts.find(contact => 
+              contact.name?.toLowerCase().trim() === writer.writer_name?.toLowerCase().trim()
+            );
+            
+            return {
+              id: Date.now() + Math.random(), // Temporary ID for form
+              contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
+              writer_name: writer.writer_name || '',
+              writer_ipi: writer.ipi_number || '',
+              pro_affiliation: writer.pro_affiliation || '',
+              writer_role: writer.writer_role || 'composer',
+              controlled_status: writer.controlled_status || 'NC',
+              writer_share_percentage: writer.ownership_percentage || 0,
+              performance_share: writer.performance_share || 0,
+              mechanical_share: writer.mechanical_share || 0,
+              synchronization_share: writer.synchronization_share || 0,
+            };
+          });
+          
+          setWriters(mappedWriters);
+        } else {
+          setWriters([]);
+        }
       } else {
         setWriters([]);
       }
-    } else {
-      setWriters([]);
-    }
-    
-    setIsLoadingWriters(false);
-  }, [allocation?.id, allocation?.ownership_splits, allocation?.copyright_id, availableCopyrights.length, availableContacts.length]);
+      
+      setIsLoadingWriters(false);
+    };
+
+    // Use setTimeout to ensure state updates are batched
+    const timeoutId = setTimeout(initializeWriters, 0);
+    return () => clearTimeout(timeoutId);
+  }, [allocation?.id, allocation?.ownership_splits, allocation?.copyright_id]); // Stable dependencies only
 
   // Handle copyright selection and auto-populate writers
   const handleCopyrightChange = useCallback((copyrightId: string) => {
