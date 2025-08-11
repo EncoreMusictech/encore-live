@@ -204,30 +204,25 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
         )}
 
         <div className="flex gap-2 pt-2">
-          <Button variant="outline" size="sm" className="flex-1">
-            <Eye className="h-4 w-4 mr-1" />
-            Preview
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1">
-            <Download className="h-4 w-4 mr-1" />
-            PDF
-          </Button>
-          <Button 
-            size="sm" 
-            className="flex-1"
-            onClick={() => handleTemplateSelect(template)}
-          >
-            <Download className="h-4 w-4 mr-1" />
-            Use
-          </Button>
-          {template.isCustom && (
+          {template.isCustom ? (
+            // Custom template buttons
             <>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => handleEditTemplate(template)}
+                className="flex-1 gap-2"
               >
                 <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+              <Button 
+                size="sm" 
+                className="flex-1 gap-2"
+                onClick={() => handleTemplateSelect(template)}
+              >
+                <Download className="h-4 w-4" />
+                Use
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -253,6 +248,26 @@ const TemplateLibrary = ({ onTemplateSelect, selectionMode = false }: TemplateLi
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+            </>
+          ) : (
+            // Public template buttons
+            <>
+              <Button variant="outline" size="sm" className="flex-1">
+                <Eye className="h-4 w-4 mr-1" />
+                Preview
+              </Button>
+              <Button variant="outline" size="sm" className="flex-1">
+                <Download className="h-4 w-4 mr-1" />
+                PDF
+              </Button>
+              <Button 
+                size="sm" 
+                className="flex-1"
+                onClick={() => handleTemplateSelect(template)}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Use
+              </Button>
             </>
           )}
         </div>
