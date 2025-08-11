@@ -1,17 +1,12 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft } from 'lucide-react';
 
 interface TemplatePreviewProps {
   contractType: string;
-  onBack: () => void;
-  onUse: () => void;
 }
 
-export function TemplatePreview({ contractType, onBack, onUse }: TemplatePreviewProps) {
+export function TemplatePreview({ contractType }: TemplatePreviewProps) {
   const getTemplateContent = (type: string) => {
     switch (type) {
       case 'publishing':
@@ -48,7 +43,6 @@ TERM: This agreement shall commence on [START DATE] and continue for a period of
         };
 
       case 'artist':
-      case 'artist_recording':
         return {
           title: "Artist Agreement Template", 
           description: "Recording and distribution agreement for independent artists",
@@ -113,7 +107,6 @@ CREDITS: Producer shall receive appropriate credit on all recordings and related
         };
 
       case 'sync':
-      case 'licensing':
         return {
           title: "Sync License Template",
           description: "Synchronization license for TV, film, and digital media",
@@ -192,119 +185,103 @@ PLATFORMS: Distribution includes but is not limited to Spotify, Apple Music, Ama
   const template = getTemplateContent(contractType);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="space-y-6 max-h-[70vh] overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={onBack} className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Templates
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{template.title}</h1>
-            <p className="text-muted-foreground">{template.description}</p>
+      <div>
+        <h3 className="text-2xl font-bold mb-2">{template.title}</h3>
+        <p className="text-muted-foreground">{template.description}</p>
+      </div>
+
+      {/* Key Terms */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Key Terms</CardTitle>
+          <CardDescription>Standard terms included in this template</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-3">
+            {template.keyTerms.map((term, index) => (
+              <div key={index} className="flex items-start gap-2">
+                <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
+                <span className="text-sm">{term}</span>
+              </div>
+            ))}
           </div>
-        </div>
-        <Button onClick={onUse} className="gap-2">
-          Use This Template
-        </Button>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="space-y-6 max-w-4xl mx-auto">
-          {/* Key Terms */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Key Terms</CardTitle>
-              <CardDescription>Standard terms included in this template</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-3">
-                {template.keyTerms.map((term, index) => (
-                  <div key={index} className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
-                    <span className="text-sm">{term}</span>
-                  </div>
-                ))}
+      {/* Contract Sections */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Contract Sections</CardTitle>
+          <CardDescription>Main sections covered in this agreement</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-2">
+            {template.sections.map((section, index) => (
+              <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                  {index + 1}
+                </span>
+                <span className="text-sm font-medium">{section}</span>
               </div>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-          {/* Contract Sections */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Contract Sections</CardTitle>
-              <CardDescription>Main sections covered in this agreement</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-2">
-                {template.sections.map((section, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                    <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
-                      {index + 1}
-                    </span>
-                    <span className="text-sm font-medium">{section}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Sample Text */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Sample Contract Text</CardTitle>
+          <CardDescription>Preview of actual contract language</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-muted/30 p-4 rounded-lg">
+            <pre className="text-sm font-mono whitespace-pre-wrap text-muted-foreground">
+              {template.sampleText}
+            </pre>
+          </div>
+        </CardContent>
+      </Card>
 
-          {/* Sample Text */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Sample Contract Text</CardTitle>
-              <CardDescription>Preview of actual contract language</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-muted/30 p-4 rounded-lg">
-                <pre className="text-sm font-mono whitespace-pre-wrap text-muted-foreground">
-                  {template.sampleText}
-                </pre>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Usage Guidelines */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Usage Guidelines</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-start gap-3">
-                <Badge variant="outline" className="mt-0.5">📝</Badge>
-                <div>
-                  <p className="font-medium">Customization Required</p>
-                  <p className="text-sm text-muted-foreground">
-                    All bracketed fields [LIKE THIS] must be filled in with specific details
-                  </p>
-                </div>
-              </div>
-              <Separator />
-              <div className="flex items-start gap-3">
-                <Badge variant="outline" className="mt-0.5">⚖️</Badge>
-                <div>
-                  <p className="font-medium">Legal Review Recommended</p>
-                  <p className="text-sm text-muted-foreground">
-                    Have an entertainment lawyer review before finalizing any agreement
-                  </p>
-                </div>
-              </div>
-              <Separator />
-              <div className="flex items-start gap-3">
-                <Badge variant="outline" className="mt-0.5">🏢</Badge>
-                <div>
-                  <p className="font-medium">Industry Standard</p>
-                  <p className="text-sm text-muted-foreground">
-                    Based on current industry practices and standard deal structures
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      {/* Usage Guidelines */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Usage Guidelines</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-start gap-3">
+            <Badge variant="outline" className="mt-0.5">📝</Badge>
+            <div>
+              <p className="font-medium">Customization Required</p>
+              <p className="text-sm text-muted-foreground">
+                All bracketed fields [LIKE THIS] must be filled in with specific details
+              </p>
+            </div>
+          </div>
+          <Separator />
+          <div className="flex items-start gap-3">
+            <Badge variant="outline" className="mt-0.5">⚖️</Badge>
+            <div>
+              <p className="font-medium">Legal Review Recommended</p>
+              <p className="text-sm text-muted-foreground">
+                Have an entertainment lawyer review before finalizing any agreement
+              </p>
+            </div>
+          </div>
+          <Separator />
+          <div className="flex items-start gap-3">
+            <Badge variant="outline" className="mt-0.5">🏢</Badge>
+            <div>
+              <p className="font-medium">Industry Standard</p>
+              <p className="text-sm text-muted-foreground">
+                Based on current industry practices and standard deal structures
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
