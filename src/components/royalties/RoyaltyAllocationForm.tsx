@@ -130,13 +130,13 @@ export function RoyaltyAllocationForm({ allocation, onCancel }: RoyaltyAllocatio
           const copyrightId = selectedCopyrightId || allocation?.copyright_id;
           const linkedCopyright = copyrights.find(c => c.id === copyrightId);
           
-          if (linkedCopyright?.writers) {
-            console.log("Loaded writers from linked copyright:", linkedCopyright.writers);
+          if (linkedCopyright?.copyright_writers) {
+            console.log("Loaded writers from linked copyright:", linkedCopyright.copyright_writers);
             
-            writersToLoad = linkedCopyright.writers.map((writer: any) => ({
+            writersToLoad = linkedCopyright.copyright_writers.map((writer: any) => ({
               id: `copyright_writer_${writer.id}`,
-              name: writer.name,
-              writer_share: writer.writer_share || 0,
+              name: writer.writer_name,
+              writer_share: writer.ownership_percentage || 0,
               performance_share: writer.performance_share || 0,
               mechanical_share: writer.mechanical_share || 0,
               synchronization_share: writer.synchronization_share || 0,
@@ -235,7 +235,27 @@ export function RoyaltyAllocationForm({ allocation, onCancel }: RoyaltyAllocatio
       });
 
       const royaltyData: RoyaltyAllocationInsert = {
-        ...data,
+        song_title: data.song_title,
+        artist: data.artist,
+        isrc: data.isrc,
+        gross_royalty_amount: data.gross_royalty_amount,
+        controlled_status: data.controlled_status,
+        recoupable_expenses: data.recoupable_expenses,
+        comments: data.comments,
+        quarter: data.quarter,
+        source: data.source,
+        revenue_source: data.revenue_source,
+        work_identifier: data.work_identifier,
+        share: data.share,
+        media_type: data.media_type,
+        media_sub_type: data.media_sub_type,
+        country: data.country,
+        quantity: data.quantity,
+        net_amount: data.net_amount,
+        iswc: data.iswc,
+        statement_id: data.statement_id,
+        batch_id: data.batch_id,
+        copyright_id: data.copyright_id,
         ownership_splits,
       };
 
