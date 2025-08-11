@@ -86,18 +86,13 @@ export function RoyaltyAllocationForm({ allocation, onCancel }: RoyaltyAllocatio
   // Load writers when allocation or copyright changes
   useEffect(() => {
     const loadWriters = async () => {
-      if (!allocation && !selectedCopyrightId) {
-        setWriters([]);
-        return;
-      }
-
       setLoadingWriters(true);
       try {
         let writersToLoad: any[] = [];
 
-        // For existing allocations, load from ownership_splits
-        if (allocation?.ownership_splits) {
-          console.log("Loaded writers from existing allocation ownership_splits:", allocation.ownership_splits);
+        // Priority 1: For existing allocations, use ownership_splits if they exist
+        if (allocation?.ownership_splits && Object.keys(allocation.ownership_splits).length > 0) {
+          console.log("Loading writers from existing allocation ownership_splits:", allocation.ownership_splits);
           
           writersToLoad = Object.entries(allocation.ownership_splits).map(([key, split]: [string, any]) => {
             if (key.startsWith('copyright_writer_')) {
@@ -124,14 +119,13 @@ export function RoyaltyAllocationForm({ allocation, onCancel }: RoyaltyAllocatio
             }
           });
         }
-        
-        // For linked copyright, load from copyright writers
+        // Priority 2: For new allocations or when no ownership_splits exist, use linked copyright
         else if (selectedCopyrightId || allocation?.copyright_id) {
           const copyrightId = selectedCopyrightId || allocation?.copyright_id;
           const linkedCopyright = copyrights.find(c => c.id === copyrightId);
           
-          if (linkedCopyright?.copyright_writers) {
-            console.log("Loaded writers from linked copyright:", linkedCopyright.copyright_writers);
+          if (linkedCopyright?.copyright_writers && linkedCopyright.copyright_writers.length > 0) {
+            console.log("Loading writers from linked copyright:", linkedCopyright.copyright_writers);
             
             writersToLoad = linkedCopyright.copyright_writers.map((writer: any) => ({
               id: `copyright_writer_${writer.id}`,
@@ -147,14 +141,7 @@ export function RoyaltyAllocationForm({ allocation, onCancel }: RoyaltyAllocatio
         }
 
         setWriters(writersToLoad);
-        console.log("Writer loading effect triggered:", {
-          allocation: allocation?.id,
-          hasOwnershipSplits: !!allocation?.ownership_splits,
-          copyrightId: selectedCopyrightId || allocation?.copyright_id,
-          availableCopyrightsCount: copyrights.length,
-          availableCopyrights: copyrights,
-          loadedWriters: writersToLoad
-        });
+        console.log("Final loaded writers:", writersToLoad);
         
       } catch (error) {
         console.error("Error loading writers:", error);
@@ -168,8 +155,14 @@ export function RoyaltyAllocationForm({ allocation, onCancel }: RoyaltyAllocatio
       }
     };
 
-    loadWriters();
-  }, [allocation, selectedCopyrightId, copyrights, contacts]);
+    // Only load if we have the necessary data
+    if (copyrights.length > 0 && contacts.length >= 0) {
+      loadWriters();
+    } else {
+      setLoadingWriters(false);
+      setWriters([]);
+    }
+  }, [allocation, selectedCopyrightId, copyrights, contacts, toast]);
 
   // Set available copyrights
   useEffect(() => {
@@ -236,26 +229,26 @@ export function RoyaltyAllocationForm({ allocation, onCancel }: RoyaltyAllocatio
 
       const royaltyData: RoyaltyAllocationInsert = {
         song_title: data.song_title,
-        artist: data.artist,
-        isrc: data.isrc,
+        artist: data.artist || null,
+        isrc: data.isrc || null,
         gross_royalty_amount: data.gross_royalty_amount,
         controlled_status: data.controlled_status,
         recoupable_expenses: data.recoupable_expenses,
-        comments: data.comments,
-        quarter: data.quarter,
-        source: data.source,
-        revenue_source: data.revenue_source,
-        work_identifier: data.work_identifier,
-        share: data.share,
-        media_type: data.media_type,
-        media_sub_type: data.media_sub_type,
-        country: data.country,
-        quantity: data.quantity,
-        net_amount: data.net_amount,
-        iswc: data.iswc,
-        statement_id: data.statement_id,
-        batch_id: data.batch_id,
-        copyright_id: data.copyright_id,
+        comments: data.comments || null,
+        quarter: data.quarter || null,
+        source: data.source || null,
+        revenue_source: data.revenue_source || null,
+        work_identifier: data.work_identifier || null,
+        share: data.share || null,
+        media_type: data.media_type || null,
+        media_sub_type: data.media_sub_type || null,
+        country: data.country || null,
+        quantity: data.quantity || null,
+        net_amount: data.net_amount || null,
+        iswc: data.iswc || null,
+        statement_id: data.statement_id || null,
+        batch_id: data.batch_id || null,
+        copyright_id: data.copyright_id || null,
         ownership_splits,
       };
 
