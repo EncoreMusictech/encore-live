@@ -54,13 +54,21 @@ export function useQuarterlyBalanceReports() {
     if (!user) return [];
 
     try {
-      // Fetch paid payouts for this user
+      console.log('Building quarterly balance reports from payouts...');
+      
+      // Fetch all payouts for this user, including paid ones
       const { data: payouts, error: payoutsError } = await supabase
         .from('payouts')
         .select('id, client_id, gross_royalties, total_expenses, amount_due, status, created_at, period_start, period_end, period')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
 
-      if (payoutsError || !payouts || payouts.length === 0) return [];
+      if (payoutsError || !payouts || payouts.length === 0) {
+        console.log('No payouts found for quarterly balance calculation');
+        return [];
+      }
+
+      console.log(`Found ${payouts.length} payouts for balance calculation`);
 
       // Collect unique client (contact) ids
       const clientIds = Array.from(new Set(payouts.map(p => p.client_id).filter(Boolean)));
@@ -85,77 +93,105 @@ export function useQuarterlyBalanceReports() {
         (payees || []).map(p => [String(p.payee_name || '').toLowerCase().trim(), p.id])
       );
 
-      // Group by payee/year/quarter
-      type Acc = QuarterlyBalanceReport & { _sortKey: number };
-      const groups = new Map<string, Acc>();
+      // Group by payee/year/quarter and calculate running balances
+      type PayeeQuarterData = {
+        payee_id: string;
+        contact: { name: string; email?: string } | undefined;
+        year: number;
+        quarter: number;
+        royalties_amount: number;
+        expenses_amount: number;
+        payments_amount: number;
+        sortKey: number;
+      };
 
+      const quarterlyData = new Map<string, PayeeQuarterData>();
       const periodKey = (year: number, quarter: number) => `${year}-Q${quarter}`;
       const periodLabel = (year: number, quarter: number) => `Q${quarter} ${year}`;
 
-      for (const p of payouts) {
-        const periodDate = (p as any).period_start || p.created_at;
+      for (const payout of payouts) {
+        const periodDate = (payout as any).period_start || payout.created_at;
         const d = new Date(periodDate);
         const year = d.getFullYear();
         const quarter = Math.ceil((d.getMonth() + 1) / 3);
-        const contact = p.client_id ? contactsMap.get(p.client_id) : undefined;
+        const contact = payout.client_id ? contactsMap.get(payout.client_id) : undefined;
         const contactName = contact?.name || 'Unknown';
         const payeeId = payeeByName.get(contactName.toLowerCase()) || `demo-${contactName}`;
         const key = `${payeeId}-${periodKey(year, quarter)}`;
 
-        if (!groups.has(key)) {
-          groups.set(key, {
-            id: `demo-${key}`,
-            user_id: user.id,
+        if (!quarterlyData.has(key)) {
+          quarterlyData.set(key, {
             payee_id: payeeId,
-            contact_id: p.client_id || undefined,
-            agreement_id: undefined,
+            contact,
             year,
             quarter,
-            period_label: periodLabel(year, quarter),
-            opening_balance: 0,
             royalties_amount: 0,
             expenses_amount: 0,
             payments_amount: 0,
-            closing_balance: 0,
-            is_calculated: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            contacts: contact ? { name: contact.name, email: contact.email } : undefined,
-            contracts: undefined,
-            _sortKey: year * 10 + quarter,
+            sortKey: year * 10 + quarter,
           });
         }
 
-        const acc = groups.get(key)!;
-        acc.royalties_amount += Number(p.gross_royalties || 0);
-        acc.expenses_amount += Number(p.total_expenses || 0);
-        acc.payments_amount += (String(p.status || '').toLowerCase() === 'paid') ? Number(p.amount_due || 0) : 0;
+        const entry = quarterlyData.get(key)!;
+        entry.royalties_amount += Number(payout.gross_royalties || 0);
+        entry.expenses_amount += Number(payout.total_expenses || 0);
+        
+        // Only count payments for payouts marked as 'paid'
+        if (String(payout.status || '').toLowerCase() === 'paid') {
+          entry.payments_amount += Number(payout.amount_due || 0);
+          console.log(`Added payment of $${payout.amount_due} for ${contactName} in ${periodLabel(year, quarter)}`);
+        }
       }
 
-      // Compute opening/closing balances per payee chronologically
-      const byPayee = new Map<string, Acc[]>();
-      for (const row of groups.values()) {
-        if (!byPayee.has(row.payee_id)) byPayee.set(row.payee_id, []);
-        byPayee.get(row.payee_id)!.push(row);
+      // Group by payee and calculate running balances chronologically
+      const byPayee = new Map<string, PayeeQuarterData[]>();
+      for (const entry of quarterlyData.values()) {
+        if (!byPayee.has(entry.payee_id)) byPayee.set(entry.payee_id, []);
+        byPayee.get(entry.payee_id)!.push(entry);
       }
 
       const results: QuarterlyBalanceReport[] = [];
-      for (const [, rows] of byPayee) {
-        rows.sort((a, b) => a._sortKey - b._sortKey);
-        let prevClosing = 0;
-        for (const r of rows) {
-          r.opening_balance = prevClosing;
-          r.closing_balance = Number((r.opening_balance + r.royalties_amount - r.expenses_amount - r.payments_amount).toFixed(2));
-          prevClosing = r.closing_balance;
-          results.push({ ...r });
+      for (const [payeeId, entries] of byPayee) {
+        // Sort chronologically
+        entries.sort((a, b) => a.sortKey - b.sortKey);
+        
+        let runningBalance = 0;
+        for (const entry of entries) {
+          const openingBalance = runningBalance;
+          const closingBalance = Number((openingBalance + entry.royalties_amount - entry.expenses_amount - entry.payments_amount).toFixed(2));
+          
+          results.push({
+            id: `demo-${entry.payee_id}-${entry.year}-Q${entry.quarter}`,
+            user_id: user.id,
+            payee_id: entry.payee_id,
+            contact_id: undefined,
+            agreement_id: undefined,
+            year: entry.year,
+            quarter: entry.quarter,
+            period_label: periodLabel(entry.year, entry.quarter),
+            opening_balance: openingBalance,
+            royalties_amount: entry.royalties_amount,
+            expenses_amount: entry.expenses_amount,
+            payments_amount: entry.payments_amount,
+            closing_balance: closingBalance,
+            is_calculated: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            contacts: entry.contact,
+            contracts: undefined,
+          });
+
+          runningBalance = closingBalance;
+          console.log(`${entry.contact?.name || 'Unknown'} ${periodLabel(entry.year, entry.quarter)}: Opening $${openingBalance}, Closing $${closingBalance}`);
         }
       }
 
       // Return most recent first to match default ordering
       results.sort((a, b) => (b.year - a.year) || (b.quarter - a.quarter));
+      console.log(`Generated ${results.length} quarterly balance reports`);
       return results;
     } catch (e) {
-      console.error('Error building demo quarterly reports from payouts:', e);
+      console.error('Error building quarterly reports from payouts:', e);
       return [];
     }
   };
@@ -201,6 +237,7 @@ export function useQuarterlyBalanceReports() {
           return;
         }
 
+        // Try to fetch existing quarterly balance reports first
         const { data, error } = await supabase
           .from('quarterly_balance_reports')
           .select(`
@@ -214,9 +251,13 @@ export function useQuarterlyBalanceReports() {
 
         if (error) throw error;
 
+        // If we have stored reports and not in demo mode, use those
         if (data && data.length > 0 && !isDemo) {
+          console.log(`Using ${data.length} stored quarterly balance reports`);
           setReports(data);
         } else {
+          // Generate ephemeral reports from payouts
+          console.log('Generating ephemeral quarterly balance reports from payouts');
           const demoData = await buildEphemeralFromPayouts();
           setReports(demoData);
         }
