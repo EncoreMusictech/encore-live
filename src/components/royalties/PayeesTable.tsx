@@ -18,11 +18,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { AutoBuildPayeesDialog } from "./AutoBuildPayeesDialog";
 
 export function PayeesTable() {
-  const { payees, loading, deletePayee } = usePayees();
+  const { payees, loading, deletePayee, refetch } = usePayees();
   const [showForm, setShowForm] = useState(false);
   const [editingPayee, setEditingPayee] = useState<any>(null);
+  const [showAutoBuild, setShowAutoBuild] = useState(false);
 
   const handleEdit = (payee: any) => {
     setEditingPayee(payee);
@@ -68,18 +70,29 @@ export function PayeesTable() {
             <h3 className="text-lg font-semibold text-muted-foreground mb-2">No Payees Found</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
               Payees are automatically created during the batch processing workflow when royalties are matched to writers and payouts are generated. 
-              To see payees here, you need to first import and process reconciliation batches.
+              You can also build payees directly from an agreement with default splits.
             </p>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>To get started:</p>
-              <ol className="list-decimal list-inside space-y-1 text-left max-w-sm mx-auto">
-                <li>Go to the Reconciliation tab</li>
-                <li>Import royalty statements</li>
-                <li>Process batches to create payouts</li>
-                <li>Payees will be automatically created</li>
-              </ol>
+            <div className="flex justify-center gap-3">
+              <Button onClick={() => setShowForm(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Payee
+              </Button>
+              <Button variant="outline" onClick={() => setShowAutoBuild(true)}>
+                Build from Agreement
+              </Button>
             </div>
           </div>
+
+          <PayeeFormDialog
+            open={showForm}
+            onOpenChange={handleCloseForm}
+            editingPayee={editingPayee}
+          />
+          <AutoBuildPayeesDialog
+            open={showAutoBuild}
+            onOpenChange={setShowAutoBuild}
+            onCompleted={refetch}
+          />
         </CardContent>
       </Card>
     );
@@ -96,10 +109,15 @@ export function PayeesTable() {
             </CardTitle>
             <CardDescription>Manage payee information and payment details</CardDescription>
           </div>
-          <Button onClick={() => setShowForm(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Payee
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowAutoBuild(true)}>
+              Build from Agreement
+            </Button>
+            <Button onClick={() => setShowForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Payee
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -203,6 +221,11 @@ export function PayeesTable() {
           open={showForm}
           onOpenChange={handleCloseForm}
           editingPayee={editingPayee}
+        />
+        <AutoBuildPayeesDialog
+          open={showAutoBuild}
+          onOpenChange={setShowAutoBuild}
+          onCompleted={refetch}
         />
       </CardContent>
     </Card>

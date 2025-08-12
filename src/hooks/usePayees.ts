@@ -11,26 +11,7 @@ export function usePayees() {
     try {
       setLoading(true);
       
-      // Check if there are any processed reconciliation batches first
-      const { data: batches, error: batchError } = await supabase
-        .from('reconciliation_batches')
-        .select('id')
-        .eq('status', 'Processed')
-        .limit(1);
-
-      if (batchError) {
-        console.error('Error checking for processed batches:', batchError);
-        setPayees([]);
-        return;
-      }
-
-      // If no processed batches exist, don't load any payees
-      if (!batches || batches.length === 0) {
-        setPayees([]);
-        return;
-      }
-
-      // Only fetch payees if there are processed batches
+      // Fetch payees unconditionally (support agreement-driven setup as well)
       const { data, error } = await supabase
         .from('payees')
         .select(`
