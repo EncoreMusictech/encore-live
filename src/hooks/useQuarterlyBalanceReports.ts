@@ -22,6 +22,11 @@ export interface QuarterlyBalanceReport {
   calculation_date?: string;
   created_at: string;
   updated_at: string;
+  // Preferred payee display
+  payee_name?: string;
+  payees?: {
+    payee_name: string;
+  };
   contacts?: {
     name: string;
     email?: string;
@@ -103,13 +108,16 @@ export function useQuarterlyBalanceReports() {
         contacts?.forEach(c => contactsMap.set(c.id, { name: c.name, email: c.email ?? undefined }));
       }
 
-      // Load payees to map by name -> id
+      // Load payees to map by name -> id and id -> name
       const { data: payees } = await supabase
         .from('payees')
         .select('id, payee_name')
         .eq('user_id', user.id);
       const payeeByName = new Map<string, string>(
         (payees || []).map(p => [String(p.payee_name || '').toLowerCase().trim(), p.id])
+      );
+      const payeeNameById = new Map<string, string>(
+        (payees || []).map(p => [p.id, String(p.payee_name || '')])
       );
 
       // Group by payee/year/quarter and calculate running balances
@@ -196,6 +204,7 @@ export function useQuarterlyBalanceReports() {
             is_calculated: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            payee_name: payeeNameById.get(entry.payee_id) || entry.contact?.name || 'Unknown',
             contacts: entry.contact,
             contracts: undefined,
           });
@@ -248,6 +257,7 @@ export function useQuarterlyBalanceReports() {
             is_calculated: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            payee_name: row.contact_name,
             contacts: row.contact_name ? { name: row.contact_name } : undefined,
             contracts: undefined,
           })) as QuarterlyBalanceReport[];
@@ -262,7 +272,8 @@ export function useQuarterlyBalanceReports() {
           .select(`
             *,
             contacts!quarterly_balance_reports_contact_id_fkey(name, email),
-            contracts!quarterly_balance_reports_agreement_id_fkey(title, agreement_id)
+            contracts!quarterly_balance_reports_agreement_id_fkey(title, agreement_id),
+            payees:payee_id(payee_name)
           `)
           .eq('user_id', user.id)
           .order('year', { ascending: false })

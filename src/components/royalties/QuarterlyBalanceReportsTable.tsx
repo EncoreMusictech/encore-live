@@ -41,8 +41,9 @@ export function QuarterlyBalanceReportsTable() {
   // Filter reports based on search and filters
   const filteredReports = useMemo(() => {
     return reports.filter(report => {
+      const payeeName = (report as any).payee_name || (report as any).payees?.payee_name || report.contacts?.name || '';
       const matchesSearch = !searchTerm || 
-        report.contacts?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         report.contracts?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         report.period_label.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -306,58 +307,59 @@ export function QuarterlyBalanceReportsTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredReports.map((report, index) => {
-                  const status = getBalanceStatus(report.closing_balance);
-                  const previousReport = filteredReports[index + 1];
-                  const hasCalculationMismatch = !report.is_calculated;
-                  
-                  return (
-                    <TableRow key={report.id}>
-                      <TableCell className="font-medium">
-                        {report.period_label}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{report.contacts?.name || 'Unknown Payee'}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {report.contacts?.email}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {report.contracts?.title || 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        ${report.opening_balance.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-green-600">
-                        +${report.royalties_amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-red-600">
-                        -${report.expenses_amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-blue-600">
-                        -${report.payments_amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-semibold">
-                        <div className="flex items-center justify-end gap-2">
-                          ${report.closing_balance.toLocaleString()}
-                          {hasCalculationMismatch && (
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={status.color}>
-                          {status.text}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {getBalanceIndicator(report.closing_balance, previousReport?.closing_balance)}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {(() => {
+                  const groups = new Map<string, { name: string; items: QuarterlyBalanceReport[] }>();
+                  filteredReports.forEach((r) => {
+                    const name = (r as any).payee_name || (r as any).payees?.payee_name || r.contacts?.name || 'Unknown Payee';
+                    const key = r.payee_id || 'unknown';
+                    const existing = groups.get(key) || { name, items: [] };
+                    existing.items.push(r);
+                    groups.set(key, existing);
+                  });
+                  const rows: JSX.Element[] = [];
+                  Array.from(groups.entries()).forEach(([payeeId, group]) => {
+                    rows.push(
+                      <TableRow key={`header-${payeeId}`} className="bg-muted/50">
+                        <TableCell colSpan={10} className="font-semibold">{group.name}</TableCell>
+                      </TableRow>
+                    );
+                    group.items.forEach((report, index) => {
+                      const status = getBalanceStatus(report.closing_balance);
+                      const previousReport = group.items[index + 1];
+                      const hasCalculationMismatch = !report.is_calculated;
+                      const payeeName = (report as any).payee_name || (report as any).payees?.payee_name || report.contacts?.name || 'Unknown Payee';
+                      rows.push(
+                        <TableRow key={report.id}>
+                          <TableCell className="font-medium">{report.period_label}</TableCell>
+                          <TableCell>
+                            <div className="font-medium">{payeeName}</div>
+                          </TableCell>
+                          <TableCell>{report.contracts?.title || 'N/A'}</TableCell>
+                          <TableCell className="text-right font-mono">${report.opening_balance.toLocaleString()}</TableCell>
+                          <TableCell className="text-right font-mono text-green-600">+${report.royalties_amount.toLocaleString()}</TableCell>
+                          <TableCell className="text-right font-mono text-red-600">-${report.expenses_amount.toLocaleString()}</TableCell>
+                          <TableCell className="text-right font-mono text-blue-600">-${report.payments_amount.toLocaleString()}</TableCell>
+                          <TableCell className="text-right font-mono font-semibold">
+                            <div className="flex items-center justify-end gap-2">
+                              ${report.closing_balance.toLocaleString()}
+                              {hasCalculationMismatch && (
+                                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={status.color}>{status.text}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {getBalanceIndicator(report.closing_balance, previousReport?.closing_balance)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    });
+                  });
+                  return rows;
+                })()}
+
               </TableBody>
             </Table>
           </div>

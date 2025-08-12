@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { AutoBuildPayeesDialog } from "./AutoBuildPayeesDialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function PayeesTable() {
   const { payees, loading, deletePayee, refetch } = usePayees();
@@ -127,6 +128,7 @@ export function PayeesTable() {
               <TableRow>
                 <TableHead>Payee ID</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Hierarchy</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Payment Method</TableHead>
                 <TableHead>Status</TableHead>
@@ -142,6 +144,65 @@ export function PayeesTable() {
                   </TableCell>
                   <TableCell className="font-medium">
                     {payee.payee_name}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-xs">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="font-mono rounded px-1.5 py-0.5 bg-muted">
+                            {payee?.writer?.original_publisher?.agreement?.agreement_id || 'AGR—'}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div>
+                            Agreement: {payee?.writer?.original_publisher?.agreement?.title || 'Unknown'}
+                            {payee?.writer?.original_publisher?.agreement?.agreement_id ? ` (${payee.writer.original_publisher.agreement.agreement_id})` : ''}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                      <span className="text-muted-foreground">→</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="font-mono rounded px-1.5 py-0.5 bg-muted">
+                            {payee?.writer?.original_publisher?.op_id || 'OP—'}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div>
+                            Original Publisher: {payee?.writer?.original_publisher?.publisher_name || 'Unknown'}
+                            {payee?.writer?.original_publisher?.op_id ? ` (${payee.writer.original_publisher.op_id})` : ''}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                      <span className="text-muted-foreground">→</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="font-mono rounded px-1.5 py-0.5 bg-muted">
+                            {payee?.writer?.writer_id || 'WR—'}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div>
+                            Writer: {payee?.writer?.writer_name || 'Unknown'}
+                            {payee?.writer?.writer_id ? ` (${payee.writer.writer_id})` : ''}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                      <span className="text-muted-foreground">→</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="font-mono rounded px-1.5 py-0.5 bg-muted">
+                            {payee?.payee_id || 'PAY—'}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div>
+                            Payee: {payee?.payee_name || 'Unknown'}
+                            {payee?.payee_id ? ` (${payee.payee_id})` : ''}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">

@@ -15,7 +15,7 @@ import { EnhancedPayoutForm } from "@/components/royalties/EnhancedPayoutForm";
 import { PayoutList } from "@/components/royalties/PayoutList";
 import { PayoutListDemo } from "@/components/royalties/PayoutListDemo";
 import { PayeesTable } from "@/components/royalties/PayeesTable";
-import { PayeeHierarchyView } from "@/components/royalties/PayeeHierarchyView";
+
 import { ExpensesTable } from "@/components/royalties/ExpensesTable";
 import { AccountBalancesTable } from "@/components/royalties/AccountBalancesTable";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
@@ -282,8 +282,7 @@ export default function PayoutsPage() {
                   <TabsTrigger value="payouts">Payouts</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="payees" className="mt-6 space-y-6">
-                  <PayeeHierarchyView />
+                <TabsContent value="payees" className="mt-6">
                   <PayeesTable />
                 </TabsContent>
                 

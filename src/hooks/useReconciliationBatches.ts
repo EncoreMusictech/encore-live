@@ -363,11 +363,12 @@ export function useReconciliationBatches() {
 
       const allRoyalties = [...(allocations || []), ...linkedStatementRoyalties];
 
-      if (allRoyalties.length === 0) {
+      const controlledRoyalties = (allRoyalties || []).filter(r => (r?.controlled_status || '').toString() === 'Controlled');
+
+      if (controlledRoyalties.length === 0) {
         toast({
-          title: "Error",
-          description: "No royalties found to process",
-          variant: "destructive",
+          title: "Info",
+          description: "No eligible royalties found to process",
         });
         return false;
       }
@@ -396,7 +397,7 @@ export function useReconciliationBatches() {
           .map((t) => t.trim())
           .filter(Boolean);
 
-      for (const royalty of allRoyalties) {
+      for (const royalty of controlledRoyalties) {
         const gross = royalty.gross_royalty_amount || 0;
         const names = royalty.work_writers ? splitWriters(royalty.work_writers) : [];
         const matches = names
