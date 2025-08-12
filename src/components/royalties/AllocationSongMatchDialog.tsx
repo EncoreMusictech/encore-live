@@ -81,6 +81,7 @@ export function AllocationSongMatchDialog({
         .update({
           copyright_id: selectedCopyright,
           song_title: selectedWork.work_title,
+          controlled_status: 'Controlled',
           updated_at: new Date().toISOString()
         })
         .eq('id', allocationId);

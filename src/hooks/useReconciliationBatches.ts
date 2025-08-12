@@ -363,17 +363,7 @@ export function useReconciliationBatches() {
 
       const allRoyalties = [...(allocations || []), ...linkedStatementRoyalties];
 
-      const controlledRoyalties = (allRoyalties || []).filter(r => (r?.controlled_status || '').toString() === 'Controlled');
-
-      if (controlledRoyalties.length === 0) {
-        toast({
-          title: "Info",
-          description: "No eligible royalties found to process",
-        });
-        return false;
-      }
-
-      // Group royalties by writer (supports multi-writer strings)
+      // Determine controlled writers per royalty based on agreements and copyrights
       const writerGroups = new Map<string, any[]>();
       const unmatched: any[] = [];
 
@@ -397,26 +387,108 @@ export function useReconciliationBatches() {
           .map((t) => t.trim())
           .filter(Boolean);
 
-      for (const royalty of controlledRoyalties) {
+      // Preload control information by copyright and agreements
+      const uniqueCopyrightIds = Array.from(
+        new Set((allRoyalties || []).map((r: any) => r.copyright_id).filter(Boolean))
+      );
+
+      let copyrightWriterRows: any[] = [];
+      let scheduleWorkRows: any[] = [];
+      let interestedPartyRows: any[] = [];
+
+      if (uniqueCopyrightIds.length > 0) {
+        const [{ data: cw }, { data: sw }] = await Promise.all([
+          supabase
+            .from('copyright_writers')
+            .select('copyright_id, writer_name, controlled_status')
+            .in('copyright_id', uniqueCopyrightIds),
+          supabase
+            .from('contract_schedule_works')
+            .select('contract_id, copyright_id, inherits_controlled_status')
+            .in('copyright_id', uniqueCopyrightIds),
+        ]);
+
+        copyrightWriterRows = cw || [];
+        scheduleWorkRows = sw || [];
+
+        const contractIds = Array.from(new Set(scheduleWorkRows.map((s: any) => s.contract_id).filter(Boolean)));
+        if (contractIds.length > 0) {
+          const { data: ip } = await supabase
+            .from('contract_interested_parties')
+            .select('contract_id, name, party_type, controlled_status')
+            .in('contract_id', contractIds)
+            .eq('party_type', 'writer');
+          interestedPartyRows = ip || [];
+        }
+      }
+
+      // Build quick-lookup maps of controlled names
+      const controlledByCopyright = new Map<string, Set<string>>();
+      for (const row of copyrightWriterRows) {
+        if ((row.controlled_status || '') === 'C') {
+          const key = row.copyright_id as string;
+          if (!controlledByCopyright.has(key)) controlledByCopyright.set(key, new Set());
+          controlledByCopyright.get(key)!.add(normalize(row.writer_name));
+        }
+      }
+
+      const controlledByAgreement = new Map<string, Set<string>>();
+      for (const sw of scheduleWorkRows) {
+        if (!sw.inherits_controlled_status) continue;
+        const parties = interestedPartyRows.filter((p: any) => p.contract_id === sw.contract_id && (p.controlled_status || '') === 'C');
+        if (parties.length === 0) continue;
+        const key = sw.copyright_id as string;
+        if (!controlledByAgreement.has(key)) controlledByAgreement.set(key, new Set());
+        const set = controlledByAgreement.get(key)!;
+        parties.forEach((p: any) => set.add(normalize(p.name)));
+      }
+
+      // Iterate royalties and only allocate amounts to controlled writers
+      let anyControlled = false;
+
+      for (const royalty of allRoyalties) {
         const gross = royalty.gross_royalty_amount || 0;
         const names = royalty.work_writers ? splitWriters(royalty.work_writers) : [];
-        const matches = names
+        const cid = royalty.copyright_id as string | null;
+
+        const controlledNames = names.filter((n: string) => {
+          const norm = normalize(n);
+          if (!cid) return false;
+          const byCopyright = controlledByCopyright.get(cid)?.has(norm);
+          const byAgreement = controlledByAgreement.get(cid)?.has(norm);
+          return Boolean(byCopyright || byAgreement);
+        });
+
+        if (controlledNames.length === 0) {
+          unmatched.push(royalty);
+          continue;
+        }
+
+        anyControlled = true;
+
+        // Match controlled names to writer records
+        const matches = controlledNames
           .map((n: string) => writerNameMap.get(normalize(n)))
           .filter((w): w is { id: string; writer_name: string; writer_id: string } => Boolean(w));
 
-        if (matches.length === 1) {
-          const w = matches[0]!;
-          if (!writerGroups.has(w.id)) writerGroups.set(w.id, []);
-          writerGroups.get(w.id)!.push({ ...royalty, writer_info: w, allocated_amount: gross });
-        } else if (matches.length > 1) {
-          const perWriter = gross / matches.length;
-          for (const w of matches) {
-            if (!writerGroups.has(w.id)) writerGroups.set(w.id, []);
-            writerGroups.get(w.id)!.push({ ...royalty, writer_info: w, allocated_amount: perWriter });
-          }
-        } else {
+        if (matches.length === 0) {
           unmatched.push(royalty);
+          continue;
         }
+
+        const perWriter = gross / matches.length;
+        for (const w of matches) {
+          if (!writerGroups.has(w.id)) writerGroups.set(w.id, []);
+          writerGroups.get(w.id)!.push({ ...royalty, writer_info: w, allocated_amount: perWriter });
+        }
+      }
+
+      if (!anyControlled) {
+        toast({
+          title: "Info",
+          description: "No eligible royalties found to process",
+        });
+        return false;
       }
 
       // Create payouts for each writer group
