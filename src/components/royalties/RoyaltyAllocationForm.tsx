@@ -51,6 +51,45 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
   const availableContacts = contacts.filter(c => c.contact_type === 'writer');
   const processedBatches = batches.filter(b => b.status === 'Processed');
 
+  // Helpers to normalize names and controlled flags, and to fetch agreement-level control
+  const normalizeName = (name: string | null | undefined) => (name || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const normalizeControlled = (val: any): 'C' | 'NC' => {
+    if (val === 'C' || val === 'Controlled' || val === true || val === 'Y') return 'C';
+    return 'NC';
+  };
+
+  const getAgreementControlledMap = async (copyrightId: string) => {
+    const map = new Map<string, boolean>();
+    try {
+      // Find contracts that include this copyright
+      const { data: sw } = await supabase
+        .from('contract_schedule_works')
+        .select('contract_id')
+        .eq('copyright_id', copyrightId);
+
+      const contractIds = (sw || []).map((s: any) => s.contract_id).filter(Boolean);
+      if (!contractIds.length) return map;
+
+      // Fetch interested parties for those contracts
+      const { data: ip } = await supabase
+        .from('contract_interested_parties')
+        .select('name, controlled_status, contract_id')
+        .in('contract_id', contractIds);
+
+      (ip || []).forEach((p: any) => {
+        const key = normalizeName(p.name);
+        const isControlled = normalizeControlled(p.controlled_status) === 'C';
+        if (key && isControlled) map.set(key, true);
+      });
+    } catch (e) {
+      console.warn('Failed to fetch agreement control map', e);
+    }
+    return map;
+  };
   // Load available copyrights
   useEffect(() => {
     const loadCopyrights = async () => {
@@ -145,9 +184,41 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
       });
       
       if (extractedWriters.length > 0) {
-        setWriters(extractedWriters);
-        console.log('Loaded writers from allocation:', extractedWriters);
-        return; // Don't try to load from copyright if we found writers in ownership_splits
+        const applyControl = async () => {
+          let updated = [...extractedWriters];
+
+          // Overlay control from linked copyright writers if available
+          if (allocation?.copyright_id && availableCopyrights.length > 0) {
+            const linkedCopyright = availableCopyrights.find(c => c.id === allocation.copyright_id);
+            const cwMap = new Map<string, 'C' | 'NC'>();
+            const cw = (linkedCopyright as any)?.copyright_writers || [];
+            cw.forEach((w: any) => {
+              cwMap.set(normalizeName(w.writer_name), normalizeControlled(w.controlled_status));
+            });
+
+            updated = updated.map(w => {
+              const k = normalizeName(w.writer_name);
+              const fromCopyright = cwMap.get(k);
+              return {
+                ...w,
+                controlled_status: fromCopyright === 'C' ? 'C' : w.controlled_status,
+              };
+            });
+
+            // Overlay agreement-level control (contract parties)
+            const agreementMap = await getAgreementControlledMap(allocation.copyright_id);
+            updated = updated.map(w => {
+              const k = normalizeName(w.writer_name);
+              const isAgreementControlled = agreementMap.get(k) === true;
+              return { ...w, controlled_status: isAgreementControlled ? 'C' : w.controlled_status };
+            });
+          }
+
+          setWriters(updated);
+          console.log('Loaded writers from allocation with control overlay:', updated);
+        };
+        applyControl();
+        return; // Stop further loading; we already applied control overlay
       }
     } 
     
@@ -162,7 +233,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         console.log('Copyright writers:', copyrightWriters);
         
         if (copyrightWriters && copyrightWriters.length > 0) {
-          const mappedWriters = copyrightWriters.map((writer: any) => {
+          let mappedWriters = copyrightWriters.map((writer: any) => {
             // Try to find a matching contact by name
             const matchingContact = availableContacts.find(contact => 
               contact.name.toLowerCase().trim() === writer.writer_name.toLowerCase().trim()
@@ -175,7 +246,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
               writer_ipi: writer.ipi_number || '',
               pro_affiliation: writer.pro_affiliation || '',
               writer_role: writer.writer_role || 'composer',
-              controlled_status: writer.controlled_status || 'NC',
+              controlled_status: normalizeControlled(writer.controlled_status),
               writer_share_percentage: writer.ownership_percentage || 0,
               performance_share: writer.performance_share || 0,
               mechanical_share: writer.mechanical_share || 0,
@@ -183,8 +254,18 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             };
           });
           
-          setWriters(mappedWriters);
-          console.log('Loaded writers from linked copyright for existing allocation:', mappedWriters);
+          // Overlay agreement-level control as well
+          const applyAgreementOverlay = async () => {
+            const agreementMap = await getAgreementControlledMap(allocation.copyright_id);
+            const withOverlay = mappedWriters.map((w: any) => {
+              const key = normalizeName(w.writer_name);
+              const isAgreementControlled = agreementMap.get(key) === true;
+              return { ...w, controlled_status: isAgreementControlled ? 'C' : w.controlled_status };
+            });
+            setWriters(withOverlay);
+            console.log('Loaded writers from linked copyright for existing allocation:', withOverlay);
+          };
+          applyAgreementOverlay();
         } else {
           console.log('No writers found in linked copyright');
         }
@@ -195,7 +276,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
   }, [allocation, availableContacts, availableCopyrights]);
 
   // Handle copyright selection and auto-populate writers
-  const handleCopyrightChange = (copyrightId: string) => {
+  const handleCopyrightChange = async (copyrightId: string) => {
     console.log('Copyright selected:', copyrightId);
     setValue('copyright_id', copyrightId === 'none' ? '' : copyrightId);
     
@@ -211,7 +292,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         
         if (selectedCopyright.copyright_writers) {
           // Auto-populate writers from the selected copyright
-          const copyrightWriters = selectedCopyright.copyright_writers.map((writer: any) => {
+          let copyrightWriters = selectedCopyright.copyright_writers.map((writer: any) => {
             // Try to find a matching contact by name
             const matchingContact = availableContacts.find(contact => 
               contact.name.toLowerCase().trim() === writer.writer_name.toLowerCase().trim()
@@ -224,7 +305,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
               writer_ipi: writer.ipi_number || '',
               pro_affiliation: writer.pro_affiliation || '',
               writer_role: writer.writer_role || '',
-              controlled_status: writer.controlled_status || '',
+              controlled_status: normalizeControlled(writer.controlled_status),
               writer_share_percentage: writer.ownership_percentage || 0,
               performance_share: writer.performance_share || 0,
               mechanical_share: writer.mechanical_share || 0,
@@ -232,7 +313,15 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             };
           });
           
-          console.log('Mapped writers:', copyrightWriters);
+          // Overlay agreement-level control: if any related agreement marks the writer as controlled, mark as 'C'
+          const agreementMap = await getAgreementControlledMap(copyrightId);
+          copyrightWriters = copyrightWriters.map((w: any) => {
+            const key = normalizeName(w.writer_name);
+            const isAgreementControlled = agreementMap.get(key) === true;
+            return { ...w, controlled_status: isAgreementControlled ? 'C' : w.controlled_status };
+          });
+          
+          console.log('Mapped writers (with control overlay):', copyrightWriters);
           setWriters(copyrightWriters);
           
           if (copyrightWriters.length > 0) {
