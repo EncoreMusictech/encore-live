@@ -284,7 +284,17 @@ export function useQuarterlyBalanceReports() {
         // If we have stored reports and not in demo mode, use those
         if (data && data.length > 0 && !isDemo) {
           console.log(`Using ${data.length} stored quarterly balance reports`);
-          setReports(data);
+          // Normalize Supabase join result so types match QuarterlyBalanceReport
+          const normalized: QuarterlyBalanceReport[] = (data as any[]).map((row: any) => ({
+            ...row,
+            // Ensure a uniform top-level payee_name for UI grouping/search
+            payee_name: row?.payees?.payee_name ?? row?.payee_name ?? row?.contacts?.name ?? 'Unknown',
+            // Normalize nested relation to expected shape (avoid SelectQueryError typing)
+            payees: row?.payees && typeof row.payees === 'object' && 'payee_name' in row.payees
+              ? { payee_name: row.payees.payee_name as string }
+              : undefined,
+          }));
+          setReports(normalized);
         } else {
           // Generate ephemeral reports from payouts only if there are processed batches
           console.log('Checking for processed batches before generating quarterly balance reports');
