@@ -7,6 +7,7 @@ export interface MLCLookupParams {
   writerName?: string;
   publisherName?: string;
   iswc?: string;
+  isrc?: string;
 }
 
 export interface MLCWriter {
@@ -52,10 +53,10 @@ export function useMLCLookup() {
   const { toast } = useToast();
 
   const lookupWork = async (params: MLCLookupParams): Promise<MLCLookupResult | null> => {
-    if (!params.workTitle && !params.writerName && !params.iswc) {
+    if (!params.workTitle && !params.writerName && !params.iswc && !params.isrc) {
       toast({
         title: "Search Parameters Required",
-        description: "Please provide at least a work title, writer name, or ISWC",
+        description: "Please provide at least a work title, writer name, ISWC, or ISRC",
         variant: "destructive"
       });
       return null;

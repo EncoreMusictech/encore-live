@@ -920,6 +920,7 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         workTitle={formData.work_title}
         writerName={writers.length > 0 ? writers[0].name : ''}
         iswc={formData.iswc}
+        isrc={spotifyMetadata?.isrc || ''}
         onDataEnriched={(result) => {
           if (result.found) {
             // Auto-populate ISWC if found

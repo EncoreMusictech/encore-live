@@ -98,7 +98,8 @@ export const MLCBulkEnrichment: React.FC = () => {
         // Perform MLC lookup
         const result = await lookupWork({
           workTitle: copyright.work_title,
-          iswc: copyright.iswc
+          iswc: copyright.iswc,
+          isrc: (copyright as any).isrc
         });
 
         if (result?.found) {

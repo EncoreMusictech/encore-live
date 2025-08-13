@@ -43,6 +43,7 @@ interface MLCMetadataEnrichmentProps {
   writerName?: string;
   publisherName?: string;
   iswc?: string;
+  isrc?: string;
   onDataEnriched?: (result: MLCResult) => void;
   className?: string;
 }
@@ -52,6 +53,7 @@ export const MLCMetadataEnrichment: React.FC<MLCMetadataEnrichmentProps> = ({
   writerName = '',
   publisherName = '',
   iswc = '',
+  isrc = '',
   onDataEnriched,
   className = ''
 }) => {
@@ -61,15 +63,16 @@ export const MLCMetadataEnrichment: React.FC<MLCMetadataEnrichmentProps> = ({
     workTitle,
     writerName,
     publisherName,
-    iswc
+    iswc,
+    isrc
   });
   const { toast } = useToast();
 
   const searchMLC = async () => {
-    if (!searchParams.workTitle && !searchParams.writerName && !searchParams.iswc) {
+    if (!searchParams.workTitle && !searchParams.writerName && !searchParams.iswc && !searchParams.isrc) {
       toast({
         title: "Search Required",
-        description: "Please enter at least a work title, writer name, or ISWC to search MLC.",
+        description: "Please enter at least a work title, writer name, ISWC, or ISRC to search MLC.",
         variant: "destructive"
       });
       return;
@@ -164,6 +167,15 @@ export const MLCMetadataEnrichment: React.FC<MLCMetadataEnrichmentProps> = ({
               value={searchParams.iswc}
               onChange={(e) => setSearchParams(prev => ({ ...prev, iswc: e.target.value }))}
               placeholder="T-123456789-0"
+            />
+          </div>
+          <div>
+            <Label htmlFor="mlc-isrc">ISRC</Label>
+            <Input
+              id="mlc-isrc"
+              value={searchParams.isrc}
+              onChange={(e) => setSearchParams(prev => ({ ...prev, isrc: e.target.value }))}
+              placeholder="USAT21234567"
             />
           </div>
         </div>

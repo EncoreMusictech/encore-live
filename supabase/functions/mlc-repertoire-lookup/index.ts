@@ -26,9 +26,9 @@ serve(async (req) => {
   }
 
   try {
-    const { workTitle, writerName, publisherName, iswc } = await req.json();
+    const { workTitle, writerName, publisherName, iswc, isrc } = await req.json();
 
-    if (!workTitle && !writerName && !iswc) {
+    if (!workTitle && !writerName && !iswc && !isrc) {
       return json({ error: 'At least one search parameter is required' }, 400);
     }
 
@@ -48,6 +48,7 @@ serve(async (req) => {
     if (writerName) searchParams.append('writer', writerName);
     if (publisherName) searchParams.append('publisher', publisherName);
     if (iswc) searchParams.append('iswc', iswc);
+    if (isrc) searchParams.append('isrc', isrc);
 
     console.log('Searching MLC with params:', Object.fromEntries(searchParams));
 
