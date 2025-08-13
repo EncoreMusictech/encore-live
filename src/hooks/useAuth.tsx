@@ -37,11 +37,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // THEN check for existing session
+    // THEN check for existing session (do not flip loading here; rely on onAuthStateChange INITIAL_SESSION)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      // Keep loading true until onAuthStateChange fires to avoid race conditions
     });
 
     return () => subscription.unsubscribe();
