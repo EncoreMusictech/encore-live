@@ -85,6 +85,9 @@ serve(async (req) => {
         })
       });
 
+      console.log('Writer search status:', writerSearchResponse.status);
+      console.log('Writer search headers:', Object.fromEntries(writerSearchResponse.headers.entries()));
+      
       if (writerSearchResponse.ok) {
         const writerResults = await writerSearchResponse.json();
         console.log('Writer search response:', JSON.stringify(writerResults, null, 2));
@@ -93,7 +96,8 @@ serve(async (req) => {
           mlcData = writerResults;
         }
       } else {
-        console.log('Writer search failed:', writerSearchResponse.status, await writerSearchResponse.text());
+        const errorText = await writerSearchResponse.text();
+        console.log('Writer search failed:', writerSearchResponse.status, errorText);
       }
     }
 
@@ -145,6 +149,9 @@ serve(async (req) => {
         })
       });
 
+      console.log('ISRC search status:', isrcSearchResponse.status);
+      console.log('ISRC search headers:', Object.fromEntries(isrcSearchResponse.headers.entries()));
+      
       if (isrcSearchResponse.ok) {
         const isrcResults = await isrcSearchResponse.json();
         console.log('ISRC search response:', JSON.stringify(isrcResults, null, 2));
@@ -153,7 +160,34 @@ serve(async (req) => {
           mlcData = isrcResults;
         }
       } else {
-        console.log('ISRC search failed:', isrcSearchResponse.status, await isrcSearchResponse.text());
+        const errorText = await isrcSearchResponse.text();
+        console.log('ISRC search failed:', isrcSearchResponse.status, errorText);
+        
+        // Try alternative ISRC endpoint
+        console.log('Trying alternative ISRC search endpoint...');
+        const altIsrcResponse = await fetch('https://public-api.themlc.com/search/recordings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            isrc: isrc
+          })
+        });
+        
+        console.log('Alternative ISRC search status:', altIsrcResponse.status);
+        if (altIsrcResponse.ok) {
+          const altIsrcResults = await altIsrcResponse.json();
+          console.log('Alternative ISRC search response:', JSON.stringify(altIsrcResults, null, 2));
+          
+          if (altIsrcResults && altIsrcResults.length > 0) {
+            mlcData = { results: altIsrcResults };
+          }
+        } else {
+          const altErrorText = await altIsrcResponse.text();
+          console.log('Alternative ISRC search also failed:', altIsrcResponse.status, altErrorText);
+        }
       }
     }
 
