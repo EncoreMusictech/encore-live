@@ -30,7 +30,7 @@ import { useTour } from "@/hooks/useTour";
 const CopyrightManagement = () => {
   const { toast } = useToast();
   const { copyrights, loading, realtimeError, getWritersForCopyright, deleteCopyright, refetch } = useCopyright();
-  const { canAccess } = useDemoAccess();
+  const { canAccess, isDemo } = useDemoAccess();
   const { subscribed } = useSubscription();
   const [writers, setWriters] = useState<{[key: string]: any[]}>({});
   const [editingCopyright, setEditingCopyright] = useState<any>(null);
@@ -67,10 +67,10 @@ const CopyrightManagement = () => {
   ];
 
   useEffect(() => {
-    if (searchParams.get('tour') === '1') {
+    if (searchParams.get('tour') === '1' && isDemo) {
       startTour(copyrightTourSteps);
     }
-  }, [searchParams, startTour]);
+  }, [searchParams, startTour, isDemo]);
 
   // Load writers for each copyright
   useEffect(() => {
@@ -219,9 +219,11 @@ const CopyrightManagement = () => {
               Register and track copyrights with split assignments and metadata management
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => startTour(copyrightTourSteps)}>
-            Start Tour
-          </Button>
+          {isDemo && (
+            <Button variant="outline" size="sm" onClick={() => startTour(copyrightTourSteps)}>
+              Start Tour
+            </Button>
+          )}
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

@@ -17,6 +17,7 @@ import { useSyncLicenses } from "@/hooks/useSyncLicenses";
 import SyncLicenseFiltersComponent from "@/components/sync-licensing/SyncLicenseFilters";
 import { useSyncLicenseFilters } from "@/hooks/useSyncLicenseFilters";
 import { useTour } from "@/hooks/useTour";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 
 const SyncLicensingPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -27,6 +28,7 @@ const SyncLicensingPage = () => {
   
   // Only show demo navigation for non-subscribers
   const showDemoNavigation = !subscribed;
+  const { isDemo } = useDemoAccess();
 
   useEffect(() => {
     updatePageMetadata('syncLicensing');
@@ -40,8 +42,8 @@ const SyncLicensingPage = () => {
     { target: "[data-tour='sync-views']", content: "Switch between table, kanban, and calendar views." },
   ];
   useEffect(() => {
-    if (searchParams.get('tour') === '1') startTour(steps);
-  }, [searchParams, startTour]);
+    if (searchParams.get('tour') === '1' && isDemo) startTour(steps);
+  }, [searchParams, startTour, isDemo]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -118,7 +120,7 @@ const SyncLicensingPage = () => {
               <Plus className="h-4 w-4" />
               New Sync Request
             </Button>
-            <Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>
+            {isDemo && (<Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>)}
         </div>
 
         {/* Dashboard Stats */}
