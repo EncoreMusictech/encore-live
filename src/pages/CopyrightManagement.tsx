@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Search, Music, FileText, Users, CheckCircle, Clock, AlertTriangle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useCopyright } from "@/hooks/useCopyright";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -24,6 +24,7 @@ import { CopyrightValidationPanel } from "@/components/copyright/CopyrightValida
 import { ExportDialog } from "@/components/copyright/ExportDialog";
 import { SenderCodeOnboarding } from "@/components/copyright/SenderCodeOnboarding";
 import { TransmissionHistory } from "@/components/copyright/TransmissionHistory";
+import { useTour } from "@/hooks/useTour";
 
 
 const CopyrightManagement = () => {
@@ -54,6 +55,22 @@ const CopyrightManagement = () => {
   useEffect(() => {
     updatePageMetadata('copyrightManagement');
   }, []);
+
+  const { startTour } = useTour();
+  const [searchParams] = useSearchParams();
+  const copyrightTourSteps = [
+    { target: "[data-tour='copyright-title']", content: "Manage your catalog: register works, splits, and metadata." },
+    { target: "[data-tour='copyright-tabs']", content: "Navigate features: management, CWR/DDEX export, register, bulk upload, activity, analytics." },
+    { target: "[data-tour='copyright-table']", content: "Your works table: edit, delete, and bulk actions." },
+    { target: "[data-tour='copyright-register']", content: "Use Register New to add a work." },
+    { target: "[data-tour='copyright-export']", content: "Export in CWR/DDEX to register with PROs and platforms." },
+  ];
+
+  useEffect(() => {
+    if (searchParams.get('tour') === '1') {
+      startTour(copyrightTourSteps);
+    }
+  }, [searchParams, startTour]);
 
   // Load writers for each copyright
   useEffect(() => {
@@ -195,18 +212,23 @@ const CopyrightManagement = () => {
         {/* Demo Limit Banner */}
         <DemoLimitBanner module="copyrightManagement" className="mb-6" />
 
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Copyright Management</h1>
-          <p className="text-muted-foreground">
-            Register and track copyrights with split assignments and metadata management
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-2" data-tour="copyright-title">Copyright Management</h1>
+            <p className="text-muted-foreground">
+              Register and track copyrights with split assignments and metadata management
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => startTour(copyrightTourSteps)}>
+            Start Tour
+          </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-6" data-tour="copyright-tabs">
             <TabsTrigger value="copyrights">My Copyrights</TabsTrigger>
-            <TabsTrigger value="cwr-ddex-export">CWR/DDEX Export</TabsTrigger>
-            <TabsTrigger value="register" disabled={!canAccess('copyrightManagement')}>
+            <TabsTrigger value="cwr-ddex-export" data-tour="copyright-export">CWR/DDEX Export</TabsTrigger>
+            <TabsTrigger value="register" disabled={!canAccess('copyrightManagement')} data-tour="copyright-register">
               {canAccess('copyrightManagement') ? 'Register New' : 'Demo Limit Reached'}
             </TabsTrigger>
             <TabsTrigger value="bulk-upload">Bulk Upload</TabsTrigger>
@@ -214,17 +236,19 @@ const CopyrightManagement = () => {
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="copyrights" className="space-y-6">
-            <CopyrightTable 
-              copyrights={copyrights}
-              writers={writers}
-              loading={loading}
-              realtimeError={realtimeError}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onBulkDelete={handleBulkDelete}
-            />
-          </TabsContent>
+            <TabsContent value="copyrights" className="space-y-6">
+              <div data-tour="copyright-table">
+                <CopyrightTable 
+                  copyrights={copyrights}
+                  writers={writers}
+                  loading={loading}
+                  realtimeError={realtimeError}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onBulkDelete={handleBulkDelete}
+                />
+              </div>
+            </TabsContent>
 
 
           <TabsContent value="cwr-ddex-export" className="space-y-6">
