@@ -25,6 +25,7 @@ import { ProRegistrationSection } from './ProRegistrationSection';
 import { ContractIntegrationPanel } from './ContractIntegrationPanel';
 import { CMORegistration, getAllPROs } from '@/data/cmo-territories';
 import { DocumentUpload } from '@/components/ui/document-upload';
+import { MLCMetadataEnrichment } from './MLCMetadataEnrichment';
 
 interface EnhancedCopyrightFormProps {
   onSuccess?: () => void;
@@ -913,6 +914,47 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
           </CollapsibleContent>
         </Card>
       </Collapsible>
+
+      {/* MLC Metadata Enrichment */}
+      <MLCMetadataEnrichment 
+        workTitle={formData.work_title}
+        writerName={writers.length > 0 ? writers[0].name : ''}
+        iswc={formData.iswc}
+        onDataEnriched={(result) => {
+          if (result.found) {
+            // Auto-populate ISWC if found
+            if (result.metadata.iswc && !formData.iswc) {
+              setFormData(prev => ({ ...prev, iswc: result.metadata.iswc }));
+            }
+            
+            // Auto-populate MLC work ID
+            if (result.metadata.mlcWorkId) {
+              setFormData(prev => ({ ...prev, mlc_work_id: result.metadata.mlcWorkId }));
+            }
+            
+            // Auto-populate writers if none exist
+            if (result.writers && result.writers.length > 0 && writers.length === 0) {
+              const mlcWriters = result.writers.map((writer, index) => ({
+                id: `mlc-writer-${index}`,
+                name: writer.name,
+                ipi: writer.ipi || '',
+                share: writer.share || 0,
+                proAffiliation: '',
+                controlled: 'NC' as const,
+                publisherName: '',
+                publisherIpi: ''
+              }));
+              setWriters(mlcWriters);
+            }
+            
+            toast({
+              title: "MLC Data Applied",
+              description: "Work metadata has been enriched with MLC data"
+            });
+          }
+        }}
+        className="mb-6"
+      />
 
       {/* Writers Section */}
       <Collapsible open={writersOpen} onOpenChange={setWritersOpen}>

@@ -24,6 +24,7 @@ import { CopyrightValidationPanel } from "@/components/copyright/CopyrightValida
 import { ExportDialog } from "@/components/copyright/ExportDialog";
 import { SenderCodeOnboarding } from "@/components/copyright/SenderCodeOnboarding";
 import { TransmissionHistory } from "@/components/copyright/TransmissionHistory";
+import { MLCBulkEnrichment } from "@/components/copyright/MLCBulkEnrichment";
 
 
 const CopyrightManagement = () => {
@@ -242,10 +243,11 @@ const CopyrightManagement = () => {
               <CardContent className="space-y-6">
                 {/* Nested Tabs for CWR/DDEX functionality */}
                 <Tabs defaultValue="export" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="export">Export Works</TabsTrigger>
                     <TabsTrigger value="transmission-history">Transmission History</TabsTrigger>
                     <TabsTrigger value="sender-codes">Sender Codes</TabsTrigger>
+                    <TabsTrigger value="mlc-enrichment">MLC Enrichment</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="export" className="space-y-6 mt-6">
@@ -376,6 +378,10 @@ const CopyrightManagement = () => {
                   
                   <TabsContent value="sender-codes" className="space-y-6 mt-6">
                     <SenderCodeOnboarding />
+                  </TabsContent>
+                  
+                  <TabsContent value="mlc-enrichment" className="space-y-6 mt-6">
+                    <MLCBulkEnrichment />
                   </TabsContent>
                 </Tabs>
               </CardContent>
