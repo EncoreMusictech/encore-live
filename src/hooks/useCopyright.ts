@@ -337,13 +337,19 @@ export const useCopyright = () => {
           }
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
           console.log('Real-time copyright subscription active');
           setRealtimeError(null);
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('Real-time subscription error');
+          console.warn('Real-time subscription error:', err);
           setRealtimeError('Real-time updates unavailable');
+        } else if (status === 'TIMED_OUT') {
+          console.warn('Real-time subscription timed out, retrying...');
+          setRealtimeError('Connection timeout, retrying...');
+        } else if (status === 'CLOSED') {
+          console.warn('Real-time subscription closed');
+          setRealtimeError('Connection closed');
         }
       });
 
