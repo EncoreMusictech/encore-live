@@ -16,10 +16,12 @@ import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportSt
 import { RoyaltiesDiscrepancyReport } from "@/components/royalties/RoyaltiesDiscrepancyReport";
 import { RoyaltiesAnalyticsDashboard } from "@/components/royalties/RoyaltiesAnalyticsDashboard";
 import { useTour } from "@/hooks/useTour";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 export default function RoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState("allocations");
   const { subscribed } = useSubscription();
+  const { isDemo } = useDemoAccess();
 
   useEffect(() => {
     updatePageMetadata('royalties');
@@ -32,8 +34,8 @@ export default function RoyaltiesPage() {
     { target: "[data-tour='royalties-new']", content: "Create a new royalty allocation." },
   ];
   useEffect(() => {
-    if (searchParams.get('tour') === '1') startTour(steps);
-  }, [searchParams, startTour]);
+    if (searchParams.get('tour') === '1' && isDemo) startTour(steps);
+  }, [searchParams, startTour, isDemo]);
   
   const {
     allocations,
@@ -75,7 +77,7 @@ export default function RoyaltiesPage() {
               Import statements, manage allocations, and process royalty distributions
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>
+          {isDemo && (<Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>)}
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

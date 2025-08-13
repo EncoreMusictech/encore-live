@@ -16,7 +16,7 @@ import { useTour } from "@/hooks/useTour";
 
 const CatalogValuationPage = () => {
   const [selectedModule, setSelectedModule] = useState<'selection' | 'valuation' | 'deals' | 'song-estimator'>('selection');
-  const { canAccess } = useDemoAccess();
+  const { canAccess, isDemo } = useDemoAccess();
   const { subscribed } = useSubscription();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -40,10 +40,10 @@ const CatalogValuationPage = () => {
   ];
 
   useEffect(() => {
-    if (searchParams.get('tour') === '1') {
+    if (searchParams.get('tour') === '1' && isDemo) {
       startTour(steps);
     }
-  }, [searchParams, startTour]);
+  }, [searchParams, startTour, isDemo]);
 
   const renderModuleSelection = () => (
     <div className="space-y-6">
@@ -54,7 +54,7 @@ const CatalogValuationPage = () => {
         <p className="text-muted-foreground">
           Professional tools for catalog valuation and deal analysis
         </p>
-        <Button variant="outline" size="sm" onClick={() => startTour(steps)} className="mt-3">Start Tour</Button>
+        {isDemo && (<Button variant="outline" size="sm" onClick={() => startTour(steps)} className="mt-3">Start Tour</Button>)}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">

@@ -14,12 +14,14 @@ import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBa
 import { ReconciliationAnalytics } from "@/components/royalties/ReconciliationAnalytics";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 import { useTour } from "@/hooks/useTour";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 
 export default function ReconciliationPage() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState("batches");
   const { refreshBatches } = useReconciliationBatches();
   const { subscribed } = useSubscription();
+  const { isDemo } = useDemoAccess();
   
   // Only show demo navigation for non-subscribers
   const showDemoNavigation = !subscribed;
@@ -38,10 +40,10 @@ export default function ReconciliationPage() {
   ];
 
   useEffect(() => {
-    if (searchParams.get('tour') === '1') {
+    if (searchParams.get('tour') === '1' && isDemo) {
       startTour(steps);
     }
-  }, [searchParams, startTour]);
+  }, [searchParams, startTour, isDemo]);
 
   const handleBatchCreated = () => {
     setShowForm(false);
@@ -83,7 +85,7 @@ export default function ReconciliationPage() {
               <Plus className="h-4 w-4" />
               New Batch
             </Button>
-            <Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>
+            {isDemo && (<Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>)}
           </div>
         </div>
 

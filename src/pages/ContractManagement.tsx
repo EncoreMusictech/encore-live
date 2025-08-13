@@ -437,7 +437,7 @@ const ContractManagement = () => {
               Simulate, upload, generate, and manage music industry agreements with automated royalty extraction.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>
+          {isDemo && (<Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>)}
         </div>
           
           <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {

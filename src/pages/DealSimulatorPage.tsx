@@ -38,7 +38,7 @@ interface Album {
 }
 
 const DealSimulatorPage = () => {
-  const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
+  const { canAccess, incrementUsage, showUpgradeModalForModule, isDemo } = useDemoAccess();
   const { subscribed } = useSubscription();
   const [currentArtist, setCurrentArtist] = useState<Artist | null>(null);
   const [artistName, setArtistName] = useState("");
@@ -68,8 +68,8 @@ const DealSimulatorPage = () => {
   ];
 
   useEffect(() => {
-    if (searchParams.get('tour') === '1') startTour(steps);
-  }, [searchParams, startTour]);
+    if (searchParams.get('tour') === '1' && isDemo) startTour(steps);
+  }, [searchParams, startTour, isDemo]);
 
   const handleArtistSearch = async () => {
     if (!artistName.trim()) {
@@ -239,7 +239,7 @@ const DealSimulatorPage = () => {
             <p className="text-muted-foreground">
               Analyze catalog acquisitions and licensing deals with detailed financial projections
             </p>
-            <div className="mt-2"><Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button></div>
+            <div className="mt-2">{isDemo && (<Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>)}</div>
           </div>
 
           <DemoLimitBanner module="dealSimulator" className="mb-6" />
