@@ -64,153 +64,89 @@ serve(async (req) => {
     const accessToken = authData.accessToken;
     let mlcData: any;
 
-    // Try different search strategies based on what the official MLC website uses
-    
-    // Strategy 1: Direct writer name search (like the screenshot shows)
-    if (writerName && !mlcData) {
-      console.log('Searching MLC by writer name:', writerName);
-      
-      // Use the same endpoint structure as the official MLC site
-      const writerSearchResponse = await fetch('https://public-api.themlc.com/search', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          searchType: 'writer',
-          writerName: writerName.toUpperCase(), // MLC often expects uppercase
-          pageSize: 50,
-          pageNumber: 1
-        })
-      });
-
-      console.log('Writer search status:', writerSearchResponse.status);
-      console.log('Writer search headers:', Object.fromEntries(writerSearchResponse.headers.entries()));
-      
-      if (writerSearchResponse.ok) {
-        const writerResults = await writerSearchResponse.json();
-        console.log('Writer search response:', JSON.stringify(writerResults, null, 2));
-        
-        if (writerResults && writerResults.results && writerResults.results.length > 0) {
-          mlcData = writerResults;
-        }
-      } else {
-        const errorText = await writerSearchResponse.text();
-        console.log('Writer search failed:', writerSearchResponse.status, errorText);
-      }
-    }
-
-    // Strategy 2: Song/work title search  
-    if (workTitle && !mlcData) {
-      console.log('Searching MLC by work title:', workTitle);
-      
-      const titleSearchResponse = await fetch('https://public-api.themlc.com/search', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          searchType: 'work',
-          workTitle: workTitle.toUpperCase(),
-          pageSize: 50,
-          pageNumber: 1
-        })
-      });
-
-      if (titleSearchResponse.ok) {
-        const titleResults = await titleSearchResponse.json();
-        console.log('Title search response:', JSON.stringify(titleResults, null, 2));
-        
-        if (titleResults && titleResults.results && titleResults.results.length > 0) {
-          mlcData = titleResults;
-        }
-      } else {
-        console.log('Title search failed:', titleSearchResponse.status, await titleSearchResponse.text());
-      }
-    }
-
-    // Strategy 3: ISRC search if provided
+    // Strategy 1: ISRC search using correct endpoint
     if (isrc && !mlcData) {
-      console.log('Searching MLC by ISRC:', isrc);
+      console.log('Searching MLC recordings by ISRC:', isrc);
       
-      const isrcSearchResponse = await fetch('https://public-api.themlc.com/search', {
+      const recordingResponse = await fetch('https://public-api.themlc.com/search/recordings', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          searchType: 'recording',
           isrc: isrc,
-          pageSize: 50,
-          pageNumber: 1
+          title: workTitle || undefined,
+          artist: writerName || undefined
         })
       });
 
-      console.log('ISRC search status:', isrcSearchResponse.status);
-      console.log('ISRC search headers:', Object.fromEntries(isrcSearchResponse.headers.entries()));
-      
-      if (isrcSearchResponse.ok) {
-        const isrcResults = await isrcSearchResponse.json();
-        console.log('ISRC search response:', JSON.stringify(isrcResults, null, 2));
-        
-        if (isrcResults && isrcResults.results && isrcResults.results.length > 0) {
-          mlcData = isrcResults;
+      console.log('Recording search status:', recordingResponse.status);
+
+      if (recordingResponse.ok) {
+        const recordings = await recordingResponse.json();
+        console.log('MLC recordings response:', JSON.stringify(recordings, null, 2));
+
+        if (recordings && recordings.length > 0) {
+          const recording = recordings[0];
+          console.log('Found recording with mlcsongCode:', recording.mlcsongCode);
+          
+          if (recording.mlcsongCode) {
+            console.log('Fetching work details for mlcsongCode:', recording.mlcsongCode);
+            
+            const workResponse = await fetch('https://public-api.themlc.com/works', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify([{ mlcsongCode: recording.mlcsongCode }])
+            });
+
+            console.log('Work fetch status:', workResponse.status);
+            
+            if (workResponse.ok) {
+              const works = await workResponse.json();
+              console.log('Work details response:', JSON.stringify(works, null, 2));
+              
+              if (works && works.length > 0) {
+                mlcData = { works };
+              }
+            } else {
+              const errorText = await workResponse.text();
+              console.log('Work fetch failed:', workResponse.status, errorText);
+            }
+          }
         }
       } else {
-        const errorText = await isrcSearchResponse.text();
-        console.log('ISRC search failed:', isrcSearchResponse.status, errorText);
-        
-        // Try alternative ISRC endpoint
-        console.log('Trying alternative ISRC search endpoint...');
-        const altIsrcResponse = await fetch('https://public-api.themlc.com/search/recordings', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            isrc: isrc
-          })
-        });
-        
-        console.log('Alternative ISRC search status:', altIsrcResponse.status);
-        if (altIsrcResponse.ok) {
-          const altIsrcResults = await altIsrcResponse.json();
-          console.log('Alternative ISRC search response:', JSON.stringify(altIsrcResults, null, 2));
-          
-          if (altIsrcResults && altIsrcResults.length > 0) {
-            mlcData = { results: altIsrcResults };
-          }
-        } else {
-          const altErrorText = await altIsrcResponse.text();
-          console.log('Alternative ISRC search also failed:', altIsrcResponse.status, altErrorText);
-        }
+        const errorText = await recordingResponse.text();
+        console.log('Recording search failed:', recordingResponse.status, errorText);
       }
     }
 
-    // Strategy 4: Try the legacy endpoints as fallback
+    // Strategy 2: Song/writer search using correct endpoint
     if (!mlcData && (workTitle || writerName)) {
-      console.log('Trying legacy songcode search as fallback...');
+      console.log('Searching MLC by songcode with title:', workTitle, 'writer:', writerName);
       
       const searchBody: any = {};
       if (workTitle) searchBody.title = workTitle;
       if (writerName) {
-        const nameParts = writerName.split(' ');
+        const nameParts = writerName.trim().split(/\s+/);
         if (nameParts.length >= 2) {
           searchBody.writers = [{
             writerFirstName: nameParts[0],
             writerLastName: nameParts.slice(1).join(' ')
           }];
         } else {
+          // If only one name part, use it as last name (common for single names)
           searchBody.writers = [{
-            writerFirstName: nameParts[0],
+            writerFirstName: '',
             writerLastName: nameParts[0]
           }];
         }
       }
+
+      console.log('Songcode search body:', JSON.stringify(searchBody, null, 2));
 
       const songResponse = await fetch('https://public-api.themlc.com/search/songcode', {
         method: 'POST',
@@ -221,14 +157,46 @@ serve(async (req) => {
         body: JSON.stringify(searchBody)
       });
 
+      console.log('Songcode search status:', songResponse.status);
+
       if (songResponse.ok) {
         const songs = await songResponse.json();
-        console.log('Legacy songcode response:', JSON.stringify(songs, null, 2));
+        console.log('MLC songcode response:', JSON.stringify(songs, null, 2));
 
         if (songs && songs.length > 0) {
-          // Convert to consistent format
-          mlcData = { results: songs };
+          const song = songs[0];
+          console.log('Found song with mlcSongCode:', song.mlcSongCode);
+          
+          if (song.mlcSongCode) {
+            console.log('Fetching work details for mlcSongCode:', song.mlcSongCode);
+            
+            const workResponse = await fetch('https://public-api.themlc.com/works', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify([{ mlcsongCode: song.mlcSongCode }])
+            });
+
+            console.log('Work fetch status:', workResponse.status);
+            
+            if (workResponse.ok) {
+              const works = await workResponse.json();
+              console.log('Work details response:', JSON.stringify(works, null, 2));
+              
+              if (works && works.length > 0) {
+                mlcData = { works };
+              }
+            } else {
+              const errorText = await workResponse.text();
+              console.log('Work fetch failed:', workResponse.status, errorText);
+            }
+          }
         }
+      } else {
+        const errorText = await songResponse.text();
+        console.log('Songcode search failed:', songResponse.status, errorText);
       }
     }
 
