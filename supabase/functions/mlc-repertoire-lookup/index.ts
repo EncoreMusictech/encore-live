@@ -65,7 +65,7 @@ serve(async (req) => {
         writers: [],
         publishers: [],
         metadata: {}
-      }, 200);
+      });
     }
 
     console.log('Getting MLC access token...');
@@ -239,7 +239,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('MLC lookup error:', error);
     console.error('Error details:', error?.stack || 'No stack trace');
-    console.error('Request body was:', { workTitle, writerName, publisherName, iswc, isrc });
+    console.error('Request body was:', await req.clone().json().catch(() => 'Could not parse request body'));
     return json({ 
       error: error.message || 'Unexpected error during MLC lookup',
       found: false,
