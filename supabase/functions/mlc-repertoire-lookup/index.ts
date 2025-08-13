@@ -47,12 +47,22 @@ async function getMlcAccessToken(): Promise<string> {
 }
 
 serve(async (req) => {
+  // Always handle CORS first
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Wrap everything in try-catch to ensure CORS headers are always returned
   try {
-    const { workTitle, writerName, publisherName, iswc, isrc } = await req.json();
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return json({ error: 'Invalid JSON in request body' }, 400);
+    }
+
+    const { workTitle, writerName, publisherName, iswc, isrc } = requestBody;
 
     if (!workTitle && !writerName && !iswc && !isrc) {
       return json({ error: 'At least one search parameter is required' }, 400);
@@ -239,7 +249,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('MLC lookup error:', error);
     console.error('Error details:', error?.stack || 'No stack trace');
-    console.error('Request body was:', await req.clone().json().catch(() => 'Could not parse request body'));
+    
+    // Always return proper CORS headers even on error
     return json({ 
       error: error.message || 'Unexpected error during MLC lookup',
       found: false,
