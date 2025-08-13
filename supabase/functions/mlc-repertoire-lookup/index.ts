@@ -9,7 +9,8 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const mlcApiKey = Deno.env.get('MLC_API_KEY');
+const mlcUsername = Deno.env.get('MLC_USERNAME');
+const mlcPassword = Deno.env.get('MLC_PASSWORD');
 
 const supabase = createClient(supabaseUrl, serviceKey || '');
 
@@ -18,6 +19,31 @@ function json(data: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
+}
+
+// Get MLC OAuth token
+async function getMlcAccessToken(): Promise<string> {
+  const authResponse = await fetch('https://public-api.themlc.com/oauth/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      username: mlcUsername,
+      password: mlcPassword
+    })
+  });
+
+  if (!authResponse.ok) {
+    throw new Error(`MLC OAuth failed: ${authResponse.status}`);
+  }
+
+  const authData = await authResponse.json();
+  if (authData.error) {
+    throw new Error(`MLC OAuth error: ${authData.error} - ${authData.errorDescription || ''}`);
+  }
+
+  return authData.accessToken;
 }
 
 serve(async (req) => {
@@ -32,9 +58,9 @@ serve(async (req) => {
       return json({ error: 'At least one search parameter is required' }, 400);
     }
 
-    if (!mlcApiKey) {
+    if (!mlcUsername || !mlcPassword) {
       return json({ 
-        error: 'MLC API key not configured',
+        error: 'MLC credentials not configured. Please set MLC_USERNAME and MLC_PASSWORD.',
         found: false,
         writers: [],
         publishers: [],
@@ -42,41 +68,112 @@ serve(async (req) => {
       }, 200);
     }
 
-    // Construct search query for MLC API
-    const searchParams = new URLSearchParams();
-    if (workTitle) searchParams.append('title', workTitle);
-    if (writerName) searchParams.append('writer', writerName);
-    if (publisherName) searchParams.append('publisher', publisherName);
-    if (iswc) searchParams.append('iswc', iswc);
-    if (isrc) searchParams.append('isrc', isrc);
+    console.log('Getting MLC access token...');
+    const accessToken = await getMlcAccessToken();
 
-    console.log('Searching MLC with params:', Object.fromEntries(searchParams));
+    let mlcData: any;
 
-    // Call MLC Public Search API
-    const mlcResponse = await fetch(`https://public-api.themlc.com/public-api/search?${searchParams}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${mlcApiKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+    // If we have ISRC, search recordings first
+    if (isrc) {
+      console.log('Searching MLC recordings by ISRC:', isrc);
+      
+      const recordingResponse = await fetch('https://public-api.themlc.com/search/recordings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          isrc: isrc,
+          title: workTitle || undefined,
+          artist: writerName || undefined
+        })
+      });
+
+      if (!recordingResponse.ok) {
+        throw new Error(`MLC recordings search failed: ${recordingResponse.status}`);
       }
-    });
 
-    if (!mlcResponse.ok) {
-      console.error('MLC API error:', mlcResponse.status, await mlcResponse.text());
-      return json({
-        error: `MLC API error: ${mlcResponse.status}`,
-        found: false,
-        writers: [],
-        publishers: [],
-        metadata: {}
-      }, 200);
+      const recordings = await recordingResponse.json();
+      console.log('MLC recordings response:', recordings);
+
+      if (recordings && recordings.length > 0) {
+        // Get the work details using the mlcsongCode from the recording
+        const recording = recordings[0];
+        if (recording.mlcsongCode) {
+          const workResponse = await fetch('https://public-api.themlc.com/works', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify([{ mlcsongCode: recording.mlcsongCode }])
+          });
+
+          if (workResponse.ok) {
+            const works = await workResponse.json();
+            if (works && works.length > 0) {
+              mlcData = { works };
+            }
+          }
+        }
+      }
     }
 
-    const mlcData = await mlcResponse.json();
-    console.log('MLC API response:', mlcData);
+    // If no results from ISRC search or no ISRC provided, try songcode search
+    if (!mlcData && (workTitle || writerName)) {
+      console.log('Searching MLC by songcode...');
+      
+      const searchBody: any = {};
+      if (workTitle) searchBody.title = workTitle;
+      if (writerName) {
+        const [firstName, ...lastNameParts] = writerName.split(' ');
+        searchBody.writers = [{
+          writerFirstName: firstName,
+          writerLastName: lastNameParts.join(' ') || firstName
+        }];
+      }
 
-    if (!mlcData.works || mlcData.works.length === 0) {
+      const songResponse = await fetch('https://public-api.themlc.com/search/songcode', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(searchBody)
+      });
+
+      if (!songResponse.ok) {
+        throw new Error(`MLC songcode search failed: ${songResponse.status}`);
+      }
+
+      const songs = await songResponse.json();
+      console.log('MLC songcode response:', songs);
+
+      if (songs && songs.length > 0) {
+        // Get full work details for the first result
+        const song = songs[0];
+        if (song.mlcSongCode) {
+          const workResponse = await fetch('https://public-api.themlc.com/works', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify([{ mlcsongCode: song.mlcSongCode }])
+          });
+
+          if (workResponse.ok) {
+            const works = await workResponse.json();
+            if (works && works.length > 0) {
+              mlcData = { works };
+            }
+          }
+        }
+      }
+    }
+
+    if (!mlcData || !mlcData.works || mlcData.works.length === 0) {
       return json({
         found: false,
         writers: [],
@@ -89,45 +186,39 @@ serve(async (req) => {
     // Process the first matching work
     const work = mlcData.works[0];
     
-    // Extract writers with their shares and IPI numbers
-    const writers = (work.rightsholders || [])
-      .filter((r: any) => r.type === 'writer' || r.role === 'songwriter')
-      .map((writer: any) => ({
-        name: writer.name || '',
-        ipi: writer.ipi_number || writer.ipi || '',
-        share: parseFloat(writer.share_percentage || writer.share || '0'),
-        role: writer.role || 'songwriter',
-        cae: writer.cae_number || ''
-      }));
+    // Extract writers from MLC format
+    const writers = (work.writers || []).map((writer: any) => ({
+      name: `${writer.writerFirstName || ''} ${writer.writerLastName || ''}`.trim(),
+      ipi: writer.writerIPI || '',
+      role: writer.writerRoleCode || 'songwriter',
+      cae: '',
+      share: 0 // MLC doesn't provide ownership shares in this endpoint
+    }));
 
-    // Extract publishers with their shares
-    const publishers = (work.rightsholders || [])
-      .filter((r: any) => r.type === 'publisher' || r.role === 'publisher')
-      .map((publisher: any) => ({
-        name: publisher.name || '',
-        ipi: publisher.ipi_number || publisher.ipi || '',
-        share: parseFloat(publisher.share_percentage || publisher.share || '0'),
-        cae: publisher.cae_number || ''
-      }));
+    // Extract publishers from MLC format
+    const publishers = (work.publishers || []).map((publisher: any) => ({
+      name: publisher.publisherName || '',
+      ipi: publisher.publisherIpiNumber || '',
+      share: publisher.collectionShare || 0,
+      cae: '',
+      mlcNumber: publisher.mlcPublisherNumber || ''
+    }));
 
     // Extract metadata
     const metadata = {
-      workTitle: work.title || '',
+      workTitle: work.primaryTitle || '',
       iswc: work.iswc || '',
-      mlcWorkId: work.work_id || work.id || '',
-      registrationDate: work.registration_date || '',
-      lastUpdated: work.last_updated || '',
-      status: work.status || 'registered',
-      workType: work.work_type || 'musical work',
-      duration: work.duration || null,
-      territory: 'USA', // MLC covers US mechanical rights
-      rightsType: 'mechanical'
+      mlcWorkId: work.membersSongId || '',
+      mlcSongCode: work.mlcSongCode || '',
+      territory: 'USA',
+      rightsType: 'mechanical',
+      source: 'MLC Public API'
     };
 
-    // Calculate confidence score based on data completeness
-    let confidence = 0.5;
+    // Calculate confidence score
+    let confidence = 0.6;
     if (work.iswc) confidence += 0.2;
-    if (writers.length > 0) confidence += 0.2;
+    if (writers.length > 0) confidence += 0.1;
     if (publishers.length > 0) confidence += 0.1;
     confidence = Math.min(1.0, confidence);
 
@@ -137,7 +228,7 @@ serve(async (req) => {
       publishers,
       metadata,
       confidence,
-      source: 'MLC',
+      source: 'MLC Public API',
       totalMatches: mlcData.works.length,
       verification_notes: `Found ${mlcData.works.length} work(s) in MLC database`
     };
