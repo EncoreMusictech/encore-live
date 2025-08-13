@@ -16,7 +16,7 @@ import { useTour } from "@/hooks/useTour";
 
 const CatalogValuationPage = () => {
   const [selectedModule, setSelectedModule] = useState<'selection' | 'valuation' | 'deals' | 'song-estimator'>('selection');
-  const { canAccess, isDemo } = useDemoAccess();
+  const { canAccess, isDemo, isDemoAccount } = useDemoAccess();
   const { subscribed } = useSubscription();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -40,10 +40,10 @@ const CatalogValuationPage = () => {
   ];
 
   useEffect(() => {
-    if (searchParams.get('tour') === '1' && isDemo) {
+    if (searchParams.get('tour') === '1' && isDemoAccount) {
       startTour(steps);
     }
-  }, [searchParams, startTour, isDemo]);
+  }, [searchParams, startTour, isDemoAccount]);
 
   const renderModuleSelection = () => (
     <div className="space-y-6">

@@ -128,7 +128,7 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
   };
 
   const extractBracketedFields = (content: string) => {
-    const bracketedFields = content.match(/\[([^\]]+)\]/g) || [];
+    const bracketedFields = (content.match(/\[([^\]]+)\]/g) || []) as string[];
     const fields: {[key: string]: string} = {};
     
     bracketedFields.forEach(field => {
