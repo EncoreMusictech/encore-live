@@ -704,3 +704,4 @@ const ContractManagement = () => {
 };
 
 export default ContractManagement;
+// End of ContractManagement page
