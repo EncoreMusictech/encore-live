@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, ArrowLeft } from "lucide-react";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
@@ -15,6 +15,7 @@ import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportStaging";
 import { RoyaltiesDiscrepancyReport } from "@/components/royalties/RoyaltiesDiscrepancyReport";
 import { RoyaltiesAnalyticsDashboard } from "@/components/royalties/RoyaltiesAnalyticsDashboard";
+import { useTour } from "@/hooks/useTour";
 export default function RoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState("allocations");
@@ -23,6 +24,16 @@ export default function RoyaltiesPage() {
   useEffect(() => {
     updatePageMetadata('royalties');
   }, []);
+  const { startTour } = useTour();
+  const [searchParams] = useSearchParams();
+  const steps = [
+    { target: "[data-tour='royalties-title']", content: "Manage statements, allocations, analytics, and discrepancies." },
+    { target: "[data-tour='royalties-tabs']", content: "Switch between modules within royalties processing." },
+    { target: "[data-tour='royalties-new']", content: "Create a new royalty allocation." },
+  ];
+  useEffect(() => {
+    if (searchParams.get('tour') === '1') startTour(steps);
+  }, [searchParams, startTour]);
   
   const {
     allocations,
@@ -59,15 +70,16 @@ export default function RoyaltiesPage() {
         
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Royalties Management</h1>
+            <h1 className="text-3xl font-bold text-foreground" data-tour="royalties-title">Royalties Management</h1>
             <p className="text-muted-foreground mt-2">
               Import statements, manage allocations, and process royalty distributions
             </p>
           </div>
+          <Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-4" data-tour="royalties-tabs">
             <TabsTrigger value="statements" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Statements
@@ -107,7 +119,7 @@ export default function RoyaltiesPage() {
                   Map works and their rightsholders to reconciled revenue
                 </p>
               </div>
-              <Button onClick={() => setShowForm(true)} className="gap-2">
+              <Button onClick={() => setShowForm(true)} className="gap-2" data-tour="royalties-new">
                 <Plus className="h-4 w-4" />
                 New Royalty
               </Button>

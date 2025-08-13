@@ -26,6 +26,7 @@ import { DemoContracts } from "@/components/contracts/DemoContracts";
 import { DemoPublishingContract } from "@/data/demo-publishing-contracts";
 import { DemoArtistContract } from "@/data/demo-artist-contracts";
 import { useContracts } from "@/hooks/useContracts";
+import { useTour } from "@/hooks/useTour";
 
 const ContractManagement = () => {
   const [activeTab, setActiveTab] = useState("contracts");
@@ -39,6 +40,11 @@ const ContractManagement = () => {
   useEffect(() => {
     updatePageMetadata('contractManagement');
   }, []);
+  const { startTour } = useTour();
+  const steps = [
+    { target: "[data-tour='contracts-title']", content: "Create, upload, or import contracts with smart workflows." },
+    { target: "[data-tour='contracts-new']", content: "Start a new contract using templates or upload." },
+  ];
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<any>(null);
@@ -175,11 +181,13 @@ const ContractManagement = () => {
         {/* Header Section */}
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Contract Management</h1>
+            <h1 className="text-3xl font-bold mb-2" data-tour="contracts-title">Contract Management</h1>
             <p className="text-muted-foreground">
               Simulate, upload, generate, and manage music industry agreements with automated royalty extraction.
             </p>
           </div>
+          <Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>
+        </div>
           
           <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
             console.log('Dialog state changing:', open);
@@ -197,6 +205,7 @@ const ContractManagement = () => {
                 className="gap-2" 
                 disabled={!canAccess('contractManagement')}
                 onClick={() => console.log('New Contract button clicked')}
+                data-tour="contracts-new"
               >
                 <Plus className="h-4 w-4" />
                 {canAccess('contractManagement') ? 'New Contract' : 'Demo Limit Reached'}

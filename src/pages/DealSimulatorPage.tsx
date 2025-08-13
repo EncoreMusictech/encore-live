@@ -15,6 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Calculator, Music, BarChart3, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTour } from "@/hooks/useTour";
+import { useSearchParams } from "react-router-dom";
 
 interface Artist {
   id: string;
@@ -48,6 +50,8 @@ const DealSimulatorPage = () => {
   useEffect(() => {
     updatePageMetadata('dealSimulator');
   }, []);
+  const { startTour } = useTour();
+  const [searchParams] = useSearchParams();
   const [discographyData, setDiscographyData] = useState<{
     albums: Album[];
     singles: Album[];
@@ -56,6 +60,16 @@ const DealSimulatorPage = () => {
   const [selectedTrackData, setSelectedTrackData] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("search");
   const { toast } = useToast();
+
+  const steps = [
+    { target: "[data-tour='deal-artist-input']", content: "Search for an artist to load their catalog." },
+    { target: "[data-tour='deal-search-btn']", content: "Start the search and load discography." },
+    { target: "[data-tour='deal-tabs']", content: "Workflow steps: Search → Select Assets → Deal Terms → Saved Scenarios." },
+  ];
+
+  useEffect(() => {
+    if (searchParams.get('tour') === '1') startTour(steps);
+  }, [searchParams, startTour]);
 
   const handleArtistSearch = async () => {
     if (!artistName.trim()) {
@@ -225,12 +239,13 @@ const DealSimulatorPage = () => {
             <p className="text-muted-foreground">
               Analyze catalog acquisitions and licensing deals with detailed financial projections
             </p>
+            <div className="mt-2"><Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button></div>
           </div>
 
           <DemoLimitBanner module="dealSimulator" className="mb-6" />
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w/full grid-cols-4" data-tour="deal-tabs">
               <TabsTrigger value="search">
                 <Search className="w-4 h-4 mr-2" />
                 Search Artist
@@ -273,8 +288,9 @@ const DealSimulatorPage = () => {
                       onChange={(e) => setArtistName(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleArtistSearch()}
                       disabled={loading}
+                      data-tour="deal-artist-input"
                     />
-                    <Button onClick={handleArtistSearch} disabled={loading || !artistName.trim()}>
+                    <Button onClick={handleArtistSearch} disabled={loading || !artistName.trim()} data-tour="deal-search-btn">
                       {loading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (

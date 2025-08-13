@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Filter, LayoutGrid, Calendar, List, ArrowLeft } from "lucide-react";
 import { updatePageMetadata } from "@/utils/seo";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +16,7 @@ import { SyncLicenseDashboard } from "@/components/sync-licensing/SyncLicenseDas
 import { useSyncLicenses } from "@/hooks/useSyncLicenses";
 import SyncLicenseFiltersComponent from "@/components/sync-licensing/SyncLicenseFilters";
 import { useSyncLicenseFilters } from "@/hooks/useSyncLicenseFilters";
+import { useTour } from "@/hooks/useTour";
 
 const SyncLicensingPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -30,6 +31,17 @@ const SyncLicensingPage = () => {
   useEffect(() => {
     updatePageMetadata('syncLicensing');
   }, []);
+  const { startTour } = useTour();
+  const [searchParams] = useSearchParams();
+  const steps = [
+    { target: "[data-tour='sync-title']", content: "Track sync deals from inquiry to payment." },
+    { target: "[data-tour='sync-new']", content: "Create a new sync request." },
+    { target: "[data-tour='sync-filters']", content: "Filter your deals by status, agent, and more." },
+    { target: "[data-tour='sync-views']", content: "Switch between table, kanban, and calendar views." },
+  ];
+  useEffect(() => {
+    if (searchParams.get('tour') === '1') startTour(steps);
+  }, [searchParams, startTour]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -97,15 +109,16 @@ const SyncLicensingPage = () => {
         )}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Sync Licensing Tracker</h1>
+            <h1 className="text-3xl font-bold text-foreground" data-tour="sync-title">Sync Licensing Tracker</h1>
             <p className="text-muted-foreground mt-2">
               Manage your sync licensing deals from inquiry to payment
             </p>
           </div>
-          <Button onClick={() => setIsFormOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Sync Request
-          </Button>
+            <Button onClick={() => setIsFormOpen(true)} className="gap-2" data-tour="sync-new">
+              <Plus className="h-4 w-4" />
+              New Sync Request
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>
         </div>
 
         {/* Dashboard Stats */}
@@ -116,13 +129,13 @@ const SyncLicensingPage = () => {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>Sync Deals</CardTitle>
-              <div className="flex gap-2">
+              <div className="flex gap-2" data-tour="sync-filters">
                 <SyncLicenseFiltersComponent
                   filters={filters}
                   onFiltersChange={setFilters}
                   activeFiltersCount={activeFiltersCount}
                 />
-                <div className="flex gap-1">
+                <div className="flex gap-1" data-tour="sync-views">
                   <Button
                     variant={viewMode === "table" ? "default" : "outline"}
                     size="sm"
