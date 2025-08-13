@@ -238,6 +238,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('MLC lookup error:', error);
+    console.error('Error details:', error?.stack || 'No stack trace');
+    console.error('Request body was:', { workTitle, writerName, publisherName, iswc, isrc });
     return json({ 
       error: error.message || 'Unexpected error during MLC lookup',
       found: false,
