@@ -53,7 +53,7 @@ serve(async (req) => {
     console.log('Searching MLC with params:', Object.fromEntries(searchParams));
 
     // Call MLC Public Search API
-    const mlcResponse = await fetch(`https://api.themlc.com/public/search?${searchParams}`, {
+    const mlcResponse = await fetch(`https://public-api.themlc.com/public-api/search?${searchParams}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${mlcApiKey}`,
