@@ -11,18 +11,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calculator, TrendingUp, ArrowRight, Brain, Target, ArrowLeft, Search } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
-import { useTour } from "@/hooks/useTour";
+import { Link } from "react-router-dom";
 
 const CatalogValuationPage = () => {
   const [selectedModule, setSelectedModule] = useState<'selection' | 'valuation' | 'deals' | 'song-estimator'>('selection');
-  const { canAccess, isDemo, isDemoAccount } = useDemoAccess();
+  const { canAccess } = useDemoAccess();
   const { subscribed } = useSubscription();
   const { user } = useAuth();
   const { toast } = useToast();
   const isAllowedSongEstimator = (user?.email?.toLowerCase() === 'info@encoremusic.tech');
-  const { startTour } = useTour();
-  const [searchParams] = useSearchParams();
 
   // Only show demo navigation for non-subscribers
   const showDemoNavigation = !subscribed;
@@ -31,30 +28,15 @@ const CatalogValuationPage = () => {
     updatePageMetadata('catalogValuation');
   }, []);
 
-  const steps = [
-    { target: "[data-tour='cv-title']", content: "Choose a tool to begin your analysis." },
-    { target: "[data-tour='cv-launch-valuation']", content: "Start a catalog valuation using streaming data and DCF." },
-    { target: "[data-tour='cv-launch-deal']", content: "Open the Deal Simulator to model acquisitions." },
-    { target: "[data-tour='cv-launch-song']", content: "Explore the Song Estimator for catalog research." },
-    { target: "[data-tour='cv-quick']", content: "Quick actions to jump into common workflows." },
-  ];
-
-  useEffect(() => {
-    if (searchParams.get('tour') === '1' && isDemoAccount) {
-      startTour(steps);
-    }
-  }, [searchParams, startTour, isDemoAccount]);
-
   const renderModuleSelection = () => (
     <div className="space-y-6">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-2" data-tour="cv-title">
+        <h1 className="text-3xl font-bold mb-2">
           Music IP Analytics Suite
         </h1>
         <p className="text-muted-foreground">
           Professional tools for catalog valuation and deal analysis
         </p>
-        {isDemo && (<Button variant="outline" size="sm" onClick={() => startTour(steps)} className="mt-3">Start Tour</Button>)}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -99,7 +81,6 @@ const CatalogValuationPage = () => {
               className="w-full bg-gradient-primary text-primary-foreground group-hover:shadow-lg transition-shadow"
               onClick={() => setSelectedModule('valuation')}
               disabled={!canAccess('catalogValuation')}
-              data-tour="cv-launch-valuation"
             >
               {canAccess('catalogValuation') ? 'Launch Catalog Valuation' : 'Demo Limit Reached'}
               <ArrowRight className="h-4 w-4 ml-2" />
@@ -148,7 +129,6 @@ const CatalogValuationPage = () => {
               variant="secondary"
               className="w-full group-hover:shadow-lg transition-shadow"
               onClick={() => window.location.href = '/deal-simulator'}
-              data-tour="cv-launch-deal"
             >
               Launch Deal Simulator
               <ArrowRight className="h-4 w-4 ml-2" />
@@ -204,7 +184,6 @@ const CatalogValuationPage = () => {
                 setSelectedModule('song-estimator');
               }}
               disabled={!canAccess('catalogValuation')}
-              data-tour="cv-launch-song"
             >
               {canAccess('catalogValuation') ? 'Launch Song Estimator' : 'Demo Limit Reached'}
               <ArrowRight className="h-4 w-4 ml-2" />
@@ -214,7 +193,7 @@ const CatalogValuationPage = () => {
       </div>
 
       {/* Quick Access Section */}
-      <div className="text-center mt-8" data-tour="cv-quick">
+      <div className="text-center mt-8">
         <p className="text-sm text-muted-foreground mb-4">
           Not sure which tool to use? Start with catalog valuation to get baseline metrics.
         </p>

@@ -30,7 +30,6 @@ interface DemoLimits {
 
 interface DemoAccessContextType {
   isDemo: boolean;
-  isDemoAccount: boolean;
   isAdmin: boolean;
   demoLimits: DemoLimits;
   canAccess: (module: string) => boolean;
@@ -84,7 +83,6 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
   // Determine if user is demo or admin
   const isDemo = !user || user?.email === DEMO_EMAIL || user?.user_metadata?.role === 'demo'; // Unauthenticated users, demo account, or users with demo role are demo users
   const isAdmin = user?.email === ADMIN_EMAIL;
-  const isDemoAccount = !!user && (user?.email === DEMO_EMAIL || user?.user_metadata?.role === 'demo');
 
   // Load demo limits from localStorage on mount
   useEffect(() => {
@@ -265,7 +263,6 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
   return (
     <DemoAccessContext.Provider value={{
       isDemo,
-      isDemoAccount,
       isAdmin,
       demoLimits,
       canAccess,

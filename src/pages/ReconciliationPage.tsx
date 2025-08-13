@@ -8,20 +8,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, BarChart3, Link2, ArrowLeft } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { useSubscription } from "@/hooks/useSubscription";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
 import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
 import { ReconciliationAnalytics } from "@/components/royalties/ReconciliationAnalytics";
 import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
-import { useTour } from "@/hooks/useTour";
-import { useDemoAccess } from "@/hooks/useDemoAccess";
 
 export default function ReconciliationPage() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState("batches");
   const { refreshBatches } = useReconciliationBatches();
   const { subscribed } = useSubscription();
-  const { isDemo } = useDemoAccess();
   
   // Only show demo navigation for non-subscribers
   const showDemoNavigation = !subscribed;
@@ -29,21 +26,6 @@ export default function ReconciliationPage() {
   useEffect(() => {
     updatePageMetadata('reconciliation');
   }, []);
-
-  const { startTour } = useTour();
-  const [searchParams] = useSearchParams();
-  const steps = [
-    { target: "[data-tour='recon-title']", content: "Manage reconciliation batches and analytics." },
-    { target: "[data-tour='recon-new-batch']", content: "Create a new reconciliation batch." },
-    { target: "[data-tour='recon-tabs']", content: "Switch between Batches and Analytics." },
-    { target: "[data-tour='recon-batch-list']", content: "Your batches appear here." },
-  ];
-
-  useEffect(() => {
-    if (searchParams.get('tour') === '1' && isDemo) {
-      startTour(steps);
-    }
-  }, [searchParams, startTour, isDemo]);
 
   const handleBatchCreated = () => {
     setShowForm(false);
@@ -75,17 +57,16 @@ export default function ReconciliationPage() {
         
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground" data-tour="recon-title">Reconciliation Management</h1>
+            <h1 className="text-3xl font-bold text-foreground">Reconciliation Management</h1>
             <p className="text-muted-foreground mt-2">
               Track and reconcile incoming royalty payments with your allocation records
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => setShowForm(true)} className="gap-2" data-tour="recon-new-batch">
+            <Button onClick={() => setShowForm(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               New Batch
             </Button>
-            {isDemo && (<Button variant="outline" size="sm" onClick={() => startTour(steps)}>Start Tour</Button>)}
           </div>
         </div>
 
@@ -104,7 +85,7 @@ export default function ReconciliationPage() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2" data-tour="recon-tabs">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="batches" className="gap-2">
               <Link2 className="h-4 w-4" />
               Batches
@@ -116,7 +97,7 @@ export default function ReconciliationPage() {
           </TabsList>
 
           <TabsContent value="batches">
-            <Card data-tour="recon-batch-list">
+            <Card>
               <CardHeader>
                 <CardTitle>Reconciliation Batches</CardTitle>
                 <CardDescription>

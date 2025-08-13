@@ -4,10 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { TrendingUp, FileText, Copyright, Film, DollarSign } from "lucide-react";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
-import { useTour } from "@/hooks/useTour";
+
 const DemoModulesPage = () => {
   const { getRemainingUsage, canAccess } = useDemoAccess();
 
@@ -67,50 +67,6 @@ const DemoModulesPage = () => {
     }
   ];
 
-  const { startTour } = useTour();
-  const [searchParams] = useSearchParams();
-
-  const steps = [
-    {
-      target: "[data-tour='demo-title']",
-      content: "Welcome! This page lists all demo modules you can explore.",
-    },
-    {
-      target: "[data-tour='demo-limits']",
-      content: "In demo mode, each module allows one key action to showcase the workflow.",
-    },
-    {
-      target: "[data-tour='module-card-catalog-valuation']",
-      content: "Start with Catalog Valuation & Deal Simulator to analyze catalogs and model deals.",
-    },
-    {
-      target: "[data-tour='module-card-royalties-processing']",
-      content: "Royalties suite covers Reconciliation, Royalties, and Payouts end-to-end.",
-    },
-    {
-      target: "[data-tour='module-card-contract-management']",
-      content: "Create, upload, or import contracts with smart templates and parsing.",
-    },
-    {
-      target: "[data-tour='module-card-sync-licensing']",
-      content: "Track sync opportunities with table, kanban, and calendar views.",
-    },
-    {
-      target: "[data-tour='demo-cta']",
-      content: "Ready to unlock everything? View pricing or sign up anytime.",
-    },
-  ];
-
-  useEffect(() => {
-    updatePageMetadata('modules');
-  }, []);
-
-  useEffect(() => {
-    if (searchParams.get('tour') === '1') {
-      startTour(steps);
-    }
-  }, [searchParams, startTour]);
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -119,21 +75,16 @@ const DemoModulesPage = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2" data-tour="demo-title">Demo Access - Music Industry Tools</h1>
+              <h1 className="text-3xl font-bold mb-2">Demo Access - Music Industry Tools</h1>
               <p className="text-muted-foreground">Explore our powerful music industry modules with limited demo access. Sign up for unlimited usage!</p>
             </div>
-            <div className="flex items-center gap-3">
-              <Badge className="bg-gradient-primary text-primary-foreground" data-tour="demo-mode-badge">
-                Demo Mode
-              </Badge>
-              <Button variant="outline" size="sm" onClick={() => startTour(steps)} data-tour="start-tour-btn">
-                Start Interactive Tour
-              </Button>
-            </div>
+            <Badge className="bg-gradient-primary text-primary-foreground">
+              Demo Mode
+            </Badge>
           </div>
         </div>
 
-        <div className="mb-6 p-4 bg-muted rounded-lg" data-tour="demo-limits">
+        <div className="mb-6 p-4 bg-muted rounded-lg">
           <h3 className="font-semibold mb-2">Demo Limitations</h3>
           <p className="text-sm text-muted-foreground">
             Each module allows 1 demo action. Once used, you'll need to sign up for full access to continue using the tools.
@@ -148,7 +99,7 @@ const DemoModulesPage = () => {
             const isUsed = remainingUsage === 0;
             
             return (
-              <Card key={module.id} data-tour={`module-card-${module.id}`} className={`hover:shadow-lg transition-shadow ${isUsed ? 'opacity-75' : ''}`}>
+              <Card key={module.id} className={`hover:shadow-lg transition-shadow ${isUsed ? 'opacity-75' : ''}`}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className={`rounded-lg p-2 w-fit ${isUsed ? 'bg-muted' : 'bg-gradient-primary'}`}>
@@ -192,7 +143,7 @@ const DemoModulesPage = () => {
           })}
         </div>
 
-        <div className="mt-8 text-center p-6 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg" data-tour="demo-cta">
+        <div className="mt-8 text-center p-6 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg">
           <h3 className="text-xl font-semibold mb-2">Ready for Full Access?</h3>
           <p className="text-muted-foreground mb-4">
             Unlock unlimited usage of all modules and access advanced features.

@@ -31,7 +31,6 @@ import ClientPortal from "./components/ClientPortal";
 import ClientAdminPage from "./pages/ClientAdminPage";
 import ContactPage from "./pages/ContactPage";
 import DocumentationPage from "./pages/DocumentationPage";
-import { TourProvider } from "@/components/tour/TourProvider";
 
 // Create a stable QueryClient instance
 let queryClient: QueryClient | null = null;
@@ -60,9 +59,8 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 <DemoUpgradeModal />
-                <TourProvider>
-                  <BrowserRouter>
-                    <Routes>
+                <BrowserRouter>
+                  <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<Index />} />
               <Route path="/modules" element={<ModulesPage />} />
@@ -142,7 +140,6 @@ const App = () => {
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </BrowserRouter>
-                </TourProvider>
               </TooltipProvider>
             </DemoAccessProvider>
           </AuthProvider>
