@@ -15,6 +15,7 @@ export const useCopyright = () => {
   const [copyrights, setCopyrights] = useState<Copyright[]>([]);
   const [loading, setLoading] = useState(true);
   const [realtimeError, setRealtimeError] = useState<string | null>(null);
+  const [writersCache, setWritersCache] = useState<{ [key: string]: CopyrightWriter[] }>({});
   const { toast } = useToast();
   const { logActivity } = useActivityLog();
   const { 
@@ -225,7 +226,12 @@ export const useCopyright = () => {
     }
   };
 
-  const getWritersForCopyright = async (copyrightId: string): Promise<CopyrightWriter[]> => {
+  const getWritersForCopyright = useCallback(async (copyrightId: string): Promise<CopyrightWriter[]> => {
+    // Check cache first
+    if (writersCache[copyrightId]) {
+      return writersCache[copyrightId];
+    }
+
     try {
       const { data, error } = await supabase
         .from('copyright_writers')
@@ -233,12 +239,17 @@ export const useCopyright = () => {
         .eq('copyright_id', copyrightId);
 
       if (error) throw error;
-      return data || [];
+      
+      // Cache the result
+      const writers = data || [];
+      setWritersCache(prev => ({ ...prev, [copyrightId]: writers }));
+      
+      return writers;
     } catch (error) {
       console.error('Error fetching writers:', error);
       return [];
     }
-  };
+  }, [writersCache]);
 
   const getPublishersForCopyright = async (copyrightId: string): Promise<CopyrightPublisher[]> => {
     try {
@@ -353,6 +364,7 @@ export const useCopyright = () => {
     getPublishersForCopyright,
     getRecordingsForCopyright,
     refetch: fetchCopyrights,
-    clearPendingUpdates: clearAllPending
+    clearPendingUpdates: clearAllPending,
+    writersCache
   };
 };

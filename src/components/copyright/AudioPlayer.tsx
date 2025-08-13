@@ -15,7 +15,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   artist = "Unknown Artist",
   className 
 }) => {
-  console.log('AudioPlayer props:', { src, title, artist });
+  // Removed console.log to prevent spam
 
   // Check if we have track info to show the component
   const hasTrackInfo = artist !== "Unknown Artist" || title !== "Unknown Track";
