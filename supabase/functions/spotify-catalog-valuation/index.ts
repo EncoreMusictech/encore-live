@@ -67,16 +67,17 @@ interface CashFlowProjection {
 function normalizeGenre(spotifyGenre: string): string {
   const lowerGenre = spotifyGenre.toLowerCase();
   
+  // R&B variations (check before pop since many R&B artists also have "pop" in their genres)
+  if (lowerGenre.includes('r&b') || lowerGenre.includes('rnb') || lowerGenre.includes('soul') || 
+      lowerGenre.includes('neo soul') || lowerGenre.includes('contemporary r&b') || 
+      lowerGenre.includes('urban contemporary')) {
+    return 'r&b';
+  }
+  
   // Hip-hop variations
   if (lowerGenre.includes('rap') || lowerGenre.includes('hip hop') || lowerGenre.includes('hip-hop') || 
       lowerGenre.includes('gangster') || lowerGenre.includes('trap') || lowerGenre.includes('drill')) {
     return 'hip-hop';
-  }
-  
-  // R&B variations
-  if (lowerGenre.includes('r&b') || lowerGenre.includes('rnb') || lowerGenre.includes('soul') || 
-      lowerGenre.includes('neo soul') || lowerGenre.includes('contemporary r&b')) {
-    return 'r&b';
   }
   
   // Electronic variations
@@ -92,7 +93,7 @@ function normalizeGenre(spotifyGenre: string): string {
     return 'rock';
   }
   
-  // Pop variations
+  // Pop variations (moved after R&B to avoid false matches)
   if (lowerGenre.includes('pop') || lowerGenre.includes('dance') || lowerGenre.includes('mainstream')) {
     return 'pop';
   }
