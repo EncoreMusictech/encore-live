@@ -125,12 +125,27 @@ function normalizeGenre(spotifyGenre: string): string {
   return 'pop';
 }
 
-// Helper to resolve a primary genre and normalize it
+// Helper to resolve a primary genre and check if normalization is needed
 async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): Promise<string> {
   let primaryGenre: string | undefined;
   
+  // Available genres in our database
+  const availableGenres = ['hip-hop', 'r&b', 'pop', 'rock', 'electronic', 'country', 'alternative', 'classical', 'jazz', 'folk'];
+  
   // First try the artist's own genres
   if (artist.genres && artist.genres.length > 0) {
+    // Check if any Spotify genre directly matches our available genres
+    for (const spotifyGenre of artist.genres) {
+      const lowerGenre = spotifyGenre.toLowerCase();
+      if (availableGenres.includes(lowerGenre)) {
+        return lowerGenre;
+      }
+      // Check for exact matches with common variations
+      if (lowerGenre === 'hip hop' || lowerGenre === 'hip-hop') return 'hip-hop';
+      if (lowerGenre === 'r&b' || lowerGenre === 'rnb') return 'r&b';
+    }
+    
+    // If no direct match, use the first genre for normalization
     primaryGenre = artist.genres[0];
   } else {
     // Fallback to related artists' genres
@@ -161,8 +176,13 @@ async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): 
     }
   }
   
-  // Normalize the genre to match database entries
-  return normalizeGenre(primaryGenre || 'pop');
+  // If we have a primary genre but it doesn't directly match, normalize it
+  if (primaryGenre) {
+    return normalizeGenre(primaryGenre);
+  }
+  
+  // If no genre data available, return 'pop' as default
+  return 'pop';
 }
 
 // Advanced mathematical models
