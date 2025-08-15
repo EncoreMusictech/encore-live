@@ -132,8 +132,38 @@ async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): 
   // Available genres in our database
   const availableGenres = ['hip-hop', 'r&b', 'pop', 'rock', 'electronic', 'country', 'alternative', 'classical', 'jazz', 'folk'];
   
+  // Known artist mappings for when Spotify doesn't provide genre data
+  const knownArtistMappings: Record<string, string> = {
+    'dababy': 'hip-hop',
+    'da baby': 'hip-hop',
+    'lil baby': 'hip-hop',
+    'drake': 'hip-hop',
+    'kendrick lamar': 'hip-hop',
+    'j. cole': 'hip-hop',
+    'travis scott': 'hip-hop',
+    'future': 'hip-hop',
+    'lil wayne': 'hip-hop',
+    'nicki minaj': 'hip-hop',
+    'cardi b': 'hip-hop',
+    'megan thee stallion': 'hip-hop',
+    'beyoncé': 'r&b',
+    'beyonce': 'r&b',
+    'rihanna': 'r&b',
+    'the weeknd': 'r&b',
+    'sza': 'r&b',
+    'frank ocean': 'r&b',
+    'alicia keys': 'r&b'
+  };
+  
   console.log(`Starting genre resolution for artist: ${artist.name}`);
   console.log(`Artist genres from Spotify: ${JSON.stringify(artist.genres)}`);
+  
+  // Check known artist mappings first
+  const artistLower = artist.name.toLowerCase();
+  if (knownArtistMappings[artistLower]) {
+    console.log(`Found known artist mapping: ${artist.name} -> ${knownArtistMappings[artistLower]}`);
+    return knownArtistMappings[artistLower];
+  }
   
   // First try the artist's own genres
   if (artist.genres && artist.genres.length > 0) {
@@ -165,7 +195,7 @@ async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): 
   } else {
     console.log(`No genres found for artist, checking related artists`);
     
-    // Fallback to related artists' genres
+    // Fallback to related artists' genres - more aggressive search for hip-hop/rap artists
     try {
       const resp = await fetch(`https://api.spotify.com/v1/artists/${artist.id}/related-artists`, {
         headers: { 'Authorization': `Bearer ${accessToken}` },
@@ -182,6 +212,33 @@ async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): 
             genreCounts[g] = (genreCounts[g] || 0) + 1;
           }
         }
+        
+        // Look for hip-hop indicators first
+        const hipHopGenres = Object.keys(genreCounts).filter(g => 
+          g.toLowerCase().includes('rap') || 
+          g.toLowerCase().includes('hip hop') || 
+          g.toLowerCase().includes('hip-hop') || 
+          g.toLowerCase().includes('trap')
+        );
+        
+        if (hipHopGenres.length > 0) {
+          console.log(`Found hip-hop genres in related artists: ${hipHopGenres.join(', ')}`);
+          return 'hip-hop';
+        }
+        
+        // Look for R&B indicators
+        const rbGenres = Object.keys(genreCounts).filter(g => 
+          g.toLowerCase().includes('r&b') || 
+          g.toLowerCase().includes('soul') || 
+          g.toLowerCase().includes('contemporary r&b')
+        );
+        
+        if (rbGenres.length > 0) {
+          console.log(`Found R&B genres in related artists: ${rbGenres.join(', ')}`);
+          return 'r&b';
+        }
+        
+        // Fall back to most common genre
         let max = 0;
         for (const [g, count] of Object.entries(genreCounts)) {
           if (count > max) {
