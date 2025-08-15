@@ -144,15 +144,80 @@ export const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({
 
   const handleDownloadInvoice = () => {
     if (previewHtml) {
-      const blob = new Blob([previewHtml], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `invoice-${license.license_id || 'draft'}.html`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      // Convert HTML to PDF using jsPDF and html2canvas
+      import('jspdf').then(({ jsPDF }) => {
+        import('html2canvas').then((html2canvas) => {
+          // Create a temporary iframe for rendering
+          const iframe = document.createElement('iframe');
+          iframe.style.position = 'fixed';
+          iframe.style.left = '-9999px';
+          iframe.style.top = '0';
+          iframe.style.width = '794px';
+          iframe.style.height = '1123px';
+          document.body.appendChild(iframe);
+          
+          const doc = iframe.contentDocument!;
+          doc.open();
+          doc.write(previewHtml);
+          doc.close();
+          
+          // Wait for content to render
+          setTimeout(() => {
+            const target = doc.body;
+            if (target) {
+              html2canvas.default(target, { 
+                scale: 2, 
+                useCORS: true, 
+                logging: false, 
+                backgroundColor: '#ffffff' 
+              }).then((canvas) => {
+                const pdf = new jsPDF('p', 'pt', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const margin = 48;
+                const imgWidth = pageWidth - margin * 2;
+                const scale = imgWidth / canvas.width;
+                const pageHeightPx = Math.floor((pageHeight - margin * 2) / scale);
+                
+                let y = 0;
+                let pageIndex = 0;
+                
+                while (y < canvas.height) {
+                  const sliceHeight = Math.min(pageHeightPx, canvas.height - y);
+                  const pageCanvas = document.createElement('canvas');
+                  pageCanvas.width = canvas.width;
+                  pageCanvas.height = sliceHeight;
+                  const ctx = pageCanvas.getContext('2d')!;
+                  ctx.drawImage(canvas, 0, y, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+                  const imgData = pageCanvas.toDataURL('image/png');
+                  
+                  if (pageIndex > 0) pdf.addPage();
+                  pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, sliceHeight * scale);
+                  
+                  y += sliceHeight;
+                  pageIndex++;
+                }
+                
+                pdf.save(`invoice-${license.license_id || 'draft'}.pdf`);
+                document.body.removeChild(iframe);
+                
+                toast({
+                  title: "Success",
+                  description: "Invoice PDF downloaded successfully",
+                });
+              }).catch((error) => {
+                console.error('Canvas rendering error:', error);
+                document.body.removeChild(iframe);
+                toast({
+                  title: "Error", 
+                  description: "Failed to render PDF",
+                  variant: "destructive",
+                });
+              });
+            }
+          }, 500);
+        });
+      });
     }
   };
 
