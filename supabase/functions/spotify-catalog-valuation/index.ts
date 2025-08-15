@@ -132,22 +132,39 @@ async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): 
   // Available genres in our database
   const availableGenres = ['hip-hop', 'r&b', 'pop', 'rock', 'electronic', 'country', 'alternative', 'classical', 'jazz', 'folk'];
   
+  console.log(`Starting genre resolution for artist: ${artist.name}`);
+  console.log(`Artist genres from Spotify: ${JSON.stringify(artist.genres)}`);
+  
   // First try the artist's own genres
   if (artist.genres && artist.genres.length > 0) {
+    console.log(`Found ${artist.genres.length} genres for artist`);
+    
     // Check if any Spotify genre directly matches our available genres
     for (const spotifyGenre of artist.genres) {
       const lowerGenre = spotifyGenre.toLowerCase();
+      console.log(`Checking genre: "${spotifyGenre}" (normalized: "${lowerGenre}")`);
+      
       if (availableGenres.includes(lowerGenre)) {
+        console.log(`Direct match found: ${lowerGenre}`);
         return lowerGenre;
       }
       // Check for exact matches with common variations
-      if (lowerGenre === 'hip hop' || lowerGenre === 'hip-hop') return 'hip-hop';
-      if (lowerGenre === 'r&b' || lowerGenre === 'rnb') return 'r&b';
+      if (lowerGenre === 'hip hop' || lowerGenre === 'hip-hop') {
+        console.log(`Hip-hop variation matched: ${lowerGenre}`);
+        return 'hip-hop';
+      }
+      if (lowerGenre === 'r&b' || lowerGenre === 'rnb') {
+        console.log(`R&B variation matched: ${lowerGenre}`);
+        return 'r&b';
+      }
     }
     
     // If no direct match, use the first genre for normalization
     primaryGenre = artist.genres[0];
+    console.log(`No direct match found, using first genre for normalization: ${primaryGenre}`);
   } else {
+    console.log(`No genres found for artist, checking related artists`);
+    
     // Fallback to related artists' genres
     try {
       const resp = await fetch(`https://api.spotify.com/v1/artists/${artist.id}/related-artists`, {
@@ -157,6 +174,8 @@ async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): 
         const data = await resp.json();
         const genreCounts: Record<string, number> = {};
         const related = Array.isArray(data?.artists) ? data.artists : [];
+        console.log(`Found ${related.length} related artists`);
+        
         for (const ra of related) {
           const genres: string[] = Array.isArray(ra?.genres) ? ra.genres : [];
           for (const g of genres) {
@@ -170,18 +189,22 @@ async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): 
             primaryGenre = g;
           }
         }
+        console.log(`Most common genre from related artists: ${primaryGenre} (${max} occurrences)`);
       }
     } catch (_e) {
-      // Ignore error and use default
+      console.log(`Error fetching related artists: ${_e.message}`);
     }
   }
   
   // If we have a primary genre but it doesn't directly match, normalize it
   if (primaryGenre) {
-    return normalizeGenre(primaryGenre);
+    const normalizedGenre = normalizeGenre(primaryGenre);
+    console.log(`Normalizing "${primaryGenre}" to "${normalizedGenre}"`);
+    return normalizedGenre;
   }
   
   // If no genre data available, return 'pop' as default
+  console.log(`No genre data found, defaulting to pop`);
   return 'pop';
 }
 
