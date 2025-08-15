@@ -9,6 +9,7 @@ import { Search, Loader2, Music, DollarSign, AlertCircle, RefreshCw, Trash2, Shi
 import { useSongEstimator } from '@/hooks/useSongEstimator';
 import { SongMetadataView } from './SongMetadataView';
 import { PipelineEstimateView } from './PipelineEstimateView';
+import { MLCTestButton } from './MLCTestButton';
 
 export function SongEstimatorTool() {
   const [songwriterName, setSongwriterName] = useState('');
@@ -212,10 +213,11 @@ export function SongEstimatorTool() {
       {/* Detailed View */}
       {currentSearch && (
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="catalog">Song Catalog</TabsTrigger>
             <TabsTrigger value="pipeline">Pipeline Analysis</TabsTrigger>
+            <TabsTrigger value="debug">Debug MLC</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -350,6 +352,10 @@ export function SongEstimatorTool() {
               searchId={currentSearch.id}
               songMetadata={songMetadata}
             />
+          </TabsContent>
+
+          <TabsContent value="debug">
+            <MLCTestButton />
           </TabsContent>
         </Tabs>
       )}

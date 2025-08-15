@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.mlc-repertoire-lookup]
 verify_jwt = false
+
+[functions.test-mlc-integration]
+verify_jwt = false
