@@ -1057,6 +1057,70 @@ Actual market values may vary significantly based on numerous factors not captur
                 </Card>
               </div>
 
+              {/* Artist Spotify Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Music className="h-5 w-5 text-primary" />
+                    Spotify Artist Information
+                  </CardTitle>
+                  <CardDescription>
+                    Artist profile data and top performing tracks from Spotify
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Primary Genre</p>
+                      <Badge variant="secondary" className="text-sm">
+                        {result.genre || result.industry_benchmarks?.genre || 'N/A'}
+                      </Badge>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Monthly Listeners</p>
+                      <p className="text-lg font-bold text-primary">
+                        {formatNumber(result.monthly_listeners || 0)}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Total Streams</p>
+                      <p className="text-lg font-bold text-primary">
+                        {formatNumber(result.total_streams || 0)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {result.top_tracks && result.top_tracks.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Top Tracks</h4>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {result.top_tracks.slice(0, 10).map((track, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 border rounded-lg bg-secondary/20">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{track.name}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {track.popularity}/100
+                                </Badge>
+                                {track.spotify_url && (
+                                  <a 
+                                    href={track.spotify_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline"
+                                  >
+                                    View on Spotify
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Enhanced Valuation Insights */}
               {result.has_additional_revenue && (
