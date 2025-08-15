@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter, ArrowLeft, TrendingUp, Clock, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { ContractList } from "@/components/contracts/ContractList";
 import { StandardizedPublishingForm } from "@/components/contracts/StandardizedPublishingForm";
@@ -32,6 +33,14 @@ const ContractManagement = () => {
   const { canAccess, isDemo, showUpgradeModal, setShowUpgradeModal } = useDemoAccess();
   const { contracts, loading } = useContracts();
   const { subscribed } = useSubscription();
+  
+  // Filter and search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [signatureFilter, setSignatureFilter] = useState<string>("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState<string>("all");
   
   // Only show demo navigation for demo users
   const showDemoNavigation = isDemo;
@@ -147,6 +156,77 @@ const ContractManagement = () => {
       }
     ];
   }, [contracts]);
+
+  // Filtered contracts based on search and filter criteria
+  const filteredContracts = useMemo(() => {
+    let filtered = contracts;
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(contract =>
+        contract.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contract.counterparty_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contract.contract_type?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(contract => contract.contract_status === statusFilter);
+    }
+
+    // Apply type filter
+    if (typeFilter !== "all") {
+      filtered = filtered.filter(contract => contract.contract_type === typeFilter);
+    }
+
+    // Apply signature filter
+    if (signatureFilter !== "all") {
+      filtered = filtered.filter(contract => contract.signature_status === signatureFilter);
+    }
+
+    // Apply date range filter
+    if (dateRangeFilter !== "all") {
+      const now = new Date();
+      filtered = filtered.filter(contract => {
+        if (!contract.created_at) return false;
+        const createdAt = new Date(contract.created_at);
+        
+        switch (dateRangeFilter) {
+          case "last7days":
+            return createdAt >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          case "last30days":
+            return createdAt >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          case "last90days":
+            return createdAt >= new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          default:
+            return true;
+        }
+      });
+    }
+
+    return filtered;
+  }, [contracts, searchTerm, statusFilter, typeFilter, signatureFilter, dateRangeFilter]);
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setTypeFilter("all");
+    setSignatureFilter("all");
+    setDateRangeFilter("all");
+  };
+
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (statusFilter !== "all") count++;
+    if (typeFilter !== "all") count++;
+    if (signatureFilter !== "all") count++;
+    if (dateRangeFilter !== "all") count++;
+    return count;
+  }, [searchTerm, statusFilter, typeFilter, signatureFilter, dateRangeFilter]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -509,21 +589,115 @@ const ContractManagement = () => {
 
           <TabsContent value="contracts" className="space-y-4">
             {/* Search and Filter Bar */}
-            <div className="flex gap-4 items-center">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input 
-                  placeholder="Search contracts by title, counterparty, or type..."
-                  className="pl-10"
-                />
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-4 items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input 
+                    placeholder="Search contracts by title, counterparty, or type..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="gap-2"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <Filter className="h-4 w-4" />
+                  Filter
+                  {activeFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                </Button>
+                {activeFilterCount > 0 && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    Clear Filters
+                  </Button>
+                )}
               </div>
-              <Button variant="outline" className="gap-2">
-                <Filter className="h-4 w-4" />
-                Filter
-              </Button>
+
+              {/* Filter Panel */}
+              {showFilters && (
+                <Card className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Status</Label>
+                      <select 
+                        className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="draft">Draft</option>
+                        <option value="active">Active</option>
+                        <option value="signed">Signed</option>
+                        <option value="expired">Expired</option>
+                        <option value="terminated">Terminated</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Type</Label>
+                      <select 
+                        className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                      >
+                        <option value="all">All Types</option>
+                        <option value="publishing">Publishing</option>
+                        <option value="artist">Artist</option>
+                        <option value="producer">Producer</option>
+                        <option value="sync">Sync</option>
+                        <option value="distribution">Distribution</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Signature Status</Label>
+                      <select 
+                        className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                        value={signatureFilter}
+                        onChange={(e) => setSignatureFilter(e.target.value)}
+                      >
+                        <option value="all">All Signatures</option>
+                        <option value="pending">Pending</option>
+                        <option value="sent">Sent</option>
+                        <option value="signed">Signed</option>
+                        <option value="declined">Declined</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Date Range</Label>
+                      <select 
+                        className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                        value={dateRangeFilter}
+                        onChange={(e) => setDateRangeFilter(e.target.value)}
+                      >
+                        <option value="all">All Time</option>
+                        <option value="last7days">Last 7 Days</option>
+                        <option value="last30days">Last 30 Days</option>
+                        <option value="last90days">Last 90 Days</option>
+                      </select>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {/* Results Summary */}
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>
+                  Showing {filteredContracts.length} of {contracts.length} contracts
+                  {activeFilterCount > 0 && ` (${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''} applied)`}
+                </span>
+              </div>
             </div>
 
-            <ContractList onEdit={handleEditContract} />
+            <ContractList contracts={filteredContracts} onEdit={handleEditContract} />
           </TabsContent>
 
           {isDemo && (

@@ -39,9 +39,10 @@ interface ContractConnectionCheck {
 
 interface ContractListProps {
   onEdit?: (contract: Contract) => void;
+  contracts?: Contract[];
 }
 
-export function ContractList({ onEdit }: ContractListProps) {
+export function ContractList({ onEdit, contracts: propContracts }: ContractListProps) {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewContract, setViewContract] = useState<Contract | null>(null);
@@ -61,11 +62,20 @@ export function ContractList({ onEdit }: ContractListProps) {
   } = useBulkOperations<Contract>();
 
   useEffect(() => {
-    fetchContracts();
-  }, []);
+    if (propContracts) {
+      // Use contracts passed as props (for filtering)
+      setContracts(propContracts);
+      setIsLoading(false);
+    } else {
+      // Fetch contracts if none provided
+      fetchContracts();
+    }
+  }, [propContracts]);
 
   const fetchContracts = async () => {
     try {
+      setIsLoading(true);
+      
       const { data, error } = await supabase
         .from('contracts')
         .select('*')
@@ -83,7 +93,7 @@ export function ContractList({ onEdit }: ContractListProps) {
 
       setContracts(data || []);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching contracts:', error);
     } finally {
       setIsLoading(false);
     }
