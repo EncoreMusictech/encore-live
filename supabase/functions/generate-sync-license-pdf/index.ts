@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -5,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 interface SyncLicense {
   id: string;
@@ -81,6 +86,150 @@ interface SyncLicense {
   
   created_at: string;
   updated_at: string;
+}
+
+async function generateWithGPT5(license: SyncLicense): Promise<string> {
+  const model = 'gpt-5-2025-08-07';
+  
+  const system = `You are a senior music attorney and world-class legal drafter specializing in synchronization licenses.
+  
+  Create a professional, legally-sound synchronization license agreement in HTML format that includes:
+  - Proper legal language and structure for sync licenses
+  - Clear terms for media usage, territories, fees, and rights
+  - Professional formatting suitable for legal documents
+  - Detailed Exhibit A with licensed works and fee allocations
+  - Signature section for both parties
+  
+  Requirements:
+  - Produce clean, production-ready HTML with semantic tags
+  - Include professional styling for legal document presentation
+  - Never hallucinate numbers; when unknown, use [Placeholder]
+  - Use the exact data provided; do not invent details
+  - Structure should follow industry-standard sync license formats`;
+  
+  const licensePayload = {
+    sync_id: license.synch_id,
+    project_details: {
+      title: license.project_title,
+      media_type: license.media_type,
+      production_company: license.production_company,
+      context: license.context_description || license.scene_description,
+      usage_description: license.usage_description
+    },
+    parties: {
+      licensor: {
+        name: license.licensor_name || license.publishing_administrator || "[Licensor Name]",
+        address: license.licensor_address || "[Licensor Address]"
+      },
+      licensee: {
+        name: license.licensee_name || license.production_company || "[Licensee Name]", 
+        address: license.licensee_address || "[Licensee Address]"
+      }
+    },
+    terms: {
+      territory: license.territory_of_licensee || "Worldwide",
+      term_start: license.term_start,
+      term_end: license.term_end,
+      duration: license.term_duration,
+      usage_type: license.music_use,
+      exclusive: license.exclusive_license || false,
+      promotional: license.promotional_usage || false,
+      festival: license.festival_usage || false
+    },
+    fees: {
+      pub_fee: license.pub_fee,
+      master_fee: license.master_fee,
+      currency: license.currency || 'USD',
+      fee_allocations: license.fee_allocations || []
+    },
+    technical: {
+      scene_duration: license.scene_duration_seconds,
+      usage_duration: license.usage_duration_seconds,
+      delivery_format: license.delivery_format,
+      delivery_deadline: license.delivery_deadline
+    },
+    rights: {
+      master_owner: license.master_owner,
+      publishing_admin: license.publishing_administrator,
+      rights_cleared: license.rights_cleared || false
+    }
+  };
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: `Generate a synchronization license agreement for: ${JSON.stringify(licensePayload, null, 2)}` }
+      ],
+      max_completion_tokens: 4000,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  let content = data.choices?.[0]?.message?.content || '';
+  
+  // Clean up markdown code fences
+  content = content.replace(/^\uFEFF/, '');
+  content = content.replace(/^\s*```\s*html\s*\n?/i, '');
+  content = content.replace(/\n?\s*```\s*$/i, '');
+  content = content.trim();
+  
+  // Ensure it's a complete HTML document
+  if (!content.includes('<html') && !content.includes('<!DOCTYPE')) {
+    content = wrapInHTML(content, license.project_title || 'Synchronization License');
+  }
+  
+  return content;
+}
+
+function wrapInHTML(content: string, title: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${escapeHtml(title)} - Synchronization License</title>
+    <style>
+        body { font-family: 'Times New Roman', serif; line-height: 1.4; margin: 0; padding: 30px 40px; font-size: 11pt; color: #000; max-width: 8.5in; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .title { font-size: 16pt; font-weight: bold; margin-bottom: 20px; letter-spacing: 1px; }
+        h1, h2, h3 { margin: 20px 0 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        table, th, td { border: 1px solid #000; }
+        th, td { padding: 8px 12px; text-align: left; }
+        th { background-color: #f0f0f0; font-weight: bold; }
+        .signature-section { margin-top: 50px; page-break-inside: avoid; }
+        .signature-line { border-bottom: 1px solid #000; width: 300px; margin-bottom: 5px; display: inline-block; }
+    </style>
+</head>
+<body>
+    ${content}
+</body>
+</html>`;
+}
+
+function escapeHtml(str: string): string {
+  return String(str || '').replace(/[&<>"']/g, (match) => {
+    const escapeMap: { [key: string]: string } = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    };
+    return escapeMap[match];
+  });
 }
 
 async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any): Promise<string> {
@@ -770,8 +919,21 @@ serve(async (req) => {
       hasLinkedCopyrights: !!(license.linked_copyright_ids && license.linked_copyright_ids.length > 0)
     });
 
-    // Generate HTML content
-    const htmlContent = await generateLicenseAgreementHTML(license, supabase);
+    // Try GPT-5 generation first, fall back to template
+    let htmlContent = '';
+    if (OPENAI_API_KEY) {
+      try {
+        console.log('Attempting GPT-5 generation...');
+        htmlContent = await generateWithGPT5(license);
+        console.log('GPT-5 generation successful');
+      } catch (gptError) {
+        console.error('GPT-5 generation failed, falling back to template:', gptError);
+        htmlContent = await generateLicenseAgreementHTML(license, supabase);
+      }
+    } else {
+      console.log('No OpenAI API key, using template generation');
+      htmlContent = await generateLicenseAgreementHTML(license, supabase);
+    }
 
     // Return a blob URL for download
     const blob = new Blob([htmlContent], { type: 'text/html' });

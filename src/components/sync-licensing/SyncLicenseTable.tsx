@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Eye, Edit, Trash2, MoreHorizontal, Receipt } from "lucide-react";
+import { Eye, Edit, Trash2, MoreHorizontal, Receipt, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SyncLicense, useDeleteSyncLicense } from "@/hooks/useSyncLicenses";
+import { SyncLicense, useDeleteSyncLicense, useGenerateSyncLicensePDF } from "@/hooks/useSyncLicenses";
 import { SyncLicenseForm } from "./SyncLicenseForm";
 import { SyncLicenseDetails } from "./SyncLicenseDetails";
 import { InvoiceGenerator } from "./InvoiceGenerator";
@@ -32,6 +32,7 @@ export const SyncLicenseTable = ({ licenses, isLoading }: SyncLicenseTableProps)
   const [viewingLicense, setViewingLicense] = useState<SyncLicense | null>(null);
   const [invoiceLicense, setInvoiceLicense] = useState<SyncLicense | null>(null);
   const deleteMutation = useDeleteSyncLicense();
+  const generatePDFMutation = useGenerateSyncLicensePDF();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -76,6 +77,10 @@ export const SyncLicenseTable = ({ licenses, isLoading }: SyncLicenseTableProps)
     if (confirm("Are you sure you want to delete this sync license?")) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const handleGeneratePDF = (license: SyncLicense) => {
+    generatePDFMutation.mutate(license.id);
   };
 
   if (isLoading) {
@@ -160,6 +165,13 @@ export const SyncLicenseTable = ({ licenses, isLoading }: SyncLicenseTableProps)
                       <DropdownMenuItem onClick={() => setInvoiceLicense(license)}>
                         <Receipt className="h-4 w-4 mr-2" />
                         Generate Invoice
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleGeneratePDF(license)}
+                        disabled={generatePDFMutation.isPending}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        {generatePDFMutation.isPending ? "Generating..." : "Generate PDF"}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => handleDelete(license.id)}

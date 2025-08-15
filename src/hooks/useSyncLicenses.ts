@@ -337,39 +337,109 @@ export const useGenerateSyncLicensePDF = () => {
 
   return useMutation({
     mutationFn: async (licenseId: string) => {
+      console.log('Generating sync license PDF for ID:', licenseId);
+      
       const { data, error } = await supabase.functions.invoke('generate-sync-license-pdf', {
         body: { licenseId }
       });
 
       if (error) {
+        console.error('PDF generation error:', error);
         throw error;
       }
 
+      console.log('PDF generation response:', data);
       return data;
     },
     onSuccess: (data) => {
       if (data?.htmlContent && data?.filename) {
-        // Create a blob from the HTML content and trigger download
-        const blob = new Blob([data.htmlContent], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = data.filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
+        // Convert HTML to PDF using jsPDF and html2canvas
+        import('jspdf').then(({ jsPDF }) => {
+          import('html2canvas').then((html2canvas) => {
+            // Create a temporary iframe for rendering
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.left = '-9999px';
+            iframe.style.top = '0';
+            iframe.style.width = '794px';
+            iframe.style.height = '1123px';
+            document.body.appendChild(iframe);
+            
+            const doc = iframe.contentDocument!;
+            doc.open();
+            doc.write(data.htmlContent);
+            doc.close();
+            
+            // Wait for content to render
+            setTimeout(() => {
+              const target = doc.body;
+              if (target) {
+                html2canvas.default(target, { 
+                  scale: 2, 
+                  useCORS: true, 
+                  logging: false, 
+                  backgroundColor: '#ffffff' 
+                }).then((canvas) => {
+                  const pdf = new jsPDF('p', 'pt', 'a4');
+                  const pageWidth = pdf.internal.pageSize.getWidth();
+                  const pageHeight = pdf.internal.pageSize.getHeight();
+                  const margin = 48;
+                  const imgWidth = pageWidth - margin * 2;
+                  const scale = imgWidth / canvas.width;
+                  const pageHeightPx = Math.floor((pageHeight - margin * 2) / scale);
+                  
+                  let y = 0;
+                  let pageIndex = 0;
+                  
+                  while (y < canvas.height) {
+                    const sliceHeight = Math.min(pageHeightPx, canvas.height - y);
+                    const pageCanvas = document.createElement('canvas');
+                    pageCanvas.width = canvas.width;
+                    pageCanvas.height = sliceHeight;
+                    const ctx = pageCanvas.getContext('2d')!;
+                    ctx.drawImage(canvas, 0, y, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+                    const imgData = pageCanvas.toDataURL('image/png');
+                    
+                    if (pageIndex > 0) pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, sliceHeight * scale);
+                    
+                    y += sliceHeight;
+                    pageIndex++;
+                  }
+                  
+                  pdf.save(data.filename.replace('.html', '.pdf'));
+                  document.body.removeChild(iframe);
+                  
+                  toast({
+                    title: "Success",
+                    description: "Sync license PDF generated and downloaded successfully",
+                  });
+                }).catch((error) => {
+                  console.error('Canvas rendering error:', error);
+                  document.body.removeChild(iframe);
+                  toast({
+                    title: "Error", 
+                    description: "Failed to render PDF",
+                    variant: "destructive",
+                  });
+                });
+              }
+            }, 500);
+          });
+        });
+      } else {
         toast({
-          title: "Success",
-          description: "License agreement generated and downloaded successfully",
+          title: "Error",
+          description: "Invalid response from PDF generation service",
+          variant: "destructive",
         });
       }
     },
     onError: (error: any) => {
+      console.error('Sync license PDF generation error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to generate PDF",
+        description: error.message || "Failed to generate sync license PDF",
         variant: "destructive",
       });
     },
