@@ -63,35 +63,105 @@ interface CashFlowProjection {
   terminalValue?: number;
 }
 
-// Helper to resolve a primary genre without normalizing
-async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): Promise<string | undefined> {
-  if (artist.genres && artist.genres.length > 0) return artist.genres[0];
-  try {
-    const resp = await fetch(`https://api.spotify.com/v1/artists/${artist.id}/related-artists`, {
-      headers: { 'Authorization': `Bearer ${accessToken}` },
-    });
-    if (!resp.ok) return undefined;
-    const data = await resp.json();
-    const genreCounts: Record<string, number> = {};
-    const related = Array.isArray(data?.artists) ? data.artists : [];
-    for (const ra of related) {
-      const genres: string[] = Array.isArray(ra?.genres) ? ra.genres : [];
-      for (const g of genres) {
-        genreCounts[g] = (genreCounts[g] || 0) + 1;
-      }
-    }
-    let selected: string | undefined;
-    let max = 0;
-    for (const [g, count] of Object.entries(genreCounts)) {
-      if (count > max) {
-        max = count;
-        selected = g;
-      }
-    }
-    return selected;
-  } catch (_e) {
-    return undefined;
+// Genre mapping function to normalize Spotify genres to database genres
+function normalizeGenre(spotifyGenre: string): string {
+  const lowerGenre = spotifyGenre.toLowerCase();
+  
+  // Hip-hop variations
+  if (lowerGenre.includes('rap') || lowerGenre.includes('hip hop') || lowerGenre.includes('hip-hop') || 
+      lowerGenre.includes('gangster') || lowerGenre.includes('trap') || lowerGenre.includes('drill')) {
+    return 'hip-hop';
   }
+  
+  // R&B variations
+  if (lowerGenre.includes('r&b') || lowerGenre.includes('rnb') || lowerGenre.includes('soul') || 
+      lowerGenre.includes('neo soul') || lowerGenre.includes('contemporary r&b')) {
+    return 'r&b';
+  }
+  
+  // Electronic variations
+  if (lowerGenre.includes('electronic') || lowerGenre.includes('edm') || lowerGenre.includes('house') || 
+      lowerGenre.includes('techno') || lowerGenre.includes('dubstep') || lowerGenre.includes('trance') ||
+      lowerGenre.includes('ambient') || lowerGenre.includes('synth')) {
+    return 'electronic';
+  }
+  
+  // Rock variations
+  if (lowerGenre.includes('rock') || lowerGenre.includes('metal') || lowerGenre.includes('punk') ||
+      lowerGenre.includes('grunge') || lowerGenre.includes('indie rock')) {
+    return 'rock';
+  }
+  
+  // Pop variations
+  if (lowerGenre.includes('pop') || lowerGenre.includes('dance') || lowerGenre.includes('mainstream')) {
+    return 'pop';
+  }
+  
+  // Country variations
+  if (lowerGenre.includes('country') || lowerGenre.includes('folk') || lowerGenre.includes('americana') ||
+      lowerGenre.includes('bluegrass')) {
+    return 'country';
+  }
+  
+  // Classical variations
+  if (lowerGenre.includes('classical') || lowerGenre.includes('opera') || lowerGenre.includes('orchestral') ||
+      lowerGenre.includes('chamber') || lowerGenre.includes('baroque')) {
+    return 'classical';
+  }
+  
+  // Jazz variations
+  if (lowerGenre.includes('jazz') || lowerGenre.includes('blues') || lowerGenre.includes('swing') ||
+      lowerGenre.includes('bebop') || lowerGenre.includes('fusion')) {
+    return 'jazz';
+  }
+  
+  // Alternative variations
+  if (lowerGenre.includes('alternative') || lowerGenre.includes('indie') || lowerGenre.includes('experimental')) {
+    return 'alternative';
+  }
+  
+  // Default to pop if no match
+  return 'pop';
+}
+
+// Helper to resolve a primary genre and normalize it
+async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): Promise<string> {
+  let primaryGenre: string | undefined;
+  
+  // First try the artist's own genres
+  if (artist.genres && artist.genres.length > 0) {
+    primaryGenre = artist.genres[0];
+  } else {
+    // Fallback to related artists' genres
+    try {
+      const resp = await fetch(`https://api.spotify.com/v1/artists/${artist.id}/related-artists`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const genreCounts: Record<string, number> = {};
+        const related = Array.isArray(data?.artists) ? data.artists : [];
+        for (const ra of related) {
+          const genres: string[] = Array.isArray(ra?.genres) ? ra.genres : [];
+          for (const g of genres) {
+            genreCounts[g] = (genreCounts[g] || 0) + 1;
+          }
+        }
+        let max = 0;
+        for (const [g, count] of Object.entries(genreCounts)) {
+          if (count > max) {
+            max = count;
+            primaryGenre = g;
+          }
+        }
+      }
+    } catch (_e) {
+      // Ignore error and use default
+    }
+  }
+  
+  // Normalize the genre to match database entries
+  return normalizeGenre(primaryGenre || 'pop');
 }
 
 // Advanced mathematical models
@@ -356,8 +426,7 @@ serve(async (req) => {
     const topTracks: SpotifyTrack[] = topTracksData.tracks.slice(0, 10);
 
 // Resolve primary genre (use Spotify genres directly when available; fallback to related artists)
-const resolvedGenre = await resolvePrimaryGenre(accessToken, artist);
-const primaryGenre = resolvedGenre ?? 'pop';
+const primaryGenre = await resolvePrimaryGenre(accessToken, artist);
 const { data: benchmarkData } = await supabase
   .from('industry_benchmarks')
   .select('*')
