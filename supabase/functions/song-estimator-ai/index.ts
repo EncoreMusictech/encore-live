@@ -5,6 +5,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const mlcUsername = Deno.env.get('MLC_USERNAME');
+const mlcPassword = Deno.env.get('MLC_PASSWORD');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +14,139 @@ const corsHeaders = {
 };
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// Helper function to get MLC OAuth token
+async function getMlcAccessToken() {
+  if (!mlcUsername || !mlcPassword) {
+    console.log('MLC credentials not configured, skipping MLC lookups');
+    return null;
+  }
+
+  try {
+    const response = await fetch('https://api.themlc.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `grant_type=client_credentials&client_id=${mlcUsername}&client_secret=${mlcPassword}`,
+    });
+
+    if (!response.ok) {
+      console.error('Failed to get MLC access token');
+      return null;
+    }
+
+    const data = await response.json();
+    return data.access_token;
+  } catch (error) {
+    console.error('Error getting MLC access token:', error);
+    return null;
+  }
+}
+
+// Helper function to lookup song in MLC database
+async function lookupSongInMlc(songTitle: string, writerName: string, accessToken: string) {
+  try {
+    // Search by song title and writer name
+    const searchParams = new URLSearchParams({
+      song_title: songTitle,
+      writer_name: writerName,
+      limit: '5'
+    });
+
+    const response = await fetch(`https://api.themlc.com/v1/search/songs?${searchParams}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`MLC search failed for "${songTitle}": ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    
+    // If we found results, get detailed work information
+    if (data.songs && data.songs.length > 0) {
+      const bestMatch = data.songs[0]; // Take the first result as best match
+      
+      // Get detailed work info using mlcsongCode
+      const detailResponse = await fetch(`https://api.themlc.com/v1/songs/${bestMatch.mlcsongCode}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (detailResponse.ok) {
+        const detailData = await detailResponse.json();
+        
+        // Calculate confidence score based on title/writer match
+        const titleMatch = songTitle.toLowerCase().includes(bestMatch.title?.toLowerCase() || '') || 
+                          (bestMatch.title?.toLowerCase() || '').includes(songTitle.toLowerCase());
+        const writerMatch = detailData.writers?.some((w: any) => 
+          w.name?.toLowerCase().includes(writerName.toLowerCase()) || 
+          writerName.toLowerCase().includes(w.name?.toLowerCase() || '')
+        ) || false;
+        
+        const confidence = (titleMatch ? 0.6 : 0) + (writerMatch ? 0.4 : 0);
+        
+        return {
+          found: true,
+          confidence,
+          mlc_work_id: bestMatch.mlcsongCode,
+          work_title: bestMatch.title,
+          iswc: detailData.iswc,
+          writers: detailData.writers || [],
+          publishers: detailData.publishers || [],
+          metadata: {
+            registrationDate: detailData.registrationDate,
+            territory: detailData.territory,
+            workType: detailData.workType
+          }
+        };
+      }
+    }
+
+    return { found: false, confidence: 0 };
+  } catch (error) {
+    console.error(`Error looking up "${songTitle}" in MLC:`, error);
+    return { found: false, confidence: 0, error: error.message };
+  }
+}
+
+// Helper function to calculate data quality score
+function calculateDataQualityScore(songData: any, bmiData: any, mlcData: any) {
+  let score = 0;
+  let maxScore = 0;
+
+  // Base metadata (20 points)
+  maxScore += 20;
+  if (songData.song_title) score += 5;
+  if (songData.co_writers?.length > 0) score += 5;
+  if (songData.estimated_splits) score += 5;
+  if (songData.publishers) score += 5;
+
+  // ISWC/Identifiers (25 points)
+  maxScore += 25;
+  if (songData.iswc || mlcData?.iswc) score += 15;
+  if (mlcData?.mlc_work_id) score += 10;
+
+  // PRO Verification (25 points)  
+  maxScore += 25;
+  if (bmiData && songData.verification_status === 'bmi_verified') score += 25;
+
+  // MLC Verification (30 points)
+  maxScore += 30;
+  if (mlcData?.found && mlcData.confidence > 0.7) score += 30;
+  else if (mlcData?.found && mlcData.confidence > 0.5) score += 20;
+  else if (mlcData?.found) score += 10;
+
+  return Math.round((score / maxScore) * 100) / 100;
+}
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -313,19 +448,29 @@ Use context: ${JSON.stringify(additionalContext)}`;
       const totalSongs = knownSongs.length;
       console.log(`Final count: Found ${totalSongs} songs to process`);
 
-      // Create song metadata entries with BMI lookups
-      if (knownSongs.length > 0) {
-        console.log('Starting BMI lookups for discovered songs...');
-        
-        const songMetadata = [];
-        let bmiVerifiedCount = 0;
+        // Create song metadata entries with BMI and MLC lookups
+        if (knownSongs.length > 0) {
+          console.log('Starting BMI and MLC lookups for discovered songs...');
+          
+          // Get MLC access token once for all lookups
+          const mlcAccessToken = await getMlcAccessToken();
+          if (mlcAccessToken) {
+            console.log('Successfully obtained MLC access token');
+          } else {
+            console.log('MLC integration not available - proceeding with BMI only');
+          }
+          
+          const songMetadata = [];
+          let bmiVerifiedCount = 0;
+          let mlcVerifiedCount = 0;
         
         for (const song of knownSongs) {
           const songTitle = song.Title || song.title || song.name;
           console.log(`Processing song: ${songTitle}`);
           
-          // Perform BMI lookup for each song
+          // Perform BMI and MLC lookups for each song
           let bmiData = null;
+          let mlcData = null;
           let verificationStatus = 'ai_generated';
           let completenessScore = 0.6; // Base score for AI-only data
           
@@ -354,8 +499,37 @@ Use context: ${JSON.stringify(additionalContext)}`;
             // Small delay to avoid overwhelming BMI lookup
             await new Promise(resolve => setTimeout(resolve, 500));
             
-          } catch (bmiError) {
+            } catch (bmiError) {
             console.error(`BMI lookup failed for ${songTitle}:`, bmiError);
+          }
+
+          // Perform MLC lookup if token is available
+          if (mlcAccessToken) {
+            try {
+              console.log(`Looking up MLC data for: ${songTitle} by ${songwriterName}`);
+              mlcData = await lookupSongInMlc(songTitle, songwriterName, mlcAccessToken);
+              
+              if (mlcData?.found) {
+                mlcVerifiedCount++;
+                console.log(`MLC verification successful for: ${songTitle} (confidence: ${mlcData.confidence})`);
+                
+                // Update verification status if MLC provides high confidence data
+                if (mlcData.confidence > 0.7) {
+                  verificationStatus = bmiData?.found ? 'bmi_mlc_verified' : 'mlc_verified';
+                  completenessScore = Math.max(completenessScore, 0.9);
+                } else if (mlcData.confidence > 0.5) {
+                  completenessScore = Math.max(completenessScore, 0.8);
+                }
+              } else {
+                console.log(`No MLC data found for: ${songTitle}`);
+              }
+              
+              // Small delay to avoid overwhelming MLC API
+              await new Promise(resolve => setTimeout(resolve, 300));
+              
+            } catch (mlcError) {
+              console.error(`MLC lookup failed for ${songTitle}:`, mlcError);
+            }
           }
           
             // Merge AI and BMI data - prioritize BMI data
@@ -379,17 +553,21 @@ Use context: ${JSON.stringify(additionalContext)}`;
               }
             }
             
-            // Prioritize verified ISWC data - NO MORE AI-GENERATED ISWCs
+            // Prioritize verified ISWC data from MLC or BMI
             let finalIswc = null;
             let iswcSource = null;
             
-            if (bmiData?.iswc) {
+            // MLC ISWC data takes priority as it's the official source
+            if (mlcData?.iswc) {
+              finalIswc = mlcData.iswc;
+              iswcSource = 'mlc_verified';
+              console.log(`Using MLC verified ISWC: ${finalIswc} for song: ${songTitle}`);
+            } else if (bmiData?.iswc) {
               finalIswc = bmiData.iswc;
-              iswcSource = bmiData.iswcSource || 'verified';
-              console.log(`Using verified ISWC from ${iswcSource}: ${finalIswc} for song: ${songTitle}`);
+              iswcSource = bmiData.iswcSource || 'bmi_verified';
+              console.log(`Using BMI verified ISWC: ${finalIswc} for song: ${songTitle}`);
             } else {
-              // Do NOT generate fake ISWCs - leave null if no verified data available
-              console.log(`No verified ISWC available for song: ${songTitle} - keeping null to avoid hallucination`);
+              console.log(`No verified ISWC available for song: ${songTitle} - keeping null`);
             }
             
             // Check for registration gaps
@@ -400,6 +578,13 @@ Use context: ${JSON.stringify(additionalContext)}`;
               registrationGaps.push('incomplete_writer_information');
             }
             
+            // Calculate overall data quality score
+            const dataQualityScore = calculateDataQualityScore(
+              { song_title: songTitle, co_writers: song.CoWriters || song.co_writers, estimated_splits: {}, publishers: mergedPublishers, iswc: finalIswc, verification_status: verificationStatus },
+              bmiData,
+              mlcData
+            );
+
             songMetadata.push({
               search_id: searchId,
               user_id: user.id,
@@ -418,12 +603,23 @@ Use context: ${JSON.stringify(additionalContext)}`;
               verification_status: verificationStatus,
               search_key: `${songTitle}|${songwriterName}|`,
               last_verified_at: new Date().toISOString(),
+              // New MLC fields
+              mlc_work_id: mlcData?.mlc_work_id || null,
+              mlc_verification_status: mlcData?.found ? 'verified' : 'not_found',
+              mlc_confidence_score: mlcData?.confidence || 0,
+              mlc_writers: mlcData?.writers || [],
+              mlc_publishers: mlcData?.publishers || [],
+              mlc_metadata: mlcData?.metadata || {},
+              data_quality_score: dataQualityScore,
+              last_mlc_lookup_at: mlcAccessToken ? new Date().toISOString() : null,
               source_data: { 
                 ai_session: session.id, 
                 confidence: parsedResponse.ConfidenceAssessment?.DataReliabilityScore || parsedResponse.confidence_score || 7,
                 ai_response: song,
                 bmi_data: bmiData,
                 bmi_verified: !!bmiData?.found,
+                mlc_data: mlcData,
+                mlc_verified: !!mlcData?.found,
                 iswc_source: iswcSource
               }
             });
@@ -436,7 +632,7 @@ Use context: ${JSON.stringify(additionalContext)}`;
         if (metadataError) {
           console.error('Error inserting song metadata:', metadataError);
         } else {
-          console.log(`Successfully inserted ${songMetadata.length} song metadata records (${bmiVerifiedCount} BMI-verified)`);
+          console.log(`Successfully inserted ${songMetadata.length} song metadata records (${bmiVerifiedCount} BMI-verified, ${mlcVerifiedCount} MLC-verified)`);
         }
       }
 

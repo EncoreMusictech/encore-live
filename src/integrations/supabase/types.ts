@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -3008,11 +3008,19 @@ export type Database = {
         Row: {
           co_writers: string[] | null
           created_at: string
+          data_quality_score: number | null
           estimated_splits: Json | null
           id: string
           iswc: string | null
+          last_mlc_lookup_at: string | null
           last_verified_at: string | null
           metadata_completeness_score: number | null
+          mlc_confidence_score: number | null
+          mlc_metadata: Json | null
+          mlc_publishers: Json | null
+          mlc_verification_status: string | null
+          mlc_work_id: string | null
+          mlc_writers: Json | null
           pro_registrations: Json | null
           publishers: Json | null
           registration_gaps: string[] | null
@@ -3028,11 +3036,19 @@ export type Database = {
         Insert: {
           co_writers?: string[] | null
           created_at?: string
+          data_quality_score?: number | null
           estimated_splits?: Json | null
           id?: string
           iswc?: string | null
+          last_mlc_lookup_at?: string | null
           last_verified_at?: string | null
           metadata_completeness_score?: number | null
+          mlc_confidence_score?: number | null
+          mlc_metadata?: Json | null
+          mlc_publishers?: Json | null
+          mlc_verification_status?: string | null
+          mlc_work_id?: string | null
+          mlc_writers?: Json | null
           pro_registrations?: Json | null
           publishers?: Json | null
           registration_gaps?: string[] | null
@@ -3048,11 +3064,19 @@ export type Database = {
         Update: {
           co_writers?: string[] | null
           created_at?: string
+          data_quality_score?: number | null
           estimated_splits?: Json | null
           id?: string
           iswc?: string | null
+          last_mlc_lookup_at?: string | null
           last_verified_at?: string | null
           metadata_completeness_score?: number | null
+          mlc_confidence_score?: number | null
+          mlc_metadata?: Json | null
+          mlc_publishers?: Json | null
+          mlc_verification_status?: string | null
+          mlc_work_id?: string | null
+          mlc_writers?: Json | null
           pro_registrations?: Json | null
           publishers?: Json | null
           registration_gaps?: string[] | null
@@ -4154,7 +4178,7 @@ export type Database = {
     }
     Functions: {
       accept_client_invitation: {
-        Args: { p_token: string; p_accepter: string; p_accepter_email: string }
+        Args: { p_accepter: string; p_accepter_email: string; p_token: string }
         Returns: {
           client_user_id: string
           created_at: string
@@ -4189,11 +4213,11 @@ export type Database = {
       }
       check_rate_limit: {
         Args: {
-          p_identifier: string
           p_action_type: string
+          p_block_minutes?: number
+          p_identifier: string
           p_max_attempts?: number
           p_window_minutes?: number
-          p_block_minutes?: number
         }
         Returns: boolean
       }
@@ -4264,15 +4288,15 @@ export type Database = {
       get_client_quarterly_balances: {
         Args: Record<PropertyKey, never>
         Returns: {
-          year: number
-          quarter: number
-          period_label: string
-          opening_balance: number
-          royalties_amount: number
-          expenses_amount: number
-          payments_amount: number
           closing_balance: number
           contact_name: string
+          expenses_amount: number
+          opening_balance: number
+          payments_amount: number
+          period_label: string
+          quarter: number
+          royalties_amount: number
+          year: number
         }[]
       }
       get_client_subscriber: {
@@ -4282,26 +4306,26 @@ export type Database = {
       get_invitations_needing_reminders: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          email: string
-          subscriber_user_id: string
-          expires_at: string
-          reminder_count: number
           days_until_expiry: number
+          email: string
+          expires_at: string
+          id: string
+          reminder_count: number
+          subscriber_user_id: string
         }[]
       }
       has_active_trial: {
-        Args: { p_user_id: string; p_modules: string[] }
+        Args: { p_modules: string[]; p_user_id: string }
         Returns: boolean
       }
       has_client_portal_access: {
-        Args: { _user_id: string; _module?: string }
+        Args: { _module?: string; _user_id: string }
         Returns: boolean
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -4311,27 +4335,27 @@ export type Database = {
       }
       log_copyright_activity: {
         Args: {
-          p_user_id: string
-          p_copyright_id?: string
           p_action_type?: string
-          p_operation_details?: Json
           p_affected_fields?: string[]
-          p_old_values?: Json
-          p_new_values?: Json
           p_batch_id?: string
+          p_copyright_id?: string
           p_ip_address?: string
+          p_new_values?: Json
+          p_old_values?: Json
+          p_operation_details?: Json
           p_user_agent?: string
+          p_user_id: string
         }
         Returns: string
       }
       log_security_event: {
         Args: {
-          p_user_id?: string
-          p_event_type?: string
           p_event_data?: Json
+          p_event_type?: string
           p_ip_address?: string
-          p_user_agent?: string
           p_severity?: string
+          p_user_agent?: string
+          p_user_id?: string
         }
         Returns: string
       }
@@ -4345,28 +4369,28 @@ export type Database = {
       }
       start_free_trial: {
         Args: {
-          p_user_id: string
-          p_trial_type: string
           p_trial_identifier: string
           p_trial_modules: string[]
+          p_trial_type: string
+          p_user_id: string
         }
         Returns: string
       }
       update_payout_workflow_stage: {
         Args: {
-          payout_id_param: string
-          new_stage: string
-          reason_param?: string
           metadata_param?: Json
+          new_stage: string
+          payout_id_param: string
+          reason_param?: string
         }
         Returns: undefined
       }
       validate_royalty_splits: {
         Args: { contract_id_param: string }
         Returns: {
+          is_valid: boolean
           right_type: string
           total_percentage: number
-          is_valid: boolean
         }[]
       }
     }

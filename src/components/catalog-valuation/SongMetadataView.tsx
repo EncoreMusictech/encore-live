@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Music, Users, Building, AlertTriangle, CheckCircle, Search, Shield, Loader2, RefreshCw } from 'lucide-react';
+import { Music, Users, Building, AlertTriangle, CheckCircle, Search, Shield, Loader2, RefreshCw, Database } from 'lucide-react';
 import { useSongEstimator } from '@/hooks/useSongEstimator';
 
 interface SongMetadata {
@@ -20,6 +20,15 @@ interface SongMetadata {
   metadata_completeness_score: number;
   verification_status: string;
   source_data: any;
+  // New MLC fields
+  mlc_work_id?: string;
+  mlc_verification_status?: string;
+  mlc_confidence_score?: number;
+  mlc_writers?: any[];
+  mlc_publishers?: any[];
+  mlc_metadata?: any;
+  data_quality_score?: number;
+  last_mlc_lookup_at?: string;
 }
 
 interface SongMetadataViewProps {
@@ -41,6 +50,20 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
 
   const getVerificationBadge = (status: string) => {
     switch (status) {
+      case 'bmi_mlc_verified':
+        return (
+          <Badge className="bg-success text-success-foreground">
+            <Database className="h-3 w-3 mr-1" />
+            BMI + MLC Verified
+          </Badge>
+        );
+      case 'mlc_verified':
+        return (
+          <Badge className="bg-primary text-primary-foreground">
+            <Database className="h-3 w-3 mr-1" />
+            MLC Verified
+          </Badge>
+        );
       case 'bmi_verified':
         return (
           <Badge className="bg-success text-success-foreground">
@@ -64,7 +87,6 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
     try {
       const success = await verifySongWithBMI(song.id, song.song_title, song.songwriter_name);
       if (success) {
-        // Refresh the metadata to show updated verification status
         await fetchSongMetadata(searchId);
       }
     } finally {
@@ -90,61 +112,77 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
       .join(', ');
   };
 
-  const averageCompleteness = songMetadata.length > 0 
-    ? songMetadata.reduce((sum, song) => sum + song.metadata_completeness_score, 0) / songMetadata.length 
-    : 0;
+  // Calculate statistics
+  const totalSongs = songMetadata.length;
+  const highQualitySongs = songMetadata.filter(song => song.metadata_completeness_score >= 0.8).length;
+  const registrationGaps = songMetadata.filter(song => song.registration_gaps?.length > 0).length;
+  const averageCompleteness = totalSongs > 0 ? 
+    songMetadata.reduce((sum, song) => sum + (song.metadata_completeness_score || 0), 0) / totalSongs : 0;
+  
+  // MLC specific stats
+  const mlcVerifiedSongs = songMetadata.filter(song => song.mlc_verification_status === 'verified').length;
+  const averageDataQuality = totalSongs > 0 ? 
+    songMetadata.reduce((sum, song) => sum + (song.data_quality_score || song.metadata_completeness_score || 0), 0) / totalSongs : 0;
 
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Music className="h-4 w-4 text-primary" />
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Music className="h-5 w-5 text-primary" />
               <div>
-                <div className="text-2xl font-bold">{songMetadata.length}</div>
-                <div className="text-sm text-muted-foreground">Total Songs</div>
+                <p className="text-sm text-muted-foreground">Total Songs</p>
+                <p className="text-2xl font-bold">{totalSongs}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-success" />
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Database className="h-5 w-5 text-primary" />
               <div>
-                <div className="text-2xl font-bold">
-                  {songMetadata.filter(s => s.metadata_completeness_score >= 0.8).length}
-                </div>
-                <div className="text-sm text-muted-foreground">High Quality</div>
+                <p className="text-sm text-muted-foreground">MLC Verified</p>
+                <p className="text-2xl font-bold">{mlcVerifiedSongs}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning" />
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-5 w-5 text-success" />
               <div>
-                <div className="text-2xl font-bold">
-                  {songMetadata.filter(s => s.registration_gaps?.length > 0).length}
-                </div>
-                <div className="text-sm text-muted-foreground">Registration Gaps</div>
+                <p className="text-sm text-muted-foreground">High Quality</p>
+                <p className="text-2xl font-bold">{highQualitySongs}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <div className="w-full">
-                <div className="text-2xl font-bold">{Math.round(averageCompleteness * 100)}%</div>
-                <div className="text-sm text-muted-foreground">Avg Completeness</div>
-                <Progress value={averageCompleteness * 100} className="mt-1" />
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              <div>
+                <p className="text-sm text-muted-foreground">Registration Gaps</p>
+                <p className="text-2xl font-bold">{registrationGaps}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Building className="h-5 w-5 text-info" />
+              <div>
+                <p className="text-sm text-muted-foreground">Data Quality</p>
+                <p className="text-2xl font-bold">{Math.round(averageDataQuality * 100)}%</p>
               </div>
             </div>
           </CardContent>
@@ -158,7 +196,7 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
             <div>
               <CardTitle>Song Catalog Metadata</CardTitle>
               <CardDescription>
-                Detailed metadata for each song in the catalog with completeness scores and registration status
+                Detailed metadata for each song with BMI & MLC verification status
               </CardDescription>
             </div>
             <Button
@@ -189,10 +227,9 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
                   <TableRow>
                     <TableHead>Song Title</TableHead>
                     <TableHead>Co-Writers</TableHead>
-                    <TableHead>Publishers</TableHead>
+                    <TableHead>Data Quality</TableHead>
+                    <TableHead>Verification Status</TableHead>
                     <TableHead>ISWC</TableHead>
-                    <TableHead>Completeness</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>Gaps</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -201,16 +238,30 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
                   {songMetadata.map((song) => (
                     <TableRow key={song.id}>
                       <TableCell className="font-medium">{song.song_title}</TableCell>
+                      <TableCell>{song.co_writers?.slice(0, 2).join(', ')}{song.co_writers?.length > 2 ? '...' : ''}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {song.co_writers?.length || 0}
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <Progress value={(song.data_quality_score || song.metadata_completeness_score) * 100} className="w-16" />
+                            <span className={`text-xs ${getCompletenessColor(song.data_quality_score || song.metadata_completeness_score)}`}>
+                              {Math.round((song.data_quality_score || song.metadata_completeness_score) * 100)}%
+                            </span>
+                          </div>
+                          {song.mlc_verification_status === 'verified' && (
+                            <div className="text-xs text-muted-foreground">
+                              MLC: {Math.round((song.mlc_confidence_score || 0) * 100)}%
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Building className="h-3 w-3" />
-                          {Object.keys(song.publishers || {}).length}
+                        <div className="space-y-1">
+                          {getVerificationBadge(song.verification_status)}
+                          {song.mlc_work_id && (
+                            <div className="text-xs text-muted-foreground">
+                              MLC ID: {song.mlc_work_id}
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -219,20 +270,6 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className={`font-medium ${getCompletenessColor(song.metadata_completeness_score)}`}>
-                            {Math.round(song.metadata_completeness_score * 100)}%
-                          </span>
-                          <Progress 
-                            value={song.metadata_completeness_score * 100} 
-                            className="w-16" 
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getVerificationBadge(song.verification_status)}
                       </TableCell>
                       <TableCell>
                         {song.registration_gaps?.length > 0 ? (
@@ -285,7 +322,7 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
           <CardHeader>
             <CardTitle>{selectedSong.song_title} - Detailed Metadata</CardTitle>
             <CardDescription>
-              Complete metadata breakdown and registration analysis
+              Complete metadata breakdown with BMI & MLC verification data
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -297,7 +334,7 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
                   <div><strong>Title:</strong> {selectedSong.song_title}</div>
                   <div><strong>Primary Writer:</strong> {selectedSong.songwriter_name}</div>
                   <div><strong>ISWC:</strong> {selectedSong.iswc || 'Not available'}</div>
-                  <div><strong>Primary Territory:</strong> {selectedSong.source_data?.primary_territory || 'Worldwide'}</div>
+                  <div><strong>Data Quality Score:</strong> {Math.round((selectedSong.data_quality_score || selectedSong.metadata_completeness_score) * 100)}%</div>
                   <div>
                     <strong>Co-Writers:</strong> {
                       selectedSong.co_writers?.length > 0 
@@ -308,20 +345,54 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
                 </div>
               </div>
 
-              {/* Splits & Publishers */}
+              {/* MLC Data */}
               <div className="space-y-4">
-                <h4 className="font-semibold">Rights & Splits</h4>
+                <h4 className="font-semibold">MLC Verification Data</h4>
                 <div className="space-y-2 text-sm">
-                  <div><strong>Estimated Splits:</strong> {formatSplits(selectedSong.estimated_splits)}</div>
-                  <div>
-                    <strong>Publishers:</strong> {
-                      Object.keys(selectedSong.publishers || {}).length > 0
-                        ? Object.entries(selectedSong.publishers).map(([name, share]) => 
-                            `${name} (${share}%)`
-                          ).join(', ')
-                        : 'None listed'
-                    }
-                  </div>
+                  <div><strong>MLC Status:</strong> {selectedSong.mlc_verification_status || 'Not checked'}</div>
+                  {selectedSong.mlc_work_id && (
+                    <div><strong>MLC Work ID:</strong> {selectedSong.mlc_work_id}</div>
+                  )}
+                  {selectedSong.mlc_confidence_score && (
+                    <div><strong>MLC Confidence:</strong> {Math.round(selectedSong.mlc_confidence_score * 100)}%</div>
+                  )}
+                  {selectedSong.mlc_writers && selectedSong.mlc_writers.length > 0 && (
+                    <div>
+                      <strong>MLC Writers:</strong>
+                      <ul className="mt-1 ml-4 list-disc">
+                        {selectedSong.mlc_writers.map((writer: any, idx: number) => (
+                          <li key={idx}>{writer.name} {writer.ipi && `(IPI: ${writer.ipi})`}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {selectedSong.mlc_publishers && selectedSong.mlc_publishers.length > 0 && (
+                    <div>
+                      <strong>MLC Publishers:</strong>
+                      <ul className="mt-1 ml-4 list-disc">
+                        {selectedSong.mlc_publishers.map((pub: any, idx: number) => (
+                          <li key={idx}>{pub.name} {pub.share && `(${pub.share}%)`}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Splits & Publishers */}
+            <div className="space-y-4">
+              <h4 className="font-semibold">Rights & Splits</h4>
+              <div className="space-y-2 text-sm">
+                <div><strong>Estimated Splits:</strong> {formatSplits(selectedSong.estimated_splits)}</div>
+                <div>
+                  <strong>Publishers:</strong> {
+                    Object.keys(selectedSong.publishers || {}).length > 0
+                      ? Object.entries(selectedSong.publishers).map(([name, share]) => 
+                          `${name} (${share}%)`
+                        ).join(', ')
+                      : 'None listed'
+                  }
                 </div>
               </div>
             </div>
