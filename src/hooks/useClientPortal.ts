@@ -105,6 +105,10 @@ export const useClientPortal = () => {
       return null;
     }
 
+    // Map 'user' role to 'client' for database compatibility
+    // The permissions field will differentiate between users and clients
+    const dbRole = role === 'user' ? 'client' : role;
+
     try {
       console.log('Setting loading to true');
       setLoading(true);
@@ -115,7 +119,7 @@ export const useClientPortal = () => {
       console.log('About to insert invitation with data:', {
         subscriber_user_id: user.id,
         email,
-        role,
+        role: dbRole, // Show the mapped role
         permissions: permissions as any,
         expires_at: expiresAt.toISOString()
       });
@@ -125,7 +129,7 @@ export const useClientPortal = () => {
         .insert({
           subscriber_user_id: user.id,
           email,
-          role,
+          role: dbRole, // Use the mapped role for database
           permissions: permissions as any,
           expires_at: expiresAt.toISOString()
         } as any)

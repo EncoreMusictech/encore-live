@@ -208,6 +208,11 @@ export default function CRMClientsPage() {
       Object.entries(permissions).map(([key, value]) => [key, { enabled: value }])
     );
     
+    // Mark user role invitations with a special flag for filtering
+    if (selectedRole === 'user') {
+      (permissionsObj as any).__is_user_role = true;
+    }
+    
     console.log('Processed permissions object:', permissionsObj);
     console.log('Calling createInvitation...');
 
@@ -412,8 +417,10 @@ export default function CRMClientsPage() {
   };
 
   // Filter invitations to only show users and admins for permissions tab
+  // Since 'user' role is stored as 'client' in DB, we need to differentiate using permissions
   const userAndAdminInvitations = invitations.filter(inv => 
-    inv.role === 'admin' || (inv.role as any) === 'user'
+    inv.role === 'admin' || 
+    (inv.role === 'client' && inv.permissions && (inv.permissions as any).__is_user_role === true)
   );
 
   // Permission editing functions
