@@ -1,11 +1,147 @@
-import CatalogValuation from "@/components/CatalogValuation";
+import { useState, useEffect } from "react";
 import { updatePageMetadata } from "@/utils/seo";
-import { useEffect } from "react";
+import { CatalogValuationWithSuspense } from "@/components/LazyComponents";
+import { SongEstimatorTool } from "@/components/catalog-valuation/SongEstimatorTool";
+import DemoLimitBanner from "@/components/DemoLimitBanner";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Brain, Calculator, Search, ArrowRight } from "lucide-react";
 
 export default function CRMCatalogValuationPage() {
+  const [activeTab, setActiveTab] = useState('catalog-valuation');
+  const { canAccess } = useDemoAccess();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const isAllowedSongEstimator = (user?.email?.toLowerCase() === 'info@encoremusic.tech');
+
   useEffect(() => {
     updatePageMetadata('catalog-valuation');
   }, []);
 
-  return <CatalogValuation />;
+  const handleTabChange = (value: string) => {
+    if (value === 'song-estimator' && !isAllowedSongEstimator) {
+      toast({ 
+        title: 'Access restricted', 
+        description: 'Song Estimator is currently limited to a single test user.', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+    if (value === 'deal-analysis') {
+      window.location.href = '/deal-simulator';
+      return;
+    }
+    setActiveTab(value);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Music IP Analytics Suite</h1>
+        <p className="text-muted-foreground">
+          Professional tools for catalog valuation and deal analysis
+        </p>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="catalog-valuation" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Catalog Valuation
+          </TabsTrigger>
+          <TabsTrigger value="deal-analysis" className="flex items-center gap-2">
+            <Calculator className="h-4 w-4" />
+            Deal Analysis
+          </TabsTrigger>
+          <TabsTrigger 
+            value="song-estimator" 
+            className="flex items-center gap-2"
+            disabled={!isAllowedSongEstimator}
+          >
+            <Search className="h-4 w-4" />
+            Song Estimator
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="catalog-valuation" className="space-y-6">
+          <DemoLimitBanner module="catalogValuation" />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                AI-Powered Catalog Valuation
+              </CardTitle>
+              <CardDescription>
+                Get professional-grade valuations using advanced DCF modeling, risk assessment, and industry benchmarks.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CatalogValuationWithSuspense />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="deal-analysis" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calculator className="h-5 w-5 text-secondary-foreground" />
+                Deal Analysis & Simulation
+              </CardTitle>
+              <CardDescription>
+                Model complex acquisition scenarios with track-level selection and custom deal structures.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">
+                  Deal Analysis opens in a dedicated interface for comprehensive modeling.
+                </p>
+                <Button 
+                  variant="secondary"
+                  className="group-hover:shadow-lg transition-shadow"
+                  onClick={() => window.location.href = '/deal-simulator'}
+                >
+                  Launch Deal Simulator
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="song-estimator" className="space-y-6">
+          <DemoLimitBanner module="catalogValuation" />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-accent-foreground" />
+                AI-Powered Songwriter Catalog Research
+              </CardTitle>
+              <CardDescription>
+                Research songwriter catalogs, analyze metadata completeness, and estimate uncollected royalty pipeline income.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isAllowedSongEstimator ? (
+                <SongEstimatorTool />
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    Song Estimator is currently limited to a single test user.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 }
