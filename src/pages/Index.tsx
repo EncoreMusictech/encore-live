@@ -135,11 +135,16 @@ const Index = () => {
       <section className="py-20 bg-secondary/20">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto space-y-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Ready to customize your system?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Ready to access your CRM?</h2>
             <p className="text-xl text-muted-foreground">
-              Join thousands of music professionals who trust ENCORE for their rights management needs.
+              Professional music rights management platform with unified dashboard and module-based tabs.
             </p>
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-4">
+              <Button size="lg" className="bg-gradient-primary text-primary-foreground hover:opacity-90" asChild>
+                <Link to="/crm">
+                  Launch CRM Dashboard
+                </Link>
+              </Button>
               <Button variant="outline" size="lg" className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground" asChild>
                 <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
                   Schedule a Demo
