@@ -5,12 +5,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { DemoAccessProvider } from "@/hooks/useDemoAccess";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminOrProtectedRoute from "@/components/AdminOrProtectedRoute";
 import DemoUpgradeModal from "@/components/DemoUpgradeModal";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { SecurityProvider } from "@/components/SecurityProvider";
 import EmailRestrictedRoute from "@/components/EmailRestrictedRoute";
+import { CRMLayout } from "@/components/crm/CRMLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -55,7 +57,8 @@ const App = () => {
         <SecurityProvider>
           <AuthProvider>
             <DemoAccessProvider>
-              <TooltipProvider>
+              <ThemeProvider defaultTheme="dark" storageKey="encore-ui-theme">
+                <TooltipProvider>
                 <Toaster />
                 <Sonner />
                 <DemoUpgradeModal />
@@ -63,6 +66,17 @@ const App = () => {
                   <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<Index />} />
+              
+              {/* CRM Routes */}
+              <Route path="/crm" element={<CRMLayout />}>
+                <Route index element={<div>CRM Dashboard</div>} />
+                <Route path="catalog-valuation" element={<div>Catalog Valuation</div>} />
+                <Route path="contracts" element={<div>Contracts</div>} />
+                <Route path="copyright" element={<div>Copyright</div>} />
+                <Route path="sync" element={<div>Sync</div>} />
+                <Route path="royalties" element={<div>Royalties</div>} />
+                <Route path="clients" element={<div>Clients</div>} />
+              </Route>
               <Route path="/modules" element={<ModulesPage />} />
               <Route path="/demo-modules" element={<DemoModulesPage />} />
               <Route path="/features/:moduleId" element={<FeaturesPage />} />
@@ -141,6 +155,7 @@ const App = () => {
                   </Routes>
                 </BrowserRouter>
               </TooltipProvider>
+              </ThemeProvider>
             </DemoAccessProvider>
           </AuthProvider>
         </SecurityProvider>
