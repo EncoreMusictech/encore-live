@@ -95,7 +95,7 @@ export const useClientPortal = () => {
   const createInvitation = async (
     email: string,
     permissions: Record<string, any>,
-    role: 'admin' | 'client' = 'client'
+    role: 'admin' | 'client' | 'user' = 'client'
   ) => {
     if (!user) return null;
 

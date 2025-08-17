@@ -36,7 +36,7 @@ export default function CRMClientsPage() {
 
   // Form states
   const [inviteEmail, setInviteEmail] = useState("");
-  const [selectedRole, setSelectedRole] = useState<"admin" | "client">("client");
+  const [selectedRole, setSelectedRole] = useState<"admin" | "client" | "user">("client");
   const [permissions, setPermissions] = useState({
     contracts: false,
     copyright: false,
@@ -517,12 +517,13 @@ export default function CRMClientsPage() {
 
                 <div>
                   <Label htmlFor="role">Role</Label>
-                  <Select value={selectedRole} onValueChange={(value: "admin" | "client") => setSelectedRole(value)}>
+                  <Select value={selectedRole} onValueChange={(value: "admin" | "client" | "user") => setSelectedRole(value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="client">Client</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
@@ -530,6 +531,16 @@ export default function CRMClientsPage() {
 
                 <div>
                   <Label>Permissions</Label>
+                  {selectedRole === 'user' && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      User role grants access to selected CRM modules (not client portal access)
+                    </p>
+                  )}
+                  {selectedRole === 'client' && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Client role grants access to client portal with selected permissions
+                    </p>
+                  )}
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     {Object.entries(permissions).map(([key, checked]) => (
                       <div key={key} className="flex items-center space-x-2">
