@@ -6,42 +6,50 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { useClientPortal } from "@/hooks/useClientPortal";
 
 export default function CRMClientsPage() {
   const { isAdmin } = useUserRoles();
+  const { clientAccess, invitations, getInvitationStatus } = useClientPortal();
   
-  const [clientStats] = useState({
-    totalClients: 45,
-    activeClients: 38,
-    pendingInvites: 7,
-    totalRevenue: 850000
-  });
+  // Calculate stats from real data
+  const clientStats = {
+    totalClients: clientAccess.length,
+    activeClients: clientAccess.filter(c => c.status === 'active').length,
+    pendingInvites: invitations.filter(i => i.status === 'pending').length,
+    totalRevenue: 850000 // This would come from actual revenue data
+  };
 
-  const recentClients = [
-    {
-      id: 1,
-      name: "Midnight Records",
-      type: "Label",
-      status: "active",
-      modules: ["copyright", "royalties"],
-      lastActive: "2 hours ago"
-    },
-    {
-      id: 2,
-      name: "Sarah Johnson",
-      type: "Artist",
-      status: "pending",
-      modules: ["contracts", "sync-licensing"],
-      lastActive: "Never"
-    },
-    {
-      id: 3,
-      name: "Harmony Publishing",
-      type: "Publisher",
-      status: "active",
-      modules: ["copyright", "contracts", "royalties"],
-      lastActive: "1 day ago"
-    }
+  // Combine client access records and invitations for display
+  const allClients = [
+    // Active clients - using client_user_id as identifier
+    ...clientAccess.map(access => ({
+      id: access.id,
+      name: `Client ${access.client_user_id.slice(0, 8)}...`, // Shortened user ID as name
+      type: access.role === 'admin' ? 'Admin' : 'Client',
+      status: access.status,
+      email: 'N/A', // Email not available in access record
+      modules: access.permissions ? Object.keys(access.permissions as any).filter(key => (access.permissions as any)[key]) : [],
+      lastActive: access.updated_at ? new Date(access.updated_at).toLocaleDateString() : 'Never',
+      isInvitation: false
+    })),
+    // Pending invitations
+    ...invitations.filter(inv => inv.status === 'pending').map(invitation => {
+      const statusInfo = getInvitationStatus(invitation);
+      return {
+        id: invitation.id,
+        name: invitation.email,
+        type: invitation.role === 'admin' ? 'Admin' : 'Client',
+        status: statusInfo.status,
+        email: invitation.email,
+        modules: invitation.permissions ? Object.keys(invitation.permissions as any).filter(key => (invitation.permissions as any)[key]) : [],
+        lastActive: 'Never',
+        isInvitation: true,
+        expiresAt: invitation.expires_at,
+        daysUntilExpiry: statusInfo.daysUntilExpiry,
+        isUrgent: statusInfo.isUrgent
+      };
+    })
   ];
 
   const getStatusColor = (status: string) => {
@@ -157,34 +165,55 @@ export default function CRMClientsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentClients.map((client) => (
-                  <div key={client.id} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <h4 className="font-semibold">{client.name}</h4>
-                          <Badge variant="outline">{client.type}</Badge>
+                {allClients.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No clients found</p>
+                    <p className="text-sm">Invite your first client to get started</p>
+                  </div>
+                ) : (
+                  allClients.map((client: any) => (
+                    <div key={client.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <h4 className="font-semibold">{client.name}</h4>
+                            <Badge variant="outline">{client.type}</Badge>
+                            {client.isInvitation && (
+                              <Badge variant="secondary" className="text-xs">
+                                Invitation
+                              </Badge>
+                            )}
+                            {client.isUrgent && (
+                              <Badge variant="destructive" className="text-xs">
+                                Expires in {client.daysUntilExpiry} days
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Email: {client.email}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Modules: {client.modules.length > 0 ? client.modules.join(", ") : "None"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Last active: {client.lastActive}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          Modules: {client.modules.join(", ")}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Last active: {client.lastActive}
-                        </p>
-                      </div>
-                      <div className="text-right space-y-2">
-                        <Badge className={getStatusColor(client.status)}>
-                          {client.status}
-                        </Badge>
-                        <div>
-                          <Button variant="outline" size="sm">
-                            Manage
-                          </Button>
+                        <div className="text-right space-y-2">
+                          <Badge className={getStatusColor(client.status)}>
+                            {client.status}
+                          </Badge>
+                          <div>
+                            <Button variant="outline" size="sm">
+                              {client.isInvitation ? 'Resend' : 'Manage'}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
               <div className="mt-4 text-center">
                 <Button asChild variant="outline">
