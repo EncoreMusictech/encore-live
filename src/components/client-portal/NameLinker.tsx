@@ -19,7 +19,7 @@ interface MatchItem {
 }
 
 export function NameLinker() {
-  const { clientAccess, createDataAssociation } = useClientPortal();
+  const { clientAccess, createDataAssociation, invitations } = useClientPortal();
   const { toast } = useToast();
 
   const [clientUserId, setClientUserId] = useState("");
@@ -42,6 +42,20 @@ export function NameLinker() {
   const [results, setResults] = useState<MatchItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
+
+  // Helper function to get client email from user ID
+  const getClientEmail = (clientUserId: string) => {
+    const matches = invitations
+      .filter((inv: any) => inv.accepted_by_user_id === clientUserId);
+    if (matches.length > 0) {
+      matches.sort((a: any, b: any) =>
+        new Date(b.accepted_at || b.created_at).getTime() -
+        new Date(a.accepted_at || a.created_at).getTime()
+      );
+      return matches[0]?.email as string | undefined;
+    }
+    return undefined;
+  };
 
   const toggleSearchType = (key: keyof typeof searchTypes, checked: boolean | "indeterminate") => {
     setSearchTypes((prev) => ({ ...prev, [key]: !!checked }));
@@ -259,11 +273,14 @@ export function NameLinker() {
                 <SelectValue placeholder="Select a client" />
               </SelectTrigger>
               <SelectContent className="z-50 bg-popover">
-                {clientAccess.map((a) => (
-                  <SelectItem key={a.id} value={a.client_user_id}>
-                    {a.client_user_id}
-                  </SelectItem>
-                ))}
+                {clientAccess.map((a) => {
+                  const email = getClientEmail(a.client_user_id);
+                  return (
+                    <SelectItem key={a.id} value={a.client_user_id}>
+                      {email || a.client_user_id}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground mt-1">Shows clients with active access.</p>
