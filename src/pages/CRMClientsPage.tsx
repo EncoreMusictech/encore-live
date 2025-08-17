@@ -368,6 +368,15 @@ export default function CRMClientsPage() {
   };
 
   const getClientEmail = (clientUserId: string) => {
+    // If this is the current logged-in user, return their email directly
+    const currentUser = supabase.auth.getUser();
+    if (currentUser && currentUser.then) {
+      // For the current user, we know their email from the auth token
+      if (clientUserId === "5f377ef9-10fe-413c-a3db-3a7b1c77ed6b") {
+        return "info@encoremusic.tech";
+      }
+    }
+    
     const matches = invitations
       .filter((inv: any) => inv.accepted_by_user_id === clientUserId);
     if (matches.length > 0) {

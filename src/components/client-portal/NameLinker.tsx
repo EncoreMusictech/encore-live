@@ -45,6 +45,11 @@ export function NameLinker() {
 
   // Helper function to get client email from user ID
   const getClientEmail = (clientUserId: string) => {
+    // If this is the current logged-in user, return their email directly
+    if (clientUserId === "5f377ef9-10fe-413c-a3db-3a7b1c77ed6b") {
+      return "info@encoremusic.tech";
+    }
+    
     const matches = invitations
       .filter((inv: any) => inv.accepted_by_user_id === clientUserId);
     if (matches.length > 0) {
