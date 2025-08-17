@@ -24,21 +24,21 @@ export const modules = [
         title: "Reconciliation - Batches",
         description: "Track incoming royalty payments from DSPs, PROs, YouTube, and other sources",
         icon: Archive,
-        path: "/reconciliation"
+        path: "/crm/royalties"
       },
       {
         id: "royalties",
         title: "Royalties Allocation",
         description: "Map works and their rightsholders to reconciled revenue with automated calculations",
         icon: Music,
-        path: "/royalties"
+        path: "/crm/royalties"
       },
       {
         id: "payouts",
         title: "Payouts & Client Accounting", 
         description: "Handle periodic statements and payments for clients with automated calculations",
         icon: CreditCard,
-        path: "/payouts"
+        path: "/crm/royalties"
       }
     ],
     features: [
@@ -62,14 +62,14 @@ export const modules = [
         title: "Catalog Valuation",
         description: "AI-powered catalog assessment with 3-5 year forecasting and fair market value analysis",
         icon: TrendingUp,
-        path: "/catalog-valuation"
+        path: "/crm/catalog-valuation"
       },
       {
         id: "deal-simulator",
         title: "Deal Simulator",
         description: "Simulate different deal structures and outcomes with advanced modeling",
         icon: TrendingUp,
-        path: "/deal-simulator"
+        path: "/crm/catalog-valuation"
       }
     ],
     features: [
@@ -93,14 +93,14 @@ export const modules = [
         title: "Contract Upload & Organization",
         description: "Upload, categorize, and organize all your music contracts in one place",
         icon: FileText,
-        path: "/contract-management"
+        path: "/crm/contracts"
       },
       {
         id: "template-library",
         title: "Template Library",
         description: "Access industry-standard contract templates for all deal types",
         icon: Archive,
-        path: "/contract-management"
+        path: "/crm/contracts"
       }
     ],
     features: [
@@ -123,14 +123,14 @@ export const modules = [
         title: "Copyright Registration",
         description: "Register and track copyrights with detailed metadata management",
         icon: Copyright,
-        path: "/copyright-management"
+        path: "/crm/copyright"
       },
       {
         id: "bulk-upload",
         title: "Bulk Upload System",
         description: "Import multiple works efficiently with CSV/Excel templates",
         icon: Archive,
-        path: "/copyright-management"
+        path: "/crm/copyright"
       }
     ],
     features: [
@@ -153,14 +153,14 @@ export const modules = [
         title: "Sync Request Management",
         description: "Track and manage sync licensing requests from inquiry to completion",
         icon: Film,
-        path: "/sync-licensing"
+        path: "/crm/sync"
       },
       {
         id: "rights-clearance",
         title: "Rights Clearance",
         description: "Comprehensive rights management and clearance workflow",
         icon: Archive,
-        path: "/sync-licensing"
+        path: "/crm/sync"
       }
     ],
     features: [
