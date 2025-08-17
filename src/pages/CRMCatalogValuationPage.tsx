@@ -71,15 +71,6 @@ export default function CRMCatalogValuationPage() {
           <DemoLimitBanner module="catalogValuation" />
           
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-primary" />
-                AI-Powered Catalog Valuation
-              </CardTitle>
-              <CardDescription>
-                Get professional-grade valuations using advanced DCF modeling, risk assessment, and industry benchmarks.
-              </CardDescription>
-            </CardHeader>
             <CardContent>
               <CatalogValuationWithSuspense />
             </CardContent>
@@ -119,15 +110,6 @@ export default function CRMCatalogValuationPage() {
           <DemoLimitBanner module="catalogValuation" />
           
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5 text-accent-foreground" />
-                AI-Powered Songwriter Catalog Research
-              </CardTitle>
-              <CardDescription>
-                Research songwriter catalogs, analyze metadata completeness, and estimate uncollected royalty pipeline income.
-              </CardDescription>
-            </CardHeader>
             <CardContent>
               {isAllowedSongEstimator ? (
                 <SongEstimatorTool />
