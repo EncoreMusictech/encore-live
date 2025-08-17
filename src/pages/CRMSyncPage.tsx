@@ -1,233 +1,155 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Filter, LayoutGrid, Calendar, List } from "lucide-react";
+import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
-import { Plus, Film, DollarSign, Calendar, TrendingUp } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import DemoLimitBanner from "@/components/DemoLimitBanner";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { SyncLicenseForm } from "@/components/sync-licensing/SyncLicenseForm";
+import { SyncLicenseTable } from "@/components/sync-licensing/SyncLicenseTable";
+import { SyncLicenseKanban } from "@/components/sync-licensing/SyncLicenseKanban";
+import { SyncLicenseCalendar } from "@/components/sync-licensing/SyncLicenseCalendar";
+import { SyncLicenseDashboard } from "@/components/sync-licensing/SyncLicenseDashboard";
+import { useSyncLicenses } from "@/hooks/useSyncLicenses";
+import SyncLicenseFiltersComponent from "@/components/sync-licensing/SyncLicenseFilters";
+import { useSyncLicenseFilters } from "@/hooks/useSyncLicenseFilters";
 
 export default function CRMSyncPage() {
-  const [syncDeals, setSyncDeals] = useState([
-    {
-      id: 1,
-      title: "Netflix Series - 'Midnight Dreams'",
-      artist: "Luna Bay",
-      project: "Dark Waters S2E5",
-      status: "negotiating",
-      value: 15000,
-      dueDate: "2024-01-15"
-    },
-    {
-      id: 2,
-      title: "Commercial - 'Summer Vibes'",
-      artist: "The Collective",
-      project: "Nike Summer Campaign",
-      status: "approved",
-      value: 25000,
-      dueDate: "2024-01-10"
-    },
-    {
-      id: 3,
-      title: "Film Score - 'Revolution'",
-      artist: "Marcus Steel",
-      project: "Independent Film",
-      status: "pending",
-      value: 8000,
-      dueDate: "2024-01-20"
-    }
-  ]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"table" | "kanban" | "calendar">("table");
+  const { data: syncLicenses = [], isLoading } = useSyncLicenses();
+  const { canAccess } = useDemoAccess();
+  const { filters, setFilters, filteredLicenses, activeFiltersCount } = useSyncLicenseFilters(syncLicenses);
+
+  useEffect(() => {
+    updatePageMetadata('syncLicensing');
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "approved": return "bg-success text-success-foreground";
-      case "negotiating": return "bg-orange-500 text-white";
-      case "pending": return "bg-muted text-muted-foreground";
-      default: return "bg-muted text-muted-foreground";
+      case "Inquiry":
+        return "bg-blue-100 text-blue-800";
+      case "Negotiating":
+        return "bg-yellow-100 text-yellow-800";
+      case "Approved":
+        return "bg-green-100 text-green-800";
+      case "Declined":
+        return "bg-red-100 text-red-800";
+      case "Licensed":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const totalValue = syncDeals.reduce((sum, deal) => sum + deal.value, 0);
-  const approvedDeals = syncDeals.filter(deal => deal.status === "approved").length;
-  const pendingDeals = syncDeals.filter(deal => deal.status === "pending").length;
+  const calculateTotalControlledAmount = (license: any) => {
+    if (!license.fee_allocations || !Array.isArray(license.fee_allocations)) {
+      return 0;
+    }
+    return license.fee_allocations.reduce((total: number, allocation: any) => {
+      return total + (allocation.controlledAmount || 0);
+    }, 0);
+  };
+
+  const getStatsFromLicenses = () => {
+    const totalDeals = syncLicenses.length;
+    const activeDeals = syncLicenses.filter(
+      license => !["Declined"].includes(license.synch_status)
+    ).length;
+    const outstandingInvoices = syncLicenses
+      .filter(license => license.invoice_status === "Issued" && license.payment_status === "Pending")
+      .reduce((sum, license) => sum + (license.invoiced_amount || 0), 0);
+    const paidDealsAmount = syncLicenses
+      .filter(license => license.payment_status === "Paid in Full")
+      .reduce((sum, license) => sum + calculateTotalControlledAmount(license), 0);
+
+    return { totalDeals, activeDeals, totalRevenue: outstandingInvoices, paidDeals: paidDealsAmount };
+  };
+
+  const stats = getStatsFromLicenses();
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Demo Limit Banner */}
+      <DemoLimitBanner module="syncLicensing" />
+
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-headline font-bold">Sync Licensing</h1>
-          <p className="text-muted-foreground">
-            Track sync opportunities and manage licensing deals
+          <h1 className="text-3xl font-bold text-foreground">Sync Licensing Tracker</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your sync licensing deals from inquiry to payment
           </p>
         </div>
-        <Button asChild>
-          <Link to="/sync-licensing">
-            <Plus className="mr-2 h-4 w-4" />
-            New Sync Deal
-          </Link>
+        <Button 
+          onClick={() => setIsFormOpen(true)} 
+          className="gap-2"
+          disabled={!canAccess('syncLicensing')}
+        >
+          <Plus className="h-4 w-4" />
+          {canAccess('syncLicensing') ? 'New Sync Request' : 'Demo Limit Reached'}
         </Button>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <Film className="h-5 w-5 text-primary" />
-              <span className="text-sm text-success font-medium">+3</span>
-            </div>
-            <CardTitle className="text-2xl font-bold">{syncDeals.length}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm font-medium">Active Deals</p>
-            <p className="text-xs text-muted-foreground">Total sync opportunities</p>
-          </CardContent>
-        </Card>
+      {/* Dashboard Stats */}
+      <SyncLicenseDashboard stats={stats} />
 
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <DollarSign className="h-5 w-5 text-primary" />
-              <span className="text-sm text-success font-medium">+15%</span>
-            </div>
-            <CardTitle className="text-2xl font-bold">${totalValue.toLocaleString()}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm font-medium">Total Value</p>
-            <p className="text-xs text-muted-foreground">Combined deal value</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <span className="text-sm text-success font-medium">+2</span>
-            </div>
-            <CardTitle className="text-2xl font-bold">{approvedDeals}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm font-medium">Approved</p>
-            <p className="text-xs text-muted-foreground">Ready for execution</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <Calendar className="h-5 w-5 text-primary" />
-              <span className="text-sm text-orange-600 font-medium">{pendingDeals}</span>
-            </div>
-            <CardTitle className="text-2xl font-bold">{pendingDeals}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm font-medium">Pending</p>
-            <p className="text-xs text-muted-foreground">Awaiting response</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="pipeline" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="pipeline">Deal Pipeline</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="pipeline" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Sync Deals</CardTitle>
-              <CardDescription>
-                Current sync licensing opportunities and their status
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {syncDeals.map((deal) => (
-                  <div key={deal.id} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <h4 className="font-semibold">{deal.title}</h4>
-                        <p className="text-sm text-muted-foreground">by {deal.artist}</p>
-                        <p className="text-sm">{deal.project}</p>
-                      </div>
-                      <div className="text-right space-y-2">
-                        <Badge className={getStatusColor(deal.status)}>
-                          {deal.status}
-                        </Badge>
-                        <div className="text-lg font-bold">${deal.value.toLocaleString()}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>Due: {deal.dueDate}</span>
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+      {/* Main Content */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>Sync Deals</CardTitle>
+            <div className="flex gap-2">
+              <SyncLicenseFiltersComponent
+                filters={filters}
+                onFiltersChange={setFilters}
+                activeFiltersCount={activeFiltersCount}
+              />
+              <div className="flex gap-1">
+                <Button
+                  variant={viewMode === "table" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode("table")}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "kanban" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode("kanban")}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "calendar" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode("calendar")}
+                >
+                  <Calendar className="h-4 w-4" />
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="calendar" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sync Calendar</CardTitle>
-              <CardDescription>
-                Upcoming deadlines and important dates
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <Calendar className="h-12 w-12 mx-auto mb-4" />
-                <p>Calendar view coming soon</p>
-                <p className="text-sm">Track sync deal deadlines and milestones</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Deal Success Rate</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-success">67%</div>
-                <p className="text-muted-foreground text-sm">Deals closed successfully</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Average Deal Value</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">${Math.round(totalValue / syncDeals.length).toLocaleString()}</div>
-                <p className="text-muted-foreground text-sm">Per sync license</p>
-              </CardContent>
-            </Card>
+            </div>
           </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Monthly Performance</CardTitle>
-              <CardDescription>
-                Sync licensing revenue and deal volume trends
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <TrendingUp className="h-12 w-12 mx-auto mb-4" />
-                <p>Analytics charts coming soon</p>
-                <p className="text-sm">Track performance metrics and trends</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </CardHeader>
+        <CardContent>
+          {viewMode === "table" && (
+            <SyncLicenseTable licenses={filteredLicenses} isLoading={isLoading} />
+          )}
+          {viewMode === "kanban" && (
+            <SyncLicenseKanban licenses={filteredLicenses} isLoading={isLoading} />
+          )}
+          {viewMode === "calendar" && (
+            <SyncLicenseCalendar licenses={filteredLicenses} isLoading={isLoading} />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* New Sync License Form Dialog */}
+      <SyncLicenseForm 
+        open={isFormOpen} 
+        onOpenChange={setIsFormOpen}
+      />
     </div>
   );
 }
