@@ -870,37 +870,6 @@ export default function CRMClientsPage() {
 
         <TabsContent value="permissions" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Module Permissions</CardTitle>
-                <CardDescription>
-                  Configure which modules clients can access
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Available Modules</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 border rounded">
-                      <span>Copyright Management</span>
-                      <Badge variant="secondary">{clientAccess.filter(c => c.permissions && (c.permissions as any)?.copyright?.enabled).length} clients</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded">
-                      <span>Contract Management</span>
-                      <Badge variant="secondary">{clientAccess.filter(c => c.permissions && (c.permissions as any)?.contracts?.enabled).length} clients</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded">
-                      <span>Royalties Processing</span>
-                      <Badge variant="secondary">{clientAccess.filter(c => c.permissions && (c.permissions as any)?.royalties?.enabled).length} clients</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded">
-                      <span>Sync Licensing</span>
-                      <Badge variant="secondary">{clientAccess.filter(c => c.permissions && (c.permissions as any)?.sync_licenses?.enabled).length} clients</Badge>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
             
             <Card>
               <CardHeader>
