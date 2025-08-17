@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function CRMCopyrightPage() {
   const [copyrights, setCopyrights] = useState([]);
+  const [writers, setWriters] = useState({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const { user } = useAuth();
@@ -22,12 +23,12 @@ export default function CRMCopyrightPage() {
 
   const fetchCopyrights = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: copyrightData, error: copyrightError } = await supabase
         .from('copyrights')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
+      if (copyrightError) {
         toast({
           title: "Error",
           description: "Failed to fetch copyrights",
@@ -36,7 +37,27 @@ export default function CRMCopyrightPage() {
         return;
       }
 
-      setCopyrights(data || []);
+      // Fetch writers for the copyrights
+      const { data: writersData, error: writersError } = await supabase
+        .from('copyright_writers')
+        .select('*');
+
+      if (writersError) {
+        console.error('Failed to fetch writers:', writersError);
+      }
+
+      setCopyrights(copyrightData || []);
+      
+      // Group writers by copyright_id
+      const groupedWriters = (writersData || []).reduce((acc, writer) => {
+        if (!acc[writer.copyright_id]) {
+          acc[writer.copyright_id] = [];
+        }
+        acc[writer.copyright_id].push(writer);
+        return acc;
+      }, {});
+      
+      setWriters(groupedWriters);
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -98,8 +119,18 @@ export default function CRMCopyrightPage() {
             </CardHeader>
             <CardContent>
               <CopyrightTable 
-                copyrights={copyrights} 
-                onUpdate={fetchCopyrights}
+                copyrights={copyrights}
+                writers={writers}
+                loading={loading}
+                onEdit={(copyright) => {
+                  // Handle edit action
+                  console.log('Edit copyright:', copyright);
+                }}
+                onDelete={(copyright) => {
+                  // Handle delete action
+                  console.log('Delete copyright:', copyright);
+                  fetchCopyrights(); // Refresh after delete
+                }}
               />
             </CardContent>
           </Card>

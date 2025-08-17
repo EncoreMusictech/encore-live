@@ -33,6 +33,13 @@ import ClientPortal from "./components/ClientPortal";
 import ClientAdminPage from "./pages/ClientAdminPage";
 import ContactPage from "./pages/ContactPage";
 import DocumentationPage from "./pages/DocumentationPage";
+import CRMPage from "./pages/CRMPage";
+import CRMCatalogValuationPage from "./pages/CRMCatalogValuationPage";
+import CRMContractsPage from "./pages/CRMContractsPage";
+import CRMCopyrightPage from "./pages/CRMCopyrightPage";
+import CRMSyncPage from "./pages/CRMSyncPage";
+import CRMRoyaltiesPage from "./pages/CRMRoyaltiesPage";
+import CRMClientsPage from "./pages/CRMClientsPage";
 
 // Create a stable QueryClient instance
 let queryClient: QueryClient | null = null;
@@ -69,14 +76,15 @@ const App = () => {
               
               {/* CRM Routes */}
               <Route path="/crm" element={<CRMLayout />}>
-                <Route index element={<div>CRM Dashboard</div>} />
-                <Route path="catalog-valuation" element={<div>Catalog Valuation</div>} />
-                <Route path="contracts" element={<div>Contracts</div>} />
-                <Route path="copyright" element={<div>Copyright</div>} />
-                <Route path="sync" element={<div>Sync</div>} />
-                <Route path="royalties" element={<div>Royalties</div>} />
-                <Route path="clients" element={<div>Clients</div>} />
+                <Route index element={<CRMPage />} />
+                <Route path="catalog-valuation" element={<CRMCatalogValuationPage />} />
+                <Route path="contracts" element={<CRMContractsPage />} />
+                <Route path="copyright" element={<CRMCopyrightPage />} />
+                <Route path="sync" element={<CRMSyncPage />} />
+                <Route path="royalties" element={<CRMRoyaltiesPage />} />
+                <Route path="clients" element={<CRMClientsPage />} />
               </Route>
+              {/* Legacy Routes - Keep for backwards compatibility */}
               <Route path="/modules" element={<ModulesPage />} />
               <Route path="/demo-modules" element={<DemoModulesPage />} />
               <Route path="/features/:moduleId" element={<FeaturesPage />} />
