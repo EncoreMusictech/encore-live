@@ -871,27 +871,6 @@ export default function CRMClientsPage() {
         <TabsContent value="permissions" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            <Card>
-              <CardHeader>
-                <CardTitle>Permission Levels</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="p-3 border rounded">
-                    <div className="font-medium">View Only</div>
-                    <div className="text-sm text-muted-foreground">Read-only access to data</div>
-                  </div>
-                  <div className="p-3 border rounded">
-                    <div className="font-medium">Full Access</div>
-                    <div className="text-sm text-muted-foreground">Complete module functionality</div>
-                  </div>
-                  <div className="p-3 border rounded">
-                    <div className="font-medium">Custom</div>
-                    <div className="text-sm text-muted-foreground">Granular permission control</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
           
           <Card>
