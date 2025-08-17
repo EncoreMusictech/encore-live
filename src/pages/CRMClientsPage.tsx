@@ -657,8 +657,6 @@ export default function CRMClientsPage() {
                 </Button>
               </CardContent>
             </Card>
-
-            <NameLinker />
           </div>
         </TabsContent>
 
@@ -811,6 +809,8 @@ export default function CRMClientsPage() {
                 )}
               </CardContent>
             </Card>
+
+            <NameLinker />
           </div>
         </TabsContent>
 
