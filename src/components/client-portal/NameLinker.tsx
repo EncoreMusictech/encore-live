@@ -244,7 +244,7 @@ export function NameLinker() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <LinkIcon className="h-5 w-5" />
-          Link by Name (No UUIDs)
+          Link by Name
         </CardTitle>
         <CardDescription>
           Search by writer, publisher, payee, artist, or interested party, then link matching contracts, works, royalties, and licenses to a client.
