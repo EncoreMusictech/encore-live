@@ -457,7 +457,39 @@ export const useClientPortal = () => {
       return { success: false, error: error.message };
     }
   };
-  
+
+  // Remove specific invitation by ID
+  const removeInvitation = async (invitationId: string) => {
+    if (!user) return { success: false, error: 'Not authenticated' };
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('client_invitations')
+        .delete()
+        .eq('id', invitationId)
+        .eq('subscriber_user_id', user.id);
+      
+      if (error) throw error;
+      
+      await fetchInvitations();
+      toast({
+        title: 'Invitation removed',
+        description: 'The invitation has been deleted successfully.'
+      });
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error removing invitation:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'Failed to remove invitation'
+      });
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Remove invitations by status (expired, pending)
   const removeInvitations = async (includePending: boolean = false) => {
     if (!user) return { success: false, error: 'Not authenticated' };
@@ -534,6 +566,7 @@ export const useClientPortal = () => {
     isClient,
     getClientPermissions,
     triggerInvitationMaintenance,
+    removeInvitation,
     removeInvitations,
     getInvitationStatus,
     refreshData: () => {

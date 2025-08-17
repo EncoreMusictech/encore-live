@@ -30,6 +30,7 @@ export default function CRMClientsPage() {
     updateDataAssociation,
     deleteDataAssociation,
     triggerInvitationMaintenance,
+    removeInvitation,
     removeInvitations,
     getInvitationStatus,
     refreshData 
@@ -424,6 +425,16 @@ export default function CRMClientsPage() {
     }));
   };
 
+  const handleRemoveInvitation = async (invitationId: string, email: string) => {
+    const result = await removeInvitation(invitationId);
+    if (result.success) {
+      toast({
+        title: 'Success',
+        description: `Invitation for ${email} has been removed.`,
+      });
+    }
+  };
+
   const filteredAssociations = dataAssociations.filter((a: any) => {
     const typeMatch = typeFilter === 'all' || a.data_type === typeFilter;
     const email = getClientEmail(a.client_user_id) || '';
@@ -635,24 +646,33 @@ export default function CRMClientsPage() {
                             {invitation.expires_at && ` • Expires: ${new Date(invitation.expires_at).toLocaleDateString()}`}
                             {invitation.reminder_count > 0 && ` • Reminders sent: ${invitation.reminder_count}`}
                           </p>
-                        </div>
-                        {invitation.status === 'pending' && (
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => copyInvitationLink(invitation.invitation_token)}
-                            >
-                              Copy Link
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleResendEmail(invitation)}
-                            >
-                              Resend Email
-                            </Button>
-                          </div>
-                        )}
+                         </div>
+                         <div className="flex items-center gap-2">
+                           {invitation.status === 'pending' && (
+                             <>
+                               <Button
+                                 size="sm"
+                                 variant="outline"
+                                 onClick={() => copyInvitationLink(invitation.invitation_token)}
+                               >
+                                 Copy Link
+                               </Button>
+                               <Button
+                                 size="sm"
+                                 onClick={() => handleResendEmail(invitation)}
+                               >
+                                 Resend Email
+                               </Button>
+                             </>
+                           )}
+                           <Button
+                             size="sm"
+                             variant="destructive"
+                             onClick={() => handleRemoveInvitation(invitation.id, invitation.email)}
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </div>
                       </div>
                     ))}
                   </div>
