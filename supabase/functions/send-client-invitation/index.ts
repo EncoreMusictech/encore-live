@@ -3,6 +3,8 @@ import { Resend } from 'npm:resend@4.0.0'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import ClientInvitationEmail from './_templates/client-invitation.tsx'
+import UserInvitationEmail from './_templates/user-invitation.tsx'
+import AdminInvitationEmail from './_templates/admin-invitation.tsx'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 
@@ -15,6 +17,8 @@ type InvitationPayload = {
   invitee_email: string
   invitee_name?: string
   token: string
+  role?: 'client' | 'user' | 'admin'
+  permissions?: Record<string, any>
   subscriber_name?: string
   site_url?: string
   support_email?: string
@@ -28,17 +32,42 @@ serve(async (req) => {
   try {
     const body = (await req.json()) as InvitationPayload
     const siteUrl = body.site_url || Deno.env.get('SITE_URL') || 'https://'+(Deno.env.get('PROJECT_DOMAIN')||'example.com')
-    const acceptUrl = `${siteUrl}/client-portal?token=${encodeURIComponent(body.token)}`
+    
+    // Determine the appropriate route and template based on role
+    const role = body.role || 'client'
+    let acceptUrl: string
+    let emailTemplate: any
+    let subject: string
 
-    const html = await renderAsync(
-      React.createElement(ClientInvitationEmail, {
-        invitee_name: body.invitee_name,
-        subscriber_name: body.subscriber_name || 'ENCORE',
-        site_url: siteUrl,
-        accept_url: acceptUrl,
-        support_email: body.support_email || 'support@encoremusic.tech',
-      })
-    )
+    if (role === 'client') {
+      // Client portal access
+      acceptUrl = `${siteUrl}/client-portal?token=${encodeURIComponent(body.token)}`
+      emailTemplate = ClientInvitationEmail
+      subject = 'You're invited to the ENCORE Client Portal'
+    } else if (role === 'user') {
+      // CRM user access
+      acceptUrl = `${siteUrl}/crm?token=${encodeURIComponent(body.token)}`
+      emailTemplate = UserInvitationEmail
+      subject = 'ENCORE CRM Team Access - User Invitation'
+    } else if (role === 'admin') {
+      // CRM admin access
+      acceptUrl = `${siteUrl}/crm?token=${encodeURIComponent(body.token)}`
+      emailTemplate = AdminInvitationEmail
+      subject = 'ENCORE CRM Administrator Access Invitation'
+    } else {
+      throw new Error('Invalid role specified')
+    }
+
+    const emailProps = {
+      invitee_name: body.invitee_name,
+      subscriber_name: body.subscriber_name || 'ENCORE',
+      site_url: siteUrl,
+      accept_url: acceptUrl,
+      support_email: body.support_email || 'support@encoremusic.tech',
+      ...(role === 'user' && { permissions: body.permissions })
+    }
+
+    const html = await renderAsync(React.createElement(emailTemplate, emailProps))
 
     if (!Deno.env.get('RESEND_API_KEY')) {
       return new Response(
@@ -50,7 +79,7 @@ serve(async (req) => {
     const { error } = await resend.emails.send({
       from: 'ENCORE <onboarding@resend.dev>',
       to: [body.invitee_email],
-      subject: 'You’re invited to the ENCORE Client Portal',
+      subject,
       html,
     })
 

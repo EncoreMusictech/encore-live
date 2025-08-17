@@ -305,6 +305,8 @@ export default function CRMClientsPage() {
         body: {
           invitee_email: invitation.email,
           token: invitation.invitation_token,
+          role: invitation.role, // Pass the role to determine email template and route
+          permissions: invitation.permissions, // Pass permissions for user role template
           subscriber_name: 'ENCORE',
           site_url: window.location.origin,
           support_email: 'support@encoremusic.tech',

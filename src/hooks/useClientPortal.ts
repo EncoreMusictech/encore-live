@@ -126,6 +126,8 @@ export const useClientPortal = () => {
             // Optionally pass a name if you collect it elsewhere
             invitee_name: undefined,
             token: (data as any).invitation_token,
+            role: role, // Pass the role to determine email template and route
+            permissions: permissions, // Pass permissions for user role template
             subscriber_name: 'ENCORE',
             site_url: window.location.origin,
             support_email: 'support@encoremusic.tech',
