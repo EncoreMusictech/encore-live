@@ -227,37 +227,32 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
   const generateFallbackTemplate = (contractType: string): string => {
     const templates = {
       artist_recording: `
-RECORDING AGREEMENT
+ARTIST RECORDING CONTRACT
 
-This Recording Agreement ("Agreement") is entered into on {{effective_date}} between {{label_name}} ("Company") and {{artist_name}} ("Artist").
+1. AGREEMENT made as of {{effective_date}}, between {{label_name}} (herein called "the Company") and {{artist_name}} (herein called "the Artist") for the tendering of personal services in connection with the production of Commercial Sound Records.
 
-1. TERM
-The term of this Agreement shall commence on the Effective Date and continue for {{term_duration}}.
+2. This agreement shall remain in effect for a period of {{term_length}} from the date hereof, and during that period you will, at mutually convenient times, come to and perform at the Company's recording studios for the purpose of recording {{minimum_selections}} selections or more than this number if the Company so desires.
 
-2. TERRITORY
-The territory covered by this Agreement is {{territory}}.
+In consideration of this Agreement and without further payment than as herein provided for yourself, you grant to the Company, its associates, subsidiaries and nominees (1) the right to manufacture, advertise, sell, lease, license or otherwise use or dispose of in any or all fields of use, throughout the world, or to refrain therefrom, throughout the world or any part thereof, records embodying the performances to be recorded hereunder, upon such terms and conditions as the Company may approve; (2) the right to use your name and photograph if desired, in connection with the exploitation of said records; and (3) all rights in and to the matrices and records, and the use and control thereof, upon which are reproduced the performances to be recorded hereunder.
 
-3. RECORDINGS
-Artist agrees to record and deliver the album titled "{{album_title}}" by {{delivery_date}}.
+3. The Company will pay you for the rights granted herein and the services to be rendered hereunder by you a royalty of {{royalty_rate}} cents for each double-faced record manufactured and sold throughout the world by the Company or its associates or subsidiaries, on both faces of which are embodied any of the selections recorded hereunder. In case of records manufactured and sold by the Company on only one face of which is embodied a selection recorded hereunder, the amount of royalty shall be one-half of the amount set forth above, excepting in cases where the recording shall be of full length on one side (in such case as a Compact Disk).
 
-4. ADVANCE
-Company shall pay Artist an advance of $\{{advance_amount}} upon execution of this Agreement.
+4. Payment of accrued royalties shall be made semi-annually on the first day of {{payment_month}} for the period ending {{first_period_end}}, and on the first day of {{second_payment_month}} for the period ending {{second_period_end}} of each year. The Company, however, shall have the right to deduct from the amount of any statements, or accounts of royalties due, the amount of royalties previously paid to you or records subsequently returned, either as defective or on exchange proposition.
 
-5. ROYALTIES
-Company shall pay Artist {{royalty_rate}} of net sales for all recordings sold under this Agreement.
+5. You agree that during the period of this Agreement you will not perform for any other person, firm or corporation, for the purpose of producing commercial sound records, that after the expiration of this Agreement you will not record for anyone else any of the musical selections recorded hereunder, and that in the event of a breach of this covenant, the Company shall be entitled to an injunction to enforce same, in addition to any other remedies available to it.
 
-6. RIGHTS
-Company shall own all rights to the master recordings created under this Agreement.
+6. The Artist hereby warrants that he has no oral or written obligations contracts, or agreements of whatever nature entered into prior to the signing of this agreement which are now in force and binding and which would in any way interfere with carrying out this agreement to its full intent and purpose.
 
-7. CREDITS
-Artist shall receive appropriate credit on all recordings and related materials.
+7. If any instrumental musicians whose services are engaged hereunder are members of the American Federation of Musicians, the following provision shall be deemed to be a part of this agreement: "As the musicians engaged under the stipulations of this contract are members of the American Federation of Musicians, nothing in this contract shall ever be construed as to interfere with any obligation which they owe to the American Federation of Musicians as members thereof."
 
-8. WARRANTIES
-Artist warrants that they have the right to enter into this Agreement and perform the obligations herein.
+8. It is mutually understood and agreed that in the event the license issued to the Company by the American Federation of Musicians, and pursuant to which the Company engages the services of Federation members as instrumental musicians, should be revoked or terminated, with or without cause, and in the event you or any of the members of the Musical Organization are members of the Federation, the Company may, at its option, terminate and cancel this agreement without liability to you.
 
-IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first written above.
+9. The Company shall have the privilege and option to extend this Agreement from the date of its expiration for a period equal to the terms of this Agreement by giving to you notice in writing of its exercise of such option and its election to continue. Such notice shall be given to you personally or be mailed to your last known address not less than ten days prior to the expiration of this Agreement. Upon the giving of such notice this Agreement shall be continued and extended for such further period upon the same terms as those above set forth.
+
+ACCEPTED AND AGREED TO:
 
 Company: {{label_name}}
+
 Artist: {{artist_name}}
       `,
       publishing: `
@@ -384,14 +379,15 @@ Producer: {{producer_name}}
     const fieldSets = {
       artist_recording: [
         { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
-        { id: 'label_name', name: 'label_name', label: 'Record Label Name', type: 'text', required: true, category: 'parties' },
+        { id: 'label_name', name: 'label_name', label: 'Company Name', type: 'text', required: true, category: 'parties' },
         { id: 'artist_name', name: 'artist_name', label: 'Artist Name', type: 'text', required: true, category: 'parties' },
-        { id: 'term_duration', name: 'term_duration', label: 'Contract Term', type: 'select', required: true, category: 'terms', options: ['1 Year', '2 Years', '3 Years', '5 Years'] },
-        { id: 'territory', name: 'territory', label: 'Territory', type: 'select', required: true, category: 'terms', options: ['Worldwide', 'North America', 'Europe'] },
-        { id: 'album_title', name: 'album_title', label: 'Album Title', type: 'text', required: true, category: 'terms' },
-        { id: 'delivery_date', name: 'delivery_date', label: 'Delivery Date', type: 'date', required: true, category: 'schedule' },
-        { id: 'advance_amount', name: 'advance_amount', label: 'Advance Amount', type: 'number' as const, required: false, category: 'financial' as const },
-        { id: 'royalty_rate', name: 'royalty_rate', label: 'Royalty Rate', type: 'select', required: true, category: 'financial', options: ['10%', '15%', '20%'] }
+        { id: 'term_length', name: 'term_length', label: 'Term Length', type: 'select', required: true, category: 'terms', options: ['1 year', '2 years', '3 years', '5 years'] },
+        { id: 'minimum_selections', name: 'minimum_selections', label: 'Minimum Selections', type: 'number', required: true, category: 'terms' },
+        { id: 'royalty_rate', name: 'royalty_rate', label: 'Royalty Rate (cents)', type: 'number', required: true, category: 'financial' },
+        { id: 'payment_month', name: 'payment_month', label: 'First Payment Month', type: 'select', required: true, category: 'financial', options: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] },
+        { id: 'first_period_end', name: 'first_period_end', label: 'First Period End Date', type: 'date', required: true, category: 'schedule' },
+        { id: 'second_payment_month', name: 'second_payment_month', label: 'Second Payment Month', type: 'select', required: true, category: 'financial', options: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] },
+        { id: 'second_period_end', name: 'second_period_end', label: 'Second Period End Date', type: 'date', required: true, category: 'schedule' }
       ],
       publishing: [
         { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
