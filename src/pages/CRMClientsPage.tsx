@@ -702,6 +702,8 @@ export default function CRMClientsPage() {
             </Card>
 
 
+            <NameLinker />
+
             {/* Data Associations Manager */}
             <Card className="lg:col-span-2">
               <CardHeader>
@@ -810,7 +812,6 @@ export default function CRMClientsPage() {
               </CardContent>
             </Card>
 
-            <NameLinker />
           </div>
         </TabsContent>
 
