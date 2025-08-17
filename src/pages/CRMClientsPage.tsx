@@ -24,6 +24,7 @@ export default function CRMClientsPage() {
     invitations,
     dataAssociations,
     createInvitation, 
+    updateInvitationPermissions,
     revokeClientAccess, 
     createDataAssociation, 
     updateDataAssociation,
@@ -59,6 +60,10 @@ export default function CRMClientsPage() {
   const [editForm, setEditForm] = useState<{ dataType: 'copyright' | 'contract' | 'royalty_allocation' | 'sync_license' | 'payee'; dataId: string}>(
     { dataType: 'copyright', dataId: '' }
   );
+
+  // Permission editing state
+  const [editingPermissionId, setEditingPermissionId] = useState<string | null>(null);
+  const [tempPermissions, setTempPermissions] = useState<Record<string, any>>({});
 
   // Resolved names for associations (type:id -> label)
   const [nameMap, setNameMap] = useState<Record<string, string>>({});
@@ -389,6 +394,34 @@ export default function CRMClientsPage() {
     return undefined;
   };
 
+  // Filter invitations to only show users and admins for permissions tab
+  const userAndAdminInvitations = invitations.filter(inv => 
+    inv.role === 'admin' || (inv.role as any) === 'user'
+  );
+
+  // Permission editing functions
+  const handleStartPermissionEdit = (invitation: any) => {
+    setEditingPermissionId(invitation.id);
+    setTempPermissions(invitation.permissions || {});
+  };
+
+  const handleSavePermissionEdit = async () => {
+    if (!editingPermissionId) return;
+    
+    const updated = await updateInvitationPermissions(editingPermissionId, tempPermissions);
+    if (updated) {
+      setEditingPermissionId(null);
+      setTempPermissions({});
+    }
+  };
+
+  const handlePermissionToggle = (module: string, enabled: boolean) => {
+    setTempPermissions(prev => ({
+      ...prev,
+      [module]: { enabled }
+    }));
+  };
+
   const filteredAssociations = dataAssociations.filter((a: any) => {
     const typeMatch = typeFilter === 'all' || a.data_type === typeFilter;
     const email = getClientEmail(a.client_user_id) || '';
@@ -530,7 +563,7 @@ export default function CRMClientsPage() {
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-50 bg-popover">
                       <SelectItem value="client">Client</SelectItem>
                       <SelectItem value="user">User</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
@@ -838,91 +871,92 @@ export default function CRMClientsPage() {
         <TabsContent value="permissions" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Module Permissions</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                User & Admin Permissions
+              </CardTitle>
               <CardDescription>
-                Configure which modules clients can access
+                Manage module access for User and Admin roles
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Available Modules</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 border rounded">
-                      <span>Copyright Management</span>
-                      <Badge variant="secondary">38 clients</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded">
-                      <span>Contract Management</span>
-                      <Badge variant="secondary">25 clients</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded">
-                      <span>Royalties Processing</span>
-                      <Badge variant="secondary">42 clients</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded">
-                      <span>Sync Licensing</span>
-                      <Badge variant="secondary">15 clients</Badge>
-                    </div>
-                  </div>
+              {userAndAdminInvitations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4" />
+                  <p>No User or Admin invitations found</p>
+                  <p className="text-sm">Create invitations with User or Admin roles to manage their permissions here</p>
                 </div>
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Permission Levels</h4>
-                  <div className="space-y-2">
-                    <div className="p-3 border rounded">
-                      <div className="font-medium">View Only</div>
-                      <div className="text-sm text-muted-foreground">Read-only access to data</div>
-                    </div>
-                    <div className="p-3 border rounded">
-                      <div className="font-medium">Full Access</div>
-                      <div className="text-sm text-muted-foreground">Complete module functionality</div>
-                    </div>
-                    <div className="p-3 border rounded">
-                      <div className="font-medium">Custom</div>
-                      <div className="text-sm text-muted-foreground">Granular permission control</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="permissions" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-          </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Portal Usage Analytics</CardTitle>
-              <CardDescription>
-                Client activity and engagement metrics
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-success">
-                    {Math.round((clientStats.activeClients / Math.max(clientStats.totalClients, 1)) * 100)}%
-                  </div>
-                  <p className="text-muted-foreground text-sm">Active client usage rate</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold">Royalties</div>
-                  <p className="text-muted-foreground text-sm">Most used module</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold">{clientStats.pendingInvites}</div>
-                  <p className="text-muted-foreground text-sm">Pending invitations</p>
-                </div>
-              </div>
-              
-              <div className="text-center py-8 text-muted-foreground border-t">
-                <Users className="h-12 w-12 mx-auto mb-4" />
-                <p>Detailed analytics dashboard coming soon</p>
-                <p className="text-sm">Track portal usage and engagement metrics</p>
-              </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Contracts</TableHead>
+                      <TableHead>Copyright</TableHead>
+                      <TableHead>Royalties</TableHead>
+                      <TableHead>Sync Licenses</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userAndAdminInvitations.map((invitation) => (
+                      <TableRow key={invitation.id}>
+                        <TableCell className="font-medium">{invitation.email}</TableCell>
+                        <TableCell>
+                          <Badge variant={invitation.role === 'admin' ? 'default' : 'secondary'}>
+                            {invitation.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(invitation)}</TableCell>
+                        
+                        {/* Permission checkboxes */}
+                        {['contracts', 'copyright', 'royalties', 'sync_licenses'].map((module) => (
+                          <TableCell key={module}>
+                            {editingPermissionId === invitation.id ? (
+                              <Checkbox
+                                checked={tempPermissions[module]?.enabled || false}
+                                onCheckedChange={(checked) => handlePermissionToggle(module, !!checked)}
+                              />
+                            ) : (
+                              <Checkbox
+                                checked={invitation.permissions?.[module]?.enabled || false}
+                                disabled
+                              />
+                            )}
+                          </TableCell>
+                        ))}
+                        
+                        <TableCell>
+                          {editingPermissionId === invitation.id ? (
+                            <div className="flex gap-1">
+                              <Button size="sm" onClick={handleSavePermissionEdit}>
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => {
+                                setEditingPermissionId(null);
+                                setTempPermissions({});
+                              }}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleStartPermissionEdit(invitation)}
+                              disabled={invitation.status !== 'pending' && invitation.status !== 'accepted'}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

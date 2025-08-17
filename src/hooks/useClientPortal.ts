@@ -167,6 +167,45 @@ export const useClientPortal = () => {
     }
   };
 
+  // Update invitation permissions
+  const updateInvitationPermissions = async (
+    invitationId: string,
+    permissions: Record<string, any>
+  ) => {
+    if (!user) return null;
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('client_invitations')
+        .update({ permissions: permissions as any })
+        .eq('id', invitationId)
+        .eq('subscriber_user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Permissions updated successfully"
+      });
+
+      await fetchInvitations();
+      return data;
+    } catch (error: any) {
+      console.error('Error updating invitation permissions:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update permissions"
+      });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Accept invitation
   const acceptInvitation = async (token: string) => {
     if (!user) return null;
@@ -484,6 +523,7 @@ export const useClientPortal = () => {
     invitations,
     dataAssociations,
     createInvitation,
+    updateInvitationPermissions,
     acceptInvitation,
     revokeClientAccess,
     createDataAssociation,
