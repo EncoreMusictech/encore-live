@@ -148,9 +148,18 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
     }
     
     // Enhance the template with AI-generated fields if available
-    const enhancedTemplate = enhancedTemplates[template.contract_type] 
-      ? { ...template, fields: enhancedTemplates[template.contract_type].templateFields }
-      : template;
+    let enhancedTemplate = template;
+    if (enhancedTemplates[template.contract_type]) {
+      const templateData = enhancedTemplates[template.contract_type];
+      enhancedTemplate = {
+        ...template,
+        template_data: {
+          fields: templateData.templateFields || [],
+          clauses: {},
+          contractContent: templateData.contractContent
+        }
+      };
+    }
     
     setSelectedTemplate(enhancedTemplate);
     setCurrentView('customize');
