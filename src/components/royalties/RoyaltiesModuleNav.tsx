@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,19 +7,19 @@ import { FileText, DollarSign, CreditCard } from "lucide-react";
 const modules = [
   {
     title: "Reconciliation",
-    path: "/reconciliation",
+    path: "/dashboard/royalties?tab=statements",
     icon: FileText,
     description: "Statement ingestion & mapping"
   },
   {
     title: "Royalties",
-    path: "/royalties", 
+    path: "/dashboard/royalties?tab=allocations", 
     icon: DollarSign,
     description: "Royalties & tracking"
   },
   {
     title: "Payouts",
-    path: "/payouts",
+    path: "/dashboard/royalties?tab=payouts",
     icon: CreditCard,
     description: "Client accounting"
   }
@@ -27,7 +27,8 @@ const modules = [
 
 export function RoyaltiesModuleNav() {
   const location = useLocation();
-  const currentPath = location.pathname;
+  const [searchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'statements';
 
   return (
     <Card className="mb-6">
@@ -43,7 +44,9 @@ export function RoyaltiesModuleNav() {
         <div className="grid grid-cols-3 gap-3">
           {modules.map((module) => {
             const IconComponent = module.icon;
-            const isActive = currentPath === module.path;
+            const isActive = (module.title === "Reconciliation" && currentTab === "statements") ||
+                            (module.title === "Royalties" && currentTab === "allocations") ||
+                            (module.title === "Payouts" && currentTab === "payouts");
             
             return (
               <Button

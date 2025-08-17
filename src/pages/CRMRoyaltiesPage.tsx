@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Music, DollarSign, Users, AlertTriangle, FileText } from "lucide-react";
+import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, CreditCard } from "lucide-react";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
@@ -11,10 +12,22 @@ import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportStaging";
 import { RoyaltiesDiscrepancyReport } from "@/components/royalties/RoyaltiesDiscrepancyReport";
 import { RoyaltiesAnalyticsDashboard } from "@/components/royalties/RoyaltiesAnalyticsDashboard";
+import { PayoutList } from "@/components/royalties/PayoutList";
 
 export default function CRMRoyaltiesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') || 'statements';
   const [showForm, setShowForm] = useState(false);
-  const [activeTab, setActiveTab] = useState("statements");
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  // Update URL when tab changes
+  useEffect(() => {
+    setSearchParams({ tab: activeTab });
+  }, [activeTab, setSearchParams]);
+
+  // Update tab when URL changes
+  useEffect(() => {
+    setActiveTab(tabFromUrl);
+  }, [tabFromUrl]);
   
   const {
     allocations,
@@ -39,7 +52,7 @@ export default function CRMRoyaltiesPage() {
       <RoyaltiesModuleNav />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="statements" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Statements
@@ -47,6 +60,10 @@ export default function CRMRoyaltiesPage() {
           <TabsTrigger value="allocations" className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
             Royalties
+          </TabsTrigger>
+          <TabsTrigger value="payouts" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Payouts
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -113,6 +130,19 @@ export default function CRMRoyaltiesPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="payouts" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold">Payouts</h2>
+              <p className="text-muted-foreground">
+                Handle periodic statements and payments for clients
+              </p>
+            </div>
+          </div>
+
+          <PayoutList />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
