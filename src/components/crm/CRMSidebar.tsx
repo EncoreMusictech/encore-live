@@ -173,14 +173,7 @@ export function CRMSidebar() {
                       <Link to={module.url} className="flex items-center">
                         <IconComponent className="mr-2 h-4 w-4" />
                         {!collapsed && (
-                          <div className="flex-1">
-                            <span className="font-medium">{module.title}</span>
-                            {module.description && (
-                              <div className="text-xs text-muted-foreground">
-                                {module.description}
-                              </div>
-                            )}
-                          </div>
+                          <span className="font-medium">{module.title}</span>
                         )}
                         {module.adminOnly && !collapsed && (
                           <Badge variant="outline" className="text-xs ml-auto">
