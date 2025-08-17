@@ -13,6 +13,7 @@ import { TemplateBuilder } from './TemplateBuilder';
 import { CustomizeContractForm } from './CustomizeContractForm';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 
 interface Template {
   id: string;
@@ -87,6 +88,7 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
   const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
   const [generatingTemplate, setGeneratingTemplate] = useState<string | null>(null);
   const [enhancedTemplates, setEnhancedTemplates] = useState<Record<string, any>>({});
+  const { downloadPDF } = usePDFGeneration();
 
   useEffect(() => {
     loadTemplates();
@@ -441,37 +443,41 @@ Producer: {{producer_name}}
     try {
       const enhancedTemplate = enhancedTemplates[template.contract_type];
       
-      // Create a blob with the contract content
+      // Create properly formatted HTML content for PDF conversion
       const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${template.title}</title>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }
-            h1, h2, h3 { color: #333; }
-            .clause { margin: 20px 0; }
-            .placeholder { background: #f0f0f0; padding: 2px 4px; }
-          </style>
-        </head>
-        <body>
-          <h1>${template.title}</h1>
-          <div style="white-space: pre-wrap;">${enhancedTemplate.contractContent}</div>
-        </body>
-        </html>
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; max-width: 800px;">
+          <div style="text-align: center; margin-bottom: 40px;">
+            <h1 style="color: #333; margin-bottom: 10px;">${template.title}</h1>
+            <p style="color: #666; font-size: 14px;">Professional Music Industry Agreement Template</p>
+          </div>
+          
+          <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+            <h3 style="margin-top: 0; color: #444;">Template Fields Available:</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+              ${enhancedTemplate.templateFields.map((field: any) => 
+                `<div style="background: white; padding: 8px 12px; border-radius: 4px; font-size: 12px;">
+                  <strong>${field.label}</strong><br>
+                  <span style="color: #666;">\{{${field.name}}}</span>
+                </div>`
+              ).join('')}
+            </div>
+          </div>
+          
+          <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.8;">
+            ${enhancedTemplate.contractContent.replace(/\{\{(\w+)\}\}/g, '<span style="background: #fff3cd; padding: 2px 4px; border-radius: 3px; font-weight: bold;">{{$1}}</span>')}
+          </div>
+          
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; font-size: 12px; color: #666;">
+            <p><strong>Note:</strong> This is a template with placeholder fields marked as {{field_name}}. 
+            Use the "Use" button to customize this template with actual values.</p>
+          </div>
+        </div>
       `;
       
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${template.title.replace(/\s+/g, '_')}_Template.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Use the existing PDF generation hook to create a proper PDF
+      await downloadPDF(htmlContent, `${template.title.replace(/\s+/g, '_')}_Template`);
       
-      toast.success('Template downloaded successfully!');
+      toast.success('PDF template downloaded successfully!');
     } catch (error) {
       console.error('Error downloading template:', error);
       toast.error('Failed to download template');
