@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ModuleItem {
@@ -45,42 +46,42 @@ const mainModules: ModuleItem[] = [
   {
     id: "dashboard",
     title: "Dashboard",
-    url: "/crm",
+    url: "/dashboard",
     icon: LayoutDashboard,
     description: "Overview & Analytics"
   },
   {
     id: "catalog-valuation",
     title: "Catalog Valuation",
-    url: "/crm/catalog-valuation",
+    url: "/dashboard/catalog-valuation",
     icon: TrendingUp,
     description: "AI-powered catalog assessment"
   },
   {
     id: "contract-management",
     title: "Contracts",
-    url: "/crm/contracts",
+    url: "/dashboard/contracts",
     icon: FileText,
     description: "Agreement management"
   },
   {
     id: "copyright-management",
     title: "Copyright",
-    url: "/crm/copyright",
+    url: "/dashboard/copyright",
     icon: Copyright,
     description: "Rights management"
   },
   {
     id: "sync-licensing",
     title: "Sync Licensing",
-    url: "/crm/sync",
+    url: "/dashboard/sync",
     icon: Film,
     description: "Sync deal tracking"
   },
   {
     id: "royalties-processing",
     title: "Royalties",
-    url: "/crm/royalties",
+    url: "/dashboard/royalties",
     icon: DollarSign,
     description: "Processing & payouts"
   },
@@ -90,7 +91,7 @@ const adminModules: ModuleItem[] = [
   {
     id: "client-portal",
     title: "Client Portal",
-    url: "/crm/clients",
+    url: "/dashboard/clients",
     icon: Users,
     description: "Client management",
     adminOnly: true
@@ -100,6 +101,7 @@ const adminModules: ModuleItem[] = [
 export function CRMSidebar() {
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
+  const { canAccess: canAccessDemo } = useDemoAccess();
   const location = useLocation();
   const [userModules, setUserModules] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState(false);
@@ -128,12 +130,23 @@ export function CRMSidebar() {
   // Include admin modules if user is admin
   const availableModules = isAdmin ? [...mainModules, ...adminModules] : mainModules;
   
-  // Filter modules based on user access
+  // Filter modules based on user access or demo access
   const accessibleModules = isAdministrator 
     ? availableModules 
-    : availableModules.filter(module => 
-        module.id === 'dashboard' || userModules.includes(module.id)
-      );
+    : availableModules.filter(module => {
+        if (module.id === 'dashboard') return true;
+        // Check if user has database access or demo access
+        // Map module IDs to demo access keys
+        const demoKey = module.id === 'royalties-processing' ? 'royaltiesProcessing' :
+                       module.id === 'catalog-valuation' ? 'catalogValuation' :
+                       module.id === 'contract-management' ? 'contractManagement' :
+                       module.id === 'copyright-management' ? 'copyrightManagement' :
+                       module.id === 'sync-licensing' ? 'syncLicensing' :
+                       module.id === 'client-portal' ? 'clientPortal' :
+                       module.id;
+        
+        return userModules.includes(module.id) || canAccessDemo(demoKey);
+      });
 
   const isActive = (path: string) => location.pathname === path;
 
