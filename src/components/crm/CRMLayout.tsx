@@ -6,6 +6,7 @@ import { CRMHeader } from "./CRMHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Lock } from "lucide-react";
@@ -14,11 +15,12 @@ export function CRMLayout() {
   const { user } = useAuth();
   const { subscribed, subscription_tier, loading: subscriptionLoading } = useSubscription();
   const { isAdmin, loading: rolesLoading } = useUserRoles();
+  const { canAccess: canAccessDemo } = useDemoAccess();
   const location = useLocation();
 
   // Check if user has access to CRM
   const isAdministrator = user?.email === 'info@encoremusic.tech' || isAdmin;
-  const hasPaidAccess = isAdministrator || subscribed;
+  const hasPaidAccess = isAdministrator || subscribed || canAccessDemo;
 
   if (!user) {
     return (
