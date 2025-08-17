@@ -191,33 +191,244 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
   const generateStandardizedTemplate = async (contractType: string) => {
     setGeneratingTemplate(contractType);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-standardized-template', {
-        body: { 
-          contractType,
-          jurisdiction: 'US',
-          tone: 'standard'
-        },
-      });
-
-      if (error) throw error;
+      // For now, create a fallback template until the Edge Function is deployed
+      const fallbackTemplate = {
+        contractContent: generateFallbackTemplate(contractType),
+        templateFields: generateFallbackFields(contractType),
+        generated: true
+      };
 
       // Store the enhanced template data
       setEnhancedTemplates(prev => ({
         ...prev,
-        [contractType]: {
-          contractContent: data.contractContent,
-          templateFields: data.templateFields,
-          generated: true
-        }
+        [contractType]: fallbackTemplate
       }));
 
-      toast.success('AI-generated template created successfully!');
+      toast.success('Template generated successfully!');
     } catch (error) {
       console.error('Error generating template:', error);
-      toast.error('Failed to generate AI template');
+      toast.error('Failed to generate template');
     } finally {
       setGeneratingTemplate(null);
     }
+  };
+
+  const generateFallbackTemplate = (contractType: string): string => {
+    const templates = {
+      artist_recording: `
+RECORDING AGREEMENT
+
+This Recording Agreement ("Agreement") is entered into on {{effective_date}} between {{label_name}} ("Company") and {{artist_name}} ("Artist").
+
+1. TERM
+The term of this Agreement shall commence on the Effective Date and continue for {{term_duration}}.
+
+2. TERRITORY
+The territory covered by this Agreement is {{territory}}.
+
+3. RECORDINGS
+Artist agrees to record and deliver the album titled "{{album_title}}" by {{delivery_date}}.
+
+4. ADVANCE
+Company shall pay Artist an advance of $\{{advance_amount}} upon execution of this Agreement.
+
+5. ROYALTIES
+Company shall pay Artist {{royalty_rate}} of net sales for all recordings sold under this Agreement.
+
+6. RIGHTS
+Company shall own all rights to the master recordings created under this Agreement.
+
+7. CREDITS
+Artist shall receive appropriate credit on all recordings and related materials.
+
+8. WARRANTIES
+Artist warrants that they have the right to enter into this Agreement and perform the obligations herein.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first written above.
+
+Company: {{label_name}}
+Artist: {{artist_name}}
+      `,
+      publishing: `
+MUSIC PUBLISHING AGREEMENT
+
+This Publishing Agreement ("Agreement") is entered into on {{effective_date}} between {{publisher_name}} ("Publisher") and {{songwriter_name}} ("Songwriter").
+
+1. GRANT OF RIGHTS
+Songwriter hereby grants to Publisher {{ownership_percentage}}% of all rights in the musical compositions listed in Schedule A.
+
+2. TERM
+This Agreement shall commence on {{effective_date}} and continue for {{term_length}} years.
+
+3. TERRITORY
+The territory of this Agreement is {{territory}}.
+
+4. ADVANCE
+Publisher shall pay Songwriter an advance of $\{{advance_amount}} upon execution.
+
+5. ROYALTY SPLITS
+Publisher shall receive {{publisher_share}}% and Songwriter shall receive {{writer_share}}% of all income.
+
+6. ADMINISTRATION
+Publisher shall administer the compositions and collect all income on behalf of both parties.
+
+7. STATEMENTS
+Publisher shall provide quarterly statements and payments to Songwriter.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement.
+
+Publisher: {{publisher_name}}
+Songwriter: {{songwriter_name}}
+      `,
+      distribution: `
+DISTRIBUTION AGREEMENT
+
+This Distribution Agreement ("Agreement") is entered into on {{effective_date}} between {{distributor_name}} ("Distributor") and {{artist_name}} ("Artist").
+
+1. DISTRIBUTION RIGHTS
+Artist grants Distributor the exclusive right to distribute the recordings in {{territory}}.
+
+2. TERM
+This Agreement shall be effective for {{term_duration}}.
+
+3. REVENUE SPLIT
+Distributor shall retain {{distributor_percentage}}% and Artist shall receive {{artist_percentage}}% of net receipts.
+
+4. DELIVERY
+Artist shall deliver masters and all required materials by {{delivery_date}}.
+
+5. MARKETING
+Distributor agrees to use reasonable efforts to market and promote the recordings.
+
+6. STATEMENTS
+Distributor shall provide monthly statements and payments.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement.
+
+Distributor: {{distributor_name}}
+Artist: {{artist_name}}
+      `,
+      sync: `
+SYNCHRONIZATION LICENSE
+
+This Synchronization License ("License") is granted on {{effective_date}} between {{licensor_name}} ("Licensor") and {{licensee_name}} ("Licensee").
+
+1. COMPOSITION
+Licensor grants rights to the musical composition "{{composition_title}}" for use in {{project_title}}.
+
+2. USAGE
+Licensed for {{usage_type}} in {{territory}} for {{duration}}.
+
+3. FEE
+Licensee shall pay a synchronization fee of $\{{sync_fee}}.
+
+4. TERM
+This license is effective from {{start_date}} to {{end_date}}.
+
+5. RESTRICTIONS
+Usage is limited to the specific project and territory described herein.
+
+6. CREDITS
+Licensee shall provide appropriate music credits.
+
+IN WITNESS WHEREOF, the parties have executed this License.
+
+Licensor: {{licensor_name}}
+Licensee: {{licensee_name}}
+      `,
+      producer: `
+PRODUCER AGREEMENT
+
+This Producer Agreement ("Agreement") is entered into on {{effective_date}} between {{artist_name}} ("Artist") and {{producer_name}} ("Producer").
+
+1. SERVICES
+Producer agrees to produce {{track_count}} tracks for Artist's project "{{project_title}}".
+
+2. FEE
+Artist shall pay Producer $\{{producer_fee}} plus \{{royalty_points}} points on net sales.
+
+3. DELIVERY
+Producer shall deliver completed masters by {{delivery_date}}.
+
+4. CREDITS
+Producer shall receive producer credit on all recordings and related materials.
+
+5. OWNERSHIP
+Producer assigns all rights to the master recordings to Artist, retaining producer royalties.
+
+6. WARRANTIES
+Producer warrants the originality of all musical contributions.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement.
+
+Artist: {{artist_name}}
+Producer: {{producer_name}}
+      `
+    };
+    
+    return templates[contractType as keyof typeof templates] || templates.artist_recording;
+  };
+
+  const generateFallbackFields = (contractType: string) => {
+    const fieldSets = {
+      artist_recording: [
+        { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
+        { id: 'label_name', name: 'label_name', label: 'Record Label Name', type: 'text', required: true, category: 'parties' },
+        { id: 'artist_name', name: 'artist_name', label: 'Artist Name', type: 'text', required: true, category: 'parties' },
+        { id: 'term_duration', name: 'term_duration', label: 'Contract Term', type: 'select', required: true, category: 'terms', options: ['1 Year', '2 Years', '3 Years', '5 Years'] },
+        { id: 'territory', name: 'territory', label: 'Territory', type: 'select', required: true, category: 'terms', options: ['Worldwide', 'North America', 'Europe'] },
+        { id: 'album_title', name: 'album_title', label: 'Album Title', type: 'text', required: true, category: 'terms' },
+        { id: 'delivery_date', name: 'delivery_date', label: 'Delivery Date', type: 'date', required: true, category: 'schedule' },
+        { id: 'advance_amount', name: 'advance_amount', label: 'Advance Amount', type: 'number' as const, required: false, category: 'financial' as const },
+        { id: 'royalty_rate', name: 'royalty_rate', label: 'Royalty Rate', type: 'select', required: true, category: 'financial', options: ['10%', '15%', '20%'] }
+      ],
+      publishing: [
+        { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
+        { id: 'publisher_name', name: 'publisher_name', label: 'Publisher Name', type: 'text', required: true, category: 'parties' },
+        { id: 'songwriter_name', name: 'songwriter_name', label: 'Songwriter Name', type: 'text', required: true, category: 'parties' },
+        { id: 'ownership_percentage', name: 'ownership_percentage', label: 'Ownership %', type: 'number', required: true, category: 'financial' },
+        { id: 'term_length', name: 'term_length', label: 'Term Length (Years)', type: 'number', required: true, category: 'terms' },
+        { id: 'territory', name: 'territory', label: 'Territory', type: 'select', required: true, category: 'terms', options: ['Worldwide', 'North America', 'Europe'] },
+        { id: 'advance_amount', name: 'advance_amount', label: 'Advance Amount', type: 'number' as const, required: false, category: 'financial' as const },
+        { id: 'publisher_share', name: 'publisher_share', label: 'Publisher Share %', type: 'number', required: true, category: 'financial' },
+        { id: 'writer_share', name: 'writer_share', label: 'Writer Share %', type: 'number', required: true, category: 'financial' }
+      ],
+      distribution: [
+        { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
+        { id: 'distributor_name', name: 'distributor_name', label: 'Distributor Name', type: 'text', required: true, category: 'parties' },
+        { id: 'artist_name', name: 'artist_name', label: 'Artist Name', type: 'text', required: true, category: 'parties' },
+        { id: 'territory', name: 'territory', label: 'Territory', type: 'select', required: true, category: 'terms', options: ['Worldwide', 'North America', 'Europe'] },
+        { id: 'term_duration', name: 'term_duration', label: 'Term Duration', type: 'select', required: true, category: 'terms', options: ['1 Year', '2 Years', '3 Years'] },
+        { id: 'distributor_percentage', name: 'distributor_percentage', label: 'Distributor %', type: 'number', required: true, category: 'financial' },
+        { id: 'artist_percentage', name: 'artist_percentage', label: 'Artist %', type: 'number', required: true, category: 'financial' },
+        { id: 'delivery_date', name: 'delivery_date', label: 'Delivery Date', type: 'date', required: true, category: 'schedule' }
+      ],
+      sync: [
+        { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
+        { id: 'licensor_name', name: 'licensor_name', label: 'Licensor Name', type: 'text', required: true, category: 'parties' },
+        { id: 'licensee_name', name: 'licensee_name', label: 'Licensee Name', type: 'text', required: true, category: 'parties' },
+        { id: 'composition_title', name: 'composition_title', label: 'Composition Title', type: 'text', required: true, category: 'terms' },
+        { id: 'project_title', name: 'project_title', label: 'Project Title', type: 'text', required: true, category: 'terms' },
+        { id: 'usage_type', name: 'usage_type', label: 'Usage Type', type: 'select', required: true, category: 'terms', options: ['Film', 'TV', 'Commercial', 'Web'] },
+        { id: 'territory', name: 'territory', label: 'Territory', type: 'select', required: true, category: 'terms', options: ['Worldwide', 'North America', 'Europe'] },
+        { id: 'duration', name: 'duration', label: 'Duration', type: 'select', required: true, category: 'terms', options: ['1 Year', '3 Years', '5 Years', 'Perpetual'] },
+        { id: 'sync_fee', name: 'sync_fee', label: 'Sync Fee', type: 'number' as const, required: true, category: 'financial' as const },
+        { id: 'start_date', name: 'start_date', label: 'Start Date', type: 'date', required: true, category: 'schedule' },
+        { id: 'end_date', name: 'end_date', label: 'End Date', type: 'date', required: true, category: 'schedule' }
+      ],
+      producer: [
+        { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
+        { id: 'artist_name', name: 'artist_name', label: 'Artist Name', type: 'text', required: true, category: 'parties' },
+        { id: 'producer_name', name: 'producer_name', label: 'Producer Name', type: 'text', required: true, category: 'parties' },
+        { id: 'track_count', name: 'track_count', label: 'Number of Tracks', type: 'number', required: true, category: 'terms' },
+        { id: 'project_title', name: 'project_title', label: 'Project Title', type: 'text', required: true, category: 'terms' },
+        { id: 'producer_fee', name: 'producer_fee', label: 'Producer Fee', type: 'number' as const, required: true, category: 'financial' as const },
+        { id: 'royalty_points', name: 'royalty_points', label: 'Royalty Points', type: 'number', required: false, category: 'financial' },
+        { id: 'delivery_date', name: 'delivery_date', label: 'Delivery Date', type: 'date', required: true, category: 'schedule' }
+      ]
+    };
+    
+    return fieldSets[contractType as keyof typeof fieldSets] || fieldSets.artist_recording;
   };
 
   const downloadTemplatePDF = async (template: Template) => {
