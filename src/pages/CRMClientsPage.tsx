@@ -691,9 +691,9 @@ export default function CRMClientsPage() {
                   <div className="space-y-2">
                     {clientAccess.map((access) => (
                       <div key={access.id} className="flex items-center justify-between p-3 border rounded">
-                        <div>
-                          <p className="font-medium">Client ID: {access.client_user_id}</p>
-                          <p className="text-sm text-muted-foreground">Email: {getClientEmail(access.client_user_id) ?? 'Unknown'}</p>
+                         <div>
+                           <p className="font-medium">Email: {getClientEmail(access.client_user_id) ?? 'Unknown'}</p>
+                           <p className="text-sm text-muted-foreground">Client ID: {access.client_user_id}</p>
                           <p className="text-sm text-muted-foreground">
                             Role: {access.role} • Status: {access.status}
                           </p>
