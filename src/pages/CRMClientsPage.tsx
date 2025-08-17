@@ -703,65 +703,6 @@ export default function CRMClientsPage() {
               </CardContent>
             </Card>
 
-            {/* Create Data Association */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
-                  Create Data Association
-                </CardTitle>
-                <CardDescription>
-                  Associate specific data records with a client
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="clientUserId">Client User ID</Label>
-                  <Input
-                    id="clientUserId"
-                    value={associationForm.clientUserId}
-                    onChange={(e) => setAssociationForm(prev => ({ ...prev, clientUserId: e.target.value }))}
-                    placeholder="Client's UUID"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="dataType">Data Type</Label>
-                  <Select 
-                    value={associationForm.dataType} 
-                    onValueChange={(value: typeof associationForm.dataType) => 
-                      setAssociationForm(prev => ({ ...prev, dataType: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="copyright">Copyright</SelectItem>
-                      <SelectItem value="contract">Contract</SelectItem>
-                      <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
-                      <SelectItem value="sync_license">Sync License</SelectItem>
-                      <SelectItem value="payee">Payee</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="dataId">Data ID</Label>
-                  <Input
-                    id="dataId"
-                    value={associationForm.dataId}
-                    onChange={(e) => setAssociationForm(prev => ({ ...prev, dataId: e.target.value }))}
-                    placeholder="Record UUID"
-                  />
-                </div>
-
-                <Button onClick={handleCreateAssociation} className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Association
-                </Button>
-              </CardContent>
-            </Card>
 
             {/* Data Associations Manager */}
             <Card className="lg:col-span-2">
