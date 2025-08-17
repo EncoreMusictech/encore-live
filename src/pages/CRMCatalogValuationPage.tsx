@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { updatePageMetadata } from "@/utils/seo";
 import { CatalogValuationWithSuspense } from "@/components/LazyComponents";
 import { SongEstimatorTool } from "@/components/catalog-valuation/SongEstimatorTool";
+import DealSimulator from "@/components/DealSimulator";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,10 +30,6 @@ export default function CRMCatalogValuationPage() {
         description: 'Song Estimator is currently limited to a single test user.', 
         variant: 'destructive' 
       });
-      return;
-    }
-    if (value === 'deal-analysis') {
-      window.location.href = '/deal-simulator';
       return;
     }
     setActiveTab(value);
@@ -78,30 +75,20 @@ export default function CRMCatalogValuationPage() {
         </TabsContent>
 
         <TabsContent value="deal-analysis" className="space-y-6">
+          <DemoLimitBanner module="dealSimulator" />
+          
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5 text-secondary-foreground" />
-                Deal Analysis & Simulation
-              </CardTitle>
-              <CardDescription>
-                Model complex acquisition scenarios with track-level selection and custom deal structures.
-              </CardDescription>
-            </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">
-                  Deal Analysis opens in a dedicated interface for comprehensive modeling.
-                </p>
-                <Button 
-                  variant="secondary"
-                  className="group-hover:shadow-lg transition-shadow"
-                  onClick={() => window.location.href = '/deal-simulator'}
-                >
-                  Launch Deal Simulator
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
+              <DealSimulator 
+                selectedTracks={[]}
+                artistName=""
+                onSaveScenario={(scenario) => {
+                  toast({ 
+                    title: 'Scenario saved', 
+                    description: 'Your deal scenario has been saved successfully.' 
+                  });
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>
