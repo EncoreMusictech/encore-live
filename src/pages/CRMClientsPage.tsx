@@ -20,6 +20,7 @@ export default function CRMClientsPage() {
   const { toast } = useToast();
   const { isAdmin } = useUserRoles();
   const { 
+    loading,
     clientAccess, 
     invitations,
     dataAssociations,
@@ -188,7 +189,13 @@ export default function CRMClientsPage() {
 
   // Helper functions
   const handleCreateInvitation = async () => {
+    console.log('Create invitation button clicked');
+    console.log('Email:', inviteEmail);
+    console.log('Selected role:', selectedRole);
+    console.log('Permissions:', permissions);
+    
     if (!inviteEmail) {
+      console.log('No email provided, showing error toast');
       toast({
         title: "Error",
         description: "Please enter an email address",
@@ -200,10 +207,16 @@ export default function CRMClientsPage() {
     const permissionsObj = Object.fromEntries(
       Object.entries(permissions).map(([key, value]) => [key, { enabled: value }])
     );
+    
+    console.log('Processed permissions object:', permissionsObj);
+    console.log('Calling createInvitation...');
 
     const invitation = await createInvitation(inviteEmail, permissionsObj, selectedRole);
     
+    console.log('createInvitation result:', invitation);
+    
     if (invitation) {
+      console.log('Invitation created successfully');
       toast({
         title: "Success",
         description: `Invitation sent to ${inviteEmail}`,
@@ -216,6 +229,7 @@ export default function CRMClientsPage() {
         sync_licenses: false
       });
     } else {
+      console.log('Invitation creation failed');
       toast({
         title: "Error",
         description: "Failed to create invitation",
@@ -614,9 +628,13 @@ export default function CRMClientsPage() {
                   </div>
                 </div>
 
-                <Button onClick={handleCreateInvitation} className="w-full">
+                <Button 
+                  onClick={handleCreateInvitation} 
+                  className="w-full" 
+                  disabled={loading}
+                >
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Invitation
+                  {loading ? 'Creating...' : 'Create Invitation'}
                 </Button>
               </CardContent>
             </Card>

@@ -97,12 +97,28 @@ export const useClientPortal = () => {
     permissions: Record<string, any>,
     role: 'admin' | 'client' | 'user' = 'client'
   ) => {
-    if (!user) return null;
+    console.log('createInvitation called with:', { email, permissions, role });
+    console.log('Current user:', user);
+    
+    if (!user) {
+      console.log('No user found, returning null');
+      return null;
+    }
 
     try {
+      console.log('Setting loading to true');
       setLoading(true);
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+      console.log('Expiry date set to:', expiresAt.toISOString());
+
+      console.log('About to insert invitation with data:', {
+        subscriber_user_id: user.id,
+        email,
+        role,
+        permissions: permissions as any,
+        expires_at: expiresAt.toISOString()
+      });
 
       const { data, error } = await supabase
         .from('client_invitations')
@@ -115,6 +131,8 @@ export const useClientPortal = () => {
         } as any)
         .select()
         .single();
+
+      console.log('Database insert result:', { data, error });
 
       if (error) throw error;
 
