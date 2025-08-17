@@ -63,10 +63,10 @@ const App = () => {
                 <BrowserRouter>
                   <Routes>
               <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={<Index />} />
+              <Route index element={<Navigate to="/dashboard" replace />} />
               
-              {/* CRM Routes */}
-              <Route path="/crm" element={<CRMLayout />}>
+              {/* Dashboard Routes */}
+              <Route path="/dashboard" element={<CRMLayout />}>
                 <Route index element={<CRMPage />} />
                 <Route path="catalog-valuation" element={<CRMCatalogValuationPage />} />
                 <Route path="contracts" element={<CRMContractsPage />} />
@@ -79,25 +79,19 @@ const App = () => {
               <Route path="/modules" element={<ModulesPage />} />
               <Route path="/demo-modules" element={<DemoModulesPage />} />
               <Route path="/features/:moduleId" element={<FeaturesPage />} />
-              <Route path="/catalog-valuation" element={<Navigate to="/crm/catalog-valuation" replace />} />
-              <Route path="/deal-simulator" element={<Navigate to="/crm/catalog-valuation" replace />} />
-              <Route path="/contract-management" element={<Navigate to="/crm/contracts" replace />} />
-              <Route path="/copyright-management" element={<Navigate to="/crm/copyright" replace />} />
-              <Route path="/sync-licensing" element={<Navigate to="/crm/sync" replace />} />
-              <Route path="/sync-licensing-preview" element={<Navigate to="/crm/sync" replace />} />
-              <Route path="/reconciliation" element={<Navigate to="/crm/royalties" replace />} />
-              <Route path="/royalties" element={<Navigate to="/crm/royalties" replace />} />
-              <Route path="/payouts" element={<Navigate to="/crm/royalties" replace />} />
+              <Route path="/catalog-valuation" element={<Navigate to="/dashboard/catalog-valuation" replace />} />
+              <Route path="/deal-simulator" element={<Navigate to="/dashboard/catalog-valuation" replace />} />
+              <Route path="/contract-management" element={<Navigate to="/dashboard/contracts" replace />} />
+              <Route path="/copyright-management" element={<Navigate to="/dashboard/copyright" replace />} />
+              <Route path="/sync-licensing" element={<Navigate to="/dashboard/sync" replace />} />
+              <Route path="/sync-licensing-preview" element={<Navigate to="/dashboard/sync" replace />} />
+              <Route path="/reconciliation" element={<Navigate to="/dashboard/royalties" replace />} />
+              <Route path="/royalties" element={<Navigate to="/dashboard/royalties" replace />} />
+              <Route path="/payouts" element={<Navigate to="/dashboard/royalties" replace />} />
                <Route path="/pricing" element={<PricingPage />} />
                <Route path="/contact" element={<ContactPage />} />
                <Route path="/documentation" element={<DocumentationPage />} />
-              <Route path="/client-portal" element={
-                <AdminOrProtectedRoute>
-                  <ErrorBoundary>
-                    <ClientPortal />
-                  </ErrorBoundary>
-                </AdminOrProtectedRoute>
-              } />
+              <Route path="/client-portal" element={<Navigate to="/dashboard/clients" replace />} />
               <Route path="/client-admin" element={
                 <ProtectedRoute>
                   <EmailRestrictedRoute allowedEmails={["info@encoremusic.tech"]}>
