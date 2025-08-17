@@ -34,7 +34,7 @@ const DEMO_TEMPLATES: Template[] = [
   {
     id: '1',
     title: 'Standard Recording Contract',
-    description: 'A basic contract for recording artists.',
+    description: 'AI-generated professional recording artist agreement with industry-standard terms.',
     contract_type: 'artist_recording',
     fields: [],
     is_public: true,
@@ -42,7 +42,7 @@ const DEMO_TEMPLATES: Template[] = [
   {
     id: '2',
     title: 'Music Publishing Agreement',
-    description: 'Agreement between a songwriter and a music publisher.',
+    description: 'AI-generated comprehensive songwriter and publisher agreement with royalty splits.',
     contract_type: 'publishing',
     fields: [],
     is_public: true,
@@ -50,16 +50,24 @@ const DEMO_TEMPLATES: Template[] = [
   {
     id: '3',
     title: 'Distribution Agreement',
-    description: 'Contract for distributing music through various channels.',
+    description: 'AI-generated distribution contract with territory and revenue sharing terms.',
     contract_type: 'distribution',
     fields: [],
     is_public: true,
   },
   {
     id: '4',
-    title: 'Licensing Agreement',
-    description: 'Agreement for licensing music for film, TV, or other media.',
-    contract_type: 'licensing',
+    title: 'Sync Licensing Agreement',
+    description: 'AI-generated synchronization license for film, TV, and digital media usage.',
+    contract_type: 'sync',
+    fields: [],
+    is_public: true,
+  },
+  {
+    id: '5',
+    title: 'Producer Agreement',
+    description: 'AI-generated producer services contract with points and credit terms.',
+    contract_type: 'producer',
     fields: [],
     is_public: true,
   },
@@ -77,6 +85,8 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
   const [customTemplates, setCustomTemplates] = useState<any[]>([]);
   const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
+  const [generatingTemplate, setGeneratingTemplate] = useState<string | null>(null);
+  const [enhancedTemplates, setEnhancedTemplates] = useState<Record<string, any>>({});
 
   useEffect(() => {
     loadTemplates();
@@ -124,13 +134,23 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
     setCurrentView('builder');
   };
 
-  const handleUseTemplate = (template: any) => {
+  const handleUseTemplate = async (template: any) => {
     if (selectionMode && onTemplateSelect) {
       onTemplateSelect(template);
       return;
     }
     
-    setSelectedTemplate(template);
+    // For popular templates, ensure we have the enhanced version
+    if (template.is_public && !enhancedTemplates[template.contract_type]) {
+      await generateStandardizedTemplate(template.contract_type);
+    }
+    
+    // Enhance the template with AI-generated fields if available
+    const enhancedTemplate = enhancedTemplates[template.contract_type] 
+      ? { ...template, fields: enhancedTemplates[template.contract_type].templateFields }
+      : template;
+    
+    setSelectedTemplate(enhancedTemplate);
     setCurrentView('customize');
   };
 
@@ -166,6 +186,85 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
     }
     setCurrentView('library');
     setSelectedTemplate(null);
+  };
+
+  const generateStandardizedTemplate = async (contractType: string) => {
+    setGeneratingTemplate(contractType);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-standardized-template', {
+        body: { 
+          contractType,
+          jurisdiction: 'US',
+          tone: 'standard'
+        },
+      });
+
+      if (error) throw error;
+
+      // Store the enhanced template data
+      setEnhancedTemplates(prev => ({
+        ...prev,
+        [contractType]: {
+          contractContent: data.contractContent,
+          templateFields: data.templateFields,
+          generated: true
+        }
+      }));
+
+      toast.success('AI-generated template created successfully!');
+    } catch (error) {
+      console.error('Error generating template:', error);
+      toast.error('Failed to generate AI template');
+    } finally {
+      setGeneratingTemplate(null);
+    }
+  };
+
+  const downloadTemplatePDF = async (template: Template) => {
+    if (!enhancedTemplates[template.contract_type]) {
+      // Generate the template first
+      await generateStandardizedTemplate(template.contract_type);
+      return;
+    }
+
+    try {
+      const enhancedTemplate = enhancedTemplates[template.contract_type];
+      
+      // Create a blob with the contract content
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${template.title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }
+            h1, h2, h3 { color: #333; }
+            .clause { margin: 20px 0; }
+            .placeholder { background: #f0f0f0; padding: 2px 4px; }
+          </style>
+        </head>
+        <body>
+          <h1>${template.title}</h1>
+          <div style="white-space: pre-wrap;">${enhancedTemplate.contractContent}</div>
+        </body>
+        </html>
+      `;
+      
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${template.title.replace(/\s+/g, '_')}_Template.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Template downloaded successfully!');
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      toast.error('Failed to download template');
+    }
   };
 
   if (currentView === 'builder') {
@@ -243,7 +342,8 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
               <SelectItem value="artist_recording">Artist Recording</SelectItem>
               <SelectItem value="publishing">Publishing</SelectItem>
               <SelectItem value="distribution">Distribution</SelectItem>
-              <SelectItem value="licensing">Licensing</SelectItem>
+              <SelectItem value="sync">Sync Licensing</SelectItem>
+              <SelectItem value="producer">Producer</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -374,11 +474,12 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => toast.success('PDF generation coming soon!')}
+                            onClick={() => downloadTemplatePDF(template)}
+                            disabled={generatingTemplate === template.contract_type}
                             className="gap-2"
                           >
                             <FileText className="h-4 w-4" />
-                            PDF
+                            {generatingTemplate === template.contract_type ? 'Generating...' : 'PDF'}
                           </Button>
                         )}
                         <Button
