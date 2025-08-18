@@ -194,13 +194,18 @@ const CatalogValuation = memo(() => {
         };
         console.log("Request body:", requestBody);
         
-        const { data, error } = await supabase.functions.invoke('spotify-catalog-valuation', {
+      console.log(`FRONTEND REQUEST DEBUG: Territory being sent: "${valuationParams.territory}"`);
+      console.log(`FRONTEND REQUEST DEBUG: Full request body:`, requestBody);
+      
+      const { data, error } = await supabase.functions.invoke('spotify-catalog-valuation', {
           body: requestBody
         });
 
         console.log("=== API RESPONSE ===");
         console.log("Data:", data);
         console.log("Error:", error);
+        console.log(`FRONTEND RESPONSE DEBUG: territory_multiplier received: ${data?.territory_multiplier}`);
+        console.log(`FRONTEND RESPONSE DEBUG: territory_focus received: ${data?.territory_focus}`);
 
         if (error) {
           console.error("Function error:", error);
