@@ -41,13 +41,10 @@ const UserCaseCard = ({
       )}
       
       <CardHeader className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-center">
           <div className="bg-gradient-primary rounded-lg p-3">
             <Icon className="h-6 w-6 text-primary-foreground" />
           </div>
-          <Badge className={tierColors[recommendedTier]}>
-            {recommendedTier} Plan
-          </Badge>
         </div>
         
         <div>
