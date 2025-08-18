@@ -96,28 +96,30 @@ const DEMO_TOURS = {
     id: 'catalog-valuation',
     steps: [
       {
-        id: 'search',
-        title: 'Step 1: Search for an Artist',
-        content: 'Enter any artist name (try "Taylor Swift" or "The Weeknd") to pull their Spotify data and see catalog analytics.',
-        target: 'input[placeholder*="artist"]',
+        id: 'tabs-overview',
+        title: 'Catalog Valuation Tools',
+        content: 'This module has three main tools: Catalog Valuation for AI-powered assessments, Deal Analysis for transaction modeling, and Song Estimator for individual track analysis.',
+        target: '[role="tablist"]',
         position: 'bottom' as const
       },
       {
-        id: 'analyze',
-        title: 'Step 2: Review the Analysis',
-        content: 'Once you search, you\'ll see streaming data, popularity metrics, genre analysis, and estimated catalog value using DCF models.',
+        id: 'catalog-tab',
+        title: 'AI-Powered Catalog Valuation',
+        content: 'This tab provides instant valuations for any artist catalog using advanced AI models, streaming data, and industry benchmarks.',
+        target: '[value="catalog-valuation"]',
         position: 'bottom' as const
       },
       {
-        id: 'valuation-methods',
-        title: 'Step 3: Understand Valuation Methods',
-        content: 'We use multiple approaches: Discounted Cash Flow (DCF), industry multiples, and risk-adjusted valuations based on genre and popularity.',
+        id: 'search-input',
+        title: 'Try the Catalog Valuation',
+        content: 'The main Catalog Valuation tool is below. Try searching for any major artist like "Taylor Swift" or "The Weeknd" to see how the AI analysis works.',
         position: 'bottom' as const
       },
       {
-        id: 'deal-scenarios',
-        title: 'Step 4: Explore Deal Scenarios',
-        content: 'Use the Deal Simulator to model different acquisition structures: full purchase, licensing deals, or co-publishing agreements.',
+        id: 'deal-analysis-tab',
+        title: 'Deal Analysis & Simulation',
+        content: 'Click here to access deal modeling tools where you can search artists, select specific catalog assets, and run detailed financial projections.',
+        target: '[value="deal-analysis"]',
         position: 'bottom' as const
       }
     ]
