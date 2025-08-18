@@ -333,27 +333,30 @@ export const TourProvider = ({ children }: { children: React.ReactNode }) => {
   const nextStep = () => {
     const currentTourStep = steps[currentStep];
     
-    console.log('nextStep called:', { 
-      currentStep, 
-      currentTourStep, 
-      navigateTo: currentTourStep?.navigateTo,
-      currentPath: location?.pathname 
-    });
-    
     if (currentStep < steps.length - 1) {
       const nextStepIndex = currentStep + 1;
+      const nextTourStep = steps[nextStepIndex];
       
-      // Check if current step requires navigation
-      if (currentTourStep?.navigateTo && navigate && location) {
-        console.log('Attempting navigation:', {
+      console.log('nextStep called:', { 
+        currentStep, 
+        nextStepIndex,
+        currentTourStep: currentTourStep?.title, 
+        nextTourStep: nextTourStep?.title,
+        nextNavigateTo: nextTourStep?.navigateTo,
+        currentPath: location?.pathname 
+      });
+      
+      // Check if NEXT step requires navigation
+      if (nextTourStep?.navigateTo && navigate && location) {
+        console.log('Next step needs navigation:', {
           from: location.pathname,
-          to: currentTourStep.navigateTo,
-          shouldNavigate: location.pathname !== currentTourStep.navigateTo
+          to: nextTourStep.navigateTo,
+          shouldNavigate: location.pathname !== nextTourStep.navigateTo
         });
         
-        if (location.pathname !== currentTourStep.navigateTo) {
-          // Navigate first, then update step after a delay
-          navigate(currentTourStep.navigateTo);
+        if (location.pathname !== nextTourStep.navigateTo) {
+          // Navigate to where the next step should be
+          navigate(nextTourStep.navigateTo);
           
           // Update step after navigation with a delay
           setTimeout(() => {
@@ -363,7 +366,7 @@ export const TourProvider = ({ children }: { children: React.ReactNode }) => {
               currentStep: nextStepIndex,
               isActive: true
             }));
-          }, 100);
+          }, 200);
           return;
         }
       }
