@@ -1,97 +1,102 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Search, MoreHorizontal, Edit, Trash2, Download, FileText, Upload, RefreshCw, Play, RotateCcw } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Search, RefreshCw, Edit, Trash2, Play } from "lucide-react";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
-import { useUserRoles } from "@/hooks/useUserRoles";
+import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { ReconciliationBatchForm } from "./ReconciliationBatchForm";
 import { ProcessBatchDialog } from "./ProcessBatchDialog";
+import { toast } from "@/hooks/use-toast";
 
-interface ReconciliationBatchListProps {
-  onSelectBatch?: (batchId: string) => void;
-}
-
-export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchListProps) {
+export function ReconciliationBatchList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [reconciliationFilter, setReconciliationFilter] = useState<string>("all");
-  const [editingBatch, setEditingBatch] = useState<any>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [processingBatch, setProcessingBatch] = useState<any>(null);
-  const { batches, loading, deleteBatch, processBatch, unprocessBatch, refreshBatches } = useReconciliationBatches();
-  const { hasRole, isAdmin } = useUserRoles();
+  
+  const { batches, loading, deleteBatch, refreshBatches } = useReconciliationBatches();
+  const { allocations } = useRoyaltyAllocations();
 
   const filteredBatches = batches.filter(batch => {
-    const batchId = batch.batch_id || '';
-    const matchesSearch = batchId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         batch.source.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = batch.batch_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         batch.source?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || batch.status === statusFilter;
     const matchesSource = sourceFilter === "all" || batch.source === sourceFilter;
-    const matchesReconciliation = reconciliationFilter === "all" || 
-                                 batch.reconciliation_status === reconciliationFilter;
+    
+    // Calculate reconciliation progress for filtering
+    const batchAllocations = allocations.filter(a => a.batch_id === batch.id);
+    const allocatedAmount = batchAllocations.reduce((sum, a) => sum + a.gross_royalty_amount, 0);
+    const reconciliationProgress = batch.total_gross_amount > 0 ? (allocatedAmount / batch.total_gross_amount) * 100 : 0;
+    
+    let matchesReconciliation = true;
+    if (reconciliationFilter === "complete") {
+      matchesReconciliation = reconciliationProgress >= 100;
+    } else if (reconciliationFilter === "incomplete") {
+      matchesReconciliation = reconciliationProgress < 100;
+    }
+    
     return matchesSearch && matchesStatus && matchesSource && matchesReconciliation;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'Imported': return 'bg-blue-100 text-blue-800';
-      case 'Processed': return 'bg-green-100 text-green-800';
+      case 'Complete': return 'bg-green-100 text-green-800';
+      case 'Incomplete': return 'bg-yellow-100 text-yellow-800';
+      case 'Processed': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getSourceColor = (source: string) => {
     switch (source) {
-      case 'DSP': return 'bg-purple-100 text-purple-800';
-      case 'PRO': return 'bg-indigo-100 text-indigo-800';
-      case 'YouTube': return 'bg-red-100 text-red-800';
-      case 'Other': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getReconciliationStatusColor = (status: 'Complete' | 'Incomplete') => {
-    switch (status) {
-      case 'Complete': return 'bg-green-100 text-green-800';
-      case 'Incomplete': return 'bg-orange-100 text-orange-800';
+      case 'SESAC': return 'bg-purple-100 text-purple-800';
+      case 'Sondahland': return 'bg-blue-100 text-blue-800';
+      case 'BMI': return 'bg-green-100 text-green-800';
+      case 'ASCAP': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const handleDelete = async (id: string) => {
-    await deleteBatch(id);
+    try {
+      await deleteBatch(id);
+      toast({
+        title: "Batch Deleted",
+        description: "Reconciliation batch has been successfully deleted",
+      });
+    } catch (error) {
+      console.error('Error deleting batch:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete batch. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
+  const calculateProgress = (batch: any) => {
+    const batchAllocations = allocations.filter(a => a.batch_id === batch.id);
+    const allocatedAmount = batchAllocations.reduce((sum, a) => sum + a.gross_royalty_amount, 0);
+    return batch.total_gross_amount > 0 ? (allocatedAmount / batch.total_gross_amount) * 100 : 0;
+  };
+
+  const uniqueSources = [...new Set(batches.map(batch => batch.source).filter(Boolean))];
+
   if (loading) {
-    return <div className="p-8 text-center">Loading batches...</div>;
+    return <div className="p-8 text-center">Loading reconciliation batches...</div>;
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header with refresh button */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Reconciliation Batches</h3>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={refreshBatches}
-          disabled={loading}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
-      
+    <div className="space-y-6">
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col lg:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
@@ -102,279 +107,128 @@ export function ReconciliationBatchList({ onSelectBatch }: ReconciliationBatchLi
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by status" />
+          <SelectTrigger className="w-full lg:w-[150px]">
+            <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="Pending">Pending</SelectItem>
-            <SelectItem value="Imported">Imported</SelectItem>
+            <SelectItem value="Incomplete">Incomplete</SelectItem>
+            <SelectItem value="Complete">Complete</SelectItem>
             <SelectItem value="Processed">Processed</SelectItem>
           </SelectContent>
         </Select>
         <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by source" />
+          <SelectTrigger className="w-full lg:w-[150px]">
+            <SelectValue placeholder="All Sources" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Sources</SelectItem>
-            <SelectItem value="DSP">DSP</SelectItem>
-            <SelectItem value="PRO">PRO</SelectItem>
-            <SelectItem value="YouTube">YouTube</SelectItem>
-            <SelectItem value="BMI">BMI</SelectItem>
-            <SelectItem value="ASCAP">ASCAP</SelectItem>
-            <SelectItem value="SESAC">SESAC</SelectItem>
-            <SelectItem value="SOCAN">SOCAN</SelectItem>
-            <SelectItem value="Spotify">Spotify</SelectItem>
-            <SelectItem value="Apple Music">Apple Music</SelectItem>
-            <SelectItem value="Amazon Music">Amazon Music</SelectItem>
-            <SelectItem value="Tidal">Tidal</SelectItem>
-            <SelectItem value="Pandora">Pandora</SelectItem>
-            <SelectItem value="SiriusXM">SiriusXM</SelectItem>
-            <SelectItem value="Other">Other</SelectItem>
+            {uniqueSources.map(source => (
+              <SelectItem key={source} value={source}>{source}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={reconciliationFilter} onValueChange={setReconciliationFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by reconciliation" />
+          <SelectTrigger className="w-full lg:w-[180px]">
+            <SelectValue placeholder="All Reconciliation" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Reconciliation</SelectItem>
-            <SelectItem value="Complete">Complete</SelectItem>
-            <SelectItem value="Incomplete">Incomplete</SelectItem>
+            <SelectItem value="complete">Complete</SelectItem>
+            <SelectItem value="incomplete">Incomplete</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={refreshBatches} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </Button>
       </div>
 
       {/* Table */}
-      <div className="border rounded-md bg-card text-card-foreground">
+      <div className="border rounded-lg overflow-hidden">
         <Table>
-           <TableHeader>
-             <TableRow className="bg-muted/40">
-                <TableHead>Batch ID</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Period</TableHead>
-                <TableHead>Date Received</TableHead>
-                <TableHead>Gross Amount</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-             </TableRow>
-           </TableHeader>
-           <TableBody>
-             {filteredBatches.map((batch) => (
-               <TableRow key={batch.id} className="hover:bg-muted/40">
-                 <TableCell className="font-medium">{batch.batch_id || 'Generating...'}</TableCell>
-                 <TableCell>
-                   <Badge className={getSourceColor(batch.source)}>
-                     {batch.source}
-                   </Badge>
-                 </TableCell>
-                 <TableCell>
-                   {batch.statement_period_start && batch.statement_period_end
-                     ? `${batch.statement_period_start} - ${batch.statement_period_end}`
-                     : 'N/A'}
-                 </TableCell>
-                 <TableCell>
-                   {new Date(batch.date_received).toLocaleDateString()}
-                 </TableCell>
-                 <TableCell>${batch.total_gross_amount.toLocaleString()}</TableCell>
-                     <TableCell>
-                       <div className="space-y-1 min-w-[120px]">
-                         {(() => {
-                           const royaltyAmount = batch.allocated_amount || 0; // This represents the royalty amount from linked statements
-                           const batchAmount = batch.total_gross_amount || 1; // Avoid division by zero
-                           const progressPercentage = batchAmount > 0 ? (royaltyAmount / batchAmount) * 100 : 0;
-                           const isOverProgress = progressPercentage > 100;
-                           const isComplete = progressPercentage === 100;
-                           const displayProgress = isOverProgress ? Math.min(progressPercentage, 100) : progressPercentage;
-                           
-                           if (isOverProgress) {
-                             const excessAmount = royaltyAmount - batchAmount;
-                             return (
-                               <>
-                                 <div className="flex justify-between text-xs text-muted-foreground">
-                                   <span>Excess: ${excessAmount.toLocaleString()}</span>
-                                   <span className="text-red-600 font-medium">
-                                     {progressPercentage.toFixed(1)}%
-                                   </span>
-                                 </div>
-                                  <Progress 
-                                    value={100} 
-                                    className="h-2 [&>[data-state='complete']]:bg-red-500" 
-                                  />
-                               </>
-                             );
-                           }
-                           
-                           return (
-                             <>
-                               <div className="flex justify-between text-xs text-muted-foreground">
-                                 <span>${royaltyAmount.toLocaleString()}</span>
-                                 <span className={isComplete ? "text-green-600 font-medium" : ""}>
-                                   {progressPercentage.toFixed(1)}%
-                                 </span>
-                               </div>
-                               <Progress 
-                                 value={displayProgress} 
-                                 className={`h-2 ${isComplete ? '[&>[data-state="complete"]]:bg-green-500' : ''}`} 
-                               />
-                             </>
-                           );
-                         })()}
-                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {(() => {
-                        const royaltyAmount = batch.allocated_amount || 0;
-                        const batchAmount = batch.total_gross_amount || 1;
-                        const progressPercentage = batchAmount > 0 ? (royaltyAmount / batchAmount) * 100 : 0;
-                        const isOverProgress = progressPercentage > 100;
-                        const isComplete = progressPercentage === 100 && !isOverProgress;
-                        
-                        const status = isComplete ? 'Complete' : 'Incomplete';
-                        
-                        return (
-                          <Badge className={getReconciliationStatusColor(status)}>
-                            {status}
-                          </Badge>
-                        );
-                      })()}
-                    </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {onSelectBatch && (
+          <TableHeader>
+            <TableRow>
+              <TableHead>Batch ID</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>Period</TableHead>
+              <TableHead>Date Received</TableHead>
+              <TableHead>Gross Amount</TableHead>
+              <TableHead>Progress</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredBatches.map((batch) => {
+              const progress = calculateProgress(batch);
+              const batchAllocations = allocations.filter(a => a.batch_id === batch.id);
+              const allocatedAmount = batchAllocations.reduce((sum, a) => sum + a.gross_royalty_amount, 0);
+              
+              return (
+                <TableRow key={batch.id}>
+                  <TableCell className="font-medium">{batch.batch_id}</TableCell>
+                  <TableCell>
+                    <Badge className={getSourceColor(batch.source || '')}>
+                      {batch.source}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{batch.statement_period_start || 'N/A'}</TableCell>
+                  <TableCell>
+                    {new Date(batch.date_received).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>${batch.total_gross_amount.toLocaleString()}</TableCell>
+                  <TableCell className="w-[200px]">
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span>${allocatedAmount.toLocaleString()}</span>
+                        <span>{progress.toFixed(1)}%</span>
+                      </div>
+                      <Progress value={progress} className="h-2" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(batch.status || 'Incomplete')}>
+                      {batch.status || 'Incomplete'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
                       <Button 
                         variant="ghost" 
-                        size="sm" 
-                        onClick={() => onSelectBatch(batch.id)}
-                        title="Import Statements"
+                        size="sm"
+                        onClick={() => setProcessingBatch(batch)}
                       >
-                        <Upload className="h-4 w-4" />
+                        <Play className="h-4 w-4" />
                       </Button>
-                    )}
-                    {batch.statement_file_url && (
-                      <Button variant="ghost" size="sm" asChild>
-                        <a href={batch.statement_file_url} download>
-                          <Download className="h-4 w-4" />
-                        </a>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDelete(batch.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    )}
-                    <Dialog open={!!editingBatch} onOpenChange={(open) => !open && setEditingBatch(null)}>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" onClick={() => setEditingBatch(batch)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card text-card-foreground">
-                        <DialogHeader>
-                          <DialogTitle>Edit Reconciliation Batch</DialogTitle>
-                        </DialogHeader>
-                        <div className="overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
-                          <ReconciliationBatchForm
-                            batch={editingBatch}
-                            onCancel={() => setEditingBatch(null)}
-                            onSuccess={() => {
-                              setEditingBatch(null);
-                              refreshBatches();
-                            }}
-                          />
-                        </div>
-                       </DialogContent>
-                     </Dialog>
-                     
-                     {/* Process Button - Only available when Progress is 100% & Status is 'Complete' */}
-                     {(() => {
-                       const royaltyAmount = batch.allocated_amount || 0;
-                       const batchAmount = batch.total_gross_amount || 1;
-                       const progressPercentage = batchAmount > 0 ? (royaltyAmount / batchAmount) * 100 : 0;
-                       const isComplete = progressPercentage === 100 && progressPercentage <= 100;
-                       const hasBeenProcessed = batch.processed_at && !batch.unprocessed_at;
-                       
-                        return isComplete && !hasBeenProcessed ? (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            title="Process to Payouts"
-                            className="text-green-600 hover:text-green-700"
-                            onClick={() => setProcessingBatch(batch)}
-                          >
-                            <Play className="h-4 w-4" />
-                          </Button>
-                        ) : null;
-                     })()}
-
-                     {/* Unprocess Button - Only available for admin users and processed batches */}
-                     {(() => {
-                       const hasBeenProcessed = batch.processed_at && !batch.unprocessed_at;
-                       const canUnprocess = (isAdmin || hasRole('admin')) && hasBeenProcessed;
-                       
-                       return canUnprocess ? (
-                         <AlertDialog>
-                           <AlertDialogTrigger asChild>
-                             <Button 
-                               variant="ghost" 
-                               size="sm" 
-                               title="Unprocess from Payouts (Admin Only)"
-                               className="text-orange-600 hover:text-orange-700"
-                             >
-                               <RotateCcw className="h-4 w-4" />
-                             </Button>
-                           </AlertDialogTrigger>
-                           <AlertDialogContent>
-                             <AlertDialogHeader>
-                               <AlertDialogTitle>Unprocess Batch from Payouts</AlertDialogTitle>
-                               <AlertDialogDescription>
-                                 This will remove all linked royalties from payouts and record a timestamp. This action requires administrator privileges.
-                               </AlertDialogDescription>
-                             </AlertDialogHeader>
-                             <AlertDialogFooter>
-                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                               <AlertDialogAction onClick={() => unprocessBatch(batch.id)} className="bg-orange-600 hover:bg-orange-700">
-                                 Unprocess
-                               </AlertDialogAction>
-                             </AlertDialogFooter>
-                           </AlertDialogContent>
-                         </AlertDialog>
-                       ) : null;
-                     })()}
-
-                     <AlertDialog>
-                       <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="sm">
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
-                       </AlertDialogTrigger>
-                       <AlertDialogContent>
-                         <AlertDialogHeader>
-                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                           <AlertDialogDescription>
-                             This will permanently delete the reconciliation batch "{batch.batch_id}" and all associated data.
-                           </AlertDialogDescription>
-                         </AlertDialogHeader>
-                         <AlertDialogFooter>
-                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                           <AlertDialogAction onClick={() => handleDelete(batch.id)}>
-                             Delete
-                           </AlertDialogAction>
-                         </AlertDialogFooter>
-                       </AlertDialogContent>
-                     </AlertDialog>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
 
-      {filteredBatches.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          {searchTerm || statusFilter !== "all" || sourceFilter !== "all" || reconciliationFilter !== "all"
-            ? "No batches found matching your filters."
-            : "No reconciliation batches found. Create your first batch to get started."}
-        </div>
-      )}
+      {/* Create Batch Dialog */}
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create New Reconciliation Batch</DialogTitle>
+          </DialogHeader>
+          <ReconciliationBatchForm onCancel={() => setShowCreateForm(false)} />
+        </DialogContent>
+      </Dialog>
 
       {/* Process Batch Dialog */}
       <ProcessBatchDialog

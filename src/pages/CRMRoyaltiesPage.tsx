@@ -12,6 +12,8 @@ import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportSt
 import { RoyaltiesDiscrepancyReport } from "@/components/royalties/RoyaltiesDiscrepancyReport";
 import { RoyaltiesAnalyticsDashboard } from "@/components/royalties/RoyaltiesAnalyticsDashboard";
 import { ReconciliationDashboard } from "@/components/royalties/ReconciliationDashboard";
+import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
+import { ReconciliationAnalytics } from "@/components/royalties/ReconciliationAnalytics";
 import { PayoutList } from "@/components/royalties/PayoutList";
 import { PayoutForm } from "@/components/royalties/PayoutForm";
 import { AccountBalancesTable } from "@/components/royalties/AccountBalancesTable";
@@ -19,6 +21,7 @@ import { AccountBalancesTable } from "@/components/royalties/AccountBalancesTabl
 export default function CRMRoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [showPayoutForm, setShowPayoutForm] = useState(false);
+  const [showBatchForm, setShowBatchForm] = useState(false);
   const [activeTab, setActiveTab] = useState("reconciliation");
   
   const {
@@ -74,14 +77,47 @@ export default function CRMRoyaltiesPage() {
         <TabsContent value="reconciliation" className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-semibold">Reconciliation Dashboard</h2>
+              <h2 className="text-xl font-semibold">Reconciliation Management</h2>
               <p className="text-muted-foreground">
-                Track batch processing, allocation progress, and reconciliation metrics
+                Track and reconcile incoming royalty payments with your allocation records
               </p>
             </div>
+            <Button onClick={() => setShowBatchForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Batch
+            </Button>
           </div>
 
-          <ReconciliationDashboard />
+          <Tabs defaultValue="batches" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="batches" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Batches
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Analytics
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="batches">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Reconciliation Batches</CardTitle>
+                  <CardDescription>
+                    Manage your incoming royalty payment batches and track reconciliation progress
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ReconciliationBatchList />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <ReconciliationAnalytics />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="statements" className="space-y-6">
