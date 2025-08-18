@@ -1166,23 +1166,6 @@ Actual market values may vary significantly based on numerous factors not captur
                 </CardContent>
               </Card>
 
-              {/* Territory Breakdown */}
-              {(result.territory_focus || valuationParams.territory !== 'global') && (
-                <TerritoryBreakdownCard
-                  territory={result.territory_focus || valuationParams.territory}
-                  territoryMultiplier={(() => {
-                    const selectedTerritory = result.territory_focus || valuationParams.territory;
-                    // Calculate correct multiplier based on territory
-                    const correctMultiplier = selectedTerritory === 'international' ? 0.8 : 
-                                            selectedTerritory === 'us-only' ? 1.2 : 1.0;
-                    console.log(`FRONTEND DEBUG: Using calculated multiplier: ${correctMultiplier} for territory: ${selectedTerritory}`);
-                    return correctMultiplier;
-                  })()}
-                  totalValuation={result.risk_adjusted_value || result.valuation_amount}
-                  domesticShare={0.7}
-                  internationalShare={0.3}
-                />
-              )}
 
               {/* Enhanced Valuation Insights */}
               {result.has_additional_revenue && (
