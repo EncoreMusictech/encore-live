@@ -33,6 +33,7 @@ import CRMCopyrightPage from "./pages/CRMCopyrightPage";
 import CRMSyncPage from "./pages/CRMSyncPage";
 import CRMRoyaltiesPage from "./pages/CRMRoyaltiesPage";
 import CRMClientsPage from "./pages/CRMClientsPage";
+import InteractiveWorkflowDemo from "./pages/InteractiveWorkflowDemo";
 
 // Create a stable QueryClient instance
 let queryClient: QueryClient | null = null;
@@ -113,8 +114,12 @@ const App = () => {
                               </ErrorBoundary>
                             </EmailRestrictedRoute>
                           </ProtectedRoute>
-                        } />
-                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        } />
+        
+        {/* Demo Routes */}
+        <Route path="/workflow-demo" element={<InteractiveWorkflowDemo />} />
+        
+         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                          <Route path="*" element={<NotFound />} />
                        </Routes>
                      </TourProvider>
