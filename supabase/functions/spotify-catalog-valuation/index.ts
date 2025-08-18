@@ -1027,13 +1027,11 @@ discount_rate: valuationParams?.discountRate || 0.12,
         peer_average_multiple: benchmark.revenue_multiple_avg * 1.1,
         market_premium_discount: artist.popularity > 80 ? 1.15 : artist.popularity < 40 ? 0.85 : 1.0
       },
-      territory_focus: territory,
-      territory_multiplier: territoryBenchmarkAdjustment,
     };
 
     console.log(`Advanced valuation complete - DCF: $${dcfValuation}, Multiple: $${multipleValuation}, Risk-Adjusted: $${riskAdjustedValue}`);
-    console.log(`FINAL DEBUG: territory_focus in response: ${valuationData.territory_focus}`);
-    console.log(`FINAL DEBUG: territory_multiplier in response: ${valuationData.territory_multiplier}`);
+    console.log(`FINAL DEBUG UPDATED: territory_focus in response: ${valuationData.territory_focus}`);
+    console.log(`FINAL DEBUG UPDATED: territory_multiplier in response: ${valuationData.territory_multiplier}`);
 
     return new Response(
       JSON.stringify(valuationData),
