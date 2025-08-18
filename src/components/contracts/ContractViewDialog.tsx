@@ -259,22 +259,29 @@ export function ContractViewDialog({ contract, open, onOpenChange, onEdit }: Con
                     {contract.advance_amount !== undefined && contract.advance_amount > 0 && (
                       <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-green-50 to-green-100">
                         <p className="text-2xl font-bold text-green-600">${contract.advance_amount.toLocaleString()}</p>
-                        <p className="text-sm text-muted-foreground">Advance Amount</p>
+                        <p className="text-sm text-muted-foreground">Advance Amount ($)</p>
                         <p className="text-xs text-green-600 mt-1">Recoupable</p>
                       </div>
                     )}
                     {contract.commission_percentage !== undefined && contract.commission_percentage > 0 && (
                       <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-blue-50 to-blue-100">
                         <p className="text-2xl font-bold text-blue-600">{contract.commission_percentage}%</p>
-                        <p className="text-sm text-muted-foreground">Commission Rate</p>
+                        <p className="text-sm text-muted-foreground">Commission (%)</p>
                         <p className="text-xs text-blue-600 mt-1">Of Net Receipts</p>
                       </div>
                     )}
                     {contract.rate_reduction_percentage !== undefined && contract.rate_reduction_percentage > 0 && (
                       <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-orange-50 to-orange-100">
                         <p className="text-2xl font-bold text-orange-600">{contract.rate_reduction_percentage}%</p>
-                        <p className="text-sm text-muted-foreground">Rate Reduction</p>
+                        <p className="text-sm text-muted-foreground">Rate Reduction (%)</p>
                         <p className="text-xs text-orange-600 mt-1">Applied to Royalties</p>
+                      </div>
+                    )}
+                    {contract.financial_terms?.rate_reduction_amount !== undefined && contract.financial_terms.rate_reduction_amount > 0 && (
+                      <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-red-50 to-red-100">
+                        <p className="text-2xl font-bold text-red-600">${contract.financial_terms.rate_reduction_amount.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">Rate Reduction ($)</p>
+                        <p className="text-xs text-red-600 mt-1">Fixed Amount</p>
                       </div>
                     )}
                     {contract.controlled_percentage !== undefined && contract.controlled_percentage > 0 && (
