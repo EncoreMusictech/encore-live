@@ -1162,9 +1162,9 @@ Actual market values may vary significantly based on numerous factors not captur
               </Card>
 
               {/* Territory Breakdown */}
-              {result.territory_focus && (
+              {(result.territory_focus || valuationParams.territory !== 'global') && (
                 <TerritoryBreakdownCard
-                  territory={result.territory_focus}
+                  territory={result.territory_focus || valuationParams.territory}
                   territoryMultiplier={result.territory_multiplier || 1.0}
                   totalValuation={result.risk_adjusted_value || result.valuation_amount}
                   domesticShare={0.7}
