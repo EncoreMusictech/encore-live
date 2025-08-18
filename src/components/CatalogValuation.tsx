@@ -1138,6 +1138,27 @@ Actual market values may vary significantly based on numerous factors not captur
                 })()}
               </div>
 
+              {/* Territory Analysis */}
+              {(() => {
+                // Calculate territory multiplier
+                const selectedTerritory = result.territory_focus || valuationParams.territory;
+                const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : 
+                                          selectedTerritory === 'us-only' ? 1.2 : 1.0;
+                
+                // Apply territory adjustment to all valuations
+                const adjustedValuation = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
+
+                return (
+                  <TerritoryBreakdownCard
+                    territory={selectedTerritory}
+                    territoryMultiplier={territoryMultiplier}
+                    totalValuation={adjustedValuation}
+                    domesticShare={0.7}
+                    internationalShare={0.3}
+                  />
+                );
+              })()}
+
               {/* Artist Spotify Information */}
               <Card>
                 <CardHeader>
