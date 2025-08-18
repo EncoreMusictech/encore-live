@@ -106,16 +106,16 @@ const DEMO_TOURS = {
       {
         id: 'tabs-overview',
         title: 'Three Powerful Tools',
-        content: 'Catalog Valuation: AI-powered instant valuations using streaming data and market benchmarks. Deal Analysis: Complete workflow for transaction modeling. Song Estimator: Individual track analysis and pipeline estimates.',
+        content: 'Notice the three tabs above: 1) Catalog Valuation - AI valuations, 2) Deal Analysis - Transaction modeling, 3) Song Estimator - Track analysis. We\'ll start with Deal Analysis for a complete workflow.',
         target: '[role="tablist"]',
         position: 'bottom' as const
       },
       {
-        id: 'territory-focus',
-        title: 'Territory Focus Concept',
-        content: 'All valuations can be scoped by territory (Global, US-Only, International). This affects streaming data sources, revenue multiples, and market risk factors used in calculations.',
-        target: '[role="tablist"]',
-        position: 'bottom' as const
+        id: 'click-deal-analysis',
+        title: 'Click Deal Analysis Tab',
+        content: '👆 Click the "Deal Analysis" tab above to start the complete workflow. This will show you the 4-step process for analyzing music catalog transactions.',
+        target: '[data-value="deal-analysis"]',
+        position: 'top' as const
       },
       
       // Catalog Valuation Tab Deep Dive
@@ -162,16 +162,16 @@ const DEMO_TOURS = {
       {
         id: 'search-artist-tab',
         title: 'Step 1: Artist Discovery & Analysis',
-        content: 'Search for artists to analyze their complete discography. The system fetches real-time Spotify data including popularity scores, release history, and streaming metrics.',
+        content: '👆 Click the "Search Artist" tab above. You\'ll search for artists to analyze their complete discography with real-time Spotify data.',
         target: '[data-tab="search"]',
-        position: 'bottom' as const
+        position: 'top' as const
       },
       {
         id: 'artist-search-input',
-        title: 'Try Searching an Artist',
-        content: 'Enter an artist name like "Billie Eilish" or "Ed Sheeran". The search will load their complete discography with popularity scores, release dates, and track counts for detailed analysis.',
+        title: 'Search for an Artist',
+        content: '👇 Type "Billie Eilish" or "Ed Sheeran" in the search box below and press Enter. This will load their complete discography with popularity scores and streaming data.',
         target: 'input[placeholder*="artist"]',
-        position: 'bottom' as const
+        position: 'top' as const
       },
       {
         id: 'discography-display',
@@ -185,16 +185,16 @@ const DEMO_TOURS = {
       {
         id: 'select-assets-tab',
         title: 'Step 2: Asset Selection & Portfolio Building',
-        content: 'Choose specific albums and singles for your deal. Each asset shows estimated annual streams based on popularity scores and track counts.',
+        content: '👆 Click the "Select Assets" tab above to choose specific albums and singles for your deal. This will show the artist\'s discography with selection checkboxes.',
         target: '[data-tab="selection"]',
-        position: 'bottom' as const
+        position: 'top' as const
       },
       {
         id: 'asset-selection-process',
-        title: 'Albums vs Singles Strategy',
-        content: 'Albums: Higher risk/reward with multiple tracks. Singles: More predictable returns. Mixed portfolios balance risk. Selection affects estimated streams: Albums = Popularity × 100K × Track Count, Singles = Popularity × 200K.',
+        title: 'Choose Your Assets',
+        content: '👇 Check the boxes next to albums/singles you want to acquire. Watch the estimated streams update in real-time as you select more assets.',
         target: '.space-y-4',
-        position: 'bottom' as const
+        position: 'top' as const
       },
       {
         id: 'estimated-streams',
@@ -208,37 +208,37 @@ const DEMO_TOURS = {
       {
         id: 'deal-terms-tab',
         title: 'Step 3: Deal Structure Configuration',
-        content: 'Configure the financial structure of your deal. These parameters directly impact ROI calculations, cash flow projections, and risk assessments.',
+        content: '👆 Click the "Deal Terms" tab above to configure the financial structure. These parameters directly impact ROI calculations and cash flow projections.',
         target: '[data-tab="terms"]',
-        position: 'bottom' as const
+        position: 'top' as const
       },
       {
         id: 'deal-type-selection',
-        title: 'Deal Type: Strategic Choice',
-        content: 'Acquisition (100% ownership): Highest control, highest investment. Licensing: Revenue share with limited terms. Co-Publishing: 50/50 partnerships with shared risk/reward.',
+        title: 'Choose Your Deal Type',
+        content: '👇 Select a deal type from the dropdown: Acquisition (100% ownership, highest investment), Licensing (revenue share), or Co-Publishing (50/50 partnership).',
         target: 'select',
-        position: 'bottom' as const
+        position: 'top' as const
       },
       {
         id: 'financial-parameters',
-        title: 'Critical Financial Parameters',
-        content: 'Upfront Advance: Initial investment amount. Recoupment Rate: % of earnings applied to advance recovery (typically 50-100%). These determine cash flow timing and breakeven points.',
+        title: 'Set Financial Parameters',
+        content: '👇 Enter your Upfront Advance amount and Recoupment Rate (50-100%). Try $500,000 advance with 75% recoupment to see how it affects cash flow timing.',
         target: '.grid',
-        position: 'bottom' as const
+        position: 'top' as const
       },
       {
         id: 'advanced-deal-terms',
-        title: 'Advanced Deal Terms',
-        content: 'Minimum Annual Guarantee: Ensures minimum payments regardless of performance. Deal Term Length: Affects terminal value calculations. Catalog Ownership %: Determines revenue share and control rights.',
+        title: 'Configure Advanced Terms',
+        content: '👇 Set Minimum Annual Guarantee, Deal Term Length (try 5 years), and Catalog Ownership %. These parameters control risk and reward structure.',
         target: '.grid',
-        position: 'bottom' as const
+        position: 'top' as const
       },
       {
-        id: 'ownership-impact',
-        title: 'Ownership & Revenue Impact',
-        content: 'Catalog Ownership % directly multiplies revenue projections. Higher ownership = higher returns but typically higher acquisition costs. Balance ownership with investment capacity.',
-        target: '.grid',
-        position: 'bottom' as const
+        id: 'calculate-projections-button',
+        title: 'Run Financial Projections',
+        content: '👇 Click "Calculate Projections" to run the 5-year financial model. This applies decay curves, risk factors, and market assumptions to your deal.',
+        target: 'button[type="submit"]',
+        position: 'top' as const
       },
       
       // Step 4: Projections & Scenario Analysis
@@ -265,19 +265,19 @@ const DEMO_TOURS = {
       },
       {
         id: 'scenario-saving',
-        title: 'Save Deal Scenarios',
-        content: 'Save scenarios to compare multiple deals, test different terms, or present to stakeholders. Each scenario preserves all parameters, projections, and assumptions for future analysis.',
-        target: '.space-y-4',
-        position: 'bottom' as const
+        title: 'Save Your Deal Scenario',
+        content: '👇 Click "Save Scenario" to preserve this deal for comparison. Name it something descriptive like "Billie Eilish - Full Catalog Acquisition".',
+        target: 'button[type="button"]',
+        position: 'top' as const
       },
       
       // Saved Scenarios Management
       {
         id: 'saved-scenarios-tab',
-        title: 'Scenario Management & Comparison',
-        content: 'View all saved deal scenarios with key metrics for quick comparison. Sort by ROI, investment size, or risk level to identify the best opportunities.',
+        title: 'View Saved Scenarios',
+        content: '👆 Click the "Saved Scenarios" tab above to view all your saved deals. This is where you compare multiple opportunities side-by-side.',
         target: '[data-tab="scenarios"]',
-        position: 'bottom' as const
+        position: 'top' as const
       },
       {
         id: 'scenario-comparison',
