@@ -90,7 +90,6 @@ const App = () => {
                         } />
                         
         {/* Legacy Routes - Redirects to CRM */}
-        <Route path="/modules" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/demo-modules" element={<DemoModulesPage />} />
                         <Route path="/features/:moduleId" element={<FeaturesPage />} />
                         <Route path="/catalog-valuation" element={<Navigate to="/dashboard/catalog-valuation" replace />} />
