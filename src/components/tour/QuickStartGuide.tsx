@@ -91,6 +91,9 @@ const QUICK_START_MODULES = [
 ];
 
 export const QuickStartGuide = () => {
+  // Temporarily disabled - will be reintroduced later
+  return null;
+  
   const { startTour } = useTour();
   const { isDemo, demoLimits } = useDemoAccess();
   const [openItems, setOpenItems] = useState<string[]>(['catalog-valuation']);
