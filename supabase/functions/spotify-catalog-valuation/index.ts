@@ -963,6 +963,8 @@ if (primaryGenre) {
       console.log(`Successfully found ${comparableArtists.length} real comparable artists`);
     }
 
+    console.log(`Territory: ${territory}, Benchmark Adjustment: ${territoryBenchmarkAdjustment}`);
+
     const valuationData = {
       artist_name: artist.name,
       total_streams: estimatedTotalStreams,
@@ -1023,7 +1025,6 @@ discount_rate: valuationParams?.discountRate || 0.12,
         peer_average_multiple: benchmark.revenue_multiple_avg * 1.1,
         market_premium_discount: artist.popularity > 80 ? 1.15 : artist.popularity < 40 ? 0.85 : 1.0
       },
-      territory_multiplier: territoryBenchmarkAdjustment
     };
 
     console.log(`Advanced valuation complete - DCF: $${dcfValuation}, Multiple: $${multipleValuation}, Risk-Adjusted: $${riskAdjustedValue}`);
