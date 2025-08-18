@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, TrendingUp, Calculator } from "lucide-react";
+import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, TrendingUp, Calculator, Clock } from "lucide-react";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
@@ -18,6 +18,8 @@ import { ReconciliationAnalytics } from "@/components/royalties/ReconciliationAn
 import { PayoutList } from "@/components/royalties/PayoutList";
 import { PayoutForm } from "@/components/royalties/PayoutForm";
 import { AccountBalancesTable } from "@/components/royalties/AccountBalancesTable";
+import { PayeesTable } from "@/components/royalties/PayeesTable";
+import { ExpensesTable } from "@/components/royalties/ExpensesTable";
 
 export default function CRMRoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
@@ -201,15 +203,144 @@ export default function CRMRoyaltiesPage() {
             <div>
               <h2 className="text-xl font-semibold">Payouts & Client Accounting</h2>
               <p className="text-muted-foreground">
-                Process royalty payments, manage client statements, and track account balances
+                Handle periodic statements and payments for clients
               </p>
             </div>
-            <Button onClick={() => setShowPayoutForm(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              New Payout
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline">
+                Create Demo Data
+              </Button>
+              <Button onClick={() => setShowPayoutForm(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                New Payout
+              </Button>
+            </div>
           </div>
 
+          {/* Overview Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-muted rounded">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Payouts</p>
+                    <p className="text-xl font-bold">11</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-yellow-100 rounded">
+                    <Clock className="h-4 w-4 text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pending Review</p>
+                    <p className="text-xl font-bold">3</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-100 rounded">
+                    <TrendingUp className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Approved</p>
+                    <p className="text-xl font-bold">2</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-orange-100 rounded">
+                    <TrendingUp className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Processing</p>
+                    <p className="text-xl font-bold">0</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-green-100 rounded">
+                    <DollarSign className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Value</p>
+                    <p className="text-xl font-bold">$2,622,000</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-red-100 rounded">
+                    <TrendingUp className="h-4 w-4 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Expenses</p>
+                    <p className="text-xl font-bold text-red-600">$1,000,000</p>
+                    <p className="text-xs text-muted-foreground">1 pending approval</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Payouts Management Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Payouts Management</CardTitle>
+              <CardDescription>
+                Comprehensive oversight of payees, expenses, account balances, and payouts
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="payouts" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="payees">Payees</TabsTrigger>
+                  <TabsTrigger value="expenses">Expenses</TabsTrigger>
+                  <TabsTrigger value="account-balances">Account Balances</TabsTrigger>
+                  <TabsTrigger value="payouts">Payouts</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="payees">
+                  <PayeesTable />
+                </TabsContent>
+
+                <TabsContent value="expenses">
+                  <ExpensesTable />
+                </TabsContent>
+
+                <TabsContent value="account-balances">
+                  <AccountBalancesTable />
+                </TabsContent>
+
+                <TabsContent value="payouts">
+                  <PayoutList />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+          
           {showPayoutForm && (
             <Card>
               <CardHeader>
@@ -223,35 +354,6 @@ export default function CRMRoyaltiesPage() {
               </CardContent>
             </Card>
           )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payout Management</CardTitle>
-                  <CardDescription>
-                    Process payments and manage client statements
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <PayoutList />
-                </CardContent>
-              </Card>
-            </div>
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Balances</CardTitle>
-                  <CardDescription>
-                    Quarterly balance reports and client accounting
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <AccountBalancesTable />
-                </CardContent>
-              </Card>
-            </div>
-          </div>
         </TabsContent>
 
         <TabsContent value="discrepancies" className="space-y-6">
