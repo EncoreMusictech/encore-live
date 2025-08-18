@@ -16,6 +16,7 @@ import { TourOverlay } from "@/components/tour/TourOverlay";
 import EmailRestrictedRoute from "@/components/EmailRestrictedRoute";
 import { CRMLayout } from "@/components/crm/CRMLayout";
 import Index from "./pages/Index";
+import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import DemoModulesPage from "./pages/DemoModulesPage";
@@ -68,7 +69,8 @@ const App = () => {
                       <TourOverlay />
                       <Routes>
                         <Route path="/auth" element={<Auth />} />
-                        <Route index element={<Navigate to="/dashboard" replace />} />
+                        <Route index element={<LandingPage />} />
+                        <Route path="/home" element={<Index />} />
                         
                         {/* Dashboard Routes */}
                         <Route path="/dashboard" element={<CRMLayout />}>

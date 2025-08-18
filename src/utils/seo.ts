@@ -86,9 +86,19 @@ export const pageMetadata: Record<string, PageMetadata> = {
   }
 };
 
-export const updatePageMetadata = (pageKey: string) => {
-  const metadata = pageMetadata[pageKey];
-  if (!metadata) return;
+export const updatePageMetadata = (pageKey: string | { title: string; description: string; keywords?: string }) => {
+  let metadata: PageMetadata;
+  
+  if (typeof pageKey === 'string') {
+    metadata = pageMetadata[pageKey];
+    if (!metadata) return;
+  } else {
+    metadata = {
+      title: pageKey.title,
+      description: pageKey.description,
+      keywords: typeof pageKey.keywords === 'string' ? [pageKey.keywords] : undefined
+    };
+  }
 
   // Update title
   document.title = metadata.title;
