@@ -390,7 +390,7 @@ export function usePayouts() {
     }
   };
 
-  const calculatePayoutTotals = async (clientId: string, periodStart: string, periodEnd: string) => {
+  const calculatePayoutTotals = async (clientId: string, periodStart: string, periodEnd: string, agreementId?: string) => {
     try {
       // Calculate gross royalties from royalty allocations for the client and period
       const { data: royalties, error: royaltyError } = await supabase
@@ -438,7 +438,7 @@ export function usePayouts() {
 
           if (expenseError) throw expenseError;
 
-          totalRecoupableExpenses = (expenses || [])
+            totalRecoupableExpenses = (expenses || [])
             .filter(expense => {
               // Check the legacy boolean field first
               if (expense.is_recoupable) return true;
@@ -451,37 +451,58 @@ export function usePayouts() {
               
               return false;
             })
-            .reduce((sum, expense) => sum + expense.amount, 0);
+            .reduce((sum, expense) => sum + (expense.amount || 0), 0);
         }
       }
       
-      // Calculate previous payments to this client
-      const { data: previousPayouts, error: payoutError } = await supabase
-        .from('payouts')
-        .select('amount_due, gross_royalties')
-        .eq('user_id', user?.id)
-        .eq('client_id', clientId)
-        .eq('status', 'paid');
-
-      if (payoutError) throw payoutError;
-
-      const paymentsToDate = previousPayouts?.reduce((sum, p) => sum + (p.amount_due || 0), 0) || 0;
-      const royaltiesToDate = previousPayouts?.reduce((sum, p) => sum + (p.gross_royalties || 0), 0) || 0;
-
-      const netRoyalties = grossRoyalties - totalRecoupableExpenses;
-      const netPayable = netRoyalties - paymentsToDate;
-
-      const totals = {
+      // If agreement-based calculation is requested and agreementId is provided
+      if (agreementId) {
+        try {
+          const { data: agreement, error: agreementError } = await supabase
+            .from('contracts')
+            .select('commission_percentage, advance_amount')
+            .eq('id', agreementId)
+            .single();
+            
+          if (agreementError) throw agreementError;
+          
+          const commissionRate = agreement?.commission_percentage || 0;
+          const commissionDeduction = grossRoyalties * (commissionRate / 100);
+          const netRoyalties = grossRoyalties - commissionDeduction;
+          const netPayable = Math.max(0, netRoyalties - totalRecoupableExpenses);
+          
+          return {
+            gross_royalties: grossRoyalties,
+            net_royalties: netRoyalties,
+            total_expenses: totalRecoupableExpenses,
+            net_payable: netPayable,
+            royalties_to_date: grossRoyalties,
+            payments_to_date: 0,
+            amount_due: netPayable,
+            commission_deduction: commissionDeduction,
+            calculation_method: 'agreement_based',
+            agreement_id: agreementId
+          };
+        } catch (error) {
+          console.error('Error in agreement-based calculation:', error);
+          // Fall back to manual calculation
+        }
+      }
+      
+      // Manual calculation (original logic)
+      const netRoyalties = grossRoyalties;
+      const netPayable = Math.max(0, netRoyalties - totalRecoupableExpenses);
+      
+      return {
         gross_royalties: grossRoyalties,
-        total_expenses: totalRecoupableExpenses,
         net_royalties: netRoyalties,
+        total_expenses: totalRecoupableExpenses,
         net_payable: netPayable,
-        royalties_to_date: royaltiesToDate + grossRoyalties,
-        payments_to_date: paymentsToDate,
-        amount_due: Math.max(0, netPayable), // Don't allow negative amounts
+        royalties_to_date: grossRoyalties,
+        payments_to_date: 0,
+        amount_due: netPayable,
+        calculation_method: 'manual'
       };
-
-      return totals;
     } catch (error: any) {
       console.error('Error calculating payout totals:', error);
       return null;
