@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemoAccess } from '@/hooks/useDemoAccess';
 
@@ -9,6 +10,7 @@ interface TourStep {
   target?: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
   action?: () => void;
+  navigateTo?: string;
 }
 
 interface TourContextType {
@@ -44,37 +46,42 @@ const DEMO_TOURS = {
       {
         id: 'catalog-valuation',
         title: 'Catalog Valuation',
-        content: 'Start here! Search for any artist to see AI-powered catalog valuations, streaming analytics, and deal projections. This gives you market insights for investment decisions.',
+        content: 'Start here! Search for any artist to see AI-powered catalog valuations, streaming analytics, and deal projections. This gives you market insights for investment decisions. Click Next to visit this module.',
         target: '[href="/crm/catalog-valuation"]',
-        position: 'bottom' as const
+        position: 'bottom' as const,
+        navigateTo: '/crm/catalog-valuation'
       },
       {
         id: 'contracts',
         title: 'Contract Management',
-        content: 'Create and manage publishing agreements, artist contracts, sync licenses, and more. Upload existing contracts or use our guided forms.',
+        content: 'Create and manage publishing agreements, artist contracts, sync licenses, and more. Upload existing contracts or use our guided forms. Click Next to visit this module.',
         target: '[href="/crm/contracts"]',
-        position: 'bottom' as const
+        position: 'bottom' as const,
+        navigateTo: '/crm/contracts'
       },
       {
         id: 'copyright',
         title: 'Copyright Registration',
-        content: 'Register your musical works, manage writer splits, and prepare CWR files for PRO submissions. Essential for royalty collection.',
+        content: 'Register your musical works, manage writer splits, and prepare CWR files for PRO submissions. Essential for royalty collection. Click Next to visit this module.',
         target: '[href="/crm/copyright"]',
-        position: 'bottom' as const
+        position: 'bottom' as const,
+        navigateTo: '/crm/copyright'
       },
       {
         id: 'sync',
         title: 'Sync Licensing',
-        content: 'Track sync opportunities, manage licensing deals, and generate invoices for TV, film, and advertising placements.',
+        content: 'Track sync opportunities, manage licensing deals, and generate invoices for TV, film, and advertising placements. Click Next to visit this module.',
         target: '[href="/crm/sync"]',
-        position: 'bottom' as const
+        position: 'bottom' as const,
+        navigateTo: '/crm/sync'
       },
       {
         id: 'royalties',
         title: 'Royalty Processing',
-        content: 'Import statements, reconcile earnings, allocate payments to writers and publishers, and generate detailed reports.',
+        content: 'Import statements, reconcile earnings, allocate payments to writers and publishers, and generate detailed reports. Click Next to visit this module.',
         target: '[href="/crm/royalties"]',
-        position: 'bottom' as const
+        position: 'bottom' as const,
+        navigateTo: '/crm/royalties'
       },
       {
         id: 'quick-actions',
@@ -240,14 +247,45 @@ const DEMO_TOURS = {
 export const TourProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const { isDemo } = useDemoAccess();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [steps, setSteps] = useState<TourStep[]>([]);
   const [hasSeenDashboardTour, setHasSeenDashboardTour] = useState(false);
+  const [activeTourId, setActiveTourId] = useState<string | null>(null);
+
+  // Restore tour state from sessionStorage when component mounts or location changes
+  useEffect(() => {
+    const restoreTourState = () => {
+      const tourState = sessionStorage.getItem('activeTour');
+      if (tourState && isDemo) {
+        try {
+          const { tourId, currentStep: savedStep, isActive: savedIsActive } = JSON.parse(tourState);
+          if (savedIsActive) {
+            const tour = DEMO_TOURS[tourId as keyof typeof DEMO_TOURS];
+            if (tour) {
+              setSteps(tour.steps);
+              setCurrentStep(savedStep);
+              setIsActive(true);
+              setActiveTourId(tourId);
+            }
+          }
+        } catch (error) {
+          console.error('Error restoring tour state:', error);
+          sessionStorage.removeItem('activeTour');
+        }
+      }
+    };
+
+    // Small delay to allow page to render
+    const timeoutId = setTimeout(restoreTourState, 500);
+    return () => clearTimeout(timeoutId);
+  }, [location.pathname, isDemo]);
 
   // Check if we should show the dashboard tour for demo users
   useEffect(() => {
-    if (isDemo && !hasSeenDashboardTour) {
+    if (isDemo && !hasSeenDashboardTour && !sessionStorage.getItem('activeTour')) {
       const hasSeenTour = localStorage.getItem('encore_dashboard_tour_seen');
       if (!hasSeenTour) {
         // Start dashboard tour automatically for new demo users
@@ -268,12 +306,38 @@ export const TourProvider = ({ children }: { children: React.ReactNode }) => {
       setSteps(tour.steps);
       setCurrentStep(0);
       setIsActive(true);
+      setActiveTourId(tourId);
+      
+      // Store tour state in sessionStorage to persist across navigation
+      sessionStorage.setItem('activeTour', JSON.stringify({
+        tourId,
+        currentStep: 0,
+        isActive: true
+      }));
     }
   };
 
   const nextStep = () => {
+    const currentTourStep = steps[currentStep];
+    
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      const nextStepIndex = currentStep + 1;
+      const nextTourStep = steps[nextStepIndex];
+      
+      // Update tour state
+      setCurrentStep(nextStepIndex);
+      
+      // Update sessionStorage
+      sessionStorage.setItem('activeTour', JSON.stringify({
+        tourId: activeTourId,
+        currentStep: nextStepIndex,
+        isActive: true
+      }));
+      
+      // Navigate if the current step has a navigateTo property
+      if (currentTourStep?.navigateTo && location.pathname !== currentTourStep.navigateTo) {
+        navigate(currentTourStep.navigateTo);
+      }
     } else {
       endTour();
     }
@@ -289,6 +353,10 @@ export const TourProvider = ({ children }: { children: React.ReactNode }) => {
     setIsActive(false);
     setCurrentStep(0);
     setSteps([]);
+    setActiveTourId(null);
+    
+    // Clean up session storage
+    sessionStorage.removeItem('activeTour');
     
     // Mark dashboard tour as seen
     if (steps.length > 0 && steps[0].id === 'welcome') {
