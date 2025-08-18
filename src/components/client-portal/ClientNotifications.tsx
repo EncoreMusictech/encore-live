@@ -13,7 +13,7 @@ export const ClientNotifications = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="bg-card/50 border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
@@ -27,7 +27,7 @@ export const ClientNotifications = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/50 border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Download className="h-5 w-5" />

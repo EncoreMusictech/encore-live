@@ -51,7 +51,7 @@ export const ClientDashboardOverview = ({ permissions }: ClientDashboardOverview
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {enabledModules.map((module) => (
-          <Card key={module.id} className="relative">
+          <Card key={module.id} className="bg-card/50 border-border/50 hover:bg-card/70 transition-colors">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <module.icon className="h-6 w-6 text-primary" />
@@ -78,7 +78,7 @@ export const ClientDashboardOverview = ({ permissions }: ClientDashboardOverview
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="bg-card/50 border-border/50">
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
@@ -98,7 +98,7 @@ export const ClientDashboardOverview = ({ permissions }: ClientDashboardOverview
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/50 border-border/50">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>

@@ -180,10 +180,10 @@ const ClientPortal = () => {
         </div>
       )}
       
-      <header className="mb-6 brand-hero rounded-xl p-6 brand-hero-ring overflow-hidden">
+      <header className="mb-6 rounded-xl p-6 overflow-hidden bg-gradient-to-br from-purple-600 via-purple-500 to-purple-400 text-white">
         <div className="flex items-center justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-headline">Client Portal</h1>
+            <h1 className="text-3xl font-semibold">Client Portal</h1>
             <p className="text-sm opacity-90 mt-1">Manage your works, contracts, and royalties</p>
             {user?.email && (
               <>
@@ -199,18 +199,18 @@ const ClientPortal = () => {
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <Avatar className="h-14 w-14 shadow-md">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-14 w-14 shadow-md border-2 border-white/20">
               <AvatarImage src={profile?.avatar_url || undefined} alt="Client avatar" loading="lazy" />
-              <AvatarFallback>{((profile?.first_name?.[0] || user?.email?.[0] || 'U') as string).toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="bg-white/10 text-white">{((profile?.first_name?.[0] || user?.email?.[0] || 'U') as string).toUpperCase()}</AvatarFallback>
             </Avatar>
-            <div className="text-base sm:text-lg font-medium leading-tight text-center">
+            <div className="text-lg font-medium leading-tight">
               {greeting}
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <Badge className="bg-background/80 text-foreground flex items-center gap-1">
+            <Badge className="bg-white/10 text-white border-white/20 flex items-center gap-1">
               <ShieldCheck className="h-4 w-4" /> Secured Client Access
             </Badge>
             <Button
@@ -218,6 +218,7 @@ const ClientPortal = () => {
               size="sm"
               onClick={handleSignOut}
               aria-label="Sign out of Client Portal"
+              className="border-white/20 text-white hover:bg-white/10"
             >
               Sign Out
             </Button>

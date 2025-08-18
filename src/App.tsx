@@ -77,8 +77,17 @@ const App = () => {
                           <Route path="copyright" element={<CRMCopyrightPage />} />
                           <Route path="sync" element={<CRMSyncPage />} />
                           <Route path="royalties" element={<CRMRoyaltiesPage />} />
-                          <Route path="clients" element={<CRMClientsPage />} />
+                          <Route path="client-admin" element={<CRMClientsPage />} />
                         </Route>
+                        
+                        {/* Client Portal - Accessible to invited clients */}
+                        <Route path="/client-portal" element={
+                          <ProtectedRoute>
+                            <ErrorBoundary>
+                              <ClientPortal />
+                            </ErrorBoundary>
+                          </ProtectedRoute>
+                        } />
                         
                         {/* Legacy Routes - Redirects to CRM */}
                         <Route path="/modules" element={<ModulesPage />} />
@@ -96,7 +105,6 @@ const App = () => {
                         <Route path="/pricing" element={<PricingPage />} />
                         <Route path="/contact" element={<ContactPage />} />
                         <Route path="/documentation" element={<DocumentationPage />} />
-                        <Route path="/client-portal" element={<Navigate to="/dashboard/clients" replace />} />
                         <Route path="/client-admin" element={
                           <ProtectedRoute>
                             <EmailRestrictedRoute allowedEmails={["info@encoremusic.tech"]}>

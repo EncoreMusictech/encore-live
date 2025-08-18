@@ -94,7 +94,7 @@ useEffect(() => {
         </p>
       </div>
 
-      <Card>
+      <Card className="bg-card/50 border-border/50">
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
