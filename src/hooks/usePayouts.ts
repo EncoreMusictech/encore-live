@@ -90,6 +90,12 @@ export interface PayoutRoyalty {
 export function usePayouts() {
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Helper function to dispatch events when payouts change
+  const dispatchPayoutEvent = useCallback((eventType: string, payout?: any) => {
+    const event = new CustomEvent(eventType, { detail: payout });
+    window.dispatchEvent(event);
+  }, []);
   
   // Use optimistic updates for better UX
   const {
@@ -283,6 +289,14 @@ export function usePayouts() {
 
       confirmUpdate(updateId);
       await fetchPayouts();
+
+      // Dispatch event to notify quarterly balance reports to refresh
+      dispatchPayoutEvent('payoutUpdated', data);
+      
+      // If status changed to 'paid', specifically notify for payment status change
+      if (payoutData.status === 'paid' && existingPayout.status !== 'paid') {
+        dispatchPayoutEvent('payoutStatusChanged', data);
+      }
 
       toast({
         title: "Success",

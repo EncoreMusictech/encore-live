@@ -608,6 +608,23 @@ export function useQuarterlyBalanceReports() {
     fetchReports();
   }, [user, isDemo]);
 
+  // Listen for payout changes that might affect quarterly balance reports
+  useEffect(() => {
+    const handlePayoutChanges = () => {
+      console.log('Payout status changed, refreshing quarterly balance reports...');
+      fetchReports();
+    };
+
+    // Listen for custom events from the payout system
+    window.addEventListener('payoutStatusChanged', handlePayoutChanges);
+    window.addEventListener('payoutUpdated', handlePayoutChanges);
+
+    return () => {
+      window.removeEventListener('payoutStatusChanged', handlePayoutChanges);
+      window.removeEventListener('payoutUpdated', handlePayoutChanges);
+    };
+  }, []);
+
   // Initialize quarterly balance reports for a new payee
   const initializePayeeReports = async (payeeId: string, contactId?: string, agreementId?: string) => {
     if (isDemo) {
