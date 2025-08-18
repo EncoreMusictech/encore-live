@@ -61,6 +61,21 @@ export function useQuarterlyBalanceReports() {
     try {
       console.log('Building quarterly balance reports from payouts and expenses...');
       
+      // Debug: Check for specific payee/contact data
+      const { data: debugContacts } = await supabase
+        .from('contacts')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .ilike('name', '%janishia%');
+      console.log('Contacts containing "janishia":', debugContacts);
+
+      const { data: debugPayees } = await supabase
+        .from('payees')
+        .select('id, payee_name')
+        .eq('user_id', user.id)
+        .ilike('payee_name', '%janishia%');
+      console.log('Payees containing "janishia":', debugPayees);
+      
       // Fetch all payouts for this user, including paid ones
       const { data: payouts, error: payoutsError } = await supabase
         .from('payouts')
