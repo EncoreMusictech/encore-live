@@ -994,111 +994,148 @@ Actual market values may vary significantly based on numerous factors not captur
             <TabsContent value="overview" className="space-y-6">
               {/* Key Metrics Grid */}
               <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-                {/* Enhanced Valuation - Show if available */}
-                {result.blended_valuation && result.has_additional_revenue ? (
-                  <Card className="ring-2 ring-primary/20">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-2">
-                        <Zap className="h-4 w-4 text-primary" />
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium leading-none">Enhanced Valuation</p>
-                          <p className="text-xl font-bold text-primary">
-                            {formatCurrency(result.blended_valuation)}
-                          </p>
-                          <div className="flex items-center gap-1">
-                            <Badge variant="secondary" className="text-xs">
-                              {((result.blended_valuation - (result.risk_adjusted_value || result.valuation_amount)) / (result.risk_adjusted_value || result.valuation_amount) * 100).toFixed(1)}% uplift
-                            </Badge>
+                {(() => {
+                  // Calculate territory multiplier
+                  const selectedTerritory = result.territory_focus || valuationParams.territory;
+                  const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : 
+                                            selectedTerritory === 'us-only' ? 1.2 : 1.0;
+                  
+                  // Apply territory adjustment to all valuations
+                  const adjustedBlendedValuation = result.blended_valuation ? result.blended_valuation * territoryMultiplier : null;
+                  const adjustedRiskAdjustedValue = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
+                  const adjustedDcfValuation = (result.dcf_valuation || 0) * territoryMultiplier;
+                  const adjustedMultipleValuation = (result.multiple_valuation || 0) * territoryMultiplier;
+                  
+                  return (
+                    <>
+                      {/* Enhanced Valuation - Show if available */}
+                      {adjustedBlendedValuation && result.has_additional_revenue ? (
+                        <Card className="ring-2 ring-primary/20">
+                          <CardContent className="p-6">
+                            <div className="flex items-center space-x-2">
+                              <Zap className="h-4 w-4 text-primary" />
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium leading-none">Enhanced Valuation</p>
+                                <p className="text-xl font-bold text-primary">
+                                  {formatCurrency(adjustedBlendedValuation)}
+                                </p>
+                                <div className="flex items-center gap-1">
+                                  <Badge variant="secondary" className="text-xs">
+                                    {((adjustedBlendedValuation - adjustedRiskAdjustedValue) / adjustedRiskAdjustedValue * 100).toFixed(1)}% uplift
+                                  </Badge>
+                                  {territoryMultiplier !== 1.0 && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <Card>
+                          <CardContent className="p-6">
+                            <div className="flex items-center space-x-2">
+                              <Target className="h-4 w-4 text-primary" />
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium leading-none">Risk-Adjusted Value</p>
+                                <p className="text-xl font-bold text-primary">
+                                  {formatCurrency(adjustedRiskAdjustedValue)}
+                                </p>
+                                {territoryMultiplier !== 1.0 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      <Card>
+                        <CardContent className="p-6">
+                          <div className="flex items-center space-x-2">
+                            <Calculator className="h-4 w-4 text-blue-600" />
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium leading-none">DCF Valuation</p>
+                              <p className="text-xl font-bold text-blue-600">
+                                {formatCurrency(adjustedDcfValuation)}
+                              </p>
+                              {territoryMultiplier !== 1.0 && (
+                                <Badge variant="outline" className="text-xs">
+                                  {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-2">
-                        <Target className="h-4 w-4 text-primary" />
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium leading-none">Risk-Adjusted Value</p>
-                          <p className="text-xl font-bold text-primary">
-                            {formatCurrency(result.risk_adjusted_value || result.valuation_amount)}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                        </CardContent>
+                      </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-2">
-                      <Calculator className="h-4 w-4 text-blue-600" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">DCF Valuation</p>
-                        <p className="text-xl font-bold text-blue-600">
-                          {formatCurrency(result.dcf_valuation || 0)}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <Card>
+                        <CardContent className="p-6">
+                          <div className="flex items-center space-x-2">
+                            <BarChart3 className="h-4 w-4 text-green-600" />
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium leading-none">Multiple Valuation</p>
+                              <p className="text-xl font-bold text-green-600">
+                                {formatCurrency(adjustedMultipleValuation)}
+                              </p>
+                              {territoryMultiplier !== 1.0 && (
+                                <Badge variant="outline" className="text-xs">
+                                  {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-2">
-                      <BarChart3 className="h-4 w-4 text-green-600" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">Multiple Valuation</p>
-                        <p className="text-xl font-bold text-green-600">
-                          {formatCurrency(result.multiple_valuation || 0)}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <Card>
+                        <CardContent className="p-6">
+                          <div className="flex items-center space-x-2">
+                            <Shield className="h-4 w-4 text-orange-600" />
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium leading-none">Confidence Score</p>
+                              <p className="text-xl font-bold text-orange-600">
+                                {result.confidence_score || 0}/100
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-2">
-                      <Shield className="h-4 w-4 text-orange-600" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">Confidence Score</p>
-                        <p className="text-xl font-bold text-orange-600">
-                          {result.confidence_score || 0}/100
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <Card>
+                        <CardContent className="p-6">
+                          <div className="flex items-center space-x-2">
+                            <DollarSign className="h-4 w-4 text-purple-600" />
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium leading-none">LTM Revenue</p>
+                              <p className="text-xl font-bold text-purple-600">
+                                {formatCurrency(result.ltm_revenue || 0)}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-2">
-                      <DollarSign className="h-4 w-4 text-purple-600" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">LTM Revenue</p>
-                        <p className="text-xl font-bold text-purple-600">
-                          {formatCurrency(result.ltm_revenue || 0)}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-2">
-                      <Star className="h-4 w-4 text-yellow-600" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">Popularity</p>
-                        <p className="text-xl font-bold text-yellow-600">
-                          {result.popularity_score || result.spotify_data.popularity}/100
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <Card>
+                        <CardContent className="p-6">
+                          <div className="flex items-center space-x-2">
+                            <Star className="h-4 w-4 text-yellow-600" />
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium leading-none">Popularity</p>
+                              <p className="text-xl font-bold text-yellow-600">
+                                {result.popularity_score || result.spotify_data.popularity}/100
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Artist Spotify Information */}
