@@ -598,6 +598,10 @@ export function usePayouts() {
 
       if (error) throw error;
 
+      // Dispatch events for quarterly balance reports to refresh
+      dispatchPayoutEvent('payoutStatusChanged', { id: payoutId, stage: newStage });
+      dispatchPayoutEvent('payoutUpdated', { id: payoutId, stage: newStage });
+      
       toast({
         title: "Success",
         description: `Payout moved to ${newStage}`,

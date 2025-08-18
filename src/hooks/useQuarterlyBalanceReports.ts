@@ -64,7 +64,7 @@ export function useQuarterlyBalanceReports() {
       // Fetch all payouts for this user, including paid ones
       const { data: payouts, error: payoutsError } = await supabase
         .from('payouts')
-        .select('id, client_id, gross_royalties, total_expenses, amount_due, status, created_at, period_start, period_end, period')
+        .select('id, client_id, gross_royalties, total_expenses, amount_due, status, workflow_stage, created_at, period_start, period_end, period')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
