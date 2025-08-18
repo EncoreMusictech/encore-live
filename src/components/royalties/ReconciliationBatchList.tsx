@@ -32,16 +32,22 @@ export function ReconciliationBatchList() {
   // Calculate progress for all batches
   useEffect(() => {
     const calculateAllProgress = async () => {
-      if (!user || !batches.length) {
-        console.log('=== PROGRESS CALCULATION SKIPPED ===');
-        console.log('User:', !!user);
-        console.log('Batches length:', batches.length);
+      console.log('=== PROGRESS CALCULATION TRIGGERED ===');
+      console.log('User:', !!user);
+      console.log('Batches length:', batches.length);
+      console.log('Allocations length:', allocations.length);
+      
+      if (!user) {
+        console.log('No user, skipping progress calculation');
+        return;
+      }
+      
+      if (!batches.length) {
+        console.log('No batches, skipping progress calculation');
         return;
       }
       
       console.log('=== CALCULATING PROGRESS FOR ALL BATCHES ===');
-      console.log('Number of batches:', batches.length);
-      console.log('Number of allocations:', allocations.length);
       
       const progressMap = new Map();
       
@@ -52,7 +58,7 @@ export function ReconciliationBatchList() {
         
         // Get linked royalties (allocations with batch_id)
         const batchAllocations = allocations.filter(a => a.batch_id === batch.id);
-        const linkedRoyaltiesTotal = batchAllocations.reduce((sum, a) => sum + a.gross_royalty_amount, 0);
+        const linkedRoyaltiesTotal = batchAllocations.reduce((sum, a) => sum + (a.gross_royalty_amount || 0), 0);
         
         console.log('Linked allocations count:', batchAllocations.length);
         console.log('Linked royalties total:', linkedRoyaltiesTotal);
@@ -73,6 +79,7 @@ export function ReconciliationBatchList() {
             if (statementRoyalties && statementRoyalties.length > 0) {
               statementRoyaltiesTotal = statementRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
               console.log('Statement royalties total:', statementRoyaltiesTotal);
+              console.log('Statement royalties details:', statementRoyalties.map(r => ({ id: r.id, amount: r.gross_royalty_amount })));
             }
           } catch (error) {
             console.error('Error fetching statement royalties for progress calculation:', error);
@@ -86,6 +93,7 @@ export function ReconciliationBatchList() {
         
         console.log('Total allocated amount:', totalAllocatedAmount);
         console.log('Calculated progress:', progress);
+        console.log('---');
         
         progressMap.set(batch.id, {
           progress,
@@ -95,11 +103,25 @@ export function ReconciliationBatchList() {
       
       console.log('=== SETTING BATCH PROGRESS DATA ===');
       console.log('Progress map size:', progressMap.size);
+      console.log('Progress map entries:', Array.from(progressMap.entries()));
       setBatchProgressData(progressMap);
     };
     
-    calculateAllProgress();
+    // Add a small delay to ensure all data is loaded
+    const timeoutId = setTimeout(() => {
+      calculateAllProgress();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [batches, allocations, user]);
+
+  // Also trigger on mount to ensure calculation runs
+  useEffect(() => {
+    console.log('=== RECONCILIATION BATCH LIST MOUNTED ===');
+    console.log('Initial batches:', batches.length);
+    console.log('Initial allocations:', allocations.length);
+    console.log('Initial user:', !!user);
+  }, []); // Empty dependency array for mount only
 
   const filteredBatches = batches.filter(batch => {
     const matchesSearch = batch.batch_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
