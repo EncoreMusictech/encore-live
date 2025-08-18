@@ -43,6 +43,14 @@ export function CRMDashboard() {
   const { subscription_tier } = useSubscription();
   const { isAdmin } = useUserRoles();
   const { isDemo } = useDemoAccess();
+  
+  // Debug logging for isDemo status
+  console.log('🔍 CRMDashboard - Debug Info:', {
+    userEmail: user?.email,
+    isDemo,
+    isAdmin,
+    shouldShowQuickStart: isDemo
+  });
   const [stats, setStats] = useState<DashboardStats>({
     contracts: 0,
     copyrights: 0,
