@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { X, ChevronLeft, ChevronRight, Lightbulb } from 'lucide-react';
 import { useTour } from './TourProvider';
+import { useDemoAccess } from '@/hooks/useDemoAccess';
 
 export const TourOverlay = () => {
   const { isActive, currentStep, steps, nextStep, prevStep, endTour, skipTour } = useTour();
+  const { isDemo } = useDemoAccess();
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const [overlayPosition, setOverlayPosition] = useState({ top: 0, left: 0 });
 
@@ -91,7 +93,7 @@ export const TourOverlay = () => {
     };
   }, [isActive, currentStep, currentTourStep]);
 
-  if (!isActive || !currentTourStep) return null;
+  if (!isDemo || !isActive || !currentTourStep) return null;
 
   return (
     <>
