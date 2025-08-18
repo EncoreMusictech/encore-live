@@ -442,30 +442,39 @@ export function usePayouts() {
         if (payees && payees.length > 0) {
           const payeeIds = payees.map(p => p.id);
           
-          // Calculate total recoupable expenses for this payee
+          // Calculate total recoupable expenses for this payee from payout_expenses table
           const { data: expenses, error: expenseError } = await supabase
             .from('payout_expenses')
             .select('amount, is_recoupable, expense_flags, expense_status')
             .in('payee_id', payeeIds)
             .eq('user_id', user?.id)
-            .eq('expense_status', 'approved');
+            .in('expense_status', ['pending', 'approved']);
 
           if (expenseError) throw expenseError;
 
-            totalRecoupableExpenses = (expenses || [])
-            .filter(expense => {
-              // Check the legacy boolean field first
-              if (expense.is_recoupable) return true;
-              
-              // Check the new JSON field if it exists
-              if (expense.expense_flags && typeof expense.expense_flags === 'object') {
-                const flags = expense.expense_flags as { recoupable?: boolean };
-                return flags.recoupable === true;
+          // Sum up recoupable expenses
+          totalRecoupableExpenses = expenses?.reduce((sum, expense) => {
+            // Check for recoupable status from both legacy boolean field and new JSON field
+            let isRecoupable = expense.is_recoupable;
+            
+            // Check the new JSON field if it exists
+            if (expense.expense_flags && typeof expense.expense_flags === 'object') {
+              try {
+                const flags = expense.expense_flags as Record<string, any>;
+                if (flags.recoupable === true) {
+                  isRecoupable = true;
+                }
+              } catch (e) {
+                // If JSON parsing fails, rely on legacy field
               }
-              
-              return false;
-            })
-            .reduce((sum, expense) => sum + (expense.amount || 0), 0);
+            }
+            
+            return sum + (isRecoupable ? expense.amount : 0);
+          }, 0) || 0;
+          
+          console.log(`Found ${expenses?.length || 0} expenses for payee(s), total recoupable: $${totalRecoupableExpenses}`);
+        } else {
+          console.log(`No payees found for contact: ${contact.name}`);
         }
       }
       

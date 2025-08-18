@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
@@ -59,26 +59,7 @@ export function useQuarterlyBalanceReports() {
     if (!user) return [];
 
     try {
-      console.log('Checking for processed batches before building quarterly balance reports...');
-      
-      // First check if there are any processed batches
-      const { data: batches, error: batchError } = await supabase
-        .from('reconciliation_batches')
-        .select('id, status')
-        .eq('user_id', user.id)
-        .eq('status', 'Processed');
-
-      if (batchError) {
-        console.error('Error checking batches:', batchError);
-        return [];
-      }
-
-      if (!batches || batches.length === 0) {
-        console.log('No processed batches found - no quarterly balance reports should exist');
-        return [];
-      }
-
-      console.log(`Found ${batches.length} processed batches, building quarterly balance reports...`);
+      console.log('Building quarterly balance reports from payouts and expenses...');
       
       // Fetch all payouts for this user, including paid ones
       const { data: payouts, error: payoutsError } = await supabase
@@ -87,7 +68,14 @@ export function useQuarterlyBalanceReports() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
-      if (payoutsError || !payouts || payouts.length === 0) {
+      if (payoutsError) {
+        console.error('Error fetching payouts:', payoutsError);
+        return [];
+      }
+
+      console.log(`Found ${payouts?.length || 0} payouts for balance calculation`);
+
+      if (!payouts || payouts.length === 0) {
         console.log('No payouts found for quarterly balance calculation');
         return [];
       }
@@ -296,8 +284,8 @@ export function useQuarterlyBalanceReports() {
           }));
           setReports(normalized);
         } else {
-          // Generate ephemeral reports from payouts only if there are processed batches
-          console.log('Checking for processed batches before generating quarterly balance reports');
+          // Generate ephemeral reports from payouts - always build them if there are payouts
+          console.log('Building quarterly balance reports from existing payouts');
           const demoData = await buildEphemeralFromPayouts();
           setReports(demoData);
         }
@@ -625,6 +613,12 @@ export function useQuarterlyBalanceReports() {
     };
   }, []);
 
+  // Manual refresh function
+  const refreshReports = useCallback(() => {
+    console.log('Manual refresh of quarterly balance reports triggered');
+    fetchReports();
+  }, []);
+
   // Initialize quarterly balance reports for a new payee
   const initializePayeeReports = async (payeeId: string, contactId?: string, agreementId?: string) => {
     if (isDemo) {
@@ -697,6 +691,7 @@ export function useQuarterlyBalanceReports() {
     reports,
     loading,
     fetchReports,
+    refreshReports,
     createReport,
     updateReport,
     deleteReport,
