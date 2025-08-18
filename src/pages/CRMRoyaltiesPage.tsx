@@ -13,6 +13,7 @@ import { RoyaltiesDiscrepancyReport } from "@/components/royalties/RoyaltiesDisc
 import { RoyaltiesAnalyticsDashboard } from "@/components/royalties/RoyaltiesAnalyticsDashboard";
 import { ReconciliationDashboard } from "@/components/royalties/ReconciliationDashboard";
 import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
+import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
 import { ReconciliationAnalytics } from "@/components/royalties/ReconciliationAnalytics";
 import { PayoutList } from "@/components/royalties/PayoutList";
 import { PayoutForm } from "@/components/royalties/PayoutForm";
@@ -101,6 +102,20 @@ export default function CRMRoyaltiesPage() {
             </TabsList>
 
             <TabsContent value="batches">
+              {showBatchForm && (
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle>Create New Reconciliation Batch</CardTitle>
+                    <CardDescription>
+                      Add a new batch to track incoming royalty payments
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ReconciliationBatchForm onCancel={() => setShowBatchForm(false)} />
+                  </CardContent>
+                </Card>
+              )}
+              
               <Card>
                 <CardHeader>
                   <CardTitle>Reconciliation Batches</CardTitle>
