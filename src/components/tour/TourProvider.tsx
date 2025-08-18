@@ -247,8 +247,19 @@ const DEMO_TOURS = {
 export const TourProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const { isDemo } = useDemoAccess();
-  const navigate = useNavigate();
-  const location = useLocation();
+  
+  // Safely handle navigation hooks
+  let navigate: ReturnType<typeof useNavigate> | null = null;
+  let location: ReturnType<typeof useLocation> | null = null;
+  
+  try {
+    navigate = useNavigate();
+    location = useLocation();
+  } catch (error) {
+    // Router hooks not available, navigation will be disabled
+    console.warn('Router hooks not available in TourProvider');
+  }
+  
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [steps, setSteps] = useState<TourStep[]>([]);
@@ -257,6 +268,8 @@ export const TourProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Restore tour state from sessionStorage when component mounts or location changes
   useEffect(() => {
+    if (!location) return; // Skip if router not available
+    
     const restoreTourState = () => {
       const tourState = sessionStorage.getItem('activeTour');
       if (tourState && isDemo) {
@@ -281,7 +294,7 @@ export const TourProvider = ({ children }: { children: React.ReactNode }) => {
     // Small delay to allow page to render
     const timeoutId = setTimeout(restoreTourState, 500);
     return () => clearTimeout(timeoutId);
-  }, [location.pathname, isDemo]);
+  }, [location?.pathname, isDemo]);
 
   // Check if we should show the dashboard tour for demo users
   useEffect(() => {
@@ -334,8 +347,8 @@ export const TourProvider = ({ children }: { children: React.ReactNode }) => {
         isActive: true
       }));
       
-      // Navigate if the current step has a navigateTo property
-      if (currentTourStep?.navigateTo && location.pathname !== currentTourStep.navigateTo) {
+      // Navigate if the current step has a navigateTo property and navigate is available
+      if (currentTourStep?.navigateTo && navigate && location && location.pathname !== currentTourStep.navigateTo) {
         navigate(currentTourStep.navigateTo);
       }
     } else {

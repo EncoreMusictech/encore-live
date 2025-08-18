@@ -57,14 +57,14 @@ const App = () => {
         <SecurityProvider>
           <AuthProvider>
             <DemoAccessProvider>
-              <TourProvider>
-                <ThemeProvider defaultTheme="dark" storageKey="encore-ui-theme">
-                  <TooltipProvider>
-                    <Toaster />
-                    <Sonner />
-                    <DemoUpgradeModal />
-                    <TourOverlay />
-                    <BrowserRouter>
+              <ThemeProvider defaultTheme="dark" storageKey="encore-ui-theme">
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <DemoUpgradeModal />
+                  <BrowserRouter>
+                    <TourProvider>
+                      <TourOverlay />
                       <Routes>
                         <Route path="/auth" element={<Auth />} />
                         <Route index element={<Navigate to="/dashboard" replace />} />
@@ -106,19 +106,19 @@ const App = () => {
                             </EmailRestrictedRoute>
                           </ProtectedRoute>
                         } />
-                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </BrowserRouter>
-                  </TooltipProvider>
-                </ThemeProvider>
-              </TourProvider>
-            </DemoAccessProvider>
-          </AuthProvider>
-        </SecurityProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
-  );
-};
-
-export default App;
+                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                         <Route path="*" element={<NotFound />} />
+                       </Routes>
+                     </TourProvider>
+                   </BrowserRouter>
+                 </TooltipProvider>
+               </ThemeProvider>
+             </DemoAccessProvider>
+           </AuthProvider>
+         </SecurityProvider>
+       </QueryClientProvider>
+     </ErrorBoundary>
+   );
+ };
+ 
+ export default App;
