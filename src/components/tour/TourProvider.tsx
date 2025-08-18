@@ -40,7 +40,7 @@ const DEMO_TOURS = {
         id: 'modules',
         title: 'Your Module Overview',
         content: 'These cards show your key metrics: catalog value, active contracts, registered copyrights, sync deals, and royalty revenue. Click any card to dive deeper into that module.',
-        target: '.grid.grid-cols-1.md\\:grid-cols-2',
+        target: '.grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3.xl\\:grid-cols-5',
         position: 'bottom' as const
       },
       {
@@ -337,19 +337,30 @@ export const TourProvider = ({ children }: { children: React.ReactNode }) => {
       const nextStepIndex = currentStep + 1;
       const nextTourStep = steps[nextStepIndex];
       
-      // Update tour state
-      setCurrentStep(nextStepIndex);
-      
-      // Update sessionStorage
-      sessionStorage.setItem('activeTour', JSON.stringify({
-        tourId: activeTourId,
-        currentStep: nextStepIndex,
-        isActive: true
-      }));
-      
       // Navigate if the current step has a navigateTo property and navigate is available
       if (currentTourStep?.navigateTo && navigate && location && location.pathname !== currentTourStep.navigateTo) {
+        // Update tour state immediately
+        setCurrentStep(nextStepIndex);
+        
+        // Update sessionStorage
+        sessionStorage.setItem('activeTour', JSON.stringify({
+          tourId: activeTourId,
+          currentStep: nextStepIndex,
+          isActive: true
+        }));
+        
+        // Navigate to the new page
         navigate(currentTourStep.navigateTo);
+      } else {
+        // No navigation needed, just update step
+        setCurrentStep(nextStepIndex);
+        
+        // Update sessionStorage
+        sessionStorage.setItem('activeTour', JSON.stringify({
+          tourId: activeTourId,
+          currentStep: nextStepIndex,
+          isActive: true
+        }));
       }
     } else {
       endTour();

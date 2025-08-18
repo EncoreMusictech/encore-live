@@ -14,55 +14,70 @@ export const TourOverlay = () => {
 
   useEffect(() => {
     if (isActive && currentTourStep?.target) {
-      // Find the target element
-      const element = document.querySelector(currentTourStep.target) as HTMLElement;
-      if (element) {
-        setTargetElement(element);
+      // Wait for navigation and element to appear with retries
+      const findTargetElement = (attempts = 0) => {
+        const maxAttempts = 20; // 2 seconds total
+        const element = document.querySelector(currentTourStep.target) as HTMLElement;
         
-        // Calculate overlay position
-        const rect = element.getBoundingClientRect();
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-        
-        let top = rect.top + scrollTop;
-        let left = rect.left + scrollLeft;
-        
-        // Adjust position based on tour step position preference
-        switch (currentTourStep.position) {
-          case 'bottom':
-            top += rect.height + 10;
-            break;
-          case 'top':
-            top -= 10;
-            break;
-          case 'right':
-            left += rect.width + 10;
-            break;
-          case 'left':
-            left -= 320; // Approximate card width
-            break;
-          default:
-            top += rect.height + 10;
+        if (element) {
+          setTargetElement(element);
+          
+          // Calculate overlay position
+          const rect = element.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+          
+          let top = rect.top + scrollTop;
+          let left = rect.left + scrollLeft;
+          
+          // Adjust position based on tour step position preference
+          switch (currentTourStep.position) {
+            case 'bottom':
+              top += rect.height + 10;
+              break;
+            case 'top':
+              top -= 10;
+              break;
+            case 'right':
+              left += rect.width + 10;
+              break;
+            case 'left':
+              left -= 320; // Approximate card width
+              break;
+            default:
+              top += rect.height + 10;
+          }
+          
+          setOverlayPosition({ top, left });
+          
+          // Scroll element into view
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'center'
+          });
+          
+          // Highlight the target element
+          element.style.position = 'relative';
+          element.style.zIndex = '9999';
+          element.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 0 8px rgba(59, 130, 246, 0.2)';
+          element.style.borderRadius = '8px';
+        } else if (attempts < maxAttempts) {
+          // Element not found, try again in 100ms
+          setTimeout(() => findTargetElement(attempts + 1), 100);
+        } else {
+          // Element not found after all attempts, show overlay without target
+          setTargetElement(null);
+          setOverlayPosition({ top: 100, left: 50 });
         }
-        
-        setOverlayPosition({ top, left });
-        
-        // Scroll element into view
-        element.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center',
-          inline: 'center'
-        });
-        
-        // Highlight the target element
-        element.style.position = 'relative';
-        element.style.zIndex = '9999';
-        element.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 0 8px rgba(59, 130, 246, 0.2)';
-        element.style.borderRadius = '8px';
-      } else {
-        setTargetElement(null);
-        setOverlayPosition({ top: 100, left: 50 });
-      }
+      };
+
+      // Start looking for the element
+      findTargetElement();
+    } else if (isActive && !currentTourStep?.target) {
+      // No target specified, just show overlay in default position
+      setTargetElement(null);
+      setOverlayPosition({ top: 100, left: 50 });
     }
 
     return () => {
@@ -74,7 +89,7 @@ export const TourOverlay = () => {
         targetElement.style.borderRadius = '';
       }
     };
-  }, [isActive, currentStep, currentTourStep, targetElement]);
+  }, [isActive, currentStep, currentTourStep]);
 
   if (!isActive || !currentTourStep) return null;
 
