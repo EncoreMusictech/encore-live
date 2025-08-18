@@ -41,7 +41,7 @@ const Auth = () => {
         // ignore and fallback
       }
       const isDemoAccount = user.email === 'demo@encoremusic.tech';
-      const defaultRedirect = isDemoAccount ? '/demo-modules' : '/';
+      const defaultRedirect = isDemoAccount ? '/dashboard' : '/';
       const from = (location.state as any)?.from?.pathname || defaultRedirect;
       navigate(from, { replace: true });
     })();
