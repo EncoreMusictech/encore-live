@@ -618,35 +618,43 @@ export function RoyaltiesAnalyticsDashboard() {
           </CardContent>
         </Card>
 
-        {/* 2. Royalties x Territory */}
+        {/* 2. Royalties x Territory - Heat Map */}
         <Card>
           <CardHeader>
             <CardTitle>Royalties x Territory</CardTitle>
-            <CardDescription>Revenue distribution by territory (top 10)</CardDescription>
+            <CardDescription>Revenue distribution by territory (heat map)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analyticsData.territory}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="name" />
-                  <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                  <Tooltip 
-                    formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
-                    labelStyle={{ color: 'hsl(var(--foreground))' }}
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px'
-                    }}
-                  />
-                  <Bar 
-                    dataKey="value" 
-                    fill="hsl(var(--secondary))" 
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="grid grid-cols-6 gap-1 h-full">
+                {analyticsData.territory.slice(0, 24).map((territory, index) => {
+                  const maxValue = Math.max(...analyticsData.territory.map(t => t.value));
+                  const intensity = maxValue > 0 ? territory.value / maxValue : 0;
+                  const opacity = Math.max(0.1, intensity);
+                  
+                  return (
+                    <div
+                      key={territory.name}
+                      className="relative group border border-border rounded-md flex flex-col items-center justify-center p-2 hover:border-primary/50 transition-all duration-200 cursor-pointer"
+                      style={{
+                        backgroundColor: `hsl(var(--primary) / ${opacity})`,
+                      }}
+                    >
+                      <div className="text-xs font-medium text-center line-clamp-2">
+                        {territory.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        ${territory.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </div>
+                      
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg border opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
+                        {territory.name}: ${territory.value.toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>
