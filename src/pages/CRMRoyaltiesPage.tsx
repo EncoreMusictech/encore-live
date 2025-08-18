@@ -13,11 +13,18 @@ import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportSt
 import { RoyaltiesDiscrepancyReport } from "@/components/royalties/RoyaltiesDiscrepancyReport";
 import { RoyaltiesAnalyticsDashboard } from "@/components/royalties/RoyaltiesAnalyticsDashboard";
 import { PayoutList } from "@/components/royalties/PayoutList";
+import { ReconciliationDashboard } from "@/components/royalties/ReconciliationDashboard";
+import { ReconciliationWorkflow } from "@/components/royalties/ReconciliationWorkflow";
+import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
+import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
+import { PayoutForm } from "@/components/royalties/PayoutForm";
 
 export default function CRMRoyaltiesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab') || 'statements';
   const [showForm, setShowForm] = useState(false);
+  const [showBatchForm, setShowBatchForm] = useState(false);
+  const [showPayoutForm, setShowPayoutForm] = useState(false);
   const [activeTab, setActiveTab] = useState(tabFromUrl);
   // Update URL when tab changes
   useEffect(() => {
@@ -83,8 +90,29 @@ export default function CRMRoyaltiesPage() {
                 Import statements, map sources for auto-detection, and review data for approval and allocation
               </p>
             </div>
+            <Button onClick={() => setShowBatchForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Batch
+            </Button>
           </div>
 
+          {showBatchForm && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Create Reconciliation Batch</CardTitle>
+                <CardDescription>
+                  Create a new batch for statement reconciliation
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ReconciliationBatchForm onCancel={() => setShowBatchForm(false)} />
+              </CardContent>
+            </Card>
+          )}
+
+          <ReconciliationDashboard />
+          <ReconciliationWorkflow />
+          <ReconciliationBatchList />
           <RoyaltiesImportStaging />
         </TabsContent>
 
@@ -140,7 +168,25 @@ export default function CRMRoyaltiesPage() {
                 Handle periodic statements and payments for clients
               </p>
             </div>
+            <Button onClick={() => setShowPayoutForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Payout
+            </Button>
           </div>
+
+          {showPayoutForm && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Create Payout</CardTitle>
+                <CardDescription>
+                  Create a new payout for client royalty distribution
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PayoutForm onCancel={() => setShowPayoutForm(false)} />
+              </CardContent>
+            </Card>
+          )}
 
           <PayoutList />
         </TabsContent>
