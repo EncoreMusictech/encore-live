@@ -844,7 +844,7 @@ Actual market values may vary significantly based on numerous factors not captur
             Advanced Catalog Valuation
           </CardTitle>
           <CardDescription>
-            Professional-grade music IP valuation using DCF modeling, risk adjustment, and industry benchmarks
+            Discover the estimated value of any artist's music catalog using real streaming data from Spotify.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
