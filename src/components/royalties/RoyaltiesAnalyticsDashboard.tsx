@@ -211,6 +211,25 @@ export function RoyaltiesAnalyticsDashboard() {
       }
     }
 
+    // Find top performing song and songwriter
+    const songPerformance = filtered.reduce((acc, allocation) => {
+      const song = allocation.song_title || 'Unknown';
+      acc[song] = (acc[song] || 0) + allocation.gross_royalty_amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const topSong = Object.entries(songPerformance)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
+    const songwriterPerformance = filtered.reduce((acc, allocation) => {
+      const songwriter = allocation.artist || 'Unknown';
+      acc[songwriter] = (acc[songwriter] || 0) + allocation.gross_royalty_amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const topSongwriter = Object.entries(songwriterPerformance)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
     return {
       mediaType: mediaTypeChartData,
       territory: territoryChartData,
@@ -218,7 +237,9 @@ export function RoyaltiesAnalyticsDashboard() {
       quarterly: quarterlyData,
       total: filtered.reduce((sum, a) => sum + a.gross_royalty_amount, 0),
       count: filtered.length,
-      averagePerRoyalty: filtered.length > 0 ? filtered.reduce((sum, a) => sum + a.gross_royalty_amount, 0) / filtered.length : 0
+      averagePerRoyalty: filtered.length > 0 ? filtered.reduce((sum, a) => sum + a.gross_royalty_amount, 0) / filtered.length : 0,
+      topSong,
+      topSongwriter
     };
   }, [allocations, dateRange, selectedWriterName, selectedTerritory, selectedSource, selectedWorkTitle, selectedMediaType, controlledWriters, batchSources]);
 
@@ -540,23 +561,23 @@ export function RoyaltiesAnalyticsDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">Top Performing Song</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analyticsData.count.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Total transactions</p>
+            <div className="text-2xl font-bold">{analyticsData.topSong || 'N/A'}</div>
+            <p className="text-xs text-muted-foreground">Highest earning track</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Transaction</CardTitle>
+            <CardTitle className="text-sm font-medium">Top Performing Songwriter</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${analyticsData.averagePerRoyalty.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
-            <p className="text-xs text-muted-foreground">Per royalty payment</p>
+            <div className="text-2xl font-bold">{analyticsData.topSongwriter || 'N/A'}</div>
+            <p className="text-xs text-muted-foreground">Highest earning artist</p>
           </CardContent>
         </Card>
       </div>
