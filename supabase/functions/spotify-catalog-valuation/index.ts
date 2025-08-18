@@ -581,14 +581,17 @@ const { data: benchmarkData } = await supabase
     // Multiple-based valuation
     const multipleValuation = Math.floor(ltmRevenue * benchmark.revenue_multiple_avg);
 
-    // Risk-adjusted valuation
+    // Risk-adjusted valuation with territory adjustments
     const catalogAge = valuationParams?.catalogAge || 5;
-    const riskAdjustedValue = ValuationEngine.calculateRiskAdjustedValue(
+    const baseRiskAdjustedValue = ValuationEngine.calculateRiskAdjustedValue(
       (dcfValuation + multipleValuation) / 2,
       artist.popularity,
       benchmark.market_risk_factor,
       catalogAge
     );
+    
+    // Apply territory-specific adjustments to final valuation
+    const riskAdjustedValue = Math.floor(baseRiskAdjustedValue * territoryBenchmarkAdjustment);
 
     // Base confidence score
     const baseConfidenceScore = ValuationEngine.calculateConfidenceScore({
