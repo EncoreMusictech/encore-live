@@ -968,7 +968,7 @@ if (primaryGenre) {
       total_streams: estimatedTotalStreams,
       monthly_listeners: artist.followers.total,
       territory_focus: territory,
-      territory_multiplier: territoryMultiplier,
+      territory_multiplier: territoryBenchmarkAdjustment,
       top_tracks: topTracks.map(track => ({
         name: track.name,
         popularity: track.popularity,
