@@ -552,7 +552,7 @@ const { data: benchmarkData } = await supabase
     // Territory-specific adjustments
     const territoryMultiplier = territory === 'us-only' ? 0.6 : territory === 'international' ? 0.4 : 1.0;
     const territoryBenchmarkAdjustment = territory === 'us-only' ? 1.2 : territory === 'international' ? 0.8 : 1.0;
-    console.log(`Territory received: "${territory}", Multiplier: ${territoryMultiplier}, Benchmark Adjustment: ${territoryBenchmarkAdjustment}`);
+    console.log(`BACKEND DEBUG: Territory received: "${territory}", Multiplier: ${territoryMultiplier}, Benchmark Adjustment: ${territoryBenchmarkAdjustment}`);
     
     // Enhanced stream estimation with genre-specific factors
     const genreMultiplier = benchmark.streams_to_revenue_ratio / 0.003; // Normalize to base rate
