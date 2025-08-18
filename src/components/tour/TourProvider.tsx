@@ -95,31 +95,241 @@ const DEMO_TOURS = {
   'catalog-valuation': {
     id: 'catalog-valuation',
     steps: [
+      // Module Overview & Navigation
+      {
+        id: 'module-overview',
+        title: 'Welcome to Catalog Valuation & Deal Analysis',
+        content: 'This comprehensive module provides AI-powered catalog valuations, deal structuring tools, and financial projections. You\'ll learn to value music catalogs, analyze deals, and save scenarios for investment decisions.',
+        target: '.space-y-6',
+        position: 'bottom' as const
+      },
       {
         id: 'tabs-overview',
-        title: 'Catalog Valuation Tools',
-        content: 'This module has three main tools: Catalog Valuation for AI-powered assessments, Deal Analysis for transaction modeling, and Song Estimator for individual track analysis.',
+        title: 'Three Powerful Tools',
+        content: 'Catalog Valuation: AI-powered instant valuations using streaming data and market benchmarks. Deal Analysis: Complete workflow for transaction modeling. Song Estimator: Individual track analysis and pipeline estimates.',
         target: '[role="tablist"]',
         position: 'bottom' as const
       },
       {
-        id: 'catalog-tab',
-        title: 'AI-Powered Catalog Valuation',
-        content: 'This tab provides instant valuations for any artist catalog using advanced AI models, streaming data, and industry benchmarks.',
+        id: 'territory-focus',
+        title: 'Territory Focus Concept',
+        content: 'All valuations can be scoped by territory (Global, US-Only, International). This affects streaming data sources, revenue multiples, and market risk factors used in calculations.',
+        target: '[role="tablist"]',
+        position: 'bottom' as const
+      },
+      
+      // Catalog Valuation Tab Deep Dive
+      {
+        id: 'catalog-tab-intro',
+        title: 'AI-Powered Catalog Valuation Engine',
+        content: 'This tab provides instant valuations using advanced algorithms that analyze Spotify data, apply industry multiples, and adjust for risk factors like genre, popularity, and catalog age.',
         target: '[value="catalog-valuation"]',
         position: 'bottom' as const
       },
       {
-        id: 'search-input',
+        id: 'catalog-search-demo',
         title: 'Try the Catalog Valuation',
-        content: 'The main Catalog Valuation tool is below. Try searching for any major artist like "Taylor Swift" or "The Weeknd" to see how the AI analysis works.',
+        content: 'Search for a major artist like "The Weeknd" or "Taylor Swift". The AI will analyze their entire catalog, calculate multiple valuation scenarios, and show comparable artist benchmarks.',
+        target: '.space-y-6',
         position: 'bottom' as const
       },
       {
-        id: 'deal-analysis-tab',
-        title: 'Deal Analysis & Simulation',
-        content: 'Click here to access deal modeling tools where you can search artists, select specific catalog assets, and run detailed financial projections.',
+        id: 'valuation-cards',
+        title: 'Understanding Valuation Results',
+        content: 'Results show Risk-Adjusted Value (primary), DCF Analysis (discounted cash flow), Market Multiple (industry comparables), and confidence scores. Charts display revenue projections and market positioning.',
+        target: '.space-y-6',
+        position: 'bottom' as const
+      },
+      
+      // Deal Analysis Workflow
+      {
+        id: 'deal-analysis-intro',
+        title: 'Deal Analysis Workflow',
+        content: 'Now let\'s explore deal modeling. This 4-step process lets you search artists, select specific assets, configure deal terms, and run financial projections. Click the Deal Analysis tab.',
         target: '[value="deal-analysis"]',
+        position: 'bottom' as const,
+        navigateTo: '/dashboard/catalog-valuation'
+      },
+      {
+        id: 'deal-tabs-overview',
+        title: 'Four-Step Deal Process',
+        content: 'Search Artist: Find and analyze target artists. Select Assets: Choose specific albums/singles. Deal Terms: Configure acquisition parameters. Saved Scenarios: Review and manage deal models.',
+        target: '.space-x-1',
+        position: 'bottom' as const
+      },
+      
+      // Step 1: Search Artist
+      {
+        id: 'search-artist-tab',
+        title: 'Step 1: Artist Discovery & Analysis',
+        content: 'Search for artists to analyze their complete discography. The system fetches real-time Spotify data including popularity scores, release history, and streaming metrics.',
+        target: '[data-tab="search"]',
+        position: 'bottom' as const
+      },
+      {
+        id: 'artist-search-input',
+        title: 'Try Searching an Artist',
+        content: 'Enter an artist name like "Billie Eilish" or "Ed Sheeran". The search will load their complete discography with popularity scores, release dates, and track counts for detailed analysis.',
+        target: 'input[placeholder*="artist"]',
+        position: 'bottom' as const
+      },
+      {
+        id: 'discography-display',
+        title: 'Artist Information & Discography',
+        content: 'View artist details, follower counts, and complete release history. Each album/single shows popularity scores (0-100) and estimated streaming potential for selection.',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      
+      // Step 2: Select Assets
+      {
+        id: 'select-assets-tab',
+        title: 'Step 2: Asset Selection & Portfolio Building',
+        content: 'Choose specific albums and singles for your deal. Each asset shows estimated annual streams based on popularity scores and track counts.',
+        target: '[data-tab="selection"]',
+        position: 'bottom' as const
+      },
+      {
+        id: 'asset-selection-process',
+        title: 'Albums vs Singles Strategy',
+        content: 'Albums: Higher risk/reward with multiple tracks. Singles: More predictable returns. Mixed portfolios balance risk. Selection affects estimated streams: Albums = Popularity × 100K × Track Count, Singles = Popularity × 200K.',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      {
+        id: 'estimated-streams',
+        title: 'Stream Calculations & Selection Impact',
+        content: 'See real-time stream estimates update as you select assets. Higher popularity scores and more tracks increase projected revenue. This forms the baseline for financial modeling.',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      
+      // Step 3: Deal Terms Configuration
+      {
+        id: 'deal-terms-tab',
+        title: 'Step 3: Deal Structure Configuration',
+        content: 'Configure the financial structure of your deal. These parameters directly impact ROI calculations, cash flow projections, and risk assessments.',
+        target: '[data-tab="terms"]',
+        position: 'bottom' as const
+      },
+      {
+        id: 'deal-type-selection',
+        title: 'Deal Type: Strategic Choice',
+        content: 'Acquisition (100% ownership): Highest control, highest investment. Licensing: Revenue share with limited terms. Co-Publishing: 50/50 partnerships with shared risk/reward.',
+        target: 'select',
+        position: 'bottom' as const
+      },
+      {
+        id: 'financial-parameters',
+        title: 'Critical Financial Parameters',
+        content: 'Upfront Advance: Initial investment amount. Recoupment Rate: % of earnings applied to advance recovery (typically 50-100%). These determine cash flow timing and breakeven points.',
+        target: '.grid',
+        position: 'bottom' as const
+      },
+      {
+        id: 'advanced-deal-terms',
+        title: 'Advanced Deal Terms',
+        content: 'Minimum Annual Guarantee: Ensures minimum payments regardless of performance. Deal Term Length: Affects terminal value calculations. Catalog Ownership %: Determines revenue share and control rights.',
+        target: '.grid',
+        position: 'bottom' as const
+      },
+      {
+        id: 'ownership-impact',
+        title: 'Ownership & Revenue Impact',
+        content: 'Catalog Ownership % directly multiplies revenue projections. Higher ownership = higher returns but typically higher acquisition costs. Balance ownership with investment capacity.',
+        target: '.grid',
+        position: 'bottom' as const
+      },
+      
+      // Step 4: Projections & Scenario Analysis
+      {
+        id: 'projection-calculation',
+        title: 'Financial Projection Engine',
+        content: 'Click "Calculate Projections" to run 5-year financial models. The system applies exponential decay curves, genre-specific risk factors, and market growth assumptions.',
+        target: 'button',
+        position: 'bottom' as const
+      },
+      {
+        id: 'projection-results',
+        title: 'Understanding Projection Results',
+        content: 'Total Projected Revenue: 5-year earnings forecast. ROI %: Return on investment after 5 years. Payback Period: Time to recover initial investment. Year-by-year cash flows show detailed earning progression.',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      {
+        id: 'roi-analysis',
+        title: 'ROI & Risk Assessment',
+        content: 'ROI calculations include advance recoupment, revenue sharing, and time value of money. Payback period indicates deal liquidity. Shorter payback = lower risk, higher confidence.',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      {
+        id: 'scenario-saving',
+        title: 'Save Deal Scenarios',
+        content: 'Save scenarios to compare multiple deals, test different terms, or present to stakeholders. Each scenario preserves all parameters, projections, and assumptions for future analysis.',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      
+      // Saved Scenarios Management
+      {
+        id: 'saved-scenarios-tab',
+        title: 'Scenario Management & Comparison',
+        content: 'View all saved deal scenarios with key metrics for quick comparison. Sort by ROI, investment size, or risk level to identify the best opportunities.',
+        target: '[data-tab="scenarios"]',
+        position: 'bottom' as const
+      },
+      {
+        id: 'scenario-comparison',
+        title: 'Deal Comparison & Portfolio Planning',
+        content: 'Compare scenarios side-by-side to optimize deal selection. Consider total investment capacity, risk tolerance, and portfolio diversification when building your catalog acquisition strategy.',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      
+      // Territory & Market Analysis
+      {
+        id: 'territory-analysis',
+        title: 'Territory Focus & Market Segmentation',
+        content: 'Switch between Global, US-Only, and International territory focus to see how geographic markets affect valuations. Different territories have varying revenue multiples and risk profiles.',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      {
+        id: 'market-conditions',
+        title: 'Market Condition Impact',
+        content: 'Territory selection affects: Revenue multiples (US: 12-15x, International: 8-12x), Risk factors (currency, regulation), Growth assumptions (mature vs emerging markets).',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      
+      // Advanced Features
+      {
+        id: 'revenue-sources',
+        title: 'Advanced: Revenue Source Management',
+        content: 'For enhanced accuracy, add additional revenue sources beyond streaming: publishing, sync licensing, merchandise, touring. Each source uses different valuation multiples.',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      {
+        id: 'comparable-analysis',
+        title: 'Comparable Artist Benchmarking',
+        content: 'The system automatically finds similar artists by genre, popularity, and catalog size to validate valuations. Comparable analysis provides market reality checks for projections.',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      {
+        id: 'export-capabilities',
+        title: 'Export & Reporting',
+        content: 'Export detailed reports, financial models, and presentations for stakeholders. All data can be downloaded for further analysis in Excel or investment committee presentations.',
+        target: '.space-y-4',
+        position: 'bottom' as const
+      },
+      {
+        id: 'workflow-complete',
+        title: 'Workflow Complete: Next Steps',
+        content: 'You\'ve learned the complete catalog valuation and deal analysis workflow. Try the Song Estimator tab for individual track analysis, or explore other modules like Contracts and Royalties for end-to-end music business management.',
+        target: '.space-y-6',
         position: 'bottom' as const
       }
     ]
