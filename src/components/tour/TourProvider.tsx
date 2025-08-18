@@ -333,35 +333,48 @@ export const TourProvider = ({ children }: { children: React.ReactNode }) => {
   const nextStep = () => {
     const currentTourStep = steps[currentStep];
     
+    console.log('nextStep called:', { 
+      currentStep, 
+      currentTourStep, 
+      navigateTo: currentTourStep?.navigateTo,
+      currentPath: location?.pathname 
+    });
+    
     if (currentStep < steps.length - 1) {
       const nextStepIndex = currentStep + 1;
-      const nextTourStep = steps[nextStepIndex];
       
-      // Navigate if the current step has a navigateTo property and navigate is available
-      if (currentTourStep?.navigateTo && navigate && location && location.pathname !== currentTourStep.navigateTo) {
-        // Update tour state immediately
-        setCurrentStep(nextStepIndex);
+      // Check if current step requires navigation
+      if (currentTourStep?.navigateTo && navigate && location) {
+        console.log('Attempting navigation:', {
+          from: location.pathname,
+          to: currentTourStep.navigateTo,
+          shouldNavigate: location.pathname !== currentTourStep.navigateTo
+        });
         
-        // Update sessionStorage
-        sessionStorage.setItem('activeTour', JSON.stringify({
-          tourId: activeTourId,
-          currentStep: nextStepIndex,
-          isActive: true
-        }));
-        
-        // Navigate to the new page
-        navigate(currentTourStep.navigateTo);
-      } else {
-        // No navigation needed, just update step
-        setCurrentStep(nextStepIndex);
-        
-        // Update sessionStorage
-        sessionStorage.setItem('activeTour', JSON.stringify({
-          tourId: activeTourId,
-          currentStep: nextStepIndex,
-          isActive: true
-        }));
+        if (location.pathname !== currentTourStep.navigateTo) {
+          // Navigate first, then update step after a delay
+          navigate(currentTourStep.navigateTo);
+          
+          // Update step after navigation with a delay
+          setTimeout(() => {
+            setCurrentStep(nextStepIndex);
+            sessionStorage.setItem('activeTour', JSON.stringify({
+              tourId: activeTourId,
+              currentStep: nextStepIndex,
+              isActive: true
+            }));
+          }, 100);
+          return;
+        }
       }
+      
+      // No navigation needed or already on correct page, just update step
+      setCurrentStep(nextStepIndex);
+      sessionStorage.setItem('activeTour', JSON.stringify({
+        tourId: activeTourId,
+        currentStep: nextStepIndex,
+        isActive: true
+      }));
     } else {
       endTour();
     }
