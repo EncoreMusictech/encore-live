@@ -173,7 +173,7 @@ export const SyncLicenseTable = ({ licenses, isLoading }: SyncLicenseTableProps)
                         disabled={generatePDFMutation.isPending}
                       >
                         <FileText className="h-4 w-4 mr-2" />
-                        {generatePDFMutation.isPending ? "Generating PDF..." : "Generate PDF (GPT-5)"}
+                        {generatePDFMutation.isPending ? "Generating..." : "Generate License"}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => handleDelete(license.id)}
