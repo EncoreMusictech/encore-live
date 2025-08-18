@@ -81,8 +81,8 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
   const [upgradeMessage, setUpgradeMessage] = useState('');
 
   // Determine if user is demo or admin
-  const isDemo = !user || user?.email === DEMO_EMAIL || user?.user_metadata?.role === 'demo'; // Unauthenticated users, demo account, or users with demo role are demo users
   const isAdmin = user?.email === ADMIN_EMAIL;
+  const isDemo = (!user || user?.email === DEMO_EMAIL || user?.user_metadata?.role === 'demo') && !isAdmin; // Unauthenticated users, demo account, or users with demo role are demo users, but exclude admin users
 
   // Load demo limits from localStorage on mount
   useEffect(() => {
