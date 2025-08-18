@@ -429,6 +429,7 @@ serve(async (req) => {
 
   try {
     const { artistName, valuationParams, catalogValuationId, userId } = await req.json();
+    const territory = valuationParams?.territory || 'global';
 
     if (!artistName) {
       throw new Error('Artist name is required');
@@ -547,15 +548,19 @@ const { data: benchmarkData } = await supabase
     // Check if industry benchmarks are missing or generic
     const hasCustomBenchmarks = benchmarkData !== null;
 
+    // Territory-specific adjustments
+    const territoryMultiplier = territory === 'us-only' ? 0.6 : territory === 'international' ? 0.4 : 1.0;
+    const territoryBenchmarkAdjustment = territory === 'us-only' ? 1.2 : territory === 'international' ? 0.8 : 1.0;
+    
     // Enhanced stream estimation with genre-specific factors
     const genreMultiplier = benchmark.streams_to_revenue_ratio / 0.003; // Normalize to base rate
     const estimatedTotalStreams = Math.floor(
-      (artist.followers.total * artist.popularity * 2.5 * genreMultiplier) + 
+      (artist.followers.total * artist.popularity * 2.5 * genreMultiplier * territoryMultiplier) + 
       topTracks.reduce((acc, track) => acc + (track.popularity * 50000), 0)
     );
 
-    // Calculate LTM Revenue estimate
-    const ltmRevenue = estimatedTotalStreams * benchmark.streams_to_revenue_ratio;
+    // Calculate LTM Revenue estimate with territory adjustments
+    const ltmRevenue = estimatedTotalStreams * benchmark.streams_to_revenue_ratio * territoryBenchmarkAdjustment;
 
     // Advanced cash flow projections using exponential decay model
     const decayRate = Math.max(0.05, 1 - benchmark.growth_rate_assumption); // Higher decay for lower growth genres
@@ -959,6 +964,8 @@ if (primaryGenre) {
       artist_name: artist.name,
       total_streams: estimatedTotalStreams,
       monthly_listeners: artist.followers.total,
+      territory_focus: territory,
+      territory_multiplier: territoryMultiplier,
       top_tracks: topTracks.map(track => ({
         name: track.name,
         popularity: track.popularity,

@@ -7,6 +7,7 @@ import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { useDebounce } from "@/hooks/usePerformanceOptimization";
 import { RevenueSourcesForm } from "@/components/catalog-valuation/RevenueSourcesForm";
 import { EnhancedValuationEngine } from "@/components/catalog-valuation/EnhancedValuationEngine";
+import { TerritoryBreakdownCard } from "@/components/catalog-valuation/TerritoryBreakdownCard";
 import { useCatalogRevenueSources } from "@/hooks/useCatalogRevenueSources";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,6 +69,8 @@ interface ValuationResult {
   artist_name: string;
   total_streams: number;
   monthly_listeners: number;
+  territory_focus?: 'global' | 'us-only' | 'international';
+  territory_multiplier?: number;
   top_tracks: TopTrack[];
   valuation_amount: number;
   currency: string;
@@ -121,6 +124,7 @@ interface ValuationParams {
   discountRate?: number;
   catalogAge?: number;
   methodology?: string;
+  territory?: 'global' | 'us-only' | 'international';
 }
 
 const CatalogValuation = memo(() => {
@@ -134,7 +138,8 @@ const CatalogValuation = memo(() => {
   const [valuationParams, setValuationParams] = useState<ValuationParams>({
     discountRate: 0.12,
     catalogAge: 5,
-    methodology: 'advanced'
+    methodology: 'advanced',
+    territory: 'global'
   });
   
   const { revenueSources, calculateRevenueMetrics, refetch } = useCatalogRevenueSources(catalogValuationId);
@@ -883,7 +888,41 @@ Actual market values may vary significantly based on numerous factors not captur
           </div>
 
           {showAdvancedInputs && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg bg-secondary/30">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-secondary/30">
+              <div className="space-y-2">
+                <Label htmlFor="territory">Territory Focus</Label>
+                <Select 
+                  value={valuationParams.territory || 'global'}
+                  onValueChange={(value: 'global' | 'us-only' | 'international') => setValuationParams(prev => ({
+                    ...prev,
+                    territory: value
+                  }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="global">
+                      <div className="flex items-center gap-2">
+                        <span>🌍</span>
+                        <span>Global Markets</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="us-only">
+                      <div className="flex items-center gap-2">
+                        <span>🇺🇸</span>
+                        <span>US-Only</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="international">
+                      <div className="flex items-center gap-2">
+                        <span>🌐</span>
+                        <span>International</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="discount-rate">Discount Rate (%)</Label>
                 <Input
@@ -1121,6 +1160,17 @@ Actual market values may vary significantly based on numerous factors not captur
                   )}
                 </CardContent>
               </Card>
+
+              {/* Territory Breakdown */}
+              {result.territory_focus && (
+                <TerritoryBreakdownCard
+                  territory={result.territory_focus}
+                  territoryMultiplier={result.territory_multiplier || 1.0}
+                  totalValuation={result.risk_adjusted_value || result.valuation_amount}
+                  domesticShare={0.7}
+                  internationalShare={0.3}
+                />
+              )}
 
               {/* Enhanced Valuation Insights */}
               {result.has_additional_revenue && (
