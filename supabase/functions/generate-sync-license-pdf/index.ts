@@ -941,7 +941,17 @@ serve(async (req) => {
       try {
         console.log('Attempting GPT-5 generation...');
         htmlContent = await generateWithGPT5(license);
-        console.log('GPT-5 generation successful');
+        
+        // Check if GPT-5 returned meaningful content
+        const bodyContent = htmlContent.match(/<body[^>]*>(.*?)<\/body>/s);
+        const hasContent = bodyContent && bodyContent[1].trim().length > 50;
+        
+        if (!hasContent) {
+          console.log('GPT-5 returned empty content, falling back to template');
+          htmlContent = await generateLicenseAgreementHTML(license, supabase);
+        } else {
+          console.log('GPT-5 generation successful with content');
+        }
       } catch (gptError) {
         console.error('GPT-5 generation failed, falling back to template:', gptError);
         htmlContent = await generateLicenseAgreementHTML(license, supabase);
