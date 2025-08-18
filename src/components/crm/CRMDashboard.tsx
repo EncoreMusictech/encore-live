@@ -212,6 +212,15 @@ export function CRMDashboard() {
         )}
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Demo Users: Show Quick Start Guide */}
+        {isDemo && (
+          <div className="lg:col-span-2 flex justify-center">
+            <QuickStartGuide />
+          </div>
+        )}
+      </div>
+
       {/* Module Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {accessibleModules.map((module) => {
@@ -243,12 +252,6 @@ export function CRMDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Demo Users: Show Quick Start Guide */}
-        {isDemo && (
-          <div className="lg:col-span-2 flex justify-center">
-            <QuickStartGuide />
-          </div>
-        )}
 
         {/* Recent Activity */}
         <Card>
