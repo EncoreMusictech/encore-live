@@ -14,6 +14,7 @@ import { useDemoAccess } from "@/hooks/useDemoAccess";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
 
 export function QuarterlyBalanceReportsTable() {
+  console.log('🔍 QuarterlyBalanceReportsTable component rendered');
   const { reports, loading, createReport, generateReportsFromData, exportToCSV } = useQuarterlyBalanceReports();
   const { user } = useAuth();
   const { isDemo } = useDemoAccess();

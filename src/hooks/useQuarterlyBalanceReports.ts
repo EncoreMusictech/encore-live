@@ -55,6 +55,8 @@ export function useQuarterlyBalanceReports() {
   const { user } = useAuth();
   const { isDemo } = useDemoAccess();
 
+  console.log('🔍 useQuarterlyBalanceReports hook initialized:', { user: !!user, isDemo });
+
   const buildEphemeralFromPayouts = async (): Promise<QuarterlyBalanceReport[]> => {
     if (!user) return [];
 
@@ -230,8 +232,10 @@ export function useQuarterlyBalanceReports() {
   };
 
   const fetchReports = async () => {
+    console.log('🔍 fetchReports called:', { user: !!user, userId: user?.id });
     try {
       if (user) {
+        console.log('🔍 User exists, proceeding with report fetch');
         // Detect if current user is a client by checking active portal access
         const { data: portalAccess } = await supabase
           .from('client_portal_access')
