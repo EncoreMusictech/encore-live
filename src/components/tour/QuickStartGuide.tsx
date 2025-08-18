@@ -23,7 +23,7 @@ const QUICK_START_MODULES = [
     title: 'Catalog Valuation',
     icon: TrendingUp,
     description: 'Get AI-powered valuations for any music catalog',
-    url: '/crm/catalog-valuation',
+    url: '/dashboard/catalog-valuation',
     steps: [
       'Search for any artist (try "Taylor Swift")',
       'Review streaming data and popularity metrics',
@@ -37,7 +37,7 @@ const QUICK_START_MODULES = [
     title: 'Contract Management',
     icon: FileText,
     description: 'Create and manage music industry agreements',
-    url: '/crm/contracts',
+    url: '/dashboard/contracts',
     steps: [
       'Choose your contract type',
       'Complete the guided 7-step form',
@@ -51,7 +51,7 @@ const QUICK_START_MODULES = [
     title: 'Copyright Registration',
     icon: Copyright,
     description: 'Register musical works and manage writer splits',
-    url: '/crm/copyright',
+    url: '/dashboard/copyright',
     steps: [
       'Enter song title and basic info',
       'Add writers and publishers',
@@ -65,7 +65,7 @@ const QUICK_START_MODULES = [
     title: 'Sync Licensing',
     icon: Film,
     description: 'Track sync opportunities and manage deals',
-    url: '/crm/sync',
+    url: '/dashboard/sync',
     steps: [
       'Log a new sync opportunity',
       'Set project details and usage terms',
@@ -79,7 +79,7 @@ const QUICK_START_MODULES = [
     title: 'Royalty Processing',
     icon: DollarSign,
     description: 'Import statements and distribute earnings',
-    url: '/crm/royalties',
+    url: '/dashboard/royalties',
     steps: [
       'Import royalty statement file',
       'Review and match songs to catalog',
