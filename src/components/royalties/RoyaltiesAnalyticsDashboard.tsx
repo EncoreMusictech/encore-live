@@ -221,9 +221,18 @@ export function RoyaltiesAnalyticsDashboard() {
     const topSong = Object.entries(songPerformance)
       .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
 
+    // Calculate top performing controlled songwriter
     const songwriterPerformance = filtered.reduce((acc, allocation) => {
-      const songwriter = allocation.artist || 'Unknown';
-      acc[songwriter] = (acc[songwriter] || 0) + allocation.gross_royalty_amount;
+      // Find controlled writers associated with this allocation
+      const associatedWriters = controlledWriters.filter(writer => 
+        allocation.song_title && writer.name
+      );
+      
+      if (associatedWriters.length > 0) {
+        associatedWriters.forEach(writer => {
+          acc[writer.name] = (acc[writer.name] || 0) + allocation.gross_royalty_amount;
+        });
+      }
       return acc;
     }, {} as Record<string, number>);
 
