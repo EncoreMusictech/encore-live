@@ -169,126 +169,136 @@ const ClientPortal = () => {
   const defaultTab = enabledTabs[0]?.id || 'overview';
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-        <div className="container mx-auto p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">Client Portal</h1>
-              <p className="text-white/80">Manage your works, contracts, and royalties</p>
-              <p className="text-sm text-white/60 mt-1">
-                Signed in as {user?.email}
-              </p>
-              <Button
-                variant="ghost"
-                onClick={() => setProfileOpen(true)}
-                className="text-white hover:bg-white/10 p-0 h-auto mt-2 text-sm"
-              >
-                My Profile
-              </Button>
+    <div className="container mx-auto py-6">
+      {invitationAccepted && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2 text-green-800">
+            <CheckCircle className="h-5 w-5" />
+            <span className="font-medium">Welcome to the Client Portal!</span>
+          </div>
+          <p className="text-green-700 mt-1">Your invitation has been accepted successfully.</p>
+        </div>
+      )}
+      
+      <header className="mb-6 brand-hero rounded-xl p-6 brand-hero-ring overflow-hidden">
+        <div className="flex items-center justify-between gap-6">
+          <div>
+            <h1 className="text-3xl font-headline">Client Portal</h1>
+            <p className="text-sm opacity-90 mt-1">Manage your works, contracts, and royalties</p>
+            {user?.email && (
+              <>
+                <p className="text-xs opacity-80 mt-2">Signed in as <span className="font-medium">{user.email}</span></p>
+                <button
+                  onClick={() => setProfileOpen(true)}
+                  className="text-sm font-semibold mt-1 opacity-90 hover:opacity-100 underline-offset-4 hover:underline"
+                  aria-label="Open My Profile"
+                >
+                  My Profile
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Avatar className="h-14 w-14 shadow-md">
+              <AvatarImage src={profile?.avatar_url || undefined} alt="Client avatar" loading="lazy" />
+              <AvatarFallback>{((profile?.first_name?.[0] || user?.email?.[0] || 'U') as string).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="text-base sm:text-lg font-medium leading-tight text-center">
+              {greeting}
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback>{((profile?.first_name?.[0] || user?.email?.[0] || 'U') as string).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div className="text-right">
-                  <p className="font-semibold">{greeting}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span className="text-sm">Secured Client Access</span>
-              </div>
-              <Button onClick={handleSignOut} variant="ghost" className="text-white hover:bg-white/10">
-                Sign Out
-              </Button>
-              <div className="w-16 h-16 bg-black/20 rounded-full flex items-center justify-center">
-                <div className="w-12 h-12 bg-black rounded-full"></div>
-              </div>
-            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Badge className="bg-background/80 text-foreground flex items-center gap-1">
+              <ShieldCheck className="h-4 w-4" /> Secured Client Access
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSignOut}
+              aria-label="Sign out of Client Portal"
+            >
+              Sign Out
+            </Button>
+            <img
+              src="/lovable-uploads/1f2a630f-1957-40bc-b85b-49b8950660a7.png"
+              alt="Spinning vinyl record illustration for Client Portal"
+              loading="lazy"
+              width={96}
+              height={96}
+              className="hidden sm:block w-24 h-24 object-contain opacity-90 animate-spin"
+              style={{ animationDuration: '12s' }}
+            />
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto p-6">
-        {invitationAccepted && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center gap-2 text-green-800">
-              <CheckCircle className="h-5 w-5" />
-              <span className="font-medium">Welcome to the Client Portal!</span>
-            </div>
-            <p className="text-green-700 mt-1">Your invitation has been accepted successfully.</p>
-          </div>
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-md max-w-[520px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>My Profile</DialogTitle>
+          </DialogHeader>
+          <ClientProfileForm
+            profile={profile as any}
+            userEmail={user?.email || ''}
+            onSaved={(p) => {
+              setProfile(p as any);
+              const name = (p.first_name as string) || (user?.email?.split('@')[0] ?? 'there');
+              setGreeting(`Welcome Back, ${name}!`);
+              setProfileOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Tabs defaultValue={defaultTab} className="w-full">
+        <TabsList className="grid grid-cols-2 lg:grid-cols-6 w-full">
+          {enabledTabs.map((tab) => (
+            <TabsTrigger 
+              key={tab.id} 
+              value={tab.id}
+              className="flex items-center gap-2"
+            >
+              <tab.icon className="h-4 w-4" />
+              <span className="hidden sm:inline">{tab.label}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          <ClientDashboardOverview permissions={permissions} />
+        </TabsContent>
+
+
+        {permissions.contracts?.enabled && (
+          <TabsContent value="contracts" className="space-y-6">
+            <ClientContracts permissions={permissions.contracts} />
+          </TabsContent>
         )}
 
-        <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
-          <DialogContent className="w-[95vw] sm:max-w-md max-w-[520px] max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>My Profile</DialogTitle>
-            </DialogHeader>
-            <ClientProfileForm
-              profile={profile as any}
-              userEmail={user?.email || ''}
-              onSaved={(p) => {
-                setProfile(p as any);
-                const name = (p.first_name as string) || (user?.email?.split('@')[0] ?? 'there');
-                setGreeting(`Welcome Back, ${name}!`);
-                setProfileOpen(false);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-
-        <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid grid-cols-2 lg:grid-cols-6 w-full">
-            {enabledTabs.map((tab) => (
-              <TabsTrigger 
-                key={tab.id} 
-                value={tab.id}
-                className="flex items-center gap-2"
-              >
-                <tab.icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <ClientDashboardOverview permissions={permissions} />
+        {permissions.copyright?.enabled && (
+          <TabsContent value="works" className="space-y-6">
+            <ClientWorks permissions={permissions.copyright} />
           </TabsContent>
+        )}
 
-          {permissions.contracts?.enabled && (
-            <TabsContent value="contracts" className="space-y-6">
-              <ClientContracts permissions={permissions.contracts} />
-            </TabsContent>
-          )}
-
-          {permissions.copyright?.enabled && (
-            <TabsContent value="works" className="space-y-6">
-              <ClientWorks permissions={permissions.copyright} />
-            </TabsContent>
-          )}
-
-          {permissions['sync-licensing']?.enabled && (
-            <TabsContent value="sync-deals" className="space-y-6">
-              <ClientSyncDeals permissions={permissions['sync-licensing']} />
-            </TabsContent>
-          )}
-
-          {permissions.royalties?.enabled && (
-            <TabsContent value="royalties" className="space-y-6">
-              <ClientRoyalties permissions={permissions.royalties} />
-            </TabsContent>
-          )}
-
-          <TabsContent value="notifications" className="space-y-6">
-            <ClientNotifications />
+        {permissions['sync-licensing']?.enabled && (
+          <TabsContent value="sync-deals" className="space-y-6">
+            <ClientSyncDeals permissions={permissions['sync-licensing']} />
           </TabsContent>
-        </Tabs>
-      </div>
+        )}
+
+        {permissions.royalties?.enabled && (
+          <TabsContent value="royalties" className="space-y-6">
+            <ClientRoyalties permissions={permissions.royalties} />
+          </TabsContent>
+        )}
+
+        <TabsContent value="notifications" className="space-y-6">
+          <ClientNotifications />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
