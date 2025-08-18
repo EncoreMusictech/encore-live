@@ -141,11 +141,10 @@ export function ContractViewDialog({ contract, open, onOpenChange, onEdit }: Con
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="h-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="parties">Parties & Splits</TabsTrigger>
             <TabsTrigger value="works">Schedule of Works</TabsTrigger>
-            <TabsTrigger value="terms">Terms & Details</TabsTrigger>
           </TabsList>
 
           <div className="overflow-y-auto max-h-[70vh] mt-4">
@@ -303,6 +302,65 @@ export function ContractViewDialog({ contract, open, onOpenChange, onEdit }: Con
                   </CardContent>
                 </Card>
               )}
+
+              {/* Contract Specific Data */}
+              {contract.contract_data && Object.keys(contract.contract_data).length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Contract Specific Data
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {Object.entries(contract.contract_data).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="font-medium">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span>
+                          <span>{value?.toString() || 'N/A'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Royalty Split Configuration */}
+              {contract.royalty_splits && Object.keys(contract.royalty_splits).length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Royalty Split Configuration
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {Object.entries(contract.royalty_splits).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="font-medium">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span>
+                          <span>{value?.toString() || 'N/A'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Additional Notes */}
+              {contract.notes && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Additional Notes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm whitespace-pre-wrap">{contract.notes}</p>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="parties" className="space-y-6 mt-0">
@@ -419,210 +477,6 @@ export function ContractViewDialog({ contract, open, onOpenChange, onEdit }: Con
               )}
             </TabsContent>
 
-            <TabsContent value="terms" className="space-y-6 mt-0">
-              {/* Terms & Details Tab with improved layout */}
-              <div className="flex gap-6 h-[60vh]">
-                {/* Left Sidebar - Navigation */}
-                <div className="w-64 space-y-2">
-                  <div className="p-4 border rounded-lg bg-muted/30">
-                    <h3 className="font-semibold text-sm text-muted-foreground mb-3">QUICK NAVIGATION</h3>
-                    <nav className="space-y-1">
-                      <Button variant="ghost" size="sm" className="w-full justify-start h-8" onClick={() => document.getElementById('financial-section')?.scrollIntoView()}>
-                        <DollarSign className="h-3 w-3 mr-2" />
-                        Financial Terms
-                      </Button>
-                      <Button variant="ghost" size="sm" className="w-full justify-start h-8" onClick={() => document.getElementById('contract-section')?.scrollIntoView()}>
-                        <FileText className="h-3 w-3 mr-2" />
-                        Contract Data
-                      </Button>
-                      <Button variant="ghost" size="sm" className="w-full justify-start h-8" onClick={() => document.getElementById('splits-section')?.scrollIntoView()}>
-                        <Users className="h-3 w-3 mr-2" />
-                        Royalty Splits
-                      </Button>
-                      <Button variant="ghost" size="sm" className="w-full justify-start h-8" onClick={() => document.getElementById('notes-section')?.scrollIntoView()}>
-                        <FileSignature className="h-3 w-3 mr-2" />
-                        Notes
-                      </Button>
-                    </nav>
-                  </div>
-
-                  {/* Contract Summary Card */}
-                  <div className="p-4 border rounded-lg">
-                    <h3 className="font-semibold text-sm text-muted-foreground mb-3">CONTRACT SUMMARY</h3>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Type:</span>
-                        <span className="font-medium">{formatContractType(contract.contract_type)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Status:</span>
-                        <Badge className={`${getStatusColor(contract.contract_status)} text-xs`}>
-                          {contract.contract_status}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Version:</span>
-                        <span className="font-medium">v{contract.version}</span>
-                      </div>
-                      <Separator className="my-2" />
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Parties:</span>
-                        <span className="font-medium">{interestedParties.length}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Works:</span>
-                        <span className="font-medium">{scheduleWorks.length}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Main Content Area */}
-                <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-                  {/* Financial Terms Section */}
-                  <div id="financial-section">
-                    <Card className="border-l-4 border-l-primary">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                          <DollarSign className="h-5 w-5 text-primary" />
-                          Financial Terms
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 gap-4">
-                          {contract.advance_amount !== undefined && contract.advance_amount > 0 && (
-                            <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span className="text-sm font-medium text-green-700">Advance Amount</span>
-                              </div>
-                              <p className="text-2xl font-bold text-green-800">${contract.advance_amount.toLocaleString()}</p>
-                            </div>
-                          )}
-                          {contract.commission_percentage !== undefined && contract.commission_percentage > 0 && (
-                            <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                <span className="text-sm font-medium text-blue-700">Commission Rate</span>
-                              </div>
-                              <p className="text-2xl font-bold text-blue-800">{contract.commission_percentage}%</p>
-                            </div>
-                          )}
-                          {contract.rate_reduction_percentage !== undefined && contract.rate_reduction_percentage > 0 && (
-                            <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border border-orange-200">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                                <span className="text-sm font-medium text-orange-700">Rate Reduction</span>
-                              </div>
-                              <p className="text-2xl font-bold text-orange-800">{contract.rate_reduction_percentage}%</p>
-                            </div>
-                          )}
-                          {contract.controlled_percentage !== undefined && contract.controlled_percentage > 0 && (
-                            <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                                <span className="text-sm font-medium text-purple-700">Controlled Share</span>
-                              </div>
-                              <p className="text-2xl font-bold text-purple-800">{contract.controlled_percentage}%</p>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Contract Data Section */}
-                  {contract.contract_data && Object.keys(contract.contract_data).length > 0 && (
-                    <div id="contract-section">
-                      <Card className="border-l-4 border-l-blue-500">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center gap-2 text-lg">
-                            <FileText className="h-5 w-5 text-blue-500" />
-                            Contract Specific Terms
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid gap-3">
-                            {Object.entries(contract.contract_data).map(([key, value]) => (
-                              <div key={key} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                <span className="font-medium capitalize text-gray-700">{key.replace(/_/g, ' ')}</span>
-                                <span className="text-gray-600 font-mono text-sm bg-white px-2 py-1 rounded border">{String(value)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
-
-                  {/* Royalty Splits Section */}
-                  {contract.royalty_splits && Object.keys(contract.royalty_splits).length > 0 && (
-                    <div id="splits-section">
-                      <Card className="border-l-4 border-l-emerald-500">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center gap-2 text-lg">
-                            <Users className="h-5 w-5 text-emerald-500" />
-                            Royalty Split Configuration
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid gap-3">
-                            {Object.entries(contract.royalty_splits).map(([key, value]) => (
-                              <div key={key} className="flex justify-between items-center p-3 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors">
-                                <span className="font-medium capitalize text-emerald-700">{key.replace(/_/g, ' ')}</span>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-emerald-600 font-mono text-sm bg-white px-2 py-1 rounded border">{String(value)}</span>
-                                  {typeof value === 'number' && value <= 100 && (
-                                    <div className="w-16 h-2 bg-emerald-200 rounded-full overflow-hidden">
-                                      <div 
-                                        className="h-full bg-emerald-500 transition-all duration-300"
-                                        style={{ width: `${value}%` }}
-                                      ></div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
-
-                  {/* Notes Section */}
-                  {contract.notes && (
-                    <div id="notes-section">
-                      <Card className="border-l-4 border-l-amber-500">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center gap-2 text-lg">
-                            <FileSignature className="h-5 w-5 text-amber-500" />
-                            Additional Notes
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                            <p className="text-sm whitespace-pre-wrap text-amber-800 leading-relaxed">{contract.notes}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
-
-                  {/* Empty State */}
-                  {(!contract.contract_data || Object.keys(contract.contract_data).length === 0) &&
-                   (!contract.royalty_splits || Object.keys(contract.royalty_splits).length === 0) &&
-                   !contract.notes && (
-                     <Card className="border-dashed border-2">
-                       <CardContent className="p-12 text-center">
-                         <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                         <h3 className="text-lg font-semibold mb-2 text-muted-foreground">No Additional Terms</h3>
-                         <p className="text-muted-foreground">This contract doesn't have any additional terms, royalty splits, or notes configured.</p>
-                       </CardContent>
-                     </Card>
-                   )}
-                </div>
-              </div>
-            </TabsContent>
           </div>
         </Tabs>
       </DialogContent>
