@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { ReconciliationBatchForm } from "./ReconciliationBatchForm";
 import { ProcessBatchDialog } from "./ProcessBatchDialog";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export function ReconciliationBatchList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,9 +23,56 @@ export function ReconciliationBatchList() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [processingBatch, setProcessingBatch] = useState<any>(null);
   const [editingBatch, setEditingBatch] = useState<any>(null);
+  const [batchProgressData, setBatchProgressData] = useState<Map<string, { progress: number; allocatedAmount: number }>>(new Map());
   
   const { batches, loading, deleteBatch, refreshBatches } = useReconciliationBatches();
   const { allocations } = useRoyaltyAllocations();
+  const { user } = useAuth();
+
+  // Calculate progress for all batches
+  useEffect(() => {
+    const calculateAllProgress = async () => {
+      if (!user || !batches.length) return;
+      
+      const progressMap = new Map();
+      
+      for (const batch of batches) {
+        // Get linked royalties (allocations with batch_id)
+        const batchAllocations = allocations.filter(a => a.batch_id === batch.id);
+        const linkedRoyaltiesTotal = batchAllocations.reduce((sum, a) => sum + a.gross_royalty_amount, 0);
+        
+        // Get statement royalties if there's a linked statement
+        let statementRoyaltiesTotal = 0;
+        if (batch.linked_statement_id) {
+          try {
+            const { data: statementRoyalties } = await supabase
+              .from('royalty_allocations')
+              .select('*')
+              .eq('user_id', user.id)
+              .or(`statement_id.eq.${batch.linked_statement_id},staging_record_id.eq.${batch.linked_statement_id}`);
+            
+            if (statementRoyalties && statementRoyalties.length > 0) {
+              statementRoyaltiesTotal = statementRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
+            }
+          } catch (error) {
+            console.error('Error fetching statement royalties for progress calculation:', error);
+          }
+        }
+        
+        const totalAllocatedAmount = linkedRoyaltiesTotal + statementRoyaltiesTotal;
+        const progress = batch.total_gross_amount > 0 ? (totalAllocatedAmount / batch.total_gross_amount) * 100 : 0;
+        
+        progressMap.set(batch.id, {
+          progress,
+          allocatedAmount: totalAllocatedAmount
+        });
+      }
+      
+      setBatchProgressData(progressMap);
+    };
+    
+    calculateAllProgress();
+  }, [batches, allocations, user]);
 
   const filteredBatches = batches.filter(batch => {
     const matchesSearch = batch.batch_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -31,16 +80,15 @@ export function ReconciliationBatchList() {
     const matchesStatus = statusFilter === "all" || batch.status === statusFilter;
     const matchesSource = sourceFilter === "all" || batch.source === sourceFilter;
     
-    // Calculate reconciliation progress for filtering
-    const batchAllocations = allocations.filter(a => a.batch_id === batch.id);
-    const allocatedAmount = batchAllocations.reduce((sum, a) => sum + a.gross_royalty_amount, 0);
-    const reconciliationProgress = batch.total_gross_amount > 0 ? (allocatedAmount / batch.total_gross_amount) * 100 : 0;
+    // Use calculated progress for filtering
+    const progressData = batchProgressData.get(batch.id);
+    const reconciliationProgress = progressData?.progress || 0;
     
     let matchesReconciliation = true;
     if (reconciliationFilter === "complete") {
-      matchesReconciliation = reconciliationProgress >= 100;
+      matchesReconciliation = Math.abs(reconciliationProgress - 100) < 0.01;
     } else if (reconciliationFilter === "incomplete") {
-      matchesReconciliation = reconciliationProgress < 100;
+      matchesReconciliation = Math.abs(reconciliationProgress - 100) >= 0.01;
     }
     
     return matchesSearch && matchesStatus && matchesSource && matchesReconciliation;
@@ -82,23 +130,16 @@ export function ReconciliationBatchList() {
     }
   };
 
-  const calculateProgress = (batch: any) => {
-    const batchAllocations = allocations.filter(a => a.batch_id === batch.id);
-    const allocatedAmount = batchAllocations.reduce((sum, a) => sum + a.gross_royalty_amount, 0);
-    return batch.total_gross_amount > 0 ? (allocatedAmount / batch.total_gross_amount) * 100 : 0;
-  };
-
-  const getBatchStatus = (batch: any) => {
-    const progress = calculateProgress(batch);
-    if (progress === 100) {
+  const getBatchStatus = (progress: number) => {
+    if (Math.abs(progress - 100) < 0.01) { // Account for floating point precision
       return 'Complete';
     } else {
       return 'Incomplete';
     }
   };
 
-  const canProcessBatch = (batch: any) => {
-    const status = getBatchStatus(batch);
+  const canProcessBatch = (progress: number, batch: any) => {
+    const status = getBatchStatus(progress);
     return status === 'Complete' && batch.status !== 'Processed';
   };
 
@@ -176,9 +217,9 @@ export function ReconciliationBatchList() {
           </TableHeader>
           <TableBody>
             {filteredBatches.map((batch) => {
-              const progress = calculateProgress(batch);
-              const batchAllocations = allocations.filter(a => a.batch_id === batch.id);
-              const allocatedAmount = batchAllocations.reduce((sum, a) => sum + a.gross_royalty_amount, 0);
+              const progressData = batchProgressData.get(batch.id);
+              const progress = progressData?.progress || 0;
+              const allocatedAmount = progressData?.allocatedAmount || 0;
               
               return (
                 <TableRow key={batch.id}>
@@ -203,8 +244,8 @@ export function ReconciliationBatchList() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(getBatchStatus(batch))}>
-                      {getBatchStatus(batch)}
+                    <Badge className={getStatusColor(getBatchStatus(progress))}>
+                      {getBatchStatus(progress)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -220,7 +261,7 @@ export function ReconciliationBatchList() {
                         variant="ghost" 
                         size="sm"
                         onClick={() => setProcessingBatch(batch)}
-                        disabled={!canProcessBatch(batch)}
+                        disabled={!canProcessBatch(progress, batch)}
                       >
                         <Play className="h-4 w-4" />
                       </Button>
