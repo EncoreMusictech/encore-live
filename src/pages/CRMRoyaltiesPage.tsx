@@ -18,14 +18,16 @@ import { ReconciliationWorkflow } from "@/components/royalties/ReconciliationWor
 import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBatchList";
 import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
 import { PayoutForm } from "@/components/royalties/PayoutForm";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 
 export default function CRMRoyaltiesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab') || 'statements';
   const [showForm, setShowForm] = useState(false);
-  const [showBatchForm, setShowBatchForm] = useState(false);
   const [showPayoutForm, setShowPayoutForm] = useState(false);
+  const [showBatchForm, setShowBatchForm] = useState(false);
   const [activeTab, setActiveTab] = useState(tabFromUrl);
+  const { incrementUsage, canAccess } = useDemoAccess();
   // Update URL when tab changes
   useEffect(() => {
     setSearchParams({ tab: activeTab });
@@ -85,23 +87,40 @@ export default function CRMRoyaltiesPage() {
         <TabsContent value="statements" className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-semibold">Statements</h2>
+              <h2 className="text-xl font-semibold">Reconciliation</h2>
               <p className="text-muted-foreground">
-                Import statements, map sources for auto-detection, and review data for approval and allocation
+                Import and manage reconciliation batches from royalty statements
               </p>
             </div>
-            <Button onClick={() => setShowBatchForm(true)} className="gap-2">
+            <Button 
+              onClick={() => {
+                if (canAccess('royaltiesProcessing')) {
+                  setShowBatchForm(true);
+                  incrementUsage('royaltiesProcessing');
+                } else {
+                  // Show upgrade modal or limit reached message
+                }
+              }} 
+              className="gap-2"
+            >
               <Plus className="h-4 w-4" />
               New Batch
             </Button>
           </div>
 
+          {/* Reconciliation Dashboard */}
+          <ReconciliationDashboard />
+
+          {/* Reconciliation Workflow */}
+          <ReconciliationWorkflow />
+
+          {/* Batch Form Modal */}
           {showBatchForm && (
             <Card>
               <CardHeader>
-                <CardTitle>Create Reconciliation Batch</CardTitle>
+                <CardTitle>Create New Reconciliation Batch</CardTitle>
                 <CardDescription>
-                  Create a new batch for statement reconciliation
+                  Import and process a new royalty statement
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -110,9 +129,20 @@ export default function CRMRoyaltiesPage() {
             </Card>
           )}
 
-          <ReconciliationDashboard />
-          <ReconciliationWorkflow />
-          <ReconciliationBatchList />
+          {/* Batch List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Reconciliation Batches</CardTitle>
+              <CardDescription>
+                View and manage all imported reconciliation batches
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ReconciliationBatchList />
+            </CardContent>
+          </Card>
+
+          {/* Import Staging (Legacy) */}
           <RoyaltiesImportStaging />
         </TabsContent>
 
@@ -163,23 +193,34 @@ export default function CRMRoyaltiesPage() {
         <TabsContent value="payouts" className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-semibold">Payouts</h2>
+              <h2 className="text-xl font-semibold">Payouts & Client Accounting</h2>
               <p className="text-muted-foreground">
-                Handle periodic statements and payments for clients
+                Handle periodic statements and payments for clients with automated calculations
               </p>
             </div>
-            <Button onClick={() => setShowPayoutForm(true)} className="gap-2">
+            <Button 
+              onClick={() => {
+                if (canAccess('royaltiesProcessing')) {
+                  setShowPayoutForm(true);
+                  incrementUsage('royaltiesProcessing');
+                } else {
+                  // Show upgrade modal or limit reached message
+                }
+              }} 
+              className="gap-2"
+            >
               <Plus className="h-4 w-4" />
               New Payout
             </Button>
           </div>
 
+          {/* Payout Form Modal */}
           {showPayoutForm && (
             <Card>
               <CardHeader>
-                <CardTitle>Create Payout</CardTitle>
+                <CardTitle>Create New Payout</CardTitle>
                 <CardDescription>
-                  Create a new payout for client royalty distribution
+                  Generate a new payout statement for a client
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -188,6 +229,7 @@ export default function CRMRoyaltiesPage() {
             </Card>
           )}
 
+          {/* Payout List */}
           <PayoutList />
         </TabsContent>
 
