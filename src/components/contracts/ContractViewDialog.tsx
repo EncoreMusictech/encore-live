@@ -257,27 +257,64 @@ export function ContractViewDialog({ contract, open, onOpenChange, onEdit }: Con
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {contract.advance_amount !== undefined && contract.advance_amount > 0 && (
-                      <div className="text-center p-4 border rounded-lg">
+                      <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-green-50 to-green-100">
                         <p className="text-2xl font-bold text-green-600">${contract.advance_amount.toLocaleString()}</p>
                         <p className="text-sm text-muted-foreground">Advance Amount</p>
+                        <p className="text-xs text-green-600 mt-1">Recoupable</p>
                       </div>
                     )}
                     {contract.commission_percentage !== undefined && contract.commission_percentage > 0 && (
-                      <div className="text-center p-4 border rounded-lg">
+                      <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-blue-50 to-blue-100">
                         <p className="text-2xl font-bold text-blue-600">{contract.commission_percentage}%</p>
-                        <p className="text-sm text-muted-foreground">Commission</p>
+                        <p className="text-sm text-muted-foreground">Commission Rate</p>
+                        <p className="text-xs text-blue-600 mt-1">Of Net Receipts</p>
                       </div>
                     )}
                     {contract.rate_reduction_percentage !== undefined && contract.rate_reduction_percentage > 0 && (
-                      <div className="text-center p-4 border rounded-lg">
+                      <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-orange-50 to-orange-100">
                         <p className="text-2xl font-bold text-orange-600">{contract.rate_reduction_percentage}%</p>
                         <p className="text-sm text-muted-foreground">Rate Reduction</p>
+                        <p className="text-xs text-orange-600 mt-1">Applied to Royalties</p>
                       </div>
                     )}
                     {contract.controlled_percentage !== undefined && contract.controlled_percentage > 0 && (
-                      <div className="text-center p-4 border rounded-lg">
+                      <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-purple-50 to-purple-100">
                         <p className="text-2xl font-bold text-purple-600">{contract.controlled_percentage}%</p>
                         <p className="text-sm text-muted-foreground">Controlled Share</p>
+                        <p className="text-xs text-purple-600 mt-1">Publishing Rights</p>
+                      </div>
+                    )}
+                    
+                    {/* Additional Financial Terms */}
+                    {contract.financial_terms?.minimum_guarantee && (
+                      <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-teal-50 to-teal-100">
+                        <p className="text-2xl font-bold text-teal-600">${contract.financial_terms.minimum_guarantee.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">Minimum Guarantee</p>
+                        <p className="text-xs text-teal-600 mt-1">Annual</p>
+                      </div>
+                    )}
+                    
+                    {contract.contract_data?.term_years && (
+                      <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-indigo-50 to-indigo-100">
+                        <p className="text-2xl font-bold text-indigo-600">{contract.contract_data.term_years}</p>
+                        <p className="text-sm text-muted-foreground">Contract Term</p>
+                        <p className="text-xs text-indigo-600 mt-1">Years</p>
+                      </div>
+                    )}
+                    
+                    {contract.financial_terms?.recoupment_rate && (
+                      <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-pink-50 to-pink-100">
+                        <p className="text-2xl font-bold text-pink-600">{contract.financial_terms.recoupment_rate}%</p>
+                        <p className="text-sm text-muted-foreground">Recoupment Rate</p>
+                        <p className="text-xs text-pink-600 mt-1">Of Earnings</p>
+                      </div>
+                    )}
+                    
+                    {contract.contract_data?.renewal_options && (
+                      <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-amber-50 to-amber-100">
+                        <p className="text-2xl font-bold text-amber-600">{contract.contract_data.renewal_options}</p>
+                        <p className="text-sm text-muted-foreground">Renewal Options</p>
+                        <p className="text-xs text-amber-600 mt-1">Available</p>
                       </div>
                     )}
                   </div>
