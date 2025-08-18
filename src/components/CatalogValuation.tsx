@@ -1171,8 +1171,12 @@ Actual market values may vary significantly based on numerous factors not captur
                 <TerritoryBreakdownCard
                   territory={result.territory_focus || valuationParams.territory}
                   territoryMultiplier={(() => {
-                    console.log(`FRONTEND DEBUG: territory_multiplier from API: ${result.territory_multiplier}, fallback: 1.0`);
-                    return result.territory_multiplier || 1.0;
+                    const selectedTerritory = result.territory_focus || valuationParams.territory;
+                    // Calculate correct multiplier based on territory
+                    const correctMultiplier = selectedTerritory === 'international' ? 0.8 : 
+                                            selectedTerritory === 'us-only' ? 1.2 : 1.0;
+                    console.log(`FRONTEND DEBUG: Using calculated multiplier: ${correctMultiplier} for territory: ${selectedTerritory}`);
+                    return correctMultiplier;
                   })()}
                   totalValuation={result.risk_adjusted_value || result.valuation_amount}
                   domesticShare={0.7}
