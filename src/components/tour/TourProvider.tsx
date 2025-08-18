@@ -47,41 +47,41 @@ const DEMO_TOURS = {
         id: 'catalog-valuation',
         title: 'Catalog Valuation',
         content: 'Start here! Search for any artist to see AI-powered catalog valuations, streaming analytics, and deal projections. This gives you market insights for investment decisions. Click Next to visit this module.',
-        target: '[href="/crm/catalog-valuation"]',
+        target: '[href="/dashboard/catalog-valuation"]',
         position: 'bottom' as const,
-        navigateTo: '/crm/catalog-valuation'
+        navigateTo: '/dashboard/catalog-valuation'
       },
       {
         id: 'contracts',
         title: 'Contract Management',
         content: 'Create and manage publishing agreements, artist contracts, sync licenses, and more. Upload existing contracts or use our guided forms. Click Next to visit this module.',
-        target: '[href="/crm/contracts"]',
+        target: '[href="/dashboard/contracts"]',
         position: 'bottom' as const,
-        navigateTo: '/crm/contracts'
+        navigateTo: '/dashboard/contracts'
       },
       {
         id: 'copyright',
         title: 'Copyright Registration',
         content: 'Register your musical works, manage writer splits, and prepare CWR files for PRO submissions. Essential for royalty collection. Click Next to visit this module.',
-        target: '[href="/crm/copyright"]',
+        target: '[href="/dashboard/copyright"]',
         position: 'bottom' as const,
-        navigateTo: '/crm/copyright'
+        navigateTo: '/dashboard/copyright'
       },
       {
         id: 'sync',
         title: 'Sync Licensing',
         content: 'Track sync opportunities, manage licensing deals, and generate invoices for TV, film, and advertising placements. Click Next to visit this module.',
-        target: '[href="/crm/sync"]',
+        target: '[href="/dashboard/sync"]',
         position: 'bottom' as const,
-        navigateTo: '/crm/sync'
+        navigateTo: '/dashboard/sync'
       },
       {
         id: 'royalties',
         title: 'Royalty Processing',
         content: 'Import statements, reconcile earnings, allocate payments to writers and publishers, and generate detailed reports. Click Next to visit this module.',
-        target: '[href="/crm/royalties"]',
+        target: '[href="/dashboard/royalties"]',
         position: 'bottom' as const,
-        navigateTo: '/crm/royalties'
+        navigateTo: '/dashboard/royalties'
       },
       {
         id: 'quick-actions',
