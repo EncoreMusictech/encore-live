@@ -124,78 +124,54 @@ export function ReconciliationBatchForm({ onCancel, onSuccess, batch }: Reconcil
   }, [user]);
 
   // Fetch royalties from linked statement
-  const fetchStatementRoyalties = async (statementId: string) => {
-    if (!user || !statementId) {
+  const fetchStatementRoyalties = async (stagingUuid: string) => {
+    if (!user || !stagingUuid) {
       setStatementRoyalties([]);
       return;
     }
     
     console.log('=== FETCHING STATEMENT ROYALTIES ===');
-    console.log('Statement ID:', statementId);
+    console.log('Staging UUID:', stagingUuid);
     
     try {
-      let royalties: any[] = [];
+      // First, get the statement_id from the staging record
+      const { data: stagingRecord, error: stagingError } = await supabase
+        .from('royalties_import_staging')
+        .select('statement_id')
+        .eq('id', stagingUuid)
+        .single();
       
-      // 1. Try direct statement_id match first
-      const { data: directRoyalties, error } = await supabase
+      if (stagingError) {
+        console.error('Error fetching staging record:', stagingError);
+        setStatementRoyalties([]);
+        return;
+      }
+      
+      if (!stagingRecord?.statement_id) {
+        console.log('No statement_id found in staging record');
+        setStatementRoyalties([]);
+        return;
+      }
+      
+      console.log('Found statement_id:', stagingRecord.statement_id);
+      
+      // Now fetch royalties using the statement_id
+      const { data: statementRoyalties, error: royaltiesError } = await supabase
         .from('royalty_allocations')
         .select('*')
         .eq('user_id', user.id)
-        .eq('statement_id', statementId);
-
-      console.log('Direct statement royalties found:', directRoyalties?.length || 0);
-      if (error) {
-        console.error('Error fetching direct statement royalties:', error);
+        .eq('statement_id', stagingRecord.statement_id);
+      
+      if (royaltiesError) {
+        console.error('Error fetching statement royalties:', royaltiesError);
+        setStatementRoyalties([]);
+        return;
       }
       
-      if (directRoyalties && directRoyalties.length > 0) {
-        royalties = directRoyalties;
-      }
+      console.log('Statement royalties found:', statementRoyalties?.length || 0);
+      console.log('Total amount from statement royalties:', statementRoyalties?.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0) || 0);
       
-      // 2. If no direct match, try staging_record_id
-      if (royalties.length === 0) {
-        const { data: stagingRoyalties, error: stagingError } = await supabase
-          .from('royalty_allocations')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('staging_record_id', statementId);
-          
-        console.log('Staging record royalties found:', stagingRoyalties?.length || 0);
-        if (stagingError) {
-          console.error('Error fetching staging royalties:', stagingError);
-        }
-        
-        if (stagingRoyalties && stagingRoyalties.length > 0) {
-          royalties = stagingRoyalties;
-        }
-      }
-      
-      // 3. If still no royalties found, try to find by import source and date
-      if (royalties.length === 0) {
-        try {
-          // Simple approach: just get unlinked royalties that might belong to this statement
-          const { data: unlinkedRoyalties } = await supabase
-            .from('royalty_allocations')
-            .select('*')
-            .eq('user_id', user.id)
-            .is('batch_id', null);
-          
-          // If we have unlinked royalties, we'll show them all for now
-          // This is a simplified approach to avoid TypeScript complexity
-          if (unlinkedRoyalties && unlinkedRoyalties.length > 0) {
-            console.log('Found unlinked royalties:', unlinkedRoyalties.length);
-            // For now, we'll just take the unlinked royalties
-            // In a more sophisticated implementation, we could filter by creation date or source
-            royalties = unlinkedRoyalties.slice(0, 10); // Limit to first 10 to avoid overwhelming UI
-          }
-        } catch (err) {
-          console.log('Error finding unlinked royalties:', err);
-        }
-      }
-      
-      console.log('Final statement royalties:', royalties);
-      console.log('Total amount from statement royalties:', royalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0));
-      setStatementRoyalties(royalties || []);
+      setStatementRoyalties(statementRoyalties || []);
     } catch (error) {
       console.error('Error fetching statement royalties:', error);
       setStatementRoyalties([]);
