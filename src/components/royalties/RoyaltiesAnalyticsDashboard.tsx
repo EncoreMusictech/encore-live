@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import TerritoryWorldMap from './TerritoryWorldMap';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))', 'hsl(var(--destructive))'];
 
@@ -618,139 +619,8 @@ export function RoyaltiesAnalyticsDashboard() {
           </CardContent>
         </Card>
 
-        {/* 2. Royalties x Territory - Geographic Heat Map */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Royalties x Territory</CardTitle>
-            <CardDescription>Revenue distribution by territory (world map)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80 bg-muted/20 rounded-lg relative overflow-hidden">
-              {/* World Map SVG Background */}
-              <svg 
-                viewBox="0 0 1000 500" 
-                className="absolute inset-0 w-full h-full"
-                style={{ background: 'hsl(var(--muted) / 0.1)' }}
-              >
-                {/* Simplified world map paths */}
-                <g fill="hsl(var(--muted) / 0.3)" stroke="hsl(var(--border))" strokeWidth="0.5">
-                  {/* North America */}
-                  <path d="M 100 120 L 200 100 L 250 140 L 200 200 L 120 180 Z" />
-                  {/* South America */}
-                  <path d="M 180 220 L 220 210 L 240 280 L 200 320 L 170 300 Z" />
-                  {/* Europe */}
-                  <path d="M 400 100 L 480 90 L 500 130 L 460 150 L 420 140 Z" />
-                  {/* Africa */}
-                  <path d="M 440 150 L 520 140 L 540 220 L 510 280 L 460 270 L 450 200 Z" />
-                  {/* Asia */}
-                  <path d="M 500 90 L 700 80 L 750 150 L 700 200 L 520 180 L 500 130 Z" />
-                  {/* Australia/Oceania */}
-                  <path d="M 720 280 L 780 270 L 800 300 L 770 320 L 730 310 Z" />
-                </g>
-              </svg>
-
-              {/* Territory Bubbles */}
-              <div className="absolute inset-0">
-                {analyticsData.territory.map((territory, index) => {
-                  const maxValue = Math.max(...analyticsData.territory.map(t => t.value));
-                  const normalizedValue = maxValue > 0 ? territory.value / maxValue : 0;
-                  const bubbleSize = Math.max(8, normalizedValue * 40);
-                  
-                  // Territory positions on the map (approximate)
-                  const territoryPositions: Record<string, { x: number; y: number; color: string }> = {
-                    'United States': { x: 150, y: 150, color: 'hsl(39, 84%, 56%)' }, // Orange
-                    'Canada': { x: 130, y: 120, color: 'hsl(39, 84%, 56%)' },
-                    'Mexico': { x: 140, y: 180, color: 'hsl(39, 84%, 56%)' },
-                    'Brazil': { x: 200, y: 250, color: 'hsl(20, 90%, 50%)' }, // Red-orange
-                    'Argentina': { x: 190, y: 290, color: 'hsl(20, 90%, 50%)' },
-                    'United Kingdom': { x: 430, y: 110, color: 'hsl(220, 84%, 56%)' }, // Blue
-                    'Germany': { x: 460, y: 120, color: 'hsl(220, 84%, 56%)' },
-                    'France': { x: 440, y: 130, color: 'hsl(220, 84%, 56%)' },
-                    'Spain': { x: 420, y: 150, color: 'hsl(220, 84%, 56%)' },
-                    'Italy': { x: 470, y: 140, color: 'hsl(220, 84%, 56%)' },
-                    'Russia': { x: 600, y: 120, color: 'hsl(220, 84%, 56%)' },
-                    'China': { x: 650, y: 150, color: 'hsl(180, 84%, 56%)' }, // Teal
-                    'Japan': { x: 720, y: 140, color: 'hsl(180, 84%, 56%)' },
-                    'India': { x: 580, y: 170, color: 'hsl(180, 84%, 56%)' },
-                    'South Korea': { x: 710, y: 150, color: 'hsl(180, 84%, 56%)' },
-                    'Australia': { x: 750, y: 290, color: 'hsl(120, 60%, 50%)' }, // Green
-                    'New Zealand': { x: 780, y: 310, color: 'hsl(120, 60%, 50%)' },
-                    'South Africa': { x: 480, y: 270, color: 'hsl(320, 84%, 56%)' }, // Pink
-                    'Nigeria': { x: 450, y: 200, color: 'hsl(320, 84%, 56%)' },
-                    'Kenya': { x: 500, y: 220, color: 'hsl(320, 84%, 56%)' },
-                  };
-
-                  const position = territoryPositions[territory.name] || { 
-                    x: 100 + (index % 8) * 100, 
-                    y: 150 + Math.floor(index / 8) * 60, 
-                    color: 'hsl(var(--primary))' 
-                  };
-
-                  return (
-                    <div
-                      key={territory.name}
-                      className="absolute group cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 hover:scale-110"
-                      style={{
-                        left: `${position.x / 10}%`,
-                        top: `${position.y / 5}%`,
-                      }}
-                    >
-                      {/* Bubble */}
-                      <div
-                        className="rounded-full border-2 border-white shadow-lg"
-                        style={{
-                          width: `${bubbleSize}px`,
-                          height: `${bubbleSize}px`,
-                          backgroundColor: position.color,
-                          opacity: 0.8,
-                        }}
-                      />
-                      
-                      {/* Tooltip */}
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-popover text-popover-foreground text-sm rounded-lg shadow-lg border opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
-                        <div className="font-medium">{territory.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          ${territory.value.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Legend */}
-              <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-lg p-3 border text-xs">
-                <div className="font-medium mb-2">Continents</div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(220, 84%, 56%)' }}></div>
-                    <span>Europe</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(180, 84%, 56%)' }}></div>
-                    <span>Asia</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(39, 84%, 56%)' }}></div>
-                    <span>North America</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(20, 90%, 50%)' }}></div>
-                    <span>South America</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(320, 84%, 56%)' }}></div>
-                    <span>Africa</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(120, 60%, 50%)' }}></div>
-                    <span>Oceania</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* 2. Royalties x Territory - Interactive World Map */}
+        <TerritoryWorldMap territoryData={analyticsData.territory} />
 
         {/* 3. Royalties x Source */}
         <Card>
