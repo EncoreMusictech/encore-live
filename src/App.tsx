@@ -11,6 +11,8 @@ import AdminOrProtectedRoute from "@/components/AdminOrProtectedRoute";
 import DemoUpgradeModal from "@/components/DemoUpgradeModal";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { SecurityProvider } from "@/components/SecurityProvider";
+import { TourProvider } from "@/components/tour/TourProvider";
+import { TourOverlay } from "@/components/tour/TourOverlay";
 import EmailRestrictedRoute from "@/components/EmailRestrictedRoute";
 import { CRMLayout } from "@/components/crm/CRMLayout";
 import Index from "./pages/Index";
@@ -55,58 +57,62 @@ const App = () => {
         <SecurityProvider>
           <AuthProvider>
             <DemoAccessProvider>
-              <ThemeProvider defaultTheme="dark" storageKey="encore-ui-theme">
-                <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <DemoUpgradeModal />
-                <BrowserRouter>
-                  <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              
-              {/* Dashboard Routes */}
-              <Route path="/dashboard" element={<CRMLayout />}>
-                <Route index element={<CRMPage />} />
-                <Route path="catalog-valuation" element={<CRMCatalogValuationPage />} />
-                <Route path="contracts" element={<CRMContractsPage />} />
-                <Route path="copyright" element={<CRMCopyrightPage />} />
-                <Route path="sync" element={<CRMSyncPage />} />
-                <Route path="royalties" element={<CRMRoyaltiesPage />} />
-                <Route path="clients" element={<CRMClientsPage />} />
-              </Route>
-              {/* Legacy Routes - Redirects to CRM */}
-              <Route path="/modules" element={<ModulesPage />} />
-              <Route path="/demo-modules" element={<DemoModulesPage />} />
-              <Route path="/features/:moduleId" element={<FeaturesPage />} />
-              <Route path="/catalog-valuation" element={<Navigate to="/dashboard/catalog-valuation" replace />} />
-              <Route path="/deal-simulator" element={<Navigate to="/dashboard/catalog-valuation" replace />} />
-              <Route path="/contract-management" element={<Navigate to="/dashboard/contracts" replace />} />
-              <Route path="/copyright-management" element={<Navigate to="/dashboard/copyright" replace />} />
-              <Route path="/sync-licensing" element={<Navigate to="/dashboard/sync" replace />} />
-              <Route path="/sync-licensing-preview" element={<Navigate to="/dashboard/sync" replace />} />
-              <Route path="/reconciliation" element={<Navigate to="/dashboard/royalties" replace />} />
-              <Route path="/royalties" element={<Navigate to="/dashboard/royalties" replace />} />
-              <Route path="/payouts" element={<Navigate to="/dashboard/royalties" replace />} />
-               <Route path="/pricing" element={<PricingPage />} />
-               <Route path="/contact" element={<ContactPage />} />
-               <Route path="/documentation" element={<DocumentationPage />} />
-              <Route path="/client-portal" element={<Navigate to="/dashboard/clients" replace />} />
-              <Route path="/client-admin" element={
-                <ProtectedRoute>
-                  <EmailRestrictedRoute allowedEmails={["info@encoremusic.tech"]}>
-                    <ErrorBoundary>
-                      <ClientAdminPage />
-                    </ErrorBoundary>
-                  </EmailRestrictedRoute>
-                </ProtectedRoute>
-              } />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
-              </TooltipProvider>
-              </ThemeProvider>
+              <TourProvider>
+                <ThemeProvider defaultTheme="dark" storageKey="encore-ui-theme">
+                  <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
+                    <DemoUpgradeModal />
+                    <TourOverlay />
+                    <BrowserRouter>
+                      <Routes>
+                        <Route path="/auth" element={<Auth />} />
+                        <Route index element={<Navigate to="/dashboard" replace />} />
+                        
+                        {/* Dashboard Routes */}
+                        <Route path="/dashboard" element={<CRMLayout />}>
+                          <Route index element={<CRMPage />} />
+                          <Route path="catalog-valuation" element={<CRMCatalogValuationPage />} />
+                          <Route path="contracts" element={<CRMContractsPage />} />
+                          <Route path="copyright" element={<CRMCopyrightPage />} />
+                          <Route path="sync" element={<CRMSyncPage />} />
+                          <Route path="royalties" element={<CRMRoyaltiesPage />} />
+                          <Route path="clients" element={<CRMClientsPage />} />
+                        </Route>
+                        
+                        {/* Legacy Routes - Redirects to CRM */}
+                        <Route path="/modules" element={<ModulesPage />} />
+                        <Route path="/demo-modules" element={<DemoModulesPage />} />
+                        <Route path="/features/:moduleId" element={<FeaturesPage />} />
+                        <Route path="/catalog-valuation" element={<Navigate to="/dashboard/catalog-valuation" replace />} />
+                        <Route path="/deal-simulator" element={<Navigate to="/dashboard/catalog-valuation" replace />} />
+                        <Route path="/contract-management" element={<Navigate to="/dashboard/contracts" replace />} />
+                        <Route path="/copyright-management" element={<Navigate to="/dashboard/copyright" replace />} />
+                        <Route path="/sync-licensing" element={<Navigate to="/dashboard/sync" replace />} />
+                        <Route path="/sync-licensing-preview" element={<Navigate to="/dashboard/sync" replace />} />
+                        <Route path="/reconciliation" element={<Navigate to="/dashboard/royalties" replace />} />
+                        <Route path="/royalties" element={<Navigate to="/dashboard/royalties" replace />} />
+                        <Route path="/payouts" element={<Navigate to="/dashboard/royalties" replace />} />
+                        <Route path="/pricing" element={<PricingPage />} />
+                        <Route path="/contact" element={<ContactPage />} />
+                        <Route path="/documentation" element={<DocumentationPage />} />
+                        <Route path="/client-portal" element={<Navigate to="/dashboard/clients" replace />} />
+                        <Route path="/client-admin" element={
+                          <ProtectedRoute>
+                            <EmailRestrictedRoute allowedEmails={["info@encoremusic.tech"]}>
+                              <ErrorBoundary>
+                                <ClientAdminPage />
+                              </ErrorBoundary>
+                            </EmailRestrictedRoute>
+                          </ProtectedRoute>
+                        } />
+                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </BrowserRouter>
+                  </TooltipProvider>
+                </ThemeProvider>
+              </TourProvider>
             </DemoAccessProvider>
           </AuthProvider>
         </SecurityProvider>

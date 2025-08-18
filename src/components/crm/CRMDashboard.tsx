@@ -18,6 +18,8 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { QuickStartGuide } from "@/components/tour/QuickStartGuide";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardStats {
@@ -40,6 +42,7 @@ export function CRMDashboard() {
   const { user } = useAuth();
   const { subscription_tier } = useSubscription();
   const { isAdmin } = useUserRoles();
+  const { isDemo } = useDemoAccess();
   const [stats, setStats] = useState<DashboardStats>({
     contracts: 0,
     copyrights: 0,
@@ -112,7 +115,7 @@ export function CRMDashboard() {
       title: 'Catalog Valuation',
       description: 'AI-powered catalog assessment',
       icon: TrendingUp,
-      url: '/crm/catalog-valuation',
+      url: '/dashboard/catalog-valuation',
       value: '$1.2M',
       change: '+12%'
     },
@@ -121,7 +124,7 @@ export function CRMDashboard() {
       title: 'Contracts',
       description: 'Active agreements',
       icon: FileText,
-      url: '/crm/contracts',
+      url: '/dashboard/contracts',
       value: stats.contracts.toString(),
       change: '+3'
     },
@@ -130,7 +133,7 @@ export function CRMDashboard() {
       title: 'Copyright',
       description: 'Registered works',
       icon: Copyright,
-      url: '/crm/copyright',
+      url: '/dashboard/copyright',
       value: stats.copyrights.toString(),
       change: '+8'
     },
@@ -139,7 +142,7 @@ export function CRMDashboard() {
       title: 'Sync Licensing',
       description: 'Active deals',
       icon: Film,
-      url: '/crm/sync',
+      url: '/dashboard/sync',
       value: stats.syncDeals.toString(),
       change: '+2'
     },
@@ -148,7 +151,7 @@ export function CRMDashboard() {
       title: 'Royalties',
       description: 'Total revenue this month',
       icon: DollarSign,
-      url: '/crm/royalties',
+      url: '/dashboard/royalties',
       value: `$${stats.totalRevenue.toLocaleString()}`,
       change: '+15%'
     }
@@ -232,6 +235,13 @@ export function CRMDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Demo Users: Show Quick Start Guide */}
+        {isDemo && (
+          <div className="lg:col-span-2 flex justify-center">
+            <QuickStartGuide />
+          </div>
+        )}
+
         {/* Recent Activity */}
         <Card>
           <CardHeader>
@@ -282,31 +292,31 @@ export function CRMDashboard() {
           </CardHeader>
           <CardContent className="space-y-3">
             <Button asChild variant="outline" className="w-full justify-start">
-              <Link to="/crm/contracts">
+              <Link to="/dashboard/contracts">
                 <FileText className="mr-2 h-4 w-4" />
                 Create New Contract
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start">
-              <Link to="/crm/copyright">
+              <Link to="/dashboard/copyright">
                 <Copyright className="mr-2 h-4 w-4" />
                 Register Copyright
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start">
-              <Link to="/crm/sync">
+              <Link to="/dashboard/sync">
                 <Film className="mr-2 h-4 w-4" />
                 Log Sync Opportunity
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start">
-              <Link to="/crm/royalties">
+              <Link to="/dashboard/royalties">
                 <DollarSign className="mr-2 h-4 w-4" />
                 Process Royalties
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start">
-              <Link to="/crm/catalog-valuation">
+              <Link to="/dashboard/catalog-valuation">
                 <TrendingUp className="mr-2 h-4 w-4" />
                 Run Catalog Valuation
               </Link>
