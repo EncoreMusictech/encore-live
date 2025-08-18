@@ -76,8 +76,8 @@ const Header = () => {
             </NavigationMenuList>
           </NavigationMenu>
           {hasPaidAccess && (
-            <Link to="/modules" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300">
-              Modules
+            <Link to="/dashboard" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300">
+              Dashboard
             </Link>
           )}
           <Link to="/pricing" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-dusty-gold transition-colors duration-300">
@@ -118,10 +118,10 @@ const Header = () => {
               <nav className="flex flex-col space-y-4 mt-6">
                 {hasPaidAccess && (
                   <Link 
-                    to="/modules" 
+                    to="/dashboard" 
                     className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
                   >
-                    Modules
+                    Dashboard
                   </Link>
                 )}
                 <Link 

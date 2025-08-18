@@ -18,7 +18,6 @@ import { CRMLayout } from "@/components/crm/CRMLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import ModulesPage from "./pages/ModulesPage";
 import DemoModulesPage from "./pages/DemoModulesPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import PricingPage from "./pages/PricingPage";
@@ -90,8 +89,8 @@ const App = () => {
                           </ProtectedRoute>
                         } />
                         
-                        {/* Legacy Routes - Redirects to CRM */}
-                        <Route path="/modules" element={<ModulesPage />} />
+        {/* Legacy Routes - Redirects to CRM */}
+        <Route path="/modules" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/demo-modules" element={<DemoModulesPage />} />
                         <Route path="/features/:moduleId" element={<FeaturesPage />} />
                         <Route path="/catalog-valuation" element={<Navigate to="/dashboard/catalog-valuation" replace />} />
