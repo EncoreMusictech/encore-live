@@ -20,6 +20,7 @@ export function ReconciliationBatchList() {
   const [reconciliationFilter, setReconciliationFilter] = useState<string>("all");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [processingBatch, setProcessingBatch] = useState<any>(null);
+  const [editingBatch, setEditingBatch] = useState<any>(null);
   
   const { batches, loading, deleteBatch, refreshBatches } = useReconciliationBatches();
   const { allocations } = useRoyaltyAllocations();
@@ -85,6 +86,20 @@ export function ReconciliationBatchList() {
     const batchAllocations = allocations.filter(a => a.batch_id === batch.id);
     const allocatedAmount = batchAllocations.reduce((sum, a) => sum + a.gross_royalty_amount, 0);
     return batch.total_gross_amount > 0 ? (allocatedAmount / batch.total_gross_amount) * 100 : 0;
+  };
+
+  const getBatchStatus = (batch: any) => {
+    const progress = calculateProgress(batch);
+    if (progress === 100) {
+      return 'Complete';
+    } else {
+      return 'Incomplete';
+    }
+  };
+
+  const canProcessBatch = (batch: any) => {
+    const status = getBatchStatus(batch);
+    return status === 'Complete' && batch.status !== 'Processed';
   };
 
   const uniqueSources = [...new Set(batches.map(batch => batch.source).filter(Boolean))];
@@ -188,19 +203,24 @@ export function ReconciliationBatchList() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(batch.status || 'Incomplete')}>
-                      {batch.status || 'Incomplete'}
+                    <Badge className={getStatusColor(getBatchStatus(batch))}>
+                      {getBatchStatus(batch)}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setEditingBatch(batch)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="sm"
                         onClick={() => setProcessingBatch(batch)}
+                        disabled={!canProcessBatch(batch)}
                       >
                         <Play className="h-4 w-4" />
                       </Button>
@@ -227,6 +247,23 @@ export function ReconciliationBatchList() {
             <DialogTitle>Create New Reconciliation Batch</DialogTitle>
           </DialogHeader>
           <ReconciliationBatchForm onCancel={() => setShowCreateForm(false)} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Batch Dialog */}
+      <Dialog open={!!editingBatch} onOpenChange={(open) => !open && setEditingBatch(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Edit Reconciliation Batch</DialogTitle>
+          </DialogHeader>
+          <ReconciliationBatchForm 
+            batch={editingBatch}
+            onCancel={() => setEditingBatch(null)}
+            onSuccess={() => {
+              setEditingBatch(null);
+              refreshBatches();
+            }}
+          />
         </DialogContent>
       </Dialog>
 
