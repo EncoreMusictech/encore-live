@@ -314,19 +314,54 @@ export const TourProvider = ({ children }: { children: React.ReactNode }) => {
   const startTour = (tourId: string) => {
     if (!isDemo) return; // Only show tours for demo users
     
+    console.log('Starting tour:', tourId);
+    
     const tour = DEMO_TOURS[tourId as keyof typeof DEMO_TOURS];
     if (tour) {
-      setSteps(tour.steps);
-      setCurrentStep(0);
-      setIsActive(true);
-      setActiveTourId(tourId);
+      // For module-specific tours, navigate to the module first
+      const moduleRoutes = {
+        'catalog-valuation': '/dashboard/catalog-valuation',
+        'contracts': '/dashboard/contracts',
+        'copyright': '/dashboard/copyright',
+        'sync': '/dashboard/sync',
+        'royalties': '/dashboard/royalties'
+      };
       
-      // Store tour state in sessionStorage to persist across navigation
-      sessionStorage.setItem('activeTour', JSON.stringify({
-        tourId,
-        currentStep: 0,
-        isActive: true
-      }));
+      const targetRoute = moduleRoutes[tourId as keyof typeof moduleRoutes];
+      
+      if (targetRoute && navigate && location && location.pathname !== targetRoute) {
+        console.log('Navigating to module before starting tour:', targetRoute);
+        // Navigate first, then start tour
+        navigate(targetRoute);
+        
+        // Start tour after navigation with a delay
+        setTimeout(() => {
+          setSteps(tour.steps);
+          setCurrentStep(0);
+          setIsActive(true);
+          setActiveTourId(tourId);
+          
+          // Store tour state in sessionStorage
+          sessionStorage.setItem('activeTour', JSON.stringify({
+            tourId,
+            currentStep: 0,
+            isActive: true
+          }));
+        }, 500);
+      } else {
+        // Already on correct page or dashboard tour
+        setSteps(tour.steps);
+        setCurrentStep(0);
+        setIsActive(true);
+        setActiveTourId(tourId);
+        
+        // Store tour state in sessionStorage
+        sessionStorage.setItem('activeTour', JSON.stringify({
+          tourId,
+          currentStep: 0,
+          isActive: true
+        }));
+      }
     }
   };
 
