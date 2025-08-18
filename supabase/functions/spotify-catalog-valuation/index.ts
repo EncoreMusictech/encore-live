@@ -1030,6 +1030,8 @@ discount_rate: valuationParams?.discountRate || 0.12,
     };
 
     console.log(`Advanced valuation complete - DCF: $${dcfValuation}, Multiple: $${multipleValuation}, Risk-Adjusted: $${riskAdjustedValue}`);
+    console.log(`FINAL DEBUG: territory_focus in response: ${valuationData.territory_focus}`);
+    console.log(`FINAL DEBUG: territory_multiplier in response: ${valuationData.territory_multiplier}`);
 
     return new Response(
       JSON.stringify(valuationData),
