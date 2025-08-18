@@ -935,40 +935,21 @@ serve(async (req) => {
       hasLinkedCopyrights: !!(license.linked_copyright_ids && license.linked_copyright_ids.length > 0)
     });
 
-    // Try GPT-5 generation first, fall back to template
-    let htmlContent = '';
-    if (OPENAI_API_KEY) {
-      try {
-        console.log('Attempting GPT-5 generation...');
-        htmlContent = await generateWithGPT5(license);
-        
-        // Check if GPT-5 returned meaningful content
-        const bodyContent = htmlContent.match(/<body[^>]*>(.*?)<\/body>/s);
-        const hasContent = bodyContent && bodyContent[1].trim().length > 50;
-        
-        console.log('GPT-5 body content check:', {
-          hasBodyMatch: !!bodyContent,
-          bodyLength: bodyContent ? bodyContent[1].trim().length : 0,
-          hasContent
-        });
-        
-        if (!hasContent) {
-          console.log('GPT-5 returned empty content, falling back to template');
-          htmlContent = await generateLicenseAgreementHTML(license, supabase);
-          console.log('Template generation completed, content length:', htmlContent.length);
-        } else {
-          console.log('GPT-5 generation successful with content');
-        }
-      } catch (gptError) {
-        console.error('GPT-5 generation failed, falling back to template:', gptError);
-        htmlContent = await generateLicenseAgreementHTML(license, supabase);
-        console.log('Template fallback completed, content length:', htmlContent.length);
-      }
-    } else {
-      console.log('No OpenAI API key, using template generation');
-      htmlContent = await generateLicenseAgreementHTML(license, supabase);
-      console.log('Direct template generation completed, content length:', htmlContent.length);
-    }
+    // Force template generation for debugging
+    console.log('=== FORCING TEMPLATE GENERATION FOR DEBUGGING ===');
+    console.log('License data summary:', {
+      id: license.id,
+      project_title: license.project_title,
+      synch_id: license.synch_id,
+      hasLinkedCopyrights: !!(license.linked_copyright_ids && license.linked_copyright_ids.length > 0)
+    });
+    
+    let htmlContent = await generateLicenseAgreementHTML(license, supabase);
+    console.log('Template generation completed:', {
+      contentLength: htmlContent.length,
+      hasContent: htmlContent.includes('<body>'),
+      bodyHasContent: htmlContent.match(/<body[^>]*>(.*?)<\/body>/s)?.[1]?.trim().length > 0
+    });
 
     // Return a blob URL for download
     const blob = new Blob([htmlContent], { type: 'text/html' });
