@@ -631,23 +631,12 @@ export function RoyaltiesAnalyticsDashboard() {
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  layout="horizontal"
-                  data={analyticsData.source}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
+                <BarChart data={analyticsData.source}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis 
-                    type="number" 
-                    tickFormatter={(value) => `$${value.toLocaleString()}`}
-                  />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
-                    width={100}
-                  />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
                   <Tooltip 
-                    formatter={(value) => [`$${value.toLocaleString()}`, 'Gross Amount']}
+                    formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
                     labelStyle={{ color: 'hsl(var(--foreground))' }}
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--background))', 
@@ -658,7 +647,7 @@ export function RoyaltiesAnalyticsDashboard() {
                   <Bar 
                     dataKey="value" 
                     fill="hsl(var(--primary))"
-                    radius={[0, 4, 4, 0]}
+                    radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -675,7 +664,7 @@ export function RoyaltiesAnalyticsDashboard() {
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={analyticsData.quarterly}>
+                <BarChart data={analyticsData.quarterly}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="quarter" />
                   <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
@@ -688,15 +677,12 @@ export function RoyaltiesAnalyticsDashboard() {
                       borderRadius: '6px'
                     }}
                   />
-                  <Area 
-                    type="monotone" 
+                  <Bar 
                     dataKey="amount" 
-                    stroke="hsl(var(--accent))" 
-                    fill="hsl(var(--accent))" 
-                    fillOpacity={0.1}
-                    strokeWidth={2}
+                    fill="hsl(var(--accent))"
+                    radius={[4, 4, 0, 0]}
                   />
-                </AreaChart>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
