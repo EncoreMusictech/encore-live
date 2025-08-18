@@ -254,6 +254,12 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
   console.log('License data:', JSON.stringify(license, null, 2));
   console.log('Linked copyright IDs:', license.linked_copyright_ids);
 
+  // Ensure we have basic license data
+  if (!license) {
+    console.error('No license data provided');
+    throw new Error('No license data available');
+  }
+
   // Fetch copyright data if linked_copyright_ids exist
   let copyrightData: any[] = [];
   if (license.linked_copyright_ids && license.linked_copyright_ids.length > 0) {
@@ -333,8 +339,18 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
       return totalControlledAmount > 0 ? formatCurrency(totalControlledAmount) : "-";
     }
     
-    console.log('No fee_allocations found, returning fallback');
-    return "-";
+    // Fallback to individual fee fields if available
+    let totalFee = 0;
+    if (license.pub_fee) totalFee += license.pub_fee;
+    if (license.master_fee) totalFee += license.master_fee;
+    
+    if (totalFee > 0) {
+      console.log('Using fallback fee calculation:', totalFee);
+      return formatCurrency(totalFee);
+    }
+    
+    console.log('No fee_allocations or fees found, returning default');
+    return "$TBD";
   };
 
   const getStateName = (abbreviation: string): string => {
@@ -500,16 +516,16 @@ async function generateLicenseAgreementHTML(license: SyncLicense, supabase: any)
 
   const generateExhibitTable = () => {
     if (copyrightData.length === 0) {
-      // Default placeholder row
+      // Default placeholder row with project title
       return `
         <tr>
-          <td>-</td>
-          <td>-</td>
-          <td>-</td>
-          <td>-</td>
-          <td>-</td>
-          <td>-</td>
-          <td>-</td>
+          <td>${license.project_title || "Musical Work"}</td>
+          <td>TBD</td>
+          <td>${license.scene_duration_seconds ? `${license.scene_duration_seconds}s` : 'TBD'}</td>
+          <td>Various Artists</td>
+          <td>TBD</td>
+          <td>Master Cleared</td>
+          <td>${getTotalSyncFee()}</td>
         </tr>
       `;
     }
