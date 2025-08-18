@@ -67,46 +67,48 @@ export function ReconciliationBatchList() {
         let statementRoyaltiesTotal = 0;
         if (batch.linked_statement_id) {
           try {
-            // First, get the statement_id from the staging record
-            const { data: stagingRecord } = await supabase
-              .from('royalties_import_staging')
-              .select('statement_id')
-              .eq('id', batch.linked_statement_id)
-              .single();
+            // For progress calculation, we should use the specific royalties that belong to this batch
+            // The batch amount (43.57) represents the portion of statement royalties allocated to this batch
+            // So we should check how much has been specifically allocated/linked to this batch from the form
             
-            console.log('Staging record:', stagingRecord);
+            // Check if there are any royalties specifically linked to this batch
+            const linkedRoyaltiesForThisBatch = allocations.filter(a => a.batch_id === batch.id);
             
-            if (stagingRecord?.statement_id) {
-              // Then query royalty allocations using the statement_id
-              const { data: statementRoyalties, error } = await supabase
-                .from('royalty_allocations')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('statement_id', stagingRecord.statement_id);
-              
-              console.log('Statement royalties query error:', error);
-              console.log('Statement royalties count:', statementRoyalties?.length || 0);
-              console.log('All statement royalties:', statementRoyalties);
-              
-              if (statementRoyalties && statementRoyalties.length > 0) {
-                // Check if any of these royalties are already linked to THIS batch
-                const unlinkedStatementRoyalties = statementRoyalties.filter(r => 
-                  !r.batch_id || r.batch_id !== batch.id
-                );
-                
-                console.log('Unlinked statement royalties:', unlinkedStatementRoyalties.length);
-                console.log('Unlinked royalties details:', unlinkedStatementRoyalties.map(r => ({ 
-                  id: r.id, 
-                  amount: r.gross_royalty_amount, 
-                  batch_id: r.batch_id,
-                  song_title: r.song_title
-                })));
-                
-                statementRoyaltiesTotal = unlinkedStatementRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
-                console.log('Statement royalties total (unlinked only):', statementRoyaltiesTotal);
-              }
+            if (linkedRoyaltiesForThisBatch.length > 0) {
+              // If royalties are specifically linked to this batch, use those
+              statementRoyaltiesTotal = linkedRoyaltiesForThisBatch.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
+              console.log('Using specifically linked royalties:', statementRoyaltiesTotal);
             } else {
-              console.log('No statement_id found in staging record');
+              // If no specific royalties are linked, we can't determine which portion of the statement belongs to this batch
+              // In this case, we'll assume the batch represents the full statement amount if it matches
+              const { data: stagingRecord } = await supabase
+                .from('royalties_import_staging')
+                .select('statement_id')
+                .eq('id', batch.linked_statement_id)
+                .single();
+              
+              if (stagingRecord?.statement_id) {
+                const { data: statementRoyalties } = await supabase
+                  .from('royalty_allocations')
+                  .select('*')
+                  .eq('user_id', user.id)
+                  .eq('statement_id', stagingRecord.statement_id);
+                
+                const totalStatementAmount = statementRoyalties?.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0) || 0;
+                console.log('Total statement amount:', totalStatementAmount);
+                console.log('Batch amount:', batch.total_gross_amount);
+                
+                // If the batch amount matches the statement total, use the full statement
+                // Otherwise, use the batch amount as the allocated amount (assuming it represents allocated portion)
+                if (Math.abs(totalStatementAmount - batch.total_gross_amount) < 0.01) {
+                  statementRoyaltiesTotal = totalStatementAmount;
+                  console.log('Batch represents full statement');
+                } else {
+                  // The batch only represents a portion - use the batch amount as the "allocated" amount
+                  statementRoyaltiesTotal = batch.total_gross_amount;
+                  console.log('Batch represents partial statement, using batch amount as allocated');
+                }
+              }
             }
           } catch (error) {
             console.error('Error fetching statement royalties for progress calculation:', error);
