@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Music, DollarSign, Users, AlertTriangle, FileText } from "lucide-react";
+import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, TrendingUp, Calculator } from "lucide-react";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
@@ -11,10 +11,15 @@ import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
 import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportStaging";
 import { RoyaltiesDiscrepancyReport } from "@/components/royalties/RoyaltiesDiscrepancyReport";
 import { RoyaltiesAnalyticsDashboard } from "@/components/royalties/RoyaltiesAnalyticsDashboard";
+import { ReconciliationDashboard } from "@/components/royalties/ReconciliationDashboard";
+import { PayoutList } from "@/components/royalties/PayoutList";
+import { PayoutForm } from "@/components/royalties/PayoutForm";
+import { AccountBalancesTable } from "@/components/royalties/AccountBalancesTable";
 
 export default function CRMRoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
-  const [activeTab, setActiveTab] = useState("statements");
+  const [showPayoutForm, setShowPayoutForm] = useState(false);
+  const [activeTab, setActiveTab] = useState("reconciliation");
   
   const {
     allocations,
@@ -39,7 +44,11 @@ export default function CRMRoyaltiesPage() {
       <RoyaltiesModuleNav />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="reconciliation" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Reconciliation
+          </TabsTrigger>
           <TabsTrigger value="statements" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Statements
@@ -47,6 +56,10 @@ export default function CRMRoyaltiesPage() {
           <TabsTrigger value="allocations" className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
             Royalties
+          </TabsTrigger>
+          <TabsTrigger value="payouts" className="flex items-center gap-2">
+            <Calculator className="h-4 w-4" />
+            Payouts
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -57,6 +70,19 @@ export default function CRMRoyaltiesPage() {
             Discrepancies
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="reconciliation" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold">Reconciliation Dashboard</h2>
+              <p className="text-muted-foreground">
+                Track batch processing, allocation progress, and reconciliation metrics
+              </p>
+            </div>
+          </div>
+
+          <ReconciliationDashboard />
+        </TabsContent>
 
         <TabsContent value="statements" className="space-y-6">
           <div className="flex justify-between items-center">
@@ -117,6 +143,64 @@ export default function CRMRoyaltiesPage() {
 
         <TabsContent value="analytics" className="space-y-6">
           <RoyaltiesAnalyticsDashboard />
+        </TabsContent>
+
+        <TabsContent value="payouts" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold">Payouts & Client Accounting</h2>
+              <p className="text-muted-foreground">
+                Process royalty payments, manage client statements, and track account balances
+              </p>
+            </div>
+            <Button onClick={() => setShowPayoutForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Payout
+            </Button>
+          </div>
+
+          {showPayoutForm && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Create New Payout</CardTitle>
+                <CardDescription>
+                  Generate payout statements for writers and publishers
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PayoutForm onCancel={() => setShowPayoutForm(false)} />
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payout Management</CardTitle>
+                  <CardDescription>
+                    Process payments and manage client statements
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PayoutList />
+                </CardContent>
+              </Card>
+            </div>
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Balances</CardTitle>
+                  <CardDescription>
+                    Quarterly balance reports and client accounting
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AccountBalancesTable />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="discrepancies" className="space-y-6">
