@@ -3,9 +3,8 @@ import { useToast } from "@/hooks/use-toast";
 import { updatePageMetadata } from "@/utils/seo";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import ModuleCard from "@/components/ModuleCard";
-import ModuleFeatureModal from "@/components/ModuleFeatureModal";
-import { modules } from "@/data/modules";
+import { userCases } from "@/data/user-cases";
+import UserCaseCard from "@/components/UserCaseCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,13 +16,13 @@ const Index = () => {
   } = useToast();
   const navigate = useNavigate();
   const [selectedTier, setSelectedTier] = useState<"Free" | "Pro" | "Enterprise">("Pro");
-  const [selectedModule, setSelectedModule] = useState<typeof modules[0] | null>(null);
+  const [selectedUserCase, setSelectedUserCase] = useState<typeof userCases[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   useEffect(() => {
     updatePageMetadata('home');
   }, []);
-  const handleGetStarted = (moduleId: string) => {
-    navigate(`/features/${moduleId}`);
+  const handleGetStarted = (userCaseId: string) => {
+    navigate(`/use-cases/${userCaseId}`);
   };
   const pricingTiers = [{
     name: "Starter Creator",
@@ -57,15 +56,15 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16 animate-fade-in">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Complete <span className="bg-gradient-primary bg-clip-text text-transparent">Rights Management</span> Suite
+              Solutions for Every <span className="bg-gradient-primary bg-clip-text text-transparent">Music Professional</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Six powerful modules designed specifically for music industry professionals
+              Tailored workflows and tools designed for your specific role in the music industry
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-slide-up">
-            {modules.map(module => <ModuleCard key={module.id} title={module.title} description={module.description} icon={module.icon} features={module.features} tier={module.tier} isPopular={module.isPopular} onGetStarted={() => handleGetStarted(module.id)} />)}
+            {userCases.map(userCase => <UserCaseCard key={userCase.id} title={userCase.title} description={userCase.description} icon={userCase.icon} audience={userCase.audience} benefits={userCase.benefits} recommendedTier={userCase.recommendedTier} isPopular={userCase.isPopular} onGetStarted={() => handleGetStarted(userCase.id)} />)}
           </div>
         </div>
       </section>
@@ -155,7 +154,7 @@ const Index = () => {
         </div>
       </section>
 
-      <ModuleFeatureModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} module={selectedModule} />
+      {/* Modal removed for user cases - direct navigation instead */}
     </div>;
 };
 export default Index;

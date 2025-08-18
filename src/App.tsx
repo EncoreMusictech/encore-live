@@ -20,6 +20,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import DemoModulesPage from "./pages/DemoModulesPage";
 import FeaturesPage from "./pages/FeaturesPage";
+import UserCasePage from "./pages/UserCasePage";
 import PricingPage from "./pages/PricingPage";
 import ClientPortal from "./components/ClientPortal";
 import ClientAdminPage from "./pages/ClientAdminPage";
@@ -92,6 +93,7 @@ const App = () => {
         {/* Legacy Routes - Redirects to CRM */}
                         <Route path="/demo-modules" element={<DemoModulesPage />} />
                         <Route path="/features/:moduleId" element={<FeaturesPage />} />
+                        <Route path="/use-cases/:userCaseId" element={<UserCasePage />} />
                         <Route path="/catalog-valuation" element={<Navigate to="/dashboard/catalog-valuation" replace />} />
                         <Route path="/deal-simulator" element={<Navigate to="/dashboard/catalog-valuation" replace />} />
                         <Route path="/contract-management" element={<Navigate to="/dashboard/contracts" replace />} />
