@@ -86,11 +86,24 @@ export function ReconciliationBatchList() {
               
               console.log('Statement royalties query error:', error);
               console.log('Statement royalties count:', statementRoyalties?.length || 0);
+              console.log('All statement royalties:', statementRoyalties);
               
               if (statementRoyalties && statementRoyalties.length > 0) {
-                statementRoyaltiesTotal = statementRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
-                console.log('Statement royalties total:', statementRoyaltiesTotal);
-                console.log('Statement royalties details:', statementRoyalties.map(r => ({ id: r.id, amount: r.gross_royalty_amount })));
+                // Check if any of these royalties are already linked to THIS batch
+                const unlinkedStatementRoyalties = statementRoyalties.filter(r => 
+                  !r.batch_id || r.batch_id !== batch.id
+                );
+                
+                console.log('Unlinked statement royalties:', unlinkedStatementRoyalties.length);
+                console.log('Unlinked royalties details:', unlinkedStatementRoyalties.map(r => ({ 
+                  id: r.id, 
+                  amount: r.gross_royalty_amount, 
+                  batch_id: r.batch_id,
+                  song_title: r.song_title
+                })));
+                
+                statementRoyaltiesTotal = unlinkedStatementRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
+                console.log('Statement royalties total (unlinked only):', statementRoyaltiesTotal);
               }
             } else {
               console.log('No statement_id found in staging record');
