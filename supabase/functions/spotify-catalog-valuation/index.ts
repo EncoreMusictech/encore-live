@@ -428,8 +428,9 @@ serve(async (req) => {
   }
 
   try {
-    const { artistName, valuationParams, catalogValuationId, userId } = await req.json();
-    const territory = valuationParams?.territory || 'global';
+  const { artistName, valuationParams, catalogValuationId, userId } = await req.json();
+  console.log(`DEBUGGING: Received territory parameter: "${valuationParams?.territory}"`);
+  const territory = valuationParams?.territory || 'global';
 
     if (!artistName) {
       throw new Error('Artist name is required');

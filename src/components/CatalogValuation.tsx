@@ -1165,7 +1165,10 @@ Actual market values may vary significantly based on numerous factors not captur
               {(result.territory_focus || valuationParams.territory !== 'global') && (
                 <TerritoryBreakdownCard
                   territory={result.territory_focus || valuationParams.territory}
-                  territoryMultiplier={result.territory_multiplier || 1.0}
+                  territoryMultiplier={(() => {
+                    console.log(`FRONTEND DEBUG: territory_multiplier from API: ${result.territory_multiplier}, fallback: 1.0`);
+                    return result.territory_multiplier || 1.0;
+                  })()}
                   totalValuation={result.risk_adjusted_value || result.valuation_amount}
                   domesticShare={0.7}
                   internationalShare={0.3}
