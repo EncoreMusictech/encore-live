@@ -32,35 +32,60 @@ export function ReconciliationBatchList() {
   // Calculate progress for all batches
   useEffect(() => {
     const calculateAllProgress = async () => {
-      if (!user || !batches.length) return;
+      if (!user || !batches.length) {
+        console.log('=== PROGRESS CALCULATION SKIPPED ===');
+        console.log('User:', !!user);
+        console.log('Batches length:', batches.length);
+        return;
+      }
+      
+      console.log('=== CALCULATING PROGRESS FOR ALL BATCHES ===');
+      console.log('Number of batches:', batches.length);
+      console.log('Number of allocations:', allocations.length);
       
       const progressMap = new Map();
       
       for (const batch of batches) {
+        console.log(`\n--- Processing batch ${batch.batch_id} ---`);
+        console.log('Batch total gross amount:', batch.total_gross_amount);
+        console.log('Batch linked_statement_id:', batch.linked_statement_id);
+        
         // Get linked royalties (allocations with batch_id)
         const batchAllocations = allocations.filter(a => a.batch_id === batch.id);
         const linkedRoyaltiesTotal = batchAllocations.reduce((sum, a) => sum + a.gross_royalty_amount, 0);
+        
+        console.log('Linked allocations count:', batchAllocations.length);
+        console.log('Linked royalties total:', linkedRoyaltiesTotal);
         
         // Get statement royalties if there's a linked statement
         let statementRoyaltiesTotal = 0;
         if (batch.linked_statement_id) {
           try {
-            const { data: statementRoyalties } = await supabase
+            const { data: statementRoyalties, error } = await supabase
               .from('royalty_allocations')
               .select('*')
               .eq('user_id', user.id)
               .or(`statement_id.eq.${batch.linked_statement_id},staging_record_id.eq.${batch.linked_statement_id}`);
             
+            console.log('Statement royalties query error:', error);
+            console.log('Statement royalties count:', statementRoyalties?.length || 0);
+            
             if (statementRoyalties && statementRoyalties.length > 0) {
               statementRoyaltiesTotal = statementRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
+              console.log('Statement royalties total:', statementRoyaltiesTotal);
             }
           } catch (error) {
             console.error('Error fetching statement royalties for progress calculation:', error);
           }
+        } else {
+          console.log('No linked statement ID');
         }
         
         const totalAllocatedAmount = linkedRoyaltiesTotal + statementRoyaltiesTotal;
         const progress = batch.total_gross_amount > 0 ? (totalAllocatedAmount / batch.total_gross_amount) * 100 : 0;
+        
+        console.log('Total allocated amount:', totalAllocatedAmount);
+        console.log('Calculated progress:', progress);
         
         progressMap.set(batch.id, {
           progress,
@@ -68,6 +93,8 @@ export function ReconciliationBatchList() {
         });
       }
       
+      console.log('=== SETTING BATCH PROGRESS DATA ===');
+      console.log('Progress map size:', progressMap.size);
       setBatchProgressData(progressMap);
     };
     
