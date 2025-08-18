@@ -151,8 +151,10 @@ export function useQuarterlyBalanceReports() {
         entry.royalties_amount += Number(payout.gross_royalties || 0);
         entry.expenses_amount += Number(payout.total_expenses || 0);
         
-        // Only count payments for payouts marked as 'paid'
-        if (String(payout.status || '').toLowerCase() === 'paid') {
+        // Only count payments for payouts marked as 'paid' (check both status and workflow_stage)
+        const isPaid = String(payout.status || '').toLowerCase() === 'paid' || 
+                      String((payout as any).workflow_stage || '').toLowerCase() === 'paid';
+        if (isPaid) {
           entry.payments_amount += Number(payout.amount_due || 0);
           console.log(`Added payment of $${payout.amount_due} for ${contactName} in ${periodLabel(year, quarter)}`);
         }

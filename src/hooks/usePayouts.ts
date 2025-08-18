@@ -573,7 +573,22 @@ export function usePayouts() {
     if (!user) return false;
 
     try {
+      // Update both workflow_stage and status for consistency
+      const statusValue = newStage === 'paid' ? 'paid' : 'pending';
+      
       const { error } = await supabase
+        .from('payouts')
+        .update({ 
+          workflow_stage: newStage,
+          status: statusValue,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', payoutId);
+      
+      if (error) throw error;
+
+      // Also call the RPC for workflow history if it exists
+      await supabase
         .rpc('update_payout_workflow_stage', {
           payout_id_param: payoutId,
           new_stage: newStage,
