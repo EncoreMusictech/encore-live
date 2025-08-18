@@ -130,8 +130,7 @@ const DEMO_TOURS = {
       {
         id: 'contract-types',
         title: 'Step 1: Choose Contract Type',
-        content: 'Select from Publishing Agreements, Artist Contracts, Producer Deals, Sync Licenses, or Distribution Agreements.',
-        target: 'button:contains("Create")',
+        content: 'Select from Publishing Agreements, Artist Contracts, Producer Deals, Sync Licenses, or Distribution Agreements. Look for buttons to create new contracts.',
         position: 'bottom' as const
       },
       {
@@ -160,8 +159,7 @@ const DEMO_TOURS = {
       {
         id: 'register-work',
         title: 'Step 1: Register a Musical Work',
-        content: 'Enter song details: title, writers, publishers, and ownership percentages. This creates the foundation for royalty collection.',
-        target: 'button:contains("Register")',
+        content: 'Enter song details: title, writers, publishers, and ownership percentages. This creates the foundation for royalty collection. Look for registration buttons or forms.',
         position: 'bottom' as const
       },
       {
@@ -190,8 +188,7 @@ const DEMO_TOURS = {
       {
         id: 'create-opportunity',
         title: 'Step 1: Log Sync Opportunity',
-        content: 'Create a new sync request with project details: TV show, film, commercial, or other media placement.',
-        target: 'button:contains("New")',
+        content: 'Create a new sync request with project details: TV show, film, commercial, or other media placement. Look for "New" or "Create" buttons.',
         position: 'bottom' as const
       },
       {
@@ -220,8 +217,7 @@ const DEMO_TOURS = {
       {
         id: 'import-statements',
         title: 'Step 1: Import Royalty Statements',
-        content: 'Upload CSV or Excel files from PROs, distributors, or streaming platforms. Our parser handles multiple formats.',
-        target: 'button:contains("Import")',
+        content: 'Upload CSV or Excel files from PROs, distributors, or streaming platforms. Our parser handles multiple formats. Look for import buttons.',
         position: 'bottom' as const
       },
       {
