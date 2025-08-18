@@ -67,19 +67,33 @@ export function ReconciliationBatchList() {
         let statementRoyaltiesTotal = 0;
         if (batch.linked_statement_id) {
           try {
-            const { data: statementRoyalties, error } = await supabase
-              .from('royalty_allocations')
-              .select('*')
-              .eq('user_id', user.id)
-              .or(`statement_id.eq.${batch.linked_statement_id},staging_record_id.eq.${batch.linked_statement_id}`);
+            // First, get the statement_id from the staging record
+            const { data: stagingRecord } = await supabase
+              .from('royalties_import_staging')
+              .select('statement_id')
+              .eq('id', batch.linked_statement_id)
+              .single();
             
-            console.log('Statement royalties query error:', error);
-            console.log('Statement royalties count:', statementRoyalties?.length || 0);
+            console.log('Staging record:', stagingRecord);
             
-            if (statementRoyalties && statementRoyalties.length > 0) {
-              statementRoyaltiesTotal = statementRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
-              console.log('Statement royalties total:', statementRoyaltiesTotal);
-              console.log('Statement royalties details:', statementRoyalties.map(r => ({ id: r.id, amount: r.gross_royalty_amount })));
+            if (stagingRecord?.statement_id) {
+              // Then query royalty allocations using the statement_id
+              const { data: statementRoyalties, error } = await supabase
+                .from('royalty_allocations')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('statement_id', stagingRecord.statement_id);
+              
+              console.log('Statement royalties query error:', error);
+              console.log('Statement royalties count:', statementRoyalties?.length || 0);
+              
+              if (statementRoyalties && statementRoyalties.length > 0) {
+                statementRoyaltiesTotal = statementRoyalties.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
+                console.log('Statement royalties total:', statementRoyaltiesTotal);
+                console.log('Statement royalties details:', statementRoyalties.map(r => ({ id: r.id, amount: r.gross_royalty_amount })));
+              }
+            } else {
+              console.log('No statement_id found in staging record');
             }
           } catch (error) {
             console.error('Error fetching statement royalties for progress calculation:', error);
