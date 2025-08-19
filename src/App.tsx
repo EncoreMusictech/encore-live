@@ -69,8 +69,8 @@ const App = () => {
                       <TourOverlay />
                       <Routes>
                         <Route path="/auth" element={<Auth />} />
-                        <Route index element={<LandingPage />} />
-                        <Route path="/home" element={<Index />} />
+                        <Route index element={<Index />} />
+                        <Route path="/home" element={<Navigate to="/" replace />} />
                         
                         {/* Dashboard Routes */}
                         <Route path="/dashboard" element={<CRMLayout />}>
