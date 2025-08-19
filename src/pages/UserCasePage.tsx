@@ -230,12 +230,76 @@ export default function UserCasePage() {
               <CardHeader>
                 <CardTitle className="text-music-purple">Recommended Plan</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-center space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Perfect for {userCase.title.toLowerCase()} with your specific needs and workflows
-                  </p>
-                </div>
+              <CardContent className="space-y-4">
+                {userCase.recommendedTier === "Free" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">Starter Bundle</h4>
+                      <Badge className="bg-secondary text-secondary-foreground">Free</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Perfect for indie creators starting their music career
+                    </p>
+                    <ul className="text-sm space-y-1 text-muted-foreground">
+                      <li>• Basic copyright tracking</li>
+                      <li>• Simple contract templates</li>
+                      <li>• Catalog valuation estimates</li>
+                    </ul>
+                  </div>
+                )}
+                
+                {userCase.recommendedTier === "Pro" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">Publishing Pro</h4>
+                      <Badge className="bg-music-purple text-primary-foreground">Pro</Badge>
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-2xl font-bold">$299</span>
+                      <span className="text-sm text-muted-foreground">/month</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Complete solution for indie publishers and growing catalogs
+                    </p>
+                    <ul className="text-sm space-y-1 text-muted-foreground">
+                      <li>• Complete royalty processing</li>
+                      <li>• Advanced copyright tracking</li>
+                      <li>• Smart contract management</li>
+                      <li>• Writer/publisher split management</li>
+                      <li>• Professional client reporting</li>
+                    </ul>
+                  </div>
+                )}
+                
+                {userCase.recommendedTier === "Enterprise" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">Enterprise Suite</h4>
+                      <Badge className="bg-music-gold text-accent-foreground">Enterprise</Badge>
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-xl font-semibold">Custom Pricing</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Full-scale solution for large catalogs and institutional investors
+                    </p>
+                    <ul className="text-sm space-y-1 text-muted-foreground">
+                      <li>• All modules included</li>
+                      <li>• White-label branding</li>
+                      <li>• Custom integrations & SLAs</li>
+                      <li>• Advanced analytics & reporting</li>
+                      <li>• Dedicated account manager</li>
+                      <li>• 24/7 priority support</li>
+                    </ul>
+                  </div>
+                )}
+                
+                <Button 
+                  className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
+                  onClick={() => navigate('/pricing')}
+                >
+                  View Full Pricing
+                </Button>
               </CardContent>
             </Card>
           </div>
