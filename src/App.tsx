@@ -35,7 +35,7 @@ import CRMSyncPage from "./pages/CRMSyncPage";
 import CRMRoyaltiesPage from "./pages/CRMRoyaltiesPage";
 import CRMClientsPage from "./pages/CRMClientsPage";
 import FeaturesOverviewPage from "./pages/FeaturesOverviewPage";
-import FeaturesPage from "./pages/FeaturesPage";
+
 
 
 // Create a stable QueryClient instance
@@ -96,7 +96,6 @@ const App = () => {
                         
                         {/* Features Routes */}
                         <Route path="/features" element={<FeaturesOverviewPage />} />
-                        <Route path="/features/:moduleId" element={<FeaturesPage />} />
                         
                         {/* Legacy Routes - Redirects to CRM */}
                         <Route path="/demo-modules" element={<DemoModulesPage />} />
