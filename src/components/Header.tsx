@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { SubscriptionBadge } from "@/components/SubscriptionBadge";
 import { modules } from "@/data/modules";
+import { userCases } from "@/data/user-cases";
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -73,6 +74,39 @@ const Header = () => {
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
+              
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300 bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
+                  Solutions
+                </NavigationMenuTrigger>
+                <NavigationMenuContent className="bg-jet-black/95 backdrop-blur-lg border border-electric-lavender/20 shadow-glow">
+                  <div className="grid w-[400px] gap-3 p-4">
+                    {userCases.map((userCase) => {
+                      const Icon = userCase.icon;
+                      return (
+                        <NavigationMenuLink key={userCase.id} asChild>
+                          <Link
+                            to={`/use-cases/${userCase.id}`}
+                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-electric-lavender/10 hover:text-electric-lavender focus:bg-electric-lavender/10 focus:text-electric-lavender"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Icon className="h-4 w-4 text-dusty-gold" />
+                              <div>
+                                <div className="text-sm font-medium leading-none text-platinum-gray">
+                                  {userCase.title}
+                                </div>
+                                <p className="line-clamp-2 text-xs leading-snug text-platinum-gray/60 mt-1">
+                                  {userCase.description}
+                                </p>
+                              </div>
+                            </div>
+                          </Link>
+                        </NavigationMenuLink>
+                      );
+                    })}
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
           {hasPaidAccess && (
@@ -124,6 +158,22 @@ const Header = () => {
                     Dashboard
                   </Link>
                 )}
+                <div className="border-b border-border pb-2">
+                  <p className="text-sm font-medium text-foreground/40 mb-2">Solutions</p>
+                  {userCases.map((userCase) => {
+                    const Icon = userCase.icon;
+                    return (
+                      <Link 
+                        key={userCase.id}
+                        to={`/use-cases/${userCase.id}`}
+                        className="flex items-center gap-2 text-sm text-foreground/60 hover:text-foreground transition-colors py-1 pl-2"
+                      >
+                        <Icon className="h-4 w-4" />
+                        {userCase.title}
+                      </Link>
+                    );
+                  })}
+                </div>
                 <Link 
                   to="/pricing" 
                   className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
