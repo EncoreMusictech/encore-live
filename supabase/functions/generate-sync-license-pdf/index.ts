@@ -89,7 +89,7 @@ interface SyncLicense {
 }
 
 async function generateWithGPT5(license: SyncLicense): Promise<string> {
-  const model = 'gpt-5-2025-08-07';
+  const model = 'gpt-4o';
   
   const system = `You are a senior music attorney and world-class legal drafter specializing in synchronization licenses.
   
@@ -935,16 +935,23 @@ serve(async (req) => {
       hasLinkedCopyrights: !!(license.linked_copyright_ids && license.linked_copyright_ids.length > 0)
     });
 
-    // Force template generation for debugging
-    console.log('=== FORCING TEMPLATE GENERATION FOR DEBUGGING ===');
-    console.log('License data summary:', {
-      id: license.id,
-      project_title: license.project_title,
-      synch_id: license.synch_id,
-      hasLinkedCopyrights: !!(license.linked_copyright_ids && license.linked_copyright_ids.length > 0)
-    });
+    // Try GPT-4 generation first, fallback to template
+    let htmlContent: string;
     
-    let htmlContent = await generateLicenseAgreementHTML(license, supabase);
+    if (OPENAI_API_KEY) {
+      console.log('Attempting GPT-4 generation...');
+      try {
+        htmlContent = await generateWithGPT5(license);
+        console.log('GPT-4 generation successful');
+      } catch (error) {
+        console.error('GPT-4 generation failed:', error);
+        console.log('Falling back to template generation...');
+        htmlContent = await generateLicenseAgreementHTML(license, supabase);
+      }
+    } else {
+      console.log('No OpenAI API key found, using template generation...');
+      htmlContent = await generateLicenseAgreementHTML(license, supabase);
+    }
     console.log('Template generation completed:', {
       contentLength: htmlContent.length,
       hasContent: htmlContent.includes('<body>'),
