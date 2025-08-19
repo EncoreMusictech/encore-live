@@ -96,7 +96,7 @@ const App = () => {
                         <Route path="/demo-modules" element={<DemoModulesPage />} />
                         <Route path="/features/:moduleId" element={<FeaturesPage />} />
                         <Route path="/use-cases/:userCaseId" element={<UserCasePage />} />
-                        <Route path="/deal-simulator" element={<Navigate to="/dashboard/catalog-valuation" replace />} />
+                        
                         <Route path="/contract-management" element={<Navigate to="/dashboard/contracts" replace />} />
                         <Route path="/copyright-management" element={<Navigate to="/dashboard/copyright" replace />} />
                         <Route path="/sync-licensing" element={<Navigate to="/dashboard/sync" replace />} />
