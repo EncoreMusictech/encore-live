@@ -51,7 +51,7 @@ const Hero = () => {
               </div>
             </div>
             
-            <p className="font-body text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+            <p className="font-body text-xl max-w-4xl mx-auto leading-relaxed text-violet-500 md:text-2xl font-bold">
               Track your rights like you track your hits.
             </p>
           </div>
