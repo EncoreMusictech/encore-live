@@ -99,7 +99,7 @@ const App = () => {
                         
                         
                         
-                        <Route path="/sync-licensing" element={<Navigate to="/dashboard/sync" replace />} />
+                        
                         <Route path="/sync-licensing-preview" element={<Navigate to="/dashboard/sync" replace />} />
                         <Route path="/reconciliation" element={<Navigate to="/dashboard/royalties" replace />} />
                         <Route path="/royalties" element={<Navigate to="/dashboard/royalties" replace />} />
