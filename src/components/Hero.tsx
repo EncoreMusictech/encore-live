@@ -1,9 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Music, TrendingUp, Shield } from "lucide-react";
-
 const Hero = () => {
-  return (
-    <section className="relative overflow-hidden py-20 lg:py-32 bg-gradient-to-br from-background via-background/95 to-electric-lavender/10">
+  return <section className="relative overflow-hidden py-20 lg:py-32 bg-gradient-to-br from-background via-background/95 to-electric-lavender/10">
       {/* Dynamic Background Elements */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-electric-lavender to-dusty-gold rounded-full blur-3xl animate-pulse"></div>
@@ -25,12 +23,14 @@ const Hero = () => {
             <div className="inline-flex items-center gap-3 bg-gradient-to-r from-electric-lavender/20 to-electric-lavender/10 border border-electric-lavender/30 rounded-full px-6 py-3 backdrop-blur-sm">
               <div className="flex gap-1">
                 <div className="w-2 h-2 bg-electric-lavender rounded-full animate-pulse"></div>
-                <div className="w-2 h-2 bg-dusty-gold rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-electric-lavender/60 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                <div className="w-2 h-2 bg-dusty-gold rounded-full animate-pulse" style={{
+                animationDelay: '0.2s'
+              }}></div>
+                <div className="w-2 h-2 bg-electric-lavender/60 rounded-full animate-pulse" style={{
+                animationDelay: '0.4s'
+              }}></div>
               </div>
-              <span className="font-accent text-electric-lavender text-sm font-semibold tracking-wider">
-                THE FUTURE OF MUSIC RIGHTS
-              </span>
+              <span className="font-accent text-electric-lavender text-sm font-semibold tracking-wider">ANALOG SOUL. DIGITAL SPINE.</span>
             </div>
             
             {/* Bold, Modern Typography */}
@@ -106,8 +106,6 @@ const Hero = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default Hero;
