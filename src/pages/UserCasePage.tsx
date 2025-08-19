@@ -216,7 +216,7 @@ export default function UserCasePage() {
                       className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
                       onClick={() => navigate('/dashboard')}
                     >
-                      Start Free
+                      Start 14-Day Free Trial
                     </Button>
                   </div>
                 )}
