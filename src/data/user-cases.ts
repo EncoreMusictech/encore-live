@@ -39,7 +39,7 @@ export const userCases: UserCase[] = [
     icon: Music,
     audience: "Independent artists, songwriters, beat makers",
     isPopular: true,
-    primaryModules: ["royalties-processing", "copyright-management", "contract-management"],
+    primaryModules: ["copyright-management", "contract-management"],
     workflows: [
       {
         title: "Track Your Music Rights",
