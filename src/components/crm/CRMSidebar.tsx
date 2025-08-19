@@ -56,7 +56,7 @@ const mainModules: ModuleItem[] = [{
 const adminModules: ModuleItem[] = [{
   id: "client-portal",
   title: "Client Portal",
-  url: "/dashboard/clients",
+  url: "/dashboard/client-admin",
   icon: Users,
   description: "Client management",
   adminOnly: true
