@@ -2,7 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { userCases } from '@/data/user-cases';
 import { modules } from '@/data/modules';
@@ -11,10 +10,12 @@ import Header from '@/components/Header';
 import ModuleScreenshotSlideshow from '@/components/ModuleScreenshotSlideshow';
 import { updatePageMetadata } from '@/utils/seo';
 import { useEffect } from 'react';
+import { useSubscription } from '@/hooks/useSubscription';
 
 export default function UserCasePage() {
   const { userCaseId } = useParams<{ userCaseId: string }>();
   const navigate = useNavigate();
+  const { createCheckout } = useSubscription();
   
   const userCase = userCases.find(uc => uc.id === userCaseId);
 
@@ -233,27 +234,27 @@ export default function UserCasePage() {
               <CardContent className="space-y-4">
                 {userCase.recommendedTier === "Free" && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">Starter Bundle</h4>
-                      <Badge className="bg-secondary text-secondary-foreground">Free</Badge>
-                    </div>
+                    <h4 className="font-semibold mb-2">Starter Bundle</h4>
                     <p className="text-sm text-muted-foreground mb-3">
                       Perfect for indie creators starting their music career
                     </p>
-                    <ul className="text-sm space-y-1 text-muted-foreground">
+                    <ul className="text-sm space-y-1 text-muted-foreground mb-4">
                       <li>• Basic copyright tracking</li>
                       <li>• Simple contract templates</li>
                       <li>• Catalog valuation estimates</li>
                     </ul>
+                    <Button 
+                      className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
+                      onClick={() => navigate('/dashboard')}
+                    >
+                      Start Free
+                    </Button>
                   </div>
                 )}
                 
                 {userCase.recommendedTier === "Pro" && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">Publishing Pro</h4>
-                      <Badge className="bg-music-purple text-primary-foreground">Pro</Badge>
-                    </div>
+                    <h4 className="font-semibold mb-2">Publishing Pro</h4>
                     <div className="flex items-baseline gap-2 mb-2">
                       <span className="text-2xl font-bold">$299</span>
                       <span className="text-sm text-muted-foreground">/month</span>
@@ -261,29 +262,32 @@ export default function UserCasePage() {
                     <p className="text-sm text-muted-foreground mb-3">
                       Complete solution for indie publishers and growing catalogs
                     </p>
-                    <ul className="text-sm space-y-1 text-muted-foreground">
+                    <ul className="text-sm space-y-1 text-muted-foreground mb-4">
                       <li>• Complete royalty processing</li>
                       <li>• Advanced copyright tracking</li>
                       <li>• Smart contract management</li>
                       <li>• Writer/publisher split management</li>
                       <li>• Professional client reporting</li>
                     </ul>
+                    <Button 
+                      className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
+                      onClick={() => createCheckout('bundle', 'publishing-pro')}
+                    >
+                      Purchase Plan
+                    </Button>
                   </div>
                 )}
                 
                 {userCase.recommendedTier === "Enterprise" && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">Enterprise Suite</h4>
-                      <Badge className="bg-music-gold text-accent-foreground">Enterprise</Badge>
-                    </div>
+                    <h4 className="font-semibold mb-2">Enterprise Suite</h4>
                     <div className="flex items-baseline gap-2 mb-2">
                       <span className="text-xl font-semibold">Custom Pricing</span>
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">
                       Full-scale solution for large catalogs and institutional investors
                     </p>
-                    <ul className="text-sm space-y-1 text-muted-foreground">
+                    <ul className="text-sm space-y-1 text-muted-foreground mb-4">
                       <li>• All modules included</li>
                       <li>• White-label branding</li>
                       <li>• Custom integrations & SLAs</li>
@@ -291,14 +295,21 @@ export default function UserCasePage() {
                       <li>• Dedicated account manager</li>
                       <li>• 24/7 priority support</li>
                     </ul>
+                    <Button 
+                      className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
+                      onClick={() => navigate('/contact')}
+                    >
+                      Contact Sales
+                    </Button>
                   </div>
                 )}
                 
                 <Button 
-                  className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
+                  variant="outline"
+                  className="w-full"
                   onClick={() => navigate('/pricing')}
                 >
-                  View Full Pricing
+                  View All Plans
                 </Button>
               </CardContent>
             </Card>
