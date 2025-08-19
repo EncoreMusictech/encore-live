@@ -297,7 +297,7 @@ const LandingPage = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4">
-              Encore <span className="bg-gradient-primary bg-clip-text text-transparent">Solves This</span>
+              ENCORE <span className="bg-gradient-primary bg-clip-text text-transparent">Solves This</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Modern technology meets music industry expertise
