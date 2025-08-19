@@ -3,26 +3,33 @@ import { ArrowRight, Music, TrendingUp, Shield } from "lucide-react";
 
 const Hero = () => {
   return (
-    <section className="relative overflow-hidden py-20 lg:py-32">
+    <section className="relative overflow-hidden py-20 lg:py-32 bg-gradient-to-br from-jet-black via-jet-black/95 to-electric-lavender/5">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-primary rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-vinyl rounded-full blur-3xl"></div>
+      </div>
       
       <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in">
-          <div className="space-y-6">
-            <div className="font-accent text-dusty-gold text-sm tracking-wider">
-              ANALOG SOUL • DIGITAL SPINE
-            </div>
-            <h1 className="font-headline text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
-              <span className="bg-gradient-primary bg-clip-text text-transparent">
-                Rights Management
+        <div className="max-w-6xl mx-auto text-center space-y-12 animate-fade-in">
+          <div className="space-y-8">
+            <div className="inline-flex items-center gap-2 bg-electric-lavender/10 border border-electric-lavender/20 rounded-full px-4 py-2">
+              <div className="w-2 h-2 bg-dusty-gold rounded-full animate-pulse"></div>
+              <span className="font-accent text-dusty-gold text-sm tracking-wider">
+                PROFESSIONAL RIGHTS MANAGEMENT
               </span>
-              <br />
-              <span className="text-foreground">
-                Reimagined
+            </div>
+            
+            <h1 className="font-headline text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-none">
+              <span className="block text-foreground">Unlock the Value</span>
+              <span className="block bg-gradient-primary bg-clip-text text-transparent">
+                of Your Catalog
               </span>
             </h1>
             
-            <p className="font-body text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Track the rights like you track the hits. Power your catalog. Protect your legacy.
+            <p className="font-body text-xl md:text-2xl text-platinum-gray/80 max-w-4xl mx-auto leading-relaxed">
+              One platform, endless opportunities to grow your music business. 
+              Professional-grade rights management, catalog valuation, and revenue optimization.
             </p>
           </div>
 
