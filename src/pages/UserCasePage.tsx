@@ -201,27 +201,32 @@ export default function UserCasePage() {
                 <CardTitle className="text-music-purple">Recommended Plan</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {userCase.recommendedTier === "Free" && (
+                {userCase.recommendedTier === "Pro" && userCase.id === "indie-creators" && (
                   <div>
-                    <h4 className="font-semibold mb-2">Starter Bundle</h4>
+                    <h4 className="font-semibold mb-2">Starter Creator</h4>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-2xl font-bold">$79</span>
+                      <span className="text-sm text-muted-foreground">/month</span>
+                    </div>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Perfect for indie creators starting their music career
+                      Perfect for indie songwriters starting their music career
                     </p>
                     <ul className="text-sm space-y-1 text-muted-foreground mb-4">
-                      <li>• Basic copyright tracking</li>
-                      <li>• Simple contract templates</li>
-                      <li>• Catalog valuation estimates</li>
+                      <li>• Metadata management</li>
+                      <li>• Writer/publisher splits</li>
+                      <li>• Basic contract templates</li>
+                      <li>• Auto-tag by deal type</li>
                     </ul>
                     <Button 
                       className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
-                      onClick={() => navigate('/dashboard')}
+                      onClick={() => createCheckout('bundle', 'starter')}
                     >
                       Start 14-Day Free Trial
                     </Button>
                   </div>
                 )}
                 
-                {userCase.recommendedTier === "Pro" && (
+                {userCase.recommendedTier === "Pro" && userCase.id !== "indie-creators" && (
                   <div>
                     <h4 className="font-semibold mb-2">Publishing Pro</h4>
                     <div className="flex items-baseline gap-2 mb-2">

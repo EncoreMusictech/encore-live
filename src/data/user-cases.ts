@@ -69,7 +69,7 @@ export const userCases: UserCase[] = [
       author: "Sarah Martinez",
       company: "Independent Singer-Songwriter"
     },
-    recommendedTier: "Free"
+    recommendedTier: "Pro"
   },
   {
     id: "music-publishers",
