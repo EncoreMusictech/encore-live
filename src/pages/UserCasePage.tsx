@@ -168,9 +168,9 @@ export default function UserCasePage() {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => navigate(`/features/${module.id}`)}
+                              onClick={() => navigate('/dashboard')}
                             >
-                              Learn More
+                              Try Now
                             </Button>
                           </div>
                           
