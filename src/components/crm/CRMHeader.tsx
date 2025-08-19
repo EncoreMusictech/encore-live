@@ -7,44 +7,33 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
-
 export function CRMHeader() {
-  const { user, signOut } = useAuth();
-  const { subscription_tier } = useSubscription();
-
+  const {
+    user,
+    signOut
+  } = useAuth();
+  const {
+    subscription_tier
+  } = useSubscription();
   const userInitials = user?.email?.slice(0, 2).toUpperCase() || 'U';
-
-  return (
-    <header className="border-b border-border bg-card">
+  return <header className="border-b border-border bg-card">
       <div className="flex items-center justify-between h-16 px-6">
         <div className="flex items-center space-x-4">
           <SidebarTrigger className="lg:hidden" />
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-headline font-bold">ENCORE CRM</h1>
-            {subscription_tier && (
-              <Badge variant="secondary" className="text-xs">
+            <h1 className="text-xl font-headline font-bold">ENCORE</h1>
+            {subscription_tier && <Badge variant="secondary" className="text-xs">
                 {subscription_tier}
-              </Badge>
-            )}
+              </Badge>}
           </div>
         </div>
 
         <div className="flex-1 max-w-md mx-8">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search across all modules..."
-              className="pl-10 bg-muted/50"
-            />
+            <Input placeholder="Search across all modules..." className="pl-10 bg-muted/50" />
           </div>
         </div>
 
@@ -90,6 +79,5 @@ export function CRMHeader() {
           </DropdownMenu>
         </div>
       </div>
-    </header>
-  );
+    </header>;
 }
