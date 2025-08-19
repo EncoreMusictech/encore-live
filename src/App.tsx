@@ -19,7 +19,7 @@ import Index from "./pages/Index";
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import DemoModulesPage from "./pages/DemoModulesPage";
+
 
 import UserCasePage from "./pages/UserCasePage";
 import PricingPage from "./pages/PricingPage";
@@ -97,8 +97,6 @@ const App = () => {
                         {/* Features Routes */}
                         <Route path="/features" element={<FeaturesOverviewPage />} />
                         
-                        {/* Legacy Routes - Redirects to CRM */}
-                        <Route path="/demo-modules" element={<DemoModulesPage />} />
                         
                         <Route path="/use-cases/:userCaseId" element={<UserCasePage />} />
                         
