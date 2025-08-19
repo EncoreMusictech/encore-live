@@ -70,7 +70,7 @@ const App = () => {
                       <Routes>
                         <Route path="/auth" element={<Auth />} />
                         <Route index element={<Index />} />
-                        <Route path="/home" element={<Navigate to="/" replace />} />
+                        
                         
                         {/* Dashboard Routes */}
                         <Route path="/dashboard" element={<CRMLayout />}>
