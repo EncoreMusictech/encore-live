@@ -7,7 +7,7 @@ import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, TrendingUp, Ca
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
-import { RoyaltiesModuleNav } from "@/components/royalties/RoyaltiesModuleNav";
+
 import { RoyaltiesImportStaging } from "@/components/royalties/RoyaltiesImportStaging";
 import { RoyaltiesDiscrepancyReport } from "@/components/royalties/RoyaltiesDiscrepancyReport";
 import { RoyaltiesAnalyticsDashboard } from "@/components/royalties/RoyaltiesAnalyticsDashboard";
@@ -47,7 +47,7 @@ export default function CRMRoyaltiesPage() {
         </div>
       </div>
 
-      <RoyaltiesModuleNav />
+      
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-6">
