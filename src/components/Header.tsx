@@ -46,33 +46,9 @@ const Header = () => {
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300 bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
+                <Link to="/features" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300">
                   Features
-                </NavigationMenuTrigger>
-                <NavigationMenuContent className="bg-jet-black/95 backdrop-blur-lg border border-electric-lavender/20 shadow-glow">
-                  <div className="grid w-[400px] gap-3 p-4">
-                    {modules.map((module) => (
-                      <NavigationMenuLink key={module.id} asChild>
-                        <Link
-                          to="/dashboard"
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-electric-lavender/10 hover:text-electric-lavender focus:bg-electric-lavender/10 focus:text-electric-lavender"
-                        >
-                          <div className="flex items-center gap-3">
-                            <module.icon className="h-4 w-4 text-dusty-gold" />
-                            <div>
-                              <div className="text-sm font-medium leading-none text-platinum-gray">
-                                {module.title}
-                              </div>
-                              <p className="line-clamp-2 text-xs leading-snug text-platinum-gray/60 mt-1">
-                                {module.description}
-                              </p>
-                            </div>
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                    ))}
-                  </div>
-                </NavigationMenuContent>
+                </Link>
               </NavigationMenuItem>
               
               <NavigationMenuItem>
@@ -158,6 +134,12 @@ const Header = () => {
                     Dashboard
                   </Link>
                 )}
+                <Link 
+                  to="/features" 
+                  className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
+                >
+                  Features
+                </Link>
                 <div className="border-b border-border pb-2">
                   <p className="text-sm font-medium text-foreground/40 mb-2">Solutions</p>
                   {userCases.map((userCase) => {

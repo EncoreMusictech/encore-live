@@ -18,6 +18,12 @@ export const pageMetadata: Record<string, PageMetadata> = {
     keywords: ["music modules", "music industry tools", "copyright management", "contract management", "royalty processing"],
     canonical: "/modules"
   },
+  features: {
+    title: "Music Rights Management Features | Catalog Valuation & Royalty Processing",
+    description: "Complete music rights management platform with catalog valuation, royalty processing, contract management, copyright tracking, and sync licensing tools.",
+    keywords: ["music rights management features", "catalog valuation tools", "royalty processing software", "contract management", "copyright tracking", "sync licensing"],
+    canonical: "/features"
+  },
   pricing: {
     title: "Pricing - Encore Music Tech Solutions",
     description: "Flexible pricing plans for music industry professionals. Choose individual modules or bundled packages with significant savings. Plans for indie creators to enterprise publishers.",
