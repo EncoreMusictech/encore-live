@@ -428,11 +428,6 @@ const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {pricingTiers.map((tier, index) => (
               <Card key={index} className={`relative ${tier.popular ? 'border-electric-lavender shadow-glow' : ''}`}>
-                {tier.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-gradient-primary text-primary-foreground">Most Popular</Badge>
-                  </div>
-                )}
                 <CardHeader className="text-center">
                   <CardTitle className="text-2xl">{tier.name}</CardTitle>
                   <div className="space-y-2">

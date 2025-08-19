@@ -83,12 +83,6 @@ const Index = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {pricingTiers.map(tier => <Card key={tier.name} className={`relative transition-all duration-300 hover:shadow-elegant ${tier.popular ? 'ring-2 ring-music-purple shadow-glow scale-105' : ''}`}>
-                {tier.popular && <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-gradient-accent text-accent-foreground">
-                      <Star className="w-3 h-3 mr-1" />
-                      Most Popular
-                    </Badge>
-                  </div>}
                 
                 <CardHeader className="text-center">
                   <CardTitle className="text-2xl">{tier.name}</CardTitle>

@@ -609,14 +609,6 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                       (plan as any).popular ? 'ring-2 ring-primary shadow-glow scale-105' : ''
                     }`}
                   >
-                    {(plan as any).popular && (
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                        <Badge className="bg-gradient-primary text-primary-foreground">
-                          <Star className="w-3 h-3 mr-1" />
-                          Most Popular
-                        </Badge>
-                      </div>
-                    )}
 
                     <CardHeader>
                       <div className="flex items-center justify-between mb-4">

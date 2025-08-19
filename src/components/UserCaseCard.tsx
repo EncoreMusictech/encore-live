@@ -34,11 +34,6 @@ const UserCaseCard = ({
     <Card className={`relative overflow-hidden transition-all duration-300 hover:shadow-elegant hover:scale-105 ${
       isPopular ? 'ring-2 ring-music-purple shadow-glow' : ''
     }`}>
-      {isPopular && (
-        <div className="absolute top-0 right-0 bg-gradient-accent text-accent-foreground text-xs font-semibold px-3 py-1 rounded-bl-lg">
-          Most Popular
-        </div>
-      )}
       
       <CardHeader className="space-y-4">
         <div className="flex items-center justify-center">

@@ -548,9 +548,6 @@ const DocumentationPage = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <CardTitle className="text-lg">{module.title}</CardTitle>
-                      <Badge variant={module.tier === "Pro" ? "default" : "secondary"} className="text-xs">
-                        {module.tier}
-                      </Badge>
                     </div>
                     <CardDescription className="mt-1">{module.description}</CardDescription>
                   </div>
@@ -595,9 +592,6 @@ const DocumentationPage = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-2xl">{module.title}</CardTitle>
-                  <Badge variant={module.tier === "Pro" ? "default" : "secondary"}>
-                    {module.tier}
-                  </Badge>
                 </div>
                 <CardDescription className="text-base mt-1">{module.description}</CardDescription>
               </div>

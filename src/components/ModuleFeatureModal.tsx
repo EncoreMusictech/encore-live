@@ -167,9 +167,6 @@ const ModuleFeatureModal = ({ isOpen, onClose, module }: ModuleFeatureModalProps
             <div className="flex-1">
               <DialogTitle className="text-2xl mb-2">{module.title}</DialogTitle>
               <div className="flex items-center gap-2">
-                <Badge className={tierColors[module.tier]}>
-                  {module.tier}
-                </Badge>
                 <p className="text-muted-foreground">{module.description}</p>
               </div>
             </div>

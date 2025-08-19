@@ -85,14 +85,6 @@ export default function UserCasePage() {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold">{userCase.title}</h1>
-                <Badge className={tierColors[userCase.recommendedTier]}>
-                  {userCase.recommendedTier} Plan
-                </Badge>
-                {userCase.isPopular && (
-                  <Badge className="bg-gradient-accent text-accent-foreground">
-                    Most Popular
-                  </Badge>
-                )}
               </div>
               <p className="text-lg text-muted-foreground mb-2">{userCase.description}</p>
               <p className="text-sm font-medium text-music-purple">{userCase.audience}</p>
@@ -282,9 +274,6 @@ export default function UserCasePage() {
               </CardHeader>
               <CardContent>
                 <div className="text-center space-y-2">
-                  <Badge className={tierColors[userCase.recommendedTier]} variant="outline">
-                    {userCase.recommendedTier} Plan
-                  </Badge>
                   <p className="text-sm text-muted-foreground">
                     Perfect for {userCase.title.toLowerCase()} with your specific needs and workflows
                   </p>

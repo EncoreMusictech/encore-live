@@ -86,11 +86,6 @@ export default function FeaturesPage() {
                 >
                   {module.tier}
                 </Badge>
-                {module.isPopular && (
-                  <Badge className="bg-gradient-accent text-accent-foreground">
-                    Most Popular
-                  </Badge>
-                )}
               </div>
               <p className="text-lg text-muted-foreground">{module.description}</p>
             </div>
