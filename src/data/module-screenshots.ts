@@ -72,8 +72,8 @@ export const moduleScreenshots: Record<string, Screenshot[]> = {
   ],
   "client-portal": [
     {
-      image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800&h=600&fit=crop",
-      caption: "Secure artist dashboard with earnings analytics and performance insights"
+      image: "/lovable-uploads/8ee2548c-9a96-4c5f-bf7a-fc15e5b87525.png",
+      caption: "Client portal interface with royalties, contracts, and works management"
     },
     {
       image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=600&fit=crop",
