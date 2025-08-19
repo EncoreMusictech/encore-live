@@ -3,33 +3,62 @@ import { ArrowRight, Music, TrendingUp, Shield } from "lucide-react";
 
 const Hero = () => {
   return (
-    <section className="relative overflow-hidden py-20 lg:py-32 bg-gradient-to-br from-jet-black via-jet-black/95 to-electric-lavender/5">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-primary rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-vinyl rounded-full blur-3xl"></div>
+    <section className="relative overflow-hidden py-20 lg:py-32 bg-gradient-to-br from-background via-background/95 to-electric-lavender/10">
+      {/* Dynamic Background Elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-electric-lavender to-dusty-gold rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-l from-electric-lavender/60 to-primary/40 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-transparent via-electric-lavender/10 to-transparent rounded-full animate-[spin_20s_linear_infinite]"></div>
+      </div>
+
+      {/* Geometric Accent Elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 right-20 w-16 h-16 bg-electric-lavender/20 transform rotate-45 animate-bounce"></div>
+        <div className="absolute bottom-32 left-16 w-8 h-8 bg-dusty-gold/30 rounded-full animate-pulse"></div>
+        <div className="absolute top-1/3 right-1/3 w-6 h-24 bg-gradient-to-b from-electric-lavender to-transparent transform rotate-12"></div>
       </div>
       
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-6xl mx-auto text-center space-y-12 animate-fade-in">
           <div className="space-y-8">
-            <div className="inline-flex items-center gap-2 bg-electric-lavender/10 border border-electric-lavender/20 rounded-full px-4 py-2">
-              <div className="w-2 h-2 bg-dusty-gold rounded-full animate-pulse"></div>
-              <span className="font-accent text-dusty-gold text-sm tracking-wider">
-                PROFESSIONAL RIGHTS MANAGEMENT
+            {/* Enhanced Badge with Modern Styling */}
+            <div className="inline-flex items-center gap-3 bg-gradient-to-r from-electric-lavender/20 to-electric-lavender/10 border border-electric-lavender/30 rounded-full px-6 py-3 backdrop-blur-sm">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-electric-lavender rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-dusty-gold rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-electric-lavender/60 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+              </div>
+              <span className="font-accent text-electric-lavender text-sm font-semibold tracking-wider">
+                THE FUTURE OF MUSIC RIGHTS
               </span>
             </div>
             
-            <h1 className="font-headline text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-none">
-              <span className="block text-foreground">Unlock the Value</span>
-              <span className="block bg-gradient-primary bg-clip-text text-transparent">
-                of Your Catalog
-              </span>
-            </h1>
+            {/* Bold, Modern Typography */}
+            <div className="space-y-4">
+              <h1 className="font-headline text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-none">
+                <span className="block relative">
+                  <span className="bg-gradient-to-r from-electric-lavender via-electric-lavender to-dusty-gold bg-clip-text text-transparent">
+                    GET THE
+                  </span>
+                </span>
+                <span className="block relative -mt-4">
+                  <span className="text-foreground italic transform -skew-x-6 inline-block">
+                    BAG!
+                  </span>
+                </span>
+              </h1>
+              
+              {/* Subtitle with modern styling */}
+              <div className="bg-electric-lavender/90 text-background px-8 py-4 rounded-2xl inline-block transform -rotate-1 shadow-lg">
+                <p className="font-body text-lg md:text-xl font-bold">
+                  The Future of Music Rights, Royalties & Licensing
+                </p>
+              </div>
+            </div>
             
-            <p className="font-body text-xl md:text-2xl text-platinum-gray/80 max-w-4xl mx-auto leading-relaxed">
-              One platform, endless opportunities to grow your music business. 
-              Professional-grade rights management, catalog valuation, and revenue optimization.
+            <p className="font-body text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+              Professional-grade rights management that actually works. 
+              <span className="text-electric-lavender font-semibold">Track your rights like you track your hits.</span>
             </p>
           </div>
 
