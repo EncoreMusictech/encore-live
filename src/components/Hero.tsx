@@ -37,7 +37,7 @@ const Hero = () => {
             <div className="space-y-4">
               <h1 className="font-headline text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-none">
                 <span className="block relative">
-                  <span className="bg-gradient-to-r from-electric-lavender via-electric-lavender to-dusty-gold bg-clip-text text-transparent italic transform -skew-x-6 inline-block">
+                  <span className="bg-gradient-to-r from-electric-lavender via-electric-lavender to-dusty-gold bg-clip-text text-transparent italic inline-block">
                     ENCORE!
                   </span>
                 </span>
