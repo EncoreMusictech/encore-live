@@ -103,7 +103,7 @@ const App = () => {
                         
                         
                         
-                        <Route path="/payouts" element={<Navigate to="/dashboard/royalties" replace />} />
+                        
                         <Route path="/pricing" element={<PricingPage />} />
                         <Route path="/contact" element={<ContactPage />} />
                         <Route path="/documentation" element={<DocumentationPage />} />
