@@ -63,24 +63,11 @@ export default function FeaturesOverviewPage() {
                 </div>
                 
                 <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gradient-primary rounded-lg p-2">
-                        <Icon className="w-5 h-5 text-primary-foreground" />
-                      </div>
-                      <CardTitle className="text-xl">{module.title}</CardTitle>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-gradient-primary rounded-lg p-2">
+                      <Icon className="w-5 h-5 text-primary-foreground" />
                     </div>
-                    <Badge 
-                      className={
-                        module.tier === 'Free' 
-                          ? 'bg-secondary text-secondary-foreground'
-                          : module.tier === 'Pro'
-                          ? 'bg-music-purple text-primary-foreground'
-                          : 'bg-music-gold text-accent-foreground'
-                      }
-                    >
-                      {module.tier}
-                    </Badge>
+                    <CardTitle className="text-xl">{module.title}</CardTitle>
                   </div>
                   <CardDescription className="text-base">
                     {module.description}
