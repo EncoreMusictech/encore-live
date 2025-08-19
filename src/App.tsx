@@ -101,7 +101,7 @@ const App = () => {
                         
                         
                         
-                        <Route path="/reconciliation" element={<Navigate to="/dashboard/royalties" replace />} />
+                        
                         <Route path="/royalties" element={<Navigate to="/dashboard/royalties" replace />} />
                         <Route path="/payouts" element={<Navigate to="/dashboard/royalties" replace />} />
                         <Route path="/pricing" element={<PricingPage />} />
