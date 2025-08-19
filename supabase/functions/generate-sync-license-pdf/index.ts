@@ -89,7 +89,7 @@ interface SyncLicense {
 }
 
 async function generateWithGPT5(license: SyncLicense): Promise<string> {
-  const model = 'gpt-4o';
+  const model = 'gpt-5-2025-08-07';
   
   const system = `You are a senior music attorney and world-class legal drafter specializing in synchronization licenses.
   
@@ -155,6 +155,8 @@ async function generateWithGPT5(license: SyncLicense): Promise<string> {
     }
   };
 
+  console.log('Making OpenAI API request with model:', model);
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -171,13 +173,20 @@ async function generateWithGPT5(license: SyncLicense): Promise<string> {
     }),
   });
 
+  console.log('OpenAI API response status:', response.status);
+
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('OpenAI API error:', response.status, errorText);
     throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
   }
 
   const data = await response.json();
+  console.log('OpenAI API response data keys:', Object.keys(data));
+  
   let content = data.choices?.[0]?.message?.content || '';
+  console.log('Generated content length:', content.length);
+  console.log('Content preview:', content.substring(0, 200));
   
   // Clean up markdown code fences
   content = content.replace(/^\uFEFF/, '');
@@ -187,9 +196,11 @@ async function generateWithGPT5(license: SyncLicense): Promise<string> {
   
   // Ensure it's a complete HTML document
   if (!content.includes('<html') && !content.includes('<!DOCTYPE')) {
+    console.log('Wrapping content in HTML structure');
     content = wrapInHTML(content, license.project_title || 'Synchronization License');
   }
   
+  console.log('Final content length after processing:', content.length);
   return content;
 }
 
