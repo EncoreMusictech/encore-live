@@ -95,48 +95,6 @@ export default function UserCasePage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Workflows */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Tailored Workflows</CardTitle>
-                <CardDescription>
-                  Step-by-step processes designed specifically for {userCase.title.toLowerCase()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {userCase.workflows.map((workflow, index) => (
-                  <div key={index}>
-                    {index > 0 && <Separator className="my-6" />}
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-lg mb-2">{workflow.title}</h4>
-                          <p className="text-muted-foreground mb-3">{workflow.description}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {workflow.modules.map(moduleId => {
-                              const module = modules.find(m => m.id === moduleId);
-                              return module ? (
-                                <Badge key={moduleId} variant="outline" className="text-xs">
-                                  {module.title}
-                                </Badge>
-                              ) : null;
-                            })}
-                          </div>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          onClick={() => navigate('/dashboard')}
-                          className="ml-4 bg-gradient-primary text-primary-foreground hover:opacity-90"
-                        >
-                          Try Workflow
-                          <ExternalLink className="w-3 h-3 ml-1" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
 
             {/* Featured Modules Screenshots */}
             {primaryModulesData.length > 0 && (
