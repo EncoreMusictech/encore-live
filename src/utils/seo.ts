@@ -30,12 +30,6 @@ export const pageMetadata: Record<string, PageMetadata> = {
     keywords: ["music software login", "encore music login", "music rights management login"],
     canonical: "/auth"
   },
-  catalogValuation: {
-    title: "Catalog Valuation - AI-Powered Music IP Valuation | Encore Music",
-    description: "Professional music catalog valuation using AI-powered analysis, DCF modeling, and real streaming data. Get accurate valuations for music IP assets and investment decisions.",
-    keywords: ["music catalog valuation", "music IP valuation", "song valuation", "music asset valuation", "DCF modeling music"],
-    canonical: "/catalog-valuation"
-  },
   dealSimulator: {
     title: "Deal Simulator - Music Acquisition Analysis | Encore Music",
     description: "Advanced deal simulation and modeling tools for music acquisitions. Analyze ROI, payback periods, and scenario comparisons for music catalog purchases.",

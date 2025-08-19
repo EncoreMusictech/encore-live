@@ -21,11 +21,11 @@ const DemoModulesPage = () => {
       title: "Catalog Valuation & Deal Simulator",
       description: "AI-powered catalog assessment with 3-5 year forecasting and deal simulation tools. Includes 1 demo valuation and 1 demo deal scenario save.",
       icon: TrendingUp,
-      path: "/catalog-valuation",
+      path: "/dashboard/catalog-valuation",
       demoKey: "catalogValuation",
       subModules: [
-        { title: "Catalog Valuation", path: "/catalog-valuation" },
-        { title: "Deal Simulator", path: "/deal-simulator" }
+        { title: "Catalog Valuation", path: "/dashboard/catalog-valuation" },
+        { title: "Deal Simulator", path: "/dashboard/catalog-valuation" }
       ]
     },
     {
@@ -33,7 +33,7 @@ const DemoModulesPage = () => {
       title: "Contract Management",
       description: "Manage music industry agreements with smart contract features",
       icon: FileText,
-      path: "/contract-management",
+      path: "/dashboard/contracts",
       demoKey: "contractManagement"
     },
     {
@@ -41,7 +41,7 @@ const DemoModulesPage = () => {
       title: "Copyright Management",
       description: "Register and track copyrights with split assignments and metadata management",
       icon: Copyright,
-      path: "/copyright-management",
+      path: "/dashboard/copyright",
       demoKey: "copyrightManagement"
     },
     {
@@ -49,7 +49,7 @@ const DemoModulesPage = () => {
       title: "Sync Licensing Tracker",
       description: "Comprehensive sync deal pipeline with pitch tracking and deal memo generation",
       icon: Film,
-      path: "/sync-licensing",
+      path: "/dashboard/sync",
       demoKey: "syncLicensing"
     },
     {
@@ -57,12 +57,12 @@ const DemoModulesPage = () => {
       title: "Royalties Processing",
       description: "Complete royalty management system from reconciliation to payouts",
       icon: DollarSign,
-      path: "/reconciliation",
+      path: "/dashboard/royalties",
       demoKey: "royaltiesProcessing",
       subModules: [
-        { title: "Reconciliation", path: "/reconciliation" },
-        { title: "Royalties Allocation", path: "/royalties" },
-        { title: "Payouts & Client Accounting", path: "/payouts" }
+        { title: "Reconciliation", path: "/dashboard/royalties" },
+        { title: "Royalties Allocation", path: "/dashboard/royalties" },
+        { title: "Payouts & Client Accounting", path: "/dashboard/royalties" }
       ]
     }
   ];
