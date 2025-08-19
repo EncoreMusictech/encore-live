@@ -43,7 +43,7 @@ serve(async (req) => {
       // Client portal access
       acceptUrl = `${siteUrl}/client-portal?token=${encodeURIComponent(body.token)}`
       emailTemplate = ClientInvitationEmail
-      subject = 'You're invited to the ENCORE Client Portal'
+      subject = 'You\'re invited to the ENCORE Client Portal'
     } else if (role === 'user') {
       // CRM user access
       acceptUrl = `${siteUrl}/crm?token=${encodeURIComponent(body.token)}`
