@@ -52,8 +52,7 @@ const Hero = () => {
             </div>
             
             <p className="font-body text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-              Professional-grade rights management that actually works. 
-              <span className="text-electric-lavender font-semibold">Track your rights like you track your hits.</span>
+              Track your rights like you track your hits.
             </p>
           </div>
 
