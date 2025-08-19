@@ -98,7 +98,7 @@ const App = () => {
                         <Route path="/use-cases/:userCaseId" element={<UserCasePage />} />
                         
                         
-                        <Route path="/copyright-management" element={<Navigate to="/dashboard/copyright" replace />} />
+                        
                         <Route path="/sync-licensing" element={<Navigate to="/dashboard/sync" replace />} />
                         <Route path="/sync-licensing-preview" element={<Navigate to="/dashboard/sync" replace />} />
                         <Route path="/reconciliation" element={<Navigate to="/dashboard/royalties" replace />} />
