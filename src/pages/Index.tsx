@@ -134,8 +134,8 @@ const Index = () => {
             </p>
             <div className="flex justify-center gap-4">
               <Button size="lg" className="bg-gradient-primary text-primary-foreground hover:opacity-90" asChild>
-                <Link to="/crm">
-                  Launch CRM Dashboard
+                <Link to="/dashboard">
+                  Launch Dashboard
                 </Link>
               </Button>
               <Button variant="outline" size="lg" className="border-music-purple text-music-purple hover:bg-music-purple hover:text-primary-foreground" asChild>
