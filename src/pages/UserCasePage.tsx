@@ -195,37 +195,6 @@ export default function UserCasePage() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Get Started</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
-                  onClick={() => navigate('/dashboard')}
-                >
-                  Start Free Trial
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => navigate('/pricing')}
-                >
-                  View Pricing
-                </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  className="w-full"
-                  onClick={() => navigate('/contact')}
-                >
-                  Contact Sales
-                </Button>
-              </CardContent>
-            </Card>
-
             {/* Recommended Plan */}
             <Card className="border-music-purple">
               <CardHeader>
