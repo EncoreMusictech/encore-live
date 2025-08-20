@@ -87,7 +87,7 @@ serve(async (req) => {
         console.log('MLC lookup input:', input);
         
         // Call MLC fetch-writer-catalog function
-        const { data: mlcResponse, error: mlcError } = await supabase.functions.invoke('mlc-fetch-writer-catalog', {
+        const { data: mlcResponse, error: mlcError } = await supabase.functions.invoke('mlc/fetch-writer-catalog', {
           body: input
         });
         
