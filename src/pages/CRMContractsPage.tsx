@@ -697,22 +697,20 @@ export default function CRMContractsPage() {
           </Card>
 
           {/* Results */}
-          <Card>
-            <CardHeader>
-              <CardTitle>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold">
                 Contracts ({filteredContracts.length})
-              </CardTitle>
-              <CardDescription>
+              </h3>
+              <p className="text-sm text-muted-foreground">
                 {filteredContracts.length === contracts.length 
                   ? `Showing all ${contracts.length} contracts`
                   : `Showing ${filteredContracts.length} of ${contracts.length} contracts`
                 }
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ContractList contracts={filteredContracts} onEdit={handleEditContract} />
-            </CardContent>
-          </Card>
+              </p>
+            </div>
+            <ContractList contracts={filteredContracts} onEdit={handleEditContract} />
+          </div>
         </TabsContent>
 
         <TabsContent value="demos">
