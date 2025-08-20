@@ -537,7 +537,7 @@ export default function CRMContractsPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="contracts">
-            Contracts
+            My Contracts
           </TabsTrigger>
           <TabsTrigger value="demos">
             Demos
