@@ -369,7 +369,7 @@ export function ReconciliationBatchList() {
 
       {/* Edit Batch Dialog */}
       <Dialog open={!!editingBatch} onOpenChange={(open) => !open && setEditingBatch(null)}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Reconciliation Batch</DialogTitle>
           </DialogHeader>
