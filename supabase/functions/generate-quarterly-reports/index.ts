@@ -131,8 +131,23 @@ Deno.serve(async (req) => {
     
     for (const payout of payouts as any[]) {
       console.log(`\n--- Processing payout ${payout.id} ---`);
-      // For now, set agreement_id to null since the complex query was causing issues
-      let agreementId: string | undefined = null;
+      // Try to get contract ID from a simpler query approach
+      let agreementId: string | undefined;
+      try {
+        // First, try to find any contract associated with this client
+        const { data: clientContracts } = await supabaseClient
+          .from('contracts')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+          
+        if (clientContracts && clientContracts.length > 0) {
+          agreementId = clientContracts[0].id;
+        }
+      } catch (e) {
+        console.log('Could not find contract for user:', user.id, e);
+        agreementId = undefined;
+      }
 
       console.log('Payout data:', {
         id: payout.id,
