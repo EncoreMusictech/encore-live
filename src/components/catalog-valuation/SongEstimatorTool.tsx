@@ -84,7 +84,7 @@ export function SongEstimatorTool() {
           <div className="space-y-4">
             <div>
               <h2 className="text-2xl font-semibold flex items-center gap-2">
-                <Database className="h-5 w-5" />
+                <Music className="h-5 w-5" />
                 New Songwriter Research
               </h2>
               <p className="text-muted-foreground">
