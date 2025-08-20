@@ -279,6 +279,10 @@ Deno.serve(async (req) => {
       calculation_date: report.calculation_date
     }));
     
+    // Log the data being sent to the database function
+    console.log('Sample report data being sent:', JSON.stringify(reportsJson[0], null, 2));
+    console.log(`Sending ${reportsJson.length} reports to database function`);
+    
     try {
       // Use the database function to insert reports safely
       const { data: insertedCount, error } = await supabaseClient
@@ -291,7 +295,39 @@ Deno.serve(async (req) => {
         throw error;
       }
 
-      console.log(`✅ Successfully inserted ${insertedCount || 0} quarterly balance reports`);
+      console.log(`✅ Database function returned: ${insertedCount}`);
+      
+      // If database function succeeded but inserted 0, let's try manual insertion for debugging
+      if (insertedCount === 0 && reportsJson.length > 0) {
+        console.log('🔍 Database function inserted 0 records, trying manual insertion for debugging...');
+        
+        const sampleReport = reportsJson[0];
+        const { data: manualInsert, error: manualError } = await supabaseClient
+          .from('quarterly_balance_reports')
+          .insert([{
+            user_id: sampleReport.user_id,
+            payee_id: sampleReport.payee_id,
+            contact_id: sampleReport.contact_id,
+            year: sampleReport.year,
+            quarter: sampleReport.quarter,
+            opening_balance: sampleReport.opening_balance,
+            royalties_amount: sampleReport.royalties_amount,
+            expenses_amount: sampleReport.expenses_amount,
+            payments_amount: sampleReport.payments_amount,
+            closing_balance: sampleReport.closing_balance,
+            is_calculated: sampleReport.is_calculated,
+            calculation_date: sampleReport.calculation_date
+          }])
+          .select('*');
+          
+        if (manualError) {
+          console.error('Manual insertion error:', manualError);
+        } else {
+          console.log('✅ Manual insertion successful:', manualInsert);
+        }
+      }
+      
+      console.log(`✅ Successfully processed ${insertedCount || 0} quarterly balance reports`);
       
       return new Response(
         JSON.stringify({ 
