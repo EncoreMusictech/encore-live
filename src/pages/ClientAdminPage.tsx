@@ -329,6 +329,10 @@ export default function ClientAdminPage() {
     return <Badge variant="secondary" className="flex items-center gap-1"><Clock className="h-3 w-3" />Pending ({status.daysUntilExpiry}d)</Badge>;
   };
 
+  // Debug logging for client access
+  console.log('🔍 Debug - clientAccess array:', clientAccess);
+  console.log('🔍 Debug - clientAccess length:', clientAccess.length);
+  
   const getClientEmail = (clientUserId: string) => {
     const matches = invitations
       .filter((inv: any) => inv.accepted_by_user_id === clientUserId);
