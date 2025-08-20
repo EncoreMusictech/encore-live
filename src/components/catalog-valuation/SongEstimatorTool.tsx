@@ -246,7 +246,7 @@ export function SongEstimatorTool() {
                     <div className="text-2xl font-bold text-warning">
                       {currentSearch.ai_research_summary?.registration_gap_analysis?.total_gaps || 0}
                     </div>
-                    <div className="text-sm text-muted-foreground">Registration Gaps</div>
+                    <div className="text-sm text-muted-foreground">Unregistered Works</div>
                   </div>
                 </div>
 
