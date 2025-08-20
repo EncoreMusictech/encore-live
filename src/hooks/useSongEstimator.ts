@@ -331,7 +331,65 @@ export function useSongEstimator() {
     }
   };
 
-  // Bulk BMI verification for a search
+  // Bulk MLC verification for a search (background processing)
+  const runBulkMLCVerification = async (searchId: string) => {
+    setBmiVerificationLoading(true);
+    try {
+      // Get all songs for this search
+      const { data: songs, error: fetchError } = await supabase
+        .from('song_metadata_cache')
+        .select('*')
+        .eq('search_id', searchId);
+
+      if (fetchError) throw fetchError;
+
+      if (!songs || songs.length === 0) {
+        toast({
+          title: "No songs found",
+          description: "No songs available for MLC verification",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Create background job for bulk MLC lookup
+      const { data: jobData, error: jobError } = await supabase.functions.invoke('song-research-background-processor', {
+        body: {
+          action: 'create_job',
+          user_id: user.id,
+          search_id: searchId,
+          job_type: 'bulk_mlc_lookup',
+          job_data: {
+            songs: songs,
+            batchSize: 5
+          },
+          priority: 8
+        }
+      });
+
+      if (jobError) throw jobError;
+
+      toast({
+        title: "MLC Verification Started",
+        description: `Background processing initiated for ${songs.length} songs. You'll be notified when complete.`,
+      });
+
+      // Start polling for job status
+      startJobStatusPolling(jobData.job_id, searchId);
+
+    } catch (err) {
+      console.error('Error starting MLC verification:', err);
+      toast({
+        title: "MLC Verification Error",
+        description: err.message || "Failed to start MLC verification",
+        variant: "destructive"
+      });
+    } finally {
+      setBmiVerificationLoading(false);
+    }
+  };
+
+  // Bulk BMI verification for a search (background processing)
   const runBulkBMIVerification = async (searchId: string) => {
     setBmiVerificationLoading(true);
     try {
@@ -352,56 +410,118 @@ export function useSongEstimator() {
         return;
       }
 
-      // Prepare songs for bulk lookup
-      const songsForLookup = songs.map(song => ({
-        id: song.id,
-        songTitle: song.song_title,
-        writerName: song.songwriter_name
-      }));
-
-      const { data, error } = await supabase.functions.invoke('bulk-bmi-lookup', {
+      // Create background job for bulk BMI verification
+      const { data: jobData, error: jobError } = await supabase.functions.invoke('song-research-background-processor', {
         body: {
-          songs: songsForLookup,
-          batchSize: 5,
-          delayMs: 1000
+          action: 'create_job',
+          user_id: user.id,
+          search_id: searchId,
+          job_type: 'bulk_bmi_verification',
+          job_data: {
+            songs: songs,
+            batchSize: 3
+          },
+          priority: 7
         }
       });
 
-      if (error) throw error;
+      if (jobError) throw jobError;
 
-      if (data.success) {
-        toast({
-          title: "BMI Verification Complete",
-          description: `${data.bmi_matches_found}/${data.total_processed} songs verified with BMI (${data.summary.verification_rate}% success rate)`,
-        });
-
-        // Refresh the song metadata
-        await fetchSongMetadata(searchId);
-        
-        // Update search metadata complete count
-        const verifiedCount = data.bmi_matches_found;
-        await supabase
-          .from('song_catalog_searches')
-          .update({ 
-            metadata_complete_count: verifiedCount,
-            last_refreshed_at: new Date().toISOString()
-          })
-          .eq('id', searchId);
-
-        await fetchSearches();
-      } else {
-        throw new Error(data.error || 'BMI verification failed');
-      }
-    } catch (err) {
-      console.error('Error running BMI verification:', err);
       toast({
-        title: "BMI Verification Error",
-        description: err.message || "Failed to verify songs with BMI",
+        title: "BMI Verification Started",
+        description: `Background processing initiated for ${songs.length} songs. You'll be notified when complete.`,
+      });
+
+      // Start polling for job status
+      startJobStatusPolling(jobData.job_id, searchId);
+
+    } catch (err) {
+      console.error('Error starting BMI verification:', err);
+      toast({
+        title: "BMI Verification Error", 
+        description: err.message || "Failed to start BMI verification",
         variant: "destructive"
       });
     } finally {
       setBmiVerificationLoading(false);
     }
+  };
+
+  // Job status polling
+  const [activeJobs, setActiveJobs] = useState<Set<string>>(new Set());
+  
+  const startJobStatusPolling = (jobId: string, searchId: string) => {
+    if (activeJobs.has(jobId)) return;
+    
+    setActiveJobs(prev => new Set(prev).add(jobId));
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('song-research-background-processor', {
+          body: {
+            action: 'check_status',
+            job_id: jobId
+          }
+        });
+
+        if (error) throw error;
+
+        const job = data.job;
+        
+        if (job.status === 'completed') {
+          clearInterval(pollInterval);
+          setActiveJobs(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(jobId);
+            return newSet;
+          });
+
+          const results = job.results;
+          toast({
+            title: "Background Processing Complete",
+            description: `${results.successCount}/${results.totalProcessed} songs processed successfully`,
+          });
+
+          // Refresh data
+          await fetchSongMetadata(searchId);
+          await fetchSearches();
+          
+        } else if (job.status === 'failed') {
+          clearInterval(pollInterval);
+          setActiveJobs(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(jobId);
+            return newSet;
+          });
+
+          toast({
+            title: "Background Processing Failed",
+            description: job.error_message || "Processing failed",
+            variant: "destructive"
+          });
+        }
+        // Continue polling if status is 'pending' or 'processing'
+        
+      } catch (error) {
+        console.error('Job status polling error:', error);
+        clearInterval(pollInterval);
+        setActiveJobs(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(jobId);
+          return newSet;
+        });
+      }
+    }, 5000); // Poll every 5 seconds
+
+    // Clean up after 10 minutes max
+    setTimeout(() => {
+      clearInterval(pollInterval);
+      setActiveJobs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(jobId);
+        return newSet;
+      });
+    }, 10 * 60 * 1000);
   };
 
   // Single song BMI verification
@@ -562,6 +682,7 @@ export function useSongEstimator() {
     loading,
     bmiVerificationLoading,
     error,
+    activeJobs,
 
     // Actions
     createSearch,
@@ -570,6 +691,7 @@ export function useSongEstimator() {
     fetchPipelineEstimates,
     refreshSearch,
     deleteSearch,
+    runBulkMLCVerification,
     runBulkBMIVerification,
     verifySongWithBMI,
     refreshCacheForSearch,
