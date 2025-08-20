@@ -318,7 +318,7 @@ export function useQuarterlyBalanceReports() {
             *,
             contacts!quarterly_balance_reports_contact_id_fkey(name, email),
             contracts!quarterly_balance_reports_agreement_id_fkey(title, agreement_id),
-            payees:payee_id(payee_name)
+            payees(payee_name)
           `)
           .eq('user_id', user.id)
           .order('year', { ascending: false })
