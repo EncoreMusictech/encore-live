@@ -39,6 +39,12 @@ export default function ClientAdminPage() {
     refreshData 
   } = useClientPortal();
   
+  // Debug logging
+  console.log('🔍 ClientAdmin Debug:');
+  console.log('🔍 clientAccess:', clientAccess);
+  console.log('🔍 clientAccess.length:', clientAccess.length);
+  console.log('🔍 clientAccess array contents:', JSON.stringify(clientAccess, null, 2));
+  
   const [inviteEmail, setInviteEmail] = useState("");
   const [selectedRole, setSelectedRole] = useState<"admin" | "client">("client");
   const [permissions, setPermissions] = useState({
