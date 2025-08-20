@@ -157,15 +157,6 @@ export function CRMDashboard() {
 
   const modules = [
     {
-      id: 'catalog-valuation',
-      title: 'Catalog Valuation',
-      description: 'AI-powered catalog assessment',
-      icon: TrendingUp,
-      url: '/dashboard/catalog-valuation',
-      value: stats.catalogValue > 0 ? `$${stats.catalogValue.toLocaleString()}` : '$0',
-      change: '+12%'
-    },
-    {
       id: 'contract-management',
       title: 'Contracts',
       description: 'Active agreements',
