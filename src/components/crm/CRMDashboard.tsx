@@ -202,7 +202,10 @@ export function CRMDashboard() {
         <div>
           <h1 className="text-3xl font-headline font-bold">Welcome back!</h1>
           <p className="text-muted-foreground">
-            Explore full-featured demo data including contracts, royalties, and sync licensing tools
+            {isDemo 
+              ? "Explore full-featured demo data including contracts, royalties, and sync licensing tools"
+              : "Manage your music business operations, track contracts, process royalties, and grow your catalog"
+            }
           </p>
         </div>
         {subscription_tier && (
