@@ -724,29 +724,33 @@ export default function ClientAdminPage() {
               {clientAccess.length === 0 ? (
                 <p className="text-muted-foreground">No active client access</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {clientAccess.map((access) => (
-                    <div key={access.id} className="flex items-center justify-between p-3 border rounded">
-                      <div>
-                        <p className="font-medium">Client ID: {access.client_user_id}</p>
-                        <p className="text-sm text-muted-foreground">Email: {getClientEmail(access.client_user_id) ?? 'Unknown'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Role: {access.role} • Status: {access.status}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
+                    <div key={access.id} className="border rounded-lg p-4 space-y-3">
+                      {/* Client Portal Access Button - Top of card */}
+                      <div className="flex justify-center">
                         <Button
-                          size="sm"
-                          variant="outline"
                           onClick={() => {
                             console.log('🔍 View Client Portal clicked for:', access.client_user_id);
                             navigate(`/client-portal?client_id=${access.client_user_id}`);
                           }}
-                          className="bg-primary text-primary-foreground hover:bg-primary/90"
+                          className="w-full max-w-xs"
+                          size="lg"
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           View Client Portal
                         </Button>
+                      </div>
+                      
+                      {/* Client Information */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Email: {getClientEmail(access.client_user_id) ?? 'Unknown'}</p>
+                          <p className="text-sm text-muted-foreground">Client ID: {access.client_user_id}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Role: {access.role} • Status: {access.status}
+                          </p>
+                        </div>
                         <Button
                           size="sm"
                           variant="destructive"
