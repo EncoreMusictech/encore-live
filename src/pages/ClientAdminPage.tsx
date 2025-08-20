@@ -730,13 +730,24 @@ export default function ClientAdminPage() {
                           Role: {access.role} • Status: {access.status}
                         </p>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleRevokeAccess(access.id)}
-                      >
-                        Revoke
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          asChild
+                        >
+                          <Link to={`/client-portal?client_id=${access.client_user_id}`}>
+                            View Client Portal
+                          </Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleRevokeAccess(access.id)}
+                        >
+                          Revoke
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
