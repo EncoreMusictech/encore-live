@@ -285,6 +285,26 @@ export function useQuarterlyBalanceReports() {
           const { data: clientRows, error: clientErr } = await supabase.rpc('get_client_quarterly_balances');
           if (clientErr) throw clientErr;
 
+          // Get contract titles for agreement IDs
+          const agreementIds = [...new Set(clientRows?.map((row: any) => row.agreement_id).filter(Boolean))];
+          const contractsMap = new Map<string, { title: string; agreement_id: string }>();
+          
+          if (agreementIds.length > 0) {
+            const { data: contractsData } = await supabase
+              .from('contracts')
+              .select('agreement_id, title')
+              .in('agreement_id', agreementIds);
+            
+            contractsData?.forEach(contract => {
+              if (contract.agreement_id) {
+                contractsMap.set(contract.agreement_id, { 
+                  title: contract.title,
+                  agreement_id: contract.agreement_id 
+                });
+              }
+            });
+          }
+
           const mapped = (clientRows || []).map((row: any) => ({
             id: `client-${row.year}-Q${row.quarter}`,
             user_id: user.id,
@@ -304,7 +324,7 @@ export function useQuarterlyBalanceReports() {
             updated_at: new Date().toISOString(),
             payee_name: row.contact_name,
             contacts: row.contact_name ? { name: row.contact_name } : undefined,
-            contracts: undefined,
+            contracts: row.agreement_id ? contractsMap.get(row.agreement_id) : undefined,
           })) as QuarterlyBalanceReport[];
 
           setReports(mapped);
