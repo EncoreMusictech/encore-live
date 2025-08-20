@@ -238,11 +238,7 @@ export default function CRMCatalogValuationPage() {
         <TabsContent value="catalog-valuation" className="space-y-6">
           <DemoLimitBanner module="catalogValuation" />
           
-          <Card>
-            <CardContent>
-              <CatalogValuationWithSuspense />
-            </CardContent>
-          </Card>
+          <CatalogValuationWithSuspense />
         </TabsContent>
 
         <TabsContent value="deal-analysis" className="space-y-6">
