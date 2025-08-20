@@ -346,7 +346,7 @@ export function QuarterlyBalanceReportsTable() {
                           <TableCell>
                             <div className="font-medium">{payeeName}</div>
                           </TableCell>
-                          <TableCell>{report.contracts?.title || 'N/A'}</TableCell>
+                          <TableCell>{(report as any).contract_title || 'N/A'}</TableCell>
                           <TableCell className="text-right font-mono">${report.opening_balance.toLocaleString()}</TableCell>
                           <TableCell className="text-right font-mono text-green-600">+${report.royalties_amount.toLocaleString()}</TableCell>
                           <TableCell className="text-right font-mono text-red-600">-${report.expenses_amount.toLocaleString()}</TableCell>

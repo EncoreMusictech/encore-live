@@ -56,20 +56,12 @@ Deno.serve(async (req) => {
 
     console.log(`Generating quarterly reports for user: ${user.id}`);
 
-    // Get all payouts with client contact information and linked contracts
+    // Get all payouts with client contact information
     const { data: payouts, error: payoutsError } = await supabaseClient
       .from('payouts')
       .select(`
         id, client_id, gross_royalties, total_expenses, amount_due, 
-        status, workflow_stage, created_at, period_start,
-        payout_royalties!inner(
-          royalty_allocations!inner(
-            copyright_id,
-            contract_schedule_works!inner(
-              contracts!inner(id, agreement_id)
-            )
-          )
-        )
+        status, workflow_stage, created_at, period_start
       `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: true })
@@ -142,16 +134,29 @@ Deno.serve(async (req) => {
       // Get the contract/agreement ID from the payout relationships
       let agreementId: string | undefined;
       try {
-        const payoutRoyalties = payout.payout_royalties || [];
-        if (payoutRoyalties.length > 0) {
-          const firstRoyalty = payoutRoyalties[0];
-          const contracts = firstRoyalty?.royalty_allocations?.contract_schedule_works?.contracts;
-          if (contracts) {
-            agreementId = contracts.agreement_id;
+        // Query for contract ID through payout relationships
+        const { data: contractData } = await supabaseClient
+          .from('payout_royalties')
+          .select(`
+            royalty_allocations!inner(
+              copyright_id,
+              contract_schedule_works!inner(
+                contract_id,
+                contracts!inner(id, agreement_id)
+              )
+            )
+          `)
+          .eq('payout_id', payout.id)
+          .limit(1);
+          
+        if (contractData && contractData.length > 0) {
+          const contractInfo = contractData[0]?.royalty_allocations?.contract_schedule_works?.contracts;
+          if (contractInfo) {
+            agreementId = contractInfo.id; // Use contract ID as agreement ID
           }
         }
       } catch (e) {
-        console.log('Could not extract agreement ID for payout:', payout.id);
+        console.log('Could not extract agreement ID for payout:', payout.id, e);
       }
 
       console.log('Payout data:', {
