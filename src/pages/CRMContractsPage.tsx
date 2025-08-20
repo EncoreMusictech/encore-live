@@ -24,20 +24,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { 
-  FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter, X, 
-  TrendingUp, Clock, CalendarIcon 
-} from "lucide-react";
+import { FileText, Plus, Upload, Calendar, DollarSign, Users, Search, Filter, X, TrendingUp, Clock, CalendarIcon } from "lucide-react";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-
 export default function CRMContractsPage() {
   const [activeTab, setActiveTab] = useState("contracts");
-  const { contracts, loading } = useContracts();
-  const { canAccess, isDemo } = useDemoAccess();
-  const { toast } = useToast();
+  const {
+    contracts,
+    loading
+  } = useContracts();
+  const {
+    canAccess,
+    isDemo
+  } = useDemoAccess();
+  const {
+    toast
+  } = useToast();
 
   // Filter and search state
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,104 +60,81 @@ export default function CRMContractsPage() {
   const [creationMethod, setCreationMethod] = useState<string | null>(null);
   const [showDocuSignImport, setShowDocuSignImport] = useState(false);
   const [showContractUpload, setShowContractUpload] = useState(false);
-
   useEffect(() => {
     updatePageMetadata('contractManagement');
   }, []);
-
-  const contractTypes = [
-    {
-      id: "publishing",
-      title: "Publishing Agreement",
-      description: "Administration, Co-Publishing, Songwriter, or Catalog Acquisition",
-      icon: FileText,
-      color: "bg-blue-500"
-    },
-    {
-      id: "artist",
-      title: "Artist Agreement", 
-      description: "Indie, Label, 360, or Distribution deals with advances",
-      icon: Users,
-      color: "bg-purple-500"
-    },
-    {
-      id: "producer",
-      title: "Producer Agreement",
-      description: "Flat fee, points, or hybrid producer deals",
-      icon: DollarSign,
-      color: "bg-green-500"
-    },
-    {
-      id: "sync",
-      title: "Sync License",
-      description: "TV, Film, Web, Ads sync licensing agreements",
-      icon: Calendar,
-      color: "bg-orange-500"
-    },
-    {
-      id: "distribution",
-      title: "Distribution Agreement",
-      description: "Distribution-only or full label deals",
-      icon: Upload,
-      color: "bg-red-500"
-    }
-  ];
+  const contractTypes = [{
+    id: "publishing",
+    title: "Publishing Agreement",
+    description: "Administration, Co-Publishing, Songwriter, or Catalog Acquisition",
+    icon: FileText,
+    color: "bg-blue-500"
+  }, {
+    id: "artist",
+    title: "Artist Agreement",
+    description: "Indie, Label, 360, or Distribution deals with advances",
+    icon: Users,
+    color: "bg-purple-500"
+  }, {
+    id: "producer",
+    title: "Producer Agreement",
+    description: "Flat fee, points, or hybrid producer deals",
+    icon: DollarSign,
+    color: "bg-green-500"
+  }, {
+    id: "sync",
+    title: "Sync License",
+    description: "TV, Film, Web, Ads sync licensing agreements",
+    icon: Calendar,
+    color: "bg-orange-500"
+  }, {
+    id: "distribution",
+    title: "Distribution Agreement",
+    description: "Distribution-only or full label deals",
+    icon: Upload,
+    color: "bg-red-500"
+  }];
 
   // Calculate dynamic stats from actual contract data
   const stats = useMemo(() => {
     const now = new Date();
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    
-    const activeContracts = contracts.filter(contract => 
-      contract.contract_status === 'signed'
-    ).length;
-    
-    const pendingSignatures = contracts.filter(contract => 
-      contract.signature_status === 'pending' || contract.signature_status === 'sent'
-    ).length;
-    
+    const activeContracts = contracts.filter(contract => contract.contract_status === 'signed').length;
+    const pendingSignatures = contracts.filter(contract => contract.signature_status === 'pending' || contract.signature_status === 'sent').length;
     const expiringSoon = contracts.filter(contract => {
       if (!contract.end_date) return false;
       const endDate = new Date(contract.end_date);
       return endDate >= now && endDate <= thirtyDaysFromNow;
     }).length;
-    
     const totalValue = contracts.reduce((sum, contract) => {
       return sum + (contract.advance_amount || 0);
     }, 0);
-    
     const formatValue = (value: number) => {
       if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
       if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
       return `$${value.toFixed(0)}`;
     };
-    
-    return [
-      { 
-        title: "Active Contracts", 
-        value: activeContracts.toString(), 
-        change: contracts.length === 0 ? "No contracts yet" : `${contracts.length} total`,
-        icon: FileText
-      },
-      { 
-        title: "Pending Signatures", 
-        value: pendingSignatures.toString(), 
-        change: pendingSignatures > 0 ? `${pendingSignatures} awaiting` : "All signed",
-        icon: Users
-      },
-      { 
-        title: "Expiring Soon", 
-        value: expiringSoon.toString(), 
-        change: expiringSoon > 0 ? "Next 30 days" : "None expiring",
-        icon: Clock
-      },
-      { 
-        title: "Total Value", 
-        value: totalValue > 0 ? formatValue(totalValue) : "$0", 
-        change: contracts.length > 0 ? "In advances" : "No advances",
-        icon: TrendingUp
-      }
-    ];
+    return [{
+      title: "Active Contracts",
+      value: activeContracts.toString(),
+      change: contracts.length === 0 ? "No contracts yet" : `${contracts.length} total`,
+      icon: FileText
+    }, {
+      title: "Pending Signatures",
+      value: pendingSignatures.toString(),
+      change: pendingSignatures > 0 ? `${pendingSignatures} awaiting` : "All signed",
+      icon: Users
+    }, {
+      title: "Expiring Soon",
+      value: expiringSoon.toString(),
+      change: expiringSoon > 0 ? "Next 30 days" : "None expiring",
+      icon: Clock
+    }, {
+      title: "Total Value",
+      value: totalValue > 0 ? formatValue(totalValue) : "$0",
+      change: contracts.length > 0 ? "In advances" : "No advances",
+      icon: TrendingUp
+    }];
   }, [contracts]);
 
   // Filtered contracts based on search and filter criteria
@@ -162,11 +143,7 @@ export default function CRMContractsPage() {
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(contract =>
-        contract.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contract.counterparty_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contract.contract_type?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      filtered = filtered.filter(contract => contract.title?.toLowerCase().includes(searchTerm.toLowerCase()) || contract.counterparty_name?.toLowerCase().includes(searchTerm.toLowerCase()) || contract.contract_type?.toLowerCase().includes(searchTerm.toLowerCase()));
     }
 
     // Apply status filter
@@ -195,17 +172,14 @@ export default function CRMContractsPage() {
         return contractDate >= startDate;
       });
     }
-
     if (endDate) {
       filtered = filtered.filter(contract => {
         const contractDate = new Date(contract.end_date || contract.created_at);
         return contractDate <= endDate;
       });
     }
-
     return filtered;
   }, [contracts, searchTerm, statusFilter, typeFilter, signatureFilter, startDate, endDate]);
-
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
@@ -214,7 +188,6 @@ export default function CRMContractsPage() {
     setStartDate(undefined);
     setEndDate(undefined);
   };
-
   const getActiveFiltersCount = () => {
     let count = 0;
     if (searchTerm) count++;
@@ -225,24 +198,17 @@ export default function CRMContractsPage() {
     if (endDate) count++;
     return count;
   };
-
   const activeFiltersCount = getActiveFiltersCount();
-
   const handleEditContract = (contract: any) => {
     setEditingContract(contract);
     setIsEditDialogOpen(true);
   };
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
+    return <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">Loading contracts...</div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <DemoLimitBanner module="contractManagement" />
 
       {/* Header Section */}
@@ -254,20 +220,17 @@ export default function CRMContractsPage() {
           </p>
         </div>
         
-        <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
-          setIsCreateDialogOpen(open);
-          if (!open) {
-            setCreationMethod(null);
-            setSelectedContractType(null);
-            setShowContractUpload(false);
-            setShowDocuSignImport(false);
-          }
-        }}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={open => {
+        setIsCreateDialogOpen(open);
+        if (!open) {
+          setCreationMethod(null);
+          setSelectedContractType(null);
+          setShowContractUpload(false);
+          setShowDocuSignImport(false);
+        }
+      }}>
           <DialogTrigger asChild>
-            <Button 
-              className="gap-2" 
-              disabled={!canAccess('contractManagement')}
-            >
+            <Button className="gap-2" disabled={!canAccess('contractManagement')}>
               <Plus className="h-4 w-4" />
               {canAccess('contractManagement') ? 'New Contract' : 'Demo Limit Reached'}
             </Button>
@@ -276,20 +239,14 @@ export default function CRMContractsPage() {
             <DialogHeader>
               <DialogTitle>Create New Contract</DialogTitle>
               <DialogDescription>
-                {!creationMethod ? "Choose how you'd like to create your contract." : 
-                 creationMethod === 'new' ? "Choose a contract type to begin creating your agreement." :
-                 creationMethod === 'template' ? "Select a template to start with." :
-                 "Upload an existing contract to import."}
+                {!creationMethod ? "Choose how you'd like to create your contract." : creationMethod === 'new' ? "Choose a contract type to begin creating your agreement." : creationMethod === 'template' ? "Select a template to start with." : "Upload an existing contract to import."}
               </DialogDescription>
             </DialogHeader>
             
-            {!creationMethod ? (
-              // Step 1: Choose creation method
-              <div className="grid md:grid-cols-3 gap-4 mt-4">
-                <Card 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => setCreationMethod('new')}
-                >
+            {!creationMethod ?
+          // Step 1: Choose creation method
+          <div className="grid md:grid-cols-3 gap-4 mt-4">
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setCreationMethod('new')}>
                   <CardHeader className="pb-3 text-center">
                     <div className="bg-gradient-primary rounded-lg p-3 w-fit mx-auto mb-2">
                       <Plus className="h-6 w-6 text-primary-foreground" />
@@ -301,10 +258,7 @@ export default function CRMContractsPage() {
                   </CardHeader>
                 </Card>
 
-                <Card 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => setCreationMethod('template')}
-                >
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setCreationMethod('template')}>
                   <CardHeader className="pb-3 text-center">
                     <div className="bg-gradient-primary rounded-lg p-3 w-fit mx-auto mb-2">
                       <FileText className="h-6 w-6 text-primary-foreground" />
@@ -316,10 +270,7 @@ export default function CRMContractsPage() {
                   </CardHeader>
                 </Card>
 
-                <Card 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => setCreationMethod('upload')}
-                >
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setCreationMethod('upload')}>
                   <CardHeader className="pb-3 text-center">
                     <div className="bg-gradient-primary rounded-lg p-3 w-fit mx-auto mb-2">
                       <Upload className="h-6 w-6 text-primary-foreground" />
@@ -330,18 +281,12 @@ export default function CRMContractsPage() {
                     </CardDescription>
                   </CardHeader>
                 </Card>
-              </div>
-            ) : creationMethod === 'new' && !selectedContractType ? (
-              // Step 2a: Choose contract type for new contract
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                {contractTypes.map((type) => {
-                  const IconComponent = type.icon;
-                  return (
-                    <Card 
-                      key={type.id} 
-                      className="cursor-pointer hover:shadow-md transition-shadow"
-                      onClick={() => setSelectedContractType(type.id)}
-                    >
+              </div> : creationMethod === 'new' && !selectedContractType ?
+          // Step 2a: Choose contract type for new contract
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                {contractTypes.map(type => {
+              const IconComponent = type.icon;
+              return <Card key={type.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedContractType(type.id)}>
                       <CardHeader className="pb-3">
                         <div className={`${type.color} rounded-lg p-2 w-fit mb-2`}>
                           <IconComponent className="h-5 w-5 text-white" />
@@ -351,37 +296,21 @@ export default function CRMContractsPage() {
                           {type.description}
                         </CardDescription>
                       </CardHeader>
-                    </Card>
-                  );
-                })}
-              </div>
-            ) : creationMethod === 'template' ? (
-              // Step 2b: Template selection
-              <div className="space-y-4">
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setCreationMethod(null)}
-                  className="gap-2"
-                >
+                    </Card>;
+            })}
+              </div> : creationMethod === 'template' ?
+          // Step 2b: Template selection
+          <div className="space-y-4">
+                <Button variant="ghost" onClick={() => setCreationMethod(null)} className="gap-2">
                   ← Back to options
                 </Button>
-                <TemplateLibrary 
-                  selectionMode={true}
-                  onBack={() => setCreationMethod(null)}
-                  onTemplateSelect={(template) => {
-                    setSelectedContractType(template.contract_type);
-                  }}
-                />
-              </div>
-            ) : creationMethod === 'upload' ? (
-              !showContractUpload && !showDocuSignImport ? (
-                // Step 2c: Upload options
-                <div className="space-y-6">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => setCreationMethod(null)}
-                    className="gap-2"
-                  >
+                <TemplateLibrary selectionMode={true} onBack={() => setCreationMethod(null)} onTemplateSelect={template => {
+              setSelectedContractType(template.contract_type);
+            }} />
+              </div> : creationMethod === 'upload' ? !showContractUpload && !showDocuSignImport ?
+          // Step 2c: Upload options
+          <div className="space-y-6">
+                  <Button variant="ghost" onClick={() => setCreationMethod(null)} className="gap-2">
                     ← Back to options
                   </Button>
                   
@@ -397,10 +326,7 @@ export default function CRMContractsPage() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <Button 
-                          className="w-full" 
-                          onClick={() => setShowDocuSignImport(true)}
-                        >
+                        <Button className="w-full" onClick={() => setShowDocuSignImport(true)}>
                           Connect DocuSign
                         </Button>
                       </CardContent>
@@ -417,98 +343,58 @@ export default function CRMContractsPage() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <Button 
-                          className="w-full" 
-                          onClick={() => setShowContractUpload(true)}
-                        >
+                        <Button className="w-full" onClick={() => setShowContractUpload(true)}>
                           Upload Contract
                         </Button>
                       </CardContent>
                     </Card>
                   </div>
-                </div>
-              ) : showDocuSignImport ? (
-                <DocuSignImport 
-                  onBack={() => setShowDocuSignImport(false)} 
-                  onSuccess={() => {
-                    setIsCreateDialogOpen(false);
-                    setCreationMethod(null);
-                    setShowDocuSignImport(false);
-                  }} 
-                />
-              ) : (
-                <ContractUpload 
-                  onBack={() => setShowContractUpload(false)} 
-                  onSuccess={() => {
-                    setIsCreateDialogOpen(false);
-                    setCreationMethod(null);
-                    setShowContractUpload(false);
-                  }} 
-                />
-              )
-            ) : selectedContractType ? (
-              // Step 3: Show appropriate form based on contract type
-              <div className="space-y-4">
-                <Button 
-                  variant="ghost" 
-                  onClick={() => {
-                    setSelectedContractType(null);
-                    if (creationMethod !== 'template') {
-                      setCreationMethod('new');
-                    }
-                  }}
-                  className="gap-2"
-                >
+                </div> : showDocuSignImport ? <DocuSignImport onBack={() => setShowDocuSignImport(false)} onSuccess={() => {
+            setIsCreateDialogOpen(false);
+            setCreationMethod(null);
+            setShowDocuSignImport(false);
+          }} /> : <ContractUpload onBack={() => setShowContractUpload(false)} onSuccess={() => {
+            setIsCreateDialogOpen(false);
+            setCreationMethod(null);
+            setShowContractUpload(false);
+          }} /> : selectedContractType ?
+          // Step 3: Show appropriate form based on contract type
+          <div className="space-y-4">
+                <Button variant="ghost" onClick={() => {
+              setSelectedContractType(null);
+              if (creationMethod !== 'template') {
+                setCreationMethod('new');
+              }
+            }} className="gap-2">
                   ← Back to contract types
                 </Button>
                 
-                {selectedContractType === 'publishing' && (
-                  <StandardizedPublishingForm 
-                    onSuccess={() => {
-                      setIsCreateDialogOpen(false);
-                      setSelectedContractType(null);
-                      setCreationMethod(null);
-                    }} 
-                  />
-                )}
-                {selectedContractType === 'artist' && (
-                  <StandardizedArtistForm 
-                    onSuccess={() => {
-                      setIsCreateDialogOpen(false);
-                      setSelectedContractType(null);
-                      setCreationMethod(null);
-                    }} 
-                  />
-                )}
-                {selectedContractType === 'producer' && (
-                  <StandardizedProducerForm 
-                    onSuccess={() => {
-                      setIsCreateDialogOpen(false);
-                      setSelectedContractType(null);
-                      setCreationMethod(null);
-                    }} 
-                  />
-                )}
-                {selectedContractType === 'sync' && (
-                  <StandardizedSyncForm 
-                    onSuccess={() => {
-                      setIsCreateDialogOpen(false);
-                      setSelectedContractType(null);
-                      setCreationMethod(null);
-                    }} 
-                  />
-                )}
-                {selectedContractType === 'distribution' && (
-                  <StandardizedDistributionForm 
-                    onSuccess={() => {
-                      setIsCreateDialogOpen(false);
-                      setSelectedContractType(null);
-                      setCreationMethod(null);
-                    }} 
-                  />
-                )}
-              </div>
-            ) : null}
+                {selectedContractType === 'publishing' && <StandardizedPublishingForm onSuccess={() => {
+              setIsCreateDialogOpen(false);
+              setSelectedContractType(null);
+              setCreationMethod(null);
+            }} />}
+                {selectedContractType === 'artist' && <StandardizedArtistForm onSuccess={() => {
+              setIsCreateDialogOpen(false);
+              setSelectedContractType(null);
+              setCreationMethod(null);
+            }} />}
+                {selectedContractType === 'producer' && <StandardizedProducerForm onSuccess={() => {
+              setIsCreateDialogOpen(false);
+              setSelectedContractType(null);
+              setCreationMethod(null);
+            }} />}
+                {selectedContractType === 'sync' && <StandardizedSyncForm onSuccess={() => {
+              setIsCreateDialogOpen(false);
+              setSelectedContractType(null);
+              setCreationMethod(null);
+            }} />}
+                {selectedContractType === 'distribution' && <StandardizedDistributionForm onSuccess={() => {
+              setIsCreateDialogOpen(false);
+              setSelectedContractType(null);
+              setCreationMethod(null);
+            }} />}
+              </div> : null}
           </DialogContent>
         </Dialog>
       </div>
@@ -516,9 +402,8 @@ export default function CRMContractsPage() {
       {/* Overview Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => {
-          const IconComponent = stat.icon;
-          return (
-            <Card key={index}>
+        const IconComponent = stat.icon;
+        return <Card key={index}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between space-y-0 pb-2">
                   <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
@@ -529,25 +414,24 @@ export default function CRMContractsPage() {
                   <p className="text-xs text-muted-foreground">{stat.change}</p>
                 </div>
               </CardContent>
-            </Card>
-          );
-        })}
+            </Card>;
+      })}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="contracts">
-            My Contracts
-          </TabsTrigger>
-          <TabsTrigger value="demos">
-            Demos
+            <FileText className="w-4 h-4 mr-2" />
+            All Contracts
           </TabsTrigger>
           <TabsTrigger value="templates">
-            My Templates
+            <Upload className="w-4 h-4 mr-2" />
+            Templates
           </TabsTrigger>
-          <TabsTrigger value="analytics">
-            Analytics
-          </TabsTrigger>
+          {isDemo && <TabsTrigger value="demo">
+              <Calendar className="w-4 h-4 mr-2" />
+              Demo Data
+            </TabsTrigger>}
         </TabsList>
 
         <TabsContent value="contracts" className="space-y-6">
@@ -557,19 +441,15 @@ export default function CRMContractsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <CardTitle className="text-lg">Filters</CardTitle>
-                  {activeFiltersCount > 0 && (
-                    <Badge variant="secondary">
+                  {activeFiltersCount > 0 && <Badge variant="secondary">
                       {activeFiltersCount} active
-                    </Badge>
-                  )}
+                    </Badge>}
                 </div>
                 <div className="flex items-center space-x-2">
-                  {activeFiltersCount > 0 && (
-                    <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  {activeFiltersCount > 0 && <Button variant="ghost" size="sm" onClick={clearFilters}>
                       <X className="mr-2 h-4 w-4" />
                       Clear All
-                    </Button>
-                  )}
+                    </Button>}
                   <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
                     <CollapsibleTrigger asChild>
                       <Button variant="outline" size="sm">
@@ -590,12 +470,7 @@ export default function CRMContractsPage() {
                   {/* Search */}
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search contracts by title or counterparty..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
+                    <Input placeholder="Search contracts by title or counterparty..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
                   </div>
 
                   {/* Filter Row */}
@@ -642,24 +517,13 @@ export default function CRMContractsPage() {
                     <div className="flex space-x-2">
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !startDate && "text-muted-foreground"
-                            )}
-                          >
+                          <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {startDate ? format(startDate, "PPP") : "Start Date"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
-                          <CalendarPicker
-                            mode="single"
-                            selected={startDate}
-                            onSelect={setStartDate}
-                            initialFocus
-                          />
+                          <CalendarPicker mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
                         </PopoverContent>
                       </Popover>
                     </div>
@@ -669,24 +533,13 @@ export default function CRMContractsPage() {
                     <div className="lg:col-start-4">
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !endDate && "text-muted-foreground"
-                            )}
-                          >
+                          <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {endDate ? format(endDate, "PPP") : "End Date"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
-                          <CalendarPicker
-                            mode="single"
-                            selected={endDate}
-                            onSelect={setEndDate}
-                            initialFocus
-                          />
+                          <CalendarPicker mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
                         </PopoverContent>
                       </Popover>
                     </div>
@@ -697,128 +550,16 @@ export default function CRMContractsPage() {
           </Card>
 
           {/* Results */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold">
-                Contracts ({filteredContracts.length})
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {filteredContracts.length === contracts.length 
-                  ? `Showing all ${contracts.length} contracts`
-                  : `Showing ${filteredContracts.length} of ${contracts.length} contracts`
-                }
-              </p>
-            </div>
-            <ContractList contracts={filteredContracts} onEdit={handleEditContract} />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="demos">
-          <DemoContracts onLoadDemo={() => {}} />
+          
         </TabsContent>
 
         <TabsContent value="templates">
-          <TemplateLibrary 
-            selectionMode={false} 
-            onBack={() => {}} 
-            onTemplateSelect={() => {}} 
-          />
+          <TemplateLibrary selectionMode={false} onBack={() => {}} onTemplateSelect={() => {}} />
         </TabsContent>
 
-        <TabsContent value="analytics">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Contract Status Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Contract Status Distribution</CardTitle>
-                <CardDescription>Breakdown of contracts by current status</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {['draft', 'active', 'signed', 'expired', 'terminated'].map((status) => {
-                    const count = contracts.filter(c => c.contract_status === status).length;
-                    const percentage = contracts.length > 0 ? Math.round((count / contracts.length) * 100) : 0;
-                    return (
-                      <div key={status} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-primary" />
-                          <span className="capitalize">{status}</span>
-                          <span className="text-sm text-muted-foreground">{count} contract{count !== 1 ? 's' : ''}</span>
-                        </div>
-                        <span className="font-semibold">{percentage}%</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Contract Types */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Contract Types</CardTitle>
-                <CardDescription>Distribution by agreement type</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {contractTypes.map((type) => {
-                    const count = contracts.filter(c => c.contract_type === type.id).length;
-                    const percentage = contracts.length > 0 ? Math.round((count / contracts.length) * 100) : 0;
-                    return (
-                      <div key={type.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${type.color}`} />
-                          <span>{type.title}</span>
-                          <span className="text-sm text-muted-foreground">{count} ({percentage}%)</span>
-                        </div>
-                        <span className="font-semibold">{count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest contract updates and changes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {contracts.slice(0, 5).map((contract) => (
-                    <div key={contract.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="space-y-1">
-                        <h4 className="font-semibold">{contract.title}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          with {contract.counterparty_name}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="outline" className={cn(
-                          contract.contract_status === 'signed' ? 'bg-success/10 text-success border-success/20' : 
-                          contract.contract_status === 'draft' ? 'bg-warning/10 text-warning border-warning/20' : 
-                          'bg-muted'
-                        )}>
-                          {contract.contract_status}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(contract.updated_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  {contracts.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>No contracts yet. Create your first contract to see activity here.</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+        {isDemo && <TabsContent value="demo">
+            <DemoContracts onLoadDemo={() => {}} />
+          </TabsContent>}
       </Tabs>
 
       {/* Edit Dialog */}
@@ -830,21 +571,14 @@ export default function CRMContractsPage() {
               Update the contract details below.
             </DialogDescription>
           </DialogHeader>
-          {editingContract && (
-            <EditContractForm 
-              contract={editingContract}
-              onSuccess={() => {
-                setIsEditDialogOpen(false);
-                setEditingContract(null);
-              }}
-              onCancel={() => {
-                setIsEditDialogOpen(false);
-                setEditingContract(null);
-              }}
-            />
-          )}
+          {editingContract && <EditContractForm contract={editingContract} onSuccess={() => {
+          setIsEditDialogOpen(false);
+          setEditingContract(null);
+        }} onCancel={() => {
+          setIsEditDialogOpen(false);
+          setEditingContract(null);
+        }} />}
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 }
