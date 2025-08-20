@@ -243,9 +243,9 @@ export function SongEstimatorTool() {
                     <div className="text-sm text-muted-foreground">Incomplete Metadata</div>
                   </div>
                   <div className="p-4 border rounded-lg bg-card">
-                    <div className="text-2xl font-bold text-warning">
-                      {currentSearch.ai_research_summary?.registration_gap_analysis?.total_gaps || 0}
-                    </div>
+                     <div className="text-2xl font-bold text-destructive">
+                       {currentSearch.ai_research_summary?.registration_gap_analysis?.total_gaps || 0}
+                     </div>
                     <div className="text-sm text-muted-foreground">Unregistered Works</div>
                   </div>
                 </div>
