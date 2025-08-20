@@ -144,7 +144,7 @@ export function SongEstimatorTool() {
           <CardHeader>
             <CardTitle>Previous Searches</CardTitle>
             <CardDescription>
-              Click on a search to view registration gap analysis and PRO cross-verification results
+              Click on a search to view detailed results and pipeline estimates
             </CardDescription>
           </CardHeader>
           <CardContent>
