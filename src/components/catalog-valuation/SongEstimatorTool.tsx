@@ -239,8 +239,8 @@ export function SongEstimatorTool() {
                     <div className="text-sm text-muted-foreground">Songs in Catalog</div>
                   </div>
                   <div className="p-4 border rounded-lg bg-card">
-                    <div className="text-2xl font-bold text-success">{currentSearch.metadata_complete_count}</div>
-                    <div className="text-sm text-muted-foreground">Complete Metadata</div>
+                    <div className="text-2xl font-bold text-warning">{currentSearch.total_songs_found - currentSearch.metadata_complete_count}</div>
+                    <div className="text-sm text-muted-foreground">Incomplete Metadata</div>
                   </div>
                   <div className="p-4 border rounded-lg bg-card">
                     <div className="text-2xl font-bold text-warning">
