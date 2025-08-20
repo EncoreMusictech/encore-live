@@ -5,10 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Loader2, Music, DollarSign, AlertCircle, RefreshCw, Trash2, Shield, CheckCircle } from 'lucide-react';
+import { Search, Loader2, Music, AlertTriangle, RefreshCw, Trash2, Shield, CheckCircle, Database } from 'lucide-react';
 import { useSongEstimator } from '@/hooks/useSongEstimator';
 import { SongMetadataView } from './SongMetadataView';
-import { PipelineEstimateView } from './PipelineEstimateView';
 import { MLCTestButton } from './MLCTestButton';
 
 export function SongEstimatorTool() {
@@ -85,11 +84,11 @@ export function SongEstimatorTool() {
           <div className="space-y-4">
             <div>
               <h2 className="text-2xl font-semibold flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                New Songwriter Research
+                <Database className="h-5 w-5" />
+                New MLC Catalog Discovery
               </h2>
               <p className="text-muted-foreground">
-                Enter a songwriter's name to begin comprehensive catalog analysis
+                Search MLC database first, then cross-verify with other PROs to identify registration gaps and uncollected royalty opportunities
               </p>
             </div>
             <div className="flex gap-4">
@@ -104,22 +103,22 @@ export function SongEstimatorTool() {
                 />
               </div>
               <div className="flex items-end">
-                <Button 
-                  onClick={handleCreateSearch}
-                  disabled={!songwriterName.trim() || loading}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Researching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="h-4 w-4 mr-2" />
-                      Start Research
-                    </>
-                  )}
+                  <Button 
+                    onClick={handleCreateSearch}
+                    disabled={!songwriterName.trim() || loading}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Searching MLC...
+                      </>
+                    ) : (
+                      <>
+                        <Database className="h-4 w-4 mr-2" />
+                        Search MLC Database
+                      </>
+                    )}
                 </Button>
               </div>
             </div>
@@ -132,7 +131,7 @@ export function SongEstimatorTool() {
         <Card className="border-destructive">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-4 w-4" />
+              <AlertTriangle className="h-4 w-4" />
               <span>{error}</span>
             </div>
           </CardContent>
@@ -143,9 +142,9 @@ export function SongEstimatorTool() {
       {searches.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Previous Searches</CardTitle>
+            <CardTitle>MLC Catalog Searches</CardTitle>
             <CardDescription>
-              Click on a search to view detailed results and pipeline estimates
+              Click on a search to view registration gap analysis and PRO cross-verification results
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -172,8 +171,12 @@ export function SongEstimatorTool() {
                           {search.total_songs_found} songs found
                         </span>
                         <span className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />
-                          {formatCurrency(search.pipeline_estimate_total)} estimated pipeline
+                          <AlertTriangle className="h-3 w-3" />
+                          {search.ai_research_summary?.registration_gap_analysis?.total_gaps || 0} gaps detected
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Database className="h-3 w-3" />
+                          MLC-first discovery
                         </span>
                         <span>
                           Created {new Date(search.created_at).toLocaleDateString()}
@@ -215,26 +218,25 @@ export function SongEstimatorTool() {
       {/* Detailed View */}
       {currentSearch && (
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="catalog">Song Catalog</TabsTrigger>
-            <TabsTrigger value="pipeline">Pipeline Analysis</TabsTrigger>
+            <TabsTrigger value="catalog">Registration Gaps</TabsTrigger>
             <TabsTrigger value="debug">Debug MLC</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
             <Card>
               <CardHeader>
-                <CardTitle>{currentSearch.songwriter_name} - Research Summary</CardTitle>
+                <CardTitle>{currentSearch.songwriter_name} - Registration Gap Analysis</CardTitle>
                 <CardDescription>
-                  AI-powered analysis of catalog and royalty pipeline
+                  MLC-first catalog discovery with PRO cross-verification to identify uncollected royalty opportunities
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="p-4 border rounded-lg bg-card">
                     <div className="text-2xl font-bold text-primary">{currentSearch.total_songs_found}</div>
-                    <div className="text-sm text-muted-foreground">Songs Identified</div>
+                    <div className="text-sm text-muted-foreground">Works in MLC</div>
                   </div>
                   <div className="p-4 border rounded-lg bg-card">
                     <div className="text-2xl font-bold text-success">{currentSearch.metadata_complete_count}</div>
@@ -242,9 +244,9 @@ export function SongEstimatorTool() {
                   </div>
                   <div className="p-4 border rounded-lg bg-card">
                     <div className="text-2xl font-bold text-warning">
-                      {formatCurrency(currentSearch.pipeline_estimate_total)}
+                      {currentSearch.ai_research_summary?.registration_gap_analysis?.total_gaps || 0}
                     </div>
-                    <div className="text-sm text-muted-foreground">Estimated Pipeline</div>
+                    <div className="text-sm text-muted-foreground">Registration Gaps</div>
                   </div>
                   <div className="p-4 border rounded-lg bg-card">
                     <div className={`text-2xl font-bold ${
@@ -257,16 +259,16 @@ export function SongEstimatorTool() {
                        currentSearch?.search_status === 'error' ? '✗' :
                        currentSearch?.search_status === 'processing' ? '⏳' : '⏸'}
                     </div>
-                    <div className="text-sm text-muted-foreground">Agent Status</div>
+                    <div className="text-sm text-muted-foreground">Search Status</div>
                   </div>
                 </div>
 
-                {/* BMI Verification Section */}
+                {/* PRO Cross-Verification Section */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Shield className="h-4 w-4" />
-                      BMI Verification
+                      PRO Cross-Verification Status
                     </h4>
                     <Button
                       onClick={() => runBulkBMIVerification(currentSearch.id)}
@@ -282,58 +284,67 @@ export function SongEstimatorTool() {
                       ) : (
                         <>
                           <CheckCircle className="h-3 w-3 mr-2" />
-                          Verify All with BMI
+                          Re-verify All PROs
                         </>
                       )}
                     </Button>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="p-3 border rounded-lg bg-card">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">BMI Verified Songs</span>
+                        <span className="text-sm text-muted-foreground">MLC Verified</span>
                         <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                          {songMetadata.filter(song => song.verification_status === 'bmi_verified').length}
+                          {currentSearch.ai_research_summary?.processing_summary?.mlc_verified || 0}
                         </Badge>
                       </div>
                     </div>
                     <div className="p-3 border rounded-lg bg-card">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Verification Rate</span>
-                        <Badge variant="outline">
-                          {songMetadata.length > 0 ? 
-                            Math.round((songMetadata.filter(song => song.verification_status === 'bmi_verified').length / songMetadata.length) * 100) 
-                            : 0}%
+                        <span className="text-sm text-muted-foreground">BMI Cross-Verified</span>
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                          {currentSearch.ai_research_summary?.processing_summary?.bmi_cross_verified || 0}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="p-3 border rounded-lg bg-card">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Registration Gaps</span>
+                        <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+                          {currentSearch.ai_research_summary?.registration_gap_analysis?.total_gaps || 0}
                         </Badge>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {currentSearch.ai_research_summary && (
+                {/* Registration Gap Analysis Summary */}
+                {currentSearch.ai_research_summary?.registration_gap_analysis && (
                   <div className="space-y-4">
-                    <h4 className="font-semibold">AI Research Summary</h4>
-                    {currentSearch.ai_research_summary.career_overview && (
-                      <div className="p-4 border rounded-lg bg-muted/50">
-                        <h5 className="font-medium mb-2">Career Overview</h5>
-                        <p className="text-sm text-muted-foreground">
-                          {currentSearch.ai_research_summary.career_overview.summary}
-                        </p>
+                    <h4 className="font-semibold">Registration Gap Analysis</h4>
+                    <div className="p-4 border rounded-lg bg-muted/50">
+                      <h5 className="font-medium mb-2">Common Registration Gaps</h5>
+                      <div className="space-y-2">
+                        {Object.entries(currentSearch.ai_research_summary.registration_gap_analysis.most_common_gaps || {}).map(([gap, count]) => (
+                          <div key={gap} className="flex justify-between items-center text-sm">
+                            <span className="text-muted-foreground capitalize">{gap.replace(/_/g, ' ')}</span>
+                            <Badge variant="outline">{count as number}</Badge>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                    {currentSearch.ai_research_summary.pipeline_summary && (
+                    </div>
+                    
+                    {currentSearch.ai_research_summary.registration_gap_analysis.recommendations && (
                       <div className="p-4 border rounded-lg bg-card">
-                        <h5 className="font-medium mb-2">Pipeline Summary</h5>
-                        <p className="text-sm text-muted-foreground">
-                          {currentSearch.ai_research_summary.pipeline_summary.summary}
-                        </p>
-                        <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-2 text-xs text-muted-foreground">
-                          <div>Total: {currentSearch.ai_research_summary.pipeline_summary.counts?.total ?? 0}</div>
-                          <div>Meta Complete: {currentSearch.ai_research_summary.pipeline_summary.counts?.meta_complete ?? 0}</div>
-                          <div>ISWC: {currentSearch.ai_research_summary.pipeline_summary.counts?.iswc ?? 0}</div>
-                          <div>PRO Verified: {currentSearch.ai_research_summary.pipeline_summary.counts?.pro_verified ?? 0}</div>
-                          <div>Verification Rate: {currentSearch.ai_research_summary.pipeline_summary.counts?.verification_rate ?? 0}%</div>
-                        </div>
+                        <h5 className="font-medium mb-2">Recommendations</h5>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          {currentSearch.ai_research_summary.registration_gap_analysis.recommendations.map((rec, index) => (
+                            <li key={index} className="flex items-start gap-2">
+                              <span className="text-primary">•</span>
+                              {rec}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     )}
                   </div>
@@ -344,13 +355,6 @@ export function SongEstimatorTool() {
 
           <TabsContent value="catalog">
             <SongMetadataView 
-              searchId={currentSearch.id}
-              songMetadata={songMetadata}
-            />
-          </TabsContent>
-
-          <TabsContent value="pipeline">
-            <PipelineEstimateView 
               searchId={currentSearch.id}
               songMetadata={songMetadata}
             />
