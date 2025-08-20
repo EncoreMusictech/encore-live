@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Search, Download, Plus, AlertTriangle, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
 import { useQuarterlyBalanceReports, QuarterlyBalanceReport } from "@/hooks/useQuarterlyBalanceReports";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -346,7 +347,20 @@ export function QuarterlyBalanceReportsTable() {
                           <TableCell>
                             <div className="font-medium">{payeeName}</div>
                           </TableCell>
-                          <TableCell>{(report as any).agreement_id || 'N/A'}</TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-help underline decoration-dotted">
+                                    {(report as any).agreement_id || 'N/A'}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{report.contracts?.title || 'Agreement details not available'}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </TableCell>
                           <TableCell className="text-right font-mono">${report.opening_balance.toLocaleString()}</TableCell>
                           <TableCell className="text-right font-mono text-green-600">+${report.royalties_amount.toLocaleString()}</TableCell>
                           <TableCell className="text-right font-mono text-red-600">-${report.expenses_amount.toLocaleString()}</TableCell>
