@@ -55,17 +55,27 @@ Deno.serve(async (req) => {
 
     console.log(`Generating quarterly reports for user: ${user.id}`);
 
-    // Get all payouts with client contact information
+    // Get all payouts with client contact information - simplified to avoid triggers
     const { data: payouts, error: payoutsError } = await supabaseClient
       .from('payouts')
       .select(`
         id, client_id, gross_royalties, total_expenses, amount_due, 
-        status, workflow_stage, created_at, period_start,
-        contacts!payouts_client_id_fkey(id, name)
+        status, workflow_stage, created_at, period_start
       `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: true })
       .limit(1000);
+
+    // Get contacts separately to avoid complex joins that trigger recursion
+    const { data: contacts } = await supabaseClient
+      .from('contacts')
+      .select('id, name')
+      .eq('user_id', user.id);
+
+    // Create a contact lookup map
+    const contactMap = new Map(
+      (contacts || []).map(c => [c.id, c.name])
+    );
 
     if (payoutsError || !payouts || payouts.length === 0) {
       console.log('No payouts found:', payoutsError);
@@ -81,7 +91,7 @@ Deno.serve(async (req) => {
     console.log('First few payouts:', payouts.slice(0, 2).map(p => ({
       id: p.id,
       client_id: p.client_id,
-      contacts: p.contacts,
+      contact_name: contactMap.get(p.client_id),
       gross_royalties: p.gross_royalties,
       period_start: p.period_start,
       created_at: p.created_at
@@ -122,7 +132,7 @@ Deno.serve(async (req) => {
         gross_royalties: payout.gross_royalties,
         period_start: payout.period_start,
         created_at: payout.created_at,
-        contacts: payout.contacts
+        contact_name: contactMap.get(payout.client_id)
       });
       
       const periodDate = payout.period_start || payout.created_at;
@@ -132,7 +142,7 @@ Deno.serve(async (req) => {
       
       console.log(`Calculated period: ${year} Q${quarter} from date ${periodDate}`);
       
-      const contactName = payout.contacts?.name || 'Unknown';
+      const contactName = contactMap.get(payout.client_id) || 'Unknown';
       const contactNameLower = contactName.toLowerCase().trim();
       
       console.log(`Contact name: "${contactName}" (lowercase: "${contactNameLower}")`);
