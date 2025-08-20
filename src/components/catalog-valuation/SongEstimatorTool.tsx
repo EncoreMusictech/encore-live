@@ -85,7 +85,7 @@ export function SongEstimatorTool() {
             <div>
               <h2 className="text-2xl font-semibold flex items-center gap-2">
                 <Database className="h-5 w-5" />
-                New MLC Catalog Discovery
+                New Songwriter Research
               </h2>
               <p className="text-muted-foreground">
                 Search MLC database first, then cross-verify with other PROs to identify registration gaps and uncollected royalty opportunities
