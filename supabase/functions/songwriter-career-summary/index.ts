@@ -29,18 +29,16 @@ serve(async (req) => {
 
     console.log(`Generating career summary for songwriter: ${songwriterName}`);
 
-    const prompt = `You are a music industry expert. Provide a comprehensive but concise career summary for the songwriter "${songwriterName}". Include:
+    const prompt = `You are a music industry expert. Provide a concise career summary for the songwriter "${songwriterName}". Include:
 
 1. **Career Overview**: Brief background and career span
 2. **Notable Achievements**: Major hits, awards, and recognition
 3. **Collaborations**: Key artists they've worked with
 4. **Musical Style**: Genres and songwriting characteristics
-5. **Industry Impact**: Their influence on music industry
-6. **Recent Activity**: Current projects or recent work (if known)
 
 ${additionalContext ? `Additional context: ${additionalContext}` : ''}
 
-Format the response as structured text with clear sections. Keep it informative but concise (300-500 words). If the songwriter is not well-known or you don't have sufficient information, provide a brief explanation and suggest general music industry insights about songwriters in similar positions.`;
+IMPORTANT: Keep the response under 150 words total. Be concise and focus on the most important career highlights. If the songwriter is not well-known, provide a brief explanation in under 150 words.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -60,7 +58,7 @@ Format the response as structured text with clear sections. Keep it informative 
             content: prompt
           }
         ],
-        max_tokens: 800,
+        max_tokens: 200,
         temperature: 0.7
       }),
     });
