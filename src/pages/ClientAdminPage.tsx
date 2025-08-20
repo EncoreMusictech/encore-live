@@ -724,44 +724,56 @@ export default function ClientAdminPage() {
               {clientAccess.length === 0 ? (
                 <p className="text-muted-foreground">No active client access</p>
               ) : (
-                <div className="space-y-4">
-                  {clientAccess.map((access) => (
-                    <div key={access.id} className="border rounded-lg p-4 space-y-3">
-                      {/* Client Portal Access Button - Top of card */}
-                      <div className="flex justify-center">
-                        <Button
-                          onClick={() => {
-                            console.log('🔍 View Client Portal clicked for:', access.client_user_id);
-                            navigate(`/client-portal?client_id=${access.client_user_id}`);
-                          }}
-                          className="w-full max-w-xs"
-                          size="lg"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Client Portal
-                        </Button>
-                      </div>
-                      
-                      {/* Client Information */}
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Email: {getClientEmail(access.client_user_id) ?? 'Unknown'}</p>
-                          <p className="text-sm text-muted-foreground">Client ID: {access.client_user_id}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Role: {access.role} • Status: {access.status}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleRevokeAccess(access.id)}
-                        >
-                          Revoke
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {clientAccess.map((access) => (
+                      <TableRow key={access.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{getClientEmail(access.client_user_id) ?? 'Unknown'}</p>
+                            <p className="text-xs text-muted-foreground">{access.client_user_id}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{access.role}</TableCell>
+                        <TableCell>
+                          <Badge variant={access.status === 'active' ? 'default' : 'secondary'}>
+                            {access.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2 justify-center">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                console.log('🔍 Navigating to client portal for:', access.client_user_id);
+                                window.open(`/client-portal?client_id=${access.client_user_id}`, '_blank');
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Portal
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleRevokeAccess(access.id)}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Revoke
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>
