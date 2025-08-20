@@ -2351,6 +2351,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_quarterly_balance_reports_payee_id"
+            columns: ["payee_id"]
+            isOneToOne: false
+            referencedRelation: "payees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "quarterly_balance_reports_agreement_id_fkey"
             columns: ["agreement_id"]
             isOneToOne: false
