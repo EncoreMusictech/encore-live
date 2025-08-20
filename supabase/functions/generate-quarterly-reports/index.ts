@@ -9,6 +9,7 @@ interface QuarterlyReportData {
   user_id: string;
   payee_id: string;
   contact_id?: string;
+  agreement_id?: string;
   year: number;
   quarter: number;
   opening_balance: number;
@@ -55,12 +56,20 @@ Deno.serve(async (req) => {
 
     console.log(`Generating quarterly reports for user: ${user.id}`);
 
-    // Get all payouts with client contact information - simplified to avoid triggers
+    // Get all payouts with client contact information and linked contracts
     const { data: payouts, error: payoutsError } = await supabaseClient
       .from('payouts')
       .select(`
         id, client_id, gross_royalties, total_expenses, amount_due, 
-        status, workflow_stage, created_at, period_start
+        status, workflow_stage, created_at, period_start,
+        payout_royalties!inner(
+          royalty_allocations!inner(
+            copyright_id,
+            contract_schedule_works!inner(
+              contracts!inner(id, agreement_id)
+            )
+          )
+        )
       `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: true })
@@ -117,6 +126,7 @@ Deno.serve(async (req) => {
     const reportData = new Map<string, {
       payee_id: string;
       contact_id?: string;
+      agreement_id?: string;
       year: number;
       quarter: number;
       royalties_amount: number;
@@ -129,13 +139,29 @@ Deno.serve(async (req) => {
     
     for (const payout of payouts as any[]) {
       console.log(`\n--- Processing payout ${payout.id} ---`);
+      // Get the contract/agreement ID from the payout relationships
+      let agreementId: string | undefined;
+      try {
+        const payoutRoyalties = payout.payout_royalties || [];
+        if (payoutRoyalties.length > 0) {
+          const firstRoyalty = payoutRoyalties[0];
+          const contracts = firstRoyalty?.royalty_allocations?.contract_schedule_works?.contracts;
+          if (contracts) {
+            agreementId = contracts.agreement_id;
+          }
+        }
+      } catch (e) {
+        console.log('Could not extract agreement ID for payout:', payout.id);
+      }
+
       console.log('Payout data:', {
         id: payout.id,
         client_id: payout.client_id,
         gross_royalties: payout.gross_royalties,
         period_start: payout.period_start,
         created_at: payout.created_at,
-        contact_name: contactMap.get(payout.client_id)
+        contact_name: contactMap.get(payout.client_id),
+        agreement_id: agreementId
       });
       
       const periodDate = payout.period_start || payout.created_at;
@@ -205,6 +231,7 @@ Deno.serve(async (req) => {
         reportData.set(key, {
           payee_id: payeeId,
           contact_id: payout.client_id,
+          agreement_id: agreementId,
           year,
           quarter,
           royalties_amount: 0,
@@ -256,6 +283,7 @@ Deno.serve(async (req) => {
           user_id: user.id,
           payee_id: entry.payee_id,
           contact_id: entry.contact_id,
+          agreement_id: entry.agreement_id,
           year: entry.year,
           quarter: entry.quarter,
           opening_balance: openingBalance,
@@ -299,6 +327,7 @@ Deno.serve(async (req) => {
       user_id: report.user_id,
       payee_id: report.payee_id,
       contact_id: report.contact_id || null,
+      agreement_id: report.agreement_id || null,
       year: report.year,
       quarter: report.quarter,
       opening_balance: report.opening_balance,
@@ -326,6 +355,7 @@ Deno.serve(async (req) => {
               user_id: report.user_id,
               payee_id: report.payee_id, 
               contact_id: report.contact_id,
+              agreement_id: report.agreement_id,
               year: report.year,
               quarter: report.quarter,
               opening_balance: report.opening_balance,
@@ -349,6 +379,7 @@ Deno.serve(async (req) => {
                 user_id: report.user_id,
                 payee_id: report.payee_id,
                 contact_id: report.contact_id,
+                agreement_id: report.agreement_id,
                 year: report.year,
                 quarter: report.quarter,
                 opening_balance: report.opening_balance,
@@ -399,6 +430,7 @@ Deno.serve(async (req) => {
               user_id: report.user_id,
               payee_id: report.payee_id,
               contact_id: report.contact_id,
+              agreement_id: report.agreement_id,
               year: report.year,
               quarter: report.quarter,
               opening_balance: report.opening_balance,
