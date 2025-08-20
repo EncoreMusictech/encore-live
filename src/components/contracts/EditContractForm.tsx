@@ -22,6 +22,7 @@ import { ScheduleWorksTable } from "./ScheduleWorksTable";
 const editContractSchema = z.object({
   title: z.string().min(1, "Title is required"),
   counterparty_name: z.string().min(1, "Counterparty name is required"),
+  contract_status: z.enum(["draft", "signed", "active", "expired", "terminated"]).default("draft"),
   original_publisher: z.string().optional(),
   administrator: z.string().optional(),
   territories: z.array(z.string()).default([]),
@@ -60,6 +61,7 @@ export function EditContractForm({ contract, onCancel, onSuccess }: EditContract
     defaultValues: {
       title: contract.title || "",
       counterparty_name: contract.counterparty_name || "",
+      contract_status: contract.contract_status || "draft",
       original_publisher: contract.original_publisher || "",
       administrator: contract.administrator || "",
       territories: contract.territories || [],
@@ -86,6 +88,7 @@ export function EditContractForm({ contract, onCancel, onSuccess }: EditContract
       const contractData = {
         title: values.title,
         counterparty_name: values.counterparty_name,
+        contract_status: values.contract_status,
         start_date: startDate?.toISOString().split('T')[0] || null,
         end_date: endDate?.toISOString().split('T')[0] || null,
         original_publisher: values.original_publisher || null,
@@ -202,6 +205,27 @@ export function EditContractForm({ contract, onCancel, onSuccess }: EditContract
                     {form.formState.errors.counterparty_name && (
                       <p className="text-sm text-red-500">{form.formState.errors.counterparty_name.message}</p>
                     )}
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="contract_status">Contract Status</Label>
+                    <Select 
+                      value={form.watch("contract_status")} 
+                      onValueChange={(value) => form.setValue("contract_status", value as "draft" | "signed" | "active" | "expired" | "terminated")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="signed">Signed</SelectItem>
+                        <SelectItem value="expired">Expired</SelectItem>
+                        <SelectItem value="terminated">Terminated</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
