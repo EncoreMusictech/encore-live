@@ -20,7 +20,12 @@ export const useClientPortal = () => {
 
   // Fetch client access records
   const fetchClientAccess = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('🔍 fetchClientAccess: No user found');
+      return;
+    }
+    
+    console.log('🔍 fetchClientAccess: Starting fetch for user:', user.id);
     
     try {
       setLoading(true);
@@ -30,10 +35,14 @@ export const useClientPortal = () => {
         .eq('subscriber_user_id', user.id)
         .order('created_at', { ascending: false });
 
+      console.log('🔍 fetchClientAccess: Query result:', { data, error });
+
       if (error) throw error;
+      
+      console.log('🔍 fetchClientAccess: Setting clientAccess to:', data || []);
       setClientAccess(data || []);
     } catch (error: any) {
-      console.error('Error fetching client access:', error);
+      console.error('🔍 fetchClientAccess: Error fetching client access:', error);
       toast({
         variant: "destructive",
         title: "Error",
