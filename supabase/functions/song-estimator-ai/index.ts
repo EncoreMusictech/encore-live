@@ -110,68 +110,41 @@ serve(async (req) => {
         console.log('Searching MLC database for songwriter catalog...');
         const { data: mlcSearchData, error: mlcError } = await supabase.functions.invoke('enhanced-mlc-lookup', {
           body: {
-            searches: [{
-              writerName: songwriterName,
-              searchType: 'catalog_discovery'
-            }]
+            writerName: songwriterName,
+            searchType: 'catalog_discovery',
+            enhanced: true,
+            includeRecordings: true
           }
         });
 
-        if (!mlcError && mlcSearchData?.results?.length > 0) {
-          mlcCatalogData = mlcSearchData.results[0];
-          console.log(`MLC catalog search found ${mlcCatalogData.works?.length || 0} works`);
+        if (!mlcError && mlcSearchData?.found) {
+          mlcCatalogData = mlcSearchData;
+          console.log(`MLC catalog search found ${mlcSearchData.works?.length || 0} works`);
           
           // Extract songs from MLC data as primary source
-          if (mlcCatalogData?.works && Array.isArray(mlcCatalogData.works)) {
-            knownSongs = mlcCatalogData.works.map(work => ({
-              title: work.metadata?.workTitle || work.title,
-              co_writers: work.writers?.map(w => w.name) || [],
-              publisher: work.publishers?.[0]?.name || null,
-              iswc: work.metadata?.iswc || null,
+          if (mlcSearchData?.works && Array.isArray(mlcSearchData.works)) {
+            knownSongs = mlcSearchData.works.map(work => ({
+              title: work.primaryTitle || work.metadata?.workTitle || work.title,
+              co_writers: work.writers?.map(w => w.name || `${w.writerFirstName} ${w.writerLastName}`.trim()) || [],
+              publisher: work.publishers?.[0]?.name || work.publishers?.[0]?.publisherName || null,
+              iswc: work.iswc || work.metadata?.iswc || null,
               mlc_work_id: work.metadata?.mlcWorkId || null,
+              mlc_song_code: work.metadata?.mlcSongCode || null,
               source: 'mlc_primary'
             }));
             console.log(`Extracted ${knownSongs.length} songs from MLC data`);
           }
+        } else {
+          console.log('MLC catalog search failed or found no results:', mlcError || 'No data found');
         }
       } catch (mlcError) {
         console.error('MLC catalog search failed:', mlcError);
       }
 
-      // If MLC didn't provide enough results, supplement with targeted search
-      if (knownSongs.length < 3) {
-        console.log('MLC results limited, performing targeted search for additional works...');
-        
-        try {
-          const { data: additionalMlcData } = await supabase.functions.invoke('enhanced-mlc-lookup', {
-            body: {
-              searches: [{
-                writerName: songwriterName,
-                workTitle: '', // Broad search
-                searchType: 'comprehensive'
-              }]
-            }
-          });
-
-          if (additionalMlcData?.results?.length > 0) {
-            const additionalWorks = additionalMlcData.results[0]?.works || [];
-            const newSongs = additionalWorks.filter(work => 
-              !knownSongs.some(existing => existing.title === work.metadata?.workTitle)
-            ).map(work => ({
-              title: work.metadata?.workTitle || work.title,
-              co_writers: work.writers?.map(w => w.name) || [],
-              publisher: work.publishers?.[0]?.name || null,
-              iswc: work.metadata?.iswc || null,
-              mlc_work_id: work.metadata?.mlcWorkId || null,
-              source: 'mlc_secondary'
-            }));
-            
-            knownSongs.push(...newSongs);
-            console.log(`Added ${newSongs.length} additional songs from comprehensive MLC search`);
-          }
-        } catch (error) {
-          console.error('Additional MLC search failed:', error);
-        }
+      // If MLC didn't provide enough results, we should have gotten the full catalog
+      // The MLC-first approach should be comprehensive, so fallback should be minimal
+      if (knownSongs.length === 0) {
+        console.log('No MLC results found, this may indicate an API issue or no registered works');
       }
 
       const totalSongs = knownSongs.length;
