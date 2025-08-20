@@ -86,21 +86,48 @@ serve(async (req) => {
 
         if (!mlcError && mlcSearchData?.found) {
           mlcCatalogData = mlcSearchData;
-          console.log(`MLC catalog search found works for ${songwriterName}`);
+          console.log(`MLC catalog search found work data:`, mlcSearchData);
           
-          // Extract songs from MLC data as exclusive source
+          // Validate that the target songwriter is actually listed as a writer in this work
           if (mlcSearchData?.writers && Array.isArray(mlcSearchData.writers)) {
-            knownSongs = [{
-              title: mlcSearchData.metadata?.workTitle || 'Unknown Title',
-              co_writers: mlcSearchData.writers.map(w => w.name).filter(name => name !== songwriterName) || [],
-              publishers: mlcSearchData.publishers?.reduce((acc, pub) => ({ ...acc, [pub.name]: pub.share || 0 }), {}) || {},
-              iswc: mlcSearchData.metadata?.iswc || null,
-              mlc_work_id: mlcSearchData.metadata?.mlcWorkId || null,
-              mlc_song_code: mlcSearchData.metadata?.mlcSongCode || null,
-              source: 'mlc_exclusive',
-              confidence: mlcSearchData.confidence || 0.8
-            }];
-            console.log(`Extracted ${knownSongs.length} songs from MLC data`);
+            const searchName = songwriterName.toLowerCase().trim();
+            const songTitle = mlcSearchData.metadata?.workTitle || 'Unknown Title';
+            
+            // Check if the target songwriter is actually listed as a writer
+            const targetWriterFound = mlcSearchData.writers.some((writer: any) => {
+              const writerName = writer.name?.toLowerCase().trim() || '';
+              console.log(`Checking writer: "${writerName}" against target: "${searchName}"`);
+              
+              // Strict name matching - the songwriter must be explicitly listed
+              return (
+                writerName === searchName || 
+                writerName.includes(searchName) ||
+                searchName.includes(writerName.split(' ').pop() || '') // Check last name
+              );
+            });
+            
+            if (targetWriterFound) {
+              knownSongs = [{
+                title: songTitle,
+                co_writers: mlcSearchData.writers
+                  .filter((w: any) => {
+                    const wName = w.name?.toLowerCase().trim() || '';
+                    return wName !== searchName;
+                  })
+                  .map((w: any) => w.name)
+                  .filter(Boolean),
+                publishers: mlcSearchData.publishers?.reduce((acc: any, pub: any) => ({ ...acc, [pub.name]: pub.share || 0 }), {}) || {},
+                iswc: mlcSearchData.metadata?.iswc || null,
+                mlc_work_id: mlcSearchData.metadata?.mlcWorkId || null,
+                mlc_song_code: mlcSearchData.metadata?.mlcSongCode || null,
+                source: 'mlc_exclusive',
+                confidence: mlcSearchData.confidence || 0.8
+              }];
+              console.log(`Target songwriter verified as writer for "${songTitle}". Extracted ${knownSongs.length} songs from MLC data`);
+            } else {
+              console.log(`Target songwriter "${songwriterName}" not found in writers list for "${songTitle}":`, mlcSearchData.writers.map((w: any) => w.name));
+              console.log('Skipping this work as it does not belong to the target songwriter');
+            }
           }
         } else {
           console.log('MLC catalog search failed or found no results:', mlcError || 'No data found');
