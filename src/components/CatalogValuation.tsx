@@ -23,32 +23,39 @@ import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { CatalogValuationSkeleton, AsyncLoading } from "@/components/LoadingStates";
 import { usePDFGeneration } from "@/hooks/usePDFGeneration";
 import { useReportAI } from "@/hooks/useReportAI";
-
 interface TopTrack {
   name: string;
   popularity: number;
   spotify_url: string;
 }
-
 interface ForecastYear {
   year: number;
   streams: number;
   revenue: number;
   valuation: number;
 }
-
 interface ScenarioForecasts {
   pessimistic: ForecastYear[];
   base: ForecastYear[];
   optimistic: ForecastYear[];
 }
-
 interface ScenarioValuations {
-  pessimistic: { current: number; year5: number; cagr: string };
-  base: { current: number; year5: number; cagr: string };
-  optimistic: { current: number; year5: number; cagr: string };
+  pessimistic: {
+    current: number;
+    year5: number;
+    cagr: string;
+  };
+  base: {
+    current: number;
+    year5: number;
+    cagr: string;
+  };
+  optimistic: {
+    current: number;
+    year5: number;
+    cagr: string;
+  };
 }
-
 interface ComparableArtist {
   name: string;
   valuation: number;
@@ -57,14 +64,12 @@ interface ComparableArtist {
   genres?: string[];
   spotify_id?: string;
 }
-
 interface CashFlowProjection {
   year: number;
   revenue: number;
   growth: number;
   discountedValue: number;
 }
-
 interface ValuationResult {
   artist_name: string;
   total_streams: number;
@@ -82,7 +87,11 @@ interface ValuationResult {
   };
   forecasts: ScenarioForecasts;
   valuations: ScenarioValuations;
-  fair_market_value: { low: number; mid: number; high: number };
+  fair_market_value: {
+    low: number;
+    mid: number;
+    high: number;
+  };
   comparable_artists: ComparableArtist[];
   growth_metrics: {
     estimated_cagr: number;
@@ -119,14 +128,12 @@ interface ValuationResult {
   blended_valuation?: number;
   valuation_methodology_v2?: string;
 }
-
 interface ValuationParams {
   discountRate?: number;
   catalogAge?: number;
   methodology?: string;
   territory?: 'global' | 'us-only' | 'international';
 }
-
 const CatalogValuation = memo(() => {
   const [artistName, setArtistName] = useState("");
   const [result, setResult] = useState<ValuationResult | null>(null);
@@ -141,26 +148,42 @@ const CatalogValuation = memo(() => {
     methodology: 'advanced',
     territory: 'global'
   });
-  
-  const { revenueSources, calculateRevenueMetrics, refetch } = useCatalogRevenueSources(catalogValuationId);
+  const {
+    revenueSources,
+    calculateRevenueMetrics,
+    refetch
+  } = useCatalogRevenueSources(catalogValuationId);
   const computedRevenueMetrics = useMemo(() => calculateRevenueMetrics(), [revenueSources]);
-  const { toast } = useToast();
-  const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
-  const { user } = useAuth();
+  const {
+    toast
+  } = useToast();
+  const {
+    canAccess,
+    incrementUsage,
+    showUpgradeModalForModule
+  } = useDemoAccess();
+  const {
+    user
+  } = useAuth();
   const debouncedArtistName = useDebounce(artistName, 300);
-  
-  const { loading, execute, error } = useAsyncOperation({
+  const {
+    loading,
+    execute,
+    error
+  } = useAsyncOperation({
     showToast: true,
     successMessage: "Catalog valuation completed successfully",
     errorMessage: "Failed to get catalog valuation"
   });
-  const { loading: aiLoading, generateReport } = useReportAI();
-
+  const {
+    loading: aiLoading,
+    generateReport
+  } = useReportAI();
   const handleSearch = useCallback(async () => {
     console.log("=== SEARCH STARTED ===");
     console.log("Artist name:", artistName);
     console.log("Can access:", canAccess('catalogValuation'));
-    
+
     // Check demo access before proceeding
     if (!canAccess('catalogValuation')) {
       console.log("Demo access denied");
@@ -172,63 +195,54 @@ const CatalogValuation = memo(() => {
       toast({
         title: "Error",
         description: "Please enter an artist name",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     console.log("Clearing previous result");
     setResult(null);
-
     try {
       console.log("Starting execute function");
       const data = await execute(async () => {
         console.log("=== INSIDE EXECUTE FUNCTION ===");
         console.log("Calling advanced Spotify catalog valuation function...");
-        
-        const requestBody = { 
+        const requestBody = {
           artistName: artistName.trim(),
           valuationParams,
           catalogValuationId,
           userId: user?.id
         };
         console.log("Request body:", requestBody);
-        
-      console.log(`FRONTEND REQUEST DEBUG: Territory being sent: "${valuationParams.territory}"`);
-      console.log(`FRONTEND REQUEST DEBUG: Full request body:`, requestBody);
-      
-      const { data, error } = await supabase.functions.invoke('spotify-catalog-valuation', {
+        console.log(`FRONTEND REQUEST DEBUG: Territory being sent: "${valuationParams.territory}"`);
+        console.log(`FRONTEND REQUEST DEBUG: Full request body:`, requestBody);
+        const {
+          data,
+          error
+        } = await supabase.functions.invoke('spotify-catalog-valuation', {
           body: requestBody
         });
-
         console.log("=== API RESPONSE ===");
         console.log("Data:", data);
         console.log("Error:", error);
         console.log(`FRONTEND RESPONSE DEBUG: territory_multiplier received: ${data?.territory_multiplier}`);
         console.log(`FRONTEND RESPONSE DEBUG: territory_focus received: ${data?.territory_focus}`);
-
         if (error) {
           console.error("Function error:", error);
           throw new Error(error.message || 'Failed to get catalog valuation');
         }
-
         if (data && data.error) {
           console.error("Data error:", data.error);
           throw new Error(data.error);
         }
-
         if (!data) {
           console.error("No data returned");
           throw new Error('No data returned from valuation service');
         }
-
         console.log("=== SUCCESS - RETURNING DATA ===");
         return data;
       });
-
       console.log("=== EXECUTE COMPLETED ===");
       console.log("Returned data:", data);
-
       if (data) {
         console.log("Valuation result:", data);
         setResult(data);
@@ -241,87 +255,85 @@ const CatalogValuation = memo(() => {
           toast({
             title: "Valuation Complete",
             description: `Found artist "${data.artist_name}" but they have limited streaming activity. Valuation shows $0 due to minimal data.`,
-            variant: "default",
+            variant: "default"
           });
         }
 
         // Save enhanced data to database (only for authenticated users)
         try {
-          const { data: user } = await supabase.auth.getUser();
+          const {
+            data: user
+          } = await supabase.auth.getUser();
           if (user.user) {
             let savedValuation = null as any;
             let saveError = null as any;
             if (catalogValuationId) {
-              const { data: updated, error: updateError } = await supabase
-                .from('catalog_valuations')
-                .update({
-                  user_id: user.user.id,
-                  artist_name: data.artist_name,
-                  total_streams: data.total_streams,
-                  monthly_listeners: data.monthly_listeners,
-                  top_tracks: data.top_tracks,
-                  valuation_amount: data.risk_adjusted_value || data.valuation_amount,
-                  currency: data.currency,
-                  ltm_revenue: data.ltm_revenue,
-                  catalog_age_years: data.catalog_age_years,
-                  genre: data.genre,
-                  popularity_score: data.popularity_score,
-                  discount_rate: data.discount_rate,
-                  dcf_valuation: data.dcf_valuation,
-                  multiple_valuation: data.multiple_valuation,
-                  risk_adjusted_value: data.risk_adjusted_value,
-                  confidence_score: data.confidence_score,
-                  valuation_methodology: data.valuation_methodology,
-                  cash_flow_projections: data.cash_flow_projections,
-                  comparable_multiples: data.comparable_multiples,
-                  // Enhanced valuation fields
-                  has_additional_revenue: data.has_additional_revenue || false,
-                  total_additional_revenue: data.total_additional_revenue || 0,
-                  revenue_diversification_score: data.revenue_diversification_score || 0,
-                  blended_valuation: data.blended_valuation,
-                  valuation_methodology_v2: data.valuation_methodology_v2 || 'basic'
-                })
-                .eq('id', catalogValuationId)
-                .select()
-                .maybeSingle();
+              const {
+                data: updated,
+                error: updateError
+              } = await supabase.from('catalog_valuations').update({
+                user_id: user.user.id,
+                artist_name: data.artist_name,
+                total_streams: data.total_streams,
+                monthly_listeners: data.monthly_listeners,
+                top_tracks: data.top_tracks,
+                valuation_amount: data.risk_adjusted_value || data.valuation_amount,
+                currency: data.currency,
+                ltm_revenue: data.ltm_revenue,
+                catalog_age_years: data.catalog_age_years,
+                genre: data.genre,
+                popularity_score: data.popularity_score,
+                discount_rate: data.discount_rate,
+                dcf_valuation: data.dcf_valuation,
+                multiple_valuation: data.multiple_valuation,
+                risk_adjusted_value: data.risk_adjusted_value,
+                confidence_score: data.confidence_score,
+                valuation_methodology: data.valuation_methodology,
+                cash_flow_projections: data.cash_flow_projections,
+                comparable_multiples: data.comparable_multiples,
+                // Enhanced valuation fields
+                has_additional_revenue: data.has_additional_revenue || false,
+                total_additional_revenue: data.total_additional_revenue || 0,
+                revenue_diversification_score: data.revenue_diversification_score || 0,
+                blended_valuation: data.blended_valuation,
+                valuation_methodology_v2: data.valuation_methodology_v2 || 'basic'
+              }).eq('id', catalogValuationId).select().maybeSingle();
               savedValuation = updated;
               saveError = updateError;
             } else {
-              const { data: inserted, error: insertError } = await supabase
-                .from('catalog_valuations')
-                .insert({
-                  user_id: user.user.id,
-                  artist_name: data.artist_name,
-                  total_streams: data.total_streams,
-                  monthly_listeners: data.monthly_listeners,
-                  top_tracks: data.top_tracks,
-                  valuation_amount: data.risk_adjusted_value || data.valuation_amount,
-                  currency: data.currency,
-                  ltm_revenue: data.ltm_revenue,
-                  catalog_age_years: data.catalog_age_years,
-                  genre: data.genre,
-                  popularity_score: data.popularity_score,
-                  discount_rate: data.discount_rate,
-                  dcf_valuation: data.dcf_valuation,
-                  multiple_valuation: data.multiple_valuation,
-                  risk_adjusted_value: data.risk_adjusted_value,
-                  confidence_score: data.confidence_score,
-                  valuation_methodology: data.valuation_methodology,
-                  cash_flow_projections: data.cash_flow_projections,
-                  comparable_multiples: data.comparable_multiples,
-                  // Enhanced valuation fields
-                  has_additional_revenue: data.has_additional_revenue || false,
-                  total_additional_revenue: data.total_additional_revenue || 0,
-                  revenue_diversification_score: data.revenue_diversification_score || 0,
-                  blended_valuation: data.blended_valuation,
-                  valuation_methodology_v2: data.valuation_methodology_v2 || 'basic'
-                })
-                .select()
-                .maybeSingle();
+              const {
+                data: inserted,
+                error: insertError
+              } = await supabase.from('catalog_valuations').insert({
+                user_id: user.user.id,
+                artist_name: data.artist_name,
+                total_streams: data.total_streams,
+                monthly_listeners: data.monthly_listeners,
+                top_tracks: data.top_tracks,
+                valuation_amount: data.risk_adjusted_value || data.valuation_amount,
+                currency: data.currency,
+                ltm_revenue: data.ltm_revenue,
+                catalog_age_years: data.catalog_age_years,
+                genre: data.genre,
+                popularity_score: data.popularity_score,
+                discount_rate: data.discount_rate,
+                dcf_valuation: data.dcf_valuation,
+                multiple_valuation: data.multiple_valuation,
+                risk_adjusted_value: data.risk_adjusted_value,
+                confidence_score: data.confidence_score,
+                valuation_methodology: data.valuation_methodology,
+                cash_flow_projections: data.cash_flow_projections,
+                comparable_multiples: data.comparable_multiples,
+                // Enhanced valuation fields
+                has_additional_revenue: data.has_additional_revenue || false,
+                total_additional_revenue: data.total_additional_revenue || 0,
+                revenue_diversification_score: data.revenue_diversification_score || 0,
+                blended_valuation: data.blended_valuation,
+                valuation_methodology_v2: data.valuation_methodology_v2 || 'basic'
+              }).select().maybeSingle();
               savedValuation = inserted;
               saveError = insertError;
             }
-
             if (saveError) {
               console.error("Error saving valuation:", saveError);
               // Don't throw here - saving is optional, the main result should still show
@@ -338,21 +350,17 @@ const CatalogValuation = memo(() => {
       console.error("Catalog valuation error:", error);
     }
   }, [artistName, valuationParams, canAccess, showUpgradeModalForModule, toast, execute, incrementUsage]);
-
   const formatNumber = useCallback((num: number) => {
     return new Intl.NumberFormat().format(num);
   }, []);
-
   const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
   }, []);
-
   const generateAdvancedReport = useCallback(() => {
     if (!result) return;
-    
     const reportText = `
 ADVANCED CATALOG VALUATION REPORT
 =====================================
@@ -394,22 +402,15 @@ Growth Assumption: ${(result.industry_benchmarks.growth_assumption * 100).toFixe
 DCF ANALYSIS
 ============
 Discount Rate: ${((result.discount_rate || 0.12) * 100).toFixed(1)}%
-${result.cash_flow_projections ? 
-  result.cash_flow_projections.map(cf => 
-    `Year ${cf.year}: Revenue ${formatCurrency(cf.revenue)}, Growth ${cf.growth.toFixed(1)}%, PV ${formatCurrency(cf.discountedValue)}`
-  ).join('\n') : 'Cash flow projections not available'}
+${result.cash_flow_projections ? result.cash_flow_projections.map(cf => `Year ${cf.year}: Revenue ${formatCurrency(cf.revenue)}, Growth ${cf.growth.toFixed(1)}%, PV ${formatCurrency(cf.discountedValue)}`).join('\n') : 'Cash flow projections not available'}
 
 5-YEAR FORECAST (BASE CASE)
 ===========================
-${result.forecasts.base.map(year => 
-  `Year ${year.year}: ${formatCurrency(year.valuation)} (${formatNumber(year.streams)} streams, ${formatCurrency(year.revenue)} revenue)`
-).join('\n')}
+${result.forecasts.base.map(year => `Year ${year.year}: ${formatCurrency(year.valuation)} (${formatNumber(year.streams)} streams, ${formatCurrency(year.revenue)} revenue)`).join('\n')}
 
 COMPARABLE ARTISTS
 ==================
-${result.comparable_artists.map(comp => 
-  `${comp.name}: ${formatCurrency(comp.valuation)} (${formatNumber(comp.followers)} followers, ${comp.popularity}/100 popularity)`
-).join('\n')}
+${result.comparable_artists.map(comp => `${comp.name}: ${formatCurrency(comp.valuation)} (${formatNumber(comp.followers)} followers, ${comp.popularity}/100 popularity)`).join('\n')}
 
 RISK FACTORS & ASSUMPTIONS
 ==========================
@@ -423,8 +424,9 @@ DISCLAIMER
 This valuation is for informational purposes only and should not be considered as investment advice. 
 Actual market values may vary significantly based on numerous factors not captured in this analysis.
 `;
-
-    const blob = new Blob([reportText], { type: 'text/plain' });
+    const blob = new Blob([reportText], {
+      type: 'text/plain'
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -433,17 +435,16 @@ Actual market values may vary significantly based on numerous factors not captur
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
     toast({
       title: "Advanced Report Downloaded",
-      description: "Comprehensive catalog valuation report has been downloaded successfully",
+      description: "Comprehensive catalog valuation report has been downloaded successfully"
     });
   }, [result, formatCurrency, formatNumber, toast]);
-
-  const { openPDFInNewWindow, downloadPDF } = usePDFGeneration();
-
+  const {
+    openPDFInNewWindow,
+    downloadPDF
+  } = usePDFGeneration();
   type ReportSection = 'executive' | 'technical' | 'market';
-
   const buildSectionHTML = useCallback((section: ReportSection) => {
     if (!result) return '<div>No data available</div>';
 
@@ -452,10 +453,13 @@ Actual market values may vary significantly based on numerous factors not captur
 
     // Build section bodies as HTML fragments (no <html>/<body> wrappers)
     if (section === 'executive') {
-      const fmw = result.fair_market_value || { low: 0, mid: 0, high: 0 };
+      const fmw = result.fair_market_value || {
+        low: 0,
+        mid: 0,
+        high: 0
+      };
       const comp = result.valuations?.base;
       const cagr = comp?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 0) * 100) / 100}%`;
-
       return `
         <section>
           <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
@@ -497,15 +501,15 @@ Actual market values may vary significantly based on numerous factors not captur
               </tr>
             </thead>
             <tbody>
-              ${['pessimistic','base','optimistic'].map((k) => {
-                const row = (result.valuations as any)?.[k] || {};
-                return `<tr>
+              ${['pessimistic', 'base', 'optimistic'].map(k => {
+        const row = (result.valuations as any)?.[k] || {};
+        return `<tr>
                   <td style="padding:6px;">${k[0].toUpperCase()}${k.slice(1)}</td>
                   <td style="padding:6px;text-align:right;">${row.current ? formatCurrency(row.current) : 'N/A'}</td>
                   <td style="padding:6px;text-align:right;">${row.year5 ? formatCurrency(row.year5) : 'N/A'}</td>
-                  <td style="padding:6px;text-align:right;">${row.cagr || (k==='base' ? cagr : 'N/A')}</td>
+                  <td style="padding:6px;text-align:right;">${row.cagr || (k === 'base' ? cagr : 'N/A')}</td>
                 </tr>`;
-              }).join('')}
+      }).join('')}
             </tbody>
           </table>
 
@@ -513,12 +517,11 @@ Actual market values may vary significantly based on numerous factors not captur
           <ul>
             ${result.has_additional_revenue ? `<li>Diversified revenue present; score ${result.revenue_diversification_score ?? 0}/100</li>` : ''}
             ${result.blended_valuation ? `<li>Enhanced blended valuation: ${formatCurrency(result.blended_valuation)}</li>` : ''}
-            <li>Benchmark multiple: ${(result.industry_benchmarks?.revenue_multiple || result.growth_metrics?.base_multiple || 0)}x</li>
+            <li>Benchmark multiple: ${result.industry_benchmarks?.revenue_multiple || result.growth_metrics?.base_multiple || 0}x</li>
           </ul>
         </section>
       `;
     }
-
     if (section === 'technical') {
       return `
         <section>
@@ -557,7 +560,7 @@ Actual market values may vary significantly based on numerous factors not captur
           <h3 style="margin-top:16px">Benchmarks & Multiples</h3>
           <ul>
             <li><strong>Genre:</strong> ${result.industry_benchmarks?.genre || result.genre || 'N/A'}</li>
-            <li><strong>Revenue Multiple:</strong> ${(result.industry_benchmarks?.revenue_multiple || result.growth_metrics?.base_multiple || 0)}x</li>
+            <li><strong>Revenue Multiple:</strong> ${result.industry_benchmarks?.revenue_multiple || result.growth_metrics?.base_multiple || 0}x</li>
             <li><strong>Risk Factor:</strong> ${pct(result.industry_benchmarks?.risk_factor)}</li>
             <li><strong>Growth Assumption:</strong> ${pct(result.industry_benchmarks?.growth_assumption)}</li>
           </ul>
@@ -585,7 +588,6 @@ Actual market values may vary significantly based on numerous factors not captur
     const topTracks = result.top_tracks || [];
     const popularitySum = topTracks.reduce((s, t) => s + (t.popularity || 0), 0) || 1;
     const topShare = topTracks.length ? Math.round((topTracks[0].popularity || 0) / popularitySum * 100) : 0;
-
     return `
       <section>
         <h3>Positioning</h3>
@@ -653,7 +655,6 @@ Actual market values may vary significantly based on numerous factors not captur
       </section>
     `;
   }, [result, formatCurrency, formatNumber]);
-
   const buildPageHTML = useCallback((pageTitle: string, body: string) => {
     const safeBody = body || '<div>No content</div>';
     return `
@@ -678,22 +679,29 @@ Actual market values may vary significantly based on numerous factors not captur
         </body>
       </html>`;
   }, []);
-
   const handleGenerateSectionReport = useCallback(async (section: ReportSection) => {
     if (!result) {
-      toast({ title: 'No data', description: 'Run a valuation first.' });
+      toast({
+        title: 'No data',
+        description: 'Run a valuation first.'
+      });
       return;
     }
     const sectionTitleMap: Record<ReportSection, string> = {
       executive: 'Executive Summary',
       technical: 'Technical Analysis',
-      market: 'Market Analysis',
+      market: 'Market Analysis'
     };
-
     try {
-      toast({ title: 'Generating AI report', description: 'Fetching sourced analysis (this may take up to a few minutes)...' });
-      const aiHtml = await generateReport({ section, valuation: result, minWords: 2500 });
-
+      toast({
+        title: 'Generating AI report',
+        description: 'Fetching sourced analysis (this may take up to a few minutes)...'
+      });
+      const aiHtml = await generateReport({
+        section,
+        valuation: result,
+        minWords: 2500
+      });
       const body = `
       <h1>${sectionTitleMap[section]}</h1>
       <div class="muted">Artist: ${result.artist_name}</div>
@@ -705,7 +713,10 @@ Actual market values may vary significantly based on numerous factors not captur
       openPDFInNewWindow(html, `${result.artist_name} - ${section} report`);
     } catch (e) {
       console.error(e);
-      toast({ title: 'AI generation failed', description: 'Showing structured report without AI narrative.' });
+      toast({
+        title: 'AI generation failed',
+        description: 'Showing structured report without AI narrative.'
+      });
       const body = `
         <h1>${sectionTitleMap[section]}</h1>
         <div class="muted">Artist: ${result.artist_name}</div>
@@ -715,13 +726,17 @@ Actual market values may vary significantly based on numerous factors not captur
       openPDFInNewWindow(htmlFallback, `${result.artist_name} - ${section} report`);
     }
   }, [result, buildSectionHTML, buildPageHTML, openPDFInNewWindow, toast, generateReport]);
-
   const exportJSON = useCallback(() => {
     if (!result) {
-      toast({ title: 'No data', description: 'Run a valuation first.' });
+      toast({
+        title: 'No data',
+        description: 'Run a valuation first.'
+      });
       return;
     }
-    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(result, null, 2)], {
+      type: 'application/json'
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -731,30 +746,25 @@ Actual market values may vary significantly based on numerous factors not captur
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, [result, toast]);
-
   const exportCSV = useCallback(() => {
     if (!result) {
-      toast({ title: 'No data', description: 'Run a valuation first.' });
+      toast({
+        title: 'No data',
+        description: 'Run a valuation first.'
+      });
       return;
     }
     const rows: Array<string[]> = [];
     rows.push(['Artist', 'Valuation', 'Confidence', 'Total Streams', 'Monthly Listeners', 'Genre', 'Popularity']);
-    rows.push([
-      result.artist_name,
-      String(result.risk_adjusted_value || result.valuation_amount || 0),
-      String(result.confidence_score || 0),
-      String(result.total_streams || 0),
-      String(result.monthly_listeners || 0),
-      result.genre || (result.industry_benchmarks?.genre || ''),
-      String(result.popularity_score || result.spotify_data?.popularity || 0),
-    ]);
+    rows.push([result.artist_name, String(result.risk_adjusted_value || result.valuation_amount || 0), String(result.confidence_score || 0), String(result.total_streams || 0), String(result.monthly_listeners || 0), result.genre || result.industry_benchmarks?.genre || '', String(result.popularity_score || result.spotify_data?.popularity || 0)]);
     rows.push([]);
     rows.push(['Top Tracks']);
     rows.push(['Name', 'Popularity', 'Spotify URL']);
     (result.top_tracks || []).forEach(t => rows.push([t.name, String(t.popularity), t.spotify_url]));
-
     const csv = rows.map(r => r.map(v => `"${(v ?? '').toString().replace(/"/g, '""')}` + '"').join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csv], {
+      type: 'text/csv;charset=utf-8;'
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -764,10 +774,12 @@ Actual market values may vary significantly based on numerous factors not captur
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, [result, toast]);
-
   const exportXML = useCallback(() => {
     if (!result) {
-      toast({ title: 'No data', description: 'Run a valuation first.' });
+      toast({
+        title: 'No data',
+        description: 'Run a valuation first.'
+      });
       return;
     }
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -779,7 +791,9 @@ Actual market values may vary significantly based on numerous factors not captur
   <monthlyListeners>${result.monthly_listeners || 0}</monthlyListeners>
   <genre>${result.genre || result.industry_benchmarks?.genre || ''}</genre>
 </valuation>`;
-    const blob = new Blob([xml], { type: 'application/xml' });
+    const blob = new Blob([xml], {
+      type: 'application/xml'
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -789,20 +803,32 @@ Actual market values may vary significantly based on numerous factors not captur
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, [result, toast]);
-
   const handleFullPDFReport = useCallback(async () => {
     if (!result) {
-      toast({ title: 'No data', description: 'Run a valuation first.' });
+      toast({
+        title: 'No data',
+        description: 'Run a valuation first.'
+      });
       return;
     }
     try {
-      toast({ title: 'Generating full AI report', description: 'Fetching sourced narratives for all sections...' });
-      const [execHtml, techHtml, marketHtml] = await Promise.all([
-        generateReport({ section: 'executive', valuation: result, minWords: 2500 }),
-        generateReport({ section: 'technical', valuation: result, minWords: 2500 }),
-        generateReport({ section: 'market', valuation: result, minWords: 2500 }),
-      ]);
-
+      toast({
+        title: 'Generating full AI report',
+        description: 'Fetching sourced narratives for all sections...'
+      });
+      const [execHtml, techHtml, marketHtml] = await Promise.all([generateReport({
+        section: 'executive',
+        valuation: result,
+        minWords: 2500
+      }), generateReport({
+        section: 'technical',
+        valuation: result,
+        minWords: 2500
+      }), generateReport({
+        section: 'market',
+        valuation: result,
+        minWords: 2500
+      })]);
       const body = `
         <h1>Full Valuation Report</h1>
         <div class="muted">Artist: ${result.artist_name}</div>
@@ -823,7 +849,10 @@ Actual market values may vary significantly based on numerous factors not captur
       openPDFInNewWindow(html, `${result.artist_name} - Full Valuation Report`);
     } catch (e) {
       console.error(e);
-      toast({ title: 'AI generation failed', description: 'Showing structured report without AI narratives.' });
+      toast({
+        title: 'AI generation failed',
+        description: 'Showing structured report without AI narratives.'
+      });
       const body = `
         <h1>Full Valuation Report</h1>
         <div class="muted">Artist: ${result.artist_name}</div>
@@ -838,14 +867,7 @@ Actual market values may vary significantly based on numerous factors not captur
       openPDFInNewWindow(html, `${result.artist_name} - Full Valuation Report`);
     }
   }, [result, buildSectionHTML, buildPageHTML, openPDFInNewWindow, toast, generateReport]);
-
-  return (
-    <AsyncLoading 
-      isLoading={loading} 
-      error={error?.message} 
-      skeleton={<CatalogValuationSkeleton />}
-      retry={handleSearch}
-    >
+  return <AsyncLoading isLoading={loading} error={error?.message} skeleton={<CatalogValuationSkeleton />} retry={handleSearch}>
       <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -859,50 +881,29 @@ Actual market values may vary significantly based on numerous factors not captur
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
-            <Input
-              placeholder="Enter artist or songwriter name..."
-              value={artistName}
-              onChange={(e) => setArtistName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              disabled={loading}
-              className="flex-1"
-            />
+            <Input placeholder="Enter artist or songwriter name..." value={artistName} onChange={e => setArtistName(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSearch()} disabled={loading} className="flex-1" />
             <Button onClick={handleSearch} disabled={loading || !artistName.trim()}>
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="h-4 w-4" />
-              )}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               {loading ? "Analyzing..." : "Analyze"}
             </Button>
-            {loading && (
-              <Button variant="outline" onClick={() => window.location.reload()}>
+            {loading && <Button variant="outline" onClick={() => window.location.reload()}>
                 Reset
-              </Button>
-            )}
+              </Button>}
           </div>
           
           <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAdvancedInputs(!showAdvancedInputs)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setShowAdvancedInputs(!showAdvancedInputs)}>
               {showAdvancedInputs ? "Hide" : "Show"} Advanced Parameters
             </Button>
           </div>
 
-          {showAdvancedInputs && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-secondary/30">
+          {showAdvancedInputs && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-secondary/30">
               <div className="space-y-2">
                 <Label htmlFor="territory">Territory Focus</Label>
-                <Select 
-                  value={valuationParams.territory || 'global'}
-                  onValueChange={(value: 'global' | 'us-only' | 'international') => setValuationParams(prev => ({
-                    ...prev,
-                    territory: value
-                  }))}
-                >
+                <Select value={valuationParams.territory || 'global'} onValueChange={(value: 'global' | 'us-only' | 'international') => setValuationParams(prev => ({
+                ...prev,
+                territory: value
+              }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -930,39 +931,24 @@ Actual market values may vary significantly based on numerous factors not captur
               </div>
               <div className="space-y-2">
                 <Label htmlFor="discount-rate">Discount Rate (%)</Label>
-                <Input
-                  id="discount-rate"
-                  type="number"
-                  min="8"
-                  max="20"
-                  step="0.5"
-                  value={(valuationParams.discountRate || 0.12) * 100}
-                  onChange={(e) => setValuationParams(prev => ({ 
-                    ...prev, 
-                    discountRate: parseFloat(e.target.value) / 100 
-                  }))}
-                />
+                <Input id="discount-rate" type="number" min="8" max="20" step="0.5" value={(valuationParams.discountRate || 0.12) * 100} onChange={e => setValuationParams(prev => ({
+                ...prev,
+                discountRate: parseFloat(e.target.value) / 100
+              }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="catalog-age">Catalog Age (Years)</Label>
-                <Input
-                  id="catalog-age"
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={valuationParams.catalogAge || 5}
-                  onChange={(e) => setValuationParams(prev => ({ 
-                    ...prev, 
-                    catalogAge: parseInt(e.target.value) 
-                  }))}
-                />
+                <Input id="catalog-age" type="number" min="1" max="50" value={valuationParams.catalogAge || 5} onChange={e => setValuationParams(prev => ({
+                ...prev,
+                catalogAge: parseInt(e.target.value)
+              }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="methodology">Valuation Method</Label>
-                <Select 
-                  value={valuationParams.methodology || 'advanced'} 
-                  onValueChange={(value) => setValuationParams(prev => ({ ...prev, methodology: value }))}
-                >
+                <Select value={valuationParams.methodology || 'advanced'} onValueChange={value => setValuationParams(prev => ({
+                ...prev,
+                methodology: value
+              }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -973,13 +959,11 @@ Actual market values may vary significantly based on numerous factors not captur
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
-      {result && (
-        <>
+      {result && <>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -995,22 +979,18 @@ Actual market values may vary significantly based on numerous factors not captur
               {/* Key Metrics Grid */}
               <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
                 {(() => {
-                  // Calculate territory multiplier
-                  const selectedTerritory = result.territory_focus || valuationParams.territory;
-                  const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : 
-                                            selectedTerritory === 'us-only' ? 1.2 : 1.0;
-                  
-                  // Apply territory adjustment to all valuations
-                  const adjustedBlendedValuation = result.blended_valuation ? result.blended_valuation * territoryMultiplier : null;
-                  const adjustedRiskAdjustedValue = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
-                  const adjustedDcfValuation = (result.dcf_valuation || 0) * territoryMultiplier;
-                  const adjustedMultipleValuation = (result.multiple_valuation || 0) * territoryMultiplier;
-                  
-                  return (
-                    <>
+                // Calculate territory multiplier
+                const selectedTerritory = result.territory_focus || valuationParams.territory;
+                const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : selectedTerritory === 'us-only' ? 1.2 : 1.0;
+
+                // Apply territory adjustment to all valuations
+                const adjustedBlendedValuation = result.blended_valuation ? result.blended_valuation * territoryMultiplier : null;
+                const adjustedRiskAdjustedValue = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
+                const adjustedDcfValuation = (result.dcf_valuation || 0) * territoryMultiplier;
+                const adjustedMultipleValuation = (result.multiple_valuation || 0) * territoryMultiplier;
+                return <>
                       {/* Enhanced Valuation - Show if available */}
-                      {adjustedBlendedValuation && result.has_additional_revenue ? (
-                        <Card className="ring-2 ring-primary/20">
+                      {adjustedBlendedValuation && result.has_additional_revenue ? <Card className="ring-2 ring-primary/20">
                           <CardContent className="p-6">
                             <div className="flex items-center space-x-2">
                               <Zap className="h-4 w-4 text-primary" />
@@ -1023,18 +1003,14 @@ Actual market values may vary significantly based on numerous factors not captur
                                   <Badge variant="secondary" className="text-xs">
                                     {((adjustedBlendedValuation - adjustedRiskAdjustedValue) / adjustedRiskAdjustedValue * 100).toFixed(1)}% uplift
                                   </Badge>
-                                  {territoryMultiplier !== 1.0 && (
-                                    <Badge variant="outline" className="text-xs">
+                                  {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
                                       {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
-                                    </Badge>
-                                  )}
+                                    </Badge>}
                                 </div>
                               </div>
                             </div>
                           </CardContent>
-                        </Card>
-                      ) : (
-                        <Card>
+                        </Card> : <Card>
                           <CardContent className="p-6">
                             <div className="flex items-center space-x-2">
                               <Target className="h-4 w-4 text-primary" />
@@ -1043,16 +1019,13 @@ Actual market values may vary significantly based on numerous factors not captur
                                 <p className="text-xl font-bold text-primary">
                                   {formatCurrency(adjustedRiskAdjustedValue)}
                                 </p>
-                                {territoryMultiplier !== 1.0 && (
-                                  <Badge variant="outline" className="text-xs">
+                                {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
                                     {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
-                                  </Badge>
-                                )}
+                                  </Badge>}
                               </div>
                             </div>
                           </CardContent>
-                        </Card>
-                      )}
+                        </Card>}
 
                       <Card>
                         <CardContent className="p-6">
@@ -1063,11 +1036,9 @@ Actual market values may vary significantly based on numerous factors not captur
                               <p className="text-xl font-bold text-blue-600">
                                 {formatCurrency(adjustedDcfValuation)}
                               </p>
-                              {territoryMultiplier !== 1.0 && (
-                                <Badge variant="outline" className="text-xs">
+                              {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
                                   {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
-                                </Badge>
-                              )}
+                                </Badge>}
                             </div>
                           </div>
                         </CardContent>
@@ -1082,11 +1053,9 @@ Actual market values may vary significantly based on numerous factors not captur
                               <p className="text-xl font-bold text-green-600">
                                 {formatCurrency(adjustedMultipleValuation)}
                               </p>
-                              {territoryMultiplier !== 1.0 && (
-                                <Badge variant="outline" className="text-xs">
+                              {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
                                   {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
-                                </Badge>
-                              )}
+                                </Badge>}
                             </div>
                           </div>
                         </CardContent>
@@ -1133,31 +1102,20 @@ Actual market values may vary significantly based on numerous factors not captur
                           </div>
                         </CardContent>
                       </Card>
-                    </>
-                  );
-                })()}
+                    </>;
+              })()}
               </div>
 
               {/* Territory Analysis */}
               {(() => {
-                // Calculate territory multiplier
-                const selectedTerritory = result.territory_focus || valuationParams.territory;
-                const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : 
-                                          selectedTerritory === 'us-only' ? 1.2 : 1.0;
-                
-                // Apply territory adjustment to all valuations
-                const adjustedValuation = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
+              // Calculate territory multiplier
+              const selectedTerritory = result.territory_focus || valuationParams.territory;
+              const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : selectedTerritory === 'us-only' ? 1.2 : 1.0;
 
-                return (
-                  <TerritoryBreakdownCard
-                    territory={selectedTerritory}
-                    territoryMultiplier={territoryMultiplier}
-                    totalValuation={adjustedValuation}
-                    domesticShare={0.7}
-                    internationalShare={0.3}
-                  />
-                );
-              })()}
+              // Apply territory adjustment to all valuations
+              const adjustedValuation = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
+              return <TerritoryBreakdownCard territory={selectedTerritory} territoryMultiplier={territoryMultiplier} totalValuation={adjustedValuation} domesticShare={0.7} internationalShare={0.3} />;
+            })()}
 
               {/* Artist Spotify Information */}
               <Card>
@@ -1192,42 +1150,30 @@ Actual market values may vary significantly based on numerous factors not captur
                     </div>
                   </div>
                   
-                  {result.top_tracks && result.top_tracks.length > 0 && (
-                    <div className="space-y-3">
+                  {result.top_tracks && result.top_tracks.length > 0 && <div className="space-y-3">
                       <h4 className="font-medium text-sm">Top Tracks</h4>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {result.top_tracks.slice(0, 10).map((track, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 border rounded-lg bg-secondary/20">
+                        {result.top_tracks.slice(0, 10).map((track, index) => <div key={index} className="flex items-center justify-between p-2 border rounded-lg bg-secondary/20">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm truncate">{track.name}</p>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs">
                                   {track.popularity}/100
                                 </Badge>
-                                {track.spotify_url && (
-                                  <a 
-                                    href={track.spotify_url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-primary hover:underline"
-                                  >
+                                {track.spotify_url && <a href={track.spotify_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
                                     View on Spotify
-                                  </a>
-                                )}
+                                  </a>}
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          </div>)}
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </CardContent>
               </Card>
 
 
               {/* Enhanced Valuation Insights */}
-              {result.has_additional_revenue && (
-                <Card className="col-span-full border-primary/20">
+              {result.has_additional_revenue && <Card className="col-span-full border-primary/20">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Brain className="h-5 w-5 text-primary" />
@@ -1260,8 +1206,7 @@ Actual market values may vary significantly based on numerous factors not captur
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
 
               {/* Confidence Meter */}
               <Card>
@@ -1290,8 +1235,7 @@ Actual market values may vary significantly based on numerous factors not captur
               </Card>
 
               {/* Industry Benchmarks */}
-              {result.industry_benchmarks && (
-                <Card>
+              {result.industry_benchmarks && <Card>
                   <CardHeader>
                     <CardTitle>Industry Benchmarks</CardTitle>
                     <CardDescription>Genre-specific market data for {result.industry_benchmarks.genre}</CardDescription>
@@ -1312,8 +1256,7 @@ Actual market values may vary significantly based on numerous factors not captur
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
             </TabsContent>
 
             <TabsContent value="analysis" className="space-y-6">
@@ -1327,11 +1270,9 @@ Actual market values may vary significantly based on numerous factors not captur
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {result.cash_flow_projections && result.cash_flow_projections.length > 0 ? (
-                      <div className="space-y-2">
+                    {result.cash_flow_projections && result.cash_flow_projections.length > 0 ? <div className="space-y-2">
                         <h4 className="font-medium">Cash Flow Projections</h4>
-                        {result.cash_flow_projections.map((cf) => (
-                          <div key={cf.year} className="flex items-center justify-between p-3 border rounded-lg">
+                        {result.cash_flow_projections.map(cf => <div key={cf.year} className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
                               <p className="font-medium">Year {cf.year}</p>
                               <p className="text-sm text-muted-foreground">
@@ -1344,12 +1285,8 @@ Actual market values may vary significantly based on numerous factors not captur
                                 PV: {formatCurrency(cf.discountedValue)}
                               </p>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground">Cash flow projections not available for this valuation</p>
-                    )}
+                          </div>)}
+                      </div> : <p className="text-muted-foreground">Cash flow projections not available for this valuation</p>}
                     
                     <Separator />
                     
@@ -1375,17 +1312,9 @@ Actual market values may vary significantly based on numerous factors not captur
                   <div className="flex items-center justify-between">
                     <CardTitle>5-Year Valuation Forecast</CardTitle>
                     <div className="flex gap-2">
-                      {(["pessimistic", "base", "optimistic"] as const).map((scenario) => (
-                        <Button
-                          key={scenario}
-                          variant={selectedScenario === scenario ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSelectedScenario(scenario)}
-                          className="capitalize"
-                        >
+                      {(["pessimistic", "base", "optimistic"] as const).map(scenario => <Button key={scenario} variant={selectedScenario === scenario ? "default" : "outline"} size="sm" onClick={() => setSelectedScenario(scenario)} className="capitalize">
                           {scenario === "base" ? "Base Case" : scenario}
-                        </Button>
-                      ))}
+                        </Button>)}
                     </div>
                   </div>
                   <CardDescription>
@@ -1418,15 +1347,14 @@ Actual market values may vary significantly based on numerous factors not captur
                       <div>
                         <p className="text-sm font-medium">Total Return</p>
                         <p className="text-xl font-bold text-green-600">
-                          {(((result.valuations[selectedScenario].year5 / result.valuations[selectedScenario].current) - 1) * 100).toFixed(0)}%
+                          {((result.valuations[selectedScenario].year5 / result.valuations[selectedScenario].current - 1) * 100).toFixed(0)}%
                         </p>
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <p className="font-medium">Year-by-Year Breakdown</p>
-                      {result.forecasts[selectedScenario].map((year) => (
-                        <div key={year.year} className="flex items-center justify-between p-3 border rounded-lg">
+                      {result.forecasts[selectedScenario].map(year => <div key={year.year} className="flex items-center justify-between p-3 border rounded-lg">
                           <div>
                             <p className="font-medium">Year {year.year}</p>
                             <p className="text-sm text-muted-foreground">
@@ -1439,8 +1367,7 @@ Actual market values may vary significantly based on numerous factors not captur
                               {formatCurrency(year.revenue)} revenue
                             </p>
                           </div>
-                        </div>
-                      ))}
+                        </div>)}
                     </div>
                   </div>
                 </CardContent>
@@ -1457,44 +1384,30 @@ Actual market values may vary significantly based on numerous factors not captur
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {result.comparable_artists.map((comp, index) => (
-                        <div key={index} className="p-3 border rounded-lg">
+                      {result.comparable_artists.map((comp, index) => <div key={index} className="p-3 border rounded-lg">
                           <div className="flex items-center justify-between mb-2">
                             <p className="font-medium">{comp.name}</p>
-                            {comp.spotify_id && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => window.open(`https://open.spotify.com/artist/${comp.spotify_id}`, '_blank')}
-                              >
+                            {comp.spotify_id && <Button variant="outline" size="sm" onClick={() => window.open(`https://open.spotify.com/artist/${comp.spotify_id}`, '_blank')}>
                                 View
-                              </Button>
-                            )}
+                              </Button>}
                           </div>
                           <div className="space-y-1">
                             <p className="text-sm text-muted-foreground">
                               {formatNumber(comp.followers)} followers
                             </p>
-                            {comp.popularity && (
-                              <p className="text-sm text-muted-foreground">
+                            {comp.popularity && <p className="text-sm text-muted-foreground">
                                 Popularity: {comp.popularity}/100
-                              </p>
-                            )}
+                              </p>}
                             <p className="font-bold text-primary">
                               {formatCurrency(comp.valuation)}
                             </p>
-                            {comp.genres && comp.genres.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {comp.genres.slice(0, 2).map((genre, genreIndex) => (
-                                  <Badge key={genreIndex} variant="outline" className="text-xs">
+                            {comp.genres && comp.genres.length > 0 && <div className="flex flex-wrap gap-1 mt-2">
+                                {comp.genres.slice(0, 2).map((genre, genreIndex) => <Badge key={genreIndex} variant="outline" className="text-xs">
                                     {genre}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
+                                  </Badge>)}
+                              </div>}
                           </div>
-                        </div>
-                      ))}
+                        </div>)}
                     </div>
                   </CardContent>
                 </Card>
@@ -1505,8 +1418,7 @@ Actual market values may vary significantly based on numerous factors not captur
                     <CardDescription>Market multiples and premiums</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {result.comparable_multiples ? (
-                      <>
+                    {result.comparable_multiples ? <>
                         <div>
                           <p className="text-sm font-medium">EV/Revenue Multiple</p>
                           <p className="text-2xl font-bold">{result.comparable_multiples.ev_revenue_multiple.toFixed(1)}x</p>
@@ -1521,15 +1433,12 @@ Actual market values may vary significantly based on numerous factors not captur
                             {((result.comparable_multiples.market_premium_discount - 1) * 100).toFixed(0)}%
                           </p>
                         </div>
-                      </>
-                    ) : (
-                      <div className="mt-4 p-3 bg-secondary/30 rounded-lg">
+                      </> : <div className="mt-4 p-3 bg-secondary/30 rounded-lg">
                         <p className="text-sm font-medium">Base Revenue Multiple</p>
                         <p className="text-lg font-bold">
                           {result.growth_metrics.base_multiple.toFixed(1)}x Revenue
                         </p>
-                      </div>
-                    )}
+                      </div>}
                   </CardContent>
                 </Card>
               </div>
@@ -1538,12 +1447,7 @@ Actual market values may vary significantly based on numerous factors not captur
             <TabsContent value="analytics" className="space-y-6">
               {/* Back Navigation */}
               <div className="flex items-center gap-2 mb-4">
-                 <Button 
-                   variant="ghost" 
-                   size="sm" 
-                   onClick={() => setActiveTab("overview")}
-                   className="text-muted-foreground hover:text-foreground"
-                 >
+                 <Button variant="ghost" size="sm" onClick={() => setActiveTab("overview")} className="text-muted-foreground hover:text-foreground">
                    <ArrowLeft className="h-4 w-4 mr-2" />
                    Back to Overview
                  </Button>
@@ -1563,29 +1467,37 @@ Actual market values may vary significantly based on numerous factors not captur
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
                       <RechartsPieChart>
-                        <Pie
-                          data={[
-                            { name: 'DCF Valuation', value: result.dcf_valuation || 0, fill: '#3b82f6' },
-                            { name: 'Multiple Valuation', value: result.multiple_valuation || 0, fill: '#10b981' },
-                            { name: 'Risk Adjustment', value: Math.abs((result.risk_adjusted_value || result.valuation_amount) - ((result.dcf_valuation || 0) + (result.multiple_valuation || 0)) / 2), fill: '#f59e0b' }
-                          ].filter(item => item.value > 0)}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {[
-                            { name: 'DCF Valuation', value: result.dcf_valuation || 0, fill: '#3b82f6' },
-                            { name: 'Multiple Valuation', value: result.multiple_valuation || 0, fill: '#10b981' },
-                            { name: 'Risk Adjustment', value: Math.abs((result.risk_adjusted_value || result.valuation_amount) - ((result.dcf_valuation || 0) + (result.multiple_valuation || 0)) / 2), fill: '#f59e0b' }
-                          ].filter(item => item.value > 0).map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
+                        <Pie data={[{
+                        name: 'DCF Valuation',
+                        value: result.dcf_valuation || 0,
+                        fill: '#3b82f6'
+                      }, {
+                        name: 'Multiple Valuation',
+                        value: result.multiple_valuation || 0,
+                        fill: '#10b981'
+                      }, {
+                        name: 'Risk Adjustment',
+                        value: Math.abs((result.risk_adjusted_value || result.valuation_amount) - ((result.dcf_valuation || 0) + (result.multiple_valuation || 0)) / 2),
+                        fill: '#f59e0b'
+                      }].filter(item => item.value > 0)} cx="50%" cy="50%" labelLine={false} label={({
+                        name,
+                        percent
+                      }) => `${name} ${(percent * 100).toFixed(0)}%`} outerRadius={80} fill="#8884d8" dataKey="value">
+                          {[{
+                          name: 'DCF Valuation',
+                          value: result.dcf_valuation || 0,
+                          fill: '#3b82f6'
+                        }, {
+                          name: 'Multiple Valuation',
+                          value: result.multiple_valuation || 0,
+                          fill: '#10b981'
+                        }, {
+                          name: 'Risk Adjustment',
+                          value: Math.abs((result.risk_adjusted_value || result.valuation_amount) - ((result.dcf_valuation || 0) + (result.multiple_valuation || 0)) / 2),
+                          fill: '#f59e0b'
+                        }].filter(item => item.value > 0).map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                         </Pie>
-                        <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                        <Tooltip formatter={value => formatCurrency(value as number)} />
                       </RechartsPieChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -1602,18 +1514,16 @@ Actual market values may vary significantly based on numerous factors not captur
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
-                      <RechartsLineChart
-                        data={result.forecasts.base.map((baseYear, index) => ({
-                          year: `Year ${baseYear.year}`,
-                          pessimistic: result.forecasts.pessimistic[index]?.valuation || 0,
-                          base: baseYear.valuation,
-                          optimistic: result.forecasts.optimistic[index]?.valuation || 0
-                        }))}
-                      >
+                      <RechartsLineChart data={result.forecasts.base.map((baseYear, index) => ({
+                      year: `Year ${baseYear.year}`,
+                      pessimistic: result.forecasts.pessimistic[index]?.valuation || 0,
+                      base: baseYear.valuation,
+                      optimistic: result.forecasts.optimistic[index]?.valuation || 0
+                    }))}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="year" />
-                        <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`} />
-                        <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                        <YAxis tickFormatter={value => `$${(value / 1000).toFixed(0)}K`} />
+                        <Tooltip formatter={value => formatCurrency(value as number)} />
                         <Legend />
                         <Line type="monotone" dataKey="pessimistic" stroke="#ef4444" strokeWidth={2} name="Pessimistic" />
                         <Line type="monotone" dataKey="base" stroke="#3b82f6" strokeWidth={3} name="Base Case" />
@@ -1634,27 +1544,18 @@ Actual market values may vary significantly based on numerous factors not captur
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
-                      <ComposedChart
-                        data={result.forecasts.base.map(year => ({
-                          year: `Year ${year.year}`,
-                          revenue: year.revenue,
-                          streams: year.streams / 1000000, // Convert to millions
-                          efficiency: (year.revenue / year.streams) * 1000000 // Revenue per million streams
-                        }))}
-                      >
+                      <ComposedChart data={result.forecasts.base.map(year => ({
+                      year: `Year ${year.year}`,
+                      revenue: year.revenue,
+                      streams: year.streams / 1000000,
+                      // Convert to millions
+                      efficiency: year.revenue / year.streams * 1000000 // Revenue per million streams
+                    }))}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="year" />
-                        <YAxis yAxisId="left" tickFormatter={(value) => `$${value.toFixed(0)}`} />
-                        <YAxis yAxisId="right" orientation="right" tickFormatter={(value) => `${value.toFixed(1)}M`} />
-                        <Tooltip 
-                          formatter={(value, name) => [
-                            name === 'revenue' ? formatCurrency(value as number) :
-                            name === 'streams' ? `${(value as number).toFixed(1)}M streams` :
-                            `$${(value as number).toFixed(2)}/M streams`,
-                            name === 'revenue' ? 'Revenue' :
-                            name === 'streams' ? 'Streams (M)' : 'Efficiency'
-                          ]}
-                        />
+                        <YAxis yAxisId="left" tickFormatter={value => `$${value.toFixed(0)}`} />
+                        <YAxis yAxisId="right" orientation="right" tickFormatter={value => `${value.toFixed(1)}M`} />
+                        <Tooltip formatter={(value, name) => [name === 'revenue' ? formatCurrency(value as number) : name === 'streams' ? `${(value as number).toFixed(1)}M streams` : `$${(value as number).toFixed(2)}/M streams`, name === 'revenue' ? 'Revenue' : name === 'streams' ? 'Streams (M)' : 'Efficiency']} />
                         <Legend />
                         <Bar yAxisId="left" dataKey="revenue" fill="#3b82f6" name="Revenue" />
                         <Line yAxisId="right" type="monotone" dataKey="streams" stroke="#10b981" strokeWidth={2} name="Streams (M)" />
@@ -1677,47 +1578,24 @@ Actual market values may vary significantly based on numerous factors not captur
                     <ResponsiveContainer width="100%" height={300}>
                       <ScatterChart>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          type="number" 
-                          dataKey="risk" 
-                          name="Risk Score" 
-                          domain={[0, 100]}
-                          tickFormatter={(value) => `${value}%`}
-                        />
-                        <YAxis 
-                          type="number" 
-                          dataKey="return" 
-                          name="Expected Return" 
-                          tickFormatter={(value) => `${value}%`}
-                        />
-                        <Tooltip 
-                          cursor={{ strokeDasharray: '3 3' }}
-                          formatter={(value, name) => [
-                            `${(value as number).toFixed(1)}%`,
-                            name === 'return' ? 'Expected Return' : 'Risk Score'
-                          ]}
-                        />
-                        <Scatter 
-                          name="Scenarios" 
-                          data={[
-                            { 
-                              risk: 100 - (result.confidence_score || 50), 
-                              return: parseFloat(result.valuations.pessimistic.cagr),
-                              scenario: 'Pessimistic'
-                            },
-                            { 
-                              risk: 100 - (result.confidence_score || 50) - 20, 
-                              return: parseFloat(result.valuations.base.cagr),
-                              scenario: 'Base Case'
-                            },
-                            { 
-                              risk: 100 - (result.confidence_score || 50) - 40, 
-                              return: parseFloat(result.valuations.optimistic.cagr),
-                              scenario: 'Optimistic'
-                            }
-                          ]} 
-                          fill="#8884d8"
-                        />
+                        <XAxis type="number" dataKey="risk" name="Risk Score" domain={[0, 100]} tickFormatter={value => `${value}%`} />
+                        <YAxis type="number" dataKey="return" name="Expected Return" tickFormatter={value => `${value}%`} />
+                        <Tooltip cursor={{
+                        strokeDasharray: '3 3'
+                      }} formatter={(value, name) => [`${(value as number).toFixed(1)}%`, name === 'return' ? 'Expected Return' : 'Risk Score']} />
+                        <Scatter name="Scenarios" data={[{
+                        risk: 100 - (result.confidence_score || 50),
+                        return: parseFloat(result.valuations.pessimistic.cagr),
+                        scenario: 'Pessimistic'
+                      }, {
+                        risk: 100 - (result.confidence_score || 50) - 20,
+                        return: parseFloat(result.valuations.base.cagr),
+                        scenario: 'Base Case'
+                      }, {
+                        risk: 100 - (result.confidence_score || 50) - 40,
+                        return: parseFloat(result.valuations.optimistic.cagr),
+                        scenario: 'Optimistic'
+                      }]} fill="#8884d8" />
                       </ScatterChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -1736,43 +1614,21 @@ Actual market values may vary significantly based on numerous factors not captur
                     <ResponsiveContainer width="100%" height={300}>
                       <ScatterChart>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          type="number" 
-                          dataKey="followers" 
-                          name="Followers" 
-                          tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
-                        />
-                        <YAxis 
-                          type="number" 
-                          dataKey="valuation" 
-                          name="Valuation" 
-                          tickFormatter={(value) => formatCurrency(value)}
-                        />
-                        <Tooltip 
-                          cursor={{ strokeDasharray: '3 3' }}
-                          formatter={(value, name) => [
-                            name === 'valuation' ? formatCurrency(value as number) : `${formatNumber(value as number)} followers`,
-                            name === 'valuation' ? 'Valuation' : 'Followers'
-                          ]}
-                        />
-                        <Scatter 
-                          name="Target Artist" 
-                          data={[{
-                            followers: result.spotify_data.followers,
-                            valuation: result.risk_adjusted_value || result.valuation_amount,
-                            name: result.artist_name
-                          }]} 
-                          fill="#ef4444"
-                        />
-                        <Scatter 
-                          name="Comparables" 
-                          data={result.comparable_artists.map(comp => ({
-                            followers: comp.followers,
-                            valuation: comp.valuation,
-                            name: comp.name
-                          }))} 
-                          fill="#3b82f6"
-                        />
+                        <XAxis type="number" dataKey="followers" name="Followers" tickFormatter={value => `${(value / 1000).toFixed(0)}K`} />
+                        <YAxis type="number" dataKey="valuation" name="Valuation" tickFormatter={value => formatCurrency(value)} />
+                        <Tooltip cursor={{
+                        strokeDasharray: '3 3'
+                      }} formatter={(value, name) => [name === 'valuation' ? formatCurrency(value as number) : `${formatNumber(value as number)} followers`, name === 'valuation' ? 'Valuation' : 'Followers']} />
+                        <Scatter name="Target Artist" data={[{
+                        followers: result.spotify_data.followers,
+                        valuation: result.risk_adjusted_value || result.valuation_amount,
+                        name: result.artist_name
+                      }]} fill="#ef4444" />
+                        <Scatter name="Comparables" data={result.comparable_artists.map(comp => ({
+                        followers: comp.followers,
+                        valuation: comp.valuation,
+                        name: comp.name
+                      }))} fill="#3b82f6" />
                       </ScatterChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -1798,11 +1654,7 @@ Actual market values may vary significantly based on numerous factors not captur
                         <span className="font-medium text-green-800">Growth Trajectory</span>
                       </div>
                       <p className="text-sm text-green-700">
-                        {parseFloat(result.valuations.base.cagr) > 10 
-                          ? "Strong growth potential with above-market CAGR projections"
-                          : parseFloat(result.valuations.base.cagr) > 5
-                          ? "Moderate growth expected, aligned with industry standards"
-                          : "Conservative growth outlook, consider risk factors"}
+                        {parseFloat(result.valuations.base.cagr) > 10 ? "Strong growth potential with above-market CAGR projections" : parseFloat(result.valuations.base.cagr) > 5 ? "Moderate growth expected, aligned with industry standards" : "Conservative growth outlook, consider risk factors"}
                       </p>
                     </div>
 
@@ -1813,9 +1665,7 @@ Actual market values may vary significantly based on numerous factors not captur
                         <span className="font-medium text-blue-800">Market Position</span>
                       </div>
                       <p className="text-sm text-blue-700">
-                        {result.spotify_data.followers > result.comparable_artists.reduce((sum, comp) => sum + comp.followers, 0) / result.comparable_artists.length
-                          ? "Above-average market position with strong follower base"
-                          : "Emerging artist with growth potential relative to peers"}
+                        {result.spotify_data.followers > result.comparable_artists.reduce((sum, comp) => sum + comp.followers, 0) / result.comparable_artists.length ? "Above-average market position with strong follower base" : "Emerging artist with growth potential relative to peers"}
                       </p>
                     </div>
 
@@ -1826,11 +1676,7 @@ Actual market values may vary significantly based on numerous factors not captur
                         <span className="font-medium text-orange-800">Risk Assessment</span>
                       </div>
                       <p className="text-sm text-orange-700">
-                        {(result.confidence_score || 0) >= 70 
-                          ? "Low-risk investment with strong data confidence"
-                          : (result.confidence_score || 0) >= 50
-                          ? "Moderate risk profile, consider additional due diligence"
-                          : "Higher risk investment, limited historical data available"}
+                        {(result.confidence_score || 0) >= 70 ? "Low-risk investment with strong data confidence" : (result.confidence_score || 0) >= 50 ? "Moderate risk profile, consider additional due diligence" : "Higher risk investment, limited historical data available"}
                       </p>
                     </div>
 
@@ -1841,9 +1687,7 @@ Actual market values may vary significantly based on numerous factors not captur
                         <span className="font-medium text-purple-800">Valuation Quality</span>
                       </div>
                       <p className="text-sm text-purple-700">
-                        {result.dcf_valuation && result.multiple_valuation
-                          ? "Comprehensive valuation using multiple methodologies"
-                          : "Single-method valuation, consider cross-validation"}
+                        {result.dcf_valuation && result.multiple_valuation ? "Comprehensive valuation using multiple methodologies" : "Single-method valuation, consider cross-validation"}
                       </p>
                     </div>
 
@@ -1854,11 +1698,7 @@ Actual market values may vary significantly based on numerous factors not captur
                         <span className="font-medium text-yellow-800">Revenue Efficiency</span>
                       </div>
                       <p className="text-sm text-yellow-700">
-                        {(result.ltm_revenue || 0) / result.total_streams * 1000000 > 3
-                          ? "High revenue per million streams, strong monetization"
-                          : (result.ltm_revenue || 0) / result.total_streams * 1000000 > 2
-                          ? "Average monetization efficiency"
-                          : "Opportunity to improve revenue per stream"}
+                        {(result.ltm_revenue || 0) / result.total_streams * 1000000 > 3 ? "High revenue per million streams, strong monetization" : (result.ltm_revenue || 0) / result.total_streams * 1000000 > 2 ? "Average monetization efficiency" : "Opportunity to improve revenue per stream"}
                       </p>
                     </div>
 
@@ -1869,9 +1709,7 @@ Actual market values may vary significantly based on numerous factors not captur
                         <span className="font-medium text-indigo-800">Genre Analysis</span>
                       </div>
                       <p className="text-sm text-indigo-700">
-                        {result.industry_benchmarks
-                          ? `${result.genre} genre shows ${result.industry_benchmarks.growth_assumption > 0.05 ? 'strong' : 'stable'} market dynamics`
-                          : "Genre-specific benchmarks applied for accurate valuation"}
+                        {result.industry_benchmarks ? `${result.genre} genre shows ${result.industry_benchmarks.growth_assumption > 0.05 ? 'strong' : 'stable'} market dynamics` : "Genre-specific benchmarks applied for accurate valuation"}
                       </p>
                     </div>
                   </div>
@@ -1882,71 +1720,49 @@ Actual market values may vary significantly based on numerous factors not captur
              <TabsContent value="revenue-sources" className="space-y-6">
                {/* Back Navigation */}
                <div className="flex items-center gap-2 mb-4">
-                  <Button 
-                   variant="ghost" 
-                   size="sm" 
-                   onClick={() => setActiveTab("overview")}
-                   className="flex items-center gap-2"
-                 >
+                  <Button variant="ghost" size="sm" onClick={() => setActiveTab("overview")} className="flex items-center gap-2">
                    <ArrowLeft className="h-4 w-4" />
                    Back to Overview
                  </Button>
                </div>
 
                {/* Instructions */}
-               {!result && (
-                 <Card>
+               {!result && <Card>
                    <CardContent className="p-6">
                      <div className="text-center space-y-2">
                        <h3 className="text-lg font-medium">Additional Revenue Analysis</h3>
                        <p className="text-muted-foreground">
                          First complete a catalog valuation, then add additional revenue sources for enhanced analysis.
                        </p>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setActiveTab("overview")}
-                        >
+                        <Button variant="outline" onClick={() => setActiveTab("overview")}>
                           Start Catalog Valuation
                         </Button>
                      </div>
                    </CardContent>
-                 </Card>
-               )}
+                 </Card>}
 
                 {/* Revenue Sources Form - Show when we have a valuation result */}
-                {result && (
-                  <>
-                    <RevenueSourcesForm 
-                      catalogValuationId={catalogValuationId}
-                      onMetricsUpdate={(metrics) => {
-                        console.log('Revenue metrics updated:', metrics);
-                        setRevenueMetrics(metrics);
-                      }}
-                      onValuationUpdate={() => {
-                        console.log('Revenue source updated, refreshing valuation with enhanced methodology');
-                        console.log('Current catalogValuationId:', catalogValuationId);
-                        // First refresh parent revenue sources, then recompute valuation
-                        try {
-                          refetch?.();
-                        } catch (e) {
-                          console.warn('Refetch revenue sources failed', e);
-                        }
-                        if (artistName) {
-                          handleSearch();
-                        }
-                      }}
-                    />
+                {result && <>
+                    <RevenueSourcesForm catalogValuationId={catalogValuationId} onMetricsUpdate={metrics => {
+                console.log('Revenue metrics updated:', metrics);
+                setRevenueMetrics(metrics);
+              }} onValuationUpdate={() => {
+                console.log('Revenue source updated, refreshing valuation with enhanced methodology');
+                console.log('Current catalogValuationId:', catalogValuationId);
+                // First refresh parent revenue sources, then recompute valuation
+                try {
+                  refetch?.();
+                } catch (e) {
+                  console.warn('Refetch revenue sources failed', e);
+                }
+                if (artistName) {
+                  handleSearch();
+                }
+              }} />
                    
                    {/* Enhanced Valuation Engine */}
-                   {revenueMetrics && revenueSources.length > 0 && (
-                     <EnhancedValuationEngine
-                       baseValuation={result}
-                       revenueSources={revenueSources}
-                       revenueMetrics={computedRevenueMetrics}
-                     />
-                   )}
-                 </>
-               )}
+                   {revenueMetrics && revenueSources.length > 0 && <EnhancedValuationEngine baseValuation={result} revenueSources={revenueSources} revenueMetrics={computedRevenueMetrics} />}
+                 </>}
               </TabsContent>
 
 
@@ -2052,15 +1868,12 @@ Actual market values may vary significantly based on numerous factors not captur
             <TabsContent value="analytics" className="space-y-6">
               {/* Analytics content placeholder */}
               <div className="text-center py-8 text-muted-foreground">
-                <p>Advanced analytics dashboard coming soon...</p>
+                
               </div>
             </TabsContent>
           </Tabs>
-        </>
-      )}
+        </>}
     </div>
-    </AsyncLoading>
-  );
+    </AsyncLoading>;
 });
-
 export default CatalogValuation;
