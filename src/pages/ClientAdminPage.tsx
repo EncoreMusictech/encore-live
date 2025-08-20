@@ -39,15 +39,6 @@ export default function ClientAdminPage() {
     refreshData 
   } = useClientPortal();
   
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 ClientAdmin Debug - useEffect triggered');
-    console.log('🔍 clientAccess:', clientAccess);
-    console.log('🔍 clientAccess.length:', clientAccess.length);
-    console.log('🔍 clientAccess array contents:', JSON.stringify(clientAccess, null, 2));
-    console.log('🔍 invitations:', invitations);
-    console.log('🔍 dataAssociations:', dataAssociations);
-  }, [clientAccess, invitations, dataAssociations]);
   
   const [inviteEmail, setInviteEmail] = useState("");
   const [selectedRole, setSelectedRole] = useState<"admin" | "client">("client");
@@ -339,9 +330,6 @@ export default function ClientAdminPage() {
     return <Badge variant="secondary" className="flex items-center gap-1"><Clock className="h-3 w-3" />Pending ({status.daysUntilExpiry}d)</Badge>;
   };
 
-  // Debug logging for client access
-  console.log('🔍 Debug - clientAccess array:', clientAccess);
-  console.log('🔍 Debug - clientAccess length:', clientAccess.length);
   
   const getClientEmail = (clientUserId: string) => {
     const matches = invitations
@@ -732,13 +720,6 @@ export default function ClientAdminPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Debug info */}
-              <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
-                <strong>Debug:</strong> clientAccess.length = {clientAccess.length}
-                {clientAccess.length > 0 && (
-                  <div>First record ID: {clientAccess[0]?.id}</div>
-                )}
-              </div>
               
               {clientAccess.length === 0 ? (
                 <p className="text-muted-foreground">No active client access</p>

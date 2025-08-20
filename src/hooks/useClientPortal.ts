@@ -25,8 +25,6 @@ export const useClientPortal = () => {
       return;
     }
     
-    console.log('🔍 fetchClientAccess: Starting fetch for user:', user.id);
-    
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -35,11 +33,7 @@ export const useClientPortal = () => {
         .eq('subscriber_user_id', user.id)
         .order('created_at', { ascending: false });
 
-      console.log('🔍 fetchClientAccess: Query result:', { data, error });
-
       if (error) throw error;
-      
-      console.log('🔍 fetchClientAccess: Setting clientAccess to:', data || []);
       setClientAccess(data || []);
     } catch (error: any) {
       console.error('🔍 fetchClientAccess: Error fetching client access:', error);
@@ -575,17 +569,10 @@ export const useClientPortal = () => {
   };
 
   useEffect(() => {
-    console.log('🔍 useClientPortal useEffect triggered');
-    console.log('🔍 User object:', user);
-    console.log('🔍 User ID:', user?.id);
-    
     if (user) {
-      console.log('🔍 User exists, calling fetch functions...');
       fetchClientAccess();
       fetchInvitations();
       fetchDataAssociations();
-    } else {
-      console.log('🔍 No user found, skipping fetch operations');
     }
   }, [user]);
 
