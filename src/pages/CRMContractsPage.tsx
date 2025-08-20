@@ -537,19 +537,17 @@ export default function CRMContractsPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="contracts">
-            <FileText className="w-4 h-4 mr-2" />
-            All Contracts
+            Contracts
+          </TabsTrigger>
+          <TabsTrigger value="demos">
+            Demos
           </TabsTrigger>
           <TabsTrigger value="templates">
-            <Upload className="w-4 h-4 mr-2" />
-            Templates
+            My Templates
           </TabsTrigger>
-          {isDemo && (
-            <TabsTrigger value="demo">
-              <Calendar className="w-4 h-4 mr-2" />
-              Demo Data
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="analytics">
+            Analytics
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="contracts" className="space-y-6">
@@ -717,6 +715,10 @@ export default function CRMContractsPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="demos">
+          <DemoContracts onLoadDemo={() => {}} />
+        </TabsContent>
+
         <TabsContent value="templates">
           <TemplateLibrary 
             selectionMode={false} 
@@ -725,11 +727,100 @@ export default function CRMContractsPage() {
           />
         </TabsContent>
 
-        {isDemo && (
-          <TabsContent value="demo">
-            <DemoContracts onLoadDemo={() => {}} />
-          </TabsContent>
-        )}
+        <TabsContent value="analytics">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Contract Status Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Contract Status Distribution</CardTitle>
+                <CardDescription>Breakdown of contracts by current status</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {['draft', 'active', 'signed', 'expired', 'terminated'].map((status) => {
+                    const count = contracts.filter(c => c.contract_status === status).length;
+                    const percentage = contracts.length > 0 ? Math.round((count / contracts.length) * 100) : 0;
+                    return (
+                      <div key={status} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-primary" />
+                          <span className="capitalize">{status}</span>
+                          <span className="text-sm text-muted-foreground">{count} contract{count !== 1 ? 's' : ''}</span>
+                        </div>
+                        <span className="font-semibold">{percentage}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Contract Types */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Contract Types</CardTitle>
+                <CardDescription>Distribution by agreement type</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {contractTypes.map((type) => {
+                    const count = contracts.filter(c => c.contract_type === type.id).length;
+                    const percentage = contracts.length > 0 ? Math.round((count / contracts.length) * 100) : 0;
+                    return (
+                      <div key={type.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${type.color}`} />
+                          <span>{type.title}</span>
+                          <span className="text-sm text-muted-foreground">{count} ({percentage}%)</span>
+                        </div>
+                        <span className="font-semibold">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+                <CardDescription>Latest contract updates and changes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {contracts.slice(0, 5).map((contract) => (
+                    <div key={contract.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="space-y-1">
+                        <h4 className="font-semibold">{contract.title}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          with {contract.counterparty_name}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="outline" className={cn(
+                          contract.contract_status === 'signed' ? 'bg-success/10 text-success border-success/20' : 
+                          contract.contract_status === 'draft' ? 'bg-warning/10 text-warning border-warning/20' : 
+                          'bg-muted'
+                        )}>
+                          {contract.contract_status}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(contract.updated_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {contracts.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No contracts yet. Create your first contract to see activity here.</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Edit Dialog */}
