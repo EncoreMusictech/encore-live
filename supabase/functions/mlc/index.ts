@@ -72,31 +72,118 @@ serve(async (req) => {
   try {
     if (url.pathname.endsWith("/fetch-writer-catalog") && req.method === "POST") {
       const { firstName, lastName, ipi, title } = await req.json();
+      console.log(`[MLC] Starting catalog search for: ${firstName} ${lastName}, IPI: ${ipi}, Title: ${title}`);
 
       const auth = await withRetry(getToken);
-      const searchBody: SearchWorkReq = {
-        title: title, // optional: limit by a known work title
-        writers: [{ writerFirstName: firstName, writerLastName: lastName, writerIPI: ipi }].filter(Boolean),
-      };
-
-      const matches = await withRetry(() => mlcSearchSongcode(auth, searchBody)); // [{ mlcSongCode, workTitle, iswc, writers: [...] }]
-      const codes = [...new Set(matches.map((m: any) => m.mlcSongCode).filter(Boolean))];
-
-      // Hydrate Work details (writers/publishers/ISWC/AKAs/artists)
-      const works = codes.length ? await withRetry(() => mlcGetWorks(auth, codes)) : [];
-
-      // Attach recordings (ISRCs) per work using title+artist (fallback if artist missing: title only)
-      const recsByCode = new Map<string, any[]>();
-      for (const w of works) {
-        const recs = await withRetry(() => mlcSearchRecordings(auth, {
-          title: w.primaryTitle,
-          artist: w.artists || undefined
-        }));
-        recsByCode.set(w.mlcSongCode, recs);
+      
+      // Multiple search strategies to maximize catalog discovery
+      const searchStrategies = [];
+      
+      // Strategy 1: Full writer info with optional title
+      if (firstName || lastName || ipi) {
+        searchStrategies.push({
+          name: "full_writer_search",
+          body: {
+            title: title,
+            writers: [{ writerFirstName: firstName, writerLastName: lastName, writerIPI: ipi }].filter(w => w.writerFirstName || w.writerLastName || w.writerIPI)
+          }
+        });
+      }
+      
+      // Strategy 2: First name only (broader search)
+      if (firstName && !title) {
+        searchStrategies.push({
+          name: "first_name_only",
+          body: {
+            writers: [{ writerFirstName: firstName }]
+          }
+        });
+      }
+      
+      // Strategy 3: Last name only (broader search)
+      if (lastName && !title) {
+        searchStrategies.push({
+          name: "last_name_only", 
+          body: {
+            writers: [{ writerLastName: lastName }]
+          }
+        });
+      }
+      
+      // Strategy 4: IPI only (if available)
+      if (ipi && !title) {
+        searchStrategies.push({
+          name: "ipi_only",
+          body: {
+            writers: [{ writerIPI: ipi }]
+          }
+        });
       }
 
+      console.log(`[MLC] Using ${searchStrategies.length} search strategies`);
+
+      const allMatches = [];
+      const allCodes = new Set<string>();
+
+      // Execute all search strategies
+      for (const strategy of searchStrategies) {
+        try {
+          console.log(`[MLC] Executing strategy: ${strategy.name}`);
+          const matches = await withRetry(() => mlcSearchSongcode(auth, strategy.body));
+          console.log(`[MLC] Strategy ${strategy.name} found ${matches.length} matches`);
+          
+          allMatches.push(...matches);
+          matches.forEach((m: any) => {
+            if (m.mlcSongCode) allCodes.add(m.mlcSongCode);
+          });
+        } catch (error) {
+          console.log(`[MLC] Strategy ${strategy.name} failed:`, error);
+        }
+      }
+
+      const codes = Array.from(allCodes);
+      console.log(`[MLC] Total unique song codes found: ${codes.length}`);
+
+      // Hydrate Work details in batches (MLC API might have limits)
+      const batchSize = 50;
+      const allWorks = [];
+      
+      for (let i = 0; i < codes.length; i += batchSize) {
+        const batch = codes.slice(i, i + batchSize);
+        console.log(`[MLC] Fetching work details for batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(codes.length/batchSize)} (${batch.length} works)`);
+        
+        try {
+          const works = await withRetry(() => mlcGetWorks(auth, batch));
+          allWorks.push(...works);
+        } catch (error) {
+          console.log(`[MLC] Failed to fetch work details for batch:`, error);
+        }
+      }
+
+      console.log(`[MLC] Retrieved details for ${allWorks.length} works`);
+
+      // Attach recordings (ISRCs) per work using title+artist
+      const recsByCode = new Map<string, any[]>();
+      let recordingCount = 0;
+      
+      for (const w of allWorks) {
+        try {
+          const recs = await withRetry(() => mlcSearchRecordings(auth, {
+            title: w.primaryTitle,
+            artist: w.artists || undefined
+          }));
+          recsByCode.set(w.mlcSongCode, recs);
+          recordingCount += recs.length;
+        } catch (error) {
+          console.log(`[MLC] Failed to fetch recordings for work ${w.primaryTitle}:`, error);
+          recsByCode.set(w.mlcSongCode, []);
+        }
+      }
+
+      console.log(`[MLC] Retrieved ${recordingCount} total recordings`);
+
       // Normalized payload ready for UI + DB
-      const result = works.map((w: any) => ({
+      const result = allWorks.map((w: any) => ({
         mlc_song_code: w.mlcSongCode,
         work_title: w.primaryTitle,
         iswc: w.iswc,
@@ -125,7 +212,18 @@ serve(async (req) => {
         })),
       }));
 
-      return new Response(JSON.stringify({ matches, works: result }), {
+      console.log(`[MLC] Final result: ${result.length} works with complete data`);
+
+      return new Response(JSON.stringify({ 
+        summary: {
+          total_matches: allMatches.length,
+          unique_works: result.length,
+          total_recordings: recordingCount,
+          strategies_used: searchStrategies.length
+        },
+        matches: allMatches, 
+        works: result 
+      }), {
         headers: { "content-type": "application/json", "access-control-allow-origin": "*" },
       });
     }
