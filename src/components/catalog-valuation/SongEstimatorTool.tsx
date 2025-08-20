@@ -277,29 +277,74 @@ export function SongEstimatorTool() {
                     </Button>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-3 border rounded-lg bg-card">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">MLC Verified</span>
-                        <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                          {currentSearch.ai_research_summary?.processing_summary?.mlc_verified || 0}
-                        </Badge>
+                  <div className="space-y-6">
+                    {/* US PROs */}
+                    <div>
+                      <h5 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">US PROs</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="p-3 border rounded-lg bg-card">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">ASCAP</span>
+                            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                              {currentSearch.ai_research_summary?.pro_registration_counts?.ascap || 0}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-3 border rounded-lg bg-card">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">BMI</span>
+                            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                              {currentSearch.ai_research_summary?.pro_registration_counts?.bmi || 0}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-3 border rounded-lg bg-card">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">SESAC</span>
+                            <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/20">
+                              {currentSearch.ai_research_summary?.pro_registration_counts?.sesac || 0}
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="p-3 border rounded-lg bg-card">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">BMI Cross-Verified</span>
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                          {currentSearch.ai_research_summary?.processing_summary?.bmi_cross_verified || 0}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="p-3 border rounded-lg bg-card">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Registration Gaps</span>
-                        <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
-                          {currentSearch.ai_research_summary?.registration_gap_analysis?.total_gaps || 0}
-                        </Badge>
+
+                    {/* International PROs */}
+                    <div>
+                      <h5 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">International PROs</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="p-3 border rounded-lg bg-card">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">PRS (UK)</span>
+                            <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+                              {currentSearch.ai_research_summary?.pro_registration_counts?.prs || 0}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-3 border rounded-lg bg-card">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">SOCAN (CA)</span>  
+                            <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+                              {currentSearch.ai_research_summary?.pro_registration_counts?.socan || 0}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-3 border rounded-lg bg-card">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">GEMA (DE)</span>
+                            <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                              {currentSearch.ai_research_summary?.pro_registration_counts?.gema || 0}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-3 border rounded-lg bg-card">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">SACEM (FR)</span>
+                            <Badge variant="outline" className="bg-cyan-500/10 text-cyan-600 border-cyan-500/20">
+                              {currentSearch.ai_research_summary?.pro_registration_counts?.sacem || 0}
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
