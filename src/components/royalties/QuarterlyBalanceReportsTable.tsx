@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Download, Plus, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { Search, Download, Plus, AlertTriangle, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
 import { useQuarterlyBalanceReports, QuarterlyBalanceReport } from "@/hooks/useQuarterlyBalanceReports";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ import DemoLimitBanner from "@/components/DemoLimitBanner";
 
 export function QuarterlyBalanceReportsTable() {
   console.log('🔍 QuarterlyBalanceReportsTable component rendered');
-  const { reports, loading, createReport, generateReportsFromData, exportToCSV } = useQuarterlyBalanceReports();
+  const { reports, loading, createReport, generateReportsFromData, generateMissingReports, exportToCSV } = useQuarterlyBalanceReports();
   const { user } = useAuth();
   const { isDemo } = useDemoAccess();
   const [searchTerm, setSearchTerm] = useState("");
@@ -195,6 +195,17 @@ export function QuarterlyBalanceReportsTable() {
         </div>
 
         <div className="flex gap-2">
+          {!isDemo && (
+            <Button 
+              onClick={generateMissingReports} 
+              variant="outline" 
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Generate Reports
+            </Button>
+          )}
+          
           <Button 
             onClick={() => exportToCSV(filteredReports)} 
             variant="outline" 

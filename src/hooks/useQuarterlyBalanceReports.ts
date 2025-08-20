@@ -118,12 +118,19 @@ export function useQuarterlyBalanceReports() {
         .from('payees')
         .select('id, payee_name')
         .eq('user_id', user.id);
+      
+      console.log(`📊 Found ${payees?.length || 0} payees for mapping`);
+      payees?.forEach(p => console.log(`📊 Payee: "${p.payee_name}" -> ID: ${p.id}`));
+      
       const payeeByName = new Map<string, string>(
         (payees || []).map(p => [String(p.payee_name || '').toLowerCase().trim(), p.id])
       );
       const payeeNameById = new Map<string, string>(
         (payees || []).map(p => [p.id, String(p.payee_name || '')])
       );
+
+      console.log(`📊 PayeeByName map has ${payeeByName.size} entries`);
+      console.log(`📊 ContactsMap has ${contactsMap.size} entries`);
 
       // Group by payee/year/quarter and calculate running balances
       type PayeeQuarterData = {
@@ -148,7 +155,34 @@ export function useQuarterlyBalanceReports() {
         const quarter = Math.ceil((d.getMonth() + 1) / 3);
         const contact = payout.client_id ? contactsMap.get(payout.client_id) : undefined;
         const contactName = contact?.name || 'Unknown';
-        const payeeId = payeeByName.get(contactName.toLowerCase()) || `demo-${contactName}`;
+        
+        console.log(`🔍 Processing payout for contact: "${contactName}" (client_id: ${payout.client_id})`);
+        
+        // Try multiple mapping strategies to find payee
+        let payeeId = '';
+        const contactNameLower = contactName.toLowerCase().trim();
+        
+        // Strategy 1: Exact match
+        payeeId = payeeByName.get(contactNameLower) || '';
+        console.log(`🔍 Strategy 1 (exact): "${contactNameLower}" -> ${payeeId || 'NOT FOUND'}`);
+        
+        // Strategy 2: Check all payee names for partial matches
+        if (!payeeId) {
+          for (const [payeeName, id] of payeeByName.entries()) {
+            if (payeeName.includes(contactNameLower) || contactNameLower.includes(payeeName)) {
+              payeeId = id;
+              console.log(`🔍 Strategy 2 (partial): "${contactNameLower}" matched "${payeeName}" -> ${id}`);
+              break;
+            }
+          }
+        }
+        
+        // Strategy 3: Create demo payee if no match
+        if (!payeeId) {
+          payeeId = `demo-${contactName}`;
+          console.log(`🔍 Strategy 3 (demo): Creating demo payee -> ${payeeId}`);
+        }
+        
         const key = `${payeeId}-${periodKey(year, quarter)}`;
 
         if (!quarterlyData.has(key)) {
@@ -173,7 +207,9 @@ export function useQuarterlyBalanceReports() {
                       String((payout as any).workflow_stage || '').toLowerCase() === 'paid';
         if (isPaid) {
           entry.payments_amount += Number(payout.amount_due || 0);
-          console.log(`Added payment of $${payout.amount_due} for ${contactName} in ${periodLabel(year, quarter)}`);
+          console.log(`✅ Added payment of $${payout.amount_due} for ${contactName} in ${periodLabel(year, quarter)}`);
+        } else {
+          console.log(`⏳ Skipped payment for ${contactName} in ${periodLabel(year, quarter)} - status: ${payout.status}, workflow_stage: ${(payout as any).workflow_stage}`);
         }
       }
 
@@ -640,6 +676,180 @@ export function useQuarterlyBalanceReports() {
     fetchReports();
   }, []);
 
+  // Generate persistent quarterly balance reports from existing payout data
+  const generateMissingReports = async () => {
+    if (!user || isDemo) {
+      toast({
+        title: "Demo Mode",
+        description: "Report generation is not available in demo mode.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log('🔄 Generating missing quarterly balance reports from existing payouts...');
+      
+      // Get all payouts with client contact information
+      const { data: payouts } = await supabase
+        .from('payouts')
+        .select(`
+          id, client_id, gross_royalties, total_expenses, amount_due, 
+          status, workflow_stage, created_at, period_start,
+          contacts!payouts_client_id_fkey(id, name)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (!payouts || payouts.length === 0) {
+        console.log('No payouts found to generate reports from');
+        return;
+      }
+
+      // Get all payees for name mapping
+      const { data: payees } = await supabase
+        .from('payees')
+        .select('id, payee_name')
+        .eq('user_id', user.id);
+
+      const payeeByName = new Map<string, string>(
+        (payees || []).map(p => [String(p.payee_name || '').toLowerCase().trim(), p.id])
+      );
+
+      // Group payouts by payee and quarter
+      const reportData = new Map<string, {
+        payee_id: string;
+        contact_id?: string;
+        year: number;
+        quarter: number;
+        royalties_amount: number;
+        expenses_amount: number;
+        payments_amount: number;
+      }>();
+
+      for (const payout of payouts as any[]) {
+        const periodDate = payout.period_start || payout.created_at;
+        const d = new Date(periodDate);
+        const year = d.getFullYear();
+        const quarter = Math.ceil((d.getMonth() + 1) / 3);
+        
+        const contactName = payout.contacts?.name || 'Unknown';
+        const contactNameLower = contactName.toLowerCase().trim();
+        
+        // Find matching payee ID
+        let payeeId = payeeByName.get(contactNameLower);
+        if (!payeeId) {
+          // Try partial matching
+          for (const [payeeName, id] of payeeByName.entries()) {
+            if (payeeName.includes(contactNameLower) || contactNameLower.includes(payeeName)) {
+              payeeId = id;
+              break;
+            }
+          }
+        }
+
+        if (!payeeId) {
+          console.log(`⚠️ No payee found for contact "${contactName}", skipping...`);
+          continue;
+        }
+
+        const key = `${payeeId}-${year}-Q${quarter}`;
+        
+        if (!reportData.has(key)) {
+          reportData.set(key, {
+            payee_id: payeeId,
+            contact_id: payout.client_id,
+            year,
+            quarter,
+            royalties_amount: 0,
+            expenses_amount: 0,
+            payments_amount: 0,
+          });
+        }
+
+        const entry = reportData.get(key)!;
+        entry.royalties_amount += Number(payout.gross_royalties || 0);
+        entry.expenses_amount += Number(payout.total_expenses || 0);
+        
+        const isPaid = String(payout.status || '').toLowerCase() === 'paid' || 
+                      String(payout.workflow_stage || '').toLowerCase() === 'paid';
+        if (isPaid) {
+          entry.payments_amount += Number(payout.amount_due || 0);
+        }
+      }
+
+      // Generate reports with proper opening/closing balances
+      const reportsToInsert = [];
+      const byPayee = new Map<string, any[]>();
+      
+      // Group by payee
+      for (const [key, data] of reportData) {
+        if (!byPayee.has(data.payee_id)) byPayee.set(data.payee_id, []);
+        byPayee.get(data.payee_id)!.push(data);
+      }
+
+      // Calculate running balances for each payee
+      for (const [payeeId, entries] of byPayee) {
+        entries.sort((a, b) => (a.year - b.year) || (a.quarter - b.quarter));
+        
+        let runningBalance = 0;
+        for (const entry of entries) {
+          const openingBalance = runningBalance;
+          const closingBalance = openingBalance + entry.royalties_amount - entry.expenses_amount - entry.payments_amount;
+          
+          reportsToInsert.push({
+            user_id: user.id,
+            payee_id: entry.payee_id,
+            contact_id: entry.contact_id,
+            year: entry.year,
+            quarter: entry.quarter,
+            opening_balance: openingBalance,
+            royalties_amount: entry.royalties_amount,
+            expenses_amount: entry.expenses_amount,
+            payments_amount: entry.payments_amount,
+            closing_balance: closingBalance,
+            is_calculated: true,
+            calculation_date: new Date().toISOString(),
+          });
+          
+          runningBalance = closingBalance;
+        }
+      }
+
+      if (reportsToInsert.length === 0) {
+        console.log('No reports to generate');
+        return;
+      }
+
+      // Insert the reports (upsert to handle duplicates)
+      const { error } = await supabase
+        .from('quarterly_balance_reports')
+        .upsert(reportsToInsert, {
+          onConflict: 'user_id,payee_id,year,quarter'
+        });
+
+      if (error) throw error;
+
+      console.log(`✅ Generated ${reportsToInsert.length} quarterly balance reports`);
+      
+      // Refresh the reports view
+      await fetchReports();
+      
+      toast({
+        title: "Success",
+        description: `Generated ${reportsToInsert.length} quarterly balance reports from existing payout data`,
+      });
+
+    } catch (error: any) {
+      console.error('Error generating missing reports:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate quarterly balance reports",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Initialize quarterly balance reports for a new payee
   const initializePayeeReports = async (payeeId: string, contactId?: string, agreementId?: string) => {
     if (isDemo) {
@@ -717,6 +927,7 @@ export function useQuarterlyBalanceReports() {
     updateReport,
     deleteReport,
     generateReportsFromData,
+    generateMissingReports,
     exportToCSV,
     initializePayeeReports,
   };
