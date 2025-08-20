@@ -40,10 +40,14 @@ export default function ClientAdminPage() {
   } = useClientPortal();
   
   // Debug logging
-  console.log('🔍 ClientAdmin Debug:');
-  console.log('🔍 clientAccess:', clientAccess);
-  console.log('🔍 clientAccess.length:', clientAccess.length);
-  console.log('🔍 clientAccess array contents:', JSON.stringify(clientAccess, null, 2));
+  useEffect(() => {
+    console.log('🔍 ClientAdmin Debug - useEffect triggered');
+    console.log('🔍 clientAccess:', clientAccess);
+    console.log('🔍 clientAccess.length:', clientAccess.length);
+    console.log('🔍 clientAccess array contents:', JSON.stringify(clientAccess, null, 2));
+    console.log('🔍 invitations:', invitations);
+    console.log('🔍 dataAssociations:', dataAssociations);
+  }, [clientAccess, invitations, dataAssociations]);
   
   const [inviteEmail, setInviteEmail] = useState("");
   const [selectedRole, setSelectedRole] = useState<"admin" | "client">("client");
