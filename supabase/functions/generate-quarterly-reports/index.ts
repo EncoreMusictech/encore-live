@@ -112,14 +112,30 @@ Deno.serve(async (req) => {
     }>();
 
     let processedCount = 0;
+    console.log('🔍 Starting to process payouts...');
+    
     for (const payout of payouts as any[]) {
+      console.log(`\n--- Processing payout ${payout.id} ---`);
+      console.log('Payout data:', {
+        id: payout.id,
+        client_id: payout.client_id,
+        gross_royalties: payout.gross_royalties,
+        period_start: payout.period_start,
+        created_at: payout.created_at,
+        contacts: payout.contacts
+      });
+      
       const periodDate = payout.period_start || payout.created_at;
       const d = new Date(periodDate);
       const year = d.getFullYear();
       const quarter = Math.ceil((d.getMonth() + 1) / 3);
       
+      console.log(`Calculated period: ${year} Q${quarter} from date ${periodDate}`);
+      
       const contactName = payout.contacts?.name || 'Unknown';
       const contactNameLower = contactName.toLowerCase().trim();
+      
+      console.log(`Contact name: "${contactName}" (lowercase: "${contactNameLower}")`);
       
       // Find matching payee ID with improved matching
       let payeeId = payeeByName.get(contactNameLower);
@@ -132,6 +148,8 @@ Deno.serve(async (req) => {
             break;
           }
         }
+      } else {
+        console.log(`✅ Found exact match for "${contactName}" -> payee ID: ${payeeId}`);
       }
 
       if (!payeeId) {
