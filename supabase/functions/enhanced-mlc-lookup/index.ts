@@ -133,10 +133,10 @@ async function fetchRecordingsByISRC(accessToken: string, isrc: string, workTitl
   return recordings || [];
 }
 
-async function searchWorksByTitleAndWriter(accessToken: string, workTitle?: string, writerName?: string): Promise<any[]> {
+async function searchWorksByTitleAndWriter(accessToken: string, workTitle?: string, writerName?: string, catalogDiscovery = false): Promise<any[]> {
   if (!workTitle && !writerName) return [];
   
-  console.log('Searching MLC by songcode with title:', workTitle, 'writer:', writerName);
+  console.log('Searching MLC by songcode with title:', workTitle, 'writer:', writerName, 'catalog discovery:', catalogDiscovery);
   
   const searchBody: any = {};
   if (workTitle) searchBody.title = workTitle;
@@ -155,27 +155,62 @@ async function searchWorksByTitleAndWriter(accessToken: string, workTitle?: stri
     }
   }
 
-  console.log('Songcode search body:', JSON.stringify(searchBody, null, 2));
+  // For catalog discovery, implement pagination to get all results
+  let allSongs: any[] = [];
+  let page = 1;
+  const pageSize = 50; // MLC API default page size
+  let hasMoreResults = true;
 
-  const songResponse = await fetch('https://public-api.themlc.com/search/songcode', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(searchBody)
-  });
+  while (hasMoreResults && (catalogDiscovery ? page <= 20 : page <= 1)) { // Limit to 20 pages (1000 songs max) for catalog discovery
+    const paginatedSearchBody = {
+      ...searchBody,
+      page: page,
+      pageSize: pageSize
+    };
 
-  if (!songResponse.ok) {
-    const errorText = await songResponse.text();
-    console.log('Songcode search failed:', songResponse.status, errorText);
-    return [];
+    console.log(`Songcode search page ${page}, body:`, JSON.stringify(paginatedSearchBody, null, 2));
+
+    const songResponse = await fetch('https://public-api.themlc.com/search/songcode', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(paginatedSearchBody)
+    });
+
+    if (!songResponse.ok) {
+      const errorText = await songResponse.text();
+      console.log(`Songcode search failed on page ${page}:`, songResponse.status, errorText);
+      break;
+    }
+
+    const songs = await songResponse.json();
+    console.log(`MLC songcode response page ${page}:`, songs?.length || 0, 'songs');
+    
+    if (!songs || songs.length === 0) {
+      hasMoreResults = false;
+      break;
+    }
+
+    allSongs.push(...songs);
+    
+    // If we got less than pageSize results, we've reached the end
+    if (songs.length < pageSize) {
+      hasMoreResults = false;
+      break;
+    }
+
+    page++;
+    
+    // Add small delay between requests to respect rate limits
+    if (hasMoreResults) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   }
 
-  const songs = await songResponse.json();
-  console.log('MLC songcode response:', JSON.stringify(songs, null, 2));
-  
-  return songs || [];
+  console.log(`Total MLC songcode results: ${allSongs.length} songs across ${page - 1} pages`);
+  return allSongs;
 }
 
 function processEnhancedMLCData(works: any[], recordings: any[] = []) {
@@ -281,7 +316,8 @@ function processEnhancedMLCData(works: any[], recordings: any[] = []) {
 }
 
 async function performEnhancedMLCLookup(params: any): Promise<any> {
-  const { workTitle, writerName, publisherName, iswc, isrc, enhanced, includeRecordings } = params;
+  const { workTitle, writerName, publisherName, iswc, isrc, enhanced, includeRecordings, searchType } = params;
+  const catalogDiscovery = searchType === 'catalog_discovery';
   
   // Check cache first
   const cacheKey = getCacheKey(params);
@@ -316,13 +352,40 @@ async function performEnhancedMLCLookup(params: any): Promise<any> {
 
   // Strategy 2: Title/writer search with comprehensive work data
   if (!allWorks.length && (workTitle || writerName)) {
-    const songs = await searchWorksByTitleAndWriter(accessToken, workTitle, writerName);
+    const songs = await searchWorksByTitleAndWriter(accessToken, workTitle, writerName, catalogDiscovery);
     
-    // For each song found, fetch comprehensive work data
-    for (const song of songs) {
-      if (song.mlcSongCode) {
-        const works = await fetchWorksByMlcSongCode(accessToken, song.mlcSongCode);
-        allWorks.push(...works);
+    console.log(`Found ${songs.length} songs from MLC search, ${catalogDiscovery ? 'catalog discovery mode' : 'single lookup mode'}`);
+    
+    // For catalog discovery, process songs in batches to avoid overwhelming the API
+    const batchSize = catalogDiscovery ? 10 : songs.length;
+    
+    for (let i = 0; i < songs.length; i += batchSize) {
+      const batch = songs.slice(i, i + batchSize);
+      console.log(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(songs.length/batchSize)} with ${batch.length} songs`);
+      
+      // Process batch in parallel with some delay
+      const batchPromises = batch.map(async (song, index) => {
+        // Add small staggered delay within batch
+        if (index > 0) await new Promise(resolve => setTimeout(resolve, index * 100));
+        
+        if (song.mlcSongCode) {
+          try {
+            const works = await fetchWorksByMlcSongCode(accessToken, song.mlcSongCode);
+            return works;
+          } catch (error) {
+            console.error(`Failed to fetch work data for song code ${song.mlcSongCode}:`, error);
+            return [];
+          }
+        }
+        return [];
+      });
+      
+      const batchResults = await Promise.all(batchPromises);
+      allWorks.push(...batchResults.flat());
+      
+      // Add delay between batches for catalog discovery
+      if (catalogDiscovery && i + batchSize < songs.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
   }
