@@ -88,7 +88,7 @@ export function SongEstimatorTool() {
                 New Songwriter Research
               </h2>
               <p className="text-muted-foreground">
-                Enter a songwriter's name to begin comprehensive catalog analysis
+                Research songwriter catalogs, analyze metadata completeness, and estimate uncollected royalty pipeline income using AI-powered analysis.
               </p>
             </div>
             <div className="flex gap-4">
