@@ -535,180 +535,185 @@ export default function CRMContractsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="contracts">
-            My Contracts
+        <TabsList className="bg-muted/30 p-1 h-auto">
+          <TabsTrigger 
+            value="contracts"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-2"
+          >
+            Contracts
           </TabsTrigger>
-          <TabsTrigger value="demos">
+          <TabsTrigger 
+            value="demos"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-2"
+          >
             Demos
           </TabsTrigger>
-          <TabsTrigger value="templates">
+          <TabsTrigger 
+            value="templates"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-2"
+          >
             My Templates
           </TabsTrigger>
-          <TabsTrigger value="analytics">
+          <TabsTrigger 
+            value="analytics"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-2"
+          >
             Analytics
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="contracts" className="space-y-6">
-          {/* Filters Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <CardTitle className="text-lg">Filters</CardTitle>
+          {/* Search and Filter Bar */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search contracts by title, counterparty, or type..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-background border-border"
+              />
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2 whitespace-nowrap">
+                  <Filter className="h-4 w-4" />
+                  Filter
                   {activeFiltersCount > 0 && (
-                    <Badge variant="secondary">
-                      {activeFiltersCount} active
+                    <Badge variant="secondary" className="ml-1 px-1.5 py-0.5 text-xs">
+                      {activeFiltersCount}
                     </Badge>
                   )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  {activeFiltersCount > 0 && (
-                    <Button variant="ghost" size="sm" onClick={clearFilters}>
-                      <X className="mr-2 h-4 w-4" />
-                      Clear All
-                    </Button>
-                  )}
-                  <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Filter className="mr-2 h-4 w-4" />
-                        {filtersOpen ? 'Hide' : 'Show'} Filters
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-4" align="end">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">Filters</h4>
+                    {activeFiltersCount > 0 && (
+                      <Button variant="ghost" size="sm" onClick={clearFilters}>
+                        <X className="mr-2 h-4 w-4" />
+                        Clear All
                       </Button>
-                    </CollapsibleTrigger>
-                  </Collapsible>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Status</label>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Statuses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="signed">Signed</SelectItem>
+                          <SelectItem value="expired">Expired</SelectItem>
+                          <SelectItem value="terminated">Terminated</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Type</label>
+                      <Select value={typeFilter} onValueChange={setTypeFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          <SelectItem value="publishing">Publishing</SelectItem>
+                          <SelectItem value="artist">Artist</SelectItem>
+                          <SelectItem value="producer">Producer</SelectItem>
+                          <SelectItem value="sync">Sync</SelectItem>
+                          <SelectItem value="distribution">Distribution</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Signature Status</label>
+                      <Select value={signatureFilter} onValueChange={setSignatureFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Signatures" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Signatures</SelectItem>
+                          <SelectItem value="signed">Signed</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Start Date</label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !startDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {startDate ? format(startDate, "MMM dd") : "Select"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
+                            <CalendarPicker
+                              mode="single"
+                              selected={startDate}
+                              onSelect={setStartDate}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">End Date</label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !endDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {endDate ? format(endDate, "MMM dd") : "Select"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
+                            <CalendarPicker
+                              mode="single"
+                              selected={endDate}
+                              onSelect={setEndDate}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <CardDescription>
-                Filter and search through your contracts
-              </CardDescription>
-            </CardHeader>
-            <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-              <CollapsibleContent>
-                <CardContent className="space-y-4">
-                  {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search contracts by title or counterparty..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-
-                  {/* Filter Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Statuses" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="signed">Signed</SelectItem>
-                        <SelectItem value="expired">Expired</SelectItem>
-                        <SelectItem value="terminated">Terminated</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={typeFilter} onValueChange={setTypeFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Types" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="publishing">Publishing</SelectItem>
-                        <SelectItem value="artist">Artist</SelectItem>
-                        <SelectItem value="producer">Producer</SelectItem>
-                        <SelectItem value="sync">Sync</SelectItem>
-                        <SelectItem value="distribution">Distribution</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={signatureFilter} onValueChange={setSignatureFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Signatures" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Signatures</SelectItem>
-                        <SelectItem value="signed">Signed</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <div className="flex space-x-2">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !startDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {startDate ? format(startDate, "PPP") : "Start Date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
-                          <CalendarPicker
-                            mode="single"
-                            selected={startDate}
-                            onSelect={setStartDate}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="lg:col-start-4">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !endDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {endDate ? format(endDate, "PPP") : "End Date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
-                          <CalendarPicker
-                            mode="single"
-                            selected={endDate}
-                            onSelect={setEndDate}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
+              </PopoverContent>
+            </Popover>
+          </div>
 
           {/* Results */}
           <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold">
-                Contracts ({filteredContracts.length})
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {filteredContracts.length === contracts.length 
-                  ? `Showing all ${contracts.length} contracts`
-                  : `Showing ${filteredContracts.length} of ${contracts.length} contracts`
-                }
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              {filteredContracts.length === contracts.length 
+                ? `Showing ${contracts.length} of ${contracts.length} contracts`
+                : `Showing ${filteredContracts.length} of ${contracts.length} contracts`
+              }
+            </p>
             <ContractList contracts={filteredContracts} onEdit={handleEditContract} />
           </div>
         </TabsContent>
