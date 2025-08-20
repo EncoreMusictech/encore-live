@@ -734,11 +734,9 @@ export default function ClientAdminPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          asChild
+                          onClick={() => window.location.href = `/client-portal?client_id=${access.client_user_id}`}
                         >
-                          <Link to={`/client-portal?client_id=${access.client_user_id}`}>
-                            View Client Portal
-                          </Link>
+                          View Client Portal
                         </Button>
                         <Button
                           size="sm"
