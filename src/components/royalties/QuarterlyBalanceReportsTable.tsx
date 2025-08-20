@@ -346,7 +346,16 @@ export function QuarterlyBalanceReportsTable() {
                           <TableCell>
                             <div className="font-medium">{payeeName}</div>
                           </TableCell>
-                          <TableCell>{(report as any).agreement_id || 'N/A'}</TableCell>
+                          <TableCell>
+                            {(() => {
+                              console.log('🔍 Report data:', { 
+                                agreement_id: report.agreement_id, 
+                                any_agreement_id: (report as any).agreement_id,
+                                full_report: report 
+                              });
+                              return report.agreement_id || (report as any).agreement_id || 'N/A';
+                            })()}
+                          </TableCell>
                           <TableCell className="text-right font-mono">${report.opening_balance.toLocaleString()}</TableCell>
                           <TableCell className="text-right font-mono text-green-600">+${report.royalties_amount.toLocaleString()}</TableCell>
                           <TableCell className="text-right font-mono text-red-600">-${report.expenses_amount.toLocaleString()}</TableCell>
