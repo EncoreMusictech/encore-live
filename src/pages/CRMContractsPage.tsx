@@ -535,7 +535,7 @@ export default function CRMContractsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-background border border-border p-1 h-auto rounded-lg">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger 
             value="contracts"
             className="data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=inactive]:text-muted-foreground px-6 py-2 rounded-md"
