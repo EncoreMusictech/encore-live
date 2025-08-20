@@ -187,19 +187,48 @@ export function NameLinker() {
           const items: MatchItem[] = [];
           const { data } = await supabase
             .from("sync_licenses")
-            .select("id, project_title, licensor_name, licensee_name, master_owner, publishing_administrator")
+            .select("id, project_title, licensor_name, licensee_name, controlled_writers, synch_agent")
             .or(
               [
                 `project_title.ilike.${term}`,
                 `licensor_name.ilike.${term}`,
                 `licensee_name.ilike.${term}`,
-                `master_owner.ilike.${term}`,
-                `publishing_administrator.ilike.${term}`,
+                `synch_agent.ilike.${term}`,
               ].join(",")
             );
-          (data || []).forEach((row: any) =>
-            items.push({ id: row.id, data_type: "sync_license", label: `Sync: ${row.project_title} ${row.licensor_name ? `(${row.licensor_name})` : ""}` })
-          );
+          (data || []).forEach((row: any) => {
+            items.push({ id: row.id, data_type: "sync_license", label: `Sync: ${row.project_title} ${row.licensor_name ? `(${row.licensor_name})` : ""}` });
+            
+            // Also search within controlled_writers JSON array
+            if (row.controlled_writers && Array.isArray(row.controlled_writers)) {
+              row.controlled_writers.forEach((writer: any) => {
+                if (writer.writer_name && writer.writer_name.toLowerCase().includes(nameQuery.trim().toLowerCase())) {
+                  items.push({ id: row.id, data_type: "sync_license", label: `Sync: ${row.project_title} (writer: ${writer.writer_name})` });
+                }
+              });
+            }
+          });
+          
+          // Additional query to search controlled_writers JSON field
+          const { data: writerMatches } = await supabase
+            .from("sync_licenses")
+            .select("id, project_title, licensor_name, controlled_writers")
+            .textSearch('controlled_writers', nameQuery.trim(), { 
+              type: 'websearch',
+              config: 'english'
+            });
+          
+          (writerMatches || []).forEach((row: any) => {
+            if (row.controlled_writers && Array.isArray(row.controlled_writers)) {
+              const matchingWriter = row.controlled_writers.find((writer: any) => 
+                writer.writer_name && writer.writer_name.toLowerCase().includes(nameQuery.trim().toLowerCase())
+              );
+              if (matchingWriter) {
+                items.push({ id: row.id, data_type: "sync_license", label: `Sync: ${row.project_title} (controlled writer: ${matchingWriter.writer_name})` });
+              }
+            }
+          });
+          
           return items;
         })());
       }
