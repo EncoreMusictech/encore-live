@@ -46,13 +46,21 @@ interface PipelineEstimate {
   potential_upside: number;
 }
 
+interface CareerSummary {
+  songwriterName: string;
+  careerSummary: string;
+  generatedAt: string;
+}
+
 export function useSongEstimator() {
   const [searches, setSearches] = useState<SongCatalogSearch[]>([]);
   const [currentSearch, setCurrentSearch] = useState<SongCatalogSearch | null>(null);
   const [songMetadata, setSongMetadata] = useState<SongMetadata[]>([]);
   const [pipelineEstimates, setPipelineEstimates] = useState<PipelineEstimate[]>([]);
+  const [careerSummary, setCareerSummary] = useState<CareerSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [bmiVerificationLoading, setBmiVerificationLoading] = useState(false);
+  const [careerSummaryLoading, setCareerSummaryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
@@ -604,6 +612,43 @@ export function useSongEstimator() {
     }
   };
 
+  // Fetch career summary for a songwriter
+  const fetchCareerSummary = async (songwriterName: string, additionalContext?: string) => {
+    setCareerSummaryLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('songwriter-career-summary', {
+        body: {
+          songwriterName,
+          additionalContext
+        }
+      });
+
+      if (error) throw error;
+
+      setCareerSummary(data);
+      
+      toast({
+        title: "Career Summary Generated",
+        description: `Generated career summary for ${songwriterName}`,
+      });
+
+      return data;
+    } catch (err) {
+      console.error('Error fetching career summary:', err);
+      setError(err.message);
+      toast({
+        title: "Error",
+        description: "Failed to generate career summary",
+        variant: "destructive"
+      });
+      return null;
+    } finally {
+      setCareerSummaryLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchSearches();
@@ -679,8 +724,10 @@ export function useSongEstimator() {
     currentSearch,
     songMetadata,
     pipelineEstimates,
+    careerSummary,
     loading,
     bmiVerificationLoading,
+    careerSummaryLoading,
     error,
     activeJobs,
 
@@ -689,6 +736,7 @@ export function useSongEstimator() {
     runAIResearch,
     fetchSongMetadata,
     fetchPipelineEstimates,
+    fetchCareerSummary,
     refreshSearch,
     deleteSearch,
     runBulkMLCVerification,
