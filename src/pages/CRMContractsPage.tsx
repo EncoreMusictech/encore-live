@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils";
 
 export default function CRMContractsPage() {
   const [activeTab, setActiveTab] = useState("contracts");
-  const { contracts, loading } = useContracts();
+  const { contracts, loading, refetch } = useContracts();
   const { canAccess, isDemo } = useDemoAccess();
   const { toast } = useToast();
 
@@ -829,6 +829,11 @@ export default function CRMContractsPage() {
               onSuccess={() => {
                 setIsEditDialogOpen(false);
                 setEditingContract(null);
+                refetch(); // Refresh the contracts list
+                toast({
+                  title: "Contract Updated",
+                  description: "Your contract changes have been saved successfully.",
+                });
               }}
               onCancel={() => {
                 setIsEditDialogOpen(false);
