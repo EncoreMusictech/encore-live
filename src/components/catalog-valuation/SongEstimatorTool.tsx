@@ -255,7 +255,7 @@ export function SongEstimatorTool() {
                   <div className="flex items-center justify-between">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Shield className="h-4 w-4" />
-                      PRO Cross-Verification Status
+                      PRO Registrations
                     </h4>
                     <Button
                       onClick={() => runBulkBMIVerification(currentSearch.id)}
