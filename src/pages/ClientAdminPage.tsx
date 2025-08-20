@@ -738,7 +738,11 @@ export default function ClientAdminPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigate(`/client-portal?client_id=${access.client_user_id}`)}
+                          onClick={() => {
+                            console.log('🔍 View Client Portal clicked for:', access.client_user_id);
+                            navigate(`/client-portal?client_id=${access.client_user_id}`);
+                          }}
+                          className="bg-primary text-primary-foreground hover:bg-primary/90"
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           View Client Portal
