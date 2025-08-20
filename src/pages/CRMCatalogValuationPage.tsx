@@ -277,7 +277,10 @@ export default function CRMCatalogValuationPage() {
                   <TabsContent value="search" className="mt-0">
                     <div className="space-y-4">
                       <div>
-                        <h3 className="text-lg font-semibold mb-2">Artist Search</h3>
+                        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                          <Search className="h-4 w-4" />
+                          Artist Search
+                        </h3>
                         <p className="text-muted-foreground text-sm mb-4">
                           Search for an artist to analyze their catalog for potential deals
                         </p>
