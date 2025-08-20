@@ -111,12 +111,12 @@ export function SongEstimatorTool() {
                     {loading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Searching MLC...
+                        Starting Research...
                       </>
                     ) : (
                       <>
-                        <Database className="h-4 w-4 mr-2" />
-                        Search MLC Database
+                        <Search className="h-4 w-4 mr-2" />
+                        Start Research
                       </>
                     )}
                 </Button>
