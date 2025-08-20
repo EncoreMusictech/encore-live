@@ -290,7 +290,7 @@ export function useQuarterlyBalanceReports() {
             user_id: user.id,
             payee_id: `client-${user.id}`,
             contact_id: undefined,
-            agreement_id: undefined,
+            agreement_id: row.agreement_id,
             year: row.year,
             quarter: row.quarter,
             period_label: row.period_label,
