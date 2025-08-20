@@ -80,50 +80,52 @@ export function SongEstimatorTool() {
   return (
     <div className="space-y-6">
       {/* Search Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            New Songwriter Research
-          </CardTitle>
-          <CardDescription>
-            Enter a songwriter's name to begin comprehensive catalog analysis
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Label htmlFor="songwriter">Songwriter Name</Label>
-              <Input
-                id="songwriter"
-                value={songwriterName}
-                onChange={(e) => setSongwriterName(e.target.value)}
-                placeholder="e.g., Max Martin, Diane Warren, Ryan Tedder"
-                onKeyPress={(e) => e.key === 'Enter' && handleCreateSearch()}
-              />
+      <div className="border rounded-lg bg-card">
+        <div className="p-6">
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-semibold flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                New Songwriter Research
+              </h2>
+              <p className="text-muted-foreground">
+                Enter a songwriter's name to begin comprehensive catalog analysis
+              </p>
             </div>
-            <div className="flex items-end">
-              <Button 
-                onClick={handleCreateSearch}
-                disabled={!songwriterName.trim() || loading}
-                className="bg-primary hover:bg-primary/90"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Researching...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-4 w-4 mr-2" />
-                    Start Research
-                  </>
-                )}
-              </Button>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <Label htmlFor="songwriter">Songwriter Name</Label>
+                <Input
+                  id="songwriter"
+                  value={songwriterName}
+                  onChange={(e) => setSongwriterName(e.target.value)}
+                  placeholder="e.g., Max Martin, Diane Warren, Ryan Tedder"
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateSearch()}
+                />
+              </div>
+              <div className="flex items-end">
+                <Button 
+                  onClick={handleCreateSearch}
+                  disabled={!songwriterName.trim() || loading}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Researching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4 mr-2" />
+                      Start Research
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Error Display */}
       {error && (
