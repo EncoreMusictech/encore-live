@@ -33,6 +33,19 @@ export function SongEstimatorTool() {
     setCurrentSearch
   } = useSongEstimator();
 
+  // Automatically fetch career summary when currentSearch changes
+  React.useEffect(() => {
+    if (currentSearch && !careerSummaryLoading) {
+      // Check if we already have a career summary for this songwriter
+      if (!careerSummary || careerSummary.songwriterName !== currentSearch.songwriter_name) {
+        const additionalContext = currentSearch.ai_research_summary ? 
+          `Songs found: ${currentSearch.total_songs_found}, Registration gaps: ${currentSearch.ai_research_summary?.registration_gap_analysis?.total_gaps || 0}` : 
+          undefined;
+        fetchCareerSummary(currentSearch.songwriter_name, additionalContext);
+      }
+    }
+  }, [currentSearch, fetchCareerSummary, careerSummary, careerSummaryLoading]);
+
   // Automatically fetch song metadata when currentSearch changes
   React.useEffect(() => {
     if (currentSearch) {
@@ -256,41 +269,26 @@ export function SongEstimatorTool() {
                 {/* Career Summary Card */}
                 <Card className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border-primary/20">
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2 text-foreground">
-                        <Music className="h-5 w-5 text-primary" />
-                        {currentSearch.songwriter_name} - Career Summary
-                      </CardTitle>
-                      <Button
-                        onClick={() => {
-                          const additionalContext = currentSearch.ai_research_summary ? 
-                            `Songs found: ${currentSearch.total_songs_found}, Registration gaps: ${currentSearch.ai_research_summary?.registration_gap_analysis?.total_gaps || 0}` : 
-                            undefined;
-                          fetchCareerSummary(currentSearch.songwriter_name, additionalContext);
-                        }}
-                        disabled={careerSummaryLoading}
-                        variant="outline"
-                        size="sm"
-                      >
-                        {careerSummaryLoading ? (
-                          <>
-                            <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="h-3 w-3 mr-2" />
-                            Generate Summary
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <Music className="h-5 w-5 text-primary" />
+                      {currentSearch.songwriter_name} - Career Summary
+                      {careerSummaryLoading && (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      )}
+                    </CardTitle>
                     <CardDescription>
                       AI-powered career overview and industry insights
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {careerSummary && careerSummary.songwriterName === currentSearch.songwriter_name ? (
+                    {careerSummaryLoading ? (
+                      <div className="text-center py-8">
+                        <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Generating career summary with GPT-4...
+                        </div>
+                      </div>
+                    ) : careerSummary && careerSummary.songwriterName === currentSearch.songwriter_name ? (
                       <div className="space-y-4">
                         <div className="prose prose-sm max-w-none">
                           <div className="whitespace-pre-line text-sm text-muted-foreground">
@@ -304,7 +302,7 @@ export function SongEstimatorTool() {
                     ) : (
                       <div className="text-center py-8">
                         <div className="text-muted-foreground text-sm">
-                          Click "Generate Summary" to get AI-powered career insights for {currentSearch.songwriter_name}
+                          Career summary will generate automatically...
                         </div>
                       </div>
                     )}
