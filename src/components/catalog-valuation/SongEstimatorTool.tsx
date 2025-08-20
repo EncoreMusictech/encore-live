@@ -220,7 +220,7 @@ export function SongEstimatorTool() {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="catalog">Registration Gaps</TabsTrigger>
+            <TabsTrigger value="catalog">Song Catalog</TabsTrigger>
             <TabsTrigger value="pipeline">Pipeline Analysis</TabsTrigger>
           </TabsList>
 
