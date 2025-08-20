@@ -14,7 +14,6 @@ import { CustomizeContractForm } from './CustomizeContractForm';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
-
 interface Template {
   id: string;
   title: string;
@@ -23,62 +22,53 @@ interface Template {
   fields: any[];
   is_public: boolean;
 }
-
 interface TemplateLibraryProps {
   onBack: () => void;
   onUseTemplate?: (contractData: any) => void;
   selectionMode?: boolean;
   onTemplateSelect?: (template: any) => void;
 }
-
-const DEMO_TEMPLATES: Template[] = [
-  {
-    id: '1',
-    title: 'Standard Recording Contract',
-    description: 'AI-generated professional recording artist agreement with industry-standard terms.',
-    contract_type: 'artist_recording',
-    fields: [],
-    is_public: true,
-  },
-  {
-    id: '2',
-    title: 'Music Publishing Agreement',
-    description: 'AI-generated comprehensive songwriter and publisher agreement with royalty splits.',
-    contract_type: 'publishing',
-    fields: [],
-    is_public: true,
-  },
-  {
-    id: '3',
-    title: 'Distribution Agreement',
-    description: 'AI-generated distribution contract with territory and revenue sharing terms.',
-    contract_type: 'distribution',
-    fields: [],
-    is_public: true,
-  },
-  {
-    id: '4',
-    title: 'Sync Licensing Agreement',
-    description: 'AI-generated synchronization license for film, TV, and digital media usage.',
-    contract_type: 'sync',
-    fields: [],
-    is_public: true,
-  },
-  {
-    id: '5',
-    title: 'Producer Agreement',
-    description: 'AI-generated producer services contract with points and credit terms.',
-    contract_type: 'producer',
-    fields: [],
-    is_public: true,
-  },
-];
-
-const TemplateLibrary: React.FC<TemplateLibraryProps> = ({ 
-  onBack, 
-  onUseTemplate, 
+const DEMO_TEMPLATES: Template[] = [{
+  id: '1',
+  title: 'Standard Recording Contract',
+  description: 'AI-generated professional recording artist agreement with industry-standard terms.',
+  contract_type: 'artist_recording',
+  fields: [],
+  is_public: true
+}, {
+  id: '2',
+  title: 'Music Publishing Agreement',
+  description: 'AI-generated comprehensive songwriter and publisher agreement with royalty splits.',
+  contract_type: 'publishing',
+  fields: [],
+  is_public: true
+}, {
+  id: '3',
+  title: 'Distribution Agreement',
+  description: 'AI-generated distribution contract with territory and revenue sharing terms.',
+  contract_type: 'distribution',
+  fields: [],
+  is_public: true
+}, {
+  id: '4',
+  title: 'Sync Licensing Agreement',
+  description: 'AI-generated synchronization license for film, TV, and digital media usage.',
+  contract_type: 'sync',
+  fields: [],
+  is_public: true
+}, {
+  id: '5',
+  title: 'Producer Agreement',
+  description: 'AI-generated producer services contract with points and credit terms.',
+  contract_type: 'producer',
+  fields: [],
+  is_public: true
+}];
+const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
+  onBack,
+  onUseTemplate,
   selectionMode = false,
-  onTemplateSelect 
+  onTemplateSelect
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -88,65 +78,54 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
   const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
   const [generatingTemplate, setGeneratingTemplate] = useState<string | null>(null);
   const [enhancedTemplates, setEnhancedTemplates] = useState<Record<string, any>>({});
-  const { downloadPDF } = usePDFGeneration();
-
+  const {
+    downloadPDF
+  } = usePDFGeneration();
   useEffect(() => {
     loadTemplates();
   }, []);
-
   const loadTemplates = async () => {
     try {
-      const { data, error } = await supabase
-        .from('contract_templates')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      const {
+        data,
+        error
+      } = await supabase.from('contract_templates').select('*').order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
-
       setCustomTemplates(data || []);
     } catch (error) {
       console.error('Error loading templates:', error);
       toast.error('Failed to load templates');
     }
   };
-
   const filteredPublicTemplates = DEMO_TEMPLATES.filter(template => {
     const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = 
-      (template.title?.toLowerCase() || '').includes(searchLower) ||
-      (template.description?.toLowerCase() || '').includes(searchLower) ||
-      (template.contract_type?.toLowerCase() || '').includes(searchLower);
-    
+    const matchesSearch = (template.title?.toLowerCase() || '').includes(searchLower) || (template.description?.toLowerCase() || '').includes(searchLower) || (template.contract_type?.toLowerCase() || '').includes(searchLower);
     const matchesType = filterType === 'all' || template.contract_type === filterType;
     return matchesSearch && matchesType;
   });
-
   const filteredCustomTemplates = customTemplates.filter(template => {
     const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = 
-      (template.template_name?.toLowerCase() || '').includes(searchLower) ||
-      (template.contract_type?.toLowerCase() || '').includes(searchLower);
-    
+    const matchesSearch = (template.template_name?.toLowerCase() || '').includes(searchLower) || (template.contract_type?.toLowerCase() || '').includes(searchLower);
     const matchesType = filterType === 'all' || template.contract_type === filterType;
     return matchesSearch && matchesType;
   });
-
   const handleEditTemplate = (template: any) => {
     setEditingTemplate(template);
     setCurrentView('builder');
   };
-
   const handleUseTemplate = async (template: any) => {
     if (selectionMode && onTemplateSelect) {
       onTemplateSelect(template);
       return;
     }
-    
+
     // For popular templates, ensure we have the enhanced version
     if (template.is_public && !enhancedTemplates[template.contract_type]) {
       await generateStandardizedTemplate(template.contract_type);
     }
-    
+
     // Enhance the template with AI-generated fields if available
     let enhancedTemplate = template;
     if (enhancedTemplates[template.contract_type]) {
@@ -160,11 +139,9 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
         }
       };
     }
-    
     setSelectedTemplate(enhancedTemplate);
     setCurrentView('customize');
   };
-
   const handleTemplateSaved = async (savedTemplate: any) => {
     console.log('Template saved callback triggered:', savedTemplate);
     // Refresh the templates list
@@ -173,16 +150,12 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
     setEditingTemplate(null);
     toast.success('Template saved successfully!');
   };
-
   const handleDeleteTemplate = async (templateId: string) => {
     try {
-      const { error } = await supabase
-        .from('contract_templates')
-        .delete()
-        .eq('id', templateId);
-
+      const {
+        error
+      } = await supabase.from('contract_templates').delete().eq('id', templateId);
       if (error) throw error;
-
       await loadTemplates();
       toast.success('Template deleted successfully');
     } catch (error) {
@@ -190,7 +163,6 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
       toast.error('Failed to delete template');
     }
   };
-
   const handleContractSaved = (contractData: any) => {
     if (onUseTemplate) {
       onUseTemplate(contractData);
@@ -198,7 +170,6 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
     setCurrentView('library');
     setSelectedTemplate(null);
   };
-
   const generateStandardizedTemplate = async (contractType: string) => {
     setGeneratingTemplate(contractType);
     try {
@@ -214,7 +185,6 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
         ...prev,
         [contractType]: fallbackTemplate
       }));
-
       toast.success('Template generated successfully!');
     } catch (error) {
       console.error('Error generating template:', error);
@@ -223,7 +193,6 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
       setGeneratingTemplate(null);
     }
   };
-
   const generateFallbackTemplate = (contractType: string): string => {
     const templates = {
       artist_recording: `
@@ -371,83 +340,358 @@ Artist: {{artist_name}}
 Producer: {{producer_name}}
       `
     };
-    
     return templates[contractType as keyof typeof templates] || templates.artist_recording;
   };
-
   const generateFallbackFields = (contractType: string) => {
     const fieldSets = {
-      artist_recording: [
-        { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
-        { id: 'label_name', name: 'label_name', label: 'Company Name', type: 'text', required: true, category: 'parties' },
-        { id: 'artist_name', name: 'artist_name', label: 'Artist Name', type: 'text', required: true, category: 'parties' },
-        { id: 'term_length', name: 'term_length', label: 'Term Length', type: 'select', required: true, category: 'terms', options: ['1 year', '2 years', '3 years', '5 years'] },
-        { id: 'minimum_selections', name: 'minimum_selections', label: 'Minimum Selections', type: 'number', required: true, category: 'terms' },
-        { id: 'royalty_rate', name: 'royalty_rate', label: 'Royalty Rate (cents)', type: 'number', required: true, category: 'financial' },
-        { id: 'payment_month', name: 'payment_month', label: 'First Payment Month', type: 'select', required: true, category: 'financial', options: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] },
-        { id: 'first_period_end', name: 'first_period_end', label: 'First Period End Date', type: 'date', required: true, category: 'schedule' },
-        { id: 'second_payment_month', name: 'second_payment_month', label: 'Second Payment Month', type: 'select', required: true, category: 'financial', options: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] },
-        { id: 'second_period_end', name: 'second_period_end', label: 'Second Period End Date', type: 'date', required: true, category: 'schedule' }
-      ],
-      publishing: [
-        { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
-        { id: 'publisher_name', name: 'publisher_name', label: 'Publisher Name', type: 'text', required: true, category: 'parties' },
-        { id: 'songwriter_name', name: 'songwriter_name', label: 'Songwriter Name', type: 'text', required: true, category: 'parties' },
-        { id: 'ownership_percentage', name: 'ownership_percentage', label: 'Ownership %', type: 'number', required: true, category: 'financial' },
-        { id: 'term_length', name: 'term_length', label: 'Term Length (Years)', type: 'number', required: true, category: 'terms' },
-        { id: 'territory', name: 'territory', label: 'Territory', type: 'select', required: true, category: 'terms', options: ['Worldwide', 'North America', 'Europe'] },
-        { id: 'advance_amount', name: 'advance_amount', label: 'Advance Amount', type: 'number' as const, required: false, category: 'financial' as const },
-        { id: 'publisher_share', name: 'publisher_share', label: 'Publisher Share %', type: 'number', required: true, category: 'financial' },
-        { id: 'writer_share', name: 'writer_share', label: 'Writer Share %', type: 'number', required: true, category: 'financial' }
-      ],
-      distribution: [
-        { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
-        { id: 'distributor_name', name: 'distributor_name', label: 'Distributor Name', type: 'text', required: true, category: 'parties' },
-        { id: 'artist_name', name: 'artist_name', label: 'Artist Name', type: 'text', required: true, category: 'parties' },
-        { id: 'territory', name: 'territory', label: 'Territory', type: 'select', required: true, category: 'terms', options: ['Worldwide', 'North America', 'Europe'] },
-        { id: 'term_duration', name: 'term_duration', label: 'Term Duration', type: 'select', required: true, category: 'terms', options: ['1 Year', '2 Years', '3 Years'] },
-        { id: 'distributor_percentage', name: 'distributor_percentage', label: 'Distributor %', type: 'number', required: true, category: 'financial' },
-        { id: 'artist_percentage', name: 'artist_percentage', label: 'Artist %', type: 'number', required: true, category: 'financial' },
-        { id: 'delivery_date', name: 'delivery_date', label: 'Delivery Date', type: 'date', required: true, category: 'schedule' }
-      ],
-      sync: [
-        { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
-        { id: 'licensor_name', name: 'licensor_name', label: 'Licensor Name', type: 'text', required: true, category: 'parties' },
-        { id: 'licensee_name', name: 'licensee_name', label: 'Licensee Name', type: 'text', required: true, category: 'parties' },
-        { id: 'composition_title', name: 'composition_title', label: 'Composition Title', type: 'text', required: true, category: 'terms' },
-        { id: 'project_title', name: 'project_title', label: 'Project Title', type: 'text', required: true, category: 'terms' },
-        { id: 'usage_type', name: 'usage_type', label: 'Usage Type', type: 'select', required: true, category: 'terms', options: ['Film', 'TV', 'Commercial', 'Web'] },
-        { id: 'territory', name: 'territory', label: 'Territory', type: 'select', required: true, category: 'terms', options: ['Worldwide', 'North America', 'Europe'] },
-        { id: 'duration', name: 'duration', label: 'Duration', type: 'select', required: true, category: 'terms', options: ['1 Year', '3 Years', '5 Years', 'Perpetual'] },
-        { id: 'sync_fee', name: 'sync_fee', label: 'Sync Fee', type: 'number' as const, required: true, category: 'financial' as const },
-        { id: 'start_date', name: 'start_date', label: 'Start Date', type: 'date', required: true, category: 'schedule' },
-        { id: 'end_date', name: 'end_date', label: 'End Date', type: 'date', required: true, category: 'schedule' }
-      ],
-      producer: [
-        { id: 'effective_date', name: 'effective_date', label: 'Effective Date', type: 'date', required: true, category: 'schedule' },
-        { id: 'artist_name', name: 'artist_name', label: 'Artist Name', type: 'text', required: true, category: 'parties' },
-        { id: 'producer_name', name: 'producer_name', label: 'Producer Name', type: 'text', required: true, category: 'parties' },
-        { id: 'track_count', name: 'track_count', label: 'Number of Tracks', type: 'number', required: true, category: 'terms' },
-        { id: 'project_title', name: 'project_title', label: 'Project Title', type: 'text', required: true, category: 'terms' },
-        { id: 'producer_fee', name: 'producer_fee', label: 'Producer Fee', type: 'number' as const, required: true, category: 'financial' as const },
-        { id: 'royalty_points', name: 'royalty_points', label: 'Royalty Points', type: 'number', required: false, category: 'financial' },
-        { id: 'delivery_date', name: 'delivery_date', label: 'Delivery Date', type: 'date', required: true, category: 'schedule' }
-      ]
+      artist_recording: [{
+        id: 'effective_date',
+        name: 'effective_date',
+        label: 'Effective Date',
+        type: 'date',
+        required: true,
+        category: 'schedule'
+      }, {
+        id: 'label_name',
+        name: 'label_name',
+        label: 'Company Name',
+        type: 'text',
+        required: true,
+        category: 'parties'
+      }, {
+        id: 'artist_name',
+        name: 'artist_name',
+        label: 'Artist Name',
+        type: 'text',
+        required: true,
+        category: 'parties'
+      }, {
+        id: 'term_length',
+        name: 'term_length',
+        label: 'Term Length',
+        type: 'select',
+        required: true,
+        category: 'terms',
+        options: ['1 year', '2 years', '3 years', '5 years']
+      }, {
+        id: 'minimum_selections',
+        name: 'minimum_selections',
+        label: 'Minimum Selections',
+        type: 'number',
+        required: true,
+        category: 'terms'
+      }, {
+        id: 'royalty_rate',
+        name: 'royalty_rate',
+        label: 'Royalty Rate (cents)',
+        type: 'number',
+        required: true,
+        category: 'financial'
+      }, {
+        id: 'payment_month',
+        name: 'payment_month',
+        label: 'First Payment Month',
+        type: 'select',
+        required: true,
+        category: 'financial',
+        options: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+      }, {
+        id: 'first_period_end',
+        name: 'first_period_end',
+        label: 'First Period End Date',
+        type: 'date',
+        required: true,
+        category: 'schedule'
+      }, {
+        id: 'second_payment_month',
+        name: 'second_payment_month',
+        label: 'Second Payment Month',
+        type: 'select',
+        required: true,
+        category: 'financial',
+        options: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+      }, {
+        id: 'second_period_end',
+        name: 'second_period_end',
+        label: 'Second Period End Date',
+        type: 'date',
+        required: true,
+        category: 'schedule'
+      }],
+      publishing: [{
+        id: 'effective_date',
+        name: 'effective_date',
+        label: 'Effective Date',
+        type: 'date',
+        required: true,
+        category: 'schedule'
+      }, {
+        id: 'publisher_name',
+        name: 'publisher_name',
+        label: 'Publisher Name',
+        type: 'text',
+        required: true,
+        category: 'parties'
+      }, {
+        id: 'songwriter_name',
+        name: 'songwriter_name',
+        label: 'Songwriter Name',
+        type: 'text',
+        required: true,
+        category: 'parties'
+      }, {
+        id: 'ownership_percentage',
+        name: 'ownership_percentage',
+        label: 'Ownership %',
+        type: 'number',
+        required: true,
+        category: 'financial'
+      }, {
+        id: 'term_length',
+        name: 'term_length',
+        label: 'Term Length (Years)',
+        type: 'number',
+        required: true,
+        category: 'terms'
+      }, {
+        id: 'territory',
+        name: 'territory',
+        label: 'Territory',
+        type: 'select',
+        required: true,
+        category: 'terms',
+        options: ['Worldwide', 'North America', 'Europe']
+      }, {
+        id: 'advance_amount',
+        name: 'advance_amount',
+        label: 'Advance Amount',
+        type: 'number' as const,
+        required: false,
+        category: 'financial' as const
+      }, {
+        id: 'publisher_share',
+        name: 'publisher_share',
+        label: 'Publisher Share %',
+        type: 'number',
+        required: true,
+        category: 'financial'
+      }, {
+        id: 'writer_share',
+        name: 'writer_share',
+        label: 'Writer Share %',
+        type: 'number',
+        required: true,
+        category: 'financial'
+      }],
+      distribution: [{
+        id: 'effective_date',
+        name: 'effective_date',
+        label: 'Effective Date',
+        type: 'date',
+        required: true,
+        category: 'schedule'
+      }, {
+        id: 'distributor_name',
+        name: 'distributor_name',
+        label: 'Distributor Name',
+        type: 'text',
+        required: true,
+        category: 'parties'
+      }, {
+        id: 'artist_name',
+        name: 'artist_name',
+        label: 'Artist Name',
+        type: 'text',
+        required: true,
+        category: 'parties'
+      }, {
+        id: 'territory',
+        name: 'territory',
+        label: 'Territory',
+        type: 'select',
+        required: true,
+        category: 'terms',
+        options: ['Worldwide', 'North America', 'Europe']
+      }, {
+        id: 'term_duration',
+        name: 'term_duration',
+        label: 'Term Duration',
+        type: 'select',
+        required: true,
+        category: 'terms',
+        options: ['1 Year', '2 Years', '3 Years']
+      }, {
+        id: 'distributor_percentage',
+        name: 'distributor_percentage',
+        label: 'Distributor %',
+        type: 'number',
+        required: true,
+        category: 'financial'
+      }, {
+        id: 'artist_percentage',
+        name: 'artist_percentage',
+        label: 'Artist %',
+        type: 'number',
+        required: true,
+        category: 'financial'
+      }, {
+        id: 'delivery_date',
+        name: 'delivery_date',
+        label: 'Delivery Date',
+        type: 'date',
+        required: true,
+        category: 'schedule'
+      }],
+      sync: [{
+        id: 'effective_date',
+        name: 'effective_date',
+        label: 'Effective Date',
+        type: 'date',
+        required: true,
+        category: 'schedule'
+      }, {
+        id: 'licensor_name',
+        name: 'licensor_name',
+        label: 'Licensor Name',
+        type: 'text',
+        required: true,
+        category: 'parties'
+      }, {
+        id: 'licensee_name',
+        name: 'licensee_name',
+        label: 'Licensee Name',
+        type: 'text',
+        required: true,
+        category: 'parties'
+      }, {
+        id: 'composition_title',
+        name: 'composition_title',
+        label: 'Composition Title',
+        type: 'text',
+        required: true,
+        category: 'terms'
+      }, {
+        id: 'project_title',
+        name: 'project_title',
+        label: 'Project Title',
+        type: 'text',
+        required: true,
+        category: 'terms'
+      }, {
+        id: 'usage_type',
+        name: 'usage_type',
+        label: 'Usage Type',
+        type: 'select',
+        required: true,
+        category: 'terms',
+        options: ['Film', 'TV', 'Commercial', 'Web']
+      }, {
+        id: 'territory',
+        name: 'territory',
+        label: 'Territory',
+        type: 'select',
+        required: true,
+        category: 'terms',
+        options: ['Worldwide', 'North America', 'Europe']
+      }, {
+        id: 'duration',
+        name: 'duration',
+        label: 'Duration',
+        type: 'select',
+        required: true,
+        category: 'terms',
+        options: ['1 Year', '3 Years', '5 Years', 'Perpetual']
+      }, {
+        id: 'sync_fee',
+        name: 'sync_fee',
+        label: 'Sync Fee',
+        type: 'number' as const,
+        required: true,
+        category: 'financial' as const
+      }, {
+        id: 'start_date',
+        name: 'start_date',
+        label: 'Start Date',
+        type: 'date',
+        required: true,
+        category: 'schedule'
+      }, {
+        id: 'end_date',
+        name: 'end_date',
+        label: 'End Date',
+        type: 'date',
+        required: true,
+        category: 'schedule'
+      }],
+      producer: [{
+        id: 'effective_date',
+        name: 'effective_date',
+        label: 'Effective Date',
+        type: 'date',
+        required: true,
+        category: 'schedule'
+      }, {
+        id: 'artist_name',
+        name: 'artist_name',
+        label: 'Artist Name',
+        type: 'text',
+        required: true,
+        category: 'parties'
+      }, {
+        id: 'producer_name',
+        name: 'producer_name',
+        label: 'Producer Name',
+        type: 'text',
+        required: true,
+        category: 'parties'
+      }, {
+        id: 'track_count',
+        name: 'track_count',
+        label: 'Number of Tracks',
+        type: 'number',
+        required: true,
+        category: 'terms'
+      }, {
+        id: 'project_title',
+        name: 'project_title',
+        label: 'Project Title',
+        type: 'text',
+        required: true,
+        category: 'terms'
+      }, {
+        id: 'producer_fee',
+        name: 'producer_fee',
+        label: 'Producer Fee',
+        type: 'number' as const,
+        required: true,
+        category: 'financial' as const
+      }, {
+        id: 'royalty_points',
+        name: 'royalty_points',
+        label: 'Royalty Points',
+        type: 'number',
+        required: false,
+        category: 'financial'
+      }, {
+        id: 'delivery_date',
+        name: 'delivery_date',
+        label: 'Delivery Date',
+        type: 'date',
+        required: true,
+        category: 'schedule'
+      }]
     };
-    
     return fieldSets[contractType as keyof typeof fieldSets] || fieldSets.artist_recording;
   };
-
   const downloadTemplatePDF = async (template: Template) => {
     if (!enhancedTemplates[template.contract_type]) {
       // Generate the template first
       await generateStandardizedTemplate(template.contract_type);
       return;
     }
-
     try {
       const enhancedTemplate = enhancedTemplates[template.contract_type];
-      
+
       // Create properly formatted HTML content for PDF conversion
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; max-width: 800px;">
@@ -459,12 +703,10 @@ Producer: {{producer_name}}
           <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
             <h3 style="margin-top: 0; color: #444;">Template Fields Available:</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-              ${enhancedTemplate.templateFields.map((field: any) => 
-                `<div style="background: white; padding: 8px 12px; border-radius: 4px; font-size: 12px;">
+              ${enhancedTemplate.templateFields.map((field: any) => `<div style="background: white; padding: 8px 12px; border-radius: 4px; font-size: 12px;">
                   <strong>${field.label}</strong><br>
                   <span style="color: #666;">\{{${field.name}}}</span>
-                </div>`
-              ).join('')}
+                </div>`).join('')}
             </div>
           </div>
           
@@ -478,55 +720,35 @@ Producer: {{producer_name}}
           </div>
         </div>
       `;
-      
+
       // Use the existing PDF generation hook to create a proper PDF
       await downloadPDF(htmlContent, `${template.title.replace(/\s+/g, '_')}_Template`);
-      
       toast.success('PDF template downloaded successfully!');
     } catch (error) {
       console.error('Error downloading template:', error);
       toast.error('Failed to download template');
     }
   };
-
   if (currentView === 'builder') {
-    return (
-      <TemplateBuilder
-        onBack={() => {
-          setCurrentView('library');
-          setEditingTemplate(null);
-        }}
-        contractType={editingTemplate?.contract_type}
-        existingTemplate={editingTemplate}
-        onTemplateSaved={handleTemplateSaved}
-      />
-    );
+    return <TemplateBuilder onBack={() => {
+      setCurrentView('library');
+      setEditingTemplate(null);
+    }} contractType={editingTemplate?.contract_type} existingTemplate={editingTemplate} onTemplateSaved={handleTemplateSaved} />;
   }
 
-// Preview view removed per new flow
+  // Preview view removed per new flow
 
   if (currentView === 'customize') {
-    return (
-      <CustomizeContractForm
-        template={selectedTemplate!}
-        onBack={() => {
-          setCurrentView('library');
-          setSelectedTemplate(null);
-        }}
-        onSave={handleContractSaved}
-      />
-    );
+    return <CustomizeContractForm template={selectedTemplate!} onBack={() => {
+      setCurrentView('library');
+      setSelectedTemplate(null);
+    }} onSave={handleContractSaved} />;
   }
-
-  return (
-    <div className="h-full flex flex-col">
+  return <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={onBack} className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Contracts
-          </Button>
+          
           <div>
             <h1 className="text-2xl font-bold">Contract Templates</h1>
             <p className="text-muted-foreground">
@@ -534,12 +756,10 @@ Producer: {{producer_name}}
             </p>
           </div>
         </div>
-        {!selectionMode && (
-          <Button onClick={() => setCurrentView('builder')} className="gap-2">
+        {!selectionMode && <Button onClick={() => setCurrentView('builder')} className="gap-2">
             <Plus className="h-4 w-4" />
             Create Template
-          </Button>
-        )}
+          </Button>}
       </div>
 
       {/* Search and Filters */}
@@ -547,12 +767,7 @@ Producer: {{producer_name}}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search templates..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+            <Input placeholder="Search templates..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
           </div>
           <Select value={filterType} onValueChange={setFilterType}>
             <SelectTrigger className="w-full sm:w-48">
@@ -579,8 +794,7 @@ Producer: {{producer_name}}
             <section>
               <h2 className="text-xl font-semibold mb-4">Your Templates</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
-                {filteredCustomTemplates.map(template => (
-                  <Card key={template.id} className="hover:shadow-md transition-shadow">
+                {filteredCustomTemplates.map(template => <Card key={template.id} className="hover:shadow-md transition-shadow">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -596,26 +810,14 @@ Producer: {{producer_name}}
                     </CardHeader>
                     <CardContent>
                       <div className="flex gap-2">
-                        {!selectionMode && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditTemplate(template)}
-                              className="gap-2"
-                            >
+                        {!selectionMode && <>
+                            <Button variant="outline" size="sm" onClick={() => handleEditTemplate(template)} className="gap-2">
                               <Edit className="h-4 w-4" />
                               Edit
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="gap-2 text-destructive hover:text-destructive"
-                                  aria-label="Delete template"
-                                  title="Delete"
-                                >
+                                <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" aria-label="Delete template" title="Delete">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
@@ -628,55 +830,38 @@ Producer: {{producer_name}}
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => handleDeleteTemplate(template.id)}
-                                  >
+                                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDeleteTemplate(template.id)}>
                                     Delete
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                          </>
-                        )}
-                        <Button
-                          size="sm"
-                          onClick={() => handleUseTemplate(template)}
-                          className="gap-2"
-                        >
+                          </>}
+                        <Button size="sm" onClick={() => handleUseTemplate(template)} className="gap-2">
                           <Settings className="h-4 w-4" />
                           {selectionMode ? 'Select' : 'Use'}
                         </Button>
                       </div>
                     </CardContent>
-                  </Card>
-                ))}
+                  </Card>)}
               </div>
 
-              {filteredCustomTemplates.length === 0 && (
-                <div className="text-center py-12">
+              {filteredCustomTemplates.length === 0 && <div className="text-center py-12">
                   <p className="text-muted-foreground mb-4">
-                    {customTemplates.length === 0 
-                      ? "You haven't created any templates yet."
-                      : "No custom templates found matching your criteria."
-                    }
+                    {customTemplates.length === 0 ? "You haven't created any templates yet." : "No custom templates found matching your criteria."}
                   </p>
-                  {!selectionMode && (
-                    <Button onClick={() => setCurrentView('builder')} className="gap-2">
+                  {!selectionMode && <Button onClick={() => setCurrentView('builder')} className="gap-2">
                       <Plus className="h-4 w-4" />
                       Create Your First Template
-                    </Button>
-                  )}
-                </div>
-              )}
+                    </Button>}
+                </div>}
             </section>
 
             {/* Popular Templates below */}
             <section>
               <h2 className="text-xl font-semibold mb-4">Popular Templates</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
-                {filteredPublicTemplates.map(template => (
-                  <Card key={template.id} className="hover:shadow-md transition-shadow">
+                {filteredPublicTemplates.map(template => <Card key={template.id} className="hover:shadow-md transition-shadow">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -692,43 +877,26 @@ Producer: {{producer_name}}
                     </CardHeader>
                     <CardContent>
                       <div className="flex gap-2">
-                        {!selectionMode && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => downloadTemplatePDF(template)}
-                            disabled={generatingTemplate === template.contract_type}
-                            className="gap-2"
-                          >
+                        {!selectionMode && <Button variant="outline" size="sm" onClick={() => downloadTemplatePDF(template)} disabled={generatingTemplate === template.contract_type} className="gap-2">
                             <FileText className="h-4 w-4" />
                             {generatingTemplate === template.contract_type ? 'Generating...' : 'PDF'}
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          onClick={() => handleUseTemplate(template)}
-                          className="gap-2"
-                        >
+                          </Button>}
+                        <Button size="sm" onClick={() => handleUseTemplate(template)} className="gap-2">
                           <Settings className="h-4 w-4" />
                           {selectionMode ? 'Select' : 'Use'}
                         </Button>
                       </div>
                     </CardContent>
-                  </Card>
-                ))}
+                  </Card>)}
               </div>
 
-              {filteredPublicTemplates.length === 0 && (
-                <div className="text-center py-12">
+              {filteredPublicTemplates.length === 0 && <div className="text-center py-12">
                   <p className="text-muted-foreground">No public templates found matching your criteria.</p>
-                </div>
-              )}
+                </div>}
             </section>
           </div>
         </ScrollArea>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default TemplateLibrary;
