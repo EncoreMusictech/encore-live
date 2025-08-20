@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Loader2, Music, AlertTriangle, RefreshCw, Trash2, Shield, CheckCircle, Database } from 'lucide-react';
 import { useSongEstimator } from '@/hooks/useSongEstimator';
 import { SongMetadataView } from './SongMetadataView';
-import { MLCTestButton } from './MLCTestButton';
+import { PipelineEstimateView } from './PipelineEstimateView';
 
 export function SongEstimatorTool() {
   const [songwriterName, setSongwriterName] = useState('');
@@ -221,7 +221,7 @@ export function SongEstimatorTool() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="catalog">Registration Gaps</TabsTrigger>
-            <TabsTrigger value="debug">Debug MLC</TabsTrigger>
+            <TabsTrigger value="pipeline">Pipeline Analysis</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -360,8 +360,11 @@ export function SongEstimatorTool() {
             />
           </TabsContent>
 
-          <TabsContent value="debug">
-            <MLCTestButton />
+          <TabsContent value="pipeline">
+            <PipelineEstimateView 
+              searchId={currentSearch.id}
+              songMetadata={songMetadata}
+            />
           </TabsContent>
         </Tabs>
       )}

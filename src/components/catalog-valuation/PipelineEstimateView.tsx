@@ -134,58 +134,58 @@ export function PipelineEstimateView({ searchId, songMetadata }: PipelineEstimat
     <div className="space-y-6">
       {/* Summary Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-primary/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-primary" />
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold text-primary">
+                <div className="text-3xl font-bold text-primary">
                   {formatCurrency(mockPipelineData.total.annual_estimate)}
                 </div>
-                <div className="text-sm text-muted-foreground">Total Pipeline</div>
+                <div className="text-sm text-muted-foreground mt-1">Total Pipeline</div>
               </div>
+              <DollarSign className="h-8 w-8 text-primary/60" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Radio className="h-4 w-4 text-success" />
+        <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold">
+                <div className="text-3xl font-bold text-green-500">
                   {formatCurrency(mockPipelineData.total.breakdown.performance)}
                 </div>
-                <div className="text-sm text-muted-foreground">Performance</div>
+                <div className="text-sm text-muted-foreground mt-1">Performance</div>
               </div>
+              <Radio className="h-8 w-8 text-green-500/60" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Disc className="h-4 w-4 text-info" />
+        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold">
+                <div className="text-3xl font-bold text-blue-500">
                   {formatCurrency(mockPipelineData.total.breakdown.mechanical)}
                 </div>
-                <div className="text-sm text-muted-foreground">Mechanical</div>
+                <div className="text-sm text-muted-foreground mt-1">Mechanical</div>
               </div>
+              <Disc className="h-8 w-8 text-blue-500/60" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Film className="h-4 w-4 text-warning" />
+        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold">
+                <div className="text-3xl font-bold text-purple-500">
                   {formatCurrency(mockPipelineData.total.breakdown.sync)}
                 </div>
-                <div className="text-sm text-muted-foreground">Sync</div>
+                <div className="text-sm text-muted-foreground mt-1">Sync</div>
               </div>
+              <Film className="h-8 w-8 text-purple-500/60" />
             </div>
           </CardContent>
         </Card>
