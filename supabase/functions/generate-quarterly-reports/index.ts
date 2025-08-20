@@ -283,7 +283,7 @@ Deno.serve(async (req) => {
       // Use the database function to insert reports safely
       const { data: insertedCount, error } = await supabaseClient
         .rpc('insert_quarterly_reports_batch', {
-          reports_data: JSON.stringify(reportsJson)
+          reports_data: reportsJson
         });
 
       if (error) {
