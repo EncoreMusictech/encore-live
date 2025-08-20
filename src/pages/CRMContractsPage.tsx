@@ -535,28 +535,28 @@ export default function CRMContractsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-muted/30 p-1 h-auto">
+        <TabsList className="bg-background border border-border p-1 h-auto rounded-lg">
           <TabsTrigger 
             value="contracts"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-2"
+            className="data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=inactive]:text-muted-foreground px-6 py-2 rounded-md"
           >
             Contracts
           </TabsTrigger>
           <TabsTrigger 
             value="demos"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-2"
+            className="data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=inactive]:text-muted-foreground px-6 py-2 rounded-md"
           >
             Demos
           </TabsTrigger>
           <TabsTrigger 
             value="templates"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-2"
+            className="data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=inactive]:text-muted-foreground px-6 py-2 rounded-md"
           >
             My Templates
           </TabsTrigger>
           <TabsTrigger 
             value="analytics"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-2"
+            className="data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=inactive]:text-muted-foreground px-6 py-2 rounded-md"
           >
             Analytics
           </TabsTrigger>
