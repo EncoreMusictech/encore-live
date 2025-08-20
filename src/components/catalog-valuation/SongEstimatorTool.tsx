@@ -142,7 +142,7 @@ export function SongEstimatorTool() {
       {searches.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>MLC Catalog Searches</CardTitle>
+            <CardTitle>Previous Searches</CardTitle>
             <CardDescription>
               Click on a search to view registration gap analysis and PRO cross-verification results
             </CardDescription>
