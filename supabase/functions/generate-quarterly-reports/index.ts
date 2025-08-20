@@ -220,109 +220,90 @@ Deno.serve(async (req) => {
       console.error('Error deleting existing reports:', deleteError);
     }
 
-    // Insert reports in small batches without triggers
-    const BATCH_SIZE = 25;
-    let insertedCount = 0;
+    // Insert reports using the safe database function
+    console.log(`Using database function to insert ${reportsToInsert.length} reports...`);
     
-    for (let i = 0; i < reportsToInsert.length; i += BATCH_SIZE) {
-      const batch = reportsToInsert.slice(i, i + BATCH_SIZE);
-      const batchNumber = Math.floor(i/BATCH_SIZE) + 1;
-      const totalBatches = Math.ceil(reportsToInsert.length/BATCH_SIZE);
-      
-      console.log(`Inserting batch ${batchNumber}/${totalBatches} (${batch.length} records)...`);
-      
-      try {
-        // Disable triggers temporarily to avoid cascading operations
-        await supabaseClient
-          .from('quarterly_balance_reports')
-          .delete()
-          .eq('user_id', user.id)
-          .in('year', batch.map(b => b.year))
-          .in('quarter', batch.map(b => b.quarter))
-          .in('payee_id', batch.map(b => b.payee_id));
-
-        // Use raw SQL with disabled triggers to insert data
-        const { error } = await supabaseClient.rpc('execute_sql', {
-          query: `
-            SET session_replication_role = replica;
-            INSERT INTO quarterly_balance_reports (
-              user_id, payee_id, contact_id, year, quarter, opening_balance, 
-              royalties_amount, expenses_amount, payments_amount, closing_balance, 
-              is_calculated, calculation_date, created_at, updated_at
-            ) VALUES ${batch.map((record, idx) => `(
-              '${record.user_id}', '${record.payee_id}', ${record.contact_id ? `'${record.contact_id}'` : 'NULL'}, 
-              ${record.year}, ${record.quarter}, ${record.opening_balance}, 
-              ${record.royalties_amount}, ${record.expenses_amount}, ${record.payments_amount}, 
-              ${record.closing_balance}, ${record.is_calculated}, '${record.calculation_date}', 
-              NOW(), NOW()
-            )`).join(',')};
-            SET session_replication_role = DEFAULT;
-          `
+    // Convert reports to JSON format for the database function
+    const reportsJson = reportsToInsert.map(report => ({
+      user_id: report.user_id,
+      payee_id: report.payee_id,
+      contact_id: report.contact_id || null,
+      year: report.year,
+      quarter: report.quarter,
+      opening_balance: report.opening_balance,
+      royalties_amount: report.royalties_amount,
+      expenses_amount: report.expenses_amount,
+      payments_amount: report.payments_amount,
+      closing_balance: report.closing_balance,
+      is_calculated: report.is_calculated,
+      calculation_date: report.calculation_date
+    }));
+    
+    try {
+      // Use the database function to insert reports safely
+      const { data: insertedCount, error } = await supabaseClient
+        .rpc('insert_quarterly_reports_batch', {
+          reports_data: JSON.stringify(reportsJson)
         });
 
-        if (error) {
-          console.error(`Error inserting batch ${batchNumber}:`, error);
-          // Try individual inserts as fallback
-          for (const record of batch) {
-            try {
-              const { error: insertError } = await supabaseClient
-                .from('quarterly_balance_reports')
-                .insert([record]);
-              if (!insertError) insertedCount++;
-            } catch (e) {
-              console.error('Individual insert failed:', e);
-            }
+      if (error) {
+        console.error('Database function error:', error);
+        throw error;
+      }
+
+      console.log(`✅ Successfully inserted ${insertedCount || 0} quarterly balance reports`);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: `Generated ${insertedCount || 0} quarterly balance reports from existing payout data`,
+          totalProcessed: insertedCount || 0
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+      
+    } catch (insertError) {
+      console.error('Failed to insert reports via database function:', insertError);
+      
+      // Final fallback - try direct inserts one by one
+      let fallbackCount = 0;
+      for (const report of reportsToInsert.slice(0, 10)) { // Limit to prevent timeout
+        try {
+          const { error: singleError } = await supabaseClient
+            .from('quarterly_balance_reports')
+            .insert([{
+              user_id: report.user_id,
+              payee_id: report.payee_id,
+              contact_id: report.contact_id,
+              year: report.year,
+              quarter: report.quarter,
+              opening_balance: report.opening_balance,
+              royalties_amount: report.royalties_amount,
+              expenses_amount: report.expenses_amount,
+              payments_amount: report.payments_amount,
+              closing_balance: report.closing_balance,
+            }]);
+          
+          if (!singleError) {
+            fallbackCount++;
           }
-        } else {
-          insertedCount += batch.length;
-          console.log(`✅ Batch ${batchNumber} completed successfully`);
-        }
-        
-      } catch (batchError) {
-        console.error(`❌ Failed on batch ${batchNumber}:`, batchError);
-        // Try simple insert without any special handling
-        for (const record of batch) {
-          try {
-            const { error: insertError } = await supabaseClient
-              .from('quarterly_balance_reports')
-              .insert([{
-                user_id: record.user_id,
-                payee_id: record.payee_id,
-                contact_id: record.contact_id,
-                year: record.year,
-                quarter: record.quarter,
-                opening_balance: record.opening_balance,
-                royalties_amount: record.royalties_amount,
-                expenses_amount: record.expenses_amount,
-                payments_amount: record.payments_amount,
-                closing_balance: record.closing_balance,
-              }]);
-            if (!insertError) {
-              insertedCount++;
-              console.log(`Individual record inserted for batch ${batchNumber}`);
-            }
-          } catch (e) {
-            console.error('Fallback insert failed:', e);
-          }
+        } catch (e) {
+          console.error('Single insert failed:', e);
         }
       }
       
-      // Small delay between batches
-      if (i + BATCH_SIZE < reportsToInsert.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      console.log(`Fallback: inserted ${fallbackCount} reports individually`);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: fallbackCount > 0, 
+          message: `Generated ${fallbackCount} quarterly balance reports (fallback mode)`,
+          totalProcessed: fallbackCount,
+          warning: 'Database function failed, used fallback insertion method'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
-    console.log(`✅ Successfully generated ${insertedCount} quarterly balance reports`);
-    
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Generated ${insertedCount} quarterly balance reports from existing payout data`,
-        totalProcessed: insertedCount 
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
 
   } catch (error) {
     console.error('Error in generate-quarterly-reports function:', error);

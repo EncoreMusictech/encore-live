@@ -4329,6 +4329,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_quarterly_reports_batch: {
+        Args: { reports_data: Json }
+        Returns: number
+      }
       link_expenses_to_payout: {
         Args: { payout_id_param: string }
         Returns: undefined
