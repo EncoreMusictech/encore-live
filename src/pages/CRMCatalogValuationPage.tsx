@@ -386,19 +386,15 @@ export default function CRMCatalogValuationPage() {
         <TabsContent value="song-estimator" className="space-y-6">
           <DemoLimitBanner module="catalogValuation" />
           
-          <Card>
-            <CardContent>
-              {isAllowedSongEstimator ? (
-                <SongEstimatorTool />
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">
-                    Song Estimator is currently limited to a single test user.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {isAllowedSongEstimator ? (
+            <SongEstimatorTool />
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                Song Estimator is currently limited to a single test user.
+              </p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
