@@ -13,37 +13,6 @@ const corsHeaders = {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Helper function to calculate registration gap score
-function calculateRegistrationGapScore(mlcData: any, bmiData: any, songData: any): number {
-  let score = 0;
-  let maxScore = 0;
-
-  // MLC Registration (40 points)
-  maxScore += 40;
-  if (mlcData?.found) {
-    score += 20;
-    if (mlcData.confidence > 0.8) score += 10;
-    if (mlcData.iswc) score += 5;
-    if (mlcData.publishers?.length > 0) score += 5;
-  }
-
-  // BMI Cross-verification (30 points)
-  maxScore += 30;
-  if (bmiData?.found) {
-    score += 15;
-    if (bmiData.writers?.length > 0) score += 8;
-    if (bmiData.publishers?.length > 0) score += 7;
-  }
-
-  // Metadata completeness (30 points)
-  maxScore += 30;
-  if (songData.iswc) score += 15;
-  if (songData.co_writers?.length > 0) score += 8;
-  if (songData.publishers) score += 7;
-
-  return Math.round((score / maxScore) * 100) / 100;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -77,7 +46,7 @@ serve(async (req) => {
       additionalContext = {}
     } = await req.json();
 
-    console.log(`Starting MLC-first research for songwriter: ${songwriterName}, session type: ${sessionType}`);
+    console.log(`Starting MLC-exclusive research for songwriter: ${songwriterName}, session type: ${sessionType}`);
 
     // Create research session record
     const { data: session, error: sessionError } = await supabase
@@ -86,7 +55,7 @@ serve(async (req) => {
         search_id: searchId,
         user_id: user.id,
         session_type: sessionType,
-        research_query: `MLC-first catalog discovery: ${songwriterName}`,
+        research_query: `MLC-exclusive catalog discovery: ${songwriterName}`,
         session_status: 'processing'
       })
       .select()
@@ -98,40 +67,39 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // MLC-first catalog discovery approach
+// MLC-only catalog discovery approach
     if (sessionType === 'initial_search') {
-      console.log('Starting MLC-first catalog discovery for:', songwriterName);
+      console.log('Starting MLC-only catalog discovery for:', songwriterName);
       
-      // Step 1: Search MLC database first for comprehensive catalog
+      // Step 1: Search MLC database exclusively for comprehensive catalog
       let mlcCatalogData = null;
       let knownSongs = [];
       
       try {
         console.log('Searching MLC database for songwriter catalog...');
-        const { data: mlcSearchData, error: mlcError } = await supabase.functions.invoke('enhanced-mlc-lookup', {
+        const { data: mlcSearchData, error: mlcError } = await supabase.functions.invoke('mlc-repertoire-lookup', {
           body: {
             writerName: songwriterName,
-            searchType: 'catalog_discovery',
-            enhanced: true,
-            includeRecordings: true
+            workTitle: undefined // Search by writer name only for full catalog
           }
         });
 
         if (!mlcError && mlcSearchData?.found) {
           mlcCatalogData = mlcSearchData;
-          console.log(`MLC catalog search found ${mlcSearchData.works?.length || 0} works`);
+          console.log(`MLC catalog search found works for ${songwriterName}`);
           
-          // Extract songs from MLC data as primary source
-          if (mlcSearchData?.works && Array.isArray(mlcSearchData.works)) {
-            knownSongs = mlcSearchData.works.map(work => ({
-              title: work.primaryTitle || work.metadata?.workTitle || work.title,
-              co_writers: work.writers?.map(w => w.name || `${w.writerFirstName} ${w.writerLastName}`.trim()) || [],
-              publisher: work.publishers?.[0]?.name || work.publishers?.[0]?.publisherName || null,
-              iswc: work.iswc || work.metadata?.iswc || null,
-              mlc_work_id: work.metadata?.mlcWorkId || null,
-              mlc_song_code: work.metadata?.mlcSongCode || null,
-              source: 'mlc_primary'
-            }));
+          // Extract songs from MLC data as exclusive source
+          if (mlcSearchData?.writers && Array.isArray(mlcSearchData.writers)) {
+            knownSongs = [{
+              title: mlcSearchData.metadata?.workTitle || 'Unknown Title',
+              co_writers: mlcSearchData.writers.map(w => w.name).filter(name => name !== songwriterName) || [],
+              publishers: mlcSearchData.publishers?.reduce((acc, pub) => ({ ...acc, [pub.name]: pub.share || 0 }), {}) || {},
+              iswc: mlcSearchData.metadata?.iswc || null,
+              mlc_work_id: mlcSearchData.metadata?.mlcWorkId || null,
+              mlc_song_code: mlcSearchData.metadata?.mlcSongCode || null,
+              source: 'mlc_exclusive',
+              confidence: mlcSearchData.confidence || 0.8
+            }];
             console.log(`Extracted ${knownSongs.length} songs from MLC data`);
           }
         } else {
@@ -141,142 +109,94 @@ serve(async (req) => {
         console.error('MLC catalog search failed:', mlcError);
       }
 
-      // If MLC didn't provide enough results, we should have gotten the full catalog
-      // The MLC-first approach should be comprehensive, so fallback should be minimal
-      if (knownSongs.length === 0) {
-        console.log('No MLC results found, this may indicate an API issue or no registered works');
-      }
-
       const totalSongs = knownSongs.length;
-      console.log(`MLC catalog discovery found ${totalSongs} songs total`);
+      console.log(`MLC-only catalog discovery found ${totalSongs} songs total`);
 
-      // Step 2: Cross-verify with other PROs to identify registration gaps
+      // Step 2: Process MLC data exclusively (no cross-verification)
       if (knownSongs.length > 0) {
-        console.log('Starting PRO cross-verification to identify registration gaps...');
+        console.log('Processing MLC-only data for songwriter catalog...');
         
         const songMetadata = [];
-        let bmiVerifiedCount = 0;
         let mlcVerifiedCount = 0;
-        let registrationGaps = [];
       
         for (const song of knownSongs) {
           const songTitle = song.title;
-          console.log(`Cross-verifying song: ${songTitle}`);
+          console.log(`Processing MLC song: ${songTitle}`);
           
-          // MLC data (already available from catalog search)
+          // MLC data (exclusive source)
           const mlcData = {
             found: true,
-            confidence: song.source === 'mlc_primary' ? 0.95 : 0.8,
+            confidence: song.confidence || 0.8,
             work_title: song.title,
             iswc: song.iswc,
             mlc_work_id: song.mlc_work_id,
-            writers: song.co_writers.map(name => ({ name })),
-            publishers: song.publisher ? [{ name: song.publisher }] : []
+            mlc_song_code: song.mlc_song_code,
+            writers: [songwriterName, ...song.co_writers].map(name => ({ name })),
+            publishers: Object.keys(song.publishers || {}).map(name => ({ name, share: song.publishers[name] }))
           };
           mlcVerifiedCount++;
-          
-          // Cross-verify with BMI to identify gaps
-          let bmiData = null;
-          try {
-            console.log(`Cross-verifying with BMI: ${songTitle} by ${songwriterName}`);
-            
-            const { data: bmiResponse, error: bmiError } = await supabase.functions.invoke('enhanced-bmi-agent', {
-              body: { 
-                workTitle: songTitle, 
-                writerName: songwriterName,
-                artistName: song.co_writers?.[0]
-              }
-            });
-          
-            if (!bmiError && bmiResponse?.found) {
-              bmiData = bmiResponse;
-              bmiVerifiedCount++;
-              console.log(`BMI cross-verification successful for: ${songTitle}`);
-            } else {
-              console.log(`No BMI registration found for: ${songTitle} - registration gap detected`);
-              registrationGaps.push({ 
-                song: songTitle, 
-                gaps: ['missing_from_bmi'],
-                impact: 'potential_uncollected_performance_royalties'
-              });
-            }
-            
-            // Small delay to avoid overwhelming BMI lookup
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-          } catch (bmiError) {
-            console.error(`BMI cross-verification failed for ${songTitle}:`, bmiError);
-            registrationGaps.push({ 
-              song: songTitle, 
-              gaps: ['bmi_lookup_failed'],
-              impact: 'verification_needed'
-            });
-          }
 
-          // Detect specific registration discrepancies
+          // Detect data completeness (MLC-only analysis)
           const detectedGaps = [];
-          if (mlcData?.found && !bmiData?.found) {
-            detectedGaps.push('missing_from_bmi');
-          }
           if (!mlcData.iswc) {
             detectedGaps.push('missing_iswc');
           }
           if (!mlcData.publishers || mlcData.publishers.length === 0) {
             detectedGaps.push('missing_publisher_info');
           }
-          if (bmiData?.found && mlcData?.found) {
-            if (bmiData.writers?.length !== mlcData.writers?.length) {
-              detectedGaps.push('writer_credit_mismatch');
-            }
-            if (bmiData.publishers?.length !== mlcData.publishers?.length) {
-              detectedGaps.push('publisher_credit_mismatch');
-            }
+          if (!mlcData.mlc_work_id) {
+            detectedGaps.push('missing_mlc_work_id');
           }
 
-          // Calculate registration completeness score
-          const registrationScore = calculateRegistrationGapScore(mlcData, bmiData, song);
+          // Calculate MLC completeness score (0-1 scale)
+          let completenessScore = 0.5; // Base score for MLC presence
+          if (mlcData.iswc) completenessScore += 0.2;
+          if (mlcData.publishers && mlcData.publishers.length > 0) completenessScore += 0.2;
+          if (mlcData.mlc_work_id) completenessScore += 0.1;
           
-          // Determine verification status based on cross-verification
-          let verificationStatus = 'mlc_verified';
-          if (bmiData?.found) {
-            verificationStatus = 'mlc_bmi_cross_verified';
-          }
-
           songMetadata.push({
             search_id: searchId,
             user_id: user.id,
             song_title: songTitle,
             songwriter_name: songwriterName,
             co_writers: song.co_writers || [],
-            publishers: song.publisher ? { [song.publisher]: 0 } : {},
+            publishers: song.publishers || {},
             pro_registrations: {
-              mlc: mlcData || { found: false },
-              bmi: bmiData || { verified: false }
+              MLC: mlcData
             },
             iswc: song.iswc || null,
             estimated_splits: {},
             registration_gaps: detectedGaps,
-            metadata_completeness_score: registrationScore,
-            verification_status: verificationStatus,
-            search_key: `${songTitle}|${songwriterName}|mlc_first`,
+            metadata_completeness_score: completenessScore,
+            verification_status: 'mlc_exclusive',
+            search_key: `${songTitle}|${songwriterName}|mlc_only`,
             last_verified_at: new Date().toISOString(),
+            mlc_work_id: song.mlc_work_id,
+            mlc_verification_status: 'verified',
+            mlc_confidence_score: song.confidence || 0.8,
+            mlc_writers: mlcData.writers,
+            mlc_publishers: mlcData.publishers,
+            mlc_metadata: {
+              workTitle: song.title,
+              iswc: song.iswc,
+              mlcWorkId: song.mlc_work_id,
+              mlcSongCode: song.mlc_song_code
+            },
             source_data: {
-              primary_source: 'mlc',
-              catalog_discovery_method: 'mlc_first',
+              primary_source: 'mlc_exclusive',
+              catalog_discovery_method: 'mlc_only',
               mlc_lookup: mlcData,
-              bmi_cross_verification: bmiData,
-              registration_gap_analysis: detectedGaps,
-              registration_completeness_score: registrationScore,
-              discrepancies_detected: detectedGaps.length > 0
+              data_completeness_analysis: detectedGaps,
+              completeness_score: completenessScore,
+              source: 'MLC Public API'
             }
           });
         }
 
-        console.log(`Processed ${songMetadata.length} songs with MLC-first approach`);
-        console.log(`MLC verified: ${mlcVerifiedCount}, BMI cross-verified: ${bmiVerifiedCount}`);
-        console.log(`Registration gaps detected: ${registrationGaps.length}`);
+        console.log(`Processed ${songMetadata.length} songs with MLC-only approach`);
+        console.log(`MLC verified: ${mlcVerifiedCount}`);
 
-        // Batch insert song metadata with gap analysis
+        // Batch insert song metadata from MLC-only search
         if (songMetadata.length > 0) {
           const { data: insertedSongs, error: insertError } = await supabase
             .from('song_metadata_cache')
@@ -286,11 +206,11 @@ serve(async (req) => {
           if (insertError) {
             console.error('Failed to insert song metadata:', insertError);
           } else {
-            console.log(`Successfully inserted ${insertedSongs?.length || 0} song records with gap analysis`);
+            console.log(`Successfully inserted ${insertedSongs?.length || 0} song records from MLC`);
           }
         }
 
-        // Update catalog search with MLC-first results and gap analysis
+        // Update catalog search with MLC-only results
         const { error: catalogUpdateError } = await supabase
           .from('song_catalog_searches')
           .update({
@@ -299,27 +219,23 @@ serve(async (req) => {
             search_status: 'completed',
             last_refreshed_at: new Date().toISOString(),
             ai_research_summary: {
-              approach: 'mlc_first_catalog_discovery',
-              catalog_discovery_source: 'mlc_database',
+              approach: 'mlc_exclusive_catalog_discovery',
+              catalog_discovery_source: 'mlc_database_only',
               processing_summary: {
                 total_processed: totalSongs,
-                mlc_primary_sources: knownSongs.filter(s => s.source === 'mlc_primary').length,
-                mlc_secondary_sources: knownSongs.filter(s => s.source === 'mlc_secondary').length,
-                bmi_cross_verified: bmiVerifiedCount,
+                mlc_exclusive_sources: knownSongs.length,
                 mlc_verified: mlcVerifiedCount,
-                registration_gaps_detected: registrationGaps.length,
                 processing_time_seconds: Math.round((Date.now() - startTime) / 1000)
               },
-              registration_gap_analysis: {
-                gaps_by_song: registrationGaps,
-                total_gaps: registrationGaps.reduce((sum, item) => sum + item.gaps.length, 0),
-                most_common_gaps: registrationGaps.flatMap(item => item.gaps)
-                  .reduce((acc, gap) => ({ ...acc, [gap]: (acc[gap] || 0) + 1 }), {}),
+              data_completeness_analysis: {
+                songs_with_iswc: songMetadata.filter(s => s.iswc).length,
+                songs_with_publishers: songMetadata.filter(s => Object.keys(s.publishers).length > 0).length,
+                average_completeness_score: songMetadata.reduce((sum, s) => sum + s.metadata_completeness_score, 0) / songMetadata.length,
                 recommendations: [
-                  'Register missing works with BMI for performance royalty collection',
-                  'Verify publisher credits match across MLC and BMI databases',
-                  'Obtain ISWC codes for works missing international identifiers',
-                  'Cross-check writer splits for accuracy across PRO databases'
+                  'MLC data used as exclusive source for mechanical royalty information',
+                  'Consider registering with additional PROs for performance royalty collection',
+                  'Verify publisher information is up to date in MLC database',
+                  'Ensure ISWC codes are properly registered for international collection'
                 ]
               }
             }
@@ -339,8 +255,9 @@ serve(async (req) => {
             total_songs_found: 0,
             last_refreshed_at: new Date().toISOString(),
             ai_research_summary: {
-              approach: 'mlc_first_catalog_discovery',
-              result: 'no_catalog_found_in_mlc'
+              approach: 'mlc_exclusive_catalog_discovery',
+              result: 'no_catalog_found_in_mlc',
+              message: 'No works found for this songwriter in MLC database'
             }
           })
           .eq('id', searchId);
@@ -352,12 +269,12 @@ serve(async (req) => {
     const { error: updateError } = await supabase
       .from('ai_research_sessions')
       .update({
-        ai_response: { approach: 'mlc_first_discovery', completed: true },
-        findings_summary: `MLC-first catalog discovery completed for ${songwriterName}`,
-        confidence_assessment: 9, // High confidence for MLC-based data
+        ai_response: { approach: 'mlc_exclusive_discovery', completed: true },
+        findings_summary: `MLC-exclusive catalog discovery completed for ${songwriterName}`,
+        confidence_assessment: 8, // High confidence for MLC-exclusive data
         processing_time_ms: processingTime,
         session_status: 'completed',
-        sources_checked: ['MLC Database', 'BMI Cross-verification']
+        sources_checked: ['MLC Database Only']
       })
       .eq('id', session.id);
 
@@ -365,14 +282,14 @@ serve(async (req) => {
       console.error('Failed to update research session:', updateError);
     }
 
-    console.log(`MLC-first research completed. Time: ${processingTime}ms`);
+    console.log(`MLC-exclusive research completed. Time: ${processingTime}ms`);
 
     return new Response(JSON.stringify({
       success: true,
       sessionId: session.id,
-      approach: 'mlc_first_catalog_discovery',
+      approach: 'mlc_exclusive_catalog_discovery',
       processingTime,
-      summary: `MLC-first catalog discovery completed for ${songwriterName}`
+      summary: `MLC-exclusive catalog discovery completed for ${songwriterName}`
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
