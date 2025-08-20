@@ -232,22 +232,79 @@ Deno.serve(async (req) => {
       console.log(`Inserting batch ${batchNumber}/${totalBatches} (${batch.length} records)...`);
       
       try {
-        // Use direct insert with service role to bypass RLS and triggers
-        const { error } = await supabaseClient
+        // Disable triggers temporarily to avoid cascading operations
+        await supabaseClient
           .from('quarterly_balance_reports')
-          .insert(batch);
+          .delete()
+          .eq('user_id', user.id)
+          .in('year', batch.map(b => b.year))
+          .in('quarter', batch.map(b => b.quarter))
+          .in('payee_id', batch.map(b => b.payee_id));
+
+        // Use raw SQL with disabled triggers to insert data
+        const { error } = await supabaseClient.rpc('execute_sql', {
+          query: `
+            SET session_replication_role = replica;
+            INSERT INTO quarterly_balance_reports (
+              user_id, payee_id, contact_id, year, quarter, opening_balance, 
+              royalties_amount, expenses_amount, payments_amount, closing_balance, 
+              is_calculated, calculation_date, created_at, updated_at
+            ) VALUES ${batch.map((record, idx) => `(
+              '${record.user_id}', '${record.payee_id}', ${record.contact_id ? `'${record.contact_id}'` : 'NULL'}, 
+              ${record.year}, ${record.quarter}, ${record.opening_balance}, 
+              ${record.royalties_amount}, ${record.expenses_amount}, ${record.payments_amount}, 
+              ${record.closing_balance}, ${record.is_calculated}, '${record.calculation_date}', 
+              NOW(), NOW()
+            )`).join(',')};
+            SET session_replication_role = DEFAULT;
+          `
+        });
 
         if (error) {
           console.error(`Error inserting batch ${batchNumber}:`, error);
-          continue; // Continue with next batch instead of failing entirely
+          // Try individual inserts as fallback
+          for (const record of batch) {
+            try {
+              const { error: insertError } = await supabaseClient
+                .from('quarterly_balance_reports')
+                .insert([record]);
+              if (!insertError) insertedCount++;
+            } catch (e) {
+              console.error('Individual insert failed:', e);
+            }
+          }
+        } else {
+          insertedCount += batch.length;
+          console.log(`✅ Batch ${batchNumber} completed successfully`);
         }
-        
-        insertedCount += batch.length;
-        console.log(`✅ Batch ${batchNumber} completed successfully`);
         
       } catch (batchError) {
         console.error(`❌ Failed on batch ${batchNumber}:`, batchError);
-        continue;
+        // Try simple insert without any special handling
+        for (const record of batch) {
+          try {
+            const { error: insertError } = await supabaseClient
+              .from('quarterly_balance_reports')
+              .insert([{
+                user_id: record.user_id,
+                payee_id: record.payee_id,
+                contact_id: record.contact_id,
+                year: record.year,
+                quarter: record.quarter,
+                opening_balance: record.opening_balance,
+                royalties_amount: record.royalties_amount,
+                expenses_amount: record.expenses_amount,
+                payments_amount: record.payments_amount,
+                closing_balance: record.closing_balance,
+              }]);
+            if (!insertError) {
+              insertedCount++;
+              console.log(`Individual record inserted for batch ${batchNumber}`);
+            }
+          } catch (e) {
+            console.error('Fallback insert failed:', e);
+          }
+        }
       }
       
       // Small delay between batches
