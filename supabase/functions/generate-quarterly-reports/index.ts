@@ -124,8 +124,37 @@ Deno.serve(async (req) => {
       }
 
       if (!payeeId) {
-        console.log(`⚠️ No payee found for contact "${contactName}", skipping...`);
-        continue;
+        console.log(`⚠️ No payee found for contact "${contactName}", creating new payee...`);
+        
+        // Create a new payee for this contact
+        try {
+          const { data: newPayee, error: payeeError } = await supabaseClient
+            .from('payees')
+            .insert({
+              user_id: user.id,
+              payee_name: contactName,
+              payee_type: 'writer',
+              writer_id: payout.client_id, // Use contact ID as writer reference
+              contact_info: {
+                name: contactName,
+                contact_id: payout.client_id
+              }
+            })
+            .select('id')
+            .single();
+
+          if (payeeError) {
+            console.error(`Failed to create payee for "${contactName}":`, payeeError);
+            continue;
+          }
+
+          payeeId = newPayee.id;
+          payeeByName.set(contactNameLower, payeeId);
+          console.log(`✅ Created new payee "${contactName}" with ID: ${payeeId}`);
+        } catch (error) {
+          console.error(`Error creating payee for "${contactName}":`, error);
+          continue;
+        }
       }
 
       const key = `${payeeId}-${year}-Q${quarter}`;
