@@ -536,28 +536,16 @@ export default function CRMContractsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger 
-            value="contracts"
-            className="data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=inactive]:text-muted-foreground px-6 py-2 rounded-md"
-          >
+          <TabsTrigger value="contracts" className="flex items-center gap-2">
             Contracts
           </TabsTrigger>
-          <TabsTrigger 
-            value="demos"
-            className="data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=inactive]:text-muted-foreground px-6 py-2 rounded-md"
-          >
+          <TabsTrigger value="demos" className="flex items-center gap-2">
             Demos
           </TabsTrigger>
-          <TabsTrigger 
-            value="templates"
-            className="data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=inactive]:text-muted-foreground px-6 py-2 rounded-md"
-          >
+          <TabsTrigger value="templates" className="flex items-center gap-2">
             My Templates
           </TabsTrigger>
-          <TabsTrigger 
-            value="analytics"
-            className="data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=inactive]:text-muted-foreground px-6 py-2 rounded-md"
-          >
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
             Analytics
           </TabsTrigger>
         </TabsList>
