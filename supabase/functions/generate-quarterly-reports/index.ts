@@ -131,33 +131,8 @@ Deno.serve(async (req) => {
     
     for (const payout of payouts as any[]) {
       console.log(`\n--- Processing payout ${payout.id} ---`);
-      // Get the contract/agreement ID from the payout relationships
-      let agreementId: string | undefined;
-      try {
-        // Query for contract ID through payout relationships
-        const { data: contractData } = await supabaseClient
-          .from('payout_royalties')
-          .select(`
-            royalty_allocations!inner(
-              copyright_id,
-              contract_schedule_works!inner(
-                contract_id,
-                contracts!inner(id, agreement_id)
-              )
-            )
-          `)
-          .eq('payout_id', payout.id)
-          .limit(1);
-          
-        if (contractData && contractData.length > 0) {
-          const contractInfo = contractData[0]?.royalty_allocations?.contract_schedule_works?.contracts;
-          if (contractInfo) {
-            agreementId = contractInfo.id; // Use contract ID as agreement ID
-          }
-        }
-      } catch (e) {
-        console.log('Could not extract agreement ID for payout:', payout.id, e);
-      }
+      // For now, set agreement_id to null since the complex query was causing issues
+      let agreementId: string | undefined = null;
 
       console.log('Payout data:', {
         id: payout.id,
