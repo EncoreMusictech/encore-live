@@ -77,6 +77,16 @@ Deno.serve(async (req) => {
 
     console.log(`Processing ${payouts.length} payouts...`);
 
+    // Log first few payouts for debugging
+    console.log('First few payouts:', payouts.slice(0, 2).map(p => ({
+      id: p.id,
+      client_id: p.client_id,
+      contacts: p.contacts,
+      gross_royalties: p.gross_royalties,
+      period_start: p.period_start,
+      created_at: p.created_at
+    })));
+
     // Get all payees for name mapping
     const { data: payees } = await supabaseClient
       .from('payees')
@@ -88,6 +98,7 @@ Deno.serve(async (req) => {
     );
 
     console.log(`Found ${payees?.length || 0} payees for mapping`);
+    console.log('Existing payees:', Array.from(payeeByName.entries()));
 
     // Group payouts by payee and quarter
     const reportData = new Map<string, {
