@@ -27,6 +27,7 @@ interface DashboardStats {
   copyrights: number;
   syncDeals: number;
   totalRevenue: number;
+  catalogValue: number;
 }
 
 interface RecentActivity {
@@ -55,7 +56,8 @@ export function CRMDashboard() {
     contracts: 0,
     copyrights: 0,
     syncDeals: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
+    catalogValue: 0
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [userModules, setUserModules] = useState<string[]>([]);
@@ -73,42 +75,78 @@ export function CRMDashboard() {
 
         setUserModules(moduleData?.map(item => item.module_id) || []);
 
-        // Fetch stats (you would replace these with actual data queries)
-        // For now, using mock data
+        // Fetch real stats from user's data
+        const [contractsResult, copyrightsResult, syncResult, royaltiesResult, catalogResult] = await Promise.all([
+          // Count contracts
+          supabase
+            .from('contracts')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+          
+          // Count copyrights
+          supabase
+            .from('copyrights')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+          
+          // Count sync licenses
+          supabase
+            .from('sync_licenses')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+          
+          // Sum total royalties
+          supabase
+            .from('royalty_allocations')
+            .select('gross_royalty_amount')
+            .eq('user_id', user.id),
+          
+          // Get catalog valuations total
+          supabase
+            .from('catalog_valuations')
+            .select('valuation_amount')
+            .eq('user_id', user.id)
+        ]);
+
+        // Calculate total revenue from royalties
+        const totalRevenue = royaltiesResult.data?.reduce((sum, allocation) => 
+          sum + (Number(allocation.gross_royalty_amount) || 0), 0) || 0;
+
+        // Calculate total catalog value
+        const totalCatalogValue = catalogResult.data?.reduce((sum, valuation) => 
+          sum + (Number(valuation.valuation_amount) || 0), 0) || 0;
+
         setStats({
-          contracts: 12,
-          copyrights: 45,
-          syncDeals: 8,
-          totalRevenue: 125000
+          contracts: contractsResult.count || 0,
+          copyrights: copyrightsResult.count || 0,
+          syncDeals: syncResult.count || 0,
+          totalRevenue: Math.round(totalRevenue),
+          catalogValue: Math.round(totalCatalogValue)
         });
 
-        // Mock recent activity
-        setRecentActivity([
-          {
-            id: '1',
+        // Fetch recent activity from actual data
+        const { data: recentContracts } = await supabase
+          .from('contracts')
+          .select('id, title, counterparty_name, created_at, contract_status')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        const activities: RecentActivity[] = [];
+        
+        // Add recent contracts
+        recentContracts?.forEach(contract => {
+          activities.push({
+            id: contract.id,
             type: 'contract',
-            title: 'Publishing Agreement - Artist XYZ',
-            description: 'Contract requires signature',
-            timestamp: '2 hours ago',
-            status: 'urgent'
-          },
-          {
-            id: '2',
-            type: 'sync',
-            title: 'Netflix Sync Deal',
-            description: 'License approved and executed',
-            timestamp: '5 hours ago',
-            status: 'completed'
-          },
-          {
-            id: '3',
-            type: 'royalty',
-            title: 'Q4 Royalty Statement',
-            description: 'Processing payment to artists',
-            timestamp: '1 day ago',
-            status: 'pending'
-          }
-        ]);
+            title: `${contract.title} - ${contract.counterparty_name}`,
+            description: `Contract status: ${contract.contract_status}`,
+            timestamp: new Date(contract.created_at).toLocaleDateString(),
+            status: contract.contract_status === 'signed' ? 'completed' : 'pending'
+          });
+        });
+
+        setRecentActivity(activities);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       }
@@ -124,7 +162,7 @@ export function CRMDashboard() {
       description: 'AI-powered catalog assessment',
       icon: TrendingUp,
       url: '/dashboard/catalog-valuation',
-      value: '$1.2M',
+      value: stats.catalogValue > 0 ? `$${stats.catalogValue.toLocaleString()}` : '$0',
       change: '+12%'
     },
     {
