@@ -79,13 +79,16 @@ Deno.serve(async (req) => {
 
     if (payoutsError || !payouts || payouts.length === 0) {
       console.log('No payouts found:', payoutsError);
+      console.log('Payouts array:', payouts);
+      console.log('User ID:', user.id);
       return new Response(
         JSON.stringify({ error: 'No payouts found to generate reports from' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Processing ${payouts.length} payouts...`);
+    console.log(`✅ Found ${payouts.length} payouts to process`);
+    console.log(`✅ Found ${contacts?.length || 0} contacts for mapping`);
 
     // Log first few payouts for debugging
     console.log('First few payouts:', payouts.slice(0, 2).map(p => ({
