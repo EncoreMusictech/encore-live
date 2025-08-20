@@ -236,7 +236,7 @@ export function SongEstimatorTool() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="p-4 border rounded-lg bg-card">
                     <div className="text-2xl font-bold text-primary">{currentSearch.total_songs_found}</div>
-                    <div className="text-sm text-muted-foreground">Works in MLC</div>
+                    <div className="text-sm text-muted-foreground">Songs in Catalog</div>
                   </div>
                   <div className="p-4 border rounded-lg bg-card">
                     <div className="text-2xl font-bold text-success">{currentSearch.metadata_complete_count}</div>
