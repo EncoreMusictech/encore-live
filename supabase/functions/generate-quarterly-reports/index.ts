@@ -131,21 +131,42 @@ Deno.serve(async (req) => {
     
     for (const payout of payouts as any[]) {
       console.log(`\n--- Processing payout ${payout.id} ---`);
-      // Try to get contract ID from a simpler query approach
+      
+      const contactName = contactMap.get(payout.client_id) || 'Unknown';
+      const contactNameLower = contactName.toLowerCase().trim();
+      
+      console.log(`Contact name: "${contactName}" (lowercase: "${contactNameLower}")`);
+      
+      // Try to find the contract associated with this payout's client
       let agreementId: string | undefined;
       try {
-        // First, try to find any contract associated with this client
-        const { data: clientContracts } = await supabaseClient
+        // First, try to match by counterparty name
+        const { data: matchingContracts } = await supabaseClient
           .from('contracts')
           .select('id')
           .eq('user_id', user.id)
+          .eq('counterparty_name', contactName)
           .limit(1);
           
-        if (clientContracts && clientContracts.length > 0) {
-          agreementId = clientContracts[0].id;
+        if (matchingContracts && matchingContracts.length > 0) {
+          agreementId = matchingContracts[0].id;
+          console.log(`✅ Found contract for "${contactName}" -> contract ID: ${agreementId}`);
+        } else {
+          // Fallback: try to find any active contract for this user
+          const { data: fallbackContracts } = await supabaseClient
+            .from('contracts')
+            .select('id')
+            .eq('user_id', user.id)
+            .in('contract_status', ['active', 'signed'])
+            .limit(1);
+            
+          if (fallbackContracts && fallbackContracts.length > 0) {
+            agreementId = fallbackContracts[0].id;
+            console.log(`⚠️ Using fallback contract for "${contactName}" -> contract ID: ${agreementId}`);
+          }
         }
       } catch (e) {
-        console.log('Could not find contract for user:', user.id, e);
+        console.log('Could not find contract for contact:', contactName, e);
         agreementId = undefined;
       }
 
@@ -155,7 +176,7 @@ Deno.serve(async (req) => {
         gross_royalties: payout.gross_royalties,
         period_start: payout.period_start,
         created_at: payout.created_at,
-        contact_name: contactMap.get(payout.client_id),
+        contact_name: contactName,
         agreement_id: agreementId
       });
       
@@ -165,11 +186,6 @@ Deno.serve(async (req) => {
       const quarter = Math.ceil((d.getMonth() + 1) / 3);
       
       console.log(`Calculated period: ${year} Q${quarter} from date ${periodDate}`);
-      
-      const contactName = contactMap.get(payout.client_id) || 'Unknown';
-      const contactNameLower = contactName.toLowerCase().trim();
-      
-      console.log(`Contact name: "${contactName}" (lowercase: "${contactNameLower}")`);
       
       // Find matching payee ID with improved matching
       let payeeId = payeeByName.get(contactNameLower);
