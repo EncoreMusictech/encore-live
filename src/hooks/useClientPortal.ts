@@ -575,10 +575,17 @@ export const useClientPortal = () => {
   };
 
   useEffect(() => {
+    console.log('🔍 useClientPortal useEffect triggered');
+    console.log('🔍 User object:', user);
+    console.log('🔍 User ID:', user?.id);
+    
     if (user) {
+      console.log('🔍 User exists, calling fetch functions...');
       fetchClientAccess();
       fetchInvitations();
       fetchDataAssociations();
+    } else {
+      console.log('🔍 No user found, skipping fetch operations');
     }
   }, [user]);
 

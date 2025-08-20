@@ -732,6 +732,14 @@ export default function ClientAdminPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Debug info */}
+              <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
+                <strong>Debug:</strong> clientAccess.length = {clientAccess.length}
+                {clientAccess.length > 0 && (
+                  <div>First record ID: {clientAccess[0]?.id}</div>
+                )}
+              </div>
+              
               {clientAccess.length === 0 ? (
                 <p className="text-muted-foreground">No active client access</p>
               ) : (
