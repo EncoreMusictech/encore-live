@@ -88,7 +88,7 @@ export function SongEstimatorTool() {
                 New Songwriter Research
               </h2>
               <p className="text-muted-foreground">
-                Search MLC database first, then cross-verify with other PROs to identify registration gaps and uncollected royalty opportunities
+                Enter a songwriter's name to begin comprehensive catalog analysis
               </p>
             </div>
             <div className="flex gap-4">
