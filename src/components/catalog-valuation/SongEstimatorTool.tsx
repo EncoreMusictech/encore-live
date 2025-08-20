@@ -258,7 +258,15 @@ export function SongEstimatorTool() {
                       PRO Registrations
                     </h4>
                     <Button
-                      onClick={() => runBulkBMIVerification(currentSearch.id)}
+                      onClick={async () => {
+                        // Run verification across all major PROs
+                        await runBulkBMIVerification(currentSearch.id);
+                        // TODO: Add ASCAP, SESAC, and other PRO verifications when available
+                        await runAIResearch(currentSearch.id, currentSearch.songwriter_name, 'metadata_enhancement', {
+                          verification_focus: 'all_pros',
+                          pros_to_verify: ['ASCAP', 'BMI', 'SESAC', 'PRS', 'SOCAN', 'GEMA', 'SACEM']
+                        });
+                      }}
                       disabled={bmiVerificationLoading || !songMetadata.length}
                       variant="outline"
                       size="sm"
