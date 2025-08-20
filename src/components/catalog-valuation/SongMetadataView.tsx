@@ -127,68 +127,6 @@ export function SongMetadataView({ searchId, songMetadata }: SongMetadataViewPro
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Music className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total Songs</p>
-                <p className="text-2xl font-bold">{totalSongs}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Database className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">MLC Verified</p>
-                <p className="text-2xl font-bold">{mlcVerifiedSongs}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-success" />
-              <div>
-                <p className="text-sm text-muted-foreground">High Quality</p>
-                <p className="text-2xl font-bold">{highQualitySongs}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              <div>
-                <p className="text-sm text-muted-foreground">Registration Gaps</p>
-                <p className="text-2xl font-bold">{registrationGaps}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Building className="h-5 w-5 text-info" />
-              <div>
-                <p className="text-sm text-muted-foreground">Data Quality</p>
-                <p className="text-2xl font-bold">{Math.round(averageDataQuality * 100)}%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Songs Table */}
       <Card>
         <CardHeader>
