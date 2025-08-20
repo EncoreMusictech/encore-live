@@ -690,7 +690,7 @@ export function useQuarterlyBalanceReports() {
     try {
       console.log('🔄 Generating missing quarterly balance reports from existing payouts...');
       
-      // Get all payouts with client contact information
+      // Get all payouts with client contact information in batches to avoid memory issues
       const { data: payouts } = await supabase
         .from('payouts')
         .select(`
@@ -699,12 +699,19 @@ export function useQuarterlyBalanceReports() {
           contacts!payouts_client_id_fkey(id, name)
         `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(1000); // Limit to prevent overwhelming the database
 
       if (!payouts || payouts.length === 0) {
         console.log('No payouts found to generate reports from');
+        toast({
+          title: "No Data",
+          description: "No payouts found to generate reports from",
+        });
         return;
       }
+
+      console.log(`Processing ${payouts.length} payouts...`);
 
       // Get all payees for name mapping
       const { data: payees } = await supabase
@@ -715,6 +722,8 @@ export function useQuarterlyBalanceReports() {
       const payeeByName = new Map<string, string>(
         (payees || []).map(p => [String(p.payee_name || '').toLowerCase().trim(), p.id])
       );
+
+      console.log(`Found ${payees?.length || 0} payees for mapping`);
 
       // Group payouts by payee and quarter
       const reportData = new Map<string, {
@@ -727,6 +736,7 @@ export function useQuarterlyBalanceReports() {
         payments_amount: number;
       }>();
 
+      let processedCount = 0;
       for (const payout of payouts as any[]) {
         const periodDate = payout.period_start || payout.created_at;
         const d = new Date(periodDate);
@@ -736,13 +746,14 @@ export function useQuarterlyBalanceReports() {
         const contactName = payout.contacts?.name || 'Unknown';
         const contactNameLower = contactName.toLowerCase().trim();
         
-        // Find matching payee ID
+        // Find matching payee ID with improved matching
         let payeeId = payeeByName.get(contactNameLower);
         if (!payeeId) {
           // Try partial matching
           for (const [payeeName, id] of payeeByName.entries()) {
             if (payeeName.includes(contactNameLower) || contactNameLower.includes(payeeName)) {
               payeeId = id;
+              console.log(`🔗 Matched "${contactName}" to payee "${payeeName}"`);
               break;
             }
           }
@@ -776,7 +787,14 @@ export function useQuarterlyBalanceReports() {
         if (isPaid) {
           entry.payments_amount += Number(payout.amount_due || 0);
         }
+
+        processedCount++;
+        if (processedCount % 100 === 0) {
+          console.log(`Processed ${processedCount}/${payouts.length} payouts...`);
+        }
       }
+
+      console.log(`Grouped into ${reportData.size} quarterly periods`);
 
       // Generate reports with proper opening/closing balances
       const reportsToInsert = [];
@@ -788,14 +806,16 @@ export function useQuarterlyBalanceReports() {
         byPayee.get(data.payee_id)!.push(data);
       }
 
+      console.log(`Processing ${byPayee.size} unique payees...`);
+
       // Calculate running balances for each payee
       for (const [payeeId, entries] of byPayee) {
         entries.sort((a, b) => (a.year - b.year) || (a.quarter - b.quarter));
         
         let runningBalance = 0;
         for (const entry of entries) {
-          const openingBalance = runningBalance;
-          const closingBalance = openingBalance + entry.royalties_amount - entry.expenses_amount - entry.payments_amount;
+          const openingBalance = Number(runningBalance.toFixed(2));
+          const closingBalance = Number((openingBalance + entry.royalties_amount - entry.expenses_amount - entry.payments_amount).toFixed(2));
           
           reportsToInsert.push({
             user_id: user.id,
@@ -804,9 +824,9 @@ export function useQuarterlyBalanceReports() {
             year: entry.year,
             quarter: entry.quarter,
             opening_balance: openingBalance,
-            royalties_amount: entry.royalties_amount,
-            expenses_amount: entry.expenses_amount,
-            payments_amount: entry.payments_amount,
+            royalties_amount: Number(entry.royalties_amount.toFixed(2)),
+            expenses_amount: Number(entry.expenses_amount.toFixed(2)),
+            payments_amount: Number(entry.payments_amount.toFixed(2)),
             closing_balance: closingBalance,
             is_calculated: true,
             calculation_date: new Date().toISOString(),
@@ -818,33 +838,58 @@ export function useQuarterlyBalanceReports() {
 
       if (reportsToInsert.length === 0) {
         console.log('No reports to generate');
+        toast({
+          title: "No Reports",
+          description: "No quarterly balance reports could be generated from the available data",
+        });
         return;
       }
 
-      // Insert the reports (upsert to handle duplicates)
-      const { error } = await supabase
-        .from('quarterly_balance_reports')
-        .upsert(reportsToInsert, {
-          onConflict: 'user_id,payee_id,year,quarter'
-        });
+      console.log(`Preparing to insert ${reportsToInsert.length} reports...`);
 
-      if (error) throw error;
+      // Process in smaller batches to avoid stack depth issues
+      const BATCH_SIZE = 50;
+      let insertedCount = 0;
+      
+      for (let i = 0; i < reportsToInsert.length; i += BATCH_SIZE) {
+        const batch = reportsToInsert.slice(i, i + BATCH_SIZE);
+        console.log(`Inserting batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(reportsToInsert.length/BATCH_SIZE)} (${batch.length} records)...`);
+        
+        const { error } = await supabase
+          .from('quarterly_balance_reports')
+          .upsert(batch, {
+            onConflict: 'user_id,payee_id,year,quarter'
+          });
 
-      console.log(`✅ Generated ${reportsToInsert.length} quarterly balance reports`);
+        if (error) {
+          console.error(`Error inserting batch ${i/BATCH_SIZE + 1}:`, error);
+          throw error;
+        }
+        
+        insertedCount += batch.length;
+        
+        // Small delay between batches to prevent overwhelming the database
+        if (i + BATCH_SIZE < reportsToInsert.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      console.log(`✅ Successfully generated ${insertedCount} quarterly balance reports`);
       
       // Refresh the reports view
       await fetchReports();
       
       toast({
         title: "Success",
-        description: `Generated ${reportsToInsert.length} quarterly balance reports from existing payout data`,
+        description: `Generated ${insertedCount} quarterly balance reports from existing payout data`,
       });
 
     } catch (error: any) {
       console.error('Error generating missing reports:', error);
+      const errorMessage = error?.message || 'Unknown error occurred';
       toast({
         title: "Error",
-        description: "Failed to generate quarterly balance reports",
+        description: `Failed to generate quarterly balance reports: ${errorMessage}`,
         variant: "destructive",
       });
     }
