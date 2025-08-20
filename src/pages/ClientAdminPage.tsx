@@ -10,14 +10,15 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useClientPortal } from "@/hooks/useClientPortal";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Mail, Users, Database, Clock, AlertTriangle, CheckCircle, XCircle, RefreshCw, Pencil, Trash2, Check, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ArrowLeft, Plus, Mail, Users, Database, Clock, AlertTriangle, CheckCircle, XCircle, RefreshCw, Pencil, Trash2, Check, X, Eye } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { ClientPortalTestHelper } from "@/components/ClientPortalTestHelper";
 import { NameLinker } from "@/components/client-portal/NameLinker";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function ClientAdminPage() {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     updatePageMetadata('clientPortal');
@@ -734,8 +735,9 @@ export default function ClientAdminPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => window.location.href = `/client-portal?client_id=${access.client_user_id}`}
+                          onClick={() => navigate(`/client-portal?client_id=${access.client_user_id}`)}
                         >
+                          <Eye className="h-4 w-4 mr-2" />
                           View Client Portal
                         </Button>
                         <Button
