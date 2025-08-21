@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, TrendingUp, Calculator, Clock } from "lucide-react";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
+import { useControlledWriters } from "@/hooks/useControlledWriters";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
 
@@ -32,6 +33,45 @@ export default function CRMRoyaltiesPage() {
     loading
   } = useRoyaltyAllocations();
   
+  const { writers: controlledWriters, loading: writersLoading } = useControlledWriters();
+  
+  // Calculate analytics data for key metrics
+  const analyticsData = useMemo(() => {
+    // Find top performing song and songwriter
+    const songPerformance = allocations.reduce((acc, allocation) => {
+      const song = allocation.song_title || 'Unknown';
+      acc[song] = (acc[song] || 0) + allocation.gross_royalty_amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const topSong = Object.entries(songPerformance)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
+    // Calculate top performing controlled songwriter
+    const songwriterPerformance = allocations.reduce((acc, allocation) => {
+      // Find controlled writers associated with this allocation
+      const associatedWriters = controlledWriters.filter(writer => 
+        allocation.song_title && writer.name
+      );
+      
+      if (associatedWriters.length > 0) {
+        associatedWriters.forEach(writer => {
+          acc[writer.name] = (acc[writer.name] || 0) + allocation.gross_royalty_amount;
+        });
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    const topSongwriter = Object.entries(songwriterPerformance)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
+    return {
+      total: allocations.reduce((sum, a) => sum + a.gross_royalty_amount, 0),
+      topSong,
+      topSongwriter
+    };
+  }, [allocations, controlledWriters]);
+  
   const totalRoyalties = allocations.reduce((sum, allocation) => sum + allocation.gross_royalty_amount, 0);
   const controlledWorks = allocations.filter(allocation => allocation.controlled_status === 'Controlled').length;
   const recoupableWorks = allocations.filter(allocation => allocation.recoupable_expenses).length;
@@ -47,7 +87,41 @@ export default function CRMRoyaltiesPage() {
         </div>
       </div>
 
-      
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${analyticsData.total.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">From all royalties</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Top Performing Song</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analyticsData.topSong || 'N/A'}</div>
+            <p className="text-xs text-muted-foreground">Highest earning track</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Top Performing Songwriter</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analyticsData.topSongwriter || 'N/A'}</div>
+            <p className="text-xs text-muted-foreground">Highest earning artist</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-6">

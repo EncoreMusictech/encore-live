@@ -555,42 +555,6 @@ export function RoyaltiesAnalyticsDashboard() {
         )}
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${analyticsData.total.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">From all royalties</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top Performing Song</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{analyticsData.topSong || 'N/A'}</div>
-            <p className="text-xs text-muted-foreground">Highest earning track</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top Performing Songwriter</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{analyticsData.topSongwriter || 'N/A'}</div>
-            <p className="text-xs text-muted-foreground">Highest earning artist</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* AI Insights */}
       {aiInsights && (
         <Card>
