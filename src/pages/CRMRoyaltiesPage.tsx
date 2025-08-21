@@ -282,7 +282,7 @@ export default function CRMRoyaltiesPage() {
                     <DollarSign className="h-4 w-4 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Gross Royalties</p>
+                    <p className="text-sm text-muted-foreground">Total Value</p>
                     <p className="text-xl font-bold">$2,622,000</p>
                   </div>
                 </div>
