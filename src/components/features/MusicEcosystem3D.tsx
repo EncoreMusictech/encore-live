@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Text, Sphere } from '@react-three/drei';
+import { OrbitControls, Text, Sphere, Box, Cylinder } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface EcosystemNodeProps {
@@ -10,12 +10,12 @@ interface EcosystemNodeProps {
   size?: number;
 }
 
-const EcosystemNode: React.FC<EcosystemNodeProps> = ({ position, text, color, size = 0.5 }) => {
+const EcosystemNode: React.FC<EcosystemNodeProps> = ({ position, text, color, size = 0.4 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+      meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
     }
   });
 
@@ -25,11 +25,12 @@ const EcosystemNode: React.FC<EcosystemNodeProps> = ({ position, text, color, si
         <meshStandardMaterial color={color} />
       </Sphere>
       <Text
-        position={[0, -0.8, 0]}
-        fontSize={0.2}
+        position={[0, -0.7, 0]}
+        fontSize={0.15}
         color="white"
         anchorX="center"
         anchorY="middle"
+        maxWidth={1.5}
       >
         {text}
       </Text>
@@ -37,25 +38,59 @@ const EcosystemNode: React.FC<EcosystemNodeProps> = ({ position, text, color, si
   );
 };
 
-const SimpleConnectingLine: React.FC<{ start: [number, number, number]; end: [number, number, number] }> = ({ start, end }) => {
-  const points = [new THREE.Vector3(...start), new THREE.Vector3(...end)];
+const CentralArtist: React.FC = () => {
+  const groupRef = useRef<THREE.Group>(null);
+  
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.2) * 0.05;
+    }
+  });
 
   return (
-    <line>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={points.length}
-          array={new Float32Array(points.flatMap(p => [p.x, p.y, p.z]))}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <lineBasicMaterial color="#8B5CF6" opacity={0.4} transparent />
-    </line>
+    <group ref={groupRef} position={[0, 0, 0]}>
+      {/* Artist head */}
+      <Sphere args={[0.4]} position={[0, 0.5, 0]}>
+        <meshStandardMaterial color="#F59E0B" />
+      </Sphere>
+      
+      {/* Artist body */}
+      <Cylinder args={[0.3, 0.4, 0.8]} position={[0, -0.2, 0]}>
+        <meshStandardMaterial color="#3B82F6" />
+      </Cylinder>
+      
+      {/* Headphones */}
+      <Box args={[0.6, 0.1, 0.1]} position={[0, 0.6, 0]}>
+        <meshStandardMaterial color="#1F2937" />
+      </Box>
+      <Sphere args={[0.15]} position={[-0.3, 0.5, 0]}>
+        <meshStandardMaterial color="#1F2937" />
+      </Sphere>
+      <Sphere args={[0.15]} position={[0.3, 0.5, 0]}>
+        <meshStandardMaterial color="#1F2937" />
+      </Sphere>
+      
+      {/* Label */}
+      <Text
+        position={[0, -1.2, 0]}
+        fontSize={0.25}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+        font="/fonts/inter-bold.woff"
+      >
+        ARTIST
+      </Text>
+    </group>
   );
 };
 
-const RotatingGroup: React.FC<{ children: React.ReactNode; speed: number }> = ({ children, speed }) => {
+const RotatingRing: React.FC<{ 
+  nodes: Array<{ text: string; color: string; angle: number }>;
+  radius: number;
+  speed: number;
+  yPosition?: number;
+}> = ({ nodes, radius, speed, yPosition = 0 }) => {
   const groupRef = useRef<THREE.Group>(null);
   
   useFrame((state) => {
@@ -64,127 +99,152 @@ const RotatingGroup: React.FC<{ children: React.ReactNode; speed: number }> = ({
     }
   });
 
-  return <group ref={groupRef}>{children}</group>;
-};
-
-const MusicEcosystem3DScene: React.FC = () => {
-  // Central artist
-  const centralArtist = (
-    <group position={[0, 0, 0]}>
-      <Sphere args={[0.8]}>
-        <meshStandardMaterial color="#F59E0B" />
-      </Sphere>
-      <Text
-        position={[0, -1.2, 0]}
-        fontSize={0.3}
-        color="white"
-        anchorX="center"
-        anchorY="middle"
-      >
-        ARTIST
-      </Text>
+  return (
+    <group ref={groupRef}>
+      {nodes.map((node, index) => {
+        const position: [number, number, number] = [
+          Math.cos(node.angle) * radius,
+          yPosition,
+          Math.sin(node.angle) * radius,
+        ];
+        return (
+          <EcosystemNode
+            key={`${node.text}-${index}`}
+            position={position}
+            text={node.text}
+            color={node.color}
+            size={0.35}
+          />
+        );
+      })}
     </group>
   );
+};
 
-  // Inner circle organizations - PROs and key entities
-  const innerCircleNodes = [
-    { text: "ASCAP", color: "#3B82F6", angle: 0 },
-    { text: "BMI", color: "#1F2937", angle: Math.PI / 2 },
-    { text: "SESAC", color: "#EF4444", angle: Math.PI },
-    { text: "MLC", color: "#10B981", angle: (3 * Math.PI) / 2 },
-  ];
-
-  // Outer circle - streaming platforms and distributors
-  const outerCircleNodes = [
-    { text: "Spotify", color: "#22C55E", angle: 0 },
-    { text: "Apple", color: "#6B7280", angle: Math.PI / 4 },
-    { text: "YouTube", color: "#EF4444", angle: Math.PI / 2 },
-    { text: "Amazon", color: "#1D4ED8", angle: (3 * Math.PI) / 4 },
-    { text: "Netflix", color: "#DC2626", angle: Math.PI },
-    { text: "Hulu", color: "#22C55E", angle: (5 * Math.PI) / 4 },
-    { text: "PRS", color: "#DC2626", angle: (3 * Math.PI) / 2 },
-    { text: "PPL", color: "#EA580C", angle: (7 * Math.PI) / 4 },
-  ];
+const FloatingMusicalNotes: React.FC = () => {
+  const notesData = useMemo(() => [
+    { position: [-4, 2, -2], scale: 0.8, speed: 0.5 },
+    { position: [4, 1.5, -3], scale: 1.2, speed: 0.3 },
+    { position: [-3, -1, 4], scale: 0.9, speed: 0.7 },
+    { position: [3.5, -0.5, 3], scale: 1.1, speed: 0.4 },
+    { position: [-5, 0.5, 1], scale: 0.7, speed: 0.6 },
+    { position: [5, 2.5, -1], scale: 1.0, speed: 0.35 },
+  ], []);
 
   return (
     <>
-      {/* Ambient lighting */}
-      <ambientLight intensity={0.6} />
-      <pointLight position={[10, 10, 10]} intensity={1} />
+      {notesData.map((note, index) => (
+        <FloatingNote
+          key={index}
+          position={note.position as [number, number, number]}
+          scale={note.scale}
+          speed={note.speed}
+        />
+      ))}
+    </>
+  );
+};
 
-      {/* Central artist */}
-      {centralArtist}
+const FloatingNote: React.FC<{
+  position: [number, number, number];
+  scale: number;
+  speed: number;
+}> = ({ position, scale, speed }) => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * speed) * 0.5;
+      meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * speed * 0.5) * 0.2;
+    }
+  });
 
-      {/* Inner circle with slow rotation */}
-      <RotatingGroup speed={0.1}>
-        {innerCircleNodes.map((node, index) => {
-          const position: [number, number, number] = [
-            Math.cos(node.angle) * 3,
-            0,
-            Math.sin(node.angle) * 3,
-          ];
-          return (
-            <React.Fragment key={`inner-${index}`}>
-              <EcosystemNode
-                position={position}
-                text={node.text}
-                color={node.color}
-                size={0.4}
-              />
-              <SimpleConnectingLine start={[0, 0, 0]} end={position} />
-            </React.Fragment>
-          );
-        })}
-      </RotatingGroup>
+  return (
+    <group position={position} scale={scale}>
+      <Text
+        ref={meshRef}
+        fontSize={0.8}
+        color="#60A5FA"
+        anchorX="center"
+        anchorY="middle"
+      >
+        ♪
+      </Text>
+    </group>
+  );
+};
 
-      {/* Outer circle with slower rotation */}
-      <RotatingGroup speed={-0.05}>
-        {outerCircleNodes.map((node, index) => {
-          const position: [number, number, number] = [
-            Math.cos(node.angle) * 6,
-            0,
-            Math.sin(node.angle) * 6,
-          ];
-          return (
-            <React.Fragment key={`outer-${index}`}>
-              <EcosystemNode
-                position={position}
-                text={node.text}
-                color={node.color}
-                size={0.3}
-              />
-              <SimpleConnectingLine 
-                start={[
-                  Math.cos(innerCircleNodes[index % innerCircleNodes.length].angle) * 3,
-                  0,
-                  Math.sin(innerCircleNodes[index % innerCircleNodes.length].angle) * 3,
-                ]} 
-                end={position} 
-              />
-            </React.Fragment>
-          );
-        })}
-      </RotatingGroup>
+const MusicEcosystem3DScene: React.FC = () => {
+  // Inner circle - PROs and core entities
+  const innerCircleNodes = useMemo(() => [
+    { text: "ASCAP", color: "#3B82F6", angle: 0 },
+    { text: "BMI", color: "#1F2937", angle: Math.PI / 3 },
+    { text: "SESAC", color: "#EF4444", angle: (2 * Math.PI) / 3 },
+    { text: "The MLC", color: "#10B981", angle: Math.PI },
+    { text: "SWR", color: "#8B5CF6", angle: (4 * Math.PI) / 3 },
+    { text: "DDEX", color: "#F59E0B", angle: (5 * Math.PI) / 3 },
+  ], []);
+
+  // Outer circle - streaming platforms and media
+  const outerCircleNodes = useMemo(() => [
+    { text: "PRS", color: "#DC2626", angle: 0 },
+    { text: "PPL", color: "#EA580C", angle: Math.PI / 4 },
+    { text: "Spotify", color: "#22C55E", angle: Math.PI / 2 },
+    { text: "Amazon Music", color: "#1D4ED8", angle: (3 * Math.PI) / 4 },
+    { text: "YouTube", color: "#EF4444", angle: Math.PI },
+    { text: "iTunes", color: "#6B7280", angle: (5 * Math.PI) / 4 },
+    { text: "Hulu", color: "#22C55E", angle: (3 * Math.PI) / 2 },
+    { text: "Netflix", color: "#DC2626", angle: (7 * Math.PI) / 4 },
+  ], []);
+
+  return (
+    <>
+      {/* Lighting */}
+      <ambientLight intensity={0.4} />
+      <pointLight position={[10, 10, 10]} intensity={0.8} />
+      <pointLight position={[-10, -10, -10]} intensity={0.3} color="#8B5CF6" />
+
+      {/* Central Artist */}
+      <CentralArtist />
+
+      {/* Inner Ring - PROs */}
+      <RotatingRing
+        nodes={innerCircleNodes}
+        radius={2.5}
+        speed={0.08}
+        yPosition={0}
+      />
+
+      {/* Outer Ring - Platforms */}
+      <RotatingRing
+        nodes={outerCircleNodes}
+        radius={4.5}
+        speed={-0.05}
+        yPosition={0}
+      />
+
+      {/* Floating Musical Notes */}
+      <FloatingMusicalNotes />
     </>
   );
 };
 
 const MusicEcosystem3D: React.FC = () => {
   return (
-    <div className="w-full h-[600px] relative">
+    <div className="w-full h-[600px] relative bg-gradient-to-b from-slate-900 to-slate-800 rounded-lg overflow-hidden">
       <Canvas
-        camera={{ position: [0, 5, 12], fov: 60 }}
-        className="bg-gradient-to-b from-slate-900 to-slate-800"
+        camera={{ position: [0, 3, 8], fov: 60 }}
+        gl={{ antialias: true, alpha: true }}
       >
         <MusicEcosystem3DScene />
         <OrbitControls
           enableZoom={true}
           enablePan={false}
           maxPolarAngle={Math.PI / 2}
-          minDistance={8}
-          maxDistance={20}
+          minDistance={6}
+          maxDistance={15}
           autoRotate={true}
-          autoRotateSpeed={0.5}
+          autoRotateSpeed={0.3}
         />
       </Canvas>
       

@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Check, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import MusicEcosystemVisualization from "@/components/features/MusicEcosystemVisualization";
+import MusicEcosystem3D from "@/components/features/MusicEcosystem3D";
 const Index = () => {
   const {
     toast
@@ -70,8 +70,10 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Music Ecosystem Visualization */}
-      <MusicEcosystemVisualization />
+      {/* Music Ecosystem 3D Visualization */}
+      <section className="py-20 px-4">
+        <MusicEcosystem3D />
+      </section>
 
       {/* Pricing Section */}
       <section id="pricing" className="py-20 bg-background">
