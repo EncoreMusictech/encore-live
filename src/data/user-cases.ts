@@ -150,12 +150,12 @@ export const userCases: UserCase[] = [
     icon: TrendingUp,
     audience: "Investment funds, catalog buyers/sellers, A&R executives",
     isPopular: true,
-    primaryModules: ["catalog-valuation", "royalties-processing", "contract-management"],
+    primaryModules: ["catalog-valuation", "contract-management"],
     workflows: [
       {
         title: "Due Diligence & Valuation",
         description: "Analyze catalog performance, forecast revenues, and simulate deal structures",
-        modules: ["catalog-valuation", "royalties-processing"]
+        modules: ["catalog-valuation"]
       },
       {
         title: "Deal Structuring & Modeling",
@@ -164,8 +164,8 @@ export const userCases: UserCase[] = [
       },
       {
         title: "Portfolio Management",
-        description: "Track performance of acquired catalogs and manage ongoing royalties",
-        modules: ["royalties-processing", "contract-management"]
+        description: "Track performance of acquired catalogs and manage ongoing contracts",
+        modules: ["contract-management"]
       }
     ],
     benefits: [
