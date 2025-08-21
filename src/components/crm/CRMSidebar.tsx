@@ -25,7 +25,7 @@ const mainModules: ModuleItem[] = [{
 }, {
   id: "catalog-valuation",
   title: "Catalog Valuation",
-  url: "/dashboard/catalog-valuation",
+  url: "/catalog-valuation",
   icon: TrendingUp,
   description: "AI-powered catalog assessment"
 }, {

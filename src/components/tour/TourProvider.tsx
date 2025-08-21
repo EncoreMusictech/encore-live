@@ -47,9 +47,9 @@ const DEMO_TOURS = {
         id: 'catalog-valuation',
         title: 'Catalog Valuation',
         content: 'Start here! Search for any artist to see AI-powered catalog valuations, streaming analytics, and deal projections. This gives you market insights for investment decisions. Click Next to visit this module.',
-        target: '[href="/dashboard/catalog-valuation"]',
+        target: '[href="/catalog-valuation"]',
         position: 'bottom' as const,
-        navigateTo: '/dashboard/catalog-valuation'
+        navigateTo: '/catalog-valuation'
       },
       {
         id: 'contracts',
@@ -148,7 +148,7 @@ const DEMO_TOURS = {
         content: 'Now let\'s explore deal modeling. This 4-step process lets you search artists, select specific assets, configure deal terms, and run financial projections. Click the Deal Analysis tab.',
         target: '[value="deal-analysis"]',
         position: 'bottom' as const,
-        navigateTo: '/dashboard/catalog-valuation'
+        navigateTo: '/catalog-valuation'
       },
       {
         id: 'deal-tabs-overview',
@@ -528,7 +528,7 @@ export const TourProvider = ({ children }: { children: React.ReactNode }) => {
     if (tour) {
       // For module-specific tours, navigate to the module first
       const moduleRoutes = {
-        'catalog-valuation': '/dashboard/catalog-valuation',
+        'catalog-valuation': '/catalog-valuation',
         'contracts': '/dashboard/contracts',
         'copyright': '/dashboard/copyright',
         'sync': '/dashboard/sync',

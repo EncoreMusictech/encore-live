@@ -127,7 +127,7 @@ const ModuleFeatureModal = ({ isOpen, onClose, module }: ModuleFeatureModalProps
       
       // Navigate to the appropriate module path
       const modulePathMapping: Record<string, string> = {
-        "catalog-valuation": "/dashboard/catalog-valuation",
+        "catalog-valuation": "/catalog-valuation",
         "contract-management": "/dashboard/contracts",
         "copyright-management": "/dashboard/copyright", 
         "sync-licensing": "/dashboard/sync",

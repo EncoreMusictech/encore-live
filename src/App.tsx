@@ -74,10 +74,12 @@ const App = () => {
                         <Route index element={<Index />} />
                         
                         
+                        {/* Catalog Valuation - Standalone Route */}
+                        <Route path="/catalog-valuation" element={<CRMCatalogValuationPage />} />
+                        
                         {/* Dashboard Routes */}
                         <Route path="/dashboard" element={<CRMLayout />}>
                           <Route index element={<CRMPage />} />
-                          <Route path="catalog-valuation" element={<CRMCatalogValuationPage />} />
                           <Route path="contracts" element={<CRMContractsPage />} />
                           <Route path="copyright" element={<CRMCopyrightPage />} />
                           <Route path="sync" element={<CRMSyncPage />} />
