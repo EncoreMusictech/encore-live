@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Check, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import MusicEcosystem3D from "@/components/features/MusicEcosystem3D";
 const Index = () => {
   const {
     toast
@@ -66,6 +67,13 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-slide-up">
             {userCases.map(userCase => <UserCaseCard key={userCase.id} title={userCase.title} description={userCase.description} icon={userCase.icon} audience={userCase.audience} benefits={userCase.benefits} recommendedTier={userCase.recommendedTier} isPopular={userCase.isPopular} onGetStarted={() => handleGetStarted(userCase.id)} />)}
           </div>
+        </div>
+      </section>
+
+      {/* Music Ecosystem 3D Section */}
+      <section className="py-20 bg-secondary/20">
+        <div className="container mx-auto px-4">
+          <MusicEcosystem3D />
         </div>
       </section>
 
