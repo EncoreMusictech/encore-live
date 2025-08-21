@@ -113,7 +113,7 @@ const ContactPage = () => {
               <CardContent>
                 <p className="text-sm text-primary font-medium mb-4">+1 (555) 123-ENCORE</p>
                 <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                  Call Now
+                  Coming Soon
                 </Button>
               </CardContent>
             </Card>
