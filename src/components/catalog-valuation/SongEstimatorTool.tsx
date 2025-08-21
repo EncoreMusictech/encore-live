@@ -250,7 +250,7 @@ export function SongEstimatorTool() {
                 </div>
 
                 {/* Career Summary Card */}
-                <Card className="bg-gradient-career border-primary/20 text-white">{/*Using career-specific gradient to match design*/}
+                <Card className="bg-gradient-career border-primary/20 text-white">{/*Using career-specific gradient with dark navy colors*/}
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
