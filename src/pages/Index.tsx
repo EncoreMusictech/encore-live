@@ -69,105 +69,109 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Music Publishing Ecosystem Section */}
-      <section className="py-20 bg-gradient-to-br from-secondary/20 to-primary/10">
+      <section className="py-20 bg-gradient-to-br from-slate-900 to-slate-800 text-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16 animate-fade-in">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Navigate the Complex <span className="bg-gradient-primary bg-clip-text text-transparent">Music Ecosystem</span>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+              Navigate the Complex <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Music Ecosystem</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              The music publishing ecosystem involves dozens of stakeholders, rights organizations, and revenue streams. 
-              Our platform connects and manages them all in one unified system.
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              From PROs to streaming platforms, manage all your music rights in one unified platform
             </p>
           </div>
 
-          <div className="w-full max-w-6xl mx-auto">
-            {/* Central Publisher Hub */}
-            <div className="flex justify-center mb-12">
+          <div className="relative w-full h-[600px] max-w-6xl mx-auto overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700">
+            {/* Animated Background Musical Notes */}
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute text-2xl opacity-20 animate-pulse text-blue-300"
+                style={{
+                  left: `${10 + (i * 12)}%`,
+                  top: `${20 + ((i % 3) * 25)}%`,
+                  animationDelay: `${i * 0.5}s`,
+                  animationDuration: '3s'
+                }}
+              >
+                🎵
+              </div>
+            ))}
+
+            {/* Central Artist Hub */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
               <div className="relative">
-                <div className="w-32 h-32 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow">
-                  <span className="text-white font-bold text-lg">PUBLISHER</span>
+                <div className="w-32 h-32 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
+                  <span className="text-white font-bold text-lg">ARTIST</span>
                 </div>
-                {/* Connection lines */}
-                <div className="absolute inset-0 pointer-events-none">
-                  {[...Array(12)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute w-0.5 h-20 bg-gradient-to-b from-primary to-transparent origin-bottom"
-                      style={{
-                        left: '50%',
-                        top: '50%',
-                        transform: `translate(-50%, -50%) rotate(${i * 30}deg) translateY(-80px)`,
-                      }}
+                
+                {/* Connection Lines */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ width: '500px', height: '500px', left: '-184px', top: '-184px' }}>
+                  {[
+                    { x: 250, y: 100, angle: 0 }, // Spotify
+                    { x: 400, y: 150, angle: 30 }, // Apple
+                    { x: 450, y: 250, angle: 60 }, // BMI
+                    { x: 400, y: 350, angle: 90 }, // YouTube
+                    { x: 300, y: 400, angle: 120 }, // Amazon
+                    { x: 200, y: 400, angle: 150 }, // Netflix
+                    { x: 100, y: 350, angle: 180 }, // Hulu
+                    { x: 50, y: 250, angle: 210 }, // SESAC
+                    { x: 100, y: 150, angle: 240 }, // PRS
+                    { x: 200, y: 100, angle: 270 }, // MLC
+                    { x: 150, y: 50, angle: 300 }, // PPL
+                  ].map((item, index) => (
+                    <line
+                      key={index}
+                      x1="250"
+                      y1="250"
+                      x2={item.x}
+                      y2={item.y}
+                      stroke="rgba(139, 92, 246, 0.3)"
+                      strokeWidth="2"
+                      className="animate-pulse"
+                      style={{ animationDelay: `${index * 0.2}s` }}
                     />
                   ))}
+                </svg>
+              </div>
+            </div>
+
+            {/* Surrounding Platform Circles */}
+            {[
+              { name: "Spotify", color: "bg-green-500", top: "15%", left: "50%", size: "w-16 h-16" },
+              { name: "Apple", color: "bg-gray-600", top: "25%", left: "70%", size: "w-14 h-14" },
+              { name: "BMI", color: "bg-gray-800", top: "50%", left: "80%", size: "w-14 h-14" },
+              { name: "YouTube", color: "bg-red-600", top: "70%", left: "70%", size: "w-16 h-16" },
+              { name: "Amazon", color: "bg-blue-600", top: "80%", left: "50%", size: "w-14 h-14" },
+              { name: "Netflix", color: "bg-red-600", top: "80%", left: "30%", size: "w-16 h-16" },
+              { name: "Hulu", color: "bg-green-600", top: "70%", left: "15%", size: "w-14 h-14" },
+              { name: "SESAC", color: "bg-red-500", top: "50%", left: "10%", size: "w-16 h-16" },
+              { name: "PRS", color: "bg-red-800", top: "25%", left: "15%", size: "w-14 h-14" },
+              { name: "MLC", color: "bg-green-500", top: "15%", left: "30%", size: "w-14 h-14" },
+              { name: "PPL", color: "bg-orange-500", top: "8%", left: "40%", size: "w-12 h-12" },
+            ].map((platform, index) => (
+              <div
+                key={platform.name}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 animate-fade-in hover-scale"
+                style={{
+                  top: platform.top,
+                  left: platform.left,
+                  animationDelay: `${index * 0.3}s`
+                }}
+              >
+                <div className={`${platform.size} ${platform.color} rounded-full flex items-center justify-center shadow-lg hover:shadow-glow transition-all duration-300`}>
+                  <span className="text-white font-medium text-xs">
+                    {platform.name}
+                  </span>
                 </div>
               </div>
-            </div>
-
-            {/* Stakeholder Rings */}
-            <div className="space-y-16">
-              {/* Inner Ring - Core Creators */}
-              <div className="flex justify-center items-center gap-16 flex-wrap">
-                {[
-                  { name: "Songwriters", color: "bg-emerald-500" },
-                  { name: "Artists", color: "bg-pink-500" },
-                  { name: "Producers", color: "bg-orange-500" },
-                ].map((stakeholder) => (
-                  <div key={stakeholder.name} className="text-center">
-                    <div className={`w-20 h-20 ${stakeholder.color} rounded-full flex items-center justify-center mb-2 shadow-lg`}>
-                      <span className="text-white font-medium text-sm">{stakeholder.name.slice(0, 4)}</span>
-                    </div>
-                    <p className="text-sm font-medium">{stakeholder.name}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Middle Ring - Rights Organizations & Platforms */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 justify-items-center">
-                {[
-                  { name: "ASCAP", color: "bg-blue-500" },
-                  { name: "BMI", color: "bg-purple-600" },
-                  { name: "SESAC", color: "bg-pink-500" },
-                  { name: "MLC", color: "bg-emerald-500" },
-                  { name: "Spotify", color: "bg-green-500" },
-                  { name: "Apple Music", color: "bg-red-500" },
-                ].map((stakeholder) => (
-                  <div key={stakeholder.name} className="text-center">
-                    <div className={`w-16 h-16 ${stakeholder.color} rounded-full flex items-center justify-center mb-2 shadow-lg`}>
-                      <span className="text-white font-medium text-xs">{stakeholder.name.slice(0, 5)}</span>
-                    </div>
-                    <p className="text-xs font-medium">{stakeholder.name}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Outer Ring - International & Specialized */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-items-center">
-                {[
-                  { name: "GEMA", color: "bg-yellow-500" },
-                  { name: "SACEM", color: "bg-emerald-500" },
-                  { name: "PRS", color: "bg-blue-500" },
-                  { name: "SOCAN", color: "bg-pink-500" },
-                  { name: "Sync Agents", color: "bg-orange-500" },
-                  { name: "Sub-Publishers", color: "bg-purple-600" },
-                ].map((stakeholder) => (
-                  <div key={stakeholder.name} className="text-center">
-                    <div className={`w-12 h-12 ${stakeholder.color} rounded-full flex items-center justify-center mb-2 shadow-lg`}>
-                      <span className="text-white font-medium text-xs">{stakeholder.name.slice(0, 4)}</span>
-                    </div>
-                    <p className="text-xs font-medium">{stakeholder.name}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
 
           <div className="text-center mt-8">
-            <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-              <strong>Ecosystem Overview:</strong> Visual representation of how publishers connect with songwriters, PROs, streaming platforms, 
-              international CMOs, and sync agents in the complex music rights landscape.
+            <p className="text-sm text-gray-400 max-w-2xl mx-auto">
+              The music industry ecosystem is incredibly complex, with dozens of stakeholders,
+              rights organizations, and platforms. Our platform simplifies this complexity by
+              providing a single hub to manage all your music rights and royalties.
             </p>
           </div>
         </div>
