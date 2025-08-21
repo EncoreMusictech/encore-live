@@ -9,22 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
-  MessageCircle, 
-  Phone, 
-  Mail, 
-  Send, 
-  Search, 
-  Clock, 
-  CheckCircle,
-  AlertCircle,
-  FileText,
-  PlayCircle,
-  Users,
-  Star
-} from "lucide-react";
+import { MessageCircle, Phone, Mail, Send, Search, Clock, CheckCircle, AlertCircle, FileText, PlayCircle, Users, Star } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-
 const ContactPage = () => {
   const [ticketForm, setTicketForm] = useState({
     firstName: "",
@@ -35,15 +21,13 @@ const ContactPage = () => {
     subject: "",
     description: ""
   });
-
   const [searchQuery, setSearchQuery] = useState("");
-
   const handleTicketSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle ticket submission
     toast({
       title: "Support Ticket Submitted",
-      description: "We'll get back to you within 24 hours.",
+      description: "We'll get back to you within 24 hours."
     });
     // Reset form
     setTicketForm({
@@ -56,48 +40,31 @@ const ContactPage = () => {
       description: ""
     });
   };
-
-  const faqItems = [
-    "How do I register my first copyright in the system?",
-    "What royalty statement formats does ENCORE support?",
-    "How do I set up writer splits and allocations?",
-    "Can I integrate ENCORE with my existing accounting system?",
-    "What's the difference between controlled and non-controlled works?",
-    "How do I generate and send client statements?",
-    "What contract templates are available in the system?",
-    "How does the sync licensing pipeline work?"
-  ];
-
-  const recentTickets = [
-    {
-      id: "TIC-001",
-      subject: "Copyright registration parsing error",
-      status: "resolved",
-      daysAgo: 2
-    },
-    {
-      id: "TIC-002", 
-      subject: "Writer allocation calculation issue",
-      status: "in_progress",
-      daysAgo: 3
-    },
-    {
-      id: "TIC-003",
-      subject: "Royalty statement import failed",
-      status: "resolved", 
-      daysAgo: 7
-    }
-  ];
-
-  return (
-    <div className="min-h-screen bg-background">
+  const faqItems = ["How do I register my first copyright in the system?", "What royalty statement formats does ENCORE support?", "How do I set up writer splits and allocations?", "Can I integrate ENCORE with my existing accounting system?", "What's the difference between controlled and non-controlled works?", "How do I generate and send client statements?", "What contract templates are available in the system?", "How does the sync licensing pipeline work?"];
+  const recentTickets = [{
+    id: "TIC-001",
+    subject: "Copyright registration parsing error",
+    status: "resolved",
+    daysAgo: 2
+  }, {
+    id: "TIC-002",
+    subject: "Writer allocation calculation issue",
+    status: "in_progress",
+    daysAgo: 3
+  }, {
+    id: "TIC-003",
+    subject: "Royalty statement import failed",
+    status: "resolved",
+    daysAgo: 7
+  }];
+  return <div className="min-h-screen bg-background">
       <Header />
       
       {/* Hero Section with Record Groove Background */}
       <div className="relative overflow-hidden py-20">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
-          backgroundImage: `url('/lovable-uploads/ab53c16c-028b-497c-ac9f-feab103ef7de.png')`
-        }} />
+        backgroundImage: `url('/lovable-uploads/ab53c16c-028b-497c-ac9f-feab103ef7de.png')`
+      }} />
         <div className="absolute inset-0 bg-jet-black/40" />
         
         <div className="container mx-auto px-4 relative z-10">
@@ -160,7 +127,7 @@ const ContactPage = () => {
                 <CardDescription>Send us a detailed message</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-primary font-medium mb-4">support@encore.com</p>
+                <p className="text-sm text-primary font-medium mb-4">info@encoremusic.tech</p>
                 <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                   Send Email
                 </Button>
@@ -184,42 +151,35 @@ const ContactPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      placeholder="Enter your first name"
-                      value={ticketForm.firstName}
-                      onChange={(e) => setTicketForm({...ticketForm, firstName: e.target.value})}
-                      required
-                    />
+                    <Input id="firstName" placeholder="Enter your first name" value={ticketForm.firstName} onChange={e => setTicketForm({
+                    ...ticketForm,
+                    firstName: e.target.value
+                  })} required />
                   </div>
                   <div>
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      placeholder="Enter your last name"
-                      value={ticketForm.lastName}
-                      onChange={(e) => setTicketForm({...ticketForm, lastName: e.target.value})}
-                      required
-                    />
+                    <Input id="lastName" placeholder="Enter your last name" value={ticketForm.lastName} onChange={e => setTicketForm({
+                    ...ticketForm,
+                    lastName: e.target.value
+                  })} required />
                   </div>
                 </div>
 
                 <div>
                   <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={ticketForm.email}
-                    onChange={(e) => setTicketForm({...ticketForm, email: e.target.value})}
-                    required
-                  />
+                  <Input id="email" type="email" placeholder="Enter your email" value={ticketForm.email} onChange={e => setTicketForm({
+                  ...ticketForm,
+                  email: e.target.value
+                })} required />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="priority">Priority Level</Label>
-                    <Select value={ticketForm.priority} onValueChange={(value) => setTicketForm({...ticketForm, priority: value})}>
+                    <Select value={ticketForm.priority} onValueChange={value => setTicketForm({
+                    ...ticketForm,
+                    priority: value
+                  })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Low - General inquiry" />
                       </SelectTrigger>
@@ -234,7 +194,10 @@ const ContactPage = () => {
 
                   <div>
                     <Label htmlFor="category">Category</Label>
-                    <Select value={ticketForm.category} onValueChange={(value) => setTicketForm({...ticketForm, category: value})}>
+                    <Select value={ticketForm.category} onValueChange={value => setTicketForm({
+                    ...ticketForm,
+                    category: value
+                  })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Account & Billing" />
                       </SelectTrigger>
@@ -251,25 +214,18 @@ const ContactPage = () => {
 
                 <div>
                   <Label htmlFor="subject">Subject</Label>
-                  <Input
-                    id="subject"
-                    placeholder="Brief description of your issue"
-                    value={ticketForm.subject}
-                    onChange={(e) => setTicketForm({...ticketForm, subject: e.target.value})}
-                    required
-                  />
+                  <Input id="subject" placeholder="Brief description of your issue" value={ticketForm.subject} onChange={e => setTicketForm({
+                  ...ticketForm,
+                  subject: e.target.value
+                })} required />
                 </div>
 
                 <div>
                   <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Please provide detailed information about your issue..."
-                    rows={4}
-                    value={ticketForm.description}
-                    onChange={(e) => setTicketForm({...ticketForm, description: e.target.value})}
-                    required
-                  />
+                  <Textarea id="description" placeholder="Please provide detailed information about your issue..." rows={4} value={ticketForm.description} onChange={e => setTicketForm({
+                  ...ticketForm,
+                  description: e.target.value
+                })} required />
                 </div>
 
                 <Button type="submit" className="w-full bg-gradient-primary text-primary-foreground">
@@ -294,19 +250,12 @@ const ContactPage = () => {
               <CardContent className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search FAQs..."
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+                  <Input placeholder="Search FAQs..." className="pl-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  {faqItems.map((faq, index) => (
-                    <button key={index} className="w-full text-left p-2 hover:bg-muted rounded-md transition-colors text-sm">
+                  {faqItems.map((faq, index) => <button key={index} className="w-full text-left p-2 hover:bg-muted rounded-md transition-colors text-sm">
                       {faq}
-                    </button>
-                  ))}
+                    </button>)}
                 </div>
                 <Button variant="outline" className="w-full">View All FAQs</Button>
               </CardContent>
@@ -318,21 +267,15 @@ const ContactPage = () => {
                 <CardTitle>Your Recent Tickets</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {recentTickets.map((ticket) => (
-                  <div key={ticket.id} className="flex items-center justify-between p-3 border rounded-lg">
+                {recentTickets.map(ticket => <div key={ticket.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex-1">
                       <p className="font-medium text-sm">{ticket.subject}</p>
                       <p className="text-xs text-muted-foreground">#{ticket.id} • {ticket.daysAgo} days ago</p>
                     </div>
                     <Badge variant={ticket.status === "resolved" ? "default" : "secondary"} className="text-xs">
-                      {ticket.status === "resolved" ? (
-                        <><CheckCircle className="h-3 w-3 mr-1" />Resolved</>
-                      ) : (
-                        <><Clock className="h-3 w-3 mr-1" />In Progress</>
-                      )}
+                      {ticket.status === "resolved" ? <><CheckCircle className="h-3 w-3 mr-1" />Resolved</> : <><Clock className="h-3 w-3 mr-1" />In Progress</>}
                     </Badge>
-                  </div>
-                ))}
+                  </div>)}
               </CardContent>
             </Card>
 
@@ -342,11 +285,7 @@ const ContactPage = () => {
                 <CardTitle>Helpful Resources</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start"
-                  onClick={() => window.open('/documentation', '_blank')}
-                >
+                <Button variant="ghost" className="w-full justify-start" onClick={() => window.open('/documentation', '_blank')}>
                   <FileText className="h-4 w-4 mr-2" />
                   User Guide & Documentation
                 </Button>
@@ -372,11 +311,9 @@ const ContactPage = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-center gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button key={star} className="p-1">
+              {[1, 2, 3, 4, 5].map(star => <button key={star} className="p-1">
                   <Star className="h-6 w-6 text-yellow-400 fill-current" />
-                </button>
-              ))}
+                </button>)}
             </div>
             <Button className="bg-gradient-primary text-primary-foreground">
               Submit Rating
@@ -384,8 +321,6 @@ const ContactPage = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default ContactPage;
