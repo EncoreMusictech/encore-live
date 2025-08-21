@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, TrendingUp, Calculator, Clock } from "lucide-react";
+import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, TrendingUp, Calculator, Clock, Percent } from "lucide-react";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
@@ -218,16 +218,17 @@ export default function CRMRoyaltiesPage() {
           </div>
 
           {/* Overview Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-muted rounded">
-                    <FileText className="h-4 w-4" />
+                  <div className="p-2 bg-green-100 rounded">
+                    <DollarSign className="h-4 w-4 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Payouts</p>
-                    <p className="text-xl font-bold">11</p>
+                    <p className="text-sm text-muted-foreground">Gross Royalties</p>
+                    <p className="text-xl font-bold">$2,622,000</p>
+                    <p className="text-xs text-muted-foreground">Total royalties collected</p>
                   </div>
                 </div>
               </CardContent>
@@ -236,12 +237,13 @@ export default function CRMRoyaltiesPage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-yellow-100 rounded">
-                    <Clock className="h-4 w-4 text-yellow-600" />
+                  <div className="p-2 bg-red-100 rounded">
+                    <TrendingUp className="h-4 w-4 text-red-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Pending Review</p>
-                    <p className="text-xl font-bold">3</p>
+                    <p className="text-sm text-muted-foreground">Total Expenses</p>
+                    <p className="text-xl font-bold text-red-600">$150,000</p>
+                    <p className="text-xs text-muted-foreground">Remaining expenses</p>
                   </div>
                 </div>
               </CardContent>
@@ -251,11 +253,12 @@ export default function CRMRoyaltiesPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-blue-100 rounded">
-                    <TrendingUp className="h-4 w-4 text-blue-600" />
+                    <Calculator className="h-4 w-4 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Approved</p>
-                    <p className="text-xl font-bold">2</p>
+                    <p className="text-sm text-muted-foreground">Net Payable</p>
+                    <p className="text-xl font-bold">$2,147,000</p>
+                    <p className="text-xs text-muted-foreground">Total royalties due</p>
                   </div>
                 </div>
               </CardContent>
@@ -265,40 +268,12 @@ export default function CRMRoyaltiesPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-orange-100 rounded">
-                    <TrendingUp className="h-4 w-4 text-orange-600" />
+                    <Percent className="h-4 w-4 text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Processing</p>
-                    <p className="text-xl font-bold">0</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-green-100 rounded">
-                    <DollarSign className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Value</p>
-                    <p className="text-xl font-bold">$2,622,000</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-red-100 rounded">
-                    <TrendingUp className="h-4 w-4 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Expenses</p>
-                    <p className="text-xl font-bold text-red-600">$1,000,000</p>
-                    <p className="text-xs text-muted-foreground">1 pending approval</p>
+                    <p className="text-sm text-muted-foreground">Company Earnings</p>
+                    <p className="text-xl font-bold">$325,000</p>
+                    <p className="text-xs text-muted-foreground">Admin fees & commissions</p>
                   </div>
                 </div>
               </CardContent>
