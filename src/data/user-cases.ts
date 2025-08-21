@@ -78,7 +78,7 @@ export const userCases: UserCase[] = [
     icon: Building2,
     audience: "Independent publishers, boutique music companies",
     isPopular: true,
-    primaryModules: ["royalties-processing", "contract-management", "client-portal", "copyright-management"],
+    primaryModules: ["royalties-processing", "contract-management", "copyright-management"],
     workflows: [
       {
         title: "Catalog Management & Registration",
@@ -86,14 +86,14 @@ export const userCases: UserCase[] = [
         modules: ["copyright-management", "contract-management"]
       },
       {
-        title: "Royalty Processing & Client Statements",
+        title: "Royalty Processing & Statements",
         description: "Import royalty statements, allocate to rightsholders, and generate professional client statements",
-        modules: ["royalties-processing", "client-portal"]
+        modules: ["royalties-processing"]
       },
       {
         title: "Artist & Writer Management",
-        description: "Provide transparent reporting to artists and writers through secure client portals",
-        modules: ["client-portal", "contract-management"]
+        description: "Manage contracts and maintain transparent relationships with artists and writers",
+        modules: ["contract-management"]
       }
     ],
     benefits: [
