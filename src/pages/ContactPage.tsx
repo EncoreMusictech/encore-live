@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import LiveChatInterface from "@/components/LiveChatInterface";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ interface RecentTicket {
   daysAgo: number;
 }
 const ContactPage = () => {
+  const navigate = useNavigate();
   const [ticketForm, setTicketForm] = useState({
     firstName: "",
     lastName: "",
@@ -371,7 +373,7 @@ const ContactPage = () => {
                 <CardTitle>Helpful Resources</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="ghost" className="w-full justify-start" onClick={() => window.open('/documentation', '_blank')}>
+                <Button variant="ghost" className="w-full justify-start" onClick={() => navigate('/documentation')}>
                   <FileText className="h-4 w-4 mr-2" />
                   User Guide & Documentation
                 </Button>
