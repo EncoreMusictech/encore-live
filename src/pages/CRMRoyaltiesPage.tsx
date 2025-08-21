@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, TrendingUp, Calculator, Clock, Percent } from "lucide-react";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
+import { usePayouts } from "@/hooks/usePayouts";
+import { useExpenses } from "@/hooks/useExpenses";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
 
@@ -32,9 +34,17 @@ export default function CRMRoyaltiesPage() {
     loading
   } = useRoyaltyAllocations();
   
-  const totalRoyalties = allocations.reduce((sum, allocation) => sum + allocation.gross_royalty_amount, 0);
-  const controlledWorks = allocations.filter(allocation => allocation.controlled_status === 'Controlled').length;
-  const recoupableWorks = allocations.filter(allocation => allocation.recoupable_expenses).length;
+  const { payouts, loading: payoutsLoading } = usePayouts();
+  const { expenses, loading: expensesLoading } = useExpenses();
+  
+  // Calculate real metrics from payouts data
+  const grossRoyalties = payouts.reduce((sum, payout) => sum + (payout.gross_royalties || 0), 0);
+  const totalExpensesAmount = expenses
+    .filter(expense => expense.expense_status === 'approved')
+    .reduce((sum, expense) => sum + (expense.amount || 0), 0);
+  const netPayable = payouts.reduce((sum, payout) => sum + (payout.net_payable || 0), 0);
+  const companyEarnings = payouts.reduce((sum, payout) => 
+    sum + (payout.admin_fee_amount || 0) + (payout.processing_fee_amount || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -227,7 +237,7 @@ export default function CRMRoyaltiesPage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Gross Royalties</p>
-                    <p className="text-xl font-bold">$2,622,000</p>
+                    <p className="text-xl font-bold">${grossRoyalties.toLocaleString()}</p>
                     <p className="text-xs text-muted-foreground">Total royalties collected</p>
                   </div>
                 </div>
@@ -242,7 +252,7 @@ export default function CRMRoyaltiesPage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Expenses</p>
-                    <p className="text-xl font-bold text-red-600">$150,000</p>
+                    <p className="text-xl font-bold text-red-600">${totalExpensesAmount.toLocaleString()}</p>
                     <p className="text-xs text-muted-foreground">Remaining expenses</p>
                   </div>
                 </div>
@@ -257,7 +267,7 @@ export default function CRMRoyaltiesPage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Net Payable</p>
-                    <p className="text-xl font-bold">$2,147,000</p>
+                    <p className="text-xl font-bold">${netPayable.toLocaleString()}</p>
                     <p className="text-xs text-muted-foreground">Total royalties due</p>
                   </div>
                 </div>
@@ -272,7 +282,7 @@ export default function CRMRoyaltiesPage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Company Earnings</p>
-                    <p className="text-xl font-bold">$325,000</p>
+                    <p className="text-xl font-bold">${companyEarnings.toLocaleString()}</p>
                     <p className="text-xs text-muted-foreground">Admin fees & commissions</p>
                   </div>
                 </div>
