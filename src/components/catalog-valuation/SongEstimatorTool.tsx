@@ -255,7 +255,7 @@ export function SongEstimatorTool() {
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
                         <Music className="h-5 w-5" />
-                        {currentSearch.songwriter_name} - Career Summary
+                        {currentSearch.songwriter_name} - Career Highlights
                       </CardTitle>
                       <Button
                         onClick={() => {
