@@ -32,6 +32,9 @@ const ContactPage = () => {
     subject: "",
     description: ""
   });
+  const [rating, setRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [recentTickets, setRecentTickets] = useState<RecentTicket[]>([
     {
@@ -117,6 +120,16 @@ const ContactPage = () => {
       setIsSubmitting(false);
     }
   };
+  const handleRatingSubmit = () => {
+    if (rating > 0) {
+      setRatingSubmitted(true);
+      toast({
+        title: "Thank you!",
+        description: `Your ${rating}-star rating has been submitted.`,
+      });
+    }
+  };
+
   const faqItems = ["How do I register my first copyright in the system?", "What royalty statement formats does ENCORE support?", "How do I set up writer splits and allocations?", "Can I integrate ENCORE with my existing accounting system?", "What's the difference between controlled and non-controlled works?", "How do I generate and send client statements?", "What contract templates are available in the system?", "How does the sync licensing pipeline work?"];
   return <div className="min-h-screen bg-background">
       <Header />
@@ -401,14 +414,58 @@ const ContactPage = () => {
             <CardDescription>How was your experience with our support team?</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-center gap-2">
-              {[1, 2, 3, 4, 5].map(star => <button key={star} className="p-1">
-                  <Star className="h-6 w-6 text-yellow-400 fill-current" />
-                </button>)}
-            </div>
-            <Button className="bg-gradient-primary text-primary-foreground">
-              Submit Rating
-            </Button>
+            {!ratingSubmitted ? (
+              <>
+                <div className="flex justify-center gap-2">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button 
+                      key={star} 
+                      className="p-1 transition-transform hover:scale-110"
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoveredRating(star)}
+                      onMouseLeave={() => setHoveredRating(0)}
+                    >
+                      <Star 
+                        className={`h-6 w-6 transition-colors ${
+                          star <= (hoveredRating || rating) 
+                            ? 'text-yellow-400 fill-current' 
+                            : 'text-gray-300'
+                        }`} 
+                      />
+                    </button>
+                  ))}
+                </div>
+                <div className="text-center text-sm text-muted-foreground">
+                  {rating > 0 && `You rated us ${rating} star${rating !== 1 ? 's' : ''}`}
+                  {rating === 0 && 'Click a star to rate your experience'}
+                </div>
+                <Button 
+                  className="bg-gradient-primary text-primary-foreground w-full"
+                  onClick={handleRatingSubmit}
+                  disabled={rating === 0}
+                >
+                  Submit Rating
+                </Button>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <div className="flex justify-center gap-2 mb-2">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <Star 
+                      key={star}
+                      className={`h-6 w-6 ${
+                        star <= rating 
+                          ? 'text-yellow-400 fill-current' 
+                          : 'text-gray-300'
+                      }`} 
+                    />
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Thank you for your feedback!
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
