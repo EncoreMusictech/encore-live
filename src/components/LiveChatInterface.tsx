@@ -135,7 +135,7 @@ const LiveChatInterface = () => {
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="max-w-md h-[600px] p-0 gap-0">
+      <DialogContent className="max-w-sm max-h-[90vh] h-[80vh] p-0 gap-0">{/*Made responsive to fit screen better*/}
         <DialogHeader className="p-4 pb-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
