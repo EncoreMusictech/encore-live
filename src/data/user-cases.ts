@@ -183,7 +183,7 @@ export const userCases: UserCase[] = [
     description: "Labels and distributors managing artist catalogs and royalty distributions",
     icon: Radio,
     audience: "Independent labels, distribution companies, aggregators",
-    primaryModules: ["royalties-processing", "client-portal", "contract-management", "copyright-management"],
+    primaryModules: ["royalties-processing", "catalog-valuation", "contract-management", "copyright-management"],
     workflows: [
       {
         title: "Artist Onboarding & Catalog Setup",
@@ -193,19 +193,19 @@ export const userCases: UserCase[] = [
       {
         title: "Royalty Collection & Distribution",
         description: "Import DSP statements, allocate to artists, and generate transparent reports",
-        modules: ["royalties-processing", "client-portal"]
+        modules: ["royalties-processing"]
       },
       {
-        title: "Artist Relationship Management",
-        description: "Provide artists with real-time access to their earnings and catalog performance",
-        modules: ["client-portal"]
+        title: "Catalog Performance & Valuation",
+        description: "Analyze catalog performance, track asset values, and make data-driven A&R decisions",
+        modules: ["catalog-valuation"]
       }
     ],
     benefits: [
       "Automated royalty processing",
-      "Transparent artist reporting",
+      "Data-driven catalog insights",
       "Efficient catalog management",
-      "Professional artist portals",
+      "Professional valuation reports",
       "Scalable for growing rosters"
     ],
     recommendedTier: "Pro"
