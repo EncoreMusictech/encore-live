@@ -2130,6 +2130,7 @@ export type Database = {
           approved_by_user_id: string | null
           auto_payment_enabled: boolean | null
           client_id: string
+          commissions_amount: number | null
           created_at: string
           failure_reason: string | null
           gross_royalties: number
@@ -2157,6 +2158,7 @@ export type Database = {
           statement_pdf_url: string | null
           status: string | null
           total_expenses: number
+          total_royalties: number | null
           updated_at: string
           user_id: string
           workflow_stage: string | null
@@ -2170,6 +2172,7 @@ export type Database = {
           approved_by_user_id?: string | null
           auto_payment_enabled?: boolean | null
           client_id: string
+          commissions_amount?: number | null
           created_at?: string
           failure_reason?: string | null
           gross_royalties?: number
@@ -2197,6 +2200,7 @@ export type Database = {
           statement_pdf_url?: string | null
           status?: string | null
           total_expenses?: number
+          total_royalties?: number | null
           updated_at?: string
           user_id: string
           workflow_stage?: string | null
@@ -2210,6 +2214,7 @@ export type Database = {
           approved_by_user_id?: string | null
           auto_payment_enabled?: boolean | null
           client_id?: string
+          commissions_amount?: number | null
           created_at?: string
           failure_reason?: string | null
           gross_royalties?: number
@@ -2237,6 +2242,7 @@ export type Database = {
           statement_pdf_url?: string | null
           status?: string | null
           total_expenses?: number
+          total_royalties?: number | null
           updated_at?: string
           user_id?: string
           workflow_stage?: string | null

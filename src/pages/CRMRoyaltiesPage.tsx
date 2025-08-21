@@ -48,9 +48,8 @@ export default function CRMRoyaltiesPage() {
   const adminFees = payouts.reduce((sum, payout) => sum + (payout.admin_fee_amount || 0), 0);
   const processingFees = payouts.reduce((sum, payout) => sum + (payout.processing_fee_amount || 0), 0);
   const commissionEarnings = payouts.reduce((sum, payout) => {
-    // Commission is the difference between gross and net royalties for agreement-based payouts
-    const commission = (payout.gross_royalties || 0) - (payout.net_royalties || 0);
-    return sum + commission;
+    // Use the new commissions_amount field directly
+    return sum + (payout.commissions_amount || 0);
   }, 0);
   const companyEarnings = adminFees + processingFees + commissionEarnings;
 

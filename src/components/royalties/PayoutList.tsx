@@ -12,18 +12,30 @@ import { Search, Edit, Trash2, Download, FileText, DollarSign, ChevronDown, Play
 import { supabase } from "@/integrations/supabase/client";
 import { usePayouts } from "@/hooks/usePayouts";
 import { useAuth } from "@/hooks/useAuth";
+import { useClientPortal } from "@/hooks/useClientPortal";
 import { PayoutForm } from "./PayoutForm";
 import { toast } from "@/hooks/use-toast";
 
 export function PayoutList() {
   const { user } = useAuth();
+  const { isClient } = useClientPortal();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingPayout, setEditingPayout] = useState<any>(null);
   const [selectedPayouts, setSelectedPayouts] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [exportingStatement, setExportingStatement] = useState<string | null>(null);
+  const [isClientPortal, setIsClientPortal] = useState(false);
   const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts, getPayoutExpenses, recalculatePayoutExpenses } = usePayouts();
+
+  // Check if this is client portal view
+  useEffect(() => {
+    const checkClientStatus = async () => {
+      const clientStatus = await isClient();
+      setIsClientPortal(clientStatus);
+    };
+    checkClientStatus();
+  }, [isClient]);
 
   const filteredPayouts = payouts.filter(payout => {
     const matchesSearch = payout.period?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
@@ -333,6 +345,8 @@ export function PayoutList() {
               </TableHead>
               <TableHead>Period</TableHead>
               <TableHead>Payee Name</TableHead>
+              {!isClientPortal && <TableHead>Total Royalties</TableHead>}
+              {!isClientPortal && <TableHead>Commissions</TableHead>}
               <TableHead>Gross Royalties</TableHead>
               <TableHead>Total Expenses</TableHead>
               <TableHead>Net Royalties</TableHead>
@@ -358,6 +372,16 @@ export function PayoutList() {
                 <TableCell className="font-medium">
                   {payout.contacts?.name || 'No Contact Assigned'}
                 </TableCell>
+                {!isClientPortal && (
+                  <TableCell className="text-blue-600 font-medium">
+                    ${payout.total_royalties?.toLocaleString() || '0'}
+                  </TableCell>
+                )}
+                {!isClientPortal && (
+                  <TableCell className="text-orange-600">
+                    ${payout.commissions_amount?.toLocaleString() || '0'}
+                  </TableCell>
+                )}
                 <TableCell>${payout.gross_royalties?.toLocaleString() || '0'}</TableCell>
                 <TableCell className="text-red-600">
                   ${payout.total_expenses?.toLocaleString() || '0'}
