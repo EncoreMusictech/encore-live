@@ -226,7 +226,7 @@ export function SongEstimatorTool() {
           <TabsContent value="overview">
             <Card>
               <CardHeader>
-                <CardTitle>{currentSearch.songwriter_name} - Registration Gap Analysis</CardTitle>
+                <CardTitle>Registration Analysis</CardTitle>
                 <CardDescription>
                   MLC-first catalog discovery with PRO cross-verification to identify uncollected royalty opportunities
                 </CardDescription>
