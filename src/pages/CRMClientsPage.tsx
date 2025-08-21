@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, UserCheck, Clock, Settings, Mail, Database, RefreshCw, AlertTriangle, CheckCircle, XCircle, Pencil, Trash2, Check, X } from "lucide-react";
+import { Plus, Users, UserCheck, Clock, Settings, Mail, Database, RefreshCw, AlertTriangle, CheckCircle, XCircle, Pencil, Trash2, Check, X, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -787,13 +787,25 @@ export default function CRMClientsPage() {
                             Role: {access.role} • Status: {access.status}
                           </p>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleRevokeAccess(access.id)}
-                        >
-                          Revoke
-                        </Button>
+                         <div className="flex gap-2">
+                           <Button
+                             size="sm"
+                             onClick={() => {
+                               console.log('🔍 Navigating to client portal for:', access.client_user_id);
+                               window.open(`/client-portal?client_id=${access.client_user_id}`, '_blank');
+                             }}
+                           >
+                             <Eye className="h-4 w-4 mr-1" />
+                             View Portal
+                           </Button>
+                           <Button
+                             size="sm"
+                             variant="destructive"
+                             onClick={() => handleRevokeAccess(access.id)}
+                           >
+                             Revoke
+                           </Button>
+                         </div>
                       </div>
                     ))}
                   </div>
