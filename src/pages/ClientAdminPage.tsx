@@ -15,6 +15,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ClientPortalTestHelper } from "@/components/ClientPortalTestHelper";
 import { NameLinker } from "@/components/client-portal/NameLinker";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ClientAdminPage() {
   const { toast } = useToast();
@@ -370,414 +371,427 @@ export default function ClientAdminPage() {
           <ClientPortalTestHelper />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Create Invitation */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Create Client Invitation
-              </CardTitle>
-              <CardDescription>
-                Send an invitation to give a client access to specific data
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="client@example.com"
-                />
-              </div>
+        <Tabs defaultValue="invitations" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="invitations">Invitations</TabsTrigger>
+            <TabsTrigger value="client-management">Client Management</TabsTrigger>
+            <TabsTrigger value="permissions">Permissions</TabsTrigger>
+          </TabsList>
 
-              <div>
-                <Label htmlFor="role">Role</Label>
-                <Select value={selectedRole} onValueChange={(value: "admin" | "client") => setSelectedRole(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="client">Client</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <TabsContent value="invitations" className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Create Invitation */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Create Client Invitation
+                  </CardTitle>
+                  <CardDescription>
+                    Send an invitation to give a client access to specific data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder="client@example.com"
+                    />
+                  </div>
 
-              <div>
-                <Label>Permissions</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {Object.entries(permissions).map(([key, checked]) => (
-                    <div key={key} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={key}
-                        checked={checked}
-                        onCheckedChange={(checked) => 
-                          setPermissions(prev => ({ ...prev, [key]: !!checked }))
-                        }
-                      />
-                      <Label htmlFor={key} className="capitalize">
-                        {key.replace('_', ' ')}
-                      </Label>
+                  <div>
+                    <Label htmlFor="role">Role</Label>
+                    <Select value={selectedRole} onValueChange={(value: "admin" | "client") => setSelectedRole(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="client">Client</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Permissions</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {Object.entries(permissions).map(([key, checked]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={key}
+                            checked={checked}
+                            onCheckedChange={(checked) => 
+                              setPermissions(prev => ({ ...prev, [key]: !!checked }))
+                            }
+                          />
+                          <Label htmlFor={key} className="capitalize">
+                            {key.replace('_', ' ')}
+                          </Label>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  <Button onClick={handleCreateInvitation} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Invitation
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Invitation Lifecycle Management */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <RefreshCw className="h-5 w-5" />
+                    Invitation Lifecycle Management
+                  </CardTitle>
+                  <CardDescription>
+                    Automate and manage invitation expiry, cleanup, and reminders
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleManualMaintenance('send_reminders')}
+                    >
+                      Send Reminders
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleManualMaintenance('expire_invitations')}
+                    >
+                      Expire Old
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleManualMaintenance('cleanup_expired')}
+                    >
+                      Cleanup Expired
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleManualMaintenance('full_maintenance')}
+                    >
+                      Full Maintenance
+                    </Button>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleRemovePendingAndExpired}
+                  >
+                    Remove All Pending + Expired
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* All Invitations */}
+            <Card>
+              <CardHeader>
+                <CardTitle>All Invitations</CardTitle>
+                <CardDescription>
+                  Complete list of invitations with status tracking
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {invitations.length === 0 ? (
+                  <p className="text-muted-foreground">No invitations yet</p>
+                ) : (
+                  <div className="space-y-2">
+                    {invitations.map((invitation) => (
+                      <div key={invitation.id} className="flex items-center justify-between p-3 border rounded">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium">{invitation.email}</p>
+                            {getStatusBadge(invitation)}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Role: {invitation.role} • Created: {new Date(invitation.created_at).toLocaleDateString()}
+                            {invitation.expires_at && ` • Expires: ${new Date(invitation.expires_at).toLocaleDateString()}`}
+                            {invitation.reminder_count > 0 && ` • Reminders sent: ${invitation.reminder_count}`}
+                          </p>
+                        </div>
+                        {invitation.status === 'pending' && (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => copyInvitationLink(invitation.invitation_token)}
+                            >
+                              Copy Link
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleResendEmail(invitation)}
+                            >
+                              Resend Email
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="client-management" className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Active Client Access */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Active Client Access
+                  </CardTitle>
+                  <CardDescription>
+                    Clients with current portal access - View their portal or revoke access
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {clientAccess.length === 0 ? (
+                    <p className="text-muted-foreground">No active client access</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Client</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {clientAccess.map((access) => (
+                          <TableRow key={access.id}>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{getClientEmail(access.client_user_id) ?? 'Unknown'}</p>
+                                <p className="text-xs text-muted-foreground">{access.client_user_id}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>{access.role}</TableCell>
+                            <TableCell>
+                              <Badge variant={access.status === 'active' ? 'default' : 'secondary'}>
+                                {access.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2 justify-center">
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    console.log('🔍 Navigating to client portal for:', access.client_user_id);
+                                    window.open(`/client-portal?client_id=${access.client_user_id}`, '_blank');
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  View Portal
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleRevokeAccess(access.id)}
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Revoke
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+
+              <NameLinker />
+
+              {/* Data Associations Manager */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Data Associations</CardTitle>
+                  <CardDescription>View, filter, edit, or remove client data links</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                    <Input
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Filter by client email or ID"
+                    />
+                    <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+                      <SelectTrigger className="sm:w-48">
+                        <SelectValue placeholder="Data type" />
+                      </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          <SelectItem value="copyright">Copyright</SelectItem>
+                          <SelectItem value="contract">Contract</SelectItem>
+                          <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
+                          <SelectItem value="sync_license">Sync License</SelectItem>
+                          <SelectItem value="payee">Payee</SelectItem>
+                        </SelectContent>
+                    </Select>
+                  </div>
+
+                  {filteredAssociations.length === 0 ? (
+                    <p className="text-muted-foreground">No associations found.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Client</TableHead>
+                          <TableHead>Data Type</TableHead>
+                          <TableHead>Data</TableHead>
+                          <TableHead className="w-[140px]">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredAssociations.map((a: any) => (
+                          <TableRow key={a.id}>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{getClientEmail(a.client_user_id) ?? 'Unknown'}</span>
+                                <span className="text-xs text-muted-foreground">{a.client_user_id}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {editingId === a.id ? (
+                                <Select value={editForm.dataType} onValueChange={(v) => setEditForm((p) => ({ ...p, dataType: v as any }))}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="copyright">Copyright</SelectItem>
+                                    <SelectItem value="contract">Contract</SelectItem>
+                                    <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
+                                    <SelectItem value="sync_license">Sync License</SelectItem>
+                                    <SelectItem value="payee">Payee</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <span className="uppercase text-xs">{a.data_type}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {editingId === a.id ? (
+                                <Input
+                                  value={editForm.dataId}
+                                  onChange={(e) => setEditForm((p) => ({ ...p, dataId: e.target.value }))}
+                                  placeholder="UUID"
+                                />
+                              ) : (
+                                <span className="text-sm">{getDataLabel(a)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {editingId === a.id ? (
+                                <div className="flex gap-2">
+                                  <Button size="sm" onClick={handleSaveAssociationEdit}>
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="outline" onClick={() => handleStartEdit(a)}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="destructive" onClick={() => handleDeleteAssociation(a.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                      <TableCaption>Showing {filteredAssociations.length} association(s)</TableCaption>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="permissions" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  Create Data Association
+                </CardTitle>
+                <CardDescription>
+                  Associate specific data records with a client
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="clientUserId">Client User ID</Label>
+                  <Input
+                    id="clientUserId"
+                    value={associationForm.clientUserId}
+                    onChange={(e) => setAssociationForm(prev => ({ ...prev, clientUserId: e.target.value }))}
+                    placeholder="Client's UUID"
+                  />
                 </div>
-              </div>
 
-              <Button onClick={handleCreateInvitation} className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Invitation
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Create Data Association */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
-                Create Data Association
-              </CardTitle>
-              <CardDescription>
-                Associate specific data records with a client
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="clientUserId">Client User ID</Label>
-                <Input
-                  id="clientUserId"
-                  value={associationForm.clientUserId}
-                  onChange={(e) => setAssociationForm(prev => ({ ...prev, clientUserId: e.target.value }))}
-                  placeholder="Client's UUID"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="dataType">Data Type</Label>
-                <Select 
-                  value={associationForm.dataType} 
-                  onValueChange={(value: typeof associationForm.dataType) => 
-                    setAssociationForm(prev => ({ ...prev, dataType: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="copyright">Copyright</SelectItem>
-                    <SelectItem value="contract">Contract</SelectItem>
-                    <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
-                    <SelectItem value="sync_license">Sync License</SelectItem>
-                    <SelectItem value="payee">Payee</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="dataId">Data ID</Label>
-                <Input
-                  id="dataId"
-                  value={associationForm.dataId}
-                  onChange={(e) => setAssociationForm(prev => ({ ...prev, dataId: e.target.value }))}
-                  placeholder="Record UUID"
-                />
-              </div>
-
-              <Button onClick={handleCreateAssociation} className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Association
-              </Button>
-            </CardContent>
-          </Card>
-
-          <NameLinker />
-
-          {/* Data Associations Manager */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Data Associations</CardTitle>
-              <CardDescription>View, filter, edit, or remove client data links</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-2 mb-3">
-                <Input
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Filter by client email or ID"
-                />
-                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-                  <SelectTrigger className="sm:w-48">
-                    <SelectValue placeholder="Data type" />
-                  </SelectTrigger>
+                <div>
+                  <Label htmlFor="dataType">Data Type</Label>
+                  <Select 
+                    value={associationForm.dataType} 
+                    onValueChange={(value: typeof associationForm.dataType) => 
+                      setAssociationForm(prev => ({ ...prev, dataType: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
                       <SelectItem value="copyright">Copyright</SelectItem>
                       <SelectItem value="contract">Contract</SelectItem>
                       <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
                       <SelectItem value="sync_license">Sync License</SelectItem>
                       <SelectItem value="payee">Payee</SelectItem>
                     </SelectContent>
-                </Select>
-              </div>
-
-              {filteredAssociations.length === 0 ? (
-                <p className="text-muted-foreground">No associations found.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Data Type</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead className="w-[140px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAssociations.map((a: any) => (
-                      <TableRow key={a.id}>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{getClientEmail(a.client_user_id) ?? 'Unknown'}</span>
-                            <span className="text-xs text-muted-foreground">{a.client_user_id}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {editingId === a.id ? (
-                            <Select value={editForm.dataType} onValueChange={(v) => setEditForm((p) => ({ ...p, dataType: v as any }))}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="copyright">Copyright</SelectItem>
-                                <SelectItem value="contract">Contract</SelectItem>
-                                <SelectItem value="royalty_allocation">Royalty Allocation</SelectItem>
-                                <SelectItem value="sync_license">Sync License</SelectItem>
-                                <SelectItem value="payee">Payee</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <span className="uppercase text-xs">{a.data_type}</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {editingId === a.id ? (
-                            <Input
-                              value={editForm.dataId}
-                              onChange={(e) => setEditForm((p) => ({ ...p, dataId: e.target.value }))}
-                              placeholder="UUID"
-                            />
-                          ) : (
-                            <span className="text-sm">{getDataLabel(a)}</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {editingId === a.id ? (
-                            <div className="flex gap-2">
-                              <Button size="sm" onClick={handleSaveAssociationEdit}>
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" onClick={() => handleStartEdit(a)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleDeleteAssociation(a.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                  <TableCaption>Showing {filteredAssociations.length} association(s)</TableCaption>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Invitation Lifecycle Management */}
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <RefreshCw className="h-5 w-5" />
-                Invitation Lifecycle Management
-              </CardTitle>
-              <CardDescription>
-                Automate and manage invitation expiry, cleanup, and reminders
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleManualMaintenance('send_reminders')}
-                >
-                  Send Reminders
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleManualMaintenance('expire_invitations')}
-                >
-                  Expire Old
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleManualMaintenance('cleanup_expired')}
-                >
-                  Cleanup Expired
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleManualMaintenance('full_maintenance')}
-                >
-                  Full Maintenance
-                </Button>
-              </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="w-full"
-                onClick={handleRemovePendingAndExpired}
-              >
-                Remove All Pending + Expired
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* All Invitations */}
-          <Card>
-            <CardHeader>
-              <CardTitle>All Invitations</CardTitle>
-              <CardDescription>
-                Complete list of invitations with status tracking
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {invitations.length === 0 ? (
-                <p className="text-muted-foreground">No invitations yet</p>
-              ) : (
-                <div className="space-y-2">
-                  {invitations.map((invitation) => (
-                    <div key={invitation.id} className="flex items-center justify-between p-3 border rounded">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium">{invitation.email}</p>
-                          {getStatusBadge(invitation)}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Role: {invitation.role} • Created: {new Date(invitation.created_at).toLocaleDateString()}
-                          {invitation.expires_at && ` • Expires: ${new Date(invitation.expires_at).toLocaleDateString()}`}
-                          {invitation.reminder_count > 0 && ` • Reminders sent: ${invitation.reminder_count}`}
-                        </p>
-                      </div>
-                      {invitation.status === 'pending' && (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => copyInvitationLink(invitation.invitation_token)}
-                          >
-                            Copy Link
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleResendEmail(invitation)}
-                          >
-                            Resend Email
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  </Select>
                 </div>
-              )}
-            </CardContent>
-          </Card>
 
-          {/* Active Client Access */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Active Client Access
-              </CardTitle>
-              <CardDescription>
-                Clients with current portal access
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              
-              {clientAccess.length === 0 ? (
-                <p className="text-muted-foreground">No active client access</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-center">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {clientAccess.map((access) => (
-                      <TableRow key={access.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{getClientEmail(access.client_user_id) ?? 'Unknown'}</p>
-                            <p className="text-xs text-muted-foreground">{access.client_user_id}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{access.role}</TableCell>
-                        <TableCell>
-                          <Badge variant={access.status === 'active' ? 'default' : 'secondary'}>
-                            {access.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2 justify-center">
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                console.log('🔍 Navigating to client portal for:', access.client_user_id);
-                                window.open(`/client-portal?client_id=${access.client_user_id}`, '_blank');
-                              }}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              View Portal
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleRevokeAccess(access.id)}
-                            >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Revoke
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                <div>
+                  <Label htmlFor="dataId">Data ID</Label>
+                  <Input
+                    id="dataId"
+                    value={associationForm.dataId}
+                    onChange={(e) => setAssociationForm(prev => ({ ...prev, dataId: e.target.value }))}
+                    placeholder="Record UUID"
+                  />
+                </div>
+
+                <Button onClick={handleCreateAssociation} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Association
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Testing Section */}
         <Card className="mt-6">
