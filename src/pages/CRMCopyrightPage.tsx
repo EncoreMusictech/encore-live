@@ -183,8 +183,120 @@ export default function CRMCopyrightPage() {
         </p>
       </div>
 
+      {/* Analytics Overview */}
+      <div className="grid md:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Copyrights</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{copyrights.length}</div>
+            <p className="text-muted-foreground text-sm">Registered works</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Fully Registered</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-green-600">
+              {copyrights.filter(c => {
+                // Check if any PRO status contains "registered"
+                const ascapRegistered = (c as any).ascap_status?.toLowerCase().includes('registered');
+                const bmiRegistered = (c as any).bmi_status?.toLowerCase().includes('registered');
+                const socanRegistered = (c as any).socan_status?.toLowerCase().includes('registered');
+                const sesacRegistered = (c as any).sesac_status?.toLowerCase().includes('registered');
+                const mlcRegistered = (c as any).mlc_status?.toLowerCase().includes('registered');
+                
+                return ascapRegistered || bmiRegistered || socanRegistered || sesacRegistered || mlcRegistered ||
+                       c.registration_status === "fully_registered" || 
+                       c.registration_status === "registered";
+              }).length}
+            </div>
+            <p className="text-muted-foreground text-sm">Complete registration</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-yellow-600">
+              {copyrights.filter(c => 
+                c.status === "draft" ||
+                c.registration_status === "pending_registration" ||
+                c.registration_status === "pending"
+              ).length}
+            </div>
+            <p className="text-muted-foreground text-sm">Awaiting registration</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Controlled Works</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-blue-600">
+              {copyrights.filter(c => {
+                const copyrightWriters = writers[c.id] || [];
+                return calculateControlledShare(copyrightWriters) > 0;
+              }).length}
+            </div>
+            <p className="text-muted-foreground text-sm">With controlled shares</p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* CWR/DDEX Compliance Section */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>CWR/DDEX Compliance Overview</CardTitle>
+          <CardDescription>
+            Monitor compliance status across your copyright portfolio for industry-standard exports
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                 {copyrights.filter(c => {
+                   const copyrightWriters = writers[c.id] || [];
+                   const hasRequiredFields = c.work_title && c.language_code && copyrightWriters.length > 0;
+                   const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
+                   return hasRequiredFields && validShares;
+                 }).length}
+              </div>
+              <p className="text-sm text-muted-foreground">CWR Ready</p>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {copyrights.filter(c => {
+                  const hasStructuredData = c.work_title && c.iswc && c.language_code;
+                  return hasStructuredData;
+                }).length}
+              </div>
+              <p className="text-sm text-muted-foreground">DDEX Ready</p>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                 {copyrights.filter(c => {
+                   const copyrightWriters = writers[c.id] || [];
+                   const hasIssues = !c.work_title || !c.language_code || copyrightWriters.length === 0 ||
+                                    copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) > 100;
+                   return hasIssues;
+                 }).length}
+              </div>
+              <p className="text-sm text-muted-foreground">Need Attention</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="copyrights">My Copyrights</TabsTrigger>
           <TabsTrigger value="cwr-ddex-export">CWR/DDEX Export</TabsTrigger>
           <TabsTrigger value="register" disabled={!canAccess('copyrightManagement')}>
@@ -192,7 +304,6 @@ export default function CRMCopyrightPage() {
           </TabsTrigger>
           <TabsTrigger value="bulk-upload">Bulk Upload</TabsTrigger>
           <TabsTrigger value="activity">Activity Log</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="copyrights" className="space-y-6">
@@ -392,119 +503,6 @@ export default function CRMCopyrightPage() {
 
         <TabsContent value="activity">
           <ActivityLog />
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          <div className="grid md:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Total Copyrights</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{copyrights.length}</div>
-                <p className="text-muted-foreground text-sm">Registered works</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Fully Registered</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-600">
-                  {copyrights.filter(c => {
-                    // Check if any PRO status contains "registered"
-                    const ascapRegistered = (c as any).ascap_status?.toLowerCase().includes('registered');
-                    const bmiRegistered = (c as any).bmi_status?.toLowerCase().includes('registered');
-                    const socanRegistered = (c as any).socan_status?.toLowerCase().includes('registered');
-                    const sesacRegistered = (c as any).sesac_status?.toLowerCase().includes('registered');
-                    const mlcRegistered = (c as any).mlc_status?.toLowerCase().includes('registered');
-                    
-                    return ascapRegistered || bmiRegistered || socanRegistered || sesacRegistered || mlcRegistered ||
-                           c.registration_status === "fully_registered" || 
-                           c.registration_status === "registered";
-                  }).length}
-                </div>
-                <p className="text-muted-foreground text-sm">Complete registration</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Pending</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-yellow-600">
-                  {copyrights.filter(c => 
-                    c.status === "draft" ||
-                    c.registration_status === "pending_registration" ||
-                    c.registration_status === "pending"
-                  ).length}
-                </div>
-                <p className="text-muted-foreground text-sm">Awaiting registration</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Controlled Works</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-blue-600">
-                  {copyrights.filter(c => {
-                    const copyrightWriters = writers[c.id] || [];
-                    return calculateControlledShare(copyrightWriters) > 0;
-                  }).length}
-                </div>
-                <p className="text-muted-foreground text-sm">With controlled shares</p>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* CWR/DDEX Compliance Section */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>CWR/DDEX Compliance Overview</CardTitle>
-              <CardDescription>
-                Monitor compliance status across your copyright portfolio for industry-standard exports
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                     {copyrights.filter(c => {
-                       const copyrightWriters = writers[c.id] || [];
-                       const hasRequiredFields = c.work_title && c.language_code && copyrightWriters.length > 0;
-                       const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
-                       return hasRequiredFields && validShares;
-                     }).length}
-                  </div>
-                  <p className="text-sm text-muted-foreground">CWR Ready</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {copyrights.filter(c => {
-                      const hasStructuredData = c.work_title && c.iswc && c.language_code;
-                      return hasStructuredData;
-                    }).length}
-                  </div>
-                  <p className="text-sm text-muted-foreground">DDEX Ready</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">
-                     {copyrights.filter(c => {
-                       const copyrightWriters = writers[c.id] || [];
-                       const hasIssues = !c.work_title || !c.language_code || copyrightWriters.length === 0 ||
-                                        copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) > 100;
-                       return hasIssues;
-                     }).length}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Need Attention</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
 
