@@ -62,7 +62,7 @@ All colors MUST be HSL.
     --gradient-accent: linear-gradient(135deg, hsl(var(--dusty-gold)), hsl(var(--electric-lavender)));
     --gradient-dark: linear-gradient(135deg, hsl(var(--jet-black)), hsl(0 0% 8%));
     --gradient-vinyl: radial-gradient(circle at center, hsl(var(--jet-black)), hsl(0 0% 15%));
-    --gradient-career: linear-gradient(135deg, hsl(260 100% 20%), hsl(240 100% 25%));
+    --gradient-career: linear-gradient(135deg, hsl(270 60% 25%), hsl(280 50% 30%));
 
     /* Analog Equipment Shadows */
     --shadow-elegant: 0 10px 30px -10px hsl(var(--electric-lavender) / 0.3);
