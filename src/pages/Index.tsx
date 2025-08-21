@@ -70,9 +70,30 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Music Ecosystem 3D Visualization */}
-      <section className="py-20 px-4">
-        <MusicEcosystem3D />
+      {/* Music Publishing Ecosystem Section */}
+      <section className="py-20 bg-gradient-to-br from-secondary/20 to-primary/10">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16 animate-fade-in">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Navigate the Complex <span className="bg-gradient-primary bg-clip-text text-transparent">Music Ecosystem</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              The music publishing ecosystem involves dozens of stakeholders, rights organizations, and revenue streams. 
+              Our platform connects and manages them all in one unified system.
+            </p>
+          </div>
+
+          <div className="h-[600px] w-full max-w-6xl mx-auto bg-gradient-to-br from-background/50 to-secondary/30 rounded-2xl shadow-elegant border border-border/50 backdrop-blur-sm animate-scale-in">
+            <MusicEcosystem3D />
+          </div>
+
+          <div className="text-center mt-8">
+            <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+              <strong>Interactive 3D Visualization:</strong> Explore how publishers connect with songwriters, PROs, streaming platforms, 
+              international CMOs, and sync agents. Click and drag to rotate, scroll to zoom.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* Pricing Section */}
