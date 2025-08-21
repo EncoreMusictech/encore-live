@@ -65,10 +65,10 @@ export default function FeaturesOverviewPage() {
             </div>
             <Button 
               size="lg" 
-              onClick={() => navigate('/pricing')}
+              onClick={() => navigate('/crm')}
               className="bg-gradient-primary text-primary-foreground hover:shadow-glow transition-all duration-300 hover:scale-105"
             >
-              Start Free Trial
+              Try Now
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -151,11 +151,11 @@ export default function FeaturesOverviewPage() {
                     {/* Action Button */}
                     <Button 
                       size="lg"
-                      onClick={() => navigate(`/features/${module.id}`)}
+                      onClick={() => navigate('/crm')}
                       className="group hover:shadow-glow transition-all duration-300"
                       variant="outline"
                     >
-                      Explore {module.title}
+                      Try Now
                       <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
                     </Button>
                   </div>
@@ -180,19 +180,19 @@ export default function FeaturesOverviewPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 size="lg"
-                onClick={() => navigate('/pricing')}
+                onClick={() => navigate('/crm')}
                 className="bg-gradient-primary text-primary-foreground hover:shadow-glow transition-all duration-300 hover:scale-105"
               >
-                Start Free Trial
+                Try Now
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
               <Button 
                 size="lg" 
                 variant="outline"
-                onClick={() => navigate('/contact')}
+                onClick={() => navigate('/crm')}
                 className="hover:bg-electric-lavender hover:text-background transition-all duration-300 hover:shadow-lg"
               >
-                Schedule Demo
+                Try Now
               </Button>
             </div>
           </div>
