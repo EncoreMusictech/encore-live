@@ -28,14 +28,17 @@ export function PayoutList() {
   const [isClientPortal, setIsClientPortal] = useState(false);
   const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts, getPayoutExpenses, recalculatePayoutExpenses } = usePayouts();
 
-  // Check if this is client portal view
+  // Check if this is client portal view and force refresh data
   useEffect(() => {
     const checkClientStatus = async () => {
       const clientStatus = await isClient();
       setIsClientPortal(clientStatus);
     };
     checkClientStatus();
-  }, [isClient]);
+    
+    // Force refresh payouts to ensure we get the latest data with new columns
+    refreshPayouts();
+  }, [isClient, refreshPayouts]);
 
   const filteredPayouts = payouts.filter(payout => {
     const matchesSearch = payout.period?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
