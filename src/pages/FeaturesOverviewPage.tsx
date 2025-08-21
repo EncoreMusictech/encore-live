@@ -32,7 +32,7 @@ export default function FeaturesOverviewPage() {
           </p>
           <Button 
             size="lg" 
-            onClick={() => navigate('/auth')}
+            onClick={() => navigate('/pricing')}
             className="bg-gradient-primary text-primary-foreground hover:opacity-90"
           >
             Start Free Trial
@@ -115,7 +115,7 @@ export default function FeaturesOverviewPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg"
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/pricing')}
               className="bg-gradient-primary text-primary-foreground hover:opacity-90"
             >
               Start Free Trial

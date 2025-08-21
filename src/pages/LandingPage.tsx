@@ -21,7 +21,7 @@ const LandingPage = () => {
     if (tier === "enterprise") {
       window.open("https://calendly.com/encoremts", "_blank");
     } else {
-      window.location.href = "/auth?demo=true";
+      window.location.href = "/pricing";
     }
   };
 

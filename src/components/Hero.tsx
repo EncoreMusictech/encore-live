@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Music, TrendingUp, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
 const Hero = () => {
   return <section className="relative overflow-hidden py-20 lg:py-32 bg-gradient-to-br from-background via-background/95 to-electric-lavender/10">
       {/* Dynamic Background Elements */}
@@ -57,9 +58,11 @@ const Hero = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-fader transition-all duration-300 hover:scale-105">
-              Start Free Trial
-              <ArrowRight className="ml-2 h-5 w-5" />
+            <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-fader transition-all duration-300 hover:scale-105" asChild>
+              <Link to="/pricing">
+                Start Free Trial
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
             <Button variant="outline" size="lg" className="border-electric-lavender text-electric-lavender hover:bg-electric-lavender hover:text-jet-black transition-all duration-300" asChild>
               <a href="/auth?demo=true">

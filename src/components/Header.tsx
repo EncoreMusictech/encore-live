@@ -112,7 +112,7 @@ const Header = () => {
               </Button>
             </>
           ) : (
-            <Link to="/auth">
+            <Link to="/pricing">
               <Button variant="fader" size="sm" className="font-body">
                 Start Free Trial
               </Button>
