@@ -11,6 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { MessageCircle, Phone, Mail, Send, Search, Clock, CheckCircle, AlertCircle, FileText, PlayCircle, Users, Star } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+interface RecentTicket {
+  id: string;
+  subject: string;
+  status: 'in_progress' | 'resolved';
+  daysAgo: number;
+}
 const ContactPage = () => {
   const [ticketForm, setTicketForm] = useState({
     firstName: "",
@@ -23,42 +31,91 @@ const ContactPage = () => {
     description: ""
   });
   const [searchQuery, setSearchQuery] = useState("");
-  const handleTicketSubmit = (e: React.FormEvent) => {
+  const [recentTickets, setRecentTickets] = useState<RecentTicket[]>([
+    {
+      id: "TIC-001",
+      subject: "Copyright registration parsing error",
+      status: "resolved",
+      daysAgo: 2
+    },
+    {
+      id: "TIC-002", 
+      subject: "Writer allocation calculation issue",
+      status: "in_progress",
+      daysAgo: 3
+    },
+    {
+      id: "TIC-003",
+      subject: "Royalty statement import failed", 
+      status: "resolved",
+      daysAgo: 7
+    }
+  ]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const generateTicketId = () => {
+    const timestamp = Date.now().toString().slice(-6);
+    return `TIC-${timestamp}`;
+  };
+
+  const handleTicketSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle ticket submission
-    toast({
-      title: "Support Ticket Submitted",
-      description: "We'll get back to you within 24 hours."
-    });
-    // Reset form
-    setTicketForm({
-      firstName: "",
-      lastName: "",
-      email: "",
-      priority: "",
-      category: "",
-      feature: "",
-      subject: "",
-      description: ""
-    });
+    setIsSubmitting(true);
+
+    try {
+      const ticketId = generateTicketId();
+      
+      // Call the edge function to send email
+      const { data, error } = await supabase.functions.invoke('send-support-ticket', {
+        body: {
+          ...ticketForm,
+          ticketId
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Add to recent tickets
+      const newTicket: RecentTicket = {
+        id: ticketId,
+        subject: ticketForm.subject,
+        status: 'in_progress',
+        daysAgo: 0
+      };
+
+      setRecentTickets(prev => [newTicket, ...prev]);
+
+      toast({
+        title: "Support Ticket Submitted",
+        description: `Your ticket ${ticketId} has been submitted. We'll get back to you within 24 hours.`
+      });
+
+      // Reset form
+      setTicketForm({
+        firstName: "",
+        lastName: "",
+        email: "",
+        priority: "",
+        category: "",
+        feature: "",
+        subject: "",
+        description: ""
+      });
+
+    } catch (error) {
+      console.error('Error submitting ticket:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit ticket. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   const faqItems = ["How do I register my first copyright in the system?", "What royalty statement formats does ENCORE support?", "How do I set up writer splits and allocations?", "Can I integrate ENCORE with my existing accounting system?", "What's the difference between controlled and non-controlled works?", "How do I generate and send client statements?", "What contract templates are available in the system?", "How does the sync licensing pipeline work?"];
-  const recentTickets = [{
-    id: "TIC-001",
-    subject: "Copyright registration parsing error",
-    status: "resolved",
-    daysAgo: 2
-  }, {
-    id: "TIC-002",
-    subject: "Writer allocation calculation issue",
-    status: "in_progress",
-    daysAgo: 3
-  }, {
-    id: "TIC-003",
-    subject: "Royalty statement import failed",
-    status: "resolved",
-    daysAgo: 7
-  }];
   return <div className="min-h-screen bg-background">
       <Header />
       
@@ -253,9 +310,13 @@ const ContactPage = () => {
                 })} required />
                 </div>
 
-                <Button type="submit" className="w-full bg-gradient-primary text-primary-foreground">
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-primary text-primary-foreground"
+                  disabled={isSubmitting}
+                >
                   <Send className="h-4 w-4 mr-2" />
-                  Submit Ticket
+                  {isSubmitting ? "Submitting..." : "Submit Ticket"}
                 </Button>
               </form>
             </CardContent>
