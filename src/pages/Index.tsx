@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Check, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import MusicEcosystem3D from "@/components/features/MusicEcosystem3D";
 const Index = () => {
   const {
     toast
@@ -83,14 +82,92 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="h-[600px] w-full max-w-6xl mx-auto bg-gradient-to-br from-background/50 to-secondary/30 rounded-2xl shadow-elegant border border-border/50 backdrop-blur-sm animate-scale-in">
-            <MusicEcosystem3D />
+          <div className="w-full max-w-6xl mx-auto">
+            {/* Central Publisher Hub */}
+            <div className="flex justify-center mb-12">
+              <div className="relative">
+                <div className="w-32 h-32 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow">
+                  <span className="text-white font-bold text-lg">PUBLISHER</span>
+                </div>
+                {/* Connection lines */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {[...Array(12)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-0.5 h-20 bg-gradient-to-b from-primary to-transparent origin-bottom"
+                      style={{
+                        left: '50%',
+                        top: '50%',
+                        transform: `translate(-50%, -50%) rotate(${i * 30}deg) translateY(-80px)`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Stakeholder Rings */}
+            <div className="space-y-16">
+              {/* Inner Ring - Core Creators */}
+              <div className="flex justify-center items-center gap-16 flex-wrap">
+                {[
+                  { name: "Songwriters", color: "bg-emerald-500" },
+                  { name: "Artists", color: "bg-pink-500" },
+                  { name: "Producers", color: "bg-orange-500" },
+                ].map((stakeholder) => (
+                  <div key={stakeholder.name} className="text-center">
+                    <div className={`w-20 h-20 ${stakeholder.color} rounded-full flex items-center justify-center mb-2 shadow-lg`}>
+                      <span className="text-white font-medium text-sm">{stakeholder.name.slice(0, 4)}</span>
+                    </div>
+                    <p className="text-sm font-medium">{stakeholder.name}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Middle Ring - Rights Organizations & Platforms */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 justify-items-center">
+                {[
+                  { name: "ASCAP", color: "bg-blue-500" },
+                  { name: "BMI", color: "bg-purple-600" },
+                  { name: "SESAC", color: "bg-pink-500" },
+                  { name: "MLC", color: "bg-emerald-500" },
+                  { name: "Spotify", color: "bg-green-500" },
+                  { name: "Apple Music", color: "bg-red-500" },
+                ].map((stakeholder) => (
+                  <div key={stakeholder.name} className="text-center">
+                    <div className={`w-16 h-16 ${stakeholder.color} rounded-full flex items-center justify-center mb-2 shadow-lg`}>
+                      <span className="text-white font-medium text-xs">{stakeholder.name.slice(0, 5)}</span>
+                    </div>
+                    <p className="text-xs font-medium">{stakeholder.name}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Outer Ring - International & Specialized */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-items-center">
+                {[
+                  { name: "GEMA", color: "bg-yellow-500" },
+                  { name: "SACEM", color: "bg-emerald-500" },
+                  { name: "PRS", color: "bg-blue-500" },
+                  { name: "SOCAN", color: "bg-pink-500" },
+                  { name: "Sync Agents", color: "bg-orange-500" },
+                  { name: "Sub-Publishers", color: "bg-purple-600" },
+                ].map((stakeholder) => (
+                  <div key={stakeholder.name} className="text-center">
+                    <div className={`w-12 h-12 ${stakeholder.color} rounded-full flex items-center justify-center mb-2 shadow-lg`}>
+                      <span className="text-white font-medium text-xs">{stakeholder.name.slice(0, 4)}</span>
+                    </div>
+                    <p className="text-xs font-medium">{stakeholder.name}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="text-center mt-8">
             <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-              <strong>Interactive 3D Visualization:</strong> Explore how publishers connect with songwriters, PROs, streaming platforms, 
-              international CMOs, and sync agents. Click and drag to rotate, scroll to zoom.
+              <strong>Ecosystem Overview:</strong> Visual representation of how publishers connect with songwriters, PROs, streaming platforms, 
+              international CMOs, and sync agents in the complex music rights landscape.
             </p>
           </div>
         </div>
