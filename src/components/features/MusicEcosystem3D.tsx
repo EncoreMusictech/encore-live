@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Text, Sphere, Box, Cylinder } from '@react-three/drei';
+import { OrbitControls, Text, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface EcosystemNodeProps {
@@ -49,25 +49,9 @@ const CentralArtist: React.FC = () => {
 
   return (
     <group ref={groupRef} position={[0, 0, 0]}>
-      {/* Artist head */}
-      <Sphere args={[0.4]} position={[0, 0.5, 0]}>
+      {/* Central artist sphere */}
+      <Sphere args={[0.6]} position={[0, 0, 0]}>
         <meshStandardMaterial color="#F59E0B" />
-      </Sphere>
-      
-      {/* Artist body */}
-      <Cylinder args={[0.3, 0.4, 0.8]} position={[0, -0.2, 0]}>
-        <meshStandardMaterial color="#3B82F6" />
-      </Cylinder>
-      
-      {/* Headphones */}
-      <Box args={[0.6, 0.1, 0.1]} position={[0, 0.6, 0]}>
-        <meshStandardMaterial color="#1F2937" />
-      </Box>
-      <Sphere args={[0.15]} position={[-0.3, 0.5, 0]}>
-        <meshStandardMaterial color="#1F2937" />
-      </Sphere>
-      <Sphere args={[0.15]} position={[0.3, 0.5, 0]}>
-        <meshStandardMaterial color="#1F2937" />
       </Sphere>
       
       {/* Label */}
@@ -77,7 +61,6 @@ const CentralArtist: React.FC = () => {
         color="white"
         anchorX="center"
         anchorY="middle"
-        font="/fonts/inter-bold.woff"
       >
         ARTIST
       </Text>
@@ -150,7 +133,7 @@ const FloatingNote: React.FC<{
   scale: number;
   speed: number;
 }> = ({ position, scale, speed }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<THREE.Group>(null);
   
   useFrame((state) => {
     if (meshRef.current) {
@@ -160,10 +143,9 @@ const FloatingNote: React.FC<{
   });
 
   return (
-    <group position={position} scale={scale}>
+    <group ref={meshRef} position={position} scale={scale}>
       <Text
-        ref={meshRef}
-        fontSize={0.8}
+        fontSize={0.6}
         color="#60A5FA"
         anchorX="center"
         anchorY="middle"
