@@ -43,8 +43,16 @@ export default function CRMRoyaltiesPage() {
     .filter(expense => expense.expense_status === 'approved')
     .reduce((sum, expense) => sum + (expense.amount || 0), 0);
   const netPayable = payouts.reduce((sum, payout) => sum + (payout.net_payable || 0), 0);
-  const companyEarnings = payouts.reduce((sum, payout) => 
-    sum + (payout.admin_fee_amount || 0) + (payout.processing_fee_amount || 0), 0);
+  
+  // Calculate company earnings including commissions from agreements
+  const adminFees = payouts.reduce((sum, payout) => sum + (payout.admin_fee_amount || 0), 0);
+  const processingFees = payouts.reduce((sum, payout) => sum + (payout.processing_fee_amount || 0), 0);
+  const commissionEarnings = payouts.reduce((sum, payout) => {
+    // Commission is the difference between gross and net royalties for agreement-based payouts
+    const commission = (payout.gross_royalties || 0) - (payout.net_royalties || 0);
+    return sum + commission;
+  }, 0);
+  const companyEarnings = adminFees + processingFees + commissionEarnings;
 
   return (
     <div className="space-y-6">
