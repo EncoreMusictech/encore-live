@@ -28,10 +28,12 @@ export function PayoutList() {
   const [isClientPortal, setIsClientPortal] = useState(false);
   const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts, getPayoutExpenses, recalculatePayoutExpenses } = usePayouts();
 
-  // Check if this is client portal view and force refresh data
+  // Check if this is client portal view - only hide columns for actual client portal routes
   useEffect(() => {
     const checkClientStatus = async () => {
-      const clientStatus = await isClient();
+      // Only hide columns if we're actually in a client portal route context
+      const isClientRoute = window.location.pathname.includes('/client-portal');
+      const clientStatus = isClientRoute ? await isClient() : false;
       setIsClientPortal(clientStatus);
     };
     checkClientStatus();
