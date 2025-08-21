@@ -112,15 +112,12 @@ export default function FeaturesOverviewPage() {
 
                 {/* Content */}
                 <div className="flex-1 space-y-8">
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-gradient-primary rounded-2xl p-4 shadow-lg">
-                        <Icon className="w-8 h-8 text-primary-foreground" />
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-gradient-primary rounded-2xl p-4 shadow-lg">
+                          <Icon className="w-8 h-8 text-primary-foreground" />
+                        </div>
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        {module.tier} Plan
-                      </Badge>
-                    </div>
                     
                     <div className="space-y-4">
                       <h2 className="text-3xl md:text-4xl font-bold">
