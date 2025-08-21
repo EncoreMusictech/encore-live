@@ -208,7 +208,7 @@ export const userCases: UserCase[] = [
       "Professional valuation reports",
       "Scalable for growing rosters"
     ],
-    recommendedTier: "Pro"
+    recommendedTier: "Enterprise"
   },
   {
     id: "management-companies",
