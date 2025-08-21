@@ -250,11 +250,11 @@ export function SongEstimatorTool() {
                 </div>
 
                 {/* Career Summary Card */}
-                <Card className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border-primary/20">
+                <Card className="bg-gradient-primary border-primary/20 text-primary-foreground">{/*Changed from direct Tailwind classes to design system gradient*/}
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2 text-foreground">
-                        <Music className="h-5 w-5 text-primary" />
+                      <CardTitle className="flex items-center gap-2">
+                        <Music className="h-5 w-5" />
                         {currentSearch.songwriter_name} - Career Summary
                       </CardTitle>
                       <Button
