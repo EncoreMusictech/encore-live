@@ -56,10 +56,8 @@ export default function FeaturesOverviewPage() {
               </Badge>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
                 <span className="bg-gradient-primary bg-clip-text text-transparent">
-                  Complete Music Rights
+                  Explore Our Features
                 </span>
-                <br />
-                <span className="text-foreground">Management Platform</span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                 Professional tools for catalog valuation, royalty processing, and contract management - 
