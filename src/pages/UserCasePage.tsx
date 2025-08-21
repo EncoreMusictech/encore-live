@@ -128,7 +128,7 @@ export default function UserCasePage() {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => navigate('/dashboard')}
+                              onClick={() => navigate('/auth')}
                             >
                               Try Now
                             </Button>
