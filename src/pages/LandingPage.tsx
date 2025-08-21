@@ -242,7 +242,7 @@ const LandingPage = () => {
                 variant="outline" 
                 size="lg" 
                 className="border-electric-lavender text-electric-lavender hover:bg-electric-lavender hover:text-jet-black transition-all duration-300"
-                onClick={() => window.open("https://calendly.com/encoremts", "_blank")}
+                onClick={() => window.open("https://www.calendly.com/encoremts", "_blank")}
               >
                 Schedule Demo
               </Button>
@@ -517,7 +517,7 @@ const LandingPage = () => {
                 size="lg" 
                 variant="outline"
                 className="text-lg px-8 py-3 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
-                onClick={() => window.open("https://calendly.com/encoremts", "_blank")}
+                onClick={() => window.open("https://www.calendly.com/encoremts", "_blank")}
               >
                 Schedule Demo
               </Button>

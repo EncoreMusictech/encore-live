@@ -189,7 +189,7 @@ export default function FeaturesOverviewPage() {
               <Button 
                 size="lg" 
                 variant="outline"
-                onClick={() => window.open("https://calendly.com/encoremts", "_blank")}
+                onClick={() => window.open("https://www.calendly.com/encoremts", "_blank")}
                 className="hover:bg-electric-lavender hover:text-background transition-all duration-300 hover:shadow-lg"
               >
                 Schedule Demo

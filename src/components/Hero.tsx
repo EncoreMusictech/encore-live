@@ -70,7 +70,7 @@ const Hero = () => {
               </a>
             </Button>
             <Button variant="outline" size="lg" className="border-electric-lavender text-electric-lavender hover:bg-electric-lavender hover:text-jet-black transition-all duration-300" asChild>
-              <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
+              <a href="https://www.calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
                 Schedule Demo
               </a>
             </Button>
