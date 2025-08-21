@@ -121,12 +121,15 @@ const ContactPage = () => {
   return <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Hero Section with Record Groove Background */}
+      {/* Hero Section with 3D Customer Service Graphic */}
       <div className="relative overflow-hidden py-20">
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
-        backgroundImage: `url('/lovable-uploads/ab53c16c-028b-497c-ac9f-feab103ef7de.png')`
-      }} />
-        <div className="absolute inset-0 bg-jet-black/40" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img 
+            src="/lovable-uploads/b93af567-da63-46a2-ad53-2fa5350f931c.png" 
+            alt="3D Customer Service Representative" 
+            className="w-96 h-96 object-contain opacity-20"
+          />
+        </div>
         
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
