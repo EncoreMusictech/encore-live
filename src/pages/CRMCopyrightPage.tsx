@@ -249,51 +249,6 @@ export default function CRMCopyrightPage() {
           </CardContent>
         </Card>
       </div>
-      
-      {/* CWR/DDEX Compliance Section */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>CWR/DDEX Compliance Overview</CardTitle>
-          <CardDescription>
-            Monitor compliance status across your copyright portfolio for industry-standard exports
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                 {copyrights.filter(c => {
-                   const copyrightWriters = writers[c.id] || [];
-                   const hasRequiredFields = c.work_title && c.language_code && copyrightWriters.length > 0;
-                   const validShares = copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) <= 100;
-                   return hasRequiredFields && validShares;
-                 }).length}
-              </div>
-              <p className="text-sm text-muted-foreground">CWR Ready</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {copyrights.filter(c => {
-                  const hasStructuredData = c.work_title && c.iswc && c.language_code;
-                  return hasStructuredData;
-                }).length}
-              </div>
-              <p className="text-sm text-muted-foreground">DDEX Ready</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                 {copyrights.filter(c => {
-                   const copyrightWriters = writers[c.id] || [];
-                   const hasIssues = !c.work_title || !c.language_code || copyrightWriters.length === 0 ||
-                                    copyrightWriters.reduce((sum, w) => sum + w.ownership_percentage, 0) > 100;
-                   return hasIssues;
-                 }).length}
-              </div>
-              <p className="text-sm text-muted-foreground">Need Attention</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
