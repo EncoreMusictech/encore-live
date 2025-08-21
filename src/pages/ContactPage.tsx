@@ -18,6 +18,7 @@ const ContactPage = () => {
     email: "",
     priority: "",
     category: "",
+    feature: "",
     subject: "",
     description: ""
   });
@@ -36,6 +37,7 @@ const ContactPage = () => {
       email: "",
       priority: "",
       category: "",
+      feature: "",
       subject: "",
       description: ""
     });
@@ -173,7 +175,7 @@ const ContactPage = () => {
                 })} required />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="priority">Priority Level</Label>
                     <Select value={ticketForm.priority} onValueChange={value => setTicketForm({
@@ -206,6 +208,29 @@ const ContactPage = () => {
                         <SelectItem value="technical">Technical Support</SelectItem>
                         <SelectItem value="feature">Feature Request</SelectItem>
                         <SelectItem value="integration">Integration Help</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="feature">Feature</Label>
+                    <Select value={ticketForm.feature} onValueChange={value => setTicketForm({
+                    ...ticketForm,
+                    feature: value
+                  })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select feature" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="catalog-valuation">Catalog Valuation</SelectItem>
+                        <SelectItem value="royalties-processing">Royalties Processing</SelectItem>
+                        <SelectItem value="copyright-registration">Copyright Registration</SelectItem>
+                        <SelectItem value="contract-management">Contract Management</SelectItem>
+                        <SelectItem value="sync-licensing">Sync Licensing</SelectItem>
+                        <SelectItem value="client-portal">Client Portal</SelectItem>
+                        <SelectItem value="reporting">Reporting & Analytics</SelectItem>
+                        <SelectItem value="integrations">Third-party Integrations</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
