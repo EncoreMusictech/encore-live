@@ -15,7 +15,7 @@ const Index = () => {
     toast
   } = useToast();
   const navigate = useNavigate();
-  const [selectedTier, setSelectedTier] = useState<"Free" | "Pro" | "Enterprise" | "Growth Bundle">("Pro");
+  const [selectedTier, setSelectedTier] = useState<"Free" | "Pro" | "Enterprise">("Pro");
   const [selectedUserCase, setSelectedUserCase] = useState<typeof userCases[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   useEffect(() => {
@@ -128,7 +128,7 @@ const Index = () => {
       <section className="py-20 bg-secondary/20">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto space-y-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Ready to customize your rights management system?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Ready to customize your solution?</h2>
             <p className="text-xl text-muted-foreground">
               Professional music rights management platform with unified dashboard and module-based tabs.
             </p>
