@@ -21,7 +21,7 @@ export function CRMHeader() {
   return <header className="border-b border-border bg-card">
       <div className="flex items-center justify-between h-16 px-6">
         <div className="flex items-center space-x-4">
-          <SidebarTrigger className="lg:hidden" />
+          <SidebarTrigger />
           <div className="flex items-center space-x-2">
             <h1 className="text-xl font-headline font-bold">ENCORE</h1>
             {subscription_tier && <Badge variant="secondary" className="text-xs">
