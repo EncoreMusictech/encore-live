@@ -60,8 +60,7 @@ export default function FeaturesOverviewPage() {
                 </span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                Professional tools for catalog valuation, royalty processing, and contract management - 
-                all integrated into one powerful platform.
+                The power to create your own rights management system, using only the tools you need at a price you can afford.
               </p>
             </div>
             <Button 
