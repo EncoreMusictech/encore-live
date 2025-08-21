@@ -6,10 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Download, Plus, AlertTriangle, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
+import { Search, Download, AlertTriangle, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
 import { useQuarterlyBalanceReports, QuarterlyBalanceReport } from "@/hooks/useQuarterlyBalanceReports";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
@@ -22,18 +20,6 @@ export function QuarterlyBalanceReportsTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterYear, setFilterYear] = useState<string>("all");
   const [filterQuarter, setFilterQuarter] = useState<string>("all");
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [newReport, setNewReport] = useState({
-    payee_id: "",
-    contact_id: "",
-    agreement_id: "",
-    year: new Date().getFullYear(),
-    quarter: Math.ceil((new Date().getMonth() + 1) / 3),
-    opening_balance: 0,
-    royalties_amount: 0,
-    expenses_amount: 0,
-    payments_amount: 0,
-  });
 
   // Get unique years from all reports
   const uniqueYears = useMemo(() => {
@@ -71,24 +57,6 @@ export function QuarterlyBalanceReportsTable() {
       reportCount: filteredReports.length
     };
   }, [filteredReports]);
-
-  const handleCreateReport = async () => {
-    const created = await createReport(newReport);
-    if (created) {
-      setShowCreateDialog(false);
-      setNewReport({
-        payee_id: "",
-        contact_id: "",
-        agreement_id: "",
-        year: new Date().getFullYear(),
-        quarter: Math.ceil((new Date().getMonth() + 1) / 3),
-        opening_balance: 0,
-        royalties_amount: 0,
-        expenses_amount: 0,
-        payments_amount: 0,
-      });
-    }
-  };
 
   const getBalanceIndicator = (current: number, previous?: number) => {
     if (!previous) return null;
@@ -216,81 +184,6 @@ export function QuarterlyBalanceReportsTable() {
             Export CSV
           </Button>
 
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                New Report
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Quarterly Balance Report</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="year">Year</Label>
-                    <Input
-                      id="year"
-                      type="number"
-                      value={newReport.year}
-                      onChange={(e) => setNewReport(prev => ({ ...prev, year: parseInt(e.target.value) }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="quarter">Quarter</Label>
-                    <Select value={newReport.quarter.toString()} onValueChange={(value) => setNewReport(prev => ({ ...prev, quarter: parseInt(value) }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Q1</SelectItem>
-                        <SelectItem value="2">Q2</SelectItem>
-                        <SelectItem value="3">Q3</SelectItem>
-                        <SelectItem value="4">Q4</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="payee_id">Payee ID</Label>
-                  <Input
-                    id="payee_id"
-                    value={newReport.payee_id}
-                    onChange={(e) => setNewReport(prev => ({ ...prev, payee_id: e.target.value }))}
-                    placeholder="Enter payee ID"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="royalties">Royalties</Label>
-                    <Input
-                      id="royalties"
-                      type="number"
-                      step="0.01"
-                      value={newReport.royalties_amount}
-                      onChange={(e) => setNewReport(prev => ({ ...prev, royalties_amount: parseFloat(e.target.value) || 0 }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="expenses">Expenses</Label>
-                    <Input
-                      id="expenses"
-                      type="number"
-                      step="0.01"
-                      value={newReport.expenses_amount}
-                      onChange={(e) => setNewReport(prev => ({ ...prev, expenses_amount: parseFloat(e.target.value) || 0 }))}
-                    />
-                  </div>
-                </div>
-
-                <Button onClick={handleCreateReport}>Create Report</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
 
