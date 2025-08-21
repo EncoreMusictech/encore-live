@@ -94,6 +94,7 @@ export default {
 				'gradient-accent': 'var(--gradient-accent)',
 				'gradient-dark': 'var(--gradient-dark)',
 				'gradient-vinyl': 'var(--gradient-vinyl)',
+				'gradient-career': 'var(--gradient-career)',
 			},
 			boxShadow: {
 				'elegant': 'var(--shadow-elegant)',
