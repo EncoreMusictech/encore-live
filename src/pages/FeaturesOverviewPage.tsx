@@ -11,6 +11,9 @@ import { ArrowRight } from 'lucide-react';
 import RoyaltiesProcessing3D from '@/components/features/RoyaltiesProcessing3D';
 import CatalogValuation3D from '@/components/features/CatalogValuation3D';
 import ContractManagement3D from '@/components/features/ContractManagement3D';
+import CopyrightManagement3D from '@/components/features/CopyrightManagement3D';
+import SyncLicensing3D from '@/components/features/SyncLicensing3D';
+import ClientPortal3D from '@/components/features/ClientPortal3D';
 
 export default function FeaturesOverviewPage() {
   const navigate = useNavigate();
@@ -18,9 +21,6 @@ export default function FeaturesOverviewPage() {
   useEffect(() => {
     updatePageMetadata('features');
   }, []);
-
-  const coreModules = modules.slice(0, 3);
-  const additionalModules = modules.slice(3);
 
   const get3DComponent = (moduleId: string) => {
     switch (moduleId) {
@@ -30,6 +30,12 @@ export default function FeaturesOverviewPage() {
         return <CatalogValuation3D />;
       case 'contract-management':
         return <ContractManagement3D />;
+      case 'copyright-management':
+        return <CopyrightManagement3D />;
+      case 'sync-licensing':
+        return <SyncLicensing3D />;
+      case 'client-portal':
+        return <ClientPortal3D />;
       default:
         return null;
     }
@@ -72,8 +78,8 @@ export default function FeaturesOverviewPage() {
         </div>
       </section>
 
-      {/* Core Features - Horizontal Sections */}
-      {coreModules.map((module, index) => {
+      {/* All Features - Horizontal Sections with 3D Graphics */}
+      {modules.map((module, index) => {
         const Icon = module.icon;
         const isEven = index % 2 === 0;
         const graphic3D = get3DComponent(module.id);
@@ -94,7 +100,11 @@ export default function FeaturesOverviewPage() {
                       </div>
                     }>
                       <div className="rounded-2xl overflow-hidden shadow-2xl">
-                        {graphic3D}
+                        {graphic3D || (
+                          <div className="w-full h-80 bg-gradient-to-br from-electric-lavender/10 to-dusty-gold/10 rounded-2xl flex items-center justify-center">
+                            <Icon className="w-16 h-16 text-muted-foreground/30" />
+                          </div>
+                        )}
                       </div>
                     </Suspense>
                     {/* Floating elements for extra visual interest */}
@@ -158,58 +168,6 @@ export default function FeaturesOverviewPage() {
           </section>
         );
       })}
-
-      {/* Additional Features - Simplified Grid */}
-      <section className="py-20 bg-gradient-to-br from-electric-lavender/5 to-dusty-gold/5">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl font-bold">Additional Capabilities</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Advanced features to streamline your entire music business workflow
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {additionalModules.map((module) => {
-              const Icon = module.icon;
-              
-              return (
-                <Card 
-                  key={module.id} 
-                  className="group hover:shadow-xl transition-all duration-500 cursor-pointer border-border/50 hover:border-electric-lavender/50 hover:-translate-y-1"
-                  onClick={() => navigate(`/features/${module.id}`)}
-                >
-                  <CardContent className="p-8">
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-gradient-primary rounded-xl p-3 flex-shrink-0 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                          <Icon className="w-6 h-6 text-primary-foreground" />
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {module.tier} Plan
-                        </Badge>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <h3 className="font-bold text-xl group-hover:text-electric-lavender transition-colors">
-                          {module.title}
-                        </h3>
-                        <p className="text-muted-foreground leading-relaxed">
-                          {module.description}
-                        </p>
-                      </div>
-                      
-                      <div className="flex items-center text-sm text-electric-lavender opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                        Explore module <ArrowRight className="w-4 h-4 ml-1" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       {/* Call to Action */}
       <section className="py-20 bg-gradient-to-r from-electric-lavender/10 to-dusty-gold/10 relative overflow-hidden">
