@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Music, TrendingUp, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
+import VinylMicrophone3D from "./features/VinylMicrophone3D";
 const Hero = () => {
   return <section className="relative overflow-hidden py-20 lg:py-32 bg-gradient-to-br from-background via-background/95 to-electric-lavender/10">
       {/* Dynamic Background Elements */}
@@ -18,63 +19,72 @@ const Hero = () => {
       </div>
       
       <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-6xl mx-auto text-center space-y-12 animate-fade-in">
-          <div className="space-y-8">
-            {/* Enhanced Badge with Modern Styling */}
-            <div className="inline-flex items-center gap-3 bg-gradient-to-r from-electric-lavender/20 to-electric-lavender/10 border border-electric-lavender/30 rounded-full px-6 py-3 backdrop-blur-sm">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 bg-electric-lavender rounded-full animate-pulse"></div>
-                <div className="w-2 h-2 bg-dusty-gold rounded-full animate-pulse" style={{
-                animationDelay: '0.2s'
-              }}></div>
-                <div className="w-2 h-2 bg-electric-lavender/60 rounded-full animate-pulse" style={{
-                animationDelay: '0.4s'
-              }}></div>
+        <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+          {/* Main Content */}
+          <div className="text-center lg:text-left space-y-12 animate-fade-in">
+            <div className="space-y-8">
+              {/* Enhanced Badge with Modern Styling */}
+              <div className="inline-flex items-center gap-3 bg-gradient-to-r from-electric-lavender/20 to-electric-lavender/10 border border-electric-lavender/30 rounded-full px-6 py-3 backdrop-blur-sm">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-electric-lavender rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-dusty-gold rounded-full animate-pulse" style={{
+                  animationDelay: '0.2s'
+                }}></div>
+                  <div className="w-2 h-2 bg-electric-lavender/60 rounded-full animate-pulse" style={{
+                  animationDelay: '0.4s'
+                }}></div>
+                </div>
+                <span className="font-accent text-electric-lavender text-sm font-semibold tracking-wider">ANALOG SOUL. DIGITAL SPINE.</span>
               </div>
-              <span className="font-accent text-electric-lavender text-sm font-semibold tracking-wider">ANALOG SOUL. DIGITAL SPINE.</span>
-            </div>
-            
-            {/* Bold, Modern Typography */}
-            <div className="space-y-4">
-              <h1 className="font-headline text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-none">
-                <span className="block relative">
-                  <span className="bg-gradient-to-r from-electric-lavender via-electric-lavender to-dusty-gold bg-clip-text text-transparent italic inline-block px-[15px]">
-                    ENCORE!
-                  </span>
-                </span>
-              </h1>
               
-              {/* Subtitle with modern styling */}
-              <div className="bg-electric-lavender/90 text-background px-8 py-4 rounded-2xl inline-block transform -rotate-1 shadow-lg">
-                <p className="font-body text-lg md:text-xl font-bold">RIGHTS MANAGEMENT SYSTEMS</p>
+              {/* Bold, Modern Typography */}
+              <div className="space-y-4">
+                <h1 className="font-headline text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-none">
+                  <span className="block relative">
+                    <span className="bg-gradient-to-r from-electric-lavender via-electric-lavender to-dusty-gold bg-clip-text text-transparent italic inline-block px-[15px]">
+                      ENCORE!
+                    </span>
+                  </span>
+                </h1>
+                
+                {/* Subtitle with modern styling */}
+                <div className="bg-electric-lavender/90 text-background px-8 py-4 rounded-2xl inline-block transform -rotate-1 shadow-lg">
+                  <p className="font-body text-lg md:text-xl font-bold">RIGHTS MANAGEMENT SYSTEMS</p>
+                </div>
               </div>
+              
+              <p className="font-body text-xl max-w-4xl mx-auto lg:mx-0 leading-relaxed text-violet-500 md:text-2xl font-bold">
+                Track your rights like you track your hits.
+              </p>
             </div>
-            
-            <p className="font-body text-xl max-w-4xl mx-auto leading-relaxed text-violet-500 md:text-2xl font-bold">
-              Track your rights like you track your hits.
-            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
+              <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-fader transition-all duration-300 hover:scale-105" asChild>
+                <Link to="/pricing">
+                  Start Free Trial
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              <Button variant="outline" size="lg" className="border-electric-lavender text-electric-lavender hover:bg-electric-lavender hover:text-jet-black transition-all duration-300" asChild>
+                <a href="/auth">
+                  Try Now
+                </a>
+              </Button>
+              <Button variant="outline" size="lg" className="border-electric-lavender text-electric-lavender hover:bg-electric-lavender hover:text-jet-black transition-all duration-300" asChild>
+                <a href="https://www.calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
+                  Schedule Demo
+                </a>
+              </Button>
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-fader transition-all duration-300 hover:scale-105" asChild>
-              <Link to="/pricing">
-                Start Free Trial
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button variant="outline" size="lg" className="border-electric-lavender text-electric-lavender hover:bg-electric-lavender hover:text-jet-black transition-all duration-300" asChild>
-              <a href="/auth">
-                Try Now
-              </a>
-            </Button>
-            <Button variant="outline" size="lg" className="border-electric-lavender text-electric-lavender hover:bg-electric-lavender hover:text-jet-black transition-all duration-300" asChild>
-              <a href="https://www.calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
-                Schedule Demo
-              </a>
-            </Button>
+          {/* 3D Visualization */}
+          <div className="relative h-[400px] lg:h-[500px] animate-fade-in">
+            <VinylMicrophone3D />
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 animate-slide-up">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 animate-slide-up max-w-4xl mx-auto">
             <div className="text-center space-y-2">
               <div className="bg-gradient-primary rounded-full p-3 w-12 h-12 mx-auto mb-4">
                 <Music className="h-6 w-6 text-primary-foreground" />
@@ -106,7 +116,6 @@ const Hero = () => {
             </div>
           </div>
         </div>
-      </div>
-    </section>;
+      </section>;
 };
 export default Hero;
