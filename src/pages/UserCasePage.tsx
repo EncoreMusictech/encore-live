@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, CheckCircle2, Music, Scale, Briefcase, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -255,37 +255,71 @@ export default function UserCasePage() {
                 
                 {userCase.recommendedTier === "Growth Bundle" && (
                   <div>
-                    <h4 className="font-semibold mb-2">Growth Bundle</h4>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">Growth Bundle</h4>
+                      <span className="text-xs bg-music-purple/10 text-music-purple px-2 py-1 rounded">Save 13%</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Ideal for Scaling publishers
+                    </p>
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="text-sm text-muted-foreground line-through">$450/mo</span>
+                    </div>
                     <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-2xl font-bold">$89</span>
+                      <span className="text-2xl font-bold text-music-purple">$399</span>
                       <span className="text-muted-foreground">/month</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Complete solution for scaling distributors and labels
-                    </p>
-                    <div className="space-y-2 text-sm">
+                    <p className="text-xs text-muted-foreground mb-4">or $4499/yr</p>
+                    
+                    <div className="mb-4">
+                      <p className="font-medium text-sm mb-2">Includes:</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Music className="w-3 h-3" />
+                          <span>Royalties</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Scale className="w-3 h-3" />
+                          <span>Copyright</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Briefcase className="w-3 h-3" />
+                          <span>Contract</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="w-3 h-3" />
+                          <span>Catalog Valuation</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-sm mb-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-music-purple" />
-                        <span>All modules included</span>
+                        <CheckCircle2 className="w-4 h-4 text-music-purple" />
+                        <span>Full royalty management suite</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-music-purple" />
-                        <span>Unlimited catalog entries</span>
+                        <CheckCircle2 className="w-4 h-4 text-music-purple" />
+                        <span>Advanced copyright tracking</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-music-purple" />
-                        <span>Advanced valuations & analytics</span>
+                        <CheckCircle2 className="w-4 h-4 text-music-purple" />
+                        <span>Contract automation</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-music-purple" />
+                        <CheckCircle2 className="w-4 h-4 text-music-purple" />
+                        <span>Catalog valuation tools</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-music-purple" />
                         <span>Priority support</span>
                       </div>
                     </div>
                     <Button 
-                      className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90 mt-4"
+                      className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
                       onClick={() => createCheckout('bundle', 'growth')}
                     >
-                      Start Free Trial
+                      Subscribe to Plan
                     </Button>
                   </div>
                 )}
