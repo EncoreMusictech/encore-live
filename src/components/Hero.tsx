@@ -46,9 +46,7 @@ const Hero = () => {
               
               {/* Subtitle with modern styling */}
               <div className="bg-electric-lavender/90 text-background px-8 py-4 rounded-2xl inline-block transform -rotate-1 shadow-lg">
-                <p className="font-body text-lg md:text-xl font-bold">
-                  Rights Management Systems
-                </p>
+                <p className="font-body text-lg md:text-xl font-bold">RIGHTS MANAGEMENT SYSTEMS</p>
               </div>
             </div>
             
