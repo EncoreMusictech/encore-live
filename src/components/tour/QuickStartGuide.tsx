@@ -23,7 +23,7 @@ const QUICK_START_MODULES = [
     title: 'Catalog Valuation',
     icon: TrendingUp,
     description: 'Get AI-powered valuations for any music catalog',
-    url: '/catalog-valuation',
+    url: '/dashboard/catalog-valuation',
     steps: [
       'Search for any artist (try "Taylor Swift")',
       'Review streaming data and popularity metrics',

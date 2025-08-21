@@ -62,14 +62,14 @@ export const modules = [
         title: "Catalog Valuation",
         description: "AI-powered catalog assessment with 3-5 year forecasting and fair market value analysis",
         icon: TrendingUp,
-        path: "/catalog-valuation"
+        path: "/dashboard/catalog-valuation"
       },
       {
         id: "deal-simulator",
         title: "Deal Simulator",
         description: "Simulate different deal structures and outcomes with advanced modeling",
         icon: TrendingUp,
-        path: "/catalog-valuation"
+        path: "/dashboard/catalog-valuation"
       }
     ],
     features: [

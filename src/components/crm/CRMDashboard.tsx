@@ -359,7 +359,7 @@ export function CRMDashboard() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start">
-              <Link to="/catalog-valuation">
+              <Link to="/dashboard/catalog-valuation">
                 <TrendingUp className="mr-2 h-4 w-4" />
                 Run Catalog Valuation
               </Link>
