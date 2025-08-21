@@ -28,7 +28,7 @@ export interface UserCase {
     author: string;
     company: string;
   };
-  recommendedTier: "Free" | "Pro" | "Enterprise";
+  recommendedTier: "Free" | "Pro" | "Enterprise" | "Growth Bundle";
 }
 
 export const userCases: UserCase[] = [
@@ -208,7 +208,7 @@ export const userCases: UserCase[] = [
       "Professional valuation reports",
       "Scalable for growing rosters"
     ],
-    recommendedTier: "Enterprise"
+    recommendedTier: "Growth Bundle"
   },
   {
     id: "management-companies",

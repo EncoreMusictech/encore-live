@@ -15,7 +15,7 @@ interface ModuleFeatureModalProps {
     description: string;
     icon: LucideIcon;
     features: string[];
-    tier: "Free" | "Pro" | "Enterprise";
+    tier: "Free" | "Pro" | "Enterprise" | "Growth Bundle";
   } | null;
 }
 
@@ -153,7 +153,8 @@ const ModuleFeatureModal = ({ isOpen, onClose, module }: ModuleFeatureModalProps
   const tierColors = {
     Free: "bg-secondary text-secondary-foreground",
     Pro: "bg-music-purple text-primary-foreground", 
-    Enterprise: "bg-music-gold text-accent-foreground"
+    Enterprise: "bg-music-gold text-accent-foreground",
+    "Growth Bundle": "bg-gradient-primary text-primary-foreground"
   };
 
   return (

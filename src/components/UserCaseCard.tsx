@@ -9,7 +9,7 @@ interface UserCaseCardProps {
   icon: LucideIcon;
   audience: string;
   benefits: string[];
-  recommendedTier: "Free" | "Pro" | "Enterprise";
+  recommendedTier: "Free" | "Pro" | "Enterprise" | "Growth Bundle";
   isPopular?: boolean;
   onGetStarted: () => void;
 }
@@ -27,7 +27,8 @@ const UserCaseCard = ({
   const tierColors = {
     Free: "bg-secondary text-secondary-foreground",
     Pro: "bg-music-purple text-primary-foreground",
-    Enterprise: "bg-music-gold text-accent-foreground"
+    Enterprise: "bg-music-gold text-accent-foreground",
+    "Growth Bundle": "bg-gradient-primary text-primary-foreground"
   };
 
   return (

@@ -15,7 +15,7 @@ const Index = () => {
     toast
   } = useToast();
   const navigate = useNavigate();
-  const [selectedTier, setSelectedTier] = useState<"Free" | "Pro" | "Enterprise">("Pro");
+  const [selectedTier, setSelectedTier] = useState<"Free" | "Pro" | "Enterprise" | "Growth Bundle">("Pro");
   const [selectedUserCase, setSelectedUserCase] = useState<typeof userCases[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   useEffect(() => {

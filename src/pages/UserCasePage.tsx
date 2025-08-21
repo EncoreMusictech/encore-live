@@ -57,7 +57,8 @@ export default function UserCasePage() {
   const tierColors = {
     Free: "bg-secondary text-secondary-foreground",
     Pro: "bg-music-purple text-primary-foreground",
-    Enterprise: "bg-music-gold text-accent-foreground"
+    Enterprise: "bg-music-gold text-accent-foreground",
+    "Growth Bundle": "bg-gradient-primary text-primary-foreground"
   };
 
   return (
@@ -248,6 +249,43 @@ export default function UserCasePage() {
                       onClick={() => createCheckout('bundle', 'publishing-pro')}
                     >
                       Purchase Plan
+                    </Button>
+                  </div>
+                )}
+                
+                {userCase.recommendedTier === "Growth Bundle" && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Growth Bundle</h4>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-2xl font-bold">$89</span>
+                      <span className="text-muted-foreground">/month</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Complete solution for scaling distributors and labels
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-music-purple" />
+                        <span>All modules included</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-music-purple" />
+                        <span>Unlimited catalog entries</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-music-purple" />
+                        <span>Advanced valuations & analytics</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-music-purple" />
+                        <span>Priority support</span>
+                      </div>
+                    </div>
+                    <Button 
+                      className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90 mt-4"
+                      onClick={() => createCheckout('bundle', 'growth')}
+                    >
+                      Start Free Trial
                     </Button>
                   </div>
                 )}
