@@ -65,7 +65,7 @@ const Hero = () => {
               </Link>
             </Button>
             <Button variant="outline" size="lg" className="border-electric-lavender text-electric-lavender hover:bg-electric-lavender hover:text-jet-black transition-all duration-300" asChild>
-              <a href="/auth?demo=true">
+              <a href="/auth">
                 Try Now
               </a>
             </Button>
