@@ -445,19 +445,21 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                   <p className="text-sm text-muted-foreground">Drag fields to build your template</p>
                 </CardHeader>
                 <CardContent>
-                  <Droppable droppableId="available-fields">
+                  <Droppable droppableId="available-fields" isDropDisabled={true}>
                     {(provided) => (
                       <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                        {(FIELD_TEMPLATES[selectedContractType] || []).map((field, index) => (
+                        {(FIELD_TEMPLATES[selectedContractType] || []).filter(field => 
+                          !selectedFields.find(f => f.id === field.id)
+                        ).map((field, index) => (
                           <Draggable key={field.id} draggableId={field.id} index={index}>
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`p-3 border rounded-lg cursor-move hover:bg-accent ${
-                                  snapshot.isDragging ? 'bg-accent' : ''
-                                } ${selectedFields.find(f => f.id === field.id) ? 'opacity-50' : ''}`}
+                                className={`p-3 border rounded-lg cursor-move hover:bg-accent transition-colors ${
+                                  snapshot.isDragging ? 'bg-accent shadow-lg' : 'hover:shadow-sm'
+                                }`}
                               >
                                 <div className="flex items-center justify-between">
                                   <div>
@@ -473,6 +475,13 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                           </Draggable>
                         ))}
                         {provided.placeholder}
+                        {(FIELD_TEMPLATES[selectedContractType] || []).filter(field => 
+                          !selectedFields.find(f => f.id === field.id)
+                        ).length === 0 && (
+                          <div className="p-8 text-center text-muted-foreground">
+                            All fields have been added to your template
+                          </div>
+                        )}
                       </div>
                     )}
                   </Droppable>
