@@ -18,12 +18,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface ContractField {
   id: string;
-  type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox';
+  type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox' | 'table' | 'multiselect';
   label: string;
   placeholder?: string;
   required: boolean;
   options?: string[];
   category: string;
+  min?: number;
+  format?: string;
 }
 
 interface TemplateBuilderProps {
@@ -40,141 +42,140 @@ interface TemplateBuilderProps {
 
 const FIELD_TEMPLATES: Record<string, ContractField[]> = {
   'artist_recording': [
-    // Header - Required
+    // Header
     { id: 'agreement_title', type: 'text', label: 'Agreement Title', required: true, category: 'header' },
     { id: 'effective_date', type: 'date', label: 'Effective Date', required: true, category: 'header' },
-    { id: 'governing_law', type: 'text', label: 'Governing Law', required: true, category: 'header' },
-    { id: 'jurisdiction', type: 'text', label: 'Jurisdiction', required: true, category: 'header' },
+    { id: 'governing_law', type: 'select', label: 'Governing Law', required: true, options: ['CA', 'NY', 'IL', 'TX', 'Other'], category: 'header' },
+    { id: 'jurisdiction', type: 'text', label: 'Jurisdiction', required: false, category: 'header' },
     
-    // Parties - Required
+    // Parties
     { id: 'company_name', type: 'text', label: 'Company Name', required: true, category: 'parties' },
-    { id: 'company_address', type: 'textarea', label: 'Company Address', required: true, category: 'parties' },
+    { id: 'company_address', type: 'textarea', label: 'Company Address', required: false, category: 'parties' },
+    { id: 'company_representative_name', type: 'text', label: 'Company Representative Name', required: false, category: 'parties' },
+    { id: 'company_representative_title', type: 'text', label: 'Company Representative Title', required: false, category: 'parties' },
     { id: 'artist_legal_name', type: 'text', label: 'Artist Legal Name', required: true, category: 'parties' },
-    { id: 'artist_stage_name', type: 'text', label: 'Artist Stage Name', required: true, category: 'parties' },
-    { id: 'company_representative_name', type: 'text', label: 'Company Representative Name', required: true, category: 'parties' },
-    { id: 'company_representative_title', type: 'text', label: 'Company Representative Title', required: true, category: 'parties' },
+    { id: 'artist_stage_name', type: 'text', label: 'Artist Stage Name', required: false, category: 'parties' },
     
-    // Work Details - Required
-    { id: 'project_title', type: 'text', label: 'Project Title', required: true, category: 'work' },
-    { id: 'number_of_tracks', type: 'number', label: 'Number of Tracks', required: true, category: 'work' },
-    { id: 'isrc_list', type: 'textarea', label: 'ISRC List', required: true, category: 'work' },
-    { id: 'delivery_format', type: 'select', label: 'Delivery Format', required: true, options: ['WAV 24-bit/96kHz', 'WAV 24-bit/48kHz', 'AIFF', 'Digital Masters'], category: 'work' },
+    // Work Details
+    { id: 'project_title', type: 'text', label: 'Project Title', required: false, category: 'work' },
+    { id: 'isrc_list', type: 'table', label: 'ISRC List', required: false, category: 'work', options: ['title', 'isrc'] },
+    { id: 'number_of_tracks', type: 'number', label: 'Number of Tracks', required: false, category: 'work', min: 1 },
+    { id: 'genre_style', type: 'select', label: 'Genre/Style', required: false, options: ['Hip-Hop', 'R&B', 'Pop', 'Rock', 'EDM', 'Other'], category: 'work' },
+    { id: 'delivery_format', type: 'select', label: 'Delivery Format', required: false, options: ['WAV', 'AIFF', 'MP3', 'Stems', 'DAW Session', 'Other'], category: 'work' },
     
-    // Financial Terms - Required
-    { id: 'advance_amount', type: 'number', label: 'Advance Amount ($)', required: true, category: 'financial' },
-    { id: 'royalty_rate_percent', type: 'number', label: 'Royalty Rate (%)', required: true, category: 'financial' },
-    { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['Net 30', 'Net 45', 'Net 60', 'Upon Delivery'], category: 'financial' },
-    { id: 'accounting_frequency', type: 'select', label: 'Accounting Frequency', required: true, options: ['Quarterly', 'Semi-Annual', 'Annual'], category: 'financial' },
-    { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['Direct Deposit', 'Check', 'Wire Transfer'], category: 'financial' },
-    { id: 'late_interest_percent', type: 'number', label: 'Late Interest Rate (%)', required: true, category: 'financial' },
-    { id: 'recoupable', type: 'checkbox', label: 'Recoupable Advance', required: true, category: 'financial' },
+    // Financial Terms
+    { id: 'advance_amount', type: 'number', label: 'Advance Amount', required: true, category: 'financial', min: 0, format: 'currency' },
+    { id: 'royalty_rate_percent', type: 'select', label: 'Royalty Rate (%)', required: true, options: ['10', '12', '15', '18', 'Custom'], category: 'financial' },
+    { id: 'late_interest_percent', type: 'select', label: 'Late Interest Rate (%)', required: true, options: ['5', '7.5', '10', 'Custom'], category: 'financial' },
+    { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['On Execution', 'Net 30', 'Net 60', 'Net 90', 'Milestone'], category: 'financial' },
+    { id: 'accounting_frequency', type: 'select', label: 'Accounting Frequency', required: true, options: ['Monthly', 'Quarterly', 'Semi-Annual', 'Annual'], category: 'financial' },
+    { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['ACH', 'Wire', 'PayPal', 'Check'], category: 'financial' },
+    { id: 'recoupable', type: 'checkbox', label: 'Recoupable', required: true, category: 'financial' },
     
-    // Terms & Conditions - Required
-    { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'North America', 'Europe', 'United States'], category: 'terms' },
-    { id: 'term_type', type: 'select', label: 'Term Type', required: true, options: ['Years', 'Album Commitment'], category: 'terms' },
+    // Terms & Conditions
+    { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'U.S. Only', 'North America', 'EU', 'Custom'], category: 'terms' },
+    { id: 'term_type', type: 'select', label: 'Term Type', required: true, options: ['Years', 'Albums', 'Perpetuity', 'Festival-Only'], category: 'terms' },
     { id: 'term_years', type: 'number', label: 'Term Years', required: false, category: 'terms' },
     { id: 'album_commitment', type: 'number', label: 'Album Commitment', required: false, category: 'terms' },
     { id: 'option_periods_count', type: 'number', label: 'Option Periods Count', required: true, category: 'terms' },
-    { id: 'exclusivity', type: 'checkbox', label: 'Exclusive Agreement', required: true, category: 'terms' },
+    { id: 'union_name', type: 'select', label: 'Union Name', required: true, options: ['AFM', 'SAG-AFTRA', 'None'], category: 'terms' },
+    { id: 'exclusivity', type: 'checkbox', label: 'Exclusivity', required: true, category: 'terms' },
     { id: 're_record_restriction_years', type: 'number', label: 'Re-record Restriction (Years)', required: true, category: 'terms' },
-    { id: 'union_name', type: 'text', label: 'Union Affiliation', required: true, category: 'terms' },
     
-    // Signatures - Required
+    // Timeline & Delivery
+    { id: 'commencement_date', type: 'date', label: 'Commencement Date', required: false, category: 'timeline' },
+    { id: 'completion_date', type: 'date', label: 'Completion Date', required: false, category: 'timeline' },
+    { id: 'delivery_date', type: 'date', label: 'Delivery Date', required: false, category: 'timeline' },
+    
+    // Schedules & Signatures
+    { id: 'schedule_a_enabled', type: 'checkbox', label: 'Include Schedule A', required: false, category: 'schedule' },
     { id: 'signature_block_company_enabled', type: 'checkbox', label: 'Company Signature Block', required: true, category: 'signatures' },
-    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' },
-    
-    // Optional Fields
-    { id: 'genre_style', type: 'text', label: 'Genre/Style', required: false, category: 'work' },
-    { id: 'schedule_a_enabled', type: 'checkbox', label: 'Include Schedule A', required: false, category: 'schedule' }
+    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' }
   ],
   'publishing': [
-    // Header - Required
+    // Header
     { id: 'agreement_title', type: 'text', label: 'Agreement Title', required: true, category: 'header' },
     { id: 'effective_date', type: 'date', label: 'Effective Date', required: true, category: 'header' },
-    { id: 'governing_law', type: 'text', label: 'Governing Law', required: true, category: 'header' },
-    { id: 'jurisdiction', type: 'text', label: 'Jurisdiction', required: true, category: 'header' },
+    { id: 'governing_law', type: 'select', label: 'Governing Law', required: true, options: ['CA', 'NY', 'IL', 'TX', 'Other'], category: 'header' },
+    { id: 'jurisdiction', type: 'text', label: 'Jurisdiction', required: false, category: 'header' },
     
-    // Parties - Required
+    // Parties
     { id: 'writer_legal_name', type: 'text', label: 'Writer Legal Name', required: true, category: 'parties' },
     { id: 'publisher_name', type: 'text', label: 'Publisher Name', required: true, category: 'parties' },
     { id: 'publisher_address', type: 'textarea', label: 'Publisher Address', required: true, category: 'parties' },
-    { id: 'pro_affiliation', type: 'select', label: 'PRO Affiliation', required: true, options: ['ASCAP', 'BMI', 'SESAC', 'GMR'], category: 'parties' },
-    { id: 'ipi_cae', type: 'text', label: 'IPI/CAE Number', required: true, category: 'parties' },
     { id: 'company_representative_name', type: 'text', label: 'Company Representative Name', required: true, category: 'parties' },
     { id: 'company_representative_title', type: 'text', label: 'Company Representative Title', required: true, category: 'parties' },
+    { id: 'pro_affiliation', type: 'select', label: 'PRO Affiliation', required: true, options: ['ASCAP', 'BMI', 'SESAC', 'SOCAN', 'PRS', 'Other'], category: 'parties' },
+    { id: 'ipi_cae', type: 'text', label: 'IPI/CAE Number', required: true, category: 'parties' },
     
-    // Work Details - Required
-    { id: 'song_titles', type: 'textarea', label: 'Song Titles (Table of Compositions)', required: true, category: 'work' },
+    // Work Details
+    { id: 'song_titles', type: 'table', label: 'Song Titles', required: true, category: 'work', options: ['title', 'iswc', 'writer_names', 'publisher_names'] },
     
-    // Financial Terms - Required
-    { id: 'advance_amount', type: 'number', label: 'Advance Amount ($)', required: true, category: 'financial' },
-    { id: 'admin_fee_percent', type: 'number', label: 'Administration Fee (%)', required: true, category: 'financial' },
-    { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['Net 30', 'Net 45', 'Net 60'], category: 'financial' },
-    { id: 'accounting_frequency', type: 'select', label: 'Accounting Frequency', required: true, options: ['Quarterly', 'Semi-Annual', 'Annual'], category: 'financial' },
-    { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['Direct Deposit', 'Check', 'Wire Transfer'], category: 'financial' },
-    { id: 'recoupable', type: 'checkbox', label: 'Recoupable Advance', required: true, category: 'financial' },
+    // Financial Terms
+    { id: 'advance_amount', type: 'number', label: 'Advance Amount', required: true, category: 'financial', min: 0, format: 'currency' },
+    { id: 'admin_fee_percent', type: 'select', label: 'Administration Fee (%)', required: true, options: ['10', '15', '20', 'Custom'], category: 'financial' },
+    { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['On Execution', 'Net 30', 'Net 60', 'Net 90', 'Milestone'], category: 'financial' },
+    { id: 'accounting_frequency', type: 'select', label: 'Accounting Frequency', required: true, options: ['Monthly', 'Quarterly', 'Semi-Annual', 'Annual'], category: 'financial' },
+    { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['ACH', 'Wire', 'PayPal', 'Check'], category: 'financial' },
+    { id: 'recoupable', type: 'checkbox', label: 'Recoupable', required: true, category: 'financial' },
     
-    // Terms & Conditions - Required
-    { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'North America', 'Europe', 'United States'], category: 'terms' },
-    { id: 'term_type', type: 'select', label: 'Term Type', required: true, options: ['Years', 'Life of Copyright'], category: 'terms' },
+    // Terms & Conditions
+    { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'U.S. Only', 'North America', 'EU', 'Custom'], category: 'terms' },
+    { id: 'term_type', type: 'select', label: 'Term Type', required: true, options: ['Years', 'Albums', 'Perpetuity', 'Festival-Only'], category: 'terms' },
     { id: 'term_years', type: 'number', label: 'Term Years', required: true, category: 'terms' },
     { id: 'option_periods_count', type: 'number', label: 'Option Periods Count', required: true, category: 'terms' },
+    { id: 'credit_language', type: 'textarea', label: 'Credit Language', required: false, category: 'terms' },
+    { id: 'credit_placement', type: 'select', label: 'Credit Placement', required: false, options: ['On-Screen', 'End Credits', 'Metadata Only', 'None'], category: 'terms' },
     
-    // Signatures - Required
+    // Schedules & Signatures
     { id: 'signature_block_company_enabled', type: 'checkbox', label: 'Company Signature Block', required: true, category: 'signatures' },
-    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' },
-    
-    // Optional Fields
-    { id: 'credit_language', type: 'text', label: 'Credit Language', required: false, category: 'terms' },
-    { id: 'credit_placement', type: 'text', label: 'Credit Placement', required: false, category: 'terms' }
+    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' }
   ],
   'distribution': [
-    // Header - Required
+    // Header
     { id: 'agreement_title', type: 'text', label: 'Agreement Title', required: true, category: 'header' },
     { id: 'effective_date', type: 'date', label: 'Effective Date', required: true, category: 'header' },
-    { id: 'governing_law', type: 'text', label: 'Governing Law', required: true, category: 'header' },
-    { id: 'jurisdiction', type: 'text', label: 'Jurisdiction', required: true, category: 'header' },
+    { id: 'governing_law', type: 'select', label: 'Governing Law', required: true, options: ['CA', 'NY', 'IL', 'TX', 'Other'], category: 'header' },
+    { id: 'jurisdiction', type: 'text', label: 'Jurisdiction', required: false, category: 'header' },
     
-    // Parties - Required
+    // Parties
     { id: 'company_name', type: 'text', label: 'Company Name', required: true, category: 'parties' },
     { id: 'distributor_name', type: 'text', label: 'Distributor Name', required: true, category: 'parties' },
     { id: 'distributor_address', type: 'textarea', label: 'Distributor Address', required: true, category: 'parties' },
     { id: 'company_representative_name', type: 'text', label: 'Company Representative Name', required: true, category: 'parties' },
     { id: 'company_representative_title', type: 'text', label: 'Company Representative Title', required: true, category: 'parties' },
     
-    // Work Details - Required
+    // Work Details
     { id: 'project_title', type: 'text', label: 'Project Title', required: true, category: 'work' },
-    { id: 'isrc_list', type: 'textarea', label: 'ISRC List', required: true, category: 'work' },
-    { id: 'delivery_format', type: 'select', label: 'Delivery Format', required: true, options: ['Digital Masters', 'WAV Files', 'Physical Masters'], category: 'work' },
+    { id: 'isrc_list', type: 'table', label: 'ISRC List', required: true, category: 'work', options: ['title', 'isrc'] },
+    { id: 'delivery_format', type: 'select', label: 'Delivery Format', required: true, options: ['WAV', 'AIFF', 'MP3', 'Stems', 'DAW Session', 'Other'], category: 'work' },
     
-    // Financial Terms - Required
-    { id: 'distribution_fee_percent', type: 'number', label: 'Distribution Fee (%)', required: true, category: 'financial' },
-    { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['Net 30', 'Net 45', 'Net 60'], category: 'financial' },
-    { id: 'accounting_frequency', type: 'select', label: 'Accounting Frequency', required: true, options: ['Quarterly', 'Monthly', 'Semi-Annual'], category: 'financial' },
-    { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['Direct Deposit', 'Check', 'Wire Transfer'], category: 'financial' },
-    { id: 'late_interest_percent', type: 'number', label: 'Late Interest Rate (%)', required: true, category: 'financial' },
+    // Financial Terms
+    { id: 'distribution_fee_percent', type: 'select', label: 'Distribution Fee (%)', required: true, options: ['10', '15', '20', 'Custom'], category: 'financial' },
+    { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['On Execution', 'Net 30', 'Net 60', 'Net 90', 'Milestone'], category: 'financial' },
+    { id: 'accounting_frequency', type: 'select', label: 'Accounting Frequency', required: true, options: ['Monthly', 'Quarterly', 'Semi-Annual', 'Annual'], category: 'financial' },
+    { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['ACH', 'Wire', 'PayPal', 'Check'], category: 'financial' },
+    { id: 'late_interest_percent', type: 'select', label: 'Late Interest Rate (%)', required: true, options: ['5', '7.5', '10', 'Custom'], category: 'financial' },
     
-    // Terms & Conditions - Required
-    { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'Digital Worldwide', 'North America'], category: 'terms' },
-    { id: 'term_type', type: 'select', label: 'Term Type', required: true, options: ['Years', 'Indefinite'], category: 'terms' },
+    // Terms & Conditions
+    { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'U.S. Only', 'North America', 'EU', 'Custom'], category: 'terms' },
+    { id: 'term_type', type: 'select', label: 'Term Type', required: true, options: ['Years', 'Albums', 'Perpetuity', 'Festival-Only'], category: 'terms' },
     { id: 'term_years', type: 'number', label: 'Term Years', required: true, category: 'terms' },
-    { id: 'media_platforms', type: 'textarea', label: 'Media Platforms', required: true, category: 'terms' },
+    { id: 'media_platforms', type: 'multiselect', label: 'Media Platforms', required: true, options: ['Theatrical', 'Television', 'Streaming', 'Online', 'DVD', 'Games', 'Advertising', 'All Media'], category: 'terms' },
     
-    // Signatures - Required
+    // Schedules & Signatures
+    { id: 'schedule_a_enabled', type: 'checkbox', label: 'Include Schedule A', required: false, category: 'schedule' },
     { id: 'signature_block_company_enabled', type: 'checkbox', label: 'Company Signature Block', required: true, category: 'signatures' },
-    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' },
-    
-    // Optional Fields
-    { id: 'schedule_a_enabled', type: 'checkbox', label: 'Include Schedule A', required: false, category: 'schedule' }
+    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' }
   ],
   'sync': [
-    // Header - Required
+    // Header
     { id: 'agreement_title', type: 'text', label: 'Agreement Title', required: true, category: 'header' },
     { id: 'effective_date', type: 'date', label: 'Effective Date', required: true, category: 'header' },
-    { id: 'governing_law', type: 'text', label: 'Governing Law', required: true, category: 'header' },
-    { id: 'jurisdiction', type: 'text', label: 'Jurisdiction', required: true, category: 'header' },
+    { id: 'governing_law', type: 'select', label: 'Governing Law', required: true, options: ['CA', 'NY', 'IL', 'TX', 'Other'], category: 'header' },
+    { id: 'jurisdiction', type: 'text', label: 'Jurisdiction', required: false, category: 'header' },
     
-    // Parties - Required
+    // Parties
     { id: 'licensor_name', type: 'text', label: 'Licensor Name', required: true, category: 'parties' },
     { id: 'licensor_address', type: 'textarea', label: 'Licensor Address', required: true, category: 'parties' },
     { id: 'licensee_name', type: 'text', label: 'Licensee Name', required: true, category: 'parties' },
@@ -182,41 +183,44 @@ const FIELD_TEMPLATES: Record<string, ContractField[]> = {
     { id: 'company_representative_name', type: 'text', label: 'Company Representative Name', required: true, category: 'parties' },
     { id: 'company_representative_title', type: 'text', label: 'Company Representative Title', required: true, category: 'parties' },
     
-    // Work Details - Required
-    { id: 'song_titles', type: 'textarea', label: 'Song Titles', required: true, category: 'work' },
+    // Work Details
+    { id: 'song_titles', type: 'table', label: 'Song Titles', required: true, category: 'work', options: ['title', 'iswc', 'writer_names', 'publisher_names'] },
     { id: 'use_description', type: 'textarea', label: 'Use Description', required: true, category: 'work' },
     { id: 'scene_duration_seconds', type: 'number', label: 'Scene Duration (Seconds)', required: true, category: 'work' },
     { id: 'project_title', type: 'text', label: 'Project Title', required: true, category: 'work' },
     
-    // Financial Terms - Required
-    { id: 'sync_fee_amount', type: 'number', label: 'Sync Fee Amount ($)', required: true, category: 'financial' },
-    { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['Upon Execution', 'Net 30', 'Upon Broadcast'], category: 'financial' },
-    { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['Check', 'Wire Transfer', 'Direct Deposit'], category: 'financial' },
+    // Financial Terms
+    { id: 'sync_fee_amount', type: 'number', label: 'Sync Fee Amount', required: true, category: 'financial', min: 0, format: 'currency' },
+    { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['On Execution', 'Net 30', 'Net 60', 'Net 90', 'Milestone'], category: 'financial' },
+    { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['ACH', 'Wire', 'PayPal', 'Check'], category: 'financial' },
     
-    // Terms & Conditions - Required
-    { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'North America', 'United States', 'Europe'], category: 'terms' },
-    { id: 'term_type', type: 'select', label: 'Term Type', required: true, options: ['Years', 'Perpetual', 'Project Duration'], category: 'terms' },
+    // Terms & Conditions
+    { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'U.S. Only', 'North America', 'EU', 'Custom'], category: 'terms' },
+    { id: 'term_type', type: 'select', label: 'Term Type', required: true, options: ['Years', 'Albums', 'Perpetuity', 'Festival-Only'], category: 'terms' },
     { id: 'term_years', type: 'number', label: 'Term Years', required: true, category: 'terms' },
-    { id: 'media_platforms', type: 'textarea', label: 'Media Platforms', required: true, category: 'terms' },
-    { id: 'credit_language', type: 'text', label: 'Credit Language', required: true, category: 'terms' },
-    { id: 'credit_placement', type: 'select', label: 'Credit Placement', required: true, options: ['End Credits', 'Opening Credits', 'Both'], category: 'terms' },
+    { id: 'media_platforms', type: 'multiselect', label: 'Media Platforms', required: true, options: ['Theatrical', 'Television', 'Streaming', 'Online', 'DVD', 'Games', 'Advertising', 'All Media'], category: 'terms' },
+    { id: 'credit_language', type: 'textarea', label: 'Credit Language', required: true, category: 'terms' },
+    { id: 'credit_placement', type: 'select', label: 'Credit Placement', required: true, options: ['On-Screen', 'End Credits', 'Metadata Only', 'None'], category: 'terms' },
     
-    // Signatures - Required
-    { id: 'signature_block_company_enabled', type: 'checkbox', label: 'Company Signature Block', required: true, category: 'signatures' },
-    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' },
+    // Timeline & Delivery
+    { id: 'commencement_date', type: 'date', label: 'Commencement Date', required: false, category: 'timeline' },
+    { id: 'completion_date', type: 'date', label: 'Completion Date', required: false, category: 'timeline' },
+    { id: 'delivery_date', type: 'date', label: 'Delivery Date', required: false, category: 'timeline' },
     
-    // Optional Fields
+    // Schedules & Signatures
     { id: 'option_periods_count', type: 'number', label: 'Option Periods Count', required: false, category: 'terms' },
-    { id: 'schedule_a_enabled', type: 'checkbox', label: 'Include Schedule A', required: false, category: 'schedule' }
+    { id: 'schedule_a_enabled', type: 'checkbox', label: 'Include Schedule A', required: false, category: 'schedule' },
+    { id: 'signature_block_company_enabled', type: 'checkbox', label: 'Company Signature Block', required: true, category: 'signatures' },
+    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' }
   ],
   'producer': [
-    // Header - Required
+    // Header
     { id: 'agreement_title', type: 'text', label: 'Agreement Title', required: true, category: 'header' },
     { id: 'effective_date', type: 'date', label: 'Effective Date', required: true, category: 'header' },
-    { id: 'governing_law', type: 'text', label: 'Governing Law', required: true, category: 'header' },
-    { id: 'jurisdiction', type: 'text', label: 'Jurisdiction', required: true, category: 'header' },
+    { id: 'governing_law', type: 'select', label: 'Governing Law', required: true, options: ['CA', 'NY', 'IL', 'TX', 'Other'], category: 'header' },
+    { id: 'jurisdiction', type: 'text', label: 'Jurisdiction', required: false, category: 'header' },
     
-    // Parties - Required
+    // Parties
     { id: 'producer_name', type: 'text', label: 'Producer Name', required: true, category: 'parties' },
     { id: 'producer_address', type: 'textarea', label: 'Producer Address', required: true, category: 'parties' },
     { id: 'company_name', type: 'text', label: 'Company Name', required: true, category: 'parties' },
@@ -224,37 +228,37 @@ const FIELD_TEMPLATES: Record<string, ContractField[]> = {
     { id: 'company_representative_name', type: 'text', label: 'Company Representative Name', required: true, category: 'parties' },
     { id: 'company_representative_title', type: 'text', label: 'Company Representative Title', required: true, category: 'parties' },
     
-    // Work Details - Required
+    // Work Details
     { id: 'project_title', type: 'text', label: 'Project Title', required: true, category: 'work' },
-    { id: 'number_of_tracks', type: 'number', label: 'Number of Tracks', required: true, category: 'work' },
-    { id: 'genre_style', type: 'text', label: 'Genre/Style', required: true, category: 'work' },
-    { id: 'delivery_format', type: 'select', label: 'Delivery Format', required: true, options: ['Pro Tools Session', 'Logic Pro X', 'Ableton Live', 'Mixed Stems'], category: 'work' },
-    { id: 'commencement_date', type: 'date', label: 'Commencement Date', required: true, category: 'work' },
-    { id: 'completion_date', type: 'date', label: 'Completion Date', required: true, category: 'work' },
-    { id: 'delivery_date', type: 'date', label: 'Delivery Date', required: true, category: 'work' },
+    { id: 'number_of_tracks', type: 'number', label: 'Number of Tracks', required: true, category: 'work', min: 1 },
+    { id: 'genre_style', type: 'select', label: 'Genre/Style', required: true, options: ['Hip-Hop', 'R&B', 'Pop', 'Rock', 'EDM', 'Other'], category: 'work' },
+    { id: 'delivery_format', type: 'select', label: 'Delivery Format', required: true, options: ['WAV', 'AIFF', 'MP3', 'Stems', 'DAW Session', 'Other'], category: 'work' },
     
-    // Financial Terms - Required
-    { id: 'fixed_fee_amount', type: 'number', label: 'Fixed Fee Amount ($)', required: true, category: 'financial' },
-    { id: 'producer_points_percent', type: 'number', label: 'Producer Points (%)', required: true, category: 'financial' },
-    { id: 'royalty_rate_percent', type: 'number', label: 'Royalty Rate (%)', required: true, category: 'financial' },
-    { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['50% on Commencement, 50% on Delivery', 'Net 30', 'Upon Delivery'], category: 'financial' },
-    { id: 'accounting_frequency', type: 'select', label: 'Accounting Frequency', required: true, options: ['Quarterly', 'Semi-Annual', 'Annual'], category: 'financial' },
-    { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['Direct Deposit', 'Check', 'Wire Transfer'], category: 'financial' },
-    { id: 'late_interest_percent', type: 'number', label: 'Late Interest Rate (%)', required: true, category: 'financial' },
-    
-    // Terms & Conditions - Required
-    { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'North America', 'United States'], category: 'terms' },
-    { id: 'term_type', type: 'select', label: 'Term Type', required: true, options: ['Project Duration', 'Years'], category: 'terms' },
-    { id: 'term_years', type: 'number', label: 'Term Years', required: true, category: 'terms' },
-    { id: 'exclusivity', type: 'checkbox', label: 'Exclusive Services', required: true, category: 'terms' },
-    
-    // Signatures - Required
-    { id: 'signature_block_company_enabled', type: 'checkbox', label: 'Company Signature Block', required: true, category: 'signatures' },
-    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' },
-    
-    // Optional Fields
+    // Financial Terms
+    { id: 'fixed_fee_amount', type: 'number', label: 'Fixed Fee Amount', required: true, category: 'financial', min: 0, format: 'currency' },
+    { id: 'producer_points_percent', type: 'select', label: 'Producer Points (%)', required: true, options: ['1', '2', '3', '4', 'Custom'], category: 'financial' },
+    { id: 'royalty_rate_percent', type: 'select', label: 'Royalty Rate (%)', required: true, options: ['10', '12', '15', '18', 'Custom'], category: 'financial' },
+    { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['On Execution', 'Net 30', 'Net 60', 'Net 90', 'Milestone'], category: 'financial' },
+    { id: 'accounting_frequency', type: 'select', label: 'Accounting Frequency', required: true, options: ['Monthly', 'Quarterly', 'Semi-Annual', 'Annual'], category: 'financial' },
+    { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['ACH', 'Wire', 'PayPal', 'Check'], category: 'financial' },
+    { id: 'late_interest_percent', type: 'select', label: 'Late Interest Rate (%)', required: true, options: ['5', '7.5', '10', 'Custom'], category: 'financial' },
     { id: 'invoice_due_days', type: 'number', label: 'Invoice Due Days', required: false, category: 'financial' },
-    { id: 'schedule_a_enabled', type: 'checkbox', label: 'Include Schedule A', required: false, category: 'schedule' }
+    
+    // Terms & Conditions
+    { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'U.S. Only', 'North America', 'EU', 'Custom'], category: 'terms' },
+    { id: 'term_type', type: 'select', label: 'Term Type', required: true, options: ['Years', 'Albums', 'Perpetuity', 'Festival-Only'], category: 'terms' },
+    { id: 'term_years', type: 'number', label: 'Term Years', required: true, category: 'terms' },
+    { id: 'exclusivity', type: 'checkbox', label: 'Exclusivity', required: true, category: 'terms' },
+    
+    // Timeline & Delivery
+    { id: 'commencement_date', type: 'date', label: 'Commencement Date', required: true, category: 'timeline' },
+    { id: 'completion_date', type: 'date', label: 'Completion Date', required: true, category: 'timeline' },
+    { id: 'delivery_date', type: 'date', label: 'Delivery Date', required: true, category: 'timeline' },
+    
+    // Schedules & Signatures
+    { id: 'schedule_a_enabled', type: 'checkbox', label: 'Include Schedule A', required: false, category: 'schedule' },
+    { id: 'signature_block_company_enabled', type: 'checkbox', label: 'Company Signature Block', required: true, category: 'signatures' },
+    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' }
   ]
 };
 
