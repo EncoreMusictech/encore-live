@@ -124,6 +124,9 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
         counterparty: 'Demo Records Inc.',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 3).toISOString().split('T')[0], // 3 years
+        territory: 'worldwide',
+        governingLaw: 'new_york',
+        notes: 'Comprehensive recording agreement with $50K advance, 15% royalty rate, and full label services including marketing and tour support.',
         royaltyRate: '15',
         advanceAmount: '50000',
         termLength: '3',
@@ -152,6 +155,9 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
         counterparty: 'Development Music Group',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 2).toISOString().split('T')[0], // 2 years
+        territory: 'north_america',
+        governingLaw: 'california',
+        notes: 'Development deal with $25K advance and 12% royalty. Includes artist development services and first option on full recording contract.',
         royaltyRate: '12',
         advanceAmount: '25000',
         termLength: '2',

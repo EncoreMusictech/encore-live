@@ -142,6 +142,9 @@ export function StandardizedDistributionForm({
         counterparty: 'Demo Distribution Co.',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 2).toISOString().split('T')[0], // 2 years
+        territory: 'worldwide',
+        governingLaw: 'california',
+        notes: 'Distribution-only agreement with 85/15 split favoring artist. Includes digital distribution to all major platforms.',
         artistRevenueShare: '85',
         labelRevenueShare: '15',
         contractTerm: '2',
@@ -167,6 +170,9 @@ export function StandardizedDistributionForm({
         counterparty: 'Demo Label Services',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 3).toISOString().split('T')[0], // 3 years
+        territory: 'worldwide',
+        governingLaw: 'new_york',
+        notes: 'Full label services agreement with 70/30 split and comprehensive marketing support. Includes promotional campaigns and industry networking.',
         artistRevenueShare: '70',
         labelRevenueShare: '30',
         contractTerm: '3',

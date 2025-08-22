@@ -124,6 +124,9 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
         counterparty: 'Demo Music Publishing',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 3).toISOString().split('T')[0], // 3 years
+        territory: 'worldwide',
+        governingLaw: 'new_york',
+        notes: 'Standard administration agreement with 15% admin fee. Includes collection and licensing services for all territories.',
         publisherShare: '0',
         writerShare: '100',
         administrationFee: '15',
@@ -148,6 +151,9 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
         counterparty: 'Demo Co-Publisher',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 5).toISOString().split('T')[0], // 5 years
+        territory: 'worldwide',
+        governingLaw: 'new_york',
+        notes: 'Co-publishing agreement with 50/50 split and $25,000 advance. Includes full publishing rights and administration.',
         publisherShare: '50',
         writerShare: '50',
         advanceAmount: '25000',
@@ -166,6 +172,9 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
         counterparty: 'Major Music Publisher',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 7).toISOString().split('T')[0], // 7 years
+        territory: 'worldwide',
+        governingLaw: 'california',
+        notes: 'Full publishing deal with $100K advance and 75% writer royalty rate. Publisher owns 100% of publishing rights.',
         publisherShare: '100',
         writerShare: '0',
         advanceAmount: '100000',
@@ -184,6 +193,9 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
         counterparty: 'Strategic Publishing Partner',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 10).toISOString().split('T')[0], // 10 years
+        territory: 'worldwide',
+        governingLaw: 'new_york',
+        notes: 'Joint venture publishing partnership with $75K advance and equal profit sharing. 10-year commitment with shared investment risk.',
         publisherShare: '50',
         writerShare: '50',
         advanceAmount: '75000',

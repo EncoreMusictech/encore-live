@@ -143,6 +143,9 @@ export function StandardizedSyncForm({
         counterparty: 'Demo Productions Inc.',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year
+        territory: 'north_america',
+        governingLaw: 'california',
+        notes: 'One-time sync license for TV commercial with $15K fee. Includes master and publishing rights for TV, online, and social media usage.',
         licenseFee: '15000',
         productionTitle: 'Demo Brand Commercial Campaign',
         productionCompany: 'Demo Productions Inc.',
@@ -169,6 +172,9 @@ export function StandardizedSyncForm({
         counterparty: 'Major Film Studio',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 2).toISOString().split('T')[0], // 2 years
+        territory: 'worldwide',
+        governingLaw: 'california',
+        notes: 'Most Favored Nations sync deal for blockbuster film with $25K fee. Includes worldwide rights for all media formats with competitive rate protection.',
         licenseFee: '25000',
         productionTitle: 'Blockbuster Film Production',
         productionCompany: 'Major Film Studio',
@@ -188,6 +194,9 @@ export function StandardizedSyncForm({
         counterparty: 'Streaming Platform',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 10).toISOString().split('T')[0], // 10 years
+        territory: 'worldwide',
+        governingLaw: 'california',
+        notes: 'Perpetual sync license for streaming platform with $50K premium fee. Includes unlimited usage rights for original series production across all digital platforms.',
         licenseFee: '50000',
         productionTitle: 'Original Series Production',
         productionCompany: 'Streaming Platform',

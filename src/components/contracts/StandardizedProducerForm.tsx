@@ -130,6 +130,9 @@ export function StandardizedProducerForm({
         counterparty: 'Demo Producer',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year
+        territory: 'worldwide',
+        governingLaw: 'california',
+        notes: 'Flat fee producer agreement with $5K upfront payment. Producer retains credit but no ongoing royalties.',
         upfrontFee: '5000',
         producerPoints: '0',
         trackCount: '10',
@@ -155,6 +158,9 @@ export function StandardizedProducerForm({
         counterparty: 'Demo Producer Co.',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 2).toISOString().split('T')[0], // 2 years
+        territory: 'worldwide',
+        governingLaw: 'new_york',
+        notes: 'Points-only producer deal with 3% ongoing royalties. No upfront payment but long-term revenue participation.',
         upfrontFee: '0',
         producerPoints: '3',
         trackCount: '12',
@@ -173,6 +179,9 @@ export function StandardizedProducerForm({
         counterparty: 'Premium Producer',
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 3).toISOString().split('T')[0], // 3 years
+        territory: 'worldwide',
+        governingLaw: 'california',
+        notes: 'Hybrid producer deal with $2.5K advance plus 2% points. Balanced approach with upfront payment and ongoing royalties.',
         upfrontFee: '2500',
         producerPoints: '2',
         trackCount: '8',
