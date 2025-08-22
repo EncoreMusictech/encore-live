@@ -210,6 +210,7 @@ export function StandardizedProducerForm({
           {...props}
           contractTypes={producerTypes}
           selectedField="producerAgreementType"
+          demoData={demoData}
           onDemoDataLoad={handleDemoDataLoad}
         />
       ),

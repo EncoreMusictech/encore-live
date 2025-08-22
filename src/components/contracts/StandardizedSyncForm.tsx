@@ -226,6 +226,7 @@ export function StandardizedSyncForm({
           {...props}
           contractTypes={syncTypes}
           selectedField="syncAgreementType"
+          demoData={demoData}
           onDemoDataLoad={handleDemoDataLoad}
         />
       ),

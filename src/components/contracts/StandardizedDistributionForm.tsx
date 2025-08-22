@@ -204,6 +204,7 @@ export function StandardizedDistributionForm({
           {...props}
           contractTypes={distributionTypes}
           selectedField="distributionAgreementType"
+          demoData={demoData}
           onDemoDataLoad={handleDemoDataLoad}
         />
       ),

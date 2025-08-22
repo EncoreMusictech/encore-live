@@ -221,6 +221,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
           {...props}
           contractTypes={publishingTypes}
           selectedField="publishingAgreementType"
+          demoData={demoData}
           onDemoDataLoad={handleDemoDataLoad}
         />
       ),

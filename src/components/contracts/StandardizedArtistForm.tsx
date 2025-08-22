@@ -190,6 +190,7 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
           {...props}
           contractTypes={artistTypes}
           selectedField="artistAgreementType"
+          demoData={demoData}
           onDemoDataLoad={handleDemoDataLoad}
         />
       ),

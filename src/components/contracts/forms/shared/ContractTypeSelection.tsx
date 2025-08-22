@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
@@ -18,6 +19,7 @@ interface ContractTypeSelectionProps {
   contractTypes: ContractType[];
   selectedField: string;
   onDemoDataLoad?: (demoId: string) => void;
+  demoData?: any;
 }
 
 export function ContractTypeSelection({
@@ -25,8 +27,29 @@ export function ContractTypeSelection({
   onChange,
   contractTypes,
   selectedField,
-  onDemoDataLoad
+  onDemoDataLoad,
+  demoData
 }: ContractTypeSelectionProps) {
+  // Pre-select agreement type from demo data
+  useEffect(() => {
+    if (demoData?.agreementType && !data[selectedField]) {
+      // Map demo agreement types to contract type IDs
+      const agreementTypeMapping: Record<string, string> = {
+        'administration': 'publishing',
+        'co_publishing': 'publishing', 
+        'exclusive_songwriter': 'publishing',
+        'catalog_acquisition': 'publishing',
+        'artist': 'artist',
+        'distribution': 'distribution'
+      };
+      
+      const mappedType = agreementTypeMapping[demoData.agreementType];
+      if (mappedType) {
+        onChange({ [selectedField]: mappedType });
+      }
+    }
+  }, [demoData, data, selectedField, onChange]);
+
   const handleTypeSelect = (typeId: string) => {
     const selectedType = contractTypes.find(type => type.id === typeId);
     

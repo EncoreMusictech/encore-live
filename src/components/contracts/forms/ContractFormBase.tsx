@@ -221,6 +221,7 @@ export function ContractFormBase({
           <CurrentStepComponent
             data={formData}
             onChange={onFormDataChange}
+            demoData={demoData}
           />
         </CardContent>
       </Card>
