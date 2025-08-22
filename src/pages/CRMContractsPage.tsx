@@ -56,6 +56,7 @@ export default function CRMContractsPage() {
   const [creationMethod, setCreationMethod] = useState<string | null>(null);
   const [showDocuSignImport, setShowDocuSignImport] = useState(false);
   const [showContractUpload, setShowContractUpload] = useState(false);
+  const [loadingDemoContract, setLoadingDemoContract] = useState<any>(null);
 
   useEffect(() => {
     updatePageMetadata('contractManagement');
@@ -233,6 +234,13 @@ export default function CRMContractsPage() {
     setIsEditDialogOpen(true);
   };
 
+  const handleLoadDemo = (demoContract: any) => {
+    setLoadingDemoContract(demoContract);
+    setIsCreateDialogOpen(true);
+    setCreationMethod('new');
+    setSelectedContractType(demoContract.agreementType === 'artist' ? 'artist' : 'publishing');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -261,6 +269,7 @@ export default function CRMContractsPage() {
             setSelectedContractType(null);
             setShowContractUpload(false);
             setShowDocuSignImport(false);
+            setLoadingDemoContract(null);
           }
         }}>
           <DialogTrigger asChild>
@@ -464,46 +473,71 @@ export default function CRMContractsPage() {
                 
                 {selectedContractType === 'publishing' && (
                   <StandardizedPublishingForm 
+                    demoData={loadingDemoContract}
                     onSuccess={() => {
                       setIsCreateDialogOpen(false);
                       setSelectedContractType(null);
                       setCreationMethod(null);
+                      toast({
+                        title: "Success",
+                        description: loadingDemoContract ? "Demo contract loaded successfully" : "Publishing agreement created successfully"
+                      });
                     }} 
                   />
                 )}
                 {selectedContractType === 'artist' && (
                   <StandardizedArtistForm 
+                    demoData={loadingDemoContract}
                     onSuccess={() => {
                       setIsCreateDialogOpen(false);
                       setSelectedContractType(null);
                       setCreationMethod(null);
+                      toast({
+                        title: "Success",
+                        description: loadingDemoContract ? "Demo contract loaded successfully" : "Artist agreement created successfully"
+                      });
                     }} 
                   />
                 )}
                 {selectedContractType === 'producer' && (
                   <StandardizedProducerForm 
+                    demoData={loadingDemoContract}
                     onSuccess={() => {
                       setIsCreateDialogOpen(false);
                       setSelectedContractType(null);
                       setCreationMethod(null);
+                      toast({
+                        title: "Success",
+                        description: loadingDemoContract ? "Demo contract loaded successfully" : "Producer agreement created successfully"
+                      });
                     }} 
                   />
                 )}
                 {selectedContractType === 'sync' && (
                   <StandardizedSyncForm 
+                    demoData={loadingDemoContract}
                     onSuccess={() => {
                       setIsCreateDialogOpen(false);
                       setSelectedContractType(null);
                       setCreationMethod(null);
+                      toast({
+                        title: "Success",
+                        description: loadingDemoContract ? "Demo contract loaded successfully" : "Sync license created successfully"
+                      });
                     }} 
                   />
                 )}
                 {selectedContractType === 'distribution' && (
                   <StandardizedDistributionForm 
+                    demoData={loadingDemoContract}
                     onSuccess={() => {
                       setIsCreateDialogOpen(false);
                       setSelectedContractType(null);
                       setCreationMethod(null);
+                      toast({
+                        title: "Success",
+                        description: loadingDemoContract ? "Demo contract loaded successfully" : "Distribution agreement created successfully"
+                      });
                     }} 
                   />
                 )}
@@ -707,7 +741,7 @@ export default function CRMContractsPage() {
         </TabsContent>
 
         <TabsContent value="demos">
-          <DemoContracts onLoadDemo={() => {}} />
+          <DemoContracts onLoadDemo={handleLoadDemo} />
         </TabsContent>
 
         <TabsContent value="templates">
