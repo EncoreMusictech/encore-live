@@ -366,7 +366,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
 
     const mappedType = selectedContractType === 'artist_recording'
       ? 'artist'
-      : (selectedContractType === 'licensing' ? 'sync' : selectedContractType);
+      : selectedContractType;
 
     const templateData = {
       template_name: templateName,
@@ -567,7 +567,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                         <SelectItem value="artist_recording">Artist Recording Contract</SelectItem>
                         <SelectItem value="publishing">Publishing Agreement</SelectItem>
                         <SelectItem value="distribution">Distribution Agreement</SelectItem>
-                        <SelectItem value="licensing">Sync Licensing Agreement</SelectItem>
+                        <SelectItem value="sync">Sync Licensing Agreement</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
