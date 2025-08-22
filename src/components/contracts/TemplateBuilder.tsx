@@ -137,7 +137,6 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
   const [templateName, setTemplateName] = useState('');
   const [selectedContractType, setSelectedContractType] = useState(contractType);
   const [selectedFields, setSelectedFields] = useState<ContractField[]>([]);
-  const [availableFields] = useState<ContractField[]>(FIELD_TEMPLATES[contractType] || []);
   const [currentView, setCurrentView] = useState<'builder' | 'preview' | 'edits'>('builder');
   const [previewData, setPreviewData] = useState<Record<string, any>>({});
   const [edits, setEdits] = useState<Array<{ field: string; oldValue: string; newValue: string; timestamp: Date }>>([]);
@@ -145,6 +144,9 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
   const [editingField, setEditingField] = useState<ContractField | null>(null);
   const [clauseDraft, setClauseDraft] = useState("");
   const [clauseEdits, setClauseEdits] = useState<Array<{ field: string; oldClause: string; newClause: string; timestamp: Date }>>([]);
+
+  // Get available fields based on current contract type
+  const availableFields = FIELD_TEMPLATES[selectedContractType] || [];
 
   const { loading: aiLoading, generateClause } = useClauseAI();
 
@@ -496,8 +498,22 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                 </CardHeader>
                 <CardContent>
                   <Droppable droppableId="selected-fields">
-                    {(provided) => (
-                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                    {(provided, snapshot) => (
+                      <div 
+                        {...provided.droppableProps} 
+                        ref={provided.innerRef} 
+                        className={`space-y-2 min-h-[200px] p-4 rounded-lg border-2 border-dashed transition-colors ${
+                          snapshot.isDraggingOver 
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-muted-foreground/20'
+                        }`}
+                      >
+                        {selectedFields.length === 0 && (
+                          <div className="text-center text-muted-foreground py-8">
+                            <div className="text-lg mb-2">Drop fields here</div>
+                            <div className="text-sm">Drag available fields to build your template</div>
+                          </div>
+                        )}
                         {selectedFields.map((field, index) => (
                           <Draggable key={field.id} draggableId={field.id} index={index}>
                             {(provided) => (
