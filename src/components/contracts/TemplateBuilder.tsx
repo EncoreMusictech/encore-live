@@ -563,7 +563,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                         <SelectItem value="artist_recording">Artist Recording Contract</SelectItem>
                         <SelectItem value="publishing">Publishing Agreement</SelectItem>
                         <SelectItem value="distribution">Distribution Agreement</SelectItem>
-                        <SelectItem value="licensing">Licensing Agreement</SelectItem>
+                        <SelectItem value="licensing">Sync Licensing Agreement</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
