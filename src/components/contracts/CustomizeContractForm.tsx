@@ -272,12 +272,12 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Company/Label Name *</Label>
-                        <Input
-                          value={formData.company_label_name || ''}
-                          onChange={(e) => handleFieldChange('company_label_name', e.target.value)}
-                          placeholder="Label or company name"
-                          required
-                        />
+                         <Input
+                           value={formData.company_name || ''}
+                           onChange={(e) => handleFieldChange('company_name', e.target.value)}
+                           placeholder="Label or company name"
+                           required
+                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Company Address *</Label>
@@ -341,40 +341,40 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                   {/* Agreement Terms */}
                   <div className="space-y-4">
                     <h4 className="text-md font-semibold">Agreement Terms</h4>
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>Term (Years)</Label>
-                        <Input
-                          type="number"
-                          value={formData.term_years || ''}
-                          onChange={(e) => handleFieldChange('term_years', e.target.value)}
-                          placeholder="2"
-                          min="1"
-                          max="10"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Term (Months)</Label>
-                        <Input
-                          type="number"
-                          value={formData.term_months || ''}
-                          onChange={(e) => handleFieldChange('term_months', e.target.value)}
-                          placeholder="24"
-                          min="1"
-                          max="120"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Number of Selections</Label>
-                        <Input
-                          type="number"
-                          value={formData.number_of_selections || ''}
-                          onChange={(e) => handleFieldChange('number_of_selections', e.target.value)}
-                          placeholder="12"
-                          min="1"
-                        />
-                      </div>
-                    </div>
+                     <div className="grid md:grid-cols-3 gap-4">
+                       <div className="space-y-2">
+                         <Label>Term (Years)</Label>
+                         <Input
+                           type="number"
+                           value={formData.term_years || ''}
+                           onChange={(e) => handleFieldChange('term_years', e.target.value)}
+                           placeholder="2"
+                           min="1"
+                           max="10"
+                         />
+                       </div>
+                       <div className="space-y-2">
+                         <Label>Album Commitment</Label>
+                         <Input
+                           type="number"
+                           value={formData.album_commitment || ''}
+                           onChange={(e) => handleFieldChange('album_commitment', e.target.value)}
+                           placeholder="1"
+                           min="1"
+                           max="5"
+                         />
+                       </div>
+                       <div className="space-y-2">
+                         <Label>Number of Tracks</Label>
+                         <Input
+                           type="number"
+                           value={formData.number_of_tracks || ''}
+                           onChange={(e) => handleFieldChange('number_of_tracks', e.target.value)}
+                           placeholder="12"
+                           min="1"
+                         />
+                       </div>
+                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Territory</Label>
@@ -410,14 +410,18 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                   <div className="space-y-4">
                     <h4 className="text-md font-semibold">Financial Terms</h4>
                     <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Royalty Amount/Percentage</Label>
-                        <Input
-                          value={formData.royalty_amount_percentage || ''}
-                          onChange={(e) => handleFieldChange('royalty_amount_percentage', e.target.value)}
-                          placeholder="15% or $2.50 per unit"
-                        />
-                      </div>
+                       <div className="space-y-2">
+                         <Label>Royalty Rate (%)</Label>
+                         <Input
+                           type="number"
+                           value={formData.royalty_rate_percent || ''}
+                           onChange={(e) => handleFieldChange('royalty_rate_percent', e.target.value)}
+                           placeholder="15"
+                           min="0"
+                           max="100"
+                           step="0.1"
+                         />
+                       </div>
                       <div className="space-y-2">
                         <Label>Digital Royalty %</Label>
                         <Input
@@ -441,42 +445,55 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Payment Days After Period</Label>
-                        <Input
-                          type="number"
-                          value={formData.payment_days || ''}
-                          onChange={(e) => handleFieldChange('payment_days', e.target.value)}
-                          placeholder="45"
-                          min="30"
-                          max="120"
-                        />
-                      </div>
+                        <div className="space-y-2">
+                          <Label>Invoice Due Days</Label>
+                          <Input
+                            type="number"
+                            value={formData.invoice_due_days || ''}
+                            onChange={(e) => handleFieldChange('invoice_due_days', e.target.value)}
+                            placeholder="45"
+                            min="15"
+                            max="90"
+                          />
+                        </div>
+                       <div className="space-y-2">
+                         <Label>Payment Method</Label>
+                         <Select value={formData.payment_method || ''} onValueChange={(v) => handleFieldChange('payment_method', v)}>
+                           <SelectTrigger>
+                             <SelectValue placeholder="Select payment method" />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="direct_deposit">Direct Deposit</SelectItem>
+                             <SelectItem value="check">Check</SelectItem>
+                             <SelectItem value="wire_transfer">Wire Transfer</SelectItem>
+                           </SelectContent>
+                         </Select>
+                       </div>
                     </div>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Reserve Periods</Label>
-                        <Input
-                          type="number"
-                          value={formData.reserve_periods || ''}
-                          onChange={(e) => handleFieldChange('reserve_periods', e.target.value)}
-                          placeholder="4"
-                          min="1"
-                          max="8"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Re-recording Restriction (Years)</Label>
-                        <Input
-                          type="number"
-                          value={formData.rerecording_restriction_years || ''}
-                          onChange={(e) => handleFieldChange('rerecording_restriction_years', e.target.value)}
-                          placeholder="5"
-                          min="2"
-                          max="10"
-                        />
-                      </div>
-                    </div>
+                     <div className="grid md:grid-cols-2 gap-4">
+                       <div className="space-y-2">
+                         <Label>Option Periods Count</Label>
+                         <Input
+                           type="number"
+                           value={formData.option_periods_count || ''}
+                           onChange={(e) => handleFieldChange('option_periods_count', e.target.value)}
+                           placeholder="2"
+                           min="1"
+                           max="5"
+                         />
+                       </div>
+                       <div className="space-y-2">
+                         <Label>Re-record Restriction (Years)</Label>
+                         <Input
+                           type="number"
+                           value={formData.re_record_restriction_years || ''}
+                           onChange={(e) => handleFieldChange('re_record_restriction_years', e.target.value)}
+                           placeholder="5"
+                           min="2"
+                           max="10"
+                         />
+                       </div>
+                     </div>
                   </div>
 
                   <Separator />
