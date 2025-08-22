@@ -226,7 +226,6 @@ export function StandardizedProducerForm({
           {...props}
           contractType="producer agreement"
           partyLabels={{ firstParty: 'Artist/Label', secondParty: 'Producer' }}
-          demoData={demoData}
         />
       ),
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
@@ -356,7 +355,6 @@ export function StandardizedProducerForm({
       onSave={handleSave}
       onSubmit={handleSubmit}
       onBack={onBack}
-      demoData={demoData}
     />
   );
 }

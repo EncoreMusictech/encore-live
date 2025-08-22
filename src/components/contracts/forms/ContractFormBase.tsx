@@ -48,22 +48,12 @@ export function ContractFormBase({
   const { toast } = useToast();
   const { showUpgradeModalForModule } = useDemoAccess();
 
-  // Initialize with demo data if provided more aggressively
+  // Initialize with demo data if provided
   useEffect(() => {
-    if (demoData) {
-      // Always merge demo data, regardless of current form data state
-      const mergedData = {
-        ...demoData,
-        // Ensure essential demo fields are populated
-        territory: demoData.territory || 'worldwide',
-        governingLaw: demoData.governingLaw || 'new_york', 
-        notes: demoData.notes || 'Demo contract for testing and evaluation purposes.',
-        // Preserve any user changes by not overwriting if data exists
-        ...formData
-      };
-      onFormDataChange(mergedData);
+    if (demoData && Object.keys(formData).length === 0) {
+      onFormDataChange(demoData);
     }
-  }, [demoData, onFormDataChange]); // Remove formData from dependencies
+  }, [demoData, formData, onFormDataChange]);
 
   const currentStepData = steps[currentStep];
   const progress = ((currentStep + 1) / steps.length) * 100;
