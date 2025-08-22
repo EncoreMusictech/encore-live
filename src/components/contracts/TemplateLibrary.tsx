@@ -21,6 +21,10 @@ interface Template {
   contract_type: string;
   fields: any[];
   is_public: boolean;
+  template_data?: {
+    content?: string;
+    clauses?: Record<string, string>;
+  };
 }
 interface TemplateLibraryProps {
   onBack: () => void;
@@ -31,7 +35,7 @@ interface TemplateLibraryProps {
 const DEMO_TEMPLATES: Template[] = [{
   id: '1',
   title: 'Standard Recording Contract',
-  description: 'AI-generated professional recording artist agreement with industry-standard terms.',
+  description: 'Professional recording artist agreement with industry-standard terms and clauses.',
   contract_type: 'artist_recording',
   fields: [
     // Header - Required
@@ -49,38 +53,114 @@ const DEMO_TEMPLATES: Template[] = [{
     { id: 'company_representative_title', type: 'text', label: 'Company Representative Title', required: true, category: 'parties' },
     
     // Work Details - Required
-    { id: 'project_title', type: 'text', label: 'Project Title', required: true, category: 'work' },
     { id: 'number_of_tracks', type: 'number', label: 'Number of Tracks', required: true, category: 'work' },
-    { id: 'isrc_list', type: 'textarea', label: 'ISRC List', required: true, category: 'work' },
-    { id: 'delivery_format', type: 'select', label: 'Delivery Format', required: true, options: ['WAV 24-bit/96kHz', 'WAV 24-bit/48kHz', 'AIFF', 'Digital Masters'], category: 'work' },
     
     // Financial Terms - Required
-    { id: 'advance_amount', type: 'number', label: 'Advance Amount ($)', required: true, category: 'financial' },
     { id: 'royalty_rate_percent', type: 'number', label: 'Royalty Rate (%)', required: true, category: 'financial' },
-    { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['Net 30', 'Net 45', 'Net 60', 'Upon Delivery'], category: 'financial' },
     { id: 'accounting_frequency', type: 'select', label: 'Accounting Frequency', required: true, options: ['Quarterly', 'Semi-Annual', 'Annual'], category: 'financial' },
+    { id: 'invoice_due_days', type: 'number', label: 'Invoice Due Days', required: true, category: 'financial' },
     { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['Direct Deposit', 'Check', 'Wire Transfer'], category: 'financial' },
-    { id: 'late_interest_percent', type: 'number', label: 'Late Interest Rate (%)', required: true, category: 'financial' },
-    { id: 'recoupable', type: 'checkbox', label: 'Recoupable Advance', required: true, category: 'financial' },
     
     // Terms & Conditions - Required
     { id: 'territory', type: 'select', label: 'Territory', required: true, options: ['Worldwide', 'North America', 'Europe', 'United States'], category: 'terms' },
-    { id: 'term_type', type: 'select', label: 'Term Type', required: true, options: ['Years', 'Album Commitment'], category: 'terms' },
-    { id: 'term_years', type: 'number', label: 'Term Years', required: false, category: 'terms' },
+    { id: 'term_years', type: 'number', label: 'Term Years', required: true, category: 'terms' },
     { id: 'album_commitment', type: 'number', label: 'Album Commitment', required: false, category: 'terms' },
     { id: 'option_periods_count', type: 'number', label: 'Option Periods Count', required: true, category: 'terms' },
-    { id: 'exclusivity', type: 'checkbox', label: 'Exclusive Agreement', required: true, category: 'terms' },
     { id: 're_record_restriction_years', type: 'number', label: 'Re-record Restriction (Years)', required: true, category: 'terms' },
     { id: 'union_name', type: 'text', label: 'Union Affiliation', required: true, category: 'terms' },
     
     // Signatures - Required
     { id: 'signature_block_company_enabled', type: 'checkbox', label: 'Company Signature Block', required: true, category: 'signatures' },
-    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' },
-    
-    // Optional Fields
-    { id: 'genre_style', type: 'text', label: 'Genre/Style', required: false, category: 'work' },
-    { id: 'schedule_a_enabled', type: 'checkbox', label: 'Include Schedule A', required: false, category: 'schedule' }
+    { id: 'signature_block_individual_enabled', type: 'checkbox', label: 'Individual Signature Block', required: true, category: 'signatures' }
   ],
+  template_data: {
+    content: `Recording Agreement
+
+This Recording Agreement ("Agreement") is made and entered into on {{effective_date}}, by and between:
+
+{{company_name}}, located at {{company_address}} ("Company"),
+and
+
+{{artist_legal_name}}, professionally known as {{artist_stage_name}} ("Artist").
+
+1. TERM
+
+This Agreement shall remain in effect for {{term_years}} year(s) (or {{album_commitment}} album(s), if applicable) from the Effective Date.
+During this Term, Artist shall render recording services for the production of {{number_of_tracks}} sound recordings (the "Recordings"), or more if mutually agreed.
+
+2. GRANT OF RIGHTS
+
+Artist grants Company the following exclusive rights:
+
+To manufacture, distribute, advertise, sell, license, or otherwise exploit the Recordings throughout {{territory}}.
+
+To use Artist's approved name, likeness, and biography in connection with the exploitation of the Recordings.
+
+To own and control all rights in and to the master recordings, matrices, and phonorecords embodying the Recordings.
+
+3. ROYALTIES
+
+Company shall pay Artist a royalty of {{royalty_rate_percent}}% of Net Receipts from sales, streams, and equivalent revenue earned from the Recordings.
+
+For single-sided recordings, Artist shall receive one-half of the above royalty unless the recording is a full-length work.
+
+Digital exploitations shall be accounted for at {{royalty_rate_percent}}%, or as otherwise agreed.
+
+4. ACCOUNTING & PAYMENT
+
+Company shall render royalty statements and payments to Artist on a {{accounting_frequency}} basis, within {{invoice_due_days}} days after the end of each accounting period.
+
+Company may withhold reasonable reserves for returns or defective products, to be liquidated within {{option_periods_count}} accounting period(s).
+
+Payments shall be made by {{payment_method}}.
+
+5. EXCLUSIVITY
+
+During the Term, Artist shall not perform or record for any third party for the purpose of producing commercial sound recordings without Company's written consent.
+
+Artist further agrees not to re-record the same musical selections for another company for a period of {{re_record_restriction_years}} year(s) after the Term.
+
+6. WARRANTIES & REPRESENTATIONS
+
+Artist represents and warrants that:
+
+Artist has full right and authority to enter this Agreement;
+
+Artist is not bound by any conflicting agreements;
+
+The Recordings will not infringe the rights of any third party.
+
+7. UNION OBLIGATIONS (if applicable)
+
+If Artist or accompanying musicians are members of the {{union_name}}, this Agreement shall be subject to the rules and obligations of such union.
+
+8. TERMINATION
+
+Company may terminate this Agreement without liability if Artist breaches obligations, or if any required union/industry licenses for production are revoked.
+
+9. OPTION TO EXTEND
+
+Company shall have the option to extend this Agreement for an additional Term equal to the original Term by providing written notice to Artist at least {{invoice_due_days}} days prior to expiration.
+
+10. MISCELLANEOUS
+
+Governing Law: This Agreement shall be governed by the laws of {{governing_law}}.
+
+Dispute Resolution: Any disputes shall be resolved in {{jurisdiction}}.
+
+Entire Agreement: This document constitutes the entire agreement between the parties and supersedes all prior agreements.
+
+SIGNATURES
+
+Company/Label
+By: ___________________________
+Name: {{company_representative_name}}
+Title: {{company_representative_title}}
+
+Artist
+Name: {{artist_legal_name}}
+p/k/a {{artist_stage_name}}`
+  },
   is_public: true
 }, {
   id: '2',

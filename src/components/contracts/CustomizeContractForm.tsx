@@ -27,6 +27,7 @@ interface CustomizeContractFormProps {
     contract_type: string;
     template_data?: {
       fields: ContractField[];
+      content?: string;
       clauses?: Record<string, string>;
     };
   };
@@ -187,6 +188,17 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
   }, {} as Record<string, ContractField[]>);
 
   const generatePreviewText = () => {
+    // Use standardized contract content if available
+    const contractContent = template.template_data?.content;
+    if (contractContent) {
+      return contractContent.replace(/\{\{(\w+)\}\}/g, (_match, key) => {
+        const val = formData[key];
+        if (val !== undefined && val !== "") return String(val);
+        return `[${key.replace(/_/g, ' ').toUpperCase()}]`;
+      });
+    }
+    
+    // Fallback to field-based generation
     const clauses = template.template_data?.clauses || {};
     return fields.map((field) => {
       const clause = clauses[field.id] || `${field.label}: {{${field.id}}}`;
