@@ -33,17 +33,29 @@ export function ContractTypeSelection({
   // Pre-select agreement type from demo data
   useEffect(() => {
     if (demoData?.agreementType && !data[selectedField]) {
-      // Map demo agreement types to contract type IDs
-      const agreementTypeMapping: Record<string, string> = {
-        'administration': 'publishing',
-        'co_publishing': 'publishing', 
-        'exclusive_songwriter': 'publishing',
-        'catalog_acquisition': 'publishing',
-        'artist': 'artist',
-        'distribution': 'distribution'
-      };
+      // Map demo agreement types to specific form agreement type IDs
+      let mappedType: string | undefined;
       
-      const mappedType = agreementTypeMapping[demoData.agreementType];
+      if (selectedField === 'publishingAgreementType') {
+        const publishingMapping: Record<string, string> = {
+          'administration': 'admin',
+          'co_publishing': 'copub',
+          'exclusive_songwriter': 'full_pub',
+          'catalog_acquisition': 'full_pub'
+        };
+        mappedType = publishingMapping[demoData.agreementType];
+      } else if (selectedField === 'artistAgreementType') {
+        const artistMapping: Record<string, string> = {
+          'artist': 'indie' // Default to indie artist agreement
+        };
+        mappedType = artistMapping[demoData.agreementType];
+      } else if (selectedField === 'distributionAgreementType') {
+        const distributionMapping: Record<string, string> = {
+          'distribution': 'distribution_only'
+        };
+        mappedType = distributionMapping[demoData.agreementType];
+      }
+      
       if (mappedType) {
         onChange({ [selectedField]: mappedType });
       }
