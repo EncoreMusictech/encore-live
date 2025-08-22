@@ -206,6 +206,7 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
           {...props}
           contractType="artist agreement"
           partyLabels={{ firstParty: 'Label/Company', secondParty: 'Artist' }}
+          demoData={demoData}
         />
       ),
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
@@ -339,6 +340,7 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
       onSave={handleSave}
       onSubmit={handleSubmit}
       onBack={onBack}
+      demoData={demoData}
     />
   );
 };

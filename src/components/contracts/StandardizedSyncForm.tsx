@@ -242,6 +242,7 @@ export function StandardizedSyncForm({
           {...props}
           contractType="sync license"
           partyLabels={{ firstParty: 'Rights Holder', secondParty: 'Production Company' }}
+          demoData={demoData}
         />
       ),
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
@@ -372,6 +373,7 @@ export function StandardizedSyncForm({
       onSave={handleSave}
       onSubmit={handleSubmit}
       onBack={onBack}
+      demoData={demoData}
     />
   );
 }

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ interface ContractBasicInfoAndPartiesProps {
     firstParty: string;
     secondParty: string;
   };
+  demoData?: any;
 }
 
 export function ContractBasicInfoAndParties({ 
@@ -28,11 +30,26 @@ export function ContractBasicInfoAndParties({
   partyLabels = {
     firstParty: "First Party",
     secondParty: "Second Party"
-  }
+  },
+  demoData
 }: ContractBasicInfoAndPartiesProps) {
   const updateData = (field: string, value: any) => {
     onChange({ ...data, [field]: value });
   };
+
+  // Pre-populate with demo data if available and data is empty
+  useEffect(() => {
+    if (demoData && Object.keys(data).length <= 1) { // Only initialize if essentially empty
+      const enrichedDemoData = {
+        ...demoData,
+        territory: demoData.territory || 'worldwide',
+        governingLaw: demoData.governingLaw || 'new_york',
+        notes: demoData.notes || 'Demo contract for testing and evaluation purposes.',
+        ...demoData
+      };
+      onChange(enrichedDemoData);
+    }
+  }, [demoData, data, onChange]);
 
   return (
     <div className="space-y-6">

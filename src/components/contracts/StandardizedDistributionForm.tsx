@@ -219,7 +219,8 @@ export function StandardizedDistributionForm({
         <ContractBasicInfoAndParties
           {...props}
           contractType="distribution agreement"
-          partyLabels={{ firstParty: 'Artist/Label', secondParty: 'Distributor' }}
+          partyLabels={{ firstParty: 'Distributor', secondParty: 'Artist/Label' }}
+          demoData={demoData}
         />
       ),
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
@@ -349,6 +350,7 @@ export function StandardizedDistributionForm({
       onSave={handleSave}
       onSubmit={handleSubmit}
       onBack={onBack}
+      demoData={demoData}
     />
   );
 }

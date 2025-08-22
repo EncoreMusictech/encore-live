@@ -237,6 +237,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
           {...props}
           contractType="publishing agreement"
           partyLabels={{ firstParty: 'Publisher', secondParty: 'Writer/Songwriter' }}
+          demoData={demoData}
         />
       ),
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
@@ -368,6 +369,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
       onSave={handleSave}
       onSubmit={handleSubmit}
       onBack={onBack}
+      demoData={demoData}
     />
   );
 };
