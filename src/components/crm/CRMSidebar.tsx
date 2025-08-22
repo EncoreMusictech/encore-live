@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard, HelpCircle } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,16 @@ const adminModules: ModuleItem[] = [{
   description: "Client management",
   adminOnly: true
 }];
+
+const quickActions: ModuleItem[] = [
+  {
+    id: "walkthroughs",
+    title: "Module Walkthroughs",
+    url: "/dashboard/walkthroughs",
+    icon: HelpCircle,
+    description: "Interactive tutorials for each module"
+  }
+];
 export function CRMSidebar() {
   const {
     user
@@ -69,7 +79,8 @@ export function CRMSidebar() {
     isAdmin
   } = useUserRoles();
   const {
-    canAccess: canAccessDemo
+    canAccess: canAccessDemo,
+    isDemo
   } = useDemoAccess();
   const location = useLocation();
   const [userModules, setUserModules] = useState<string[]>([]);
@@ -146,6 +157,14 @@ export function CRMSidebar() {
             <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
+                {isDemo && <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/dashboard/walkthroughs" className="flex items-center">
+                      <HelpCircle className="mr-2 h-4 w-4" />
+                      Module Walkthroughs
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/pricing" className="flex items-center">

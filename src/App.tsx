@@ -35,6 +35,7 @@ import CRMSyncPage from "./pages/CRMSyncPage";
 import CRMRoyaltiesPage from "./pages/CRMRoyaltiesPage";
 import CRMClientsPage from "./pages/CRMClientsPage";
 import FeaturesOverviewPage from "./pages/FeaturesOverviewPage";
+import ModuleWalkthroughsPage from "./pages/ModuleWalkthroughsPage";
 
 
 
@@ -83,6 +84,7 @@ const App = () => {
                           <Route path="sync" element={<CRMSyncPage />} />
                           <Route path="royalties" element={<CRMRoyaltiesPage />} />
                           <Route path="client-admin" element={<CRMClientsPage />} />
+                          <Route path="walkthroughs" element={<ModuleWalkthroughsPage />} />
                         </Route>
                         
                         {/* Client Portal - Accessible to invited clients */}
