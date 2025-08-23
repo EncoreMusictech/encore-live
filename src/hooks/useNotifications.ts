@@ -139,7 +139,7 @@ export const useNotifications = () => {
     try {
       const { data: result, error } = await supabase.rpc('create_notification', {
         p_user_id: userId,
-        p_type: type,
+        p_type: type as any,
         p_title: title,
         p_message: message,
         p_data: data,

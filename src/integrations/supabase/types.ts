@@ -4541,6 +4541,7 @@ export type Database = {
         | "user_registration"
         | "subscription_change"
         | "document_ready"
+        | "contract_pending"
       payment_method: "ACH" | "Wire" | "PayPal" | "Check"
       pro_type: "ASCAP" | "BMI" | "ICE" | "SOCAN" | "PRS" | "OTHER"
       producer_type: "flat_fee" | "points" | "hybrid"
@@ -4718,6 +4719,7 @@ export const Constants = {
         "user_registration",
         "subscription_change",
         "document_ready",
+        "contract_pending",
       ],
       payment_method: ["ACH", "Wire", "PayPal", "Check"],
       pro_type: ["ASCAP", "BMI", "ICE", "SOCAN", "PRS", "OTHER"],
