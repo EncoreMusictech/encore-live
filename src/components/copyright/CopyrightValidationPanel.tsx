@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   CheckCircle, 
   AlertTriangle, 
@@ -311,6 +312,21 @@ export const CopyrightValidationPanel: React.FC<CopyrightValidationPanelProps> =
               <div className="flex items-center justify-center gap-2">
                 <CheckCircle className="h-4 w-4" />
                 <span className="text-sm font-medium">Complete</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">
+                        <strong>Compliance vs Completeness:</strong><br />
+                        • CWR/DDEX scores measure export readiness (required fields only)<br />
+                        • Completeness measures data richness (required + optional fields)<br />
+                        • You can have 100% compliance but lower completeness if optional fields are missing
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
             <Progress 
