@@ -178,6 +178,7 @@ p/k/a {{artist_stage_name}}`
     { id: 'writer_legal_name', type: 'text', label: 'Writer Legal Name', required: true, category: 'parties' },
     { id: 'publisher_name', type: 'text', label: 'Publisher Name', required: true, category: 'parties' },
     { id: 'publisher_address', type: 'textarea', label: 'Publisher Address', required: true, category: 'parties' },
+    { id: 'company_address', type: 'textarea', label: 'Company Address', required: true, category: 'parties' },
     { id: 'pro_affiliation', type: 'select', label: 'PRO Affiliation', required: true, options: ['ASCAP', 'BMI', 'SESAC', 'GMR'], category: 'parties' },
     { id: 'ipi_cae', type: 'text', label: 'IPI/CAE Number', required: true, category: 'parties' },
     { id: 'company_representative_name', type: 'text', label: 'Company Representative Name', required: true, category: 'parties' },
@@ -186,11 +187,12 @@ p/k/a {{artist_stage_name}}`
     // Work Details - Required
     { id: 'song_titles', type: 'textarea', label: 'Song Titles (Table of Compositions)', required: true, category: 'work' },
     
-    // Financial Terms - Required
+    // Financial Terms - Required  
     { id: 'advance_amount', type: 'number', label: 'Advance Amount ($)', required: true, category: 'financial' },
     { id: 'admin_fee_percent', type: 'number', label: 'Administration Fee (%)', required: true, category: 'financial' },
     { id: 'payment_terms', type: 'select', label: 'Payment Terms', required: true, options: ['Net 30', 'Net 45', 'Net 60'], category: 'financial' },
     { id: 'accounting_frequency', type: 'select', label: 'Accounting Frequency', required: true, options: ['Quarterly', 'Semi-Annual', 'Annual'], category: 'financial' },
+    { id: 'invoice_due_days', type: 'number', label: 'Invoice Due Days', required: true, category: 'financial' },
     { id: 'payment_method', type: 'select', label: 'Payment Method', required: true, options: ['Direct Deposit', 'Check', 'Wire Transfer'], category: 'financial' },
     { id: 'recoupable', type: 'checkbox', label: 'Recoupable Advance', required: true, category: 'financial' },
     
@@ -208,6 +210,112 @@ p/k/a {{artist_stage_name}}`
     { id: 'credit_language', type: 'text', label: 'Credit Language', required: false, category: 'terms' },
     { id: 'credit_placement', type: 'text', label: 'Credit Placement', required: false, category: 'terms' }
   ],
+  template_data: {
+    content: `Publishing Administration Agreement
+
+This Publishing Administration Agreement ("Agreement") is made and entered into as of {{effective_date}} (the "Effective Date"), by and between:
+
+{{writer_legal_name}} ("Writer"), IPI/CAE: {{ipi_cae}}, PRO: {{pro_affiliation}}, located at {{company_address}},
+
+and
+
+{{publisher_name}}, at {{publisher_address}} ("Administrator"), represented by {{company_representative_name}}, {{company_representative_title}}.
+
+1. TERM
+
+The term of this Agreement shall commence on the Effective Date and continue for {{term_years}} year(s), unless earlier terminated in accordance with this Agreement (the "Term").
+
+Administrator shall have {{option_periods_count}} option(s) to extend the Term for additional periods upon written notice.
+
+2. GRANT OF RIGHTS
+
+Writer hereby grants to Administrator the sole and exclusive right to administer and exploit the musical compositions listed in Schedule A and any additional compositions created during the Term (the "Compositions") throughout the {{territory}}.
+
+Administrator shall have the right to:
+
+License and collect royalties from performances, reproductions, and uses of the Compositions;
+
+Enter into subpublishing agreements;
+
+Print, publish, and distribute sheet music;
+
+Synchronize Compositions with audiovisual works (subject to Writer's approval for sensitive uses such as political, religious, or explicit content);
+
+Use Writer's approved name, likeness, and biographical information in connection with exploitation of the Compositions.
+
+3. ADVANCES
+
+Administrator shall pay Writer an advance of ${{advance_amount}} (the "Advance"), recoupable from royalties earned under this Agreement.
+
+Any additional advances, if made, shall also be fully recoupable from Writer's royalties.
+
+4. ADMINISTRATION FEE; ROYALTIES
+
+Administrator shall collect all gross income derived from the Compositions ("Gross Receipts"). After deducting the Administration Fee and recoupable amounts, Administrator shall pay Writer the balance of Net Income.
+
+Administration Fee: {{admin_fee_percent}}%.
+
+Payment Method: {{payment_method}}.
+
+5. PERFORMING RIGHTS
+
+The performing rights in each Composition shall be licensed and collected by the appropriate performing rights societies (e.g., {{pro_affiliation}}). Administrator shall receive the publisher's share, and Writer shall receive the writer's share directly.
+
+6. ACCOUNTING
+
+Administrator shall render royalty statements to Writer on a {{accounting_frequency}} basis within {{invoice_due_days}} days after the end of each accounting period.
+
+Payments shall accompany each statement, subject to recoupment and reserves.
+
+Writer shall have the right, at Writer's expense, to audit Administrator's books not more than once per year, with at least {{invoice_due_days}} days' prior notice.
+
+7. WARRANTIES AND REPRESENTATIONS
+
+Writer represents and warrants that:
+
+Writer owns or controls the rights to the Compositions;
+
+The Compositions do not infringe upon any other works;
+
+Writer has full authority to enter into this Agreement.
+
+Administrator represents and warrants that it has the authority to enter into this Agreement.
+
+8. INDEMNITY
+
+Each party agrees to indemnify and hold harmless the other from claims, damages, and expenses arising from any breach of this Agreement.
+
+9. TERMINATION
+
+Upon expiration or termination of the Term:
+
+Administrator shall continue to collect royalties during the {{term_years}} year(s) Rights Period.
+
+After the Rights Period, Administrator may collect royalties for an additional {{option_periods_count}} year(s) Collection Period solely to cover licenses already granted.
+
+10. MISCELLANEOUS
+
+Notices: All notices shall be sent to the addresses set forth above.
+
+Entire Agreement: This Agreement constitutes the entire understanding between the parties.
+
+Governing Law: This Agreement shall be governed by the laws of {{governing_law}}.
+
+Dispute Resolution: Any disputes shall be resolved in the courts of {{jurisdiction}}.
+
+SIGNATURES
+
+Writer:
+Name: {{writer_legal_name}}
+
+Administrator:
+Name: {{company_representative_name}}
+Title: {{company_representative_title}}
+
+SCHEDULE A – COMPOSITIONS
+
+{{song_titles}}`
+  },
   is_public: true
 }, {
   id: '3',
