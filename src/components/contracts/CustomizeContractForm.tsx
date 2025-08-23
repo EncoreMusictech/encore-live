@@ -44,16 +44,6 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
   const { toast } = useToast();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
-  
-  // Debug effect to monitor dialog state changes
-  useEffect(() => {
-    console.log('EmailDialog state changed:', emailDialogOpen);
-  }, [emailDialogOpen]);
-  
-  // Debug effect to monitor component renders
-  useEffect(() => {
-    console.log('CustomizeContractForm rendered, emailDialogOpen:', emailDialogOpen);
-  });
   const [emailFormData, setEmailFormData] = useState({
     to: '',
     subject: `${template.title || 'Contract'} for Review`,
@@ -1983,19 +1973,7 @@ Notes/Additional Specifications: ________________________`;
                     </div>
                   </ScrollArea>
                   <div className="flex flex-col sm:flex-row gap-3 justify-end pt-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={(e) => {
-                        console.log('Send Email button clicked - event:', e);
-                        console.log('Current emailDialogOpen state:', emailDialogOpen);
-                        try {
-                          setEmailDialogOpen(true);
-                          console.log('setEmailDialogOpen(true) called successfully');
-                        } catch (error) {
-                          console.error('Error setting emailDialogOpen:', error);
-                        }
-                      }}
-                    >
+                    <Button variant="outline" onClick={() => setEmailDialogOpen(true)}>
                       <Send className="h-4 w-4 mr-2" />
                       Send Email
                     </Button>
@@ -2016,12 +1994,10 @@ Notes/Additional Specifications: ________________________`;
       {/* Email Dialog */}
       <Dialog 
         open={emailDialogOpen} 
-        onOpenChange={(open) => {
-          console.log('Dialog onOpenChange called with:', open);
-          setEmailDialogOpen(open);
-        }}
+        onOpenChange={setEmailDialogOpen}
+        modal={true}
       >
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] z-[60]" style={{zIndex: 60}}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Send className="h-5 w-5" />
