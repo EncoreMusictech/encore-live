@@ -939,7 +939,8 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                     <div className="space-y-4">
                       <div className="text-center">
                         <h3 className="text-lg font-bold mb-2">
-                          {template.contract_type === 'publishing' ? 'Publishing Administration Agreement' : 'Recording Agreement'}
+                          {template.contract_type === 'publishing' ? 'Publishing Administration Agreement' : 
+                           template.contract_type === 'distribution' ? 'Distribution Agreement' : 'Recording Agreement'}
                         </h3>
                         <div className="h-px bg-border mb-4"></div>
                       </div>
