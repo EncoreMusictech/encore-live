@@ -516,7 +516,14 @@ Notes/Additional Specifications: ________________________`;
   };
 
   const handleSendEmail = async () => {
+    console.log('handleSendEmail called with:', { 
+      to: emailFormData.to, 
+      subject: emailFormData.subject,
+      templateTitle: template.title 
+    });
+
     if (!emailFormData.to.trim()) {
+      console.log('Email validation failed: no recipient');
       toast({
         title: 'Error',
         description: 'Please enter a recipient email address.',
@@ -525,26 +532,35 @@ Notes/Additional Specifications: ________________________`;
       return;
     }
 
+    console.log('Setting isSendingEmail to true');
     setEmailFormData(prev => ({ ...prev, isSendingEmail: true }));
 
     try {
-      // Generate PDF first
-      const pdfUrl = await handleGeneratePDF();
-      if (!pdfUrl) return;
+      console.log('Generating contract content...');
+      // Generate the contract content
+      const contractContent = generatePreviewText();
+      console.log('Contract content generated:', contractContent.substring(0, 100) + '...');
 
-      // Send email with PDF attachment
-      const { error } = await supabase.functions.invoke('send-contract-email', {
+      console.log('Calling send-contract-email edge function...');
+      // Send email with contract content
+      const { data, error } = await supabase.functions.invoke('send-contract-email', {
         body: {
           to: emailFormData.to,
-          subject: emailFormData.subject,
-          body: emailFormData.body,
+          recipientName: emailFormData.to.split('@')[0], // Use part before @ as name
           contractTitle: template.title || 'Contract',
-          pdfUrl: pdfUrl
+          contractContent: contractContent,
+          senderMessage: emailFormData.body || undefined
         }
       });
 
-      if (error) throw error;
+      console.log('Edge function response:', { data, error });
 
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      console.log('Email sent successfully');
       toast({
         title: 'Email Sent',
         description: `Contract successfully sent to ${emailFormData.to}`,
@@ -559,13 +575,14 @@ Notes/Additional Specifications: ________________________`;
       }));
 
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Error in handleSendEmail:', error);
       toast({
         title: 'Error',
-        description: 'Failed to send email. Please try again.',
+        description: `Failed to send email: ${error.message || 'Unknown error'}`,
         variant: 'destructive'
       });
     } finally {
+      console.log('Setting isSendingEmail to false');
       setEmailFormData(prev => ({ ...prev, isSendingEmail: false }));
     }
   };
