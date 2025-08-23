@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      ack_processing_logs: {
+        Row: {
+          ack_file_content: string | null
+          ack_file_name: string
+          created_at: string
+          errors_found: number | null
+          id: string
+          parsed_data: Json | null
+          processed_at: string | null
+          processing_errors: Json | null
+          processing_status: string
+          updated_at: string
+          user_id: string
+          works_updated: number | null
+        }
+        Insert: {
+          ack_file_content?: string | null
+          ack_file_name: string
+          created_at?: string
+          errors_found?: number | null
+          id?: string
+          parsed_data?: Json | null
+          processed_at?: string | null
+          processing_errors?: Json | null
+          processing_status?: string
+          updated_at?: string
+          user_id: string
+          works_updated?: number | null
+        }
+        Update: {
+          ack_file_content?: string | null
+          ack_file_name?: string
+          created_at?: string
+          errors_found?: number | null
+          id?: string
+          parsed_data?: Json | null
+          processed_at?: string | null
+          processing_errors?: Json | null
+          processing_status?: string
+          updated_at?: string
+          user_id?: string
+          works_updated?: number | null
+        }
+        Relationships: []
+      }
       ai_research_sessions: {
         Row: {
           ai_response: Json | null
@@ -1025,40 +1070,70 @@ export type Database = {
       }
       copyright_exports: {
         Row: {
+          batch_name: string | null
           copyright_id: string | null
           created_at: string
+          delivery_job_id: string | null
           error_message: string | null
           export_format: string
+          export_notes: string | null
           export_status: string | null
+          export_tags: string[] | null
           export_type: string | null
+          export_version: number | null
+          file_size_bytes: number | null
+          file_storage_path: string | null
           file_url: string | null
           id: string
+          parent_export_id: string | null
+          readiness_issues: Json | null
           record_count: number | null
           user_id: string
+          validation_score: number | null
         }
         Insert: {
+          batch_name?: string | null
           copyright_id?: string | null
           created_at?: string
+          delivery_job_id?: string | null
           error_message?: string | null
           export_format: string
+          export_notes?: string | null
           export_status?: string | null
+          export_tags?: string[] | null
           export_type?: string | null
+          export_version?: number | null
+          file_size_bytes?: number | null
+          file_storage_path?: string | null
           file_url?: string | null
           id?: string
+          parent_export_id?: string | null
+          readiness_issues?: Json | null
           record_count?: number | null
           user_id: string
+          validation_score?: number | null
         }
         Update: {
+          batch_name?: string | null
           copyright_id?: string | null
           created_at?: string
+          delivery_job_id?: string | null
           error_message?: string | null
           export_format?: string
+          export_notes?: string | null
           export_status?: string | null
+          export_tags?: string[] | null
           export_type?: string | null
+          export_version?: number | null
+          file_size_bytes?: number | null
+          file_storage_path?: string | null
           file_url?: string | null
           id?: string
+          parent_export_id?: string | null
+          readiness_issues?: Json | null
           record_count?: number | null
           user_id?: string
+          validation_score?: number | null
         }
         Relationships: [
           {
@@ -1066,6 +1141,20 @@ export type Database = {
             columns: ["copyright_id"]
             isOneToOne: false
             referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copyright_exports_delivery_job_id_fkey"
+            columns: ["delivery_job_id"]
+            isOneToOne: false
+            referencedRelation: "export_delivery_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copyright_exports_parent_export_id_fkey"
+            columns: ["parent_export_id"]
+            isOneToOne: false
+            referencedRelation: "copyright_exports"
             referencedColumns: ["id"]
           },
         ]
@@ -1643,6 +1732,107 @@ export type Database = {
           selected_tracks?: Json
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      export_delivery_jobs: {
+        Row: {
+          attempt_count: number | null
+          completed_at: string | null
+          created_at: string
+          delivery_metadata: Json | null
+          delivery_status: string
+          error_message: string | null
+          export_id: string
+          file_path: string
+          ftp_credential_id: string
+          id: string
+          last_attempt_at: string | null
+          max_attempts: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number | null
+          completed_at?: string | null
+          created_at?: string
+          delivery_metadata?: Json | null
+          delivery_status?: string
+          error_message?: string | null
+          export_id: string
+          file_path: string
+          ftp_credential_id: string
+          id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempt_count?: number | null
+          completed_at?: string | null
+          created_at?: string
+          delivery_metadata?: Json | null
+          delivery_status?: string
+          error_message?: string | null
+          export_id?: string
+          file_path?: string
+          ftp_credential_id?: string
+          id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_delivery_jobs_ftp_credential_id_fkey"
+            columns: ["ftp_credential_id"]
+            isOneToOne: false
+            referencedRelation: "pro_ftp_credentials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      export_validation_results: {
+        Row: {
+          blocking_issues: Json | null
+          can_export: boolean | null
+          copyright_ids: string[]
+          created_at: string
+          id: string
+          overall_score: number | null
+          user_id: string
+          validated_at: string
+          validation_results: Json
+          validation_type: string
+          warning_issues: Json | null
+        }
+        Insert: {
+          blocking_issues?: Json | null
+          can_export?: boolean | null
+          copyright_ids: string[]
+          created_at?: string
+          id?: string
+          overall_score?: number | null
+          user_id: string
+          validated_at?: string
+          validation_results?: Json
+          validation_type: string
+          warning_issues?: Json | null
+        }
+        Update: {
+          blocking_issues?: Json | null
+          can_export?: boolean | null
+          copyright_ids?: string[]
+          created_at?: string
+          id?: string
+          overall_score?: number | null
+          user_id?: string
+          validated_at?: string
+          validation_results?: Json
+          validation_type?: string
+          warning_issues?: Json | null
         }
         Relationships: []
       }
@@ -2456,6 +2646,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pro_ftp_credentials: {
+        Row: {
+          base_path: string | null
+          connection_status: string | null
+          connection_type: string
+          created_at: string
+          host: string
+          id: string
+          is_active: boolean | null
+          last_connection_test: string | null
+          password_encrypted: string
+          port: number
+          pro_code: string
+          pro_name: string
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          base_path?: string | null
+          connection_status?: string | null
+          connection_type?: string
+          created_at?: string
+          host: string
+          id?: string
+          is_active?: boolean | null
+          last_connection_test?: string | null
+          password_encrypted: string
+          port?: number
+          pro_code: string
+          pro_name: string
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          base_path?: string | null
+          connection_status?: string | null
+          connection_type?: string
+          created_at?: string
+          host?: string
+          id?: string
+          is_active?: boolean | null
+          last_connection_test?: string | null
+          password_encrypted?: string
+          port?: number
+          pro_code?: string
+          pro_name?: string
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
