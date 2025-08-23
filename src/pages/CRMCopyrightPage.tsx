@@ -234,20 +234,6 @@ export default function CRMCopyrightPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Controlled Works</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">
-              {copyrights.filter(c => {
-                const copyrightWriters = writers[c.id] || [];
-                return calculateControlledShare(copyrightWriters) > 0;
-              }).length}
-            </div>
-            <p className="text-muted-foreground text-sm">With controlled shares</p>
-          </CardContent>
-        </Card>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
