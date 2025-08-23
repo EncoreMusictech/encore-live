@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 interface ExportRecord {
   id: string;
   export_format: string;
-  copyright_count: number;
+  copyright_count?: number;
   file_storage_path?: string;
   file_size_bytes?: number;
   export_version: number;
@@ -37,7 +37,7 @@ interface ExportRecord {
   export_notes?: string;
   export_tags?: string[];
   validation_score: number;
-  readiness_issues?: any[];
+  readiness_issues?: any;
   delivery_job_id?: string;
   parent_export_id?: string;
   created_at: string;
@@ -48,17 +48,19 @@ interface DeliveryJob {
   id: string;
   delivery_status: string;
   attempt_count: number;
+  max_attempts: number;
+  last_attempt_at?: string;
   completed_at?: string;
   error_message?: string;
-  pro_ftp_credentials?: {
-    pro_name: string;
-    host: string;
-  };
 }
 
-const ExportHistoryWithVersioning: React.FC = () => {
+interface ExportHistoryWithVersioningProps {
+  userId: string;
+}
+
+const ExportHistoryWithVersioning: React.FC<ExportHistoryWithVersioningProps> = ({ userId }) => {
   const [exports, setExports] = useState<ExportRecord[]>([]);
-  const [deliveryJobs, setDeliveryJobs] = useState<{ [key: string]: DeliveryJob }>({});
+  const [deliveryJobs, setDeliveryJobs] = useState<DeliveryJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedExport, setSelectedExport] = useState<ExportRecord | null>(null);
   const [filterFormat, setFilterFormat] = useState<string>('all');
@@ -66,71 +68,98 @@ const ExportHistoryWithVersioning: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchExports();
-  }, []);
-
   const fetchExports = async () => {
     setLoading(true);
     try {
-      const { data: exportsData, error: exportsError } = await supabase
+      const { data, error } = await supabase
         .from('copyright_exports')
-        .select('*')
+        .select(`
+          *,
+          export_delivery_jobs(*)
+        `)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (exportsError) {
-        console.error('Error fetching exports:', exportsError);
+      if (error) {
+        console.error('Error fetching exports:', error);
         toast({
           title: "Error",
-          description: "Failed to load export history",
+          description: "Failed to fetch export history",
           variant: "destructive"
         });
         return;
       }
 
-      setExports(exportsData || []);
-
-      // Fetch delivery job details for exports that have them
-      const exportIdsWithDelivery = exportsData?.filter(e => e.delivery_job_id).map(e => e.delivery_job_id) || [];
-      
-      if (exportIdsWithDelivery.length > 0) {
-        const { data: deliveryData, error: deliveryError } = await supabase
-          .from('export_delivery_jobs')
-          .select(`
-            id,
-            delivery_status,
-            attempt_count,
-            completed_at,
-            error_message,
-            pro_ftp_credentials (pro_name, host)
-          `)
-          .in('id', exportIdsWithDelivery);
-
-        if (!deliveryError && deliveryData) {
-          const deliveryMap = deliveryData.reduce((acc, job) => {
-            acc[job.id] = job;
-            return acc;
-          }, {} as { [key: string]: DeliveryJob });
-          setDeliveryJobs(deliveryMap);
-        }
-      }
+      setExports((data || []).map((item: any) => ({ 
+        ...item, 
+        copyright_count: item.copyright_count || 0,
+        readiness_issues: Array.isArray(item.readiness_issues) ? item.readiness_issues : 
+          item.readiness_issues ? [item.readiness_issues] : []
+      })));
     } catch (error) {
-      console.error('Error fetching export history:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      });
+      console.error('Error fetching exports:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const downloadExport = async (exportRecord: ExportRecord) => {
-    if (!exportRecord.file_storage_path) {
+  const fetchDeliveryJobs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('export_delivery_jobs')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching delivery jobs:', error);
+        return;
+      }
+
+      setDeliveryJobs(data || []);
+    } catch (error) {
+      console.error('Error fetching delivery jobs:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchExports();
+    fetchDeliveryJobs();
+  }, [userId]);
+
+  const filteredExports = exports.filter(export_ => {
+    const matchesFormat = filterFormat === 'all' || export_.export_format.toLowerCase() === filterFormat.toLowerCase();
+    const matchesStatus = filterStatus === 'all' || export_.export_status.toLowerCase() === filterStatus.toLowerCase();
+    const matchesSearch = searchTerm === '' || 
+      export_.batch_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      export_.export_notes?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesFormat && matchesStatus && matchesSearch;
+  });
+
+  const getStatusIcon = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return <CheckCircle className="h-4 w-4 text-emerald-600" />;
+      case 'failed':
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
+      case 'processing':
+        return <Clock className="h-4 w-4 text-amber-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
+  const getDeliveryStatus = (exportId: string) => {
+    const job = deliveryJobs.find(j => j.id === exportId);
+    if (!job) return null;
+    return job;
+  };
+
+  const downloadExport = async (export_: ExportRecord) => {
+    if (!export_.file_storage_path) {
       toast({
         title: "Download Error",
-        description: "Export file is not available for download",
+        description: "Export file not available for download",
         variant: "destructive"
       });
       return;
@@ -139,7 +168,7 @@ const ExportHistoryWithVersioning: React.FC = () => {
     try {
       const { data, error } = await supabase.storage
         .from('cwr-exports')
-        .download(exportRecord.file_storage_path);
+        .download(export_.file_storage_path);
 
       if (error) {
         console.error('Download error:', error);
@@ -151,102 +180,62 @@ const ExportHistoryWithVersioning: React.FC = () => {
         return;
       }
 
-      // Create download link
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${exportRecord.batch_name || 'export'}_v${exportRecord.export_version}.${exportRecord.format.toLowerCase()}`;
+      a.download = `${export_.batch_name || 'export'}_v${export_.export_version}.${export_.export_format.toLowerCase()}`;
+      document.body.appendChild(a);
       a.click();
       URL.revokeObjectURL(url);
-
-      toast({
-        title: "Download Started",
-        description: "Export file download has started",
-      });
+      document.body.removeChild(a);
     } catch (error) {
       console.error('Download error:', error);
       toast({
         title: "Download Error",
-        description: "An unexpected error occurred during download",
+        description: "An error occurred during download",
         variant: "destructive"
       });
     }
   };
 
-  const getStatusBadge = (status: string, deliveryJob?: DeliveryJob) => {
-    if (deliveryJob) {
-      switch (deliveryJob.delivery_status) {
-        case 'completed':
-          return <Badge variant="secondary" className="text-emerald-700 bg-emerald-50"><CheckCircle className="h-3 w-3 mr-1" />Delivered</Badge>;
-        case 'failed':
-          return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" />Delivery Failed</Badge>;
-        case 'pending':
-        case 'in_progress':
-        case 'retrying':
-          return <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />Delivering</Badge>;
-      }
-    }
-
-    switch (status) {
-      case 'completed':
-        return <Badge variant="secondary"><CheckCircle className="h-3 w-3 mr-1" />Completed</Badge>;
-      case 'failed':
-        return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" />Failed</Badge>;
-      default:
-        return <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />Processing</Badge>;
-    }
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-emerald-600';
-    if (score >= 70) return 'text-amber-600';
-    return 'text-red-600';
-  };
-
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes) return 'Unknown';
-    const kb = bytes / 1024;
-    if (kb < 1024) return `${kb.toFixed(1)} KB`;
-    return `${(kb / 1024).toFixed(1)} MB`;
-  };
-
-  const filteredExports = exports.filter(exp => {
-    const matchesFormat = filterFormat === 'all' || exp.format.toLowerCase() === filterFormat;
-    const matchesStatus = filterStatus === 'all' || exp.status === filterStatus;
-    const matchesSearch = !searchTerm || 
-      exp.batch_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exp.export_notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exp.export_tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return matchesFormat && matchesStatus && matchesSearch;
-  });
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Export History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Export History</h2>
-          <p className="text-muted-foreground">View and manage your CWR/DDEX export history with versioning</p>
-        </div>
-      </div>
-
-      {/* Filters */}
       <Card>
-        <CardContent className="pt-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              <span className="text-sm font-medium">Filters:</span>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Archive className="h-5 w-5" />
+            Export History & Versioning
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Filters */}
+          <div className="flex gap-4 mb-6">
+            <div className="flex-1">
+              <Input
+                placeholder="Search exports..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
             </div>
-            <Input
-              placeholder="Search batch name, notes, or tags..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-xs"
-            />
             <Select value={filterFormat} onValueChange={setFilterFormat}>
               <SelectTrigger className="w-32">
-                <SelectValue placeholder="Format" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Formats</SelectItem>
@@ -256,245 +245,424 @@ const ExportHistoryWithVersioning: React.FC = () => {
             </Select>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-32">
-                <SelectValue placeholder="Status" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Export History Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Archive className="h-5 w-5" />
-            Export Records ({filteredExports.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-              <p className="mt-2 text-muted-foreground">Loading export history...</p>
-            </div>
-          ) : filteredExports.length === 0 ? (
-            <div className="text-center py-8">
-              <FileDown className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Export Records Found</h3>
-              <p className="text-muted-foreground">
-                {searchTerm || filterFormat !== 'all' || filterStatus !== 'all' 
-                  ? 'No exports match your current filters.' 
-                  : 'No exports have been created yet.'
-                }
-              </p>
-            </div>
-          ) : (
+          {/* Export Table */}
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Batch</TableHead>
+                  <TableHead>Batch Name</TableHead>
                   <TableHead>Format</TableHead>
                   <TableHead>Works</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Version</TableHead>
                   <TableHead>Score</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredExports.map((exportRecord) => {
-                  const deliveryJob = exportRecord.delivery_job_id ? deliveryJobs[exportRecord.delivery_job_id] : undefined;
-                  
-                  return (
-                    <TableRow key={exportRecord.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{exportRecord.batch_name || 'Unnamed Export'}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {exportRecord.file_size_bytes && formatFileSize(exportRecord.file_size_bytes)}
+                {filteredExports.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No exports found matching your criteria
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredExports.map((export_) => {
+                    const deliveryJob = getDeliveryStatus(export_.delivery_job_id || '');
+                    return (
+                      <TableRow key={export_.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {export_.parent_export_id && (
+                              <GitBranch className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <span className="font-medium">
+                              {export_.batch_name || 'Unnamed Export'}
+                            </span>
                           </div>
-                          {exportRecord.export_tags && exportRecord.export_tags.length > 0 && (
+                          {export_.export_tags && export_.export_tags.length > 0 && (
                             <div className="flex gap-1 mt-1">
-                              {exportRecord.export_tags.slice(0, 2).map((tag) => (
-                                <Badge key={tag} variant="outline" className="text-xs">
-                                  <Tag className="h-2 w-2 mr-1" />
+                              {export_.export_tags.slice(0, 2).map((tag, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
                                   {tag}
                                 </Badge>
                               ))}
-                              {exportRecord.export_tags.length > 2 && (
+                              {export_.export_tags.length > 2 && (
                                 <Badge variant="outline" className="text-xs">
-                                  +{exportRecord.export_tags.length - 2}
+                                  +{export_.export_tags.length - 2}
                                 </Badge>
                               )}
                             </div>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{exportRecord.format.toUpperCase()}</Badge>
-                      </TableCell>
-                      <TableCell>{exportRecord.copyright_count}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <GitBranch className="h-3 w-3" />
-                          v{exportRecord.export_version}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className={`font-medium ${getScoreColor(exportRecord.validation_score)}`}>
-                          {exportRecord.validation_score.toFixed(1)}%
-                        </div>
-                        <Progress 
-                          value={exportRecord.validation_score} 
-                          className="w-16 h-1 mt-1" 
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(exportRecord.status, deliveryJob)}
-                        {deliveryJob && deliveryJob.delivery_status === 'completed' && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            to {deliveryJob.pro_ftp_credentials?.pro_name}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {new Date(exportRecord.created_at).toLocaleDateString()}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(exportRecord.created_at).toLocaleTimeString()}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button size="sm" variant="outline" onClick={() => setSelectedExport(exportRecord)}>
-                                <Eye className="h-3 w-3" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>Export Details - {exportRecord.batch_name}</DialogTitle>
-                              </DialogHeader>
-                              {selectedExport && (
-                                <Tabs defaultValue="overview">
-                                  <TabsList>
-                                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                                    <TabsTrigger value="delivery">Delivery</TabsTrigger>
-                                    <TabsTrigger value="validation">Validation</TabsTrigger>
-                                  </TabsList>
-                                  <TabsContent value="overview" className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div>
-                                        <Label className="text-sm font-medium">Batch Name</Label>
-                                        <p>{selectedExport.batch_name || 'Unnamed'}</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium">Format</Label>
-                                        <p>{selectedExport.format.toUpperCase()}</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium">Works Count</Label>
-                                        <p>{selectedExport.copyright_count}</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium">File Size</Label>
-                                        <p>{formatFileSize(selectedExport.file_size_bytes)}</p>
-                                      </div>
-                                    </div>
-                                    {selectedExport.export_notes && (
-                                      <div>
-                                        <Label className="text-sm font-medium">Notes</Label>
-                                        <p className="text-sm text-muted-foreground mt-1">{selectedExport.export_notes}</p>
-                                      </div>
-                                    )}
-                                  </TabsContent>
-                                  <TabsContent value="delivery">
-                                    {deliveryJob ? (
-                                      <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                          <div>
-                                            <Label className="text-sm font-medium">Status</Label>
-                                            <p>{deliveryJob.delivery_status}</p>
-                                          </div>
-                                          <div>
-                                            <Label className="text-sm font-medium">Attempts</Label>
-                                            <p>{deliveryJob.attempt_count}</p>
-                                          </div>
-                                        </div>
-                                        {deliveryJob.error_message && (
-                                          <div>
-                                            <Label className="text-sm font-medium">Error</Label>
-                                            <p className="text-sm text-red-600">{deliveryJob.error_message}</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <p className="text-muted-foreground">No delivery configured for this export.</p>
-                                    )}
-                                  </TabsContent>
-                                  <TabsContent value="validation">
-                                    <div className="space-y-4">
-                                      <div>
-                                        <Label className="text-sm font-medium">Validation Score</Label>
-                                        <div className="flex items-center gap-2 mt-1">
-                                          <Progress value={selectedExport.validation_score} className="flex-1" />
-                                          <span className={`font-medium ${getScoreColor(selectedExport.validation_score)}`}>
-                                            {selectedExport.validation_score.toFixed(1)}%
-                                          </span>
-                                        </div>
-                                      </div>
-                                      {selectedExport.readiness_issues && selectedExport.readiness_issues.length > 0 && (
-                                        <div>
-                                          <Label className="text-sm font-medium">Issues</Label>
-                                          <div className="mt-1 space-y-1">
-                                            {selectedExport.readiness_issues.map((issue, index) => (
-                                              <div key={index} className="text-sm text-muted-foreground">
-                                                • {issue.message}
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </TabsContent>
-                                </Tabs>
-                              )}
-                            </DialogContent>
-                          </Dialog>
-                          {exportRecord.file_storage_path && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => downloadExport(exportRecord)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={export_.export_format === "CWR" ? "default" : "secondary"}>
+                            {export_.export_format}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{export_.copyright_count || 0}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(export_.export_status)}
+                            <Badge 
+                              variant={
+                                export_.export_status === 'completed' ? 'default' :
+                                export_.export_status === 'failed' ? 'destructive' : 'secondary'
+                              }
                             >
-                              <Download className="h-3 w-3" />
-                            </Button>
+                              {export_.export_status}
+                            </Badge>
+                          </div>
+                          {deliveryJob && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Delivery: {deliveryJob.delivery_status}
+                              {deliveryJob.attempt_count > 0 && ` (${deliveryJob.attempt_count}/${deliveryJob.max_attempts})`}
+                            </div>
                           )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">v{export_.export_version}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress value={export_.validation_score} className="w-16" />
+                            <span className="text-sm text-muted-foreground">
+                              {export_.validation_score.toFixed(0)}%
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {new Date(export_.created_at).toLocaleDateString()}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(export_.created_at).toLocaleTimeString()}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {export_.file_storage_path && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => downloadExport(export_)}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setSelectedExport(export_)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>Export Details</DialogTitle>
+                                </DialogHeader>
+                                {selectedExport && (
+                                  <ExportDetailsView 
+                                    export_={selectedExport} 
+                                    deliveryJob={getDeliveryStatus(selectedExport.delivery_job_id || '')} 
+                                  />
+                                )}
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
-          )}
+          </div>
         </CardContent>
       </Card>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Exports</p>
+                <p className="text-2xl font-bold">{exports.length}</p>
+              </div>
+              <FileDown className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {exports.filter(e => e.export_status === 'completed').length}
+                </p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-emerald-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Processing</p>
+                <p className="text-2xl font-bold text-amber-600">
+                  {exports.filter(e => e.export_status === 'processing').length}
+                </p>
+              </div>
+              <Clock className="h-8 w-8 text-amber-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Failed</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {exports.filter(e => e.export_status === 'failed').length}
+                </p>
+              </div>
+              <AlertCircle className="h-8 w-8 text-red-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Delivery Jobs Timeline */}
+      {deliveryJobs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Recent Delivery Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {deliveryJobs.slice(0, 5).map((job) => (
+                <div key={job.id} className="flex items-center gap-4 p-3 rounded-lg border">
+                  <div className="flex-shrink-0">
+                    {job.delivery_status === 'completed' ? (
+                      <CheckCircle className="h-5 w-5 text-emerald-600" />
+                    ) : job.delivery_status === 'failed' ? (
+                      <AlertCircle className="h-5 w-5 text-red-600" />
+                    ) : (
+                      <Clock className="h-5 w-5 text-amber-600" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      Export delivery {job.delivery_status}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {job.attempt_count > 0 && `Attempt ${job.attempt_count}/${job.max_attempts} • `}
+                      {job.last_attempt_at && 
+                        `Last attempt: ${new Date(job.last_attempt_at).toLocaleString()}`
+                      }
+                    </p>
+                    {job.error_message && (
+                      <p className="text-sm text-red-600 mt-1">{job.error_message}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
 
-const Label: React.FC<{ className?: string; children: React.ReactNode }> = ({ className, children }) => (
-  <div className={`text-sm font-medium ${className || ''}`}>{children}</div>
-);
+interface ExportDetailsViewProps {
+  export_: ExportRecord;
+  deliveryJob: DeliveryJob | null;
+}
+
+const ExportDetailsView: React.FC<ExportDetailsViewProps> = ({ export_, deliveryJob }) => {
+  return (
+    <Tabs defaultValue="details" className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="details">Details</TabsTrigger>
+        <TabsTrigger value="validation">Validation</TabsTrigger>
+        <TabsTrigger value="delivery">Delivery</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="details" className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h4 className="font-medium mb-2">Export Information</h4>
+            <div className="space-y-2 text-sm">
+              <div><strong>Batch Name:</strong> {export_.batch_name || 'Unnamed'}</div>
+              <div><strong>Format:</strong> {export_.export_format}</div>
+              <div><strong>Version:</strong> v{export_.export_version}</div>
+              <div><strong>Works Count:</strong> {export_.copyright_count || 0}</div>
+              <div><strong>File Size:</strong> {export_.file_size_bytes ? `${(export_.file_size_bytes / 1024).toFixed(1)} KB` : 'N/A'}</div>
+            </div>
+          </div>
+          <div>
+            <h4 className="font-medium mb-2">Status & Timing</h4>
+            <div className="space-y-2 text-sm">
+              <div><strong>Status:</strong> 
+                <Badge className="ml-2" variant={export_.export_status === 'completed' ? 'default' : 'secondary'}>
+                  {export_.export_status}
+                </Badge>
+              </div>
+              <div><strong>Created:</strong> {new Date(export_.created_at).toLocaleString()}</div>
+            </div>
+          </div>
+        </div>
+
+        {export_.export_notes && (
+          <div>
+            <h4 className="font-medium mb-2">Notes</h4>
+            <p className="text-sm text-muted-foreground p-3 bg-muted rounded-lg">
+              {export_.export_notes}
+            </p>
+          </div>
+        )}
+
+        {export_.export_tags && export_.export_tags.length > 0 && (
+          <div>
+            <h4 className="font-medium mb-2">Tags</h4>
+            <div className="flex flex-wrap gap-2">
+              {export_.export_tags.map((tag, index) => (
+                <Badge key={index} variant="outline">
+                  <Tag className="h-3 w-3 mr-1" />
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </TabsContent>
+
+      <TabsContent value="validation" className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-emerald-600 mb-1">
+                  {export_.validation_score.toFixed(1)}%
+                </div>
+                <p className="text-sm text-muted-foreground">Validation Score</p>
+                <Progress value={export_.validation_score} className="mt-2" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-amber-600 mb-1">
+                  {Array.isArray(export_.readiness_issues) ? export_.readiness_issues.length : 0}
+                </div>
+                <p className="text-sm text-muted-foreground">Issues Found</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {Array.isArray(export_.readiness_issues) && export_.readiness_issues.length > 0 && (
+          <div>
+            <h4 className="font-medium mb-2">Validation Issues</h4>
+            <div className="space-y-2">
+              {export_.readiness_issues.map((issue, index) => (
+                <div key={index} className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">{issue.type || 'Validation Issue'}</p>
+                    <p className="text-sm text-muted-foreground">{issue.message || 'No details available'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </TabsContent>
+
+      <TabsContent value="delivery" className="space-y-4">
+        {deliveryJob ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-center">
+                    <Badge 
+                      className="mb-2" 
+                      variant={deliveryJob.delivery_status === 'completed' ? 'default' : 'secondary'}
+                    >
+                      {deliveryJob.delivery_status}
+                    </Badge>
+                    <p className="text-sm text-muted-foreground">Delivery Status</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold mb-1">
+                      {deliveryJob.attempt_count}/{deliveryJob.max_attempts}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Delivery Attempts</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-2">
+              {deliveryJob.last_attempt_at && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Last Attempt:</span>
+                  <span>{new Date(deliveryJob.last_attempt_at).toLocaleString()}</span>
+                </div>
+              )}
+              {deliveryJob.completed_at && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Completed:</span>
+                  <span>{new Date(deliveryJob.completed_at).toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+
+            {deliveryJob.error_message && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm font-medium text-red-800">Delivery Error</p>
+                <p className="text-sm text-red-600 mt-1">{deliveryJob.error_message}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <Upload className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No delivery information available</p>
+            <p className="text-sm">This export was not configured for automatic delivery</p>
+          </div>
+        )}
+      </TabsContent>
+    </Tabs>
+  );
+};
 
 export default ExportHistoryWithVersioning;

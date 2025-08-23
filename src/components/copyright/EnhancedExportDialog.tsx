@@ -92,20 +92,21 @@ const EnhancedExportDialog: React.FC<EnhancedExportDialogProps> = ({
     };
 
     try {
-      const result = await exportCopyrights(exportOptions);
+      await exportCopyrights(exportOptions);
       
-      if (result && result.success && autoDeliver && selectedFtpCredential) {
-        // Automatically deliver the export
-        await deliverExport(result.data?.id, selectedFtpCredential);
-      }
-
-      if (result?.success) {
+      if (autoDeliver && selectedFtpCredential) {
+        // Note: Delivery will be handled by the backend after export completion
         toast({
-          title: "Export Completed",
-          description: `${exportFormat.toUpperCase()} file generated successfully${autoDeliver ? ' and queued for delivery' : ''}`,
+          title: "Export Started",
+          description: "Export queued for generation and delivery",
         });
-        onOpenChange(false);
+      } else {
+        toast({
+          title: "Export Started",
+          description: `${exportFormat.toUpperCase()} file generation started`,
+        });
       }
+      onOpenChange(false);
     } catch (error) {
       console.error('Export error:', error);
     }
@@ -322,7 +323,7 @@ const EnhancedExportDialog: React.FC<EnhancedExportDialogProps> = ({
                         <Checkbox 
                           id="includePublishers" 
                           checked={includePublishers}
-                          onCheckedChange={setIncludePublishers}
+                          onCheckedChange={(checked) => setIncludePublishers(checked === true)}
                         />
                         <Label htmlFor="includePublishers" className="text-sm">Include Publishers</Label>
                       </div>
@@ -330,7 +331,7 @@ const EnhancedExportDialog: React.FC<EnhancedExportDialogProps> = ({
                         <Checkbox 
                           id="includeRecordings" 
                           checked={includeRecordings}
-                          onCheckedChange={setIncludeRecordings}
+                          onCheckedChange={(checked) => setIncludeRecordings(checked === true)}
                           disabled={exportFormat === 'ddex'}
                         />
                         <Label htmlFor="includeRecordings" className="text-sm">
@@ -391,7 +392,7 @@ const EnhancedExportDialog: React.FC<EnhancedExportDialogProps> = ({
                   <Checkbox 
                     id="autoDeliver" 
                     checked={autoDeliver}
-                    onCheckedChange={setAutoDeliver}
+                    onCheckedChange={(checked) => setAutoDeliver(checked === true)}
                   />
                   <Label htmlFor="autoDeliver">Automatically deliver export via FTP/SFTP</Label>
                 </div>
