@@ -238,16 +238,23 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    {template.contract_type === 'publishing' ? 'Publishing Administration Agreement Details' : 'Recording Agreement Details'}
+                    {template.contract_type === 'publishing' ? 'Publishing Administration Agreement Details' : 
+                     template.contract_type === 'distribution' ? 'Distribution Agreement Details' : 'Recording Agreement Details'}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {template.contract_type === 'publishing' 
                       ? 'Complete details for the Publishing Administration Agreement' 
+                      : template.contract_type === 'distribution'
+                      ? 'Complete details for the Distribution Agreement'
                       : 'Complete details for the Standard Recording Contract'}
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {template.contract_type === 'publishing' ? (
+                    <>
+...
+                    </>
+                   ) : template.contract_type === 'distribution' ? (
                     <>
                       {/* Basic Contract Info */}
                       <div className="space-y-4">
@@ -256,17 +263,18 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                           <div className="space-y-2">
                             <Label>Agreement Title</Label>
                             <Input
-                              value={formData.agreement_title || "Publishing Administration Agreement"}
+                              value={formData.agreement_title || "Distribution Agreement"}
                               onChange={(e) => handleFieldChange('agreement_title', e.target.value)}
-                              placeholder="Publishing Administration Agreement"
+                              placeholder="Distribution Agreement"
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Effective Date</Label>
+                            <Label>Effective Date *</Label>
                             <Input
                               type="date"
                               value={formData.effective_date || ''}
                               onChange={(e) => handleFieldChange('effective_date', e.target.value)}
+                              required
                             />
                           </div>
                         </div>
@@ -274,78 +282,25 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
 
                       <Separator />
 
-                      {/* Writer Information */}
+                      {/* Company Information */}
                       <div className="space-y-4">
-                        <h4 className="text-md font-semibold">Writer Information</h4>
+                        <h4 className="text-md font-semibold">Company Information</h4>
                         <div className="grid md:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Writer Legal Name *</Label>
+                            <Label>Company Name *</Label>
                             <Input
-                              value={formData.writer_legal_name || ''}
-                              onChange={(e) => handleFieldChange('writer_legal_name', e.target.value)}
-                              placeholder="Full legal name"
+                              value={formData.company_name || ''}
+                              onChange={(e) => handleFieldChange('company_name', e.target.value)}
+                              placeholder="Company/Label name"
                               required
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>IPI/CAE Number *</Label>
-                            <Input
-                              value={formData.ipi_cae || ''}
-                              onChange={(e) => handleFieldChange('ipi_cae', e.target.value)}
-                              placeholder="IPI/CAE identification number"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>PRO Affiliation *</Label>
-                            <Select value={formData.pro_affiliation || ''} onValueChange={(v) => handleFieldChange('pro_affiliation', v)}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select PRO" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="ASCAP">ASCAP</SelectItem>
-                                <SelectItem value="BMI">BMI</SelectItem>
-                                <SelectItem value="SESAC">SESAC</SelectItem>
-                                <SelectItem value="GMR">GMR</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Writer Address *</Label>
+                            <Label>Company Address *</Label>
                             <Textarea
                               value={formData.company_address || ''}
                               onChange={(e) => handleFieldChange('company_address', e.target.value)}
-                              placeholder="Full address"
-                              rows={2}
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      {/* Publisher/Administrator Information */}
-                      <div className="space-y-4">
-                        <h4 className="text-md font-semibold">Publisher/Administrator Information</h4>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Publisher Name *</Label>
-                            <Input
-                              value={formData.publisher_name || ''}
-                              onChange={(e) => handleFieldChange('publisher_name', e.target.value)}
-                              placeholder="Publishing company name"
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Publisher Address *</Label>
-                            <Textarea
-                              value={formData.publisher_address || ''}
-                              onChange={(e) => handleFieldChange('publisher_address', e.target.value)}
-                              placeholder="Full publisher address"
+                              placeholder="Full company address"
                               rows={2}
                               required
                             />
@@ -353,19 +308,21 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                         </div>
                         <div className="grid md:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Representative Name</Label>
+                            <Label>Company Representative Name *</Label>
                             <Input
                               value={formData.company_representative_name || ''}
                               onChange={(e) => handleFieldChange('company_representative_name', e.target.value)}
                               placeholder="Representative's full name"
+                              required
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Representative Title</Label>
+                            <Label>Representative Title *</Label>
                             <Input
                               value={formData.company_representative_title || ''}
                               onChange={(e) => handleFieldChange('company_representative_title', e.target.value)}
-                              placeholder="President, Director, etc."
+                              placeholder="President, CEO, etc."
+                              required
                             />
                           </div>
                         </div>
@@ -373,29 +330,37 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
 
                       <Separator />
 
-                      {/* Schedule A - Compositions */}
+                      {/* Distributor Information */}
                       <div className="space-y-4">
-                        <h4 className="text-md font-semibold">Schedule A - Compositions</h4>
-                        <div className="space-y-2">
-                          <Label>Song Titles & Composition Details *</Label>
-                          <Textarea
-                            value={formData.song_titles || ''}
-                            onChange={(e) => handleFieldChange('song_titles', e.target.value)}
-                            placeholder="Format: Title | ISWC | Writers | Publishers&#10;Example: &#10;My Song Title | T-123456789-1 | John Doe, Jane Smith | ABC Music Publishing&#10;Another Song | T-987654321-0 | Jane Smith | XYZ Publishing"
-                            rows={4}
-                            required
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Enter each composition on a new line using the format: Title | ISWC | Writers | Publishers
-                          </p>
+                        <h4 className="text-md font-semibold">Distributor Information</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Distributor Name *</Label>
+                            <Input
+                              value={formData.distributor_name || ''}
+                              onChange={(e) => handleFieldChange('distributor_name', e.target.value)}
+                              placeholder="Distribution company name"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Distributor Address *</Label>
+                            <Textarea
+                              value={formData.distributor_address || ''}
+                              onChange={(e) => handleFieldChange('distributor_address', e.target.value)}
+                              placeholder="Full distributor address"
+                              rows={2}
+                              required
+                            />
+                          </div>
                         </div>
                       </div>
 
                       <Separator />
 
-                      {/* Agreement Terms */}
+                      {/* Distribution Terms */}
                       <div className="space-y-4">
-                        <h4 className="text-md font-semibold">Agreement Terms</h4>
+                        <h4 className="text-md font-semibold">Distribution Terms</h4>
                         <div className="grid md:grid-cols-3 gap-4">
                           <div className="space-y-2">
                             <Label>Term (Years) *</Label>
@@ -410,14 +375,14 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Option Periods</Label>
+                            <Label>Album Commitment</Label>
                             <Input
-                              type="number"  
-                              value={formData.option_periods_count || ''}
-                              onChange={(e) => handleFieldChange('option_periods_count', e.target.value)}
-                              placeholder="2"
-                              min="0"
-                              max="5"
+                              type="number"
+                              value={formData.album_commitment || ''}  
+                              onChange={(e) => handleFieldChange('album_commitment', e.target.value)}
+                              placeholder="1"
+                              min="1"
+                              max="10"
                             />
                           </div>
                           <div className="space-y-2">
@@ -444,28 +409,52 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                         <h4 className="text-md font-semibold">Financial Terms</h4>
                         <div className="grid md:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Advance Amount ($) *</Label>
+                            <Label>Distribution Fee (%) *</Label>
                             <Input
                               type="number"
-                              value={formData.advance_amount || ''}
-                              onChange={(e) => handleFieldChange('advance_amount', e.target.value)}
-                              placeholder="50000"
-                              min="0"
-                              step="1000"
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Administration Fee (%) *</Label>
-                            <Input
-                              type="number"
-                              value={formData.admin_fee_percent || ''}
-                              onChange={(e) => handleFieldChange('admin_fee_percent', e.target.value)}
+                              value={formData.distribution_fee_percent || ''}
+                              onChange={(e) => handleFieldChange('distribution_fee_percent', e.target.value)}
                               placeholder="15"
                               min="0"
                               max="50"
                               step="0.5"
                               required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Fixed Fee Amount ($)</Label>
+                            <Input
+                              type="number"
+                              value={formData.fixed_fee_amount || ''}
+                              onChange={(e) => handleFieldChange('fixed_fee_amount', e.target.value)}
+                              placeholder="10000"
+                              min="0"
+                              step="1000"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Advance Amount ($)</Label>
+                            <Input
+                              type="number"
+                              value={formData.advance_amount || ''}
+                              onChange={(e) => handleFieldChange('advance_amount', e.target.value)}
+                              placeholder="25000"
+                              min="0"
+                              step="1000"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Royalty Rate (%)</Label>
+                            <Input
+                              type="number"
+                              value={formData.royalty_rate_percent || ''}
+                              onChange={(e) => handleFieldChange('royalty_rate_percent', e.target.value)}
+                              placeholder="50"
+                              min="0"
+                              max="100"
+                              step="0.5"
                             />
                           </div>
                         </div>
@@ -489,7 +478,7 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                               type="number"
                               value={formData.invoice_due_days || ''}
                               onChange={(e) => handleFieldChange('invoice_due_days', e.target.value)}
-                              placeholder="30"
+                              placeholder="45"
                               min="15"
                               max="90"
                               required
@@ -513,6 +502,27 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
 
                       <Separator />
 
+                      {/* Delivery Requirements */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Delivery Requirements</h4>
+                        <div className="space-y-2">
+                          <Label>Delivery Format *</Label>
+                          <Select value={formData.delivery_format || ''} onValueChange={(v) => handleFieldChange('delivery_format', v)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select format" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="24-bit/96kHz WAV">24-bit/96kHz WAV</SelectItem>
+                              <SelectItem value="24-bit/48kHz WAV">24-bit/48kHz WAV</SelectItem>
+                              <SelectItem value="16-bit/44.1kHz WAV">16-bit/44.1kHz WAV</SelectItem>
+                              <SelectItem value="Digital Distribution Format">Digital Distribution Format</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <Separator />
+
                       {/* Legal Terms */}
                       <div className="space-y-4">
                         <h4 className="text-md font-semibold">Legal Terms</h4>
@@ -522,7 +532,7 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                             <Input
                               value={formData.governing_law || ''}
                               onChange={(e) => handleFieldChange('governing_law', e.target.value)}
-                              placeholder="State of New York"
+                              placeholder="State of California"
                               required
                             />
                           </div>
@@ -531,10 +541,30 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                             <Input
                               value={formData.jurisdiction || ''}
                               onChange={(e) => handleFieldChange('jurisdiction', e.target.value)}
-                              placeholder="New York, NY"
+                              placeholder="Los Angeles, CA"
                               required
                             />
                           </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Schedule A - Recordings */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Schedule A - Recordings</h4>
+                        <div className="space-y-2">
+                          <Label>Recording Details *</Label>
+                          <Textarea
+                            value={formData.recording_details || ''}
+                            onChange={(e) => handleFieldChange('recording_details', e.target.value)}
+                            placeholder="Format: Title | Artist | Album/Project | Catalog Number | Format | Release Date&#10;Example: &#10;Song Title | Artist Name | Album Name | CAT001 | Digital/Physical | 2024-01-15&#10;Another Song | Artist Name | Single Release | CAT002 | Digital Only | 2024-02-01"
+                            rows={4}
+                            required
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Enter each recording on a new line using the format: Title | Artist | Album/Project | Catalog Number | Format | Release Date
+                          </p>
                         </div>
                       </div>
                     </>
