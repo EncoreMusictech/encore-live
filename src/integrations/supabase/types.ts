@@ -1394,6 +1394,62 @@ export type Database = {
         }
         Relationships: []
       }
+      cwr_acknowledgments: {
+        Row: {
+          ack_file_name: string | null
+          ack_file_url: string | null
+          created_at: string
+          id: string
+          linked_records: Json | null
+          parsed_data: Json | null
+          received_at: string
+          registration_status: string
+          response_code: string | null
+          response_message: string | null
+          submission_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ack_file_name?: string | null
+          ack_file_url?: string | null
+          created_at?: string
+          id?: string
+          linked_records?: Json | null
+          parsed_data?: Json | null
+          received_at?: string
+          registration_status?: string
+          response_code?: string | null
+          response_message?: string | null
+          submission_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ack_file_name?: string | null
+          ack_file_url?: string | null
+          created_at?: string
+          id?: string
+          linked_records?: Json | null
+          parsed_data?: Json | null
+          received_at?: string
+          registration_status?: string
+          response_code?: string | null
+          response_message?: string | null
+          submission_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cwr_acknowledgments_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "cwr_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cwr_sender_code_requests: {
         Row: {
           created_at: string
@@ -1491,6 +1547,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      cwr_submissions: {
+        Row: {
+          copyright_id: string | null
+          created_at: string
+          cwr_file_name: string | null
+          cwr_file_url: string | null
+          id: string
+          iswc: string | null
+          pro_name: string
+          sender_code: string
+          submission_date: string
+          submission_status: string
+          submitted_by: string
+          updated_at: string
+          user_id: string
+          work_title: string
+        }
+        Insert: {
+          copyright_id?: string | null
+          created_at?: string
+          cwr_file_name?: string | null
+          cwr_file_url?: string | null
+          id?: string
+          iswc?: string | null
+          pro_name: string
+          sender_code: string
+          submission_date?: string
+          submission_status?: string
+          submitted_by: string
+          updated_at?: string
+          user_id: string
+          work_title: string
+        }
+        Update: {
+          copyright_id?: string | null
+          created_at?: string
+          cwr_file_name?: string | null
+          cwr_file_url?: string | null
+          id?: string
+          iswc?: string | null
+          pro_name?: string
+          sender_code?: string
+          submission_date?: string
+          submission_status?: string
+          submitted_by?: string
+          updated_at?: string
+          user_id?: string
+          work_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cwr_submissions_copyright_id_fkey"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deal_scenarios: {
         Row: {
@@ -2560,6 +2675,50 @@ export type Database = {
             columns: ["linked_statement_id"]
             isOneToOne: false
             referencedRelation: "royalties_import_staging"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registration_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          new_status: string
+          previous_status: string | null
+          status_reason: string | null
+          submission_id: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_status: string
+          previous_status?: string | null
+          status_reason?: string | null
+          submission_id?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_status?: string
+          previous_status?: string | null
+          status_reason?: string | null
+          submission_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_status_history_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "cwr_submissions"
             referencedColumns: ["id"]
           },
         ]
