@@ -322,18 +322,18 @@ export const CopyrightValidationPanel: React.FC<CopyrightValidationPanelProps> =
 
         {/* Overall Status */}
         {validationResult && (
-          <Alert className={validationResult.isValid ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+          <Alert className={validationResult.isValid ? 'border-green-200 bg-green-50 text-green-900' : 'border-red-200 bg-red-50 text-red-900'}>
             <div className="flex items-center gap-2">
               {validationResult.isValid ? (
                 <CheckCircle className="h-4 w-4 text-green-600" />
               ) : (
                 <XCircle className="h-4 w-4 text-red-600" />
               )}
-              <span className="font-medium">
+              <span className="font-medium text-current">
                 {validationResult.isValid ? 'Ready for Export' : 'Issues Found'}
               </span>
             </div>
-            <AlertDescription className="mt-1 text-foreground">
+            <AlertDescription className="mt-1 text-current">
               {validationResult.isValid 
                 ? "This copyright meets the requirements for CWR and DDEX export."
                 : `${validationResult.issues.filter(i => i.severity === 'error').length} error(s) and ${validationResult.issues.filter(i => i.severity === 'warning').length} warning(s) found.`
