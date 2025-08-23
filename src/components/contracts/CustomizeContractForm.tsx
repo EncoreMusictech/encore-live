@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, Send, FileText, Paperclip } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 interface ContractField {
@@ -42,6 +43,14 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
 }) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailFormData, setEmailFormData] = useState({
+    to: '',
+    subject: `${template.title || 'Contract'} for Review`,
+    body: `Please find the attached ${template.title || 'contract'} for your review and signature.\n\nBest regards,`,
+    isGeneratingPDF: false,
+    isSendingEmail: false
+  });
   // Single-view form; preview removed per updated UX
   const fields = template.template_data?.fields || [];
 
@@ -473,6 +482,92 @@ Notes/Additional Specifications: ________________________`;
         return `[${field.label}]`;
       });
     }).join("\n\n");
+  };
+
+  const handleGeneratePDF = async () => {
+    setEmailFormData(prev => ({ ...prev, isGeneratingPDF: true }));
+    
+    try {
+      const contractContent = generatePreviewText();
+      const contractData = {
+        title: template.title || 'Contract',
+        content: contractContent,
+        formData
+      };
+
+      const { data, error } = await supabase.functions.invoke('generate-agreement-pdf', {
+        body: contractData
+      });
+
+      if (error) throw error;
+      
+      return data.pdfUrl;
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate PDF. Please try again.',
+        variant: 'destructive'
+      });
+      return null;
+    } finally {
+      setEmailFormData(prev => ({ ...prev, isGeneratingPDF: false }));
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailFormData.to.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a recipient email address.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setEmailFormData(prev => ({ ...prev, isSendingEmail: true }));
+
+    try {
+      // Generate PDF first
+      const pdfUrl = await handleGeneratePDF();
+      if (!pdfUrl) return;
+
+      // Send email with PDF attachment
+      const { error } = await supabase.functions.invoke('send-contract-email', {
+        body: {
+          to: emailFormData.to,
+          subject: emailFormData.subject,
+          body: emailFormData.body,
+          contractTitle: template.title || 'Contract',
+          pdfUrl: pdfUrl
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Email Sent',
+        description: `Contract successfully sent to ${emailFormData.to}`,
+      });
+
+      setEmailDialogOpen(false);
+      setEmailFormData(prev => ({
+        ...prev,
+        to: '',
+        subject: `${template.title || 'Contract'} for Review`,
+        body: `Please find the attached ${template.title || 'contract'} for your review and signature.\n\nBest regards,`
+      }));
+
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to send email. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setEmailFormData(prev => ({ ...prev, isSendingEmail: false }));
+    }
   };
 
   return (
@@ -1878,7 +1973,8 @@ Notes/Additional Specifications: ________________________`;
                     </div>
                   </ScrollArea>
                   <div className="flex flex-col sm:flex-row gap-3 justify-end pt-2">
-                    <Button variant="outline" onClick={() => toast({ title: 'Email sent', description: 'Send Email flow coming soon' })}>
+                    <Button variant="outline" onClick={() => setEmailDialogOpen(true)}>
+                      <Send className="h-4 w-4 mr-2" />
                       Send Email
                     </Button>
                     <Button variant="outline" onClick={() => toast({ title: 'DocuSign', description: 'Send via DocuSign coming soon' })}>
@@ -1894,6 +1990,89 @@ Notes/Additional Specifications: ________________________`;
           </div>
         </div>
       </div>
+
+      {/* Email Dialog */}
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              Send Contract via Email
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email-to">To *</Label>
+              <Input
+                id="email-to"
+                type="email"
+                placeholder="recipient@example.com"
+                value={emailFormData.to}
+                onChange={(e) => setEmailFormData(prev => ({ ...prev, to: e.target.value }))}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email-subject">Subject *</Label>
+              <Input
+                id="email-subject"
+                placeholder="Contract for Review"
+                value={emailFormData.subject}
+                onChange={(e) => setEmailFormData(prev => ({ ...prev, subject: e.target.value }))}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email-body">Message</Label>
+              <Textarea
+                id="email-body"
+                placeholder="Please find the attached contract for your review and signature..."
+                value={emailFormData.body}
+                onChange={(e) => setEmailFormData(prev => ({ ...prev, body: e.target.value }))}
+                rows={6}
+                className="resize-none"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+              <Paperclip className="h-4 w-4 text-muted-foreground" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Attachment</p>
+                <p className="text-xs text-muted-foreground">
+                  {template.title || 'Contract'}.pdf (Generated automatically)
+                </p>
+              </div>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setEmailDialogOpen(false)}
+                disabled={emailFormData.isSendingEmail || emailFormData.isGeneratingPDF}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSendEmail}
+                disabled={emailFormData.isSendingEmail || emailFormData.isGeneratingPDF || !emailFormData.to.trim()}
+              >
+                {emailFormData.isGeneratingPDF 
+                  ? 'Generating PDF...' 
+                  : emailFormData.isSendingEmail 
+                    ? 'Sending...' 
+                    : 'Send Email'
+                }
+                {!emailFormData.isGeneratingPDF && !emailFormData.isSendingEmail && (
+                  <Send className="h-4 w-4 ml-2" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
