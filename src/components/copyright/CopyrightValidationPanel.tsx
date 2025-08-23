@@ -333,9 +333,9 @@ export const CopyrightValidationPanel: React.FC<CopyrightValidationPanelProps> =
                 {validationResult.isValid ? 'Ready for Export' : 'Issues Found'}
               </span>
             </div>
-            <AlertDescription className="mt-1">
+            <AlertDescription className="mt-1 text-foreground">
               {validationResult.isValid 
-                ? 'This copyright meets the requirements for CWR and DDEX export.'
+                ? "This copyright meets the requirements for CWR and DDEX export."
                 : `${validationResult.issues.filter(i => i.severity === 'error').length} error(s) and ${validationResult.issues.filter(i => i.severity === 'warning').length} warning(s) found.`
               }
             </AlertDescription>
@@ -362,7 +362,7 @@ export const CopyrightValidationPanel: React.FC<CopyrightValidationPanelProps> =
                     {getSeverityIcon(issue.severity)}
                     <div className="flex-1">
                       <div className="font-medium text-sm">{issue.message}</div>
-                      <div className="text-xs text-muted-foreground mt-1">Field: {issue.field}</div>
+                      <div className="text-xs text-gray-700 mt-1">Field: {issue.field}</div>
                       {issue.suggestion && (
                         <div className="text-xs text-blue-600 mt-1">{issue.suggestion}</div>
                       )}
@@ -385,7 +385,7 @@ export const CopyrightValidationPanel: React.FC<CopyrightValidationPanelProps> =
                     {getSeverityIcon(issue.severity)}
                     <div className="flex-1">
                       <div className="font-medium text-sm">{issue.message}</div>
-                      <div className="text-xs text-muted-foreground mt-1">Field: {issue.field}</div>
+                      <div className="text-xs text-gray-700 mt-1">Field: {issue.field}</div>
                       {issue.suggestion && (
                         <div className="text-xs text-blue-600 mt-1">{issue.suggestion}</div>
                       )}
