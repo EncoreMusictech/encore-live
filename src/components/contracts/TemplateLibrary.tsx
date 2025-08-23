@@ -1042,10 +1042,6 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
                               <Edit className="h-4 w-4" />
                               Edit
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => downloadTemplatePDF(template)} disabled={generatingTemplate === template.contract_type} className="gap-2">
-                              <FileText className="h-4 w-4" />
-                              {generatingTemplate === template.contract_type ? 'Generating...' : 'PDF'}
-                            </Button>
                           </>
                         )}
                         <Button size="sm" onClick={() => handleUseTemplate(template)} className="gap-2">
