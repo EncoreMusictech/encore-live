@@ -239,13 +239,16 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                 <CardHeader>
                   <CardTitle>
                     {template.contract_type === 'publishing' ? 'Publishing Administration Agreement Details' : 
-                     template.contract_type === 'distribution' ? 'Distribution Agreement Details' : 'Recording Agreement Details'}
+                     template.contract_type === 'distribution' ? 'Distribution Agreement Details' : 
+                     template.contract_type === 'sync' ? 'Synchronization License Agreement Details' : 'Recording Agreement Details'}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {template.contract_type === 'publishing' 
                       ? 'Complete details for the Publishing Administration Agreement' 
                       : template.contract_type === 'distribution'
                       ? 'Complete details for the Distribution Agreement'
+                      : template.contract_type === 'sync'
+                      ? 'Complete details for the Synchronization License Agreement'
                       : 'Complete details for the Standard Recording Contract'}
                   </p>
                 </CardHeader>
@@ -565,6 +568,350 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                           <p className="text-xs text-muted-foreground">
                             Enter each recording on a new line using the format: Title | Artist | Album/Project | Catalog Number | Format | Release Date
                           </p>
+                        </div>
+                      </div>
+                    </>
+                   ) : template.contract_type === 'sync' ? (
+                    <>
+                      {/* Basic Contract Info */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Basic Information</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Agreement Title</Label>
+                            <Input
+                              value={formData.agreement_title || "Synchronization License Agreement"}
+                              onChange={(e) => handleFieldChange('agreement_title', e.target.value)}
+                              placeholder="Synchronization License Agreement"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Effective Date *</Label>
+                            <Input
+                              type="date"
+                              value={formData.effective_date || ''}
+                              onChange={(e) => handleFieldChange('effective_date', e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Licensor Information */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Licensor Information</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Licensor Name *</Label>
+                            <Input
+                              value={formData.licensor_name || ''}
+                              onChange={(e) => handleFieldChange('licensor_name', e.target.value)}
+                              placeholder="Rights holder/publisher name"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Licensor Address *</Label>
+                            <Textarea
+                              value={formData.licensor_address || ''}
+                              onChange={(e) => handleFieldChange('licensor_address', e.target.value)}
+                              placeholder="Full licensor address"
+                              rows={2}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Representative Name *</Label>
+                            <Input
+                              value={formData.company_representative_name || ''}
+                              onChange={(e) => handleFieldChange('company_representative_name', e.target.value)}
+                              placeholder="Representative's full name"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Representative Title *</Label>
+                            <Input
+                              value={formData.company_representative_title || ''}
+                              onChange={(e) => handleFieldChange('company_representative_title', e.target.value)}
+                              placeholder="President, Music Supervisor, etc."
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Licensee Information */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Licensee Information</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Licensee Name *</Label>
+                            <Input
+                              value={formData.licensee_name || ''}
+                              onChange={(e) => handleFieldChange('licensee_name', e.target.value)}
+                              placeholder="Production company/client name"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Licensee Address *</Label>
+                            <Textarea
+                              value={formData.licensee_address || ''}
+                              onChange={(e) => handleFieldChange('licensee_address', e.target.value)}
+                              placeholder="Full licensee address"
+                              rows={2}
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Production Details */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Production Details</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Project Title *</Label>
+                            <Input
+                              value={formData.project_title || ''}
+                              onChange={(e) => handleFieldChange('project_title', e.target.value)}
+                              placeholder="Film, TV show, commercial title"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Media Platforms *</Label>
+                            <Select value={formData.media_platforms || ''} onValueChange={(v) => handleFieldChange('media_platforms', v)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select media type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Film/Theatrical">Film/Theatrical</SelectItem>
+                                <SelectItem value="Television">Television</SelectItem>
+                                <SelectItem value="Streaming/Digital">Streaming/Digital</SelectItem>
+                                <SelectItem value="Commercial/Advertising">Commercial/Advertising</SelectItem>
+                                <SelectItem value="Web/Online">Web/Online</SelectItem>
+                                <SelectItem value="All Media">All Media</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Scene Duration (Seconds) *</Label>
+                            <Input
+                              type="number"
+                              value={formData.scene_duration_seconds || ''}
+                              onChange={(e) => handleFieldChange('scene_duration_seconds', e.target.value)}
+                              placeholder="30"
+                              min="1"
+                              max="600"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Territory *</Label>
+                            <Select value={formData.territory || ''} onValueChange={(v) => handleFieldChange('territory', v)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select territory" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Worldwide">Worldwide</SelectItem>
+                                <SelectItem value="United States">United States</SelectItem>
+                                <SelectItem value="North America">North America</SelectItem>
+                                <SelectItem value="Europe">Europe</SelectItem>
+                                <SelectItem value="Festival Only">Festival Only</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Use Description *</Label>
+                          <Textarea
+                            value={formData.use_description || ''}
+                            onChange={(e) => handleFieldChange('use_description', e.target.value)}
+                            placeholder="Describe how the music will be used in the scene (background, featured, instrumental, etc.)"
+                            rows={3}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Term & Usage Rights */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Term & Usage Rights</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Term Type *</Label>
+                            <Select value={formData.term_type || ''} onValueChange={(v) => handleFieldChange('term_type', v)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select term type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Perpetual">Perpetual</SelectItem>
+                                <SelectItem value="Fixed Term">Fixed Term</SelectItem>
+                                <SelectItem value="Festival Only">Festival Only</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Term (Years)</Label>
+                            <Input
+                              type="number"
+                              value={formData.term_years || ''}
+                              onChange={(e) => handleFieldChange('term_years', e.target.value)}
+                              placeholder="5"
+                              min="1"
+                              max="25"
+                              disabled={formData.term_type === 'Perpetual' || formData.term_type === 'Festival Only'}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Financial Terms */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Financial Terms</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Sync Fee Amount ($) *</Label>
+                            <Input
+                              type="number"
+                              value={formData.sync_fee_amount || ''}
+                              onChange={(e) => handleFieldChange('sync_fee_amount', e.target.value)}
+                              placeholder="5000"
+                              min="0"
+                              step="100"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Payment Terms *</Label>
+                            <Select value={formData.payment_terms || ''} onValueChange={(v) => handleFieldChange('payment_terms', v)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select payment terms" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Net 30">Net 30</SelectItem>
+                                <SelectItem value="Net 45">Net 45</SelectItem>
+                                <SelectItem value="Upon Execution">Upon Execution</SelectItem>
+                                <SelectItem value="50% Upon Execution, 50% Upon Delivery">50% Upon Execution, 50% Upon Delivery</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Payment Method *</Label>
+                          <Select value={formData.payment_method || ''} onValueChange={(v) => handleFieldChange('payment_method', v)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select payment method" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Direct Deposit">Direct Deposit</SelectItem>
+                              <SelectItem value="Check">Check</SelectItem>
+                              <SelectItem value="Wire Transfer">Wire Transfer</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Song Details */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Licensed Work Details</h4>
+                        <div className="space-y-2">
+                          <Label>Song Title *</Label>
+                          <Input
+                            value={formData.song_titles?.title || ''}
+                            onChange={(e) => handleFieldChange('song_titles', {...formData.song_titles, title: e.target.value})}
+                            placeholder="Song title"
+                            required
+                          />
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>ISWC</Label>
+                            <Input
+                              value={formData.song_titles?.iswc || ''}
+                              onChange={(e) => handleFieldChange('song_titles', {...formData.song_titles, iswc: e.target.value})}
+                              placeholder="T-123456789-1"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Writer Names *</Label>
+                            <Input
+                              value={formData.song_titles?.writer_names || ''}
+                              onChange={(e) => handleFieldChange('song_titles', {...formData.song_titles, writer_names: e.target.value})}
+                              placeholder="John Doe, Jane Smith"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Publisher Names *</Label>
+                            <Input
+                              value={formData.song_titles?.publisher_names || ''}
+                              onChange={(e) => handleFieldChange('song_titles', {...formData.song_titles, publisher_names: e.target.value})}
+                              placeholder="ABC Music Publishing"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Credit Placement *</Label>
+                            <Select value={formData.credit_placement || ''} onValueChange={(v) => handleFieldChange('credit_placement', v)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select credit placement" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="End Credits">End Credits</SelectItem>
+                                <SelectItem value="Opening Credits">Opening Credits</SelectItem>
+                                <SelectItem value="On Screen">On Screen</SelectItem>
+                                <SelectItem value="No Credit Required">No Credit Required</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Legal Terms */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Legal Terms</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Governing Law *</Label>
+                            <Input
+                              value={formData.governing_law || ''}
+                              onChange={(e) => handleFieldChange('governing_law', e.target.value)}
+                              placeholder="State of California"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Jurisdiction *</Label>
+                            <Input
+                              value={formData.jurisdiction || ''}
+                              onChange={(e) => handleFieldChange('jurisdiction', e.target.value)}
+                              placeholder="Los Angeles, CA"
+                              required
+                            />
+                          </div>
                         </div>
                       </div>
                     </>
@@ -940,7 +1287,8 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                       <div className="text-center">
                         <h3 className="text-lg font-bold mb-2">
                           {template.contract_type === 'publishing' ? 'Publishing Administration Agreement' : 
-                           template.contract_type === 'distribution' ? 'Distribution Agreement' : 'Recording Agreement'}
+                           template.contract_type === 'distribution' ? 'Distribution Agreement' : 
+                           template.contract_type === 'sync' ? 'Synchronization License Agreement' : 'Recording Agreement'}
                         </h3>
                         <div className="h-px bg-border mb-4"></div>
                       </div>
