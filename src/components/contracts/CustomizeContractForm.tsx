@@ -191,11 +191,142 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
     // Use standardized contract content if available
     const contractContent = template.template_data?.content;
     if (contractContent) {
-      return contractContent.replace(/\{\{(\w+)\}\}/g, (_match, key) => {
-        const val = formData[key];
-        if (val !== undefined && val !== "") return String(val);
-        return `[${key.replace(/_/g, ' ').toUpperCase()}]`;
+      return contractContent.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (_match, key) => {
+        // Handle nested object keys like song_titles.title
+        const keys = key.split('.');
+        let val = formData;
+        for (const k of keys) {
+          val = val?.[k];
+        }
+        if (val !== undefined && val !== null && String(val) !== "") return String(val);
+        return `[${key.replace(/_/g, ' ').replace(/\./g, ' ').toUpperCase()}]`;
       });
+    }
+    
+     // Handle sync licensing agreement specifically
+    if (String(template.contract_type) === 'sync' || template.title?.toLowerCase().includes('sync')) {
+      return `Synchronization License Agreement
+
+This Synchronization License Agreement ("Agreement") is made and entered into as of ${formData.effective_date || '[EFFECTIVE DATE]'}, by and between:
+
+${formData.licensor_name || '[LICENSOR NAME]'}, located at ${formData.licensor_address || '[LICENSOR ADDRESS]'} ("Licensor"),
+and
+
+${formData.licensee_name || '[LICENSEE NAME]'}, located at ${formData.licensee_address || '[LICENSEE ADDRESS]'} ("Licensee").
+
+1. GRANT OF RIGHTS
+
+Licensor grants to Licensee a non-exclusive license to synchronize the musical composition(s) listed in Schedule A with the audiovisual production:
+
+Production Title: ${formData.project_title || '[PROJECT TITLE]'}
+
+Producer/Company: ${formData.licensee_name || '[LICENSEE NAME]'}
+
+Type of Use: ${formData.media_platforms || '[MEDIA PLATFORMS]'}
+
+Scene/Use Description: ${formData.use_description || '[USE DESCRIPTION]'}
+
+Duration/Timing: ${formData.scene_duration_seconds || '[SCENE DURATION]'} seconds
+
+The license is granted for the use of the composition in timed relation with the Production only.
+
+2. TERRITORY
+
+The rights granted herein are valid for the following territory: ${formData.territory || '[TERRITORY]'}.
+
+3. TERM
+
+The rights granted herein shall endure for: ${formData.term_type || '[TERM TYPE]'} ${formData.term_years ? `(${formData.term_years} year(s))` : '([TERM YEARS] year(s))'}.
+
+4. MEDIA & USAGE
+
+The license includes the right to distribute and exploit the Production containing the Composition in the following media: ${formData.media_platforms || '[MEDIA PLATFORMS]'}.
+
+Any uses beyond those listed shall require a separate written agreement.
+
+5. FEE
+
+As consideration for the license granted herein, Licensee agrees to pay Licensor the following fee:
+
+Synchronization Fee: $${formData.sync_fee_amount || '[SYNC FEE AMOUNT]'}
+
+Payment Terms: ${formData.payment_terms || '[PAYMENT TERMS]'}
+
+Payment Method: ${formData.payment_method || '[PAYMENT METHOD]'}
+
+6. CREDITS
+
+Licensee shall accord credit as follows (if applicable):
+
+"${formData.song_titles?.title || '[SONG TITLE]'}" written by ${formData.song_titles?.writer_names || '[WRITER NAMES]'}, published by ${formData.song_titles?.publisher_names || '[PUBLISHER NAMES]'}, used by permission.
+
+Placement: ${formData.credit_placement || '[CREDIT PLACEMENT]'}
+
+7. WARRANTIES & REPRESENTATIONS
+
+Licensor represents and warrants that:
+
+Licensor has the full right and authority to grant this license;
+
+The Composition does not infringe the rights of any third party.
+
+Licensee represents and warrants that:
+
+The Production does not contain material that unlawfully infringes on third-party rights;
+
+The Composition shall be used only as authorized under this Agreement.
+
+8. INDEMNITY
+
+Each party agrees to indemnify and hold harmless the other from claims, damages, or expenses arising from its breach of this Agreement.
+
+9. TERMINATION
+
+If Licensee fails to pay the Fee or breaches this Agreement, Licensor may terminate the license immediately, whereupon all rights granted shall revert to Licensor.
+
+10. MISCELLANEOUS
+
+Governing Law: This Agreement shall be governed by the laws of ${formData.governing_law || '[GOVERNING LAW]'}.
+
+Jurisdiction: Disputes shall be resolved in ${formData.jurisdiction || '[JURISDICTION]'}.
+
+Entire Agreement: This document contains the entire agreement between the parties.
+
+Notices: All notices shall be delivered to the parties at the addresses listed above.
+
+SIGNATURES
+
+Licensor
+By: ___________________________
+Name: ${formData.company_representative_name || '[REPRESENTATIVE NAME]'}
+Title: ${formData.company_representative_title || '[REPRESENTATIVE TITLE]'}
+Date: _________________________
+
+Licensee
+By: ___________________________
+Name: ${formData.company_representative_name || '[REPRESENTATIVE NAME]'}
+Title: ${formData.company_representative_title || '[REPRESENTATIVE TITLE]'}
+Date: _________________________
+
+EXHIBIT A – LICENSED WORK DETAILS
+
+Song Title: ${formData.song_titles?.title || '[SONG TITLE]'}
+
+ISWC: ${formData.song_titles?.iswc || '[ISWC]'}
+
+Writers: ${formData.song_titles?.writer_names || '[WRITER NAMES]'}
+
+Publishers: ${formData.song_titles?.publisher_names || '[PUBLISHER NAMES]'}
+
+Use Description: ${formData.use_description || '[USE DESCRIPTION]'}
+
+Term: ${formData.term_years || '[TERM YEARS]'} years
+
+Territory: ${formData.territory || '[TERRITORY]'}
+
+Media: ${formData.media_platforms || '[MEDIA PLATFORMS]'}
+
+Fee: $${formData.sync_fee_amount || '[SYNC FEE AMOUNT]'}`;
     }
     
     // Fallback to field-based generation
