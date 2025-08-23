@@ -905,8 +905,18 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
                   <p className="text-sm text-muted-foreground">Live preview updates as you type</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <ScrollArea className="h-[520px] rounded-md border p-4">
-                    <pre className="text-sm whitespace-pre-wrap">{generatePreviewText()}</pre>
+                  <ScrollArea className="h-[520px] rounded-md border p-4 bg-muted/10">
+                    <div className="space-y-4">
+                      <div className="text-center">
+                        <h3 className="text-lg font-bold mb-2">
+                          {template.contract_type === 'publishing' ? 'Publishing Administration Agreement' : 'Recording Agreement'}
+                        </h3>
+                        <div className="h-px bg-border mb-4"></div>
+                      </div>
+                      <div className="prose prose-sm max-w-none">
+                        <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">{generatePreviewText()}</pre>
+                      </div>
+                    </div>
                   </ScrollArea>
                   <div className="flex flex-col sm:flex-row gap-3 justify-end pt-2">
                     <Button variant="outline" onClick={() => toast({ title: 'Email sent', description: 'Send Email flow coming soon' })}>
