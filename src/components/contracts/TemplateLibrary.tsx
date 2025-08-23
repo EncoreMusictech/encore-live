@@ -1020,7 +1020,8 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
             <section>
               <h2 className="text-xl font-semibold mb-4">Popular Templates</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
-                {filteredPublicTemplates.map(template => <Card key={template.id} className="hover:shadow-md transition-shadow">
+                {filteredPublicTemplates.map(template => 
+                  <Card key={template.id} className="hover:shadow-md transition-shadow">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -1028,6 +1029,14 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
                           <p className="text-sm text-muted-foreground mt-1">
                             {template.description}
                           </p>
+                          <div className="flex gap-2 mt-2">
+                            <Badge variant="outline" className="text-xs">
+                              English
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              Spanish
+                            </Badge>
+                          </div>
                         </div>
                         <Badge variant="secondary" className="ml-2">
                           {template.contract_type?.replace('_', ' ') || 'Contract'}
