@@ -21,49 +21,84 @@ serve(async (req) => {
   }
 
   try {
-    const { contractId, forceSubtype }: { contractId: string; forceSubtype?: AgreementSubtype } = await req.json();
-    if (!contractId) throw new Error('contractId is required');
+    const requestBody = await req.json();
+    const { contractId, forceSubtype, title, content, formData } = requestBody;
+    
+    // Handle template customization (direct content) vs contract generation (from DB)
+    if (!contractId && (!title || !content)) {
+      throw new Error('Either contractId or title and content are required');
+    }
 
-    // Load contract with related data
-    const { data: contract, error } = await supabase
-      .from('contracts')
-      .select(`*, contract_interested_parties(*), contract_schedule_works(*)`)
-      .eq('id', contractId)
-      .maybeSingle();
-
-    if (error) throw new Error(`DB error: ${error.message}`);
-    if (!contract) throw new Error('Contract not found');
-
-    const subtype: AgreementSubtype = forceSubtype || (contract.contract_data?.agreement_type as AgreementSubtype) || mapContractType(contract.contract_type);
-
-    // Build clean payload for the model
-    const payload = buildAgreementPayload(contract, subtype);
-
-    // Try AI generation first
     let html = '';
-    if (OPENAI_API_KEY) {
-      try {
-        html = await generateWithOpenAI(payload);
-      } catch (aiErr) {
-        console.error('OpenAI generation failed, falling back to deterministic template:', aiErr);
+    let contractTitle = '';
+    let downloadUrl = '';
+
+    if (contractId) {
+      // Existing logic: Load contract from database
+      const { data: contract, error } = await supabase
+        .from('contracts')
+        .select(`*, contract_interested_parties(*), contract_schedule_works(*)`)
+        .eq('id', contractId)
+        .maybeSingle();
+
+      if (error) throw new Error(`DB error: ${error.message}`);
+      if (!contract) throw new Error('Contract not found');
+
+      const subtype: AgreementSubtype = forceSubtype || (contract.contract_data?.agreement_type as AgreementSubtype) || mapContractType(contract.contract_type);
+      const payload = buildAgreementPayload(contract, subtype);
+
+      // Try AI generation first
+      if (OPENAI_API_KEY) {
+        try {
+          html = await generateWithOpenAI(payload);
+        } catch (aiErr) {
+          console.error('OpenAI generation failed, falling back to deterministic template:', aiErr);
+        }
+      } else {
+        console.log('OPENAI_API_KEY not set; using deterministic template.');
       }
+
+      // Fallback deterministic generation
+      if (!html || html.trim().length < 500) {
+        html = deterministicTemplate(payload);
+      }
+
+      // Update contract record
+      await supabase
+        .from('contracts')
+        .update({ generated_pdf_url: `agreement-${contractId}.html`, signature_status: 'ready_for_signature' })
+        .eq('id', contractId);
+
+      contractTitle = contract.title;
+      downloadUrl = `agreement-${contractId}.html`;
     } else {
-      console.log('OPENAI_API_KEY not set; using deterministic template.');
-    }
+      // New logic: Use template content directly
+      let processedContent = content;
+      
+      // Replace form field placeholders with actual values if formData is provided
+      if (formData && typeof formData === 'object') {
+        Object.entries(formData).forEach(([key, value]) => {
+          const placeholder = `[${key.toUpperCase().replace(/_/g, ' ')}]`;
+          processedContent = processedContent.replace(new RegExp(placeholder, 'g'), String(value || ''));
+        });
+      }
 
-    // Fallback deterministic generation
-    if (!html || html.trim().length < 500) {
-      html = deterministicTemplate(payload);
+      // Wrap content in proper HTML structure if needed
+      const isFullDoc = /<html[\s>]|<!doctype/i.test(processedContent);
+      html = isFullDoc ? processedContent : wrapHtml(processedContent, title);
+      
+      contractTitle = title;
+      downloadUrl = `template-${Date.now()}.html`;
     }
-
-    // Optionally persist a URL marker and status
-    await supabase
-      .from('contracts')
-      .update({ generated_pdf_url: `agreement-${contractId}.html`, signature_status: 'ready_for_signature' })
-      .eq('id', contractId);
 
     return new Response(
-      JSON.stringify({ success: true, contractId, contractTitle: contract.title, subtype, pdfData: html, downloadUrl: `agreement-${contractId}.html` }),
+      JSON.stringify({ 
+        success: true, 
+        contractId, 
+        contractTitle, 
+        pdfData: html, 
+        downloadUrl 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (err: any) {
