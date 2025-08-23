@@ -328,6 +328,140 @@ Media: ${formData.media_platforms || '[MEDIA PLATFORMS]'}
 
 Fee: $${formData.sync_fee_amount || '[SYNC FEE AMOUNT]'}`;
     }
+
+    // Handle producer agreement specifically
+    if (String(template.contract_type) === 'producer' || template.title?.toLowerCase().includes('producer')) {
+      return `Music Production Agreement
+
+This Production Agreement ("Agreement") is made effective as of ${formData.effective_date || '[EFFECTIVE DATE]'}, by and between:
+
+${formData.producer_name || '[PRODUCER NAME]'}, with a primary address at ${formData.producer_address || '[PRODUCER ADDRESS]'} ("Producer"), and
+
+${formData.company_name || '[COMPANY NAME]'}, with a primary address at ${formData.company_address || '[COMPANY ADDRESS]'} ("Client").
+
+Producer and Client may be referred to individually as a "Party" and collectively as the "Parties."
+
+RECITALS
+
+WHEREAS, Client wishes to engage Producer to render music production services;
+WHEREAS, Producer has the skills and expertise to provide such services;
+NOW, THEREFORE, in consideration of the mutual promises herein, the Parties agree as follows:
+
+1. DEFINITIONS
+
+Production Services: The services Producer shall provide under this Agreement, including recording, mixing, mastering, arranging, or other services as agreed.
+
+Project: The production of a completed recording (track(s)/album) as described in Schedule A.
+
+Work: The finished recordings delivered by Producer.
+
+Commencement Date: ${formData.commencement_date || '[COMMENCEMENT DATE]'}.
+
+Completion Date: ${formData.completion_date || '[COMPLETION DATE]'}.
+
+Fees: Payment due to Producer as described in Section 4.
+
+2. ENGAGEMENT
+
+Producer agrees to provide Production Services for the Project beginning on the Commencement Date and concluding on the Completion Date, and Client agrees to compensate Producer as set forth herein.
+
+3. SPECIFICATIONS
+
+The Project shall consist of:
+
+Number of Songs/Tracks: ${formData.number_of_tracks || '[NUMBER OF TRACKS]'}
+
+Genre/Style: ${formData.genre_style || '[GENRE/STYLE]'}
+
+Delivery Format: ${formData.delivery_format || '[DELIVERY FORMAT]'}
+
+4. FEES & PAYMENT
+
+A. Fixed Fee: Client shall pay Producer $${formData.fixed_fee_amount || '[FIXED FEE AMOUNT]'} for all Production Services.
+B. Payment Terms:
+
+   Deposit: $${formData.advance_amount || '[ADVANCE AMOUNT]'} due upon signing.
+
+   Balance: payable on or before ${formData.delivery_date || '[DELIVERY DATE]'}.
+C. Expenses: Client shall reimburse Producer for pre-approved out-of-pocket expenses.
+D. Late Payments: Overdue amounts shall accrue interest at ${formData.late_interest_percent || '[LATE INTEREST PERCENT]'}% per annum.
+E. Royalties / Points: In addition to Fees, Producer shall also be entitled to ${formData.producer_points_percent || '[PRODUCER POINTS PERCENT]'}% of Net Receipts from exploitation of the Work, and/or ${formData.royalty_rate_percent || '[ROYALTY RATE PERCENT]'}% royalties if applicable.
+
+Payments shall be made by ${formData.payment_method || '[PAYMENT METHOD]'}.
+
+5. OWNERSHIP & RIGHTS
+
+Unless otherwise agreed in writing:
+
+The Work shall be deemed a "work-made-for-hire" for Client.
+
+Client shall own all rights, title, and interest in the Work, including copyright.
+
+Producer shall retain customary credit as "Producer" on the Work.
+
+6. WARRANTIES & REPRESENTATIONS
+
+Producer warrants the Work shall be original and not infringe third-party rights.
+
+Client warrants it has authority to enter this Agreement and to exploit the Work.
+
+7. LIMITATION OF LIABILITY
+
+Except in cases of gross negligence or willful misconduct, Producer's liability shall not exceed the Fees paid under this Agreement. Neither Party shall be liable for indirect or consequential damages.
+
+8. INDEMNITY
+
+Each Party agrees to indemnify and hold harmless the other against losses, damages, or claims arising from a breach of this Agreement.
+
+9. TERMINATION
+
+This Agreement may be terminated:
+
+By either Party for material breach not cured within ${formData.invoice_due_days || '[INVOICE DUE DAYS]'} days after notice;
+
+By Producer if Client fails to pay Fees due within ${formData.invoice_due_days || '[INVOICE DUE DAYS]'} days;
+
+By Client if Producer fails to deliver the Work as specified.
+
+Upon termination, Client shall pay Producer for all services rendered up to termination.
+
+10. GENERAL PROVISIONS
+
+Governing Law: This Agreement shall be governed by the laws of ${formData.governing_law || '[GOVERNING LAW]'}.
+
+Jurisdiction: Disputes shall be resolved in ${formData.jurisdiction || '[JURISDICTION]'}.
+
+Notices: Notices shall be sent to the Parties' addresses above.
+
+Entire Agreement: This document constitutes the full agreement between the Parties.
+
+Amendments: Any modifications must be in writing and signed by both Parties.
+
+Force Majeure: Neither Party shall be liable for failure to perform due to causes beyond their control.
+
+SIGNATURES
+
+Producer
+Name: ${formData.producer_name || '[PRODUCER NAME]'}
+Signature: _________________________
+Date: ____________________________
+
+Client/Artist/Label
+Name: ${formData.company_representative_name || '[COMPANY REPRESENTATIVE NAME]'}
+Title: ${formData.company_representative_title || '[COMPANY REPRESENTATIVE TITLE]'}
+Signature: _________________________
+Date: ____________________________
+
+SCHEDULE A – PROJECT DETAILS
+
+Project Title: ${formData.project_title || '[PROJECT TITLE]'}
+
+Number of Tracks: ${formData.number_of_tracks || '[NUMBER OF TRACKS]'}
+
+Delivery Date: ${formData.delivery_date || '[DELIVERY DATE]'}
+
+Notes/Additional Specifications: ________________________`;
+    }
     
     // Fallback to field-based generation
     const clauses = template.template_data?.clauses || {};
@@ -371,7 +505,8 @@ Fee: $${formData.sync_fee_amount || '[SYNC FEE AMOUNT]'}`;
                   <CardTitle>
                     {template.contract_type === 'publishing' ? 'Publishing Administration Agreement Details' : 
                      template.contract_type === 'distribution' ? 'Distribution Agreement Details' : 
-                     template.contract_type === 'sync' ? 'Synchronization License Agreement Details' : 'Recording Agreement Details'}
+                     template.contract_type === 'sync' ? 'Synchronization License Agreement Details' : 
+                     template.contract_type === 'producer' ? 'Music Production Agreement Details' : 'Recording Agreement Details'}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {template.contract_type === 'publishing' 
@@ -380,6 +515,8 @@ Fee: $${formData.sync_fee_amount || '[SYNC FEE AMOUNT]'}`;
                       ? 'Complete details for the Distribution Agreement'
                       : template.contract_type === 'sync'
                       ? 'Complete details for the Synchronization License Agreement'
+                      : template.contract_type === 'producer'
+                      ? 'Complete details for the Music Production Agreement'
                       : 'Complete details for the Standard Recording Contract'}
                   </p>
                 </CardHeader>
@@ -1046,6 +1183,317 @@ Fee: $${formData.sync_fee_amount || '[SYNC FEE AMOUNT]'}`;
                         </div>
                       </div>
                     </>
+                   ) : template.contract_type === 'producer' ? (
+                    <>
+                      {/* Basic Contract Info */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Basic Information</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Agreement Title</Label>
+                            <Input
+                              value={formData.agreement_title || "Music Production Agreement"}
+                              onChange={(e) => handleFieldChange('agreement_title', e.target.value)}
+                              placeholder="Music Production Agreement"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Effective Date *</Label>
+                            <Input
+                              type="date"
+                              value={formData.effective_date || ''}
+                              onChange={(e) => handleFieldChange('effective_date', e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Commencement Date *</Label>
+                            <Input
+                              type="date"
+                              value={formData.commencement_date || ''}
+                              onChange={(e) => handleFieldChange('commencement_date', e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Completion Date *</Label>
+                            <Input
+                              type="date"
+                              value={formData.completion_date || ''}
+                              onChange={(e) => handleFieldChange('completion_date', e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Producer Information */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Producer Information</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Producer Name *</Label>
+                            <Input
+                              value={formData.producer_name || ''}
+                              onChange={(e) => handleFieldChange('producer_name', e.target.value)}
+                              placeholder="Producer's legal name"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Producer Address *</Label>
+                            <Textarea
+                              value={formData.producer_address || ''}
+                              onChange={(e) => handleFieldChange('producer_address', e.target.value)}
+                              placeholder="Full producer address"
+                              rows={2}
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Client Information */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Client Information</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Company Name *</Label>
+                            <Input
+                              value={formData.company_name || ''}
+                              onChange={(e) => handleFieldChange('company_name', e.target.value)}
+                              placeholder="Client/Label/Artist name"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Company Address *</Label>
+                            <Textarea
+                              value={formData.company_address || ''}
+                              onChange={(e) => handleFieldChange('company_address', e.target.value)}
+                              placeholder="Full client address"
+                              rows={2}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Representative Name *</Label>
+                            <Input
+                              value={formData.company_representative_name || ''}
+                              onChange={(e) => handleFieldChange('company_representative_name', e.target.value)}
+                              placeholder="Representative's full name"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Representative Title *</Label>
+                            <Input
+                              value={formData.company_representative_title || ''}
+                              onChange={(e) => handleFieldChange('company_representative_title', e.target.value)}
+                              placeholder="Artist, Manager, A&R, etc."
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Project Specifications */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Project Specifications</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Project Title *</Label>
+                            <Input
+                              value={formData.project_title || ''}
+                              onChange={(e) => handleFieldChange('project_title', e.target.value)}
+                              placeholder="Album, EP, or project name"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Number of Tracks *</Label>
+                            <Input
+                              type="number"
+                              value={formData.number_of_tracks || ''}
+                              onChange={(e) => handleFieldChange('number_of_tracks', e.target.value)}
+                              placeholder="10"
+                              min="1"
+                              max="50"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Genre/Style *</Label>
+                            <Input
+                              value={formData.genre_style || ''}
+                              onChange={(e) => handleFieldChange('genre_style', e.target.value)}
+                              placeholder="Hip-Hop, Pop, R&B, etc."
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Delivery Format *</Label>
+                            <Select value={formData.delivery_format || ''} onValueChange={(v) => handleFieldChange('delivery_format', v)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select format" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="24-bit/96kHz WAV">24-bit/96kHz WAV</SelectItem>
+                                <SelectItem value="24-bit/48kHz WAV">24-bit/48kHz WAV</SelectItem>
+                                <SelectItem value="16-bit/44.1kHz WAV">16-bit/44.1kHz WAV</SelectItem>
+                                <SelectItem value="Mixed and Mastered">Mixed and Mastered</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Delivery Date *</Label>
+                          <Input
+                            type="date"
+                            value={formData.delivery_date || ''}
+                            onChange={(e) => handleFieldChange('delivery_date', e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Financial Terms */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Financial Terms</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Fixed Fee Amount ($) *</Label>
+                            <Input
+                              type="number"
+                              value={formData.fixed_fee_amount || ''}
+                              onChange={(e) => handleFieldChange('fixed_fee_amount', e.target.value)}
+                              placeholder="5000"
+                              min="0"
+                              step="100"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Advance Amount ($) *</Label>
+                            <Input
+                              type="number"
+                              value={formData.advance_amount || ''}
+                              onChange={(e) => handleFieldChange('advance_amount', e.target.value)}
+                              placeholder="2500"
+                              min="0"
+                              step="100"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Producer Points (%)</Label>
+                            <Input
+                              type="number"
+                              value={formData.producer_points_percent || ''}
+                              onChange={(e) => handleFieldChange('producer_points_percent', e.target.value)}
+                              placeholder="3"
+                              min="0"
+                              max="10"
+                              step="0.5"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Royalty Rate (%)</Label>
+                            <Input
+                              type="number"
+                              value={formData.royalty_rate_percent || ''}
+                              onChange={(e) => handleFieldChange('royalty_rate_percent', e.target.value)}
+                              placeholder="2"
+                              min="0"
+                              max="10"
+                              step="0.5"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Late Interest (%)</Label>
+                            <Input
+                              type="number"
+                              value={formData.late_interest_percent || ''}
+                              onChange={(e) => handleFieldChange('late_interest_percent', e.target.value)}
+                              placeholder="1.5"
+                              min="0"
+                              max="5"
+                              step="0.25"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Invoice Due Days *</Label>
+                            <Input
+                              type="number"
+                              value={formData.invoice_due_days || ''}
+                              onChange={(e) => handleFieldChange('invoice_due_days', e.target.value)}
+                              placeholder="30"
+                              min="15"
+                              max="90"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Payment Method *</Label>
+                            <Select value={formData.payment_method || ''} onValueChange={(v) => handleFieldChange('payment_method', v)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select method" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Direct Deposit">Direct Deposit</SelectItem>
+                                <SelectItem value="Check">Check</SelectItem>
+                                <SelectItem value="Wire Transfer">Wire Transfer</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Legal Terms */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-semibold">Legal Terms</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Governing Law *</Label>
+                            <Input
+                              value={formData.governing_law || ''}
+                              onChange={(e) => handleFieldChange('governing_law', e.target.value)}
+                              placeholder="State of California"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Jurisdiction *</Label>
+                            <Input
+                              value={formData.jurisdiction || ''}
+                              onChange={(e) => handleFieldChange('jurisdiction', e.target.value)}
+                              placeholder="Los Angeles, CA"
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
                    ) : (
                      <>
                        {/* Original recording agreement form content - keep existing code */}
@@ -1419,7 +1867,8 @@ Fee: $${formData.sync_fee_amount || '[SYNC FEE AMOUNT]'}`;
                         <h3 className="text-lg font-bold mb-2">
                           {template.contract_type === 'publishing' ? 'Publishing Administration Agreement' : 
                            template.contract_type === 'distribution' ? 'Distribution Agreement' : 
-                           template.contract_type === 'sync' ? 'Synchronization License Agreement' : 'Recording Agreement'}
+                           template.contract_type === 'sync' ? 'Synchronization License Agreement' : 
+                           template.contract_type === 'producer' ? 'Music Production Agreement' : 'Recording Agreement'}
                         </h3>
                         <div className="h-px bg-border mb-4"></div>
                       </div>
