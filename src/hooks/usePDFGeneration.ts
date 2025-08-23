@@ -43,7 +43,7 @@ export const usePDFGeneration = () => {
     try {
       console.log('Generating PDF for contract:', contractId);
 
-      const { data, error } = await supabase.functions.invoke('generate-agreement-pdf', {
+      const { data, error } = await supabase.functions.invoke('generate-publishing-agreement-pdf', {
         body: { contractId }
       });
 
