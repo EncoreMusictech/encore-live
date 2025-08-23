@@ -239,11 +239,11 @@ export default function CRMCopyrightPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="copyrights">My Copyrights</TabsTrigger>
-          <TabsTrigger value="cwr-ddex-export">CWR/DDEX Export</TabsTrigger>
           <TabsTrigger value="register" disabled={!canAccess('copyrightManagement')}>
             {canAccess('copyrightManagement') ? 'Register New' : 'Demo Limit Reached'}
           </TabsTrigger>
           <TabsTrigger value="bulk-upload">Bulk Upload</TabsTrigger>
+          <TabsTrigger value="cwr-ddex-export">CWR/DDEX Export</TabsTrigger>
           <TabsTrigger value="activity">Activity Log</TabsTrigger>
         </TabsList>
 
@@ -256,6 +256,29 @@ export default function CRMCopyrightPage() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onBulkDelete={handleBulkDelete}
+          />
+        </TabsContent>
+
+        <TabsContent value="register">
+          <EnhancedCopyrightForm 
+            onSuccess={() => {
+              // Switch to the copyrights tab - let real-time updates handle the data refresh
+              setActiveTab("copyrights");
+              toast({
+                title: "Copyright Created",
+                description: "Your copyright work has been successfully created with all metadata."
+              });
+            }}
+            onCancel={() => setActiveTab("copyrights")}
+          />
+        </TabsContent>
+
+        <TabsContent value="bulk-upload">
+          <BulkUpload 
+            onSuccess={() => {
+              refetch();
+              setActiveTab("copyrights");
+            }}
           />
         </TabsContent>
 
@@ -417,29 +440,6 @@ export default function CRMCopyrightPage() {
               </Tabs>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="register">
-          <EnhancedCopyrightForm 
-            onSuccess={() => {
-              // Switch to the copyrights tab - let real-time updates handle the data refresh
-              setActiveTab("copyrights");
-              toast({
-                title: "Copyright Created",
-                description: "Your copyright work has been successfully created with all metadata."
-              });
-            }}
-            onCancel={() => setActiveTab("copyrights")}
-          />
-        </TabsContent>
-
-        <TabsContent value="bulk-upload">
-          <BulkUpload 
-            onSuccess={() => {
-              refetch();
-              setActiveTab("copyrights");
-            }}
-          />
         </TabsContent>
 
         <TabsContent value="activity">
