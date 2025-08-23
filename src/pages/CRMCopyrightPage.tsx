@@ -22,6 +22,7 @@ import { ExportDialog } from "@/components/copyright/ExportDialog";
 import { SenderCodeOnboarding } from "@/components/copyright/SenderCodeOnboarding";
 import { TransmissionHistory } from "@/components/copyright/TransmissionHistory";
 import { MLCBulkEnrichment } from "@/components/copyright/MLCBulkEnrichment";
+import { CWRRegistrationStatusTracker } from "@/components/copyright/CWRRegistrationStatusTracker";
 
 export default function CRMCopyrightPage() {
   const { toast } = useToast();
@@ -297,8 +298,9 @@ export default function CRMCopyrightPage() {
             <CardContent className="space-y-6">
               {/* Nested Tabs for CWR/DDEX functionality */}
               <Tabs defaultValue="export" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="export">Export Works</TabsTrigger>
+                  <TabsTrigger value="registration-status">Registration Status</TabsTrigger>
                   <TabsTrigger value="transmission-history">Transmission History</TabsTrigger>
                   <TabsTrigger value="sender-codes">Sender Codes</TabsTrigger>
                   <TabsTrigger value="mlc-enrichment">MLC Enrichment</TabsTrigger>
@@ -424,6 +426,10 @@ export default function CRMCopyrightPage() {
                     onDelete={handleDelete}
                     onBulkDelete={handleBulkDelete}
                   />
+                </TabsContent>
+                
+                <TabsContent value="registration-status" className="space-y-6 mt-6">
+                  <CWRRegistrationStatusTracker />
                 </TabsContent>
                 
                 <TabsContent value="transmission-history" className="space-y-6 mt-6">
