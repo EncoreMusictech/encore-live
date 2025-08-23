@@ -1642,6 +1642,84 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_enabled: boolean
+          enabled: boolean
+          id: string
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          push_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_enabled?: boolean
+          enabled?: boolean
+          id?: string
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          push_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_enabled?: boolean
+          enabled?: boolean
+          id?: string
+          notification_type?: Database["public"]["Enums"]["notification_type"]
+          push_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          expires_at: string | null
+          id: string
+          message: string
+          priority: Database["public"]["Enums"]["notification_priority"]
+          read: boolean
+          read_at: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          message: string
+          priority?: Database["public"]["Enums"]["notification_priority"]
+          read?: boolean
+          read_at?: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          message?: string
+          priority?: Database["public"]["Enums"]["notification_priority"]
+          read?: boolean
+          read_at?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_emails: {
         Row: {
           clicked_at: string | null
@@ -4238,9 +4316,25 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      cleanup_expired_notifications: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       cleanup_old_logs: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      create_notification: {
+        Args: {
+          p_data?: Json
+          p_expires_at?: string
+          p_message: string
+          p_priority?: Database["public"]["Enums"]["notification_priority"]
+          p_title: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+          p_user_id: string
+        }
+        Returns: string
       }
       expire_client_access: {
         Args: Record<PropertyKey, never>
@@ -4378,8 +4472,16 @@ export type Database = {
         }
         Returns: string
       }
+      mark_all_notifications_read: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       mark_invitation_reminder_sent: {
         Args: { invitation_id: string }
+        Returns: undefined
+      }
+      mark_notification_read: {
+        Args: { notification_id: string }
         Returns: undefined
       }
       setup_demo_user: {
@@ -4426,6 +4528,19 @@ export type Database = {
         | "sync"
         | "distribution"
       controlled_status: "Controlled" | "Non-Controlled"
+      notification_priority: "low" | "medium" | "high" | "critical"
+      notification_type:
+        | "contract_signed"
+        | "contract_expiring"
+        | "royalty_statement"
+        | "payment_processed"
+        | "copyright_registered"
+        | "sync_opportunity"
+        | "system_alert"
+        | "security_event"
+        | "user_registration"
+        | "subscription_change"
+        | "document_ready"
       payment_method: "ACH" | "Wire" | "PayPal" | "Check"
       pro_type: "ASCAP" | "BMI" | "ICE" | "SOCAN" | "PRS" | "OTHER"
       producer_type: "flat_fee" | "points" | "hybrid"
@@ -4590,6 +4705,20 @@ export const Constants = {
         "distribution",
       ],
       controlled_status: ["Controlled", "Non-Controlled"],
+      notification_priority: ["low", "medium", "high", "critical"],
+      notification_type: [
+        "contract_signed",
+        "contract_expiring",
+        "royalty_statement",
+        "payment_processed",
+        "copyright_registered",
+        "sync_opportunity",
+        "system_alert",
+        "security_event",
+        "user_registration",
+        "subscription_change",
+        "document_ready",
+      ],
       payment_method: ["ACH", "Wire", "PayPal", "Check"],
       pro_type: ["ASCAP", "BMI", "ICE", "SOCAN", "PRS", "OTHER"],
       producer_type: ["flat_fee", "points", "hybrid"],
