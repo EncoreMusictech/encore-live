@@ -453,24 +453,34 @@ export default function CRMCopyrightPage() {
           <DialogHeader>
             <DialogTitle>Edit Copyright - {editingCopyright?.work_title}</DialogTitle>
           </DialogHeader>
-          <div className="max-h-[75vh] overflow-y-auto pr-2 space-y-6">
-            {/* Validation Panel */}
-            {editingCopyright && (
-              <CopyrightValidationPanel
-                copyright={editingCopyright}
-                writers={writers[editingCopyright.id] || []}
-                publishers={[]}
-                onValidationComplete={(result) => {
-                  console.log('Validation completed:', result);
-                }}
-              />
-            )}
-            
-            <EnhancedCopyrightForm 
-              editingCopyright={editingCopyright}
-              onSuccess={handleEditSuccess}
-              onCancel={handleEditCancel}
-            />
+          <div className="max-h-[75vh] overflow-y-auto pr-2">
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details">Copyright Details</TabsTrigger>
+                <TabsTrigger value="compliance">CWR/DDEX Compliance</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="details" className="mt-6">
+                <EnhancedCopyrightForm 
+                  editingCopyright={editingCopyright}
+                  onSuccess={handleEditSuccess}
+                  onCancel={handleEditCancel}
+                />
+              </TabsContent>
+              
+              <TabsContent value="compliance" className="mt-6">
+                {editingCopyright && (
+                  <CopyrightValidationPanel
+                    copyright={editingCopyright}
+                    writers={writers[editingCopyright.id] || []}
+                    publishers={[]}
+                    onValidationComplete={(result) => {
+                      console.log('Validation completed:', result);
+                    }}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         </DialogContent>
       </Dialog>
