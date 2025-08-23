@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, Send, FileText, Paperclip } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -1973,7 +1973,11 @@ Notes/Additional Specifications: ________________________`;
                     </div>
                   </ScrollArea>
                   <div className="flex flex-col sm:flex-row gap-3 justify-end pt-2">
-                    <Button variant="outline" onClick={() => setEmailDialogOpen(true)}>
+                    <Button variant="outline" onClick={() => {
+                      console.log('Send Email button clicked');
+                      setEmailDialogOpen(true);
+                      console.log('Email dialog should be open:', true);
+                    }}>
                       <Send className="h-4 w-4 mr-2" />
                       Send Email
                     </Button>
@@ -1999,6 +2003,9 @@ Notes/Additional Specifications: ________________________`;
               <Send className="h-5 w-5" />
               Send Contract via Email
             </DialogTitle>
+            <DialogDescription>
+              Fill out the form below to send the contract via email with a PDF attachment.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
