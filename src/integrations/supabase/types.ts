@@ -1537,6 +1537,57 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_touchpoints: {
+        Row: {
+          channel: string
+          content: string | null
+          created_at: string | null
+          customer_user_id: string
+          follow_up_date: string | null
+          follow_up_required: boolean | null
+          handled_by_user_id: string | null
+          id: string
+          interaction_direction: string
+          metadata: Json | null
+          outcome: string | null
+          subject: string
+          touchpoint_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          channel: string
+          content?: string | null
+          created_at?: string | null
+          customer_user_id: string
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          handled_by_user_id?: string | null
+          id?: string
+          interaction_direction: string
+          metadata?: Json | null
+          outcome?: string | null
+          subject: string
+          touchpoint_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          channel?: string
+          content?: string | null
+          created_at?: string | null
+          customer_user_id?: string
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          handled_by_user_id?: string | null
+          id?: string
+          interaction_direction?: string
+          metadata?: Json | null
+          outcome?: string | null
+          subject?: string
+          touchpoint_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       cwr_acknowledgments: {
         Row: {
           ack_file_name: string | null
@@ -2126,37 +2177,64 @@ export type Database = {
       }
       operations_team_members: {
         Row: {
+          active_tickets_count: number | null
+          avg_resolution_time_hours: number | null
+          contact_info: Json | null
           created_at: string | null
           department: string
+          department_level: number | null
           hire_date: string | null
           id: string
           is_active: boolean | null
+          is_team_lead: boolean | null
+          last_performance_review: string | null
+          performance_score: number | null
           permissions: Json | null
+          resolved_tickets_count: number | null
           role_title: string
+          status: string | null
           team_member_name: string
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
+          active_tickets_count?: number | null
+          avg_resolution_time_hours?: number | null
+          contact_info?: Json | null
           created_at?: string | null
           department: string
+          department_level?: number | null
           hire_date?: string | null
           id?: string
           is_active?: boolean | null
+          is_team_lead?: boolean | null
+          last_performance_review?: string | null
+          performance_score?: number | null
           permissions?: Json | null
+          resolved_tickets_count?: number | null
           role_title: string
+          status?: string | null
           team_member_name: string
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
+          active_tickets_count?: number | null
+          avg_resolution_time_hours?: number | null
+          contact_info?: Json | null
           created_at?: string | null
           department?: string
+          department_level?: number | null
           hire_date?: string | null
           id?: string
           is_active?: boolean | null
+          is_team_lead?: boolean | null
+          last_performance_review?: string | null
+          performance_score?: number | null
           permissions?: Json | null
+          resolved_tickets_count?: number | null
           role_title?: string
+          status?: string | null
           team_member_name?: string
           updated_at?: string | null
           user_id?: string | null
@@ -2739,6 +2817,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      performance_metrics: {
+        Row: {
+          benchmark_value: number | null
+          calculation_method: string | null
+          created_at: string | null
+          entity_id: string
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_type: string
+          metric_unit: string | null
+          metric_value: number
+          period_end: string
+          period_start: string
+          trend_direction: string | null
+          updated_at: string | null
+          variance_percentage: number | null
+        }
+        Insert: {
+          benchmark_value?: number | null
+          calculation_method?: string | null
+          created_at?: string | null
+          entity_id: string
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_type: string
+          metric_unit?: string | null
+          metric_value: number
+          period_end: string
+          period_start: string
+          trend_direction?: string | null
+          updated_at?: string | null
+          variance_percentage?: number | null
+        }
+        Update: {
+          benchmark_value?: number | null
+          calculation_method?: string | null
+          created_at?: string | null
+          entity_id?: string
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_type?: string
+          metric_unit?: string | null
+          metric_value?: number
+          period_end?: string
+          period_start?: string
+          trend_direction?: string | null
+          updated_at?: string | null
+          variance_percentage?: number | null
+        }
+        Relationships: []
       }
       pro_ftp_credentials: {
         Row: {
@@ -4745,6 +4877,54 @@ export type Database = {
           max_valuations_per_month?: number | null
           tier_name?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workflow_automation_rules: {
+        Row: {
+          actions: Json
+          created_at: string | null
+          created_by_user_id: string
+          execution_count: number | null
+          id: string
+          is_active: boolean | null
+          last_executed_at: string | null
+          priority: number | null
+          rule_name: string
+          trigger_conditions: Json
+          trigger_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          actions?: Json
+          created_at?: string | null
+          created_by_user_id: string
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          priority?: number | null
+          rule_name: string
+          trigger_conditions?: Json
+          trigger_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          actions?: Json
+          created_at?: string | null
+          created_by_user_id?: string
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          priority?: number | null
+          rule_name?: string
+          trigger_conditions?: Json
+          trigger_type?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
