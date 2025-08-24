@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { 
   Activity, 
   Users, 
@@ -9,7 +11,15 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  MessageSquare
+  MessageSquare,
+  Headphones,
+  UserPlus,
+  BookOpen,
+  Settings,
+  CheckSquare,
+  Calendar,
+  Target,
+  PlayCircle
 } from "lucide-react";
 import { AIOperationsAssistant } from "../AIOperationsAssistant";
 
@@ -24,8 +34,18 @@ export function OperationsHub({ metrics, aiInsights }: OperationsHubProps) {
 
   return (
     <div className="space-y-6">
-      {/* Key Operations Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Enhanced Operations Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="support">Support System</TabsTrigger>
+          <TabsTrigger value="onboarding">Client Onboarding</TabsTrigger>
+          <TabsTrigger value="tasks">Task Management</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          {/* Key Operations Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -179,8 +199,251 @@ export function OperationsHub({ metrics, aiInsights }: OperationsHubProps) {
         </CardContent>
       </Card>
 
-      {/* AI Operations Assistant */}
-      <AIOperationsAssistant />
+          {/* AI Operations Assistant */}
+          <AIOperationsAssistant />
+        </TabsContent>
+
+        <TabsContent value="support" className="space-y-6">
+          {/* Support System Dashboard */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <MessageSquare className="h-5 w-5 text-blue-600" />
+                  <Badge variant={metrics.openTickets > 10 ? "destructive" : "secondary"}>Open</Badge>
+                </div>
+                <CardTitle className="text-sm font-medium">Support Tickets</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{metrics.openTickets}</div>
+                <p className="text-xs text-muted-foreground">Total open tickets</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <Clock className="h-5 w-5 text-orange-600" />
+                  <Badge variant="secondary">Response</Badge>
+                </div>
+                <CardTitle className="text-sm font-medium">First Response</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{metrics.firstResponseTime?.toFixed(1) || '0'}h</div>
+                <p className="text-xs text-muted-foreground">Average time</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <Badge variant="secondary">Resolution</Badge>
+                </div>
+                <CardTitle className="text-sm font-medium">Avg Resolution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{metrics.avgResolutionTime?.toFixed(1) || '0'}h</div>
+                <p className="text-xs text-muted-foreground">Time to resolve</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <Headphones className="h-5 w-5 text-purple-600" />
+                  <Badge variant="secondary">Satisfaction</Badge>
+                </div>
+                <CardTitle className="text-sm font-medium">CSAT Score</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{metrics.customerSatisfaction?.toFixed(1) || '0'}/5</div>
+                <p className="text-xs text-muted-foreground">Customer rating</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Support Tickets by Priority */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Active Support Tickets
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[
+                  { id: "TIK-001", subject: "API Integration Issues", priority: "High", status: "In Progress", assignee: "Sarah M.", created: "2 hours ago" },
+                  { id: "TIK-002", subject: "Royalty Calculation Error", priority: "High", status: "Open", assignee: "Mike D.", created: "4 hours ago" },
+                  { id: "TIK-003", subject: "Dashboard Loading Slow", priority: "Medium", status: "In Progress", assignee: "Lisa K.", created: "1 day ago" },
+                  { id: "TIK-004", subject: "Export Feature Request", priority: "Low", status: "Open", assignee: "Tom R.", created: "2 days ago" }
+                ].map((ticket, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-xs">{ticket.id}</Badge>
+                        <Badge variant={
+                          ticket.priority === 'High' ? 'destructive' : 
+                          ticket.priority === 'Medium' ? 'secondary' : 'outline'
+                        }>
+                          {ticket.priority}
+                        </Badge>
+                      </div>
+                      <h4 className="font-semibold text-sm">{ticket.subject}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Assigned to: {ticket.assignee} • Created: {ticket.created}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant={ticket.status === 'Open' ? 'secondary' : 'default'}>
+                        {ticket.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="onboarding" className="space-y-6">
+          {/* Client Onboarding Dashboard */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Client Onboarding Pipeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  { stage: "Initial Setup", count: 5, icon: <Settings className="h-4 w-4" />, color: "bg-blue-500" },
+                  { stage: "API Configuration", count: 3, icon: <Server className="h-4 w-4" />, color: "bg-orange-500" },
+                  { stage: "Training Scheduled", count: 7, icon: <BookOpen className="h-4 w-4" />, color: "bg-purple-500" },
+                  { stage: "Documentation Access", count: 12, icon: <CheckCircle className="h-4 w-4" />, color: "bg-green-500" }
+                ].map((stage, index) => (
+                  <div key={index} className="text-center">
+                    <div className={`w-16 h-16 ${stage.color} rounded-full flex items-center justify-center mx-auto mb-3`}>
+                      <div className="text-white">{stage.icon}</div>
+                    </div>
+                    <h4 className="font-semibold text-sm">{stage.stage}</h4>
+                    <p className="text-2xl font-bold mt-1">{stage.count}</p>
+                    <p className="text-xs text-muted-foreground">Active clients</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Active Onboarding Progress */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Active Onboarding Sessions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[
+                  { client: "Harmony Records", progress: 85, stage: "Training & Documentation", nextStep: "Final Review", dueDate: "Nov 5" },
+                  { client: "Melody Music Group", progress: 60, stage: "API Setup", nextStep: "Integration Testing", dueDate: "Nov 8" },
+                  { client: "Rhythm Publishing", progress: 30, stage: "Initial Configuration", nextStep: "Data Migration", dueDate: "Nov 12" },
+                  { client: "Beat Street Studios", progress: 95, stage: "Final Review", nextStep: "Go Live", dueDate: "Nov 3" }
+                ].map((onboarding, index) => (
+                  <div key={index} className="space-y-3 p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold">{onboarding.client}</h4>
+                      <Badge variant={onboarding.progress >= 80 ? "default" : "secondary"}>
+                        {onboarding.progress}% Complete
+                      </Badge>
+                    </div>
+                    <Progress value={onboarding.progress} className="h-2" />
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>Current: {onboarding.stage}</span>
+                      <span>Due: {onboarding.dueDate}</span>
+                    </div>
+                    <p className="text-sm text-primary">Next: {onboarding.nextStep}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tasks" className="space-y-6">
+          {/* Task Management Dashboard */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckSquare className="h-5 w-5" />
+                Phase-Based Task Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {[
+                  { phase: "Planning & Strategy", count: 8, color: "bg-blue-500" },
+                  { phase: "Content Creation", count: 12, color: "bg-purple-500" },
+                  { phase: "Outreach & Engagement", count: 15, color: "bg-orange-500" },
+                  { phase: "Tracking & Optimization", count: 6, color: "bg-green-500" },
+                  { phase: "Final Deliverables", count: 4, color: "bg-gray-500" }
+                ].map((phase, index) => (
+                  <Card key={index} className="text-center">
+                    <CardContent className="p-4">
+                      <div className={`w-12 h-12 ${phase.color} rounded-full flex items-center justify-center mx-auto mb-2`}>
+                        <CheckSquare className="h-6 w-6 text-white" />
+                      </div>
+                      <h4 className="font-semibold text-xs mb-1">{phase.phase}</h4>
+                      <p className="text-2xl font-bold">{phase.count}</p>
+                      <p className="text-xs text-muted-foreground">Tasks</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Active Tasks List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>High Priority Tasks</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  { task: "Music Tectonics Conference Preparation", phase: "Final Deliverables", assignee: "Marketing Team", deadline: "Nov 1", priority: "High" },
+                  { task: "Q4 Revenue Analysis Dashboard", phase: "Tracking & Optimization", assignee: "Finance Team", deadline: "Nov 5", priority: "High" },
+                  { task: "Customer Onboarding Automation", phase: "Content Creation", assignee: "Operations Team", deadline: "Nov 8", priority: "Medium" },
+                  { task: "API Documentation Update", phase: "Content Creation", assignee: "Tech Team", deadline: "Nov 10", priority: "Medium" },
+                  { task: "Partnership Agreement Review", phase: "Planning & Strategy", assignee: "Legal Team", deadline: "Nov 12", priority: "Low" }
+                ].map((task, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant={
+                          task.priority === 'High' ? 'destructive' : 
+                          task.priority === 'Medium' ? 'secondary' : 'outline'
+                        } className="text-xs">
+                          {task.priority}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">{task.phase}</Badge>
+                      </div>
+                      <h4 className="font-semibold text-sm">{task.task}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Assigned to: {task.assignee} • Due: {task.deadline}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="outline">
+                      <PlayCircle className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
