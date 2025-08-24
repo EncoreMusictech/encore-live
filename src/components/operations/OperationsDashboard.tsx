@@ -11,6 +11,13 @@ import { FinancialTab } from "./tabs/FinancialTab";
 import { SalesTab } from "./tabs/SalesTab";
 import { MarketingTab } from "./tabs/MarketingTab";
 import { EnterpriseTab } from "./tabs/EnterpriseTab";
+import { AccessControlMatrix } from "./phase6/AccessControlMatrix";
+import { TaskManagementSystem } from "./phase6/TaskManagementSystem";
+import { CampaignManagement } from "./phase6/CampaignManagement";
+import { OnboardingPipelineManager } from "./phase6/OnboardingPipelineManager";
+import { ClientSegmentation } from "./phase6/ClientSegmentation";
+import { KnowledgeBaseManager } from "./phase6/KnowledgeBaseManager";
+import { UserBehaviorAnalytics } from "./phase6/UserBehaviorAnalytics";
 
 export function OperationsDashboard() {
   const { metrics, customerHealth, supportTickets, loading, error, refreshData } = useOperationsData();
@@ -63,6 +70,7 @@ export function OperationsDashboard() {
     { id: 'sales', label: 'Sales', roles: ['admin', 'sales'] },
     { id: 'marketing', label: 'Marketing', roles: ['admin', 'marketing'] },
     { id: 'enterprise', label: 'Enterprise', roles: ['admin', 'enterprise'] },
+    { id: 'phase6', label: 'Phase 6', roles: ['admin'] },
   ].filter(tab => 
     hasRole('admin') || tab.roles.some(role => hasRole(role))
   );
@@ -85,7 +93,7 @@ export function OperationsDashboard() {
 
       {/* Role-based Tabs */}
       <Tabs defaultValue={availableTabs[0]?.id || 'operations'} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           {availableTabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id}>
               {tab.label}
@@ -119,6 +127,18 @@ export function OperationsDashboard() {
 
         <TabsContent value="enterprise" className="space-y-6">
           <EnterpriseTab />
+        </TabsContent>
+
+        <TabsContent value="phase6" className="space-y-6">
+          <div className="grid gap-6">
+            <AccessControlMatrix />
+            <TaskManagementSystem />
+            <CampaignManagement />
+            <OnboardingPipelineManager />
+            <ClientSegmentation />
+            <KnowledgeBaseManager />
+            <UserBehaviorAnalytics />
+          </div>
         </TabsContent>
       </Tabs>
 
