@@ -24,6 +24,10 @@ import { WorkflowAutomationPanel } from "./WorkflowAutomationPanel";
 import { PredictiveAnalyticsDashboard } from "./PredictiveAnalyticsDashboard";
 import { CohortAnalysisDashboard } from "./CohortAnalysisDashboard";
 import { CustomerSuccessIntelligence } from "./CustomerSuccessIntelligence";
+import { RealtimeMonitoringDashboard } from "./RealtimeMonitoringDashboard";
+import { AdvancedAutomationDashboard } from "./AdvancedAutomationDashboard";
+import { BusinessIntelligenceDashboard } from "./BusinessIntelligenceDashboard";
+import { IntegrationManagementDashboard } from "./IntegrationManagementDashboard";
 
 export function OperationsDashboard() {
   const { metrics, customerHealth, supportTickets, loading, error, refreshData } = useOperationsData();
@@ -394,6 +398,23 @@ export function OperationsDashboard() {
 
         {/* Cohort Analysis Dashboard */}
         <CohortAnalysisDashboard />
+      </div>
+
+      {/* Phase 3 - Real-time Monitoring, Advanced Automation & Business Intelligence */}
+      <div className="space-y-6">
+        {/* Real-time Monitoring Dashboard */}
+        <RealtimeMonitoringDashboard />
+
+        {/* Business Intelligence Dashboard */}
+        <BusinessIntelligenceDashboard />
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* Advanced Automation Dashboard */}
+          <AdvancedAutomationDashboard />
+
+          {/* Integration Management Dashboard */}
+          <IntegrationManagementDashboard />
+        </div>
       </div>
     </div>
   );
