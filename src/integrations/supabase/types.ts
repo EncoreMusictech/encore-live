@@ -4888,6 +4888,10 @@ export type Database = {
         Args: { copyright_id_param: string }
         Returns: number
       }
+      can_manage_operations_team: {
+        Args: { p_user_id?: string }
+        Returns: boolean
+      }
       check_contract_payee_connections: {
         Args: { contract_id_param: string }
         Returns: Json
@@ -5035,6 +5039,10 @@ export type Database = {
       insert_quarterly_reports_batch: {
         Args: { reports_data: Json }
         Returns: number
+      }
+      is_operations_team_member: {
+        Args: { p_user_id?: string }
+        Returns: boolean
       }
       link_expenses_to_payout: {
         Args: { payout_id_param: string }
