@@ -1029,14 +1029,6 @@ const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
                           <p className="text-sm text-muted-foreground mt-1">
                             {template.description}
                           </p>
-                          <div className="flex gap-2 mt-2">
-                            <Badge variant="outline" className="text-xs">
-                              English
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              Spanish
-                            </Badge>
-                          </div>
                         </div>
                         <Badge variant="secondary" className="ml-2">
                           {template.contract_type?.replace('_', ' ') || 'Contract'}
