@@ -28,6 +28,11 @@ import { RealtimeMonitoringDashboard } from "./RealtimeMonitoringDashboard";
 import { AdvancedAutomationDashboard } from "./AdvancedAutomationDashboard";
 import { BusinessIntelligenceDashboard } from "./BusinessIntelligenceDashboard";
 import { IntegrationManagementDashboard } from "./IntegrationManagementDashboard";
+import { ExecutiveDashboard } from "./ExecutiveDashboard";
+import { AdvancedSecurityCenter } from "./AdvancedSecurityCenter";
+import { AIOperationsAssistant } from "./AIOperationsAssistant";
+import { AdvancedWorkflowOrchestrator } from "./AdvancedWorkflowOrchestrator";
+import { PredictiveForecastingEngine } from "./PredictiveForecastingEngine";
 
 export function OperationsDashboard() {
   const { metrics, customerHealth, supportTickets, loading, error, refreshData } = useOperationsData();
@@ -415,6 +420,26 @@ export function OperationsDashboard() {
           {/* Integration Management Dashboard */}
           <IntegrationManagementDashboard />
         </div>
+      </div>
+
+      {/* Phase 4 - Executive Insights, AI Operations, Advanced Security & Workflow Orchestration */}
+      <div className="space-y-6">
+        {/* Executive Dashboard */}
+        <ExecutiveDashboard />
+
+        {/* AI Operations Assistant */}
+        <AIOperationsAssistant />
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* Advanced Security Center */}
+          <AdvancedSecurityCenter />
+
+          {/* Predictive Forecasting Engine */}
+          <PredictiveForecastingEngine />
+        </div>
+
+        {/* Advanced Workflow Orchestrator */}
+        <AdvancedWorkflowOrchestrator />
       </div>
     </div>
   );
