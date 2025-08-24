@@ -21,6 +21,9 @@ import { RevenueChart } from "./RevenueChart";
 import { DataSeedButton } from "./DataSeedButton";
 import { TeamPerformanceDashboard } from "./TeamPerformanceDashboard";
 import { WorkflowAutomationPanel } from "./WorkflowAutomationPanel";
+import { PredictiveAnalyticsDashboard } from "./PredictiveAnalyticsDashboard";
+import { CohortAnalysisDashboard } from "./CohortAnalysisDashboard";
+import { CustomerSuccessIntelligence } from "./CustomerSuccessIntelligence";
 
 export function OperationsDashboard() {
   const { metrics, customerHealth, supportTickets, loading, error, refreshData } = useOperationsData();
@@ -379,6 +382,18 @@ export function OperationsDashboard() {
             <SupportTicketsTable tickets={supportTickets.slice(0, 10)} />
           </CardContent>
         </Card>
+      </div>
+
+      {/* Phase 2 - Advanced Analytics & Intelligence */}
+      <div className="space-y-6">
+        {/* Predictive Analytics Dashboard */}
+        <PredictiveAnalyticsDashboard />
+
+        {/* Customer Success Intelligence */}
+        <CustomerSuccessIntelligence />
+
+        {/* Cohort Analysis Dashboard */}
+        <CohortAnalysisDashboard />
       </div>
     </div>
   );
