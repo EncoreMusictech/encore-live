@@ -15,6 +15,7 @@ import { BusinessIntelligenceDashboard } from "../BusinessIntelligenceDashboard"
 import { PredictiveForecastingEngine } from "../PredictiveForecastingEngine";
 import { FinancialKPIDashboard } from "../financial/FinancialKPIDashboard";
 import { CashFlowProjectionChart } from "../financial/CashFlowProjectionChart";
+import { ExecutiveExportReport } from "../executive/ExecutiveExportReport";
 import { useEnhancedOperationsData } from "@/hooks/useEnhancedOperationsData";
 
 interface FinancialTabProps {
@@ -77,14 +78,13 @@ export function FinancialTab({ metrics }: FinancialTabProps) {
         </CardHeader>
       </Card>
 
-      {/* Enhanced Financial Dashboard */}
-      <FinancialTab metrics={metrics} />
+      {/* Enhanced KPI Dashboard */}
+      <FinancialKPIDashboard metrics={financialMetrics} />
 
-      {/* Executive Export Report */}
-      <ExecutiveExportReport 
-        financialMetrics={financialMetrics}
-        customerMetrics={metrics}
-        supportMetrics={metrics}
+      {/* Cash Flow Projections */}
+      <CashFlowProjectionChart 
+        quarterlyData={quarterlyData}
+        revenueEvents={revenueEvents}
       />
 
       {/* Revenue Trends Chart */}
@@ -108,6 +108,13 @@ export function FinancialTab({ metrics }: FinancialTabProps) {
 
       {/* Predictive Forecasting */}
       <PredictiveForecastingEngine />
+
+      {/* Executive Export Report */}
+      <ExecutiveExportReport 
+        financialMetrics={financialMetrics}
+        customerMetrics={metrics}
+        supportMetrics={metrics}
+      />
     </div>
   );
 }
