@@ -1483,6 +1483,60 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_health_metrics: {
+        Row: {
+          contracts_created: number | null
+          created_at: string | null
+          customer_user_id: string
+          days_since_signup: number | null
+          feature_adoption_rate: number | null
+          health_score: number | null
+          id: string
+          last_activity_date: string | null
+          login_frequency: number | null
+          modules_used: string[] | null
+          risk_level: string | null
+          royalties_processed: number | null
+          subscription_status: string | null
+          support_tickets_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          contracts_created?: number | null
+          created_at?: string | null
+          customer_user_id: string
+          days_since_signup?: number | null
+          feature_adoption_rate?: number | null
+          health_score?: number | null
+          id?: string
+          last_activity_date?: string | null
+          login_frequency?: number | null
+          modules_used?: string[] | null
+          risk_level?: string | null
+          royalties_processed?: number | null
+          subscription_status?: string | null
+          support_tickets_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          contracts_created?: number | null
+          created_at?: string | null
+          customer_user_id?: string
+          days_since_signup?: number | null
+          feature_adoption_rate?: number | null
+          health_score?: number | null
+          id?: string
+          last_activity_date?: string | null
+          login_frequency?: number | null
+          modules_used?: string[] | null
+          risk_level?: string | null
+          royalties_processed?: number | null
+          subscription_status?: string | null
+          support_tickets_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       cwr_acknowledgments: {
         Row: {
           ack_file_name: string | null
@@ -2067,6 +2121,45 @@ export type Database = {
           opened_at?: string | null
           sent_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      operations_team_members: {
+        Row: {
+          created_at: string | null
+          department: string
+          hire_date: string | null
+          id: string
+          is_active: boolean | null
+          permissions: Json | null
+          role_title: string
+          team_member_name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department: string
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          permissions?: Json | null
+          role_title: string
+          team_member_name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department?: string
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          permissions?: Json | null
+          role_title?: string
+          team_member_name?: string
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -2967,6 +3060,45 @@ export type Database = {
           },
         ]
       }
+      revenue_events: {
+        Row: {
+          billing_cycle: string | null
+          created_at: string | null
+          customer_user_id: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          mrr_change: number | null
+          new_plan: string | null
+          previous_plan: string | null
+          revenue_amount: number | null
+        }
+        Insert: {
+          billing_cycle?: string | null
+          created_at?: string | null
+          customer_user_id?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          mrr_change?: number | null
+          new_plan?: string | null
+          previous_plan?: string | null
+          revenue_amount?: number | null
+        }
+        Update: {
+          billing_cycle?: string | null
+          created_at?: string | null
+          customer_user_id?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          mrr_change?: number | null
+          new_plan?: string | null
+          previous_plan?: string | null
+          revenue_amount?: number | null
+        }
+        Relationships: []
+      }
       royalties_import_staging: {
         Row: {
           batch_id: string | null
@@ -3823,6 +3955,65 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      support_ticket_analytics: {
+        Row: {
+          assigned_team_member_id: string | null
+          created_at: string | null
+          customer_satisfaction_score: number | null
+          customer_user_id: string | null
+          first_response_time_hours: number | null
+          id: string
+          priority_level: string | null
+          resolution_time_hours: number | null
+          resolved_at: string | null
+          status: string | null
+          tags: string[] | null
+          ticket_category: string
+          ticket_subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_team_member_id?: string | null
+          created_at?: string | null
+          customer_satisfaction_score?: number | null
+          customer_user_id?: string | null
+          first_response_time_hours?: number | null
+          id?: string
+          priority_level?: string | null
+          resolution_time_hours?: number | null
+          resolved_at?: string | null
+          status?: string | null
+          tags?: string[] | null
+          ticket_category: string
+          ticket_subject: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_team_member_id?: string | null
+          created_at?: string | null
+          customer_satisfaction_score?: number | null
+          customer_user_id?: string | null
+          first_response_time_hours?: number | null
+          id?: string
+          priority_level?: string | null
+          resolution_time_hours?: number | null
+          resolved_at?: string | null
+          status?: string | null
+          tags?: string[] | null
+          ticket_category?: string
+          ticket_subject?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_analytics_assigned_team_member_id_fkey"
+            columns: ["assigned_team_member_id"]
+            isOneToOne: false
+            referencedRelation: "operations_team_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sync_invoices: {
         Row: {

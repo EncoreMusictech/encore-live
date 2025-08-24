@@ -34,6 +34,7 @@ import CRMCopyrightPage from "./pages/CRMCopyrightPage";
 import CRMSyncPage from "./pages/CRMSyncPage";
 import CRMRoyaltiesPage from "./pages/CRMRoyaltiesPage";
 import CRMClientsPage from "./pages/CRMClientsPage";
+import CRMOperationsPage from "./pages/CRMOperationsPage";
 import FeaturesOverviewPage from "./pages/FeaturesOverviewPage";
 import ModuleWalkthroughsPage from "./pages/ModuleWalkthroughsPage";
 
@@ -84,6 +85,7 @@ const App = () => {
                           <Route path="sync" element={<CRMSyncPage />} />
                           <Route path="royalties" element={<CRMRoyaltiesPage />} />
                           <Route path="client-admin" element={<CRMClientsPage />} />
+                          <Route path="operations" element={<CRMOperationsPage />} />
                           <Route path="walkthroughs" element={<ModuleWalkthroughsPage />} />
                         </Route>
                         
