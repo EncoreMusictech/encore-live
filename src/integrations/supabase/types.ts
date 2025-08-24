@@ -190,6 +190,57 @@ export type Database = {
         }
         Relationships: []
       }
+      business_intelligence_reports: {
+        Row: {
+          auto_generated: boolean | null
+          created_at: string | null
+          file_url: string | null
+          generated_for_user_id: string | null
+          id: string
+          metadata: Json | null
+          report_data: Json
+          report_format: string | null
+          report_name: string
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          share_settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_generated?: boolean | null
+          created_at?: string | null
+          file_url?: string | null
+          generated_for_user_id?: string | null
+          id?: string
+          metadata?: Json | null
+          report_data?: Json
+          report_format?: string | null
+          report_name: string
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          share_settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_generated?: boolean | null
+          created_at?: string | null
+          file_url?: string | null
+          generated_for_user_id?: string | null
+          id?: string
+          metadata?: Json | null
+          report_data?: Json
+          report_format?: string | null
+          report_name?: string
+          report_period_end?: string
+          report_period_start?: string
+          report_type?: string
+          share_settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       catalog_revenue_sources: {
         Row: {
           annual_revenue: number
@@ -506,6 +557,57 @@ export type Database = {
           status?: string
           subscriber_user_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      cohort_analysis: {
+        Row: {
+          calculated_metrics: Json
+          calculation_date: string
+          churn_data: Json
+          cohort_name: string
+          cohort_period: string
+          cohort_type: string
+          created_at: string | null
+          customer_count: number
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          retention_data: Json
+          revenue_data: Json
+          updated_at: string | null
+        }
+        Insert: {
+          calculated_metrics?: Json
+          calculation_date?: string
+          churn_data?: Json
+          cohort_name: string
+          cohort_period: string
+          cohort_type: string
+          created_at?: string | null
+          customer_count?: number
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          retention_data?: Json
+          revenue_data?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          calculated_metrics?: Json
+          calculation_date?: string
+          churn_data?: Json
+          cohort_name?: string
+          cohort_period?: string
+          cohort_type?: string
+          created_at?: string | null
+          customer_count?: number
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          retention_data?: Json
+          revenue_data?: Json
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1533,6 +1635,51 @@ export type Database = {
           royalties_processed?: number | null
           subscription_status?: string | null
           support_tickets_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      customer_journey_events: {
+        Row: {
+          automated_trigger: boolean | null
+          created_at: string | null
+          customer_user_id: string
+          event_category: string
+          event_details: Json
+          event_type: string
+          id: string
+          impact_score: number | null
+          journey_stage: string
+          metadata: Json | null
+          processed_by_user_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          automated_trigger?: boolean | null
+          created_at?: string | null
+          customer_user_id: string
+          event_category: string
+          event_details?: Json
+          event_type: string
+          id?: string
+          impact_score?: number | null
+          journey_stage: string
+          metadata?: Json | null
+          processed_by_user_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          automated_trigger?: boolean | null
+          created_at?: string | null
+          customer_user_id?: string
+          event_category?: string
+          event_details?: Json
+          event_type?: string
+          id?: string
+          impact_score?: number | null
+          journey_stage?: string
+          metadata?: Json | null
+          processed_by_user_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -2869,6 +3016,51 @@ export type Database = {
           trend_direction?: string | null
           updated_at?: string | null
           variance_percentage?: number | null
+        }
+        Relationships: []
+      }
+      predictive_analytics_cache: {
+        Row: {
+          calculation_date: string
+          confidence_score: number
+          contributing_factors: Json
+          created_at: string | null
+          customer_user_id: string
+          expires_at: string
+          id: string
+          metadata: Json | null
+          model_version: string | null
+          prediction_type: string
+          prediction_value: number
+          updated_at: string | null
+        }
+        Insert: {
+          calculation_date?: string
+          confidence_score: number
+          contributing_factors?: Json
+          created_at?: string | null
+          customer_user_id: string
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          model_version?: string | null
+          prediction_type: string
+          prediction_value: number
+          updated_at?: string | null
+        }
+        Update: {
+          calculation_date?: string
+          confidence_score?: number
+          contributing_factors?: Json
+          created_at?: string | null
+          customer_user_id?: string
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          model_version?: string | null
+          prediction_type?: string
+          prediction_value?: number
+          updated_at?: string | null
         }
         Relationships: []
       }
