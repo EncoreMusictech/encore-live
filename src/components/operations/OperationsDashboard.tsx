@@ -19,6 +19,8 @@ import { CustomerHealthTable } from "./CustomerHealthTable";
 import { SupportTicketsTable } from "./SupportTicketsTable";
 import { RevenueChart } from "./RevenueChart";
 import { DataSeedButton } from "./DataSeedButton";
+import { TeamPerformanceDashboard } from "./TeamPerformanceDashboard";
+import { WorkflowAutomationPanel } from "./WorkflowAutomationPanel";
 
 export function OperationsDashboard() {
   const { metrics, customerHealth, supportTickets, loading, error, refreshData } = useOperationsData();
@@ -320,6 +322,35 @@ export function OperationsDashboard() {
 
       {/* Data Seeder for Development */}
       <DataSeedButton />
+
+      {/* Enhanced Operations Features */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Team Performance Dashboard */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Team Performance</CardTitle>
+            <CardDescription>
+              Team member performance and workload management
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TeamPerformanceDashboard />
+          </CardContent>
+        </Card>
+
+        {/* Workflow Automation */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Workflow Automation</CardTitle>
+            <CardDescription>
+              Automated business processes and triggers
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <WorkflowAutomationPanel />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Detailed Tables */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
