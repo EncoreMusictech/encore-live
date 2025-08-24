@@ -11,91 +11,99 @@ import {
 } from "lucide-react";
 
 interface FinancialKPIProps {
-  metrics: {
-    mrr: number;
-    arr: number;
-    grossProfit: number;
-    netProfit: number;
-    profitMargin: number;
-    growthRate: number;
-    targetRevenue: number;
-    targetProfitMargin: number;
-  };
+  metrics: any; // Accept any metrics structure from unified operations hook
 }
 
 export function FinancialKPIDashboard({ metrics }: FinancialKPIProps) {
+  // Safely extract values from unified metrics with defaults
+  const mrr = metrics?.monthlyRecurringRevenue || 0;
+  const arr = metrics?.annualRecurringRevenue || 0;
+  const profitMargin = metrics?.profitMargin || 0;
+  const growthRate = metrics?.growthRate || 0;
+  const customerLifetimeValue = metrics?.customerLifetimeValue || 0;
+  const customerAcquisitionCost = metrics?.customerAcquisitionCost || 0;
+  
+  // Calculate derived values safely
+  const targetRevenue = 324000; // $324K target
+  const targetProfitMargin = 68; // 68% target
+  const grossProfit = (arr * profitMargin) / 100;
+  const netProfit = grossProfit * 0.85; // Estimate net after taxes/fees
+
   const kpis = [
     {
       title: "Monthly Recurring Revenue",
-      value: metrics.mrr,
+      value: mrr,
       format: "currency",
       icon: DollarSign,
-      trend: metrics.growthRate > 0 ? "up" : "down",
-      trendValue: `+${metrics.growthRate.toFixed(1)}%`,
+      trend: growthRate > 0 ? "up" : "down",
+      trendValue: `+${growthRate.toFixed(1)}%`,
       subtitle: "Current MRR"
     },
     {
       title: "Annual Recurring Revenue", 
-      value: metrics.arr,
+      value: arr,
       format: "currency",
       icon: BarChart3,
       trend: "up",
-      trendValue: `$${(metrics.targetRevenue / 1000).toFixed(0)}K target`,
+      trendValue: `$${(targetRevenue / 1000).toFixed(0)}K target`,
       subtitle: "Projected ARR",
-      progress: (metrics.arr / metrics.targetRevenue) * 100
+      progress: targetRevenue > 0 ? (arr / targetRevenue) * 100 : 0
     },
     {
-      title: "Gross Profit",
-      value: metrics.grossProfit,
+      title: "Customer Lifetime Value",
+      value: customerLifetimeValue,
       format: "currency", 
       icon: TrendingUp,
       trend: "up",
-      trendValue: `${((metrics.grossProfit / (metrics.mrr * 12)) * 100).toFixed(1)}%`,
-      subtitle: "Revenue - Direct Costs"
+      trendValue: `${customerAcquisitionCost > 0 ? (customerLifetimeValue / customerAcquisitionCost).toFixed(1) : '0'}x ROI`,
+      subtitle: "LTV per Customer"
     },
     {
-      title: "Net Profit",
-      value: metrics.netProfit,
+      title: "Customer Acquisition Cost",
+      value: customerAcquisitionCost,
       format: "currency",
       icon: Target,
-      trend: metrics.netProfit > 0 ? "up" : "down", 
-      trendValue: `${((metrics.netProfit / (metrics.mrr * 12)) * 100).toFixed(1)}%`,
-      subtitle: "After All Expenses"
+      trend: customerAcquisitionCost < 200 ? "up" : "down", 
+      trendValue: `$200 target`,
+      subtitle: "Cost per Customer"
     },
     {
       title: "Profit Margin %",
-      value: metrics.profitMargin,
+      value: profitMargin,
       format: "percentage",
       icon: Calculator,
-      trend: metrics.profitMargin >= metrics.targetProfitMargin ? "up" : "down",
-      trendValue: `${metrics.targetProfitMargin}% target`,
+      trend: profitMargin >= targetProfitMargin ? "up" : "down",
+      trendValue: `${targetProfitMargin}% target`,
       subtitle: "Net Profit / Revenue",
-      progress: (metrics.profitMargin / metrics.targetProfitMargin) * 100
+      progress: targetProfitMargin > 0 ? (profitMargin / targetProfitMargin) * 100 : 0
     },
     {
       title: "Growth Rate",
-      value: metrics.growthRate,
+      value: growthRate,
       format: "percentage",
       icon: PieChart,
-      trend: metrics.growthRate > 50 ? "up" : "neutral",
-      trendValue: "99% target",
+      trend: growthRate > 10 ? "up" : "neutral",
+      trendValue: "15% target",
       subtitle: "Year-over-Year",
-      progress: metrics.growthRate > 0 ? (metrics.growthRate / 99) * 100 : 0
+      progress: growthRate > 0 ? (growthRate / 15) * 100 : 0
     }
   ];
 
-  const formatValue = (value: number, format: string) => {
+  const formatValue = (value: number | undefined, format: string) => {
+    // Handle undefined/null values safely
+    const safeValue = value || 0;
+    
     switch (format) {
       case "currency":
-        return value >= 1000000 
-          ? `$${(value / 1000000).toFixed(1)}M`
-          : value >= 1000
-          ? `$${(value / 1000).toFixed(0)}K`
-          : `$${value.toLocaleString()}`;
+        return safeValue >= 1000000 
+          ? `$${(safeValue / 1000000).toFixed(1)}M`
+          : safeValue >= 1000
+          ? `$${(safeValue / 1000).toFixed(0)}K`
+          : `$${safeValue.toLocaleString()}`;
       case "percentage":
-        return `${value.toFixed(1)}%`;
+        return `${safeValue.toFixed(1)}%`;
       default:
-        return value.toLocaleString();
+        return safeValue.toLocaleString();
     }
   };
 
