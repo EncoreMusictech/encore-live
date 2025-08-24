@@ -10,6 +10,7 @@ import { SupportTab } from "./tabs/SupportTab";
 import { FinancialTab } from "./tabs/FinancialTab";
 import { SalesTab } from "./tabs/SalesTab";
 import { MarketingTab } from "./tabs/MarketingTab";
+import { EnterpriseTab } from "./tabs/EnterpriseTab";
 
 export function OperationsDashboard() {
   const { metrics, customerHealth, supportTickets, loading, error, refreshData } = useOperationsData();
@@ -61,6 +62,7 @@ export function OperationsDashboard() {
     { id: 'financial', label: 'Financial', roles: ['admin', 'financial'] },
     { id: 'sales', label: 'Sales', roles: ['admin', 'sales'] },
     { id: 'marketing', label: 'Marketing', roles: ['admin', 'marketing'] },
+    { id: 'enterprise', label: 'Enterprise', roles: ['admin', 'enterprise'] },
   ].filter(tab => 
     hasRole('admin') || tab.roles.some(role => hasRole(role))
   );
@@ -83,7 +85,7 @@ export function OperationsDashboard() {
 
       {/* Role-based Tabs */}
       <Tabs defaultValue={availableTabs[0]?.id || 'operations'} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           {availableTabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id}>
               {tab.label}
@@ -113,6 +115,10 @@ export function OperationsDashboard() {
 
         <TabsContent value="marketing" className="space-y-6">
           <MarketingTab metrics={metrics} />
+        </TabsContent>
+
+        <TabsContent value="enterprise" className="space-y-6">
+          <EnterpriseTab />
         </TabsContent>
       </Tabs>
 
