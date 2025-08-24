@@ -27,7 +27,7 @@ export default function CRMRoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [showPayoutForm, setShowPayoutForm] = useState(false);
   const [showBatchForm, setShowBatchForm] = useState(false);
-  const [activeTab, setActiveTab] = useState("reconciliation");
+  const [activeTab, setActiveTab] = useState("analytics");
   
   const {
     allocations,
@@ -68,6 +68,10 @@ export default function CRMRoyaltiesPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
           <TabsTrigger value="reconciliation" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Reconciliation
@@ -83,10 +87,6 @@ export default function CRMRoyaltiesPage() {
           <TabsTrigger value="payouts" className="flex items-center gap-2">
             <Calculator className="h-4 w-4" />
             Payouts
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Analytics
           </TabsTrigger>
           <TabsTrigger value="discrepancies" className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
