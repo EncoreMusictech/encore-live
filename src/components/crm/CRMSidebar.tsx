@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Link2 } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,12 @@ const mainModules: ModuleItem[] = [{
   url: "/dashboard/royalties",
   icon: DollarSign,
   description: "Processing & payouts"
+}, {
+  id: "digital-rights-blockchain",
+  title: "Digital Rights & Blockchain",
+  url: "/dashboard/blockchain",
+  icon: Link2,
+  description: "Blockchain asset management"
 }];
 const adminModules: ModuleItem[] = [{
   id: "client-portal",
