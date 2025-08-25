@@ -196,6 +196,78 @@ export type Database = {
         }
         Relationships: []
       }
+      blockchain_admin_settings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      blockchain_transactions: {
+        Row: {
+          created_at: string | null
+          gas_price: number | null
+          gas_used: number | null
+          id: string
+          metadata: Json | null
+          network: string
+          status: string
+          transaction_hash: string
+          transaction_type: string
+          updated_at: string | null
+          user_id: string
+          value_eth: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          gas_price?: number | null
+          gas_used?: number | null
+          id?: string
+          metadata?: Json | null
+          network?: string
+          status?: string
+          transaction_hash: string
+          transaction_type: string
+          updated_at?: string | null
+          user_id: string
+          value_eth?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          gas_price?: number | null
+          gas_used?: number | null
+          id?: string
+          metadata?: Json | null
+          network?: string
+          status?: string
+          transaction_hash?: string
+          transaction_type?: string
+          updated_at?: string | null
+          user_id?: string
+          value_eth?: number | null
+        }
+        Relationships: []
+      }
       bundle_products: {
         Row: {
           annual_price: number | null
