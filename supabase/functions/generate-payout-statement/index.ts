@@ -63,7 +63,106 @@ function categorizeExpense(expenseType: string): string {
   return 'Other';
 }
 
-// Simple HTML to PDF-like text format for now (avoiding complex dependencies)
+// HTML version for PDF-like display
+function generateHTMLStatement(payoutData: PayoutData): string {
+  const formatCurrency = (amount: number) => `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US');
+
+  // Calculate income categories
+  const incomeCategories = {
+    Performance: { gross: 0, expenses: 0 },
+    Mechanical: { gross: 0, expenses: 0 },
+    Sync: { gross: 0, expenses: 0 },
+    Other: { gross: 0, expenses: 0 }
+  };
+
+  // Categorize royalties and expenses
+  payoutData.royalties.forEach(royalty => {
+    const category = categorizeIncomeType(royalty.source, royalty.income_type);
+    incomeCategories[category as keyof typeof incomeCategories].gross += royalty.amount;
+  });
+
+  payoutData.expenses.forEach(expense => {
+    const category = categorizeExpense(expense.expense_type);
+    incomeCategories[category as keyof typeof incomeCategories].expenses += expense.amount;
+  });
+
+  const totalGross = Object.values(incomeCategories).reduce((sum, cat) => sum + cat.gross, 0);
+  const totalExpenses = Object.values(incomeCategories).reduce((sum, cat) => sum + cat.expenses, 0);
+  const totalNet = totalGross - totalExpenses;
+  const closingBalance = payoutData.opening_balance + totalNet - payoutData.amount_due;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Royalty Payout Statement</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        .section { margin-bottom: 25px; }
+        .section h3 { color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
+        th { background-color: #f5f5f5; }
+        .amount { text-align: right; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>ROYALTY PAYOUT STATEMENT</h1>
+        <p><strong>Period:</strong> ${payoutData.period}</p>
+        <p><strong>Payee:</strong> ${payoutData.client_name}</p>
+        <p><strong>Statement ID:</strong> ${payoutData.id.substring(0, 8)}</p>
+        <p><strong>Date Issued:</strong> ${formatDate(new Date().toISOString())}</p>
+        <p><strong>Status:</strong> ${payoutData.workflow_stage.replace('_', ' ').toUpperCase()}</p>
+      </div>
+
+      <div class="section">
+        <h3>Income Summary</h3>
+        <table>
+          <tr><th>Category</th><th class="amount">Gross</th><th class="amount">Expenses</th><th class="amount">Net</th></tr>
+          ${Object.entries(incomeCategories).map(([category, amounts]) => {
+            const net = amounts.gross - amounts.expenses;
+            return `<tr><td>${category}</td><td class="amount">${formatCurrency(amounts.gross)}</td><td class="amount">${formatCurrency(amounts.expenses)}</td><td class="amount">${formatCurrency(net)}</td></tr>`;
+          }).join('')}
+          <tr style="font-weight: bold; border-top: 2px solid #333;">
+            <td>TOTAL</td>
+            <td class="amount">${formatCurrency(totalGross)}</td>
+            <td class="amount">${formatCurrency(totalExpenses)}</td>
+            <td class="amount">${formatCurrency(totalNet)}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>Balance Summary</h3>
+        <table>
+          <tr><td>Opening Balance:</td><td class="amount">${formatCurrency(payoutData.opening_balance)}</td></tr>
+          <tr><td>Net for Period:</td><td class="amount">${formatCurrency(totalNet)}</td></tr>
+          <tr><td>Payments Made:</td><td class="amount">${formatCurrency(payoutData.amount_due)}</td></tr>
+          <tr style="font-weight: bold; border-top: 2px solid #333;"><td>Closing Balance:</td><td class="amount">${formatCurrency(closingBalance)}</td></tr>
+        </table>
+      </div>
+
+      ${payoutData.royalties.length > 0 ? `
+      <div class="section">
+        <h3>Royalty Details</h3>
+        <table>
+          <tr><th>Quarter</th><th>Source</th><th>Work ID</th><th>Title</th><th class="amount">Amount</th></tr>
+          ${payoutData.royalties.map(royalty => 
+            `<tr><td>${royalty.quarter}</td><td>${royalty.source}</td><td>${royalty.work_id}</td><td>${royalty.work_title}</td><td class="amount">${formatCurrency(royalty.amount)}</td></tr>`
+          ).join('')}
+        </table>
+      </div>
+      ` : ''}
+    </body>
+    </html>
+  `;
+}
+
+// Simple text format for non-PDF exports
 function generateSimpleStatementText(payoutData: PayoutData): string {
   const formatCurrency = (amount: number) => `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US');
@@ -265,23 +364,40 @@ serve(async (req) => {
     const period = payoutData.period.replace(/[^a-zA-Z0-9]/g, '-');
     const baseFilename = `payout-statement-${period}-${payoutData.id.substring(0, 8)}`;
 
-    // Generate simple text format for both PDF and Excel (avoiding complex dependencies for now)
-    const statementText = generateSimpleStatementText(payoutData);
-    const textBytes = new TextEncoder().encode(statementText);
+    if (format === 'pdf') {
+      // Generate HTML for PDF conversion
+      const htmlContent = generateHTMLStatement(payoutData);
+      
+      // Simple PDF-like response (basic HTML to PDF conversion would go here)
+      // For now, return as HTML that browsers can display properly
+      const filename = `${baseFilename}.html`;
+      
+      console.log('Returning HTML statement:', filename);
+      
+      return new Response(htmlContent, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/html',
+          'Content-Disposition': `inline; filename="${filename}"`
+        }
+      });
+    } else {
+      // Generate simple text format for other formats
+      const statementText = generateSimpleStatementText(payoutData);
+      const textBytes = new TextEncoder().encode(statementText);
+      const contentType = 'text/plain';
+      const filename = `${baseFilename}.txt`;
 
-    // Return as text file with appropriate extension
-    const contentType = format === 'xlsx' ? 'text/plain' : 'text/plain';
-    const filename = `${baseFilename}.${format === 'xlsx' ? 'txt' : 'txt'}`;
+      console.log('Returning text statement:', filename);
 
-    console.log('Returning statement:', filename);
-
-    return new Response(textBytes, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${filename}"`
-      }
-    });
+      return new Response(textBytes, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': contentType,
+          'Content-Disposition': `attachment; filename="${filename}"`
+        }
+      });
+    }
 
   } catch (error) {
     console.error('Error generating payout statement:', error);

@@ -29,6 +29,64 @@ function categorizeExpense(expenseType: string): string {
   return 'Other';
 }
 
+function generateHTMLStatement(payoutData: any): string {
+  const formatCurrency = (amount: number) => `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US');
+
+  // Calculate income categories
+  const incomeCategories = {
+    Performance: { gross: 0, expenses: 0 },
+    Mechanical: { gross: 0, expenses: 0 },
+    Sync: { gross: 0, expenses: 0 },
+    Other: { gross: 0, expenses: 0 }
+  };
+
+  payoutData.royalties.forEach((royalty: any) => {
+    const category = categorizeIncomeType(royalty.source, royalty.income_type);
+    incomeCategories[category as keyof typeof incomeCategories].gross += royalty.amount;
+  });
+
+  payoutData.expenses.forEach((expense: any) => {
+    const category = categorizeExpense(expense.expense_type);
+    incomeCategories[category as keyof typeof incomeCategories].expenses += expense.amount;
+  });
+
+  const totalGross = Object.values(incomeCategories).reduce((sum, cat) => sum + cat.gross, 0);
+  const totalExpenses = Object.values(incomeCategories).reduce((sum, cat) => sum + cat.expenses, 0);
+  const totalNet = totalGross - totalExpenses;
+  const closingBalance = payoutData.opening_balance + totalNet - payoutData.amount_due;
+
+  return `
+    <h2>ROYALTY PAYOUT STATEMENT</h2>
+    <p><strong>Period:</strong> ${payoutData.period}</p>
+    <p><strong>Payee:</strong> ${payoutData.client_name}</p>
+    <p><strong>Statement ID:</strong> ${payoutData.id.substring(0, 8)}</p>
+    <p><strong>Status:</strong> ${payoutData.workflow_stage.replace('_', ' ').toUpperCase()}</p>
+
+    <div class="section">
+      <h3>Income Summary</h3>
+      <table>
+        <tr><th>Category</th><th class="amount">Gross</th><th class="amount">Expenses</th><th class="amount">Net</th></tr>
+        ${Object.entries(incomeCategories).map(([category, amounts]) => {
+          const net = amounts.gross - amounts.expenses;
+          return `<tr><td>${category}</td><td class="amount">${formatCurrency(amounts.gross)}</td><td class="amount">${formatCurrency(amounts.expenses)}</td><td class="amount">${formatCurrency(net)}</td></tr>`;
+        }).join('')}
+        <tr style="font-weight: bold;"><td>TOTAL</td><td class="amount">${formatCurrency(totalGross)}</td><td class="amount">${formatCurrency(totalExpenses)}</td><td class="amount">${formatCurrency(totalNet)}</td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>Balance Summary</h3>
+      <table>
+        <tr><td>Opening Balance:</td><td class="amount">${formatCurrency(payoutData.opening_balance)}</td></tr>
+        <tr><td>Net for Period:</td><td class="amount">${formatCurrency(totalNet)}</td></tr>
+        <tr><td>Payments Made:</td><td class="amount">${formatCurrency(payoutData.amount_due)}</td></tr>
+        <tr style="font-weight: bold;"><td>Closing Balance:</td><td class="amount">${formatCurrency(closingBalance)}</td></tr>
+      </table>
+    </div>
+  `;
+}
+
 function generateStatementText(payoutData: any): string {
   const formatCurrency = (amount: number) => `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US');
@@ -191,13 +249,35 @@ serve(async (req) => {
 
     console.log(`Fetched ${payouts.length} payouts successfully`);
 
-    // Generate bulk text report (simplified approach for now)
-    let bulkContent = `BULK PAYOUT STATEMENTS EXPORT\n`;
-    bulkContent += `Generated: ${new Date().toLocaleDateString()}\n`;
-    bulkContent += `Total Statements: ${payouts.length}\n`;
-    bulkContent += `\n${'='.repeat(80)}\n\n`;
+    if (format === 'pdf') {
+      // Generate HTML for bulk statements
+      let htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Bulk Payout Statements</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+            .statement { page-break-before: always; margin-bottom: 40px; }
+            .statement:first-child { page-break-before: auto; }
+            .section h3 { color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
+            th { background-color: #f5f5f5; }
+            .amount { text-align: right; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>BULK PAYOUT STATEMENTS EXPORT</h1>
+            <p>Generated: ${new Date().toLocaleDateString()}</p>
+            <p>Total Statements: ${payouts.length}</p>
+          </div>
+      `;
 
-    for (const payout of payouts) {
+      for (const payout of payouts) {
       const payoutData = {
         id: payout.id,
         period: payout.period || 'Unknown Period',
@@ -232,34 +312,112 @@ serve(async (req) => {
         })) || []
       };
 
-      bulkContent += generateStatementText(payoutData);
-      bulkContent += `\n${'='.repeat(80)}\n\n`;
-    }
-
-    // Summary
-    const totalGross = payouts.reduce((sum, p) => sum + (p.gross_royalties || 0), 0);
-    const totalExpenses = payouts.reduce((sum, p) => sum + (p.total_expenses || 0), 0);
-    const totalDue = payouts.reduce((sum, p) => sum + (p.amount_due || 0), 0);
-
-    bulkContent += `BULK SUMMARY\n`;
-    bulkContent += `Total Gross Royalties: ${totalGross.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}\n`;
-    bulkContent += `Total Expenses: ${totalExpenses.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}\n`;
-    bulkContent += `Total Amount Due: ${totalDue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}\n`;
-
-    const textBytes = new TextEncoder().encode(bulkContent);
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
-    const filename = `bulk-payout-statements-${timestamp[0]}-${timestamp[1].split('.')[0]}.txt`;
-
-    console.log('Returning bulk statements file:', filename);
-
-    return new Response(textBytes, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/plain',
-        'Content-Disposition': `attachment; filename="${filename}"`
+        htmlContent += `<div class="statement">`;
+        htmlContent += generateHTMLStatement(payoutData);
+        htmlContent += `</div>`;
       }
-    });
+
+      // Summary
+      const totalGross = payouts.reduce((sum, p) => sum + (p.gross_royalties || 0), 0);
+      const totalExpenses = payouts.reduce((sum, p) => sum + (p.total_expenses || 0), 0);
+      const totalDue = payouts.reduce((sum, p) => sum + (p.amount_due || 0), 0);
+
+      htmlContent += `
+          <div class="section" style="page-break-before: always;">
+            <h3>Bulk Summary</h3>
+            <table>
+              <tr><td>Total Gross Royalties:</td><td class="amount">${totalGross.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</td></tr>
+              <tr><td>Total Expenses:</td><td class="amount">${totalExpenses.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</td></tr>
+              <tr><td>Total Amount Due:</td><td class="amount">${totalDue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</td></tr>
+            </table>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
+      const filename = `bulk-payout-statements-${timestamp[0]}-${timestamp[1].split('.')[0]}.html`;
+
+      console.log('Returning bulk HTML statements:', filename);
+
+      return new Response(htmlContent, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/html',
+          'Content-Disposition': `inline; filename="${filename}"`
+        }
+      });
+    } else {
+      // Generate text format for other exports
+      let bulkContent = `BULK PAYOUT STATEMENTS EXPORT\n`;
+      bulkContent += `Generated: ${new Date().toLocaleDateString()}\n`;
+      bulkContent += `Total Statements: ${payouts.length}\n`;
+      bulkContent += `\n${'='.repeat(80)}\n\n`;
+
+      for (const payout of payouts) {
+        const payoutData = {
+          id: payout.id,
+          period: payout.period || 'Unknown Period',
+          client_name: payout.contacts?.name || 'Unknown Client',
+          client_id: payout.client_id,
+          gross_royalties: payout.gross_royalties || 0,
+          total_expenses: payout.total_expenses || 0,
+          net_payable: payout.net_payable || 0,
+          amount_due: payout.amount_due || 0,
+          payment_method: payout.payment_method || '',
+          workflow_stage: payout.workflow_stage || 'draft',
+          created_at: payout.created_at,
+          opening_balance: 0,
+          royalties: payout.payout_royalties?.map((pr: any) => ({
+            quarter: pr.royalty_allocations?.quarter || 'N/A',
+            source: pr.royalty_allocations?.source || 'Unknown Source',
+            work_id: pr.royalty_allocations?.work_id || 'N/A',
+            work_title: pr.royalty_allocations?.song_title || 'Unknown Work',
+            writers: pr.royalty_allocations?.mapped_data?.writers || 'N/A',
+            pub_share: 100,
+            income_type: pr.royalty_allocations?.revenue_source || 'Other',
+            territory: pr.royalty_allocations?.country || 'Unknown',
+            units: parseInt(pr.royalty_allocations?.quantity) || 0,
+            amount: pr.allocated_amount || 0,
+            payee: payout.contacts?.name || 'Unknown'
+          })) || [],
+          expenses: payout.payout_expenses?.map((pe: any) => ({
+            description: pe.description || 'Unknown Expense',
+            amount: pe.amount || 0,
+            expense_type: pe.expense_type || 'Unknown Type',
+            category: categorizeExpense(pe.expense_type || '')
+          })) || []
+        };
+
+        bulkContent += generateStatementText(payoutData);
+        bulkContent += `\n${'='.repeat(80)}\n\n`;
+      }
+
+      // Summary
+      const totalGross = payouts.reduce((sum, p) => sum + (p.gross_royalties || 0), 0);
+      const totalExpenses = payouts.reduce((sum, p) => sum + (p.total_expenses || 0), 0);
+      const totalDue = payouts.reduce((sum, p) => sum + (p.amount_due || 0), 0);
+
+      bulkContent += `BULK SUMMARY\n`;
+      bulkContent += `Total Gross Royalties: ${totalGross.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}\n`;
+      bulkContent += `Total Expenses: ${totalExpenses.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}\n`;
+      bulkContent += `Total Amount Due: ${totalDue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}\n`;
+
+      const textBytes = new TextEncoder().encode(bulkContent);
+      
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
+      const filename = `bulk-payout-statements-${timestamp[0]}-${timestamp[1].split('.')[0]}.txt`;
+
+      console.log('Returning bulk text statements:', filename);
+
+      return new Response(textBytes, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/plain',
+          'Content-Disposition': `attachment; filename="${filename}"`
+        }
+      });
+    }
 
   } catch (error) {
     console.error('Error generating bulk statements:', error);
