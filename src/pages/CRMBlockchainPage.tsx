@@ -6,14 +6,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link2, Wallet, Coins, Shield, Activity, TrendingUp } from "lucide-react";
 import { updatePageMetadata } from "@/utils/metadata";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import { WalletConnection } from "@/components/blockchain/WalletConnection";
 import { AssetMinting } from "@/components/blockchain/AssetMinting";
 import { SmartContractDashboard } from "@/components/blockchain/SmartContractDashboard";
 import { NFTMarketplace } from "@/components/blockchain/NFTMarketplace";
 import { BlockchainAnalytics } from "@/components/blockchain/BlockchainAnalytics";
+import { AdminPanel } from "@/components/blockchain/AdminPanel";
 
 export default function CRMBlockchainPage() {
   const { user } = useAuth();
+  const { isAdmin } = useAdmin();
   const [activeTab, setActiveTab] = useState("overview");
 
   // Update page metadata
@@ -83,12 +86,13 @@ export default function CRMBlockchainPage() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'}`}>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="minting">Asset Minting</TabsTrigger>
           <TabsTrigger value="contracts">Smart Contracts</TabsTrigger>
           <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -142,6 +146,12 @@ export default function CRMBlockchainPage() {
         <TabsContent value="analytics">
           <BlockchainAnalytics />
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="admin">
+            <AdminPanel />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
