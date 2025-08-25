@@ -99,32 +99,39 @@ export function PayoutList() {
     }
   };
 
-  const handleExportStatement = async (payout: any) => {
+  const handleExportStatement = async (payout: any, format: 'pdf' | 'xlsx' = 'pdf') => {
     setExportingStatement(payout.id);
     try {
       toast({
         title: "Generating Statement",
-        description: "Creating PDF statement...",
+        description: `Creating ${format.toUpperCase()} statement...`,
       });
 
-      // Call the edge function to generate PDF
-      const response = await fetch('/api/generate-payout-statement', {
+      // Call the edge function to generate statement
+      const response = await fetch(`/api/generate-payout-statement?format=${format}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         },
         body: JSON.stringify({ payoutId: payout.id }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate statement');
+        const errorText = await response.text();
+        throw new Error(`Failed to generate statement: ${errorText}`);
       }
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filename = contentDisposition?.match(/filename="([^"]+)"/)?.[1] || 
+        `payout-statement-${payout.period || payout.id}.${format}`;
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `payout-statement-${payout.period || payout.id}.pdf`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -132,13 +139,13 @@ export function PayoutList() {
 
       toast({
         title: "Statement Ready",
-        description: "PDF statement downloaded successfully",
+        description: `${format.toUpperCase()} statement downloaded successfully`,
       });
     } catch (error) {
       console.error('Error exporting statement:', error);
       toast({
         title: "Error",
-        description: "Failed to generate statement. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate statement. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -207,31 +214,38 @@ export function PayoutList() {
     }
   };
 
-  const handleBulkExport = async () => {
+  const handleBulkExport = async (format: 'pdf' | 'xlsx' | 'both' = 'pdf') => {
     toast({
       title: "Export Started",
-      description: "Generating statements for selected payouts...",
+      description: `Generating ${selectedPayouts.length} statements as ${format.toUpperCase()}...`,
     });
     
     try {
       // Generate statements for all selected payouts
-      const response = await fetch('/api/generate-bulk-statements', {
+      const response = await fetch(`/api/generate-bulk-statements?format=${format}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         },
         body: JSON.stringify({ payoutIds: selectedPayouts }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate bulk statements');
+        const errorText = await response.text();
+        throw new Error(`Failed to generate bulk statements: ${errorText}`);
       }
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filename = contentDisposition?.match(/filename="([^"]+)"/)?.[1] || 
+        `bulk-payout-statements-${new Date().toISOString().split('T')[0]}.zip`;
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `bulk-payout-statements-${new Date().toISOString().split('T')[0]}.zip`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -239,13 +253,13 @@ export function PayoutList() {
 
       toast({
         title: "Export Complete",
-        description: "Bulk statements downloaded successfully",
+        description: `Downloaded ${selectedPayouts.length} statements as ZIP (${(blob.size / 1024 / 1024).toFixed(1)} MB)`,
       });
     } catch (error) {
       console.error('Error in bulk export:', error);
       toast({
         title: "Error",
-        description: "Failed to generate bulk statements",
+        description: error instanceof Error ? error.message : "Failed to generate bulk statements",
         variant: "destructive",
       });
     }
@@ -329,8 +343,14 @@ export function PayoutList() {
               <DropdownMenuItem onClick={() => handleBulkAction('bulk_process')}>
                 Process Payments
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleBulkAction('bulk_export')}>
-                Export Statements
+              <DropdownMenuItem onClick={() => handleBulkExport('pdf')}>
+                Export as PDF ZIP
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleBulkExport('xlsx')}>
+                Export as Excel ZIP
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleBulkExport('both')}>
+                Export as PDF + Excel ZIP
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -449,9 +469,13 @@ export function PayoutList() {
                           <RefreshCw className="h-4 w-4 mr-2" />
                           Recalculate Expenses
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExportStatement(payout)}>
+                        <DropdownMenuItem onClick={() => handleExportStatement(payout, 'pdf')}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          {exportingStatement === payout.id ? "Generating..." : "Export PDF"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportStatement(payout, 'xlsx')}>
                           <Download className="h-4 w-4 mr-2" />
-                          {exportingStatement === payout.id ? "Generating..." : "Export Statement"}
+                          {exportingStatement === payout.id ? "Generating..." : "Export Excel"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

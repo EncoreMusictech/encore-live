@@ -1,15 +1,18 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0'
+import * as XLSX from 'https://esm.sh/xlsx@0.18.5'
+import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface PayoutStatement {
+interface PayoutData {
   id: string;
   period: string;
   client_name: string;
+  client_id: string;
   gross_royalties: number;
   total_expenses: number;
   net_payable: number;
@@ -17,287 +20,416 @@ interface PayoutStatement {
   payment_method: string;
   workflow_stage: string;
   created_at: string;
+  opening_balance: number;
   royalties: Array<{
-    work_title: string;
-    amount: number;
+    quarter: string;
     source: string;
+    work_id: string;
+    work_title: string;
+    writers: string;
+    pub_share: number;
+    income_type: string;
+    territory: string;
+    units: number;
+    amount: number;
+    payee: string;
   }>;
   expenses: Array<{
     description: string;
     amount: number;
     expense_type: string;
+    category: string;
   }>;
 }
 
-function generateStatementHTML(statement: PayoutStatement): string {
-  const formatCurrency = (amount: number) => `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+function categorizeIncomeType(source: string, revenueSource: string): string {
+  const sourceText = (source + ' ' + revenueSource).toLowerCase();
+  
+  if (sourceText.includes('performance') || sourceText.includes('ascap') || sourceText.includes('bmi') || sourceText.includes('sesac')) {
+    return 'Performance';
+  }
+  if (sourceText.includes('mechanical') || sourceText.includes('streaming') || sourceText.includes('digital')) {
+    return 'Mechanical';
+  }
+  if (sourceText.includes('sync') || sourceText.includes('synchronization') || sourceText.includes('film') || sourceText.includes('tv')) {
+    return 'Sync';
+  }
+  return 'Other';
+}
+
+function categorizeExpense(expenseType: string): string {
+  const type = expenseType.toLowerCase();
+  if (type.includes('performance')) return 'Performance';
+  if (type.includes('mechanical')) return 'Mechanical';
+  if (type.includes('sync')) return 'Sync';
+  return 'Other';
+}
+
+async function generateExcelStatement(payoutData: PayoutData): Promise<Uint8Array> {
+  const workbook = XLSX.utils.book_new();
+  
+  // Summary Sheet
+  const summaryData = [
+    ['ROYALTY PAYOUT STATEMENT', '', '', ''],
+    ['', '', '', ''],
+    ['Period:', payoutData.period, '', ''],
+    ['Payee:', payoutData.client_name, '', ''],
+    ['Statement ID:', payoutData.id.substring(0, 8), '', ''],
+    ['Date Issued:', new Date().toLocaleDateString(), '', ''],
+    ['', '', '', ''],
+    ['INCOME SUMMARY', '', '', ''],
+    ['Category', 'Gross Amount', 'Expenses/Recoupment', 'Net Amount'],
+  ];
+
+  // Calculate income categories
+  const incomeCategories = {
+    Performance: { gross: 0, expenses: 0 },
+    Mechanical: { gross: 0, expenses: 0 },
+    Sync: { gross: 0, expenses: 0 },
+    Other: { gross: 0, expenses: 0 }
+  };
+
+  // Categorize royalties
+  payoutData.royalties.forEach(royalty => {
+    const category = categorizeIncomeType(royalty.source, royalty.income_type);
+    incomeCategories[category as keyof typeof incomeCategories].gross += royalty.amount;
   });
 
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <title>Payout Statement - ${statement.period}</title>
-        <style>
-            body { 
-                font-family: Arial, sans-serif; 
-                margin: 0; 
-                padding: 20px;
-                color: #333;
-                line-height: 1.4;
-            }
-            .header { 
-                text-align: center; 
-                margin-bottom: 30px; 
-                border-bottom: 2px solid #0066cc;
-                padding-bottom: 20px;
-            }
-            .header h1 { 
-                color: #0066cc; 
-                margin: 0;
-                font-size: 28px;
-            }
-            .statement-info { 
-                display: flex; 
-                justify-content: space-between; 
-                margin-bottom: 30px;
-                background: #f8f9fa;
-                padding: 20px;
-                border-radius: 8px;
-            }
-            .client-info, .statement-details { 
-                flex: 1; 
-            }
-            .client-info h3, .statement-details h3 { 
-                margin-top: 0; 
-                color: #0066cc;
-                border-bottom: 1px solid #ddd;
-                padding-bottom: 8px;
-            }
-            .summary-table { 
-                width: 100%; 
-                border-collapse: collapse; 
-                margin-bottom: 30px;
-                background: white;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            .summary-table th, .summary-table td { 
-                padding: 12px; 
-                text-align: left; 
-                border-bottom: 1px solid #ddd; 
-            }
-            .summary-table th { 
-                background-color: #0066cc; 
-                color: white;
-                font-weight: bold;
-            }
-            .summary-table .total-row { 
-                background-color: #f0f8ff; 
-                font-weight: bold;
-                font-size: 16px;
-            }
-            .amount { 
-                text-align: right; 
-                font-weight: bold;
-            }
-            .section { 
-                margin-bottom: 30px; 
-            }
-            .section h3 { 
-                color: #0066cc; 
-                border-bottom: 2px solid #0066cc;
-                padding-bottom: 8px;
-                margin-bottom: 15px;
-            }
-            .details-table { 
-                width: 100%; 
-                border-collapse: collapse;
-                background: white;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            .details-table th, .details-table td { 
-                padding: 10px; 
-                text-align: left; 
-                border-bottom: 1px solid #eee; 
-            }
-            .details-table th { 
-                background-color: #f8f9fa; 
-                font-weight: bold;
-                color: #333;
-            }
-            .footer { 
-                margin-top: 50px; 
-                text-align: center; 
-                font-size: 12px; 
-                color: #666;
-                border-top: 1px solid #ddd;
-                padding-top: 20px;
-            }
-            .status-badge {
-                display: inline-block;
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: bold;
-                text-transform: uppercase;
-            }
-            .status-paid { background: #d4edda; color: #155724; }
-            .status-processing { background: #ffeaa7; color: #856404; }
-            .status-approved { background: #cce5ff; color: #004085; }
-            .status-pending { background: #fff3cd; color: #856404; }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>Royalty Payout Statement</h1>
-            <p>Period: ${statement.period}</p>
-        </div>
+  // Categorize expenses
+  payoutData.expenses.forEach(expense => {
+    const category = categorizeExpense(expense.expense_type);
+    incomeCategories[category as keyof typeof incomeCategories].expenses += expense.amount;
+  });
 
-        <div class="statement-info">
-            <div class="client-info">
-                <h3>Client Information</h3>
-                <p><strong>Client:</strong> ${statement.client_name}</p>
-                <p><strong>Statement ID:</strong> ${statement.id.substring(0, 8)}</p>
-            </div>
-            <div class="statement-details">
-                <h3>Statement Details</h3>
-                <p><strong>Generated:</strong> ${formatDate(new Date().toISOString())}</p>
-                <p><strong>Status:</strong> <span class="status-badge status-${statement.workflow_stage}">${statement.workflow_stage.replace('_', ' ')}</span></p>
-                <p><strong>Payment Method:</strong> ${statement.payment_method || 'Not specified'}</p>
-            </div>
-        </div>
+  // Add category rows
+  Object.entries(incomeCategories).forEach(([category, amounts]) => {
+    summaryData.push([
+      category + ' Income',
+      amounts.gross,
+      amounts.expenses,
+      amounts.gross - amounts.expenses
+    ]);
+  });
 
-        <table class="summary-table">
-            <thead>
-                <tr>
-                    <th>Description</th>
-                    <th class="amount">Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Gross Royalties</td>
-                    <td class="amount">${formatCurrency(statement.gross_royalties)}</td>
-                </tr>
-                <tr>
-                    <td>Total Expenses</td>
-                    <td class="amount">-${formatCurrency(statement.total_expenses)}</td>
-                </tr>
-                <tr>
-                    <td>Net Payable</td>
-                    <td class="amount">${formatCurrency(statement.net_payable)}</td>
-                </tr>
-                <tr class="total-row">
-                    <td>Amount Due</td>
-                    <td class="amount">${formatCurrency(statement.amount_due)}</td>
-                </tr>
-            </tbody>
-        </table>
+  const totalGross = Object.values(incomeCategories).reduce((sum, cat) => sum + cat.gross, 0);
+  const totalExpenses = Object.values(incomeCategories).reduce((sum, cat) => sum + cat.expenses, 0);
+  const totalNet = totalGross - totalExpenses;
 
-        ${statement.royalties && statement.royalties.length > 0 ? `
-        <div class="section">
-            <h3>Royalty Details</h3>
-            <table class="details-table">
-                <thead>
-                    <tr>
-                        <th>Work Title</th>
-                        <th>Source</th>
-                        <th class="amount">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${statement.royalties.map(royalty => `
-                        <tr>
-                            <td>${royalty.work_title}</td>
-                            <td>${royalty.source}</td>
-                            <td class="amount">${formatCurrency(royalty.amount)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-        ` : ''}
+  summaryData.push(
+    ['TOTAL', totalGross, totalExpenses, totalNet],
+    ['', '', '', ''],
+    ['BALANCE SUMMARY', '', '', ''],
+    ['Opening Balance', payoutData.opening_balance, '', ''],
+    ['Net for Period', totalNet, '', ''],
+    ['Payments Made', payoutData.amount_due, '', ''],
+    ['Closing Balance', payoutData.opening_balance + totalNet - payoutData.amount_due, '', ''],
+    ['', '', '', ''],
+    ['Payment Method:', payoutData.payment_method || 'Not specified', '', '']
+  );
 
-        ${statement.expenses && statement.expenses.length > 0 ? `
-        <div class="section">
-            <h3>Expense Details</h3>
-            <table class="details-table">
-                <thead>
-                    <tr>
-                        <th>Description</th>
-                        <th>Type</th>
-                        <th class="amount">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${statement.expenses.map(expense => `
-                        <tr>
-                            <td>${expense.description}</td>
-                            <td>${expense.expense_type}</td>
-                            <td class="amount">-${formatCurrency(expense.amount)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-        ` : ''}
+  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+  
+  // Format summary sheet
+  summarySheet['!cols'] = [
+    { width: 20 },
+    { width: 15 },
+    { width: 18 },
+    { width: 15 }
+  ];
 
-        <div class="footer">
-            <p>This statement was generated automatically. Please retain for your records.</p>
-            <p>Generated on ${formatDate(new Date().toISOString())}</p>
-        </div>
-    </body>
-    </html>
-  `;
+  XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+
+  // Details Sheet
+  const detailsHeaders = [
+    'QUARTER', 'SOURCE', 'WORK ID', 'WORK TITLE', 'WRITER(S)', 
+    'PUB SHARE (%)', 'INCOME TYPE', 'TERRITORY', 'UNITS', 'AMOUNT', 'PAYEE'
+  ];
+  
+  const detailsData = [detailsHeaders];
+  
+  payoutData.royalties.forEach(royalty => {
+    detailsData.push([
+      royalty.quarter,
+      royalty.source,
+      royalty.work_id,
+      royalty.work_title,
+      royalty.writers,
+      royalty.pub_share,
+      categorizeIncomeType(royalty.source, royalty.income_type),
+      royalty.territory,
+      royalty.units,
+      royalty.amount,
+      royalty.payee
+    ]);
+  });
+
+  const detailsSheet = XLSX.utils.aoa_to_sheet(detailsData);
+  
+  // Format details sheet
+  detailsSheet['!cols'] = [
+    { width: 10 }, // QUARTER
+    { width: 15 }, // SOURCE
+    { width: 12 }, // WORK ID
+    { width: 25 }, // WORK TITLE
+    { width: 20 }, // WRITER(S)
+    { width: 12 }, // PUB SHARE (%)
+    { width: 15 }, // INCOME TYPE
+    { width: 12 }, // TERRITORY
+    { width: 10 }, // UNITS
+    { width: 12 }, // AMOUNT
+    { width: 20 }  // PAYEE
+  ];
+
+  XLSX.utils.book_append_sheet(workbook, detailsSheet, 'Royalty Details');
+
+  // Generate XLSX buffer
+  const xlsxBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  return new Uint8Array(xlsxBuffer);
+}
+
+async function generatePDFStatement(payoutData: PayoutData, includeDetails: boolean = false): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  
+  const page = pdfDoc.addPage([612, 792]); // Letter size
+  const { width, height } = page.getSize();
+  
+  let yPosition = height - 50;
+  
+  // Header
+  page.drawText('ROYALTY PAYOUT STATEMENT', {
+    x: 50,
+    y: yPosition,
+    size: 20,
+    font: helveticaBold,
+    color: rgb(0, 0.4, 0.8)
+  });
+  
+  yPosition -= 40;
+  
+  // Statement info
+  const infoItems = [
+    `Period: ${payoutData.period}`,
+    `Payee: ${payoutData.client_name}`, 
+    `Statement ID: ${payoutData.id.substring(0, 8)}`,
+    `Date Issued: ${new Date().toLocaleDateString()}`,
+    `Status: ${payoutData.workflow_stage.replace('_', ' ').toUpperCase()}`
+  ];
+  
+  infoItems.forEach(item => {
+    page.drawText(item, {
+      x: 50,
+      y: yPosition,
+      size: 12,
+      font: helveticaFont
+    });
+    yPosition -= 20;
+  });
+  
+  yPosition -= 20;
+  
+  // Income Summary Table
+  page.drawText('INCOME SUMMARY', {
+    x: 50,
+    y: yPosition,
+    size: 14,
+    font: helveticaBold
+  });
+  
+  yPosition -= 30;
+  
+  // Calculate categories (same logic as Excel)
+  const incomeCategories = {
+    Performance: { gross: 0, expenses: 0 },
+    Mechanical: { gross: 0, expenses: 0 },
+    Sync: { gross: 0, expenses: 0 },
+    Other: { gross: 0, expenses: 0 }
+  };
+
+  payoutData.royalties.forEach(royalty => {
+    const category = categorizeIncomeType(royalty.source, royalty.income_type);
+    incomeCategories[category as keyof typeof incomeCategories].gross += royalty.amount;
+  });
+
+  payoutData.expenses.forEach(expense => {
+    const category = categorizeExpense(expense.expense_type);
+    incomeCategories[category as keyof typeof incomeCategories].expenses += expense.amount;
+  });
+  
+  // Table headers
+  const headers = ['Category', 'Gross Amount', 'Expenses', 'Net Amount'];
+  headers.forEach((header, index) => {
+    page.drawText(header, {
+      x: 50 + (index * 120),
+      y: yPosition,
+      size: 10,
+      font: helveticaBold
+    });
+  });
+  
+  yPosition -= 20;
+  
+  // Table rows
+  Object.entries(incomeCategories).forEach(([category, amounts]) => {
+    const net = amounts.gross - amounts.expenses;
+    const rowData = [
+      category + ' Income',
+      `$${amounts.gross.toFixed(2)}`,
+      `$${amounts.expenses.toFixed(2)}`,
+      `$${net.toFixed(2)}`
+    ];
+    
+    rowData.forEach((data, index) => {
+      page.drawText(data, {
+        x: 50 + (index * 120),
+        y: yPosition,
+        size: 10,
+        font: helveticaFont
+      });
+    });
+    yPosition -= 15;
+  });
+  
+  yPosition -= 20;
+  
+  // Balance Summary
+  page.drawText('BALANCE SUMMARY', {
+    x: 50,
+    y: yPosition,
+    size: 14,
+    font: helveticaBold
+  });
+  
+  yPosition -= 30;
+  
+  const totalNet = Object.values(incomeCategories).reduce((sum, cat) => sum + (cat.gross - cat.expenses), 0);
+  const closingBalance = payoutData.opening_balance + totalNet - payoutData.amount_due;
+  
+  const balanceItems = [
+    `Opening Balance: $${payoutData.opening_balance.toFixed(2)}`,
+    `Net for Period: $${totalNet.toFixed(2)}`,
+    `Payments Made: $${payoutData.amount_due.toFixed(2)}`,
+    `Closing Balance: $${closingBalance.toFixed(2)}`,
+    `Payment Method: ${payoutData.payment_method || 'Not specified'}`
+  ];
+  
+  balanceItems.forEach(item => {
+    page.drawText(item, {
+      x: 50,
+      y: yPosition,
+      size: 12,
+      font: helveticaFont
+    });
+    yPosition -= 20;
+  });
+  
+  // Add details page if requested
+  if (includeDetails && payoutData.royalties.length > 0) {
+    const detailsPage = pdfDoc.addPage([792, 612]); // Landscape for details
+    let detailsY = 550;
+    
+    detailsPage.drawText('ROYALTY DETAILS', {
+      x: 50,
+      y: detailsY,
+      size: 16,
+      font: helveticaBold
+    });
+    
+    detailsY -= 40;
+    
+    // Headers (condensed for landscape)
+    const detailHeaders = ['Work Title', 'Source', 'Income Type', 'Amount'];
+    detailHeaders.forEach((header, index) => {
+      detailsPage.drawText(header, {
+        x: 50 + (index * 150),
+        y: detailsY,
+        size: 10,
+        font: helveticaBold
+      });
+    });
+    
+    detailsY -= 20;
+    
+    // Limit to first 20 rows to fit on page
+    payoutData.royalties.slice(0, 20).forEach(royalty => {
+      const rowData = [
+        royalty.work_title.substring(0, 20), // Truncate long titles
+        royalty.source.substring(0, 15),
+        categorizeIncomeType(royalty.source, royalty.income_type),
+        `$${royalty.amount.toFixed(2)}`
+      ];
+      
+      rowData.forEach((data, index) => {
+        detailsPage.drawText(data, {
+          x: 50 + (index * 150),
+          y: detailsY,
+          size: 9,
+          font: helveticaFont
+        });
+      });
+      detailsY -= 15;
+    });
+    
+    if (payoutData.royalties.length > 20) {
+      detailsPage.drawText(`... and ${payoutData.royalties.length - 20} more items`, {
+        x: 50,
+        y: detailsY - 20,
+        size: 9,
+        font: helveticaFont,
+        color: rgb(0.5, 0.5, 0.5)
+      });
+    }
+  }
+  
+  return await pdfDoc.save();
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { payoutId } = await req.json()
+    const url = new URL(req.url);
+    const format = url.searchParams.get('format') || 'pdf';
+    const includeDetails = url.searchParams.get('includeDetails') === 'true';
+    
+    const { payoutId } = await req.json();
 
     if (!payoutId) {
       return new Response(JSON.stringify({ error: 'Payout ID is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      });
     }
 
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get authorization header
-    const authHeader = req.headers.get('Authorization')
+    const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization required' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      });
     }
 
     // Verify user access
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Invalid authorization' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      });
     }
 
-    // Fetch payout data with related information
+    // Fetch comprehensive payout data
     const { data: payout, error: payoutError } = await supabase
       .from('payouts')
       .select(`
@@ -305,30 +437,42 @@ serve(async (req) => {
         contacts (name),
         payout_royalties (
           allocated_amount,
-          royalty_allocations (work_title, source)
+          royalty_allocations (
+            work_id,
+            work_title,
+            source,
+            revenue_source,
+            quarter,
+            country,
+            quantity,
+            gross_amount,
+            mapped_data
+          )
         ),
         payout_expenses (
           description,
           amount,
-          expense_type
+          expense_type,
+          expense_flags
         )
       `)
       .eq('id', payoutId)
       .eq('user_id', user.id)
-      .single()
+      .single();
 
     if (payoutError || !payout) {
       return new Response(JSON.stringify({ error: 'Payout not found or access denied' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      });
     }
 
-    // Prepare statement data
-    const statement: PayoutStatement = {
+    // Prepare enhanced payout data
+    const payoutData: PayoutData = {
       id: payout.id,
       period: payout.period || 'Unknown Period',
       client_name: payout.contacts?.name || 'Unknown Client',
+      client_id: payout.client_id,
       gross_royalties: payout.gross_royalties || 0,
       total_expenses: payout.total_expenses || 0,
       net_payable: payout.net_payable || 0,
@@ -336,41 +480,61 @@ serve(async (req) => {
       payment_method: payout.payment_method || '',
       workflow_stage: payout.workflow_stage || 'draft',
       created_at: payout.created_at,
+      opening_balance: 0, // Could be calculated from previous periods
       royalties: payout.payout_royalties?.map((pr: any) => ({
+        quarter: pr.royalty_allocations?.quarter || 'N/A',
+        source: pr.royalty_allocations?.source || 'Unknown Source',
+        work_id: pr.royalty_allocations?.work_id || 'N/A',
         work_title: pr.royalty_allocations?.work_title || 'Unknown Work',
+        writers: pr.royalty_allocations?.mapped_data?.writers || 'N/A',
+        pub_share: 100, // Default, could be calculated from ownership data
+        income_type: pr.royalty_allocations?.revenue_source || 'Other',
+        territory: pr.royalty_allocations?.country || 'Unknown',
+        units: parseInt(pr.royalty_allocations?.quantity) || 0,
         amount: pr.allocated_amount || 0,
-        source: pr.royalty_allocations?.source || 'Unknown Source'
+        payee: payout.contacts?.name || 'Unknown'
       })) || [],
       expenses: payout.payout_expenses?.map((pe: any) => ({
         description: pe.description || 'Unknown Expense',
         amount: pe.amount || 0,
-        expense_type: pe.expense_type || 'Unknown Type'
+        expense_type: pe.expense_type || 'Unknown Type',
+        category: categorizeExpense(pe.expense_type || '')
       })) || []
+    };
+
+    const period = payoutData.period.replace(/[^a-zA-Z0-9]/g, '-');
+    const baseFilename = `payout-statement-${period}-${payoutData.id.substring(0, 8)}`;
+
+    if (format === 'xlsx') {
+      const xlsxBuffer = await generateExcelStatement(payoutData);
+      
+      return new Response(xlsxBuffer, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="${baseFilename}.xlsx"`
+        }
+      });
+    } else {
+      const pdfBuffer = await generatePDFStatement(payoutData, includeDetails);
+      
+      return new Response(pdfBuffer, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${baseFilename}.pdf"`
+        }
+      });
     }
 
-    // Generate HTML content
-    const htmlContent = generateStatementHTML(statement)
-
-    // Convert HTML to PDF using a lightweight approach
-    // For production, you might want to use a more robust PDF generation service
-    const pdfBytes = new TextEncoder().encode(htmlContent)
-
-    return new Response(pdfBytes, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/html',
-        'Content-Disposition': `attachment; filename="payout-statement-${statement.period}.html"`
-      }
-    })
-
   } catch (error) {
-    console.error('Error generating payout statement:', error)
+    console.error('Error generating payout statement:', error);
     return new Response(JSON.stringify({ 
       error: 'Failed to generate statement',
       details: error.message 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    });
   }
-})
+});
