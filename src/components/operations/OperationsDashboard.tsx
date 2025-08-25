@@ -71,7 +71,7 @@ export function OperationsDashboard() {
             Operations Dashboard
           </h1>
           <p className="text-muted-foreground">
-            AI-powered business intelligence with 50% simplified workflows
+            AI-powered business intelligence and comprehensive operations management
           </p>
         </div>
         <Button onClick={refreshData} variant="outline" size="sm">
