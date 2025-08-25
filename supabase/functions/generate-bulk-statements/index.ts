@@ -161,7 +161,7 @@ serve(async (req) => {
           allocated_amount,
           royalty_allocations (
             work_id,
-            work_title,
+            song_title,
             source,
             revenue_source,
             quarter,
@@ -215,7 +215,7 @@ serve(async (req) => {
           quarter: pr.royalty_allocations?.quarter || 'N/A',
           source: pr.royalty_allocations?.source || 'Unknown Source',
           work_id: pr.royalty_allocations?.work_id || 'N/A',
-          work_title: pr.royalty_allocations?.work_title || 'Unknown Work',
+          work_title: pr.royalty_allocations?.song_title || 'Unknown Work',
           writers: pr.royalty_allocations?.mapped_data?.writers || 'N/A',
           pub_share: 100,
           income_type: pr.royalty_allocations?.revenue_source || 'Other',
