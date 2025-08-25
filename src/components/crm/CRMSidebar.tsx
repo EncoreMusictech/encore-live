@@ -52,12 +52,6 @@ const mainModules: ModuleItem[] = [{
   url: "/dashboard/royalties",
   icon: DollarSign,
   description: "Processing & payouts"
-}, {
-  id: "digital-rights-blockchain",
-  title: "NFT Minting",
-  url: "/dashboard/blockchain",
-  icon: Link2,
-  description: "Blockchain asset management"
 }];
 const adminModules: ModuleItem[] = [{
   id: "client-portal",
@@ -72,6 +66,13 @@ const adminModules: ModuleItem[] = [{
   url: "/dashboard/operations",
   icon: Monitor,
   description: "Business analytics",
+  adminOnly: true
+}, {
+  id: "digital-rights-blockchain",
+  title: "NFT Minting",
+  url: "/dashboard/blockchain",
+  icon: Link2,
+  description: "Blockchain asset management",
   adminOnly: true
 }];
 
