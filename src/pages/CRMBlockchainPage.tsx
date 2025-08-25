@@ -13,10 +13,13 @@ import { SmartContractDashboard } from "@/components/blockchain/SmartContractDas
 import { NFTMarketplace } from "@/components/blockchain/NFTMarketplace";
 import { BlockchainAnalytics } from "@/components/blockchain/BlockchainAnalytics";
 import { AdminPanel } from "@/components/blockchain/AdminPanel";
-
 export default function CRMBlockchainPage() {
-  const { user } = useAuth();
-  const { isAdmin } = useAdmin();
+  const {
+    user
+  } = useAuth();
+  const {
+    isAdmin
+  } = useAdmin();
   const [activeTab, setActiveTab] = useState("overview");
 
   // Update page metadata
@@ -24,40 +27,32 @@ export default function CRMBlockchainPage() {
     title: "Digital Rights & Blockchain | Encore Music",
     description: "Mint and manage your music assets on the blockchain with smart contract automation"
   });
-
-  const stats = [
-    {
-      title: "Total Minted Assets",
-      value: "0",
-      icon: Coins,
-      description: "NFTs created from your assets"
-    },
-    {
-      title: "Smart Contracts",
-      value: "0",
-      icon: Shield,
-      description: "Active automated contracts"
-    },
-    {
-      title: "Blockchain Revenue",
-      value: "$0.00",
-      icon: TrendingUp,
-      description: "Earnings from tokenized rights"
-    },
-    {
-      title: "Wallet Status",
-      value: "Disconnected",
-      icon: Wallet,
-      description: "Web3 wallet connection"
-    }
-  ];
-
-  return (
-    <div className="space-y-6 p-6">
+  const stats = [{
+    title: "Total Minted Assets",
+    value: "0",
+    icon: Coins,
+    description: "NFTs created from your assets"
+  }, {
+    title: "Smart Contracts",
+    value: "0",
+    icon: Shield,
+    description: "Active automated contracts"
+  }, {
+    title: "Blockchain Revenue",
+    value: "$0.00",
+    icon: TrendingUp,
+    description: "Earnings from tokenized rights"
+  }, {
+    title: "Wallet Status",
+    value: "Disconnected",
+    icon: Wallet,
+    description: "Web3 wallet connection"
+  }];
+  return <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Digital Rights & Blockchain</h1>
+          <h1 className="text-3xl font-bold tracking-tight">NFT Minting &amp; Blockchain</h1>
           <p className="text-muted-foreground">
             Mint, manage, and trade your music assets on the blockchain
           </p>
@@ -70,8 +65,7 @@ export default function CRMBlockchainPage() {
 
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
+        {stats.map(stat => <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
               <stat.icon className="h-4 w-4 text-muted-foreground" />
@@ -80,8 +74,7 @@ export default function CRMBlockchainPage() {
               <div className="text-2xl font-bold">{stat.value}</div>
               <p className="text-xs text-muted-foreground">{stat.description}</p>
             </CardContent>
-          </Card>
-        ))}
+          </Card>)}
       </div>
 
       {/* Main Content */}
@@ -147,12 +140,9 @@ export default function CRMBlockchainPage() {
           <BlockchainAnalytics />
         </TabsContent>
 
-        {isAdmin && (
-          <TabsContent value="admin">
+        {isAdmin && <TabsContent value="admin">
             <AdminPanel />
-          </TabsContent>
-        )}
+          </TabsContent>}
       </Tabs>
-    </div>
-  );
+    </div>;
 }
