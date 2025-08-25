@@ -96,18 +96,23 @@ function generateStatementText(payoutData: any): string {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     console.log('Edge function called - generate-bulk-statements');
+    console.log('Request method:', req.method);
+    console.log('Request URL:', req.url);
     
     const url = new URL(req.url);
     const format = url.searchParams.get('format') || 'pdf';
     console.log('Format requested:', format);
     
-    const { payoutIds } = await req.json();
+    const body = await req.json();
+    const { payoutIds } = body;
+    console.log('Request body:', body);
     console.log('Payout IDs:', payoutIds);
 
     if (!payoutIds || !Array.isArray(payoutIds) || payoutIds.length === 0) {

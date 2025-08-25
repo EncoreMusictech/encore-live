@@ -131,18 +131,23 @@ function generateSimpleStatementText(payoutData: PayoutData): string {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     console.log('Edge function called - generate-payout-statement');
+    console.log('Request method:', req.method);
+    console.log('Request URL:', req.url);
     
     const url = new URL(req.url);
     const format = url.searchParams.get('format') || 'pdf';
     console.log('Format requested:', format);
     
-    const { payoutId } = await req.json();
+    const body = await req.json();
+    const { payoutId } = body;
+    console.log('Request body:', body);
     console.log('Payout ID:', payoutId);
 
     if (!payoutId) {
