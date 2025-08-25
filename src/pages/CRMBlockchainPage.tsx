@@ -52,7 +52,10 @@ export default function CRMBlockchainPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">NFT Minting &amp; Blockchain</h1>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <Coins className="h-8 w-8 text-primary" />
+            NFT Minting &amp; Blockchain
+          </h1>
           <p className="text-muted-foreground">
             Mint, manage, and trade your music assets on the blockchain
           </p>
