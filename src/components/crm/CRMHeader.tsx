@@ -24,7 +24,9 @@ export function CRMHeader() {
         <div className="flex items-center space-x-4">
           <SidebarTrigger />
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-headline font-bold">ENCORE</h1>
+            <Link to="/">
+              <h1 className="text-xl font-headline font-bold">ENCORE</h1>
+            </Link>
             {subscription_tier && <Badge variant="secondary" className="text-xs">
                 {subscription_tier}
               </Badge>}
