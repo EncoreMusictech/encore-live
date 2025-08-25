@@ -132,30 +132,51 @@ export function PayoutList() {
         throw new Error(`Failed to generate statement: ${response.error.message || 'Unknown error'}`);
       }
 
-      // The response data should be the binary content
+      // The response data should be the content
       if (!response.data) {
         throw new Error('No data received from statement generator');
       }
 
       console.log('Statement generated successfully');
 
-      // Convert response to blob for download
-      const blob = new Blob([response.data], { 
-        type: format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf' 
-      });
+      // Check if the response is HTML content (for PDF format)
+      const isHtmlResponse = format === 'pdf' && typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>');
       
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `payout-statement-${payout.period || payout.id}.${format}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      if (isHtmlResponse) {
+        // For HTML responses, open in a new tab
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+          newWindow.document.write(response.data);
+          newWindow.document.close();
+        } else {
+          // Fallback: create a blob URL and open it
+          const blob = new Blob([response.data], { type: 'text/html' });
+          const url = window.URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          // Clean up the URL after a delay
+          setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+        }
+      } else {
+        // For other formats (xlsx or actual binary PDF), download as before
+        const blob = new Blob([response.data], { 
+          type: format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf' 
+        });
+        
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `payout-statement-${payout.period || payout.id}.${format}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
 
       toast({
         title: "Statement Ready",
-        description: `${format.toUpperCase()} statement downloaded successfully`,
+        description: isHtmlResponse 
+          ? `${format.toUpperCase()} statement opened in new tab. Use your browser's print function to save as PDF.`
+          : `${format.toUpperCase()} statement downloaded successfully`,
       });
     } catch (error) {
       console.error('Error exporting statement:', error);
