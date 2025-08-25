@@ -477,8 +477,7 @@ serve(async (req) => {
       return new Response(htmlContent, {
         headers: {
           ...corsHeaders,
-          'Content-Type': 'text/html; charset=utf-8',
-          'Content-Disposition': `attachment; filename="${filename}"`
+          'Content-Type': 'text/html; charset=utf-8'
         }
       });
     } else {
