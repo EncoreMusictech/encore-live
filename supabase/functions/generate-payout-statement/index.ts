@@ -99,25 +99,125 @@ function generateHTMLStatement(payoutData: PayoutData): string {
       <meta charset="UTF-8">
       <title>Royalty Payout Statement</title>
       <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
-        .section { margin-bottom: 25px; }
-        .section h3 { color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
-        th { background-color: #f5f5f5; }
-        .amount { text-align: right; }
+        @media print {
+          body { margin: 0; }
+          .no-print { display: none; }
+        }
+        body { 
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+          margin: 40px auto; 
+          max-width: 800px;
+          line-height: 1.6;
+          color: #333;
+          background: #f9f9f9;
+        }
+        .document {
+          background: white;
+          padding: 40px;
+          box-shadow: 0 0 10px rgba(0,0,0,0.1);
+          border-radius: 8px;
+        }
+        .header { 
+          text-align: center; 
+          border-bottom: 3px solid #2563eb; 
+          padding-bottom: 20px; 
+          margin-bottom: 30px; 
+        }
+        .header h1 {
+          color: #2563eb;
+          margin-bottom: 20px;
+          font-size: 28px;
+        }
+        .header-info {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 15px;
+          margin-top: 20px;
+        }
+        .header-info div {
+          background: #f8fafc;
+          padding: 10px;
+          border-radius: 4px;
+          border-left: 4px solid #2563eb;
+        }
+        .section { margin-bottom: 30px; }
+        .section h3 { 
+          color: #1e40af; 
+          border-bottom: 2px solid #e5e7eb; 
+          padding-bottom: 8px; 
+          margin-bottom: 15px;
+          font-size: 18px;
+        }
+        table { 
+          width: 100%; 
+          border-collapse: collapse; 
+          margin-top: 15px;
+          background: white;
+          border-radius: 6px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        th { 
+          background: linear-gradient(135deg, #2563eb, #1d4ed8); 
+          color: white; 
+          padding: 12px 8px; 
+          font-weight: 600;
+          text-transform: uppercase;
+          font-size: 12px;
+          letter-spacing: 0.5px;
+        }
+        td { 
+          padding: 12px 8px; 
+          border-bottom: 1px solid #f1f5f9; 
+        }
+        tr:hover {
+          background-color: #f8fafc;
+        }
+        .amount { 
+          text-align: right; 
+          font-weight: 600;
+          color: #059669;
+        }
+        .total-row {
+          background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+          font-weight: bold;
+        }
+        .print-button {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #2563eb;
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 600;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .print-button:hover {
+          background: #1d4ed8;
+        }
       </style>
+      <script>
+        function printStatement() {
+          window.print();
+        }
+      </script>
     </head>
     <body>
-      <div class="header">
-        <h1>ROYALTY PAYOUT STATEMENT</h1>
-        <p><strong>Period:</strong> ${payoutData.period}</p>
-        <p><strong>Payee:</strong> ${payoutData.client_name}</p>
-        <p><strong>Statement ID:</strong> ${payoutData.id.substring(0, 8)}</p>
-        <p><strong>Date Issued:</strong> ${formatDate(new Date().toISOString())}</p>
-        <p><strong>Status:</strong> ${payoutData.workflow_stage.replace('_', ' ').toUpperCase()}</p>
-      </div>
+      <button class="print-button no-print" onclick="printStatement()">Print Statement</button>
+      <div class="document">
+        <div class="header">
+          <h1>ROYALTY PAYOUT STATEMENT</h1>
+          <div class="header-info">
+            <div><strong>Period:</strong> ${payoutData.period}</div>
+            <div><strong>Payee:</strong> ${payoutData.client_name}</div>
+            <div><strong>Statement ID:</strong> ${payoutData.id.substring(0, 8)}</div>
+            <div><strong>Date Issued:</strong> ${formatDate(new Date().toISOString())}</div>
+            <div><strong>Status:</strong> ${payoutData.workflow_stage.replace('_', ' ').toUpperCase()}</div>
+          </div>
+        </div>
 
       <div class="section">
         <h3>Income Summary</h3>
@@ -127,7 +227,7 @@ function generateHTMLStatement(payoutData: PayoutData): string {
             const net = amounts.gross - amounts.expenses;
             return `<tr><td>${category}</td><td class="amount">${formatCurrency(amounts.gross)}</td><td class="amount">${formatCurrency(amounts.expenses)}</td><td class="amount">${formatCurrency(net)}</td></tr>`;
           }).join('')}
-          <tr style="font-weight: bold; border-top: 2px solid #333;">
+          <tr class="total-row">
             <td>TOTAL</td>
             <td class="amount">${formatCurrency(totalGross)}</td>
             <td class="amount">${formatCurrency(totalExpenses)}</td>
@@ -142,7 +242,7 @@ function generateHTMLStatement(payoutData: PayoutData): string {
           <tr><td>Opening Balance:</td><td class="amount">${formatCurrency(payoutData.opening_balance)}</td></tr>
           <tr><td>Net for Period:</td><td class="amount">${formatCurrency(totalNet)}</td></tr>
           <tr><td>Payments Made:</td><td class="amount">${formatCurrency(payoutData.amount_due)}</td></tr>
-          <tr style="font-weight: bold; border-top: 2px solid #333;"><td>Closing Balance:</td><td class="amount">${formatCurrency(closingBalance)}</td></tr>
+          <tr class="total-row"><td>Closing Balance:</td><td class="amount">${formatCurrency(closingBalance)}</td></tr>
         </table>
       </div>
 
@@ -157,6 +257,7 @@ function generateHTMLStatement(payoutData: PayoutData): string {
         </table>
       </div>
       ` : ''}
+      </div>
     </body>
     </html>
   `;
@@ -377,8 +478,8 @@ serve(async (req) => {
       return new Response(htmlContent, {
         headers: {
           ...corsHeaders,
-          'Content-Type': 'text/html',
-          'Content-Disposition': `inline; filename="${filename}"`
+          'Content-Type': 'text/html; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${filename}"`
         }
       });
     } else {
