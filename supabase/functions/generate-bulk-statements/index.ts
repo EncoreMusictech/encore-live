@@ -1,45 +1,9 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0'
-import * as XLSX from 'https://esm.sh/xlsx@0.18.5'
-import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface PayoutData {
-  id: string;
-  period: string;
-  client_name: string;
-  client_id: string;
-  gross_royalties: number;
-  total_expenses: number;
-  net_payable: number;
-  amount_due: number;
-  payment_method: string;
-  workflow_stage: string;
-  created_at: string;
-  opening_balance: number;
-  royalties: Array<{
-    quarter: string;
-    source: string;
-    work_id: string;
-    work_title: string;
-    writers: string;
-    pub_share: number;
-    income_type: string;
-    territory: string;
-    units: number;
-    amount: number;
-    payee: string;
-  }>;
-  expenses: Array<{
-    description: string;
-    amount: number;
-    expense_type: string;
-    category: string;
-  }>;
 }
 
 function categorizeIncomeType(source: string, revenueSource: string): string {
@@ -65,21 +29,9 @@ function categorizeExpense(expenseType: string): string {
   return 'Other';
 }
 
-async function generateExcelStatement(payoutData: PayoutData): Promise<Uint8Array> {
-  const workbook = XLSX.utils.book_new();
-  
-  // Summary Sheet
-  const summaryData = [
-    ['ROYALTY PAYOUT STATEMENT', '', '', ''],
-    ['', '', '', ''],
-    ['Period:', payoutData.period, '', ''],
-    ['Payee:', payoutData.client_name, '', ''],
-    ['Statement ID:', payoutData.id.substring(0, 8), '', ''],
-    ['Date Issued:', new Date().toLocaleDateString(), '', ''],
-    ['', '', '', ''],
-    ['INCOME SUMMARY', '', '', ''],
-    ['Category', 'Gross Amount', 'Expenses/Recoupment', 'Net Amount'],
-  ];
+function generateStatementText(payoutData: any): string {
+  const formatCurrency = (amount: number) => `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US');
 
   // Calculate income categories
   const incomeCategories = {
@@ -90,441 +42,57 @@ async function generateExcelStatement(payoutData: PayoutData): Promise<Uint8Arra
   };
 
   // Categorize royalties
-  payoutData.royalties.forEach(royalty => {
+  payoutData.royalties.forEach((royalty: any) => {
     const category = categorizeIncomeType(royalty.source, royalty.income_type);
     incomeCategories[category as keyof typeof incomeCategories].gross += royalty.amount;
   });
 
   // Categorize expenses
-  payoutData.expenses.forEach(expense => {
+  payoutData.expenses.forEach((expense: any) => {
     const category = categorizeExpense(expense.expense_type);
     incomeCategories[category as keyof typeof incomeCategories].expenses += expense.amount;
-  });
-
-  // Add category rows
-  Object.entries(incomeCategories).forEach(([category, amounts]) => {
-    summaryData.push([
-      category + ' Income',
-      amounts.gross,
-      amounts.expenses,
-      amounts.gross - amounts.expenses
-    ]);
   });
 
   const totalGross = Object.values(incomeCategories).reduce((sum, cat) => sum + cat.gross, 0);
   const totalExpenses = Object.values(incomeCategories).reduce((sum, cat) => sum + cat.expenses, 0);
   const totalNet = totalGross - totalExpenses;
+  const closingBalance = payoutData.opening_balance + totalNet - payoutData.amount_due;
 
-  summaryData.push(
-    ['TOTAL', totalGross, totalExpenses, totalNet],
-    ['', '', '', ''],
-    ['BALANCE SUMMARY', '', '', ''],
-    ['Opening Balance', payoutData.opening_balance, '', ''],
-    ['Net for Period', totalNet, '', ''],
-    ['Payments Made', payoutData.amount_due, '', ''],
-    ['Closing Balance', payoutData.opening_balance + totalNet - payoutData.amount_due, '', ''],
-    ['', '', '', ''],
-    ['Payment Method:', payoutData.payment_method || 'Not specified', '', '']
-  );
+  let content = `ROYALTY PAYOUT STATEMENT\n`;
+  content += `${'='.repeat(50)}\n\n`;
+  content += `Period: ${payoutData.period}\n`;
+  content += `Payee: ${payoutData.client_name}\n`;
+  content += `Statement ID: ${payoutData.id.substring(0, 8)}\n`;
+  content += `Date Issued: ${formatDate(new Date().toISOString())}\n`;
+  content += `Status: ${payoutData.workflow_stage.replace('_', ' ').toUpperCase()}\n\n`;
 
-  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-  
-  // Format summary sheet
-  summarySheet['!cols'] = [
-    { width: 20 },
-    { width: 15 },
-    { width: 18 },
-    { width: 15 }
-  ];
-
-  XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
-
-  // Details Sheet
-  const detailsHeaders = [
-    'QUARTER', 'SOURCE', 'WORK ID', 'WORK TITLE', 'WRITER(S)', 
-    'PUB SHARE (%)', 'INCOME TYPE', 'TERRITORY', 'UNITS', 'AMOUNT', 'PAYEE'
-  ];
-  
-  const detailsData = [detailsHeaders];
-  
-  payoutData.royalties.forEach(royalty => {
-    detailsData.push([
-      royalty.quarter,
-      royalty.source,
-      royalty.work_id,
-      royalty.work_title,
-      royalty.writers,
-      royalty.pub_share,
-      categorizeIncomeType(royalty.source, royalty.income_type),
-      royalty.territory,
-      royalty.units,
-      royalty.amount,
-      royalty.payee
-    ]);
-  });
-
-  const detailsSheet = XLSX.utils.aoa_to_sheet(detailsData);
-  
-  // Format details sheet
-  detailsSheet['!cols'] = [
-    { width: 10 }, // QUARTER
-    { width: 15 }, // SOURCE
-    { width: 12 }, // WORK ID
-    { width: 25 }, // WORK TITLE
-    { width: 20 }, // WRITER(S)
-    { width: 12 }, // PUB SHARE (%)
-    { width: 15 }, // INCOME TYPE
-    { width: 12 }, // TERRITORY
-    { width: 10 }, // UNITS
-    { width: 12 }, // AMOUNT
-    { width: 20 }  // PAYEE
-  ];
-
-  XLSX.utils.book_append_sheet(workbook, detailsSheet, 'Royalty Details');
-
-  // Generate XLSX buffer
-  const xlsxBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-  return new Uint8Array(xlsxBuffer);
-}
-
-async function generatePDFStatement(payoutData: PayoutData, includeDetails: boolean = false): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create();
-  const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  
-  const page = pdfDoc.addPage([612, 792]); // Letter size
-  const { width, height } = page.getSize();
-  
-  let yPosition = height - 50;
-  
-  // Header
-  page.drawText('ROYALTY PAYOUT STATEMENT', {
-    x: 50,
-    y: yPosition,
-    size: 20,
-    font: helveticaBold,
-    color: rgb(0, 0.4, 0.8)
-  });
-  
-  yPosition -= 40;
-  
-  // Statement info
-  const infoItems = [
-    `Period: ${payoutData.period}`,
-    `Payee: ${payoutData.client_name}`, 
-    `Statement ID: ${payoutData.id.substring(0, 8)}`,
-    `Date Issued: ${new Date().toLocaleDateString()}`,
-    `Status: ${payoutData.workflow_stage.replace('_', ' ').toUpperCase()}`
-  ];
-  
-  infoItems.forEach(item => {
-    page.drawText(item, {
-      x: 50,
-      y: yPosition,
-      size: 12,
-      font: helveticaFont
-    });
-    yPosition -= 20;
-  });
-  
-  yPosition -= 20;
-  
-  // Income Summary Table
-  page.drawText('INCOME SUMMARY', {
-    x: 50,
-    y: yPosition,
-    size: 14,
-    font: helveticaBold
-  });
-  
-  yPosition -= 30;
-  
-  // Calculate categories (same logic as Excel)
-  const incomeCategories = {
-    Performance: { gross: 0, expenses: 0 },
-    Mechanical: { gross: 0, expenses: 0 },
-    Sync: { gross: 0, expenses: 0 },
-    Other: { gross: 0, expenses: 0 }
-  };
-
-  payoutData.royalties.forEach(royalty => {
-    const category = categorizeIncomeType(royalty.source, royalty.income_type);
-    incomeCategories[category as keyof typeof incomeCategories].gross += royalty.amount;
-  });
-
-  payoutData.expenses.forEach(expense => {
-    const category = categorizeExpense(expense.expense_type);
-    incomeCategories[category as keyof typeof incomeCategories].expenses += expense.amount;
-  });
-  
-  // Table headers
-  const headers = ['Category', 'Gross Amount', 'Expenses', 'Net Amount'];
-  headers.forEach((header, index) => {
-    page.drawText(header, {
-      x: 50 + (index * 120),
-      y: yPosition,
-      size: 10,
-      font: helveticaBold
-    });
-  });
-  
-  yPosition -= 20;
-  
-  // Table rows
+  content += `INCOME SUMMARY\n`;
+  content += `${'-'.repeat(30)}\n`;
   Object.entries(incomeCategories).forEach(([category, amounts]) => {
     const net = amounts.gross - amounts.expenses;
-    const rowData = [
-      category + ' Income',
-      `$${amounts.gross.toFixed(2)}`,
-      `$${amounts.expenses.toFixed(2)}`,
-      `$${net.toFixed(2)}`
-    ];
-    
-    rowData.forEach((data, index) => {
-      page.drawText(data, {
-        x: 50 + (index * 120),
-        y: yPosition,
-        size: 10,
-        font: helveticaFont
-      });
-    });
-    yPosition -= 15;
+    content += `${category} Income: ${formatCurrency(amounts.gross)} (expenses: ${formatCurrency(amounts.expenses)}) = ${formatCurrency(net)}\n`;
   });
-  
-  yPosition -= 20;
-  
-  // Balance Summary
-  page.drawText('BALANCE SUMMARY', {
-    x: 50,
-    y: yPosition,
-    size: 14,
-    font: helveticaBold
-  });
-  
-  yPosition -= 30;
-  
-  const totalNet = Object.values(incomeCategories).reduce((sum, cat) => sum + (cat.gross - cat.expenses), 0);
-  const closingBalance = payoutData.opening_balance + totalNet - payoutData.amount_due;
-  
-  const balanceItems = [
-    `Opening Balance: $${payoutData.opening_balance.toFixed(2)}`,
-    `Net for Period: $${totalNet.toFixed(2)}`,
-    `Payments Made: $${payoutData.amount_due.toFixed(2)}`,
-    `Closing Balance: $${closingBalance.toFixed(2)}`,
-    `Payment Method: ${payoutData.payment_method || 'Not specified'}`
-  ];
-  
-  balanceItems.forEach(item => {
-    page.drawText(item, {
-      x: 50,
-      y: yPosition,
-      size: 12,
-      font: helveticaFont
-    });
-    yPosition -= 20;
-  });
-  
-  // Add details page if requested
-  if (includeDetails && payoutData.royalties.length > 0) {
-    const detailsPage = pdfDoc.addPage([792, 612]); // Landscape for details
-    let detailsY = 550;
-    
-    detailsPage.drawText('ROYALTY DETAILS', {
-      x: 50,
-      y: detailsY,
-      size: 16,
-      font: helveticaBold
-    });
-    
-    detailsY -= 40;
-    
-    // Headers (condensed for landscape)
-    const detailHeaders = ['Work Title', 'Source', 'Income Type', 'Amount'];
-    detailHeaders.forEach((header, index) => {
-      detailsPage.drawText(header, {
-        x: 50 + (index * 150),
-        y: detailsY,
-        size: 10,
-        font: helveticaBold
-      });
-    });
-    
-    detailsY -= 20;
-    
-    // Limit to first 20 rows to fit on page
-    payoutData.royalties.slice(0, 20).forEach(royalty => {
-      const rowData = [
-        royalty.work_title.substring(0, 20), // Truncate long titles
-        royalty.source.substring(0, 15),
-        categorizeIncomeType(royalty.source, royalty.income_type),
-        `$${royalty.amount.toFixed(2)}`
-      ];
-      
-      rowData.forEach((data, index) => {
-        detailsPage.drawText(data, {
-          x: 50 + (index * 150),
-          y: detailsY,
-          size: 9,
-          font: helveticaFont
-        });
-      });
-      detailsY -= 15;
-    });
-    
-    if (payoutData.royalties.length > 20) {
-      detailsPage.drawText(`... and ${payoutData.royalties.length - 20} more items`, {
-        x: 50,
-        y: detailsY - 20,
-        size: 9,
-        font: helveticaFont,
-        color: rgb(0.5, 0.5, 0.5)
-      });
-    }
-  }
-  
-  return await pdfDoc.save();
-}
+  content += `\nTOTAL: ${formatCurrency(totalGross)} (expenses: ${formatCurrency(totalExpenses)}) = ${formatCurrency(totalNet)}\n\n`;
 
-// Simple ZIP implementation using browser-compatible approach
-async function createZipBuffer(files: Array<{ name: string; data: Uint8Array }>): Promise<Uint8Array> {
-  // Create a simple ZIP file structure manually
-  // This is a basic implementation - for production, you might want to use a more robust ZIP library
-  
-  const encoder = new TextEncoder();
-  const zipParts: Uint8Array[] = [];
-  const centralDirectory: Uint8Array[] = [];
-  let offset = 0;
-  
-  // Add each file to ZIP
-  for (const file of files) {
-    const nameBytes = encoder.encode(file.name);
-    
-    // Local file header
-    const localHeader = new Uint8Array(30 + nameBytes.length);
-    const view = new DataView(localHeader.buffer);
-    
-    // Local file header signature
-    view.setUint32(0, 0x04034b50, true);
-    // Version needed to extract
-    view.setUint16(4, 20, true);
-    // General purpose bit flag
-    view.setUint16(6, 0, true);
-    // Compression method (0 = no compression)
-    view.setUint16(8, 0, true);
-    // Last mod file time
-    view.setUint16(10, 0, true);
-    // Last mod file date
-    view.setUint16(12, 0x21, true);
-    // CRC-32 (simplified - would need proper calculation)
-    view.setUint32(14, 0, true);
-    // Compressed size
-    view.setUint32(18, file.data.length, true);
-    // Uncompressed size
-    view.setUint32(22, file.data.length, true);
-    // File name length
-    view.setUint16(26, nameBytes.length, true);
-    // Extra field length
-    view.setUint16(28, 0, true);
-    
-    // Add filename
-    localHeader.set(nameBytes, 30);
-    
-    zipParts.push(localHeader);
-    zipParts.push(file.data);
-    
-    // Create central directory entry
-    const centralEntry = new Uint8Array(46 + nameBytes.length);
-    const centralView = new DataView(centralEntry.buffer);
-    
-    // Central directory file header signature
-    centralView.setUint32(0, 0x02014b50, true);
-    // Version made by
-    centralView.setUint16(4, 20, true);
-    // Version needed to extract
-    centralView.setUint16(6, 20, true);
-    // General purpose bit flag
-    centralView.setUint16(8, 0, true);
-    // Compression method
-    centralView.setUint16(10, 0, true);
-    // Last mod file time
-    centralView.setUint16(12, 0, true);
-    // Last mod file date
-    centralView.setUint16(14, 0x21, true);
-    // CRC-32
-    centralView.setUint32(16, 0, true);
-    // Compressed size
-    centralView.setUint32(20, file.data.length, true);
-    // Uncompressed size
-    centralView.setUint32(24, file.data.length, true);
-    // File name length
-    centralView.setUint16(28, nameBytes.length, true);
-    // Extra field length
-    centralView.setUint16(30, 0, true);
-    // File comment length
-    centralView.setUint16(32, 0, true);
-    // Disk number start
-    centralView.setUint16(34, 0, true);
-    // Internal file attributes
-    centralView.setUint16(36, 0, true);
-    // External file attributes
-    centralView.setUint32(38, 0, true);
-    // Relative offset of local header
-    centralView.setUint32(42, offset, true);
-    
-    // Add filename
-    centralEntry.set(nameBytes, 46);
-    
-    centralDirectory.push(centralEntry);
-    
-    offset += localHeader.length + file.data.length;
+  content += `BALANCE SUMMARY\n`;
+  content += `${'-'.repeat(30)}\n`;
+  content += `Opening Balance: ${formatCurrency(payoutData.opening_balance)}\n`;
+  content += `Net for Period: ${formatCurrency(totalNet)}\n`;
+  content += `Payments Made: ${formatCurrency(payoutData.amount_due)}\n`;
+  content += `Closing Balance: ${formatCurrency(closingBalance)}\n`;
+  content += `Payment Method: ${payoutData.payment_method || 'Not specified'}\n\n`;
+
+  if (payoutData.royalties.length > 0) {
+    content += `ROYALTY DETAILS\n`;
+    content += `${'-'.repeat(50)}\n`;
+    content += `QUARTER | SOURCE | WORK ID | WORK TITLE | AMOUNT\n`;
+    content += `${'-'.repeat(80)}\n`;
+    payoutData.royalties.forEach((royalty: any) => {
+      content += `${royalty.quarter} | ${royalty.source || 'N/A'} | ${royalty.work_id || 'N/A'} | ${royalty.work_title.substring(0, 20)} | ${formatCurrency(royalty.amount)}\n`;
+    });
   }
-  
-  // Calculate central directory size
-  const centralDirSize = centralDirectory.reduce((sum, entry) => sum + entry.length, 0);
-  
-  // End of central directory record
-  const endRecord = new Uint8Array(22);
-  const endView = new DataView(endRecord.buffer);
-  
-  // End of central dir signature
-  endView.setUint32(0, 0x06054b50, true);
-  // Number of this disk
-  endView.setUint16(4, 0, true);
-  // Number of disk with start of central directory
-  endView.setUint16(6, 0, true);
-  // Total number of entries in central directory on this disk
-  endView.setUint16(8, files.length, true);
-  // Total number of entries in central directory
-  endView.setUint16(10, files.length, true);
-  // Size of central directory
-  endView.setUint32(12, centralDirSize, true);
-  // Offset of start of central directory
-  endView.setUint32(16, offset, true);
-  // ZIP file comment length
-  endView.setUint16(20, 0, true);
-  
-  // Combine all parts
-  const totalSize = zipParts.reduce((sum, part) => sum + part.length, 0) + centralDirSize + endRecord.length;
-  const zipBuffer = new Uint8Array(totalSize);
-  
-  let pos = 0;
-  
-  // Add file data
-  for (const part of zipParts) {
-    zipBuffer.set(part, pos);
-    pos += part.length;
-  }
-  
-  // Add central directory
-  for (const entry of centralDirectory) {
-    zipBuffer.set(entry, pos);
-    pos += entry.length;
-  }
-  
-  // Add end record
-  zipBuffer.set(endRecord, pos);
-  
-  return zipBuffer;
+
+  return content;
 }
 
 serve(async (req) => {
@@ -533,11 +101,14 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Edge function called - generate-bulk-statements');
+    
     const url = new URL(req.url);
     const format = url.searchParams.get('format') || 'pdf';
-    const includeDetails = url.searchParams.get('includeDetails') === 'true';
+    console.log('Format requested:', format);
     
     const { payoutIds } = await req.json();
+    console.log('Payout IDs:', payoutIds);
 
     if (!payoutIds || !Array.isArray(payoutIds) || payoutIds.length === 0) {
       return new Response(JSON.stringify({ error: 'Payout IDs array is required' }), {
@@ -565,11 +136,14 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
+      console.error('Auth error:', authError);
       return new Response(JSON.stringify({ error: 'Invalid authorization' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    console.log('User authenticated:', user.id);
 
     // Fetch all requested payouts with comprehensive data
     const { data: payouts, error: payoutsError } = await supabase
@@ -602,17 +176,23 @@ serve(async (req) => {
       .eq('user_id', user.id);
 
     if (payoutsError || !payouts || payouts.length === 0) {
+      console.error('Payouts fetch error:', payoutsError);
       return new Response(JSON.stringify({ error: 'No accessible payouts found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    const files: Array<{ name: string; data: Uint8Array }> = [];
+    console.log(`Fetched ${payouts.length} payouts successfully`);
 
-    // Generate statements for each payout
+    // Generate bulk text report (simplified approach for now)
+    let bulkContent = `BULK PAYOUT STATEMENTS EXPORT\n`;
+    bulkContent += `Generated: ${new Date().toLocaleDateString()}\n`;
+    bulkContent += `Total Statements: ${payouts.length}\n`;
+    bulkContent += `\n${'='.repeat(80)}\n\n`;
+
     for (const payout of payouts) {
-      const payoutData: PayoutData = {
+      const payoutData = {
         id: payout.id,
         period: payout.period || 'Unknown Period',
         client_name: payout.contacts?.name || 'Unknown Client',
@@ -624,14 +204,14 @@ serve(async (req) => {
         payment_method: payout.payment_method || '',
         workflow_stage: payout.workflow_stage || 'draft',
         created_at: payout.created_at,
-        opening_balance: 0, // Could be calculated from previous periods
+        opening_balance: 0,
         royalties: payout.payout_royalties?.map((pr: any) => ({
           quarter: pr.royalty_allocations?.quarter || 'N/A',
           source: pr.royalty_allocations?.source || 'Unknown Source',
           work_id: pr.royalty_allocations?.work_id || 'N/A',
           work_title: pr.royalty_allocations?.work_title || 'Unknown Work',
           writers: pr.royalty_allocations?.mapped_data?.writers || 'N/A',
-          pub_share: 100, // Default, could be calculated from ownership data
+          pub_share: 100,
           income_type: pr.royalty_allocations?.revenue_source || 'Other',
           territory: pr.royalty_allocations?.country || 'Unknown',
           units: parseInt(pr.royalty_allocations?.quantity) || 0,
@@ -646,37 +226,31 @@ serve(async (req) => {
         })) || []
       };
 
-      const period = payoutData.period.replace(/[^a-zA-Z0-9]/g, '-');
-      const baseFilename = `payout-statement-${period}-${payoutData.id.substring(0, 8)}`;
-
-      // Generate files based on format
-      if (format === 'xlsx' || format === 'both') {
-        const xlsxBuffer = await generateExcelStatement(payoutData);
-        files.push({
-          name: `${baseFilename}.xlsx`,
-          data: xlsxBuffer
-        });
-      }
-      
-      if (format === 'pdf' || format === 'both') {
-        const pdfBuffer = await generatePDFStatement(payoutData, includeDetails);
-        files.push({
-          name: `${baseFilename}.pdf`,
-          data: pdfBuffer
-        });
-      }
+      bulkContent += generateStatementText(payoutData);
+      bulkContent += `\n${'='.repeat(80)}\n\n`;
     }
 
-    // Create ZIP file
-    const zipBuffer = await createZipBuffer(files);
+    // Summary
+    const totalGross = payouts.reduce((sum, p) => sum + (p.gross_royalties || 0), 0);
+    const totalExpenses = payouts.reduce((sum, p) => sum + (p.total_expenses || 0), 0);
+    const totalDue = payouts.reduce((sum, p) => sum + (p.amount_due || 0), 0);
+
+    bulkContent += `BULK SUMMARY\n`;
+    bulkContent += `Total Gross Royalties: ${totalGross.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}\n`;
+    bulkContent += `Total Expenses: ${totalExpenses.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}\n`;
+    bulkContent += `Total Amount Due: ${totalDue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}\n`;
+
+    const textBytes = new TextEncoder().encode(bulkContent);
     
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
-    const filename = `bulk-payout-statements-${timestamp[0]}-${timestamp[1].split('.')[0]}.zip`;
+    const filename = `bulk-payout-statements-${timestamp[0]}-${timestamp[1].split('.')[0]}.txt`;
 
-    return new Response(zipBuffer, {
+    console.log('Returning bulk statements file:', filename);
+
+    return new Response(textBytes, {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'application/zip',
+        'Content-Type': 'text/plain',
         'Content-Disposition': `attachment; filename="${filename}"`
       }
     });

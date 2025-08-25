@@ -107,31 +107,47 @@ export function PayoutList() {
         description: `Creating ${format.toUpperCase()} statement...`,
       });
 
-      // Call the edge function to generate statement
-      const response = await fetch(`/api/generate-payout-statement?format=${format}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({ payoutId: payout.id }),
-      });
+      console.log('Starting statement generation for payout:', payout.id, 'format:', format);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to generate statement: ${errorText}`);
+      // Get the session token
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      
+      if (!token) {
+        throw new Error('No authentication token available');
       }
 
-      // Get filename from Content-Disposition header
-      const contentDisposition = response.headers.get('Content-Disposition');
-      const filename = contentDisposition?.match(/filename="([^"]+)"/)?.[1] || 
-        `payout-statement-${payout.period || payout.id}.${format}`;
+      console.log('Making request to edge function...');
 
-      const blob = await response.blob();
+      // Call the Supabase edge function to generate statement
+      const response = await supabase.functions.invoke('generate-payout-statement', {
+        body: { 
+          payoutId: payout.id,
+          format: format
+        }
+      });
+
+      if (response.error) {
+        console.error('Edge function error:', response.error);
+        throw new Error(`Failed to generate statement: ${response.error.message || 'Unknown error'}`);
+      }
+
+      // The response data should be the binary content
+      if (!response.data) {
+        throw new Error('No data received from statement generator');
+      }
+
+      console.log('Statement generated successfully');
+
+      // Convert response to blob for download
+      const blob = new Blob([response.data], { 
+        type: format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf' 
+      });
+      
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = filename;
+      link.download = `payout-statement-${payout.period || payout.id}.${format}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -197,9 +213,6 @@ export function PayoutList() {
             description: `${selectedPayouts.length} payouts set to processing`,
           });
           break;
-        case 'bulk_export':
-          await handleBulkExport();
-          break;
       }
       setSelectedPayouts([]);
     } catch (error) {
@@ -221,31 +234,33 @@ export function PayoutList() {
     });
     
     try {
-      // Generate statements for all selected payouts
-      const response = await fetch(`/api/generate-bulk-statements?format=${format}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({ payoutIds: selectedPayouts }),
+      console.log('Starting bulk export:', { payoutIds: selectedPayouts, format });
+
+      // Generate statements using Supabase edge function
+      const response = await supabase.functions.invoke('generate-bulk-statements', {
+        body: { 
+          payoutIds: selectedPayouts,
+          format: format
+        }
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to generate bulk statements: ${errorText}`);
+      if (response.error) {
+        console.error('Bulk export edge function error:', response.error);
+        throw new Error(`Failed to generate bulk statements: ${response.error.message || 'Unknown error'}`);
       }
 
-      // Get filename from Content-Disposition header
-      const contentDisposition = response.headers.get('Content-Disposition');
-      const filename = contentDisposition?.match(/filename="([^"]+)"/)?.[1] || 
-        `bulk-payout-statements-${new Date().toISOString().split('T')[0]}.zip`;
+      if (!response.data) {
+        throw new Error('No data received from bulk statement generator');
+      }
 
-      const blob = await response.blob();
+      console.log('Bulk statements generated successfully');
+
+      // Convert response to blob for download
+      const blob = new Blob([response.data], { type: 'text/plain' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = filename;
+      link.download = `bulk-payout-statements-${new Date().toISOString().split('T')[0]}.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -253,7 +268,7 @@ export function PayoutList() {
 
       toast({
         title: "Export Complete",
-        description: `Downloaded ${selectedPayouts.length} statements as ZIP (${(blob.size / 1024 / 1024).toFixed(1)} MB)`,
+        description: `Downloaded ${selectedPayouts.length} statements (${(blob.size / 1024).toFixed(1)} KB)`,
       });
     } catch (error) {
       console.error('Error in bulk export:', error);

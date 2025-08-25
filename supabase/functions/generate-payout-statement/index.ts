@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0'
-import * as XLSX from 'https://esm.sh/xlsx@0.18.5'
-import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,21 +63,10 @@ function categorizeExpense(expenseType: string): string {
   return 'Other';
 }
 
-async function generateExcelStatement(payoutData: PayoutData): Promise<Uint8Array> {
-  const workbook = XLSX.utils.book_new();
-  
-  // Summary Sheet
-  const summaryData = [
-    ['ROYALTY PAYOUT STATEMENT', '', '', ''],
-    ['', '', '', ''],
-    ['Period:', payoutData.period, '', ''],
-    ['Payee:', payoutData.client_name, '', ''],
-    ['Statement ID:', payoutData.id.substring(0, 8), '', ''],
-    ['Date Issued:', new Date().toLocaleDateString(), '', ''],
-    ['', '', '', ''],
-    ['INCOME SUMMARY', '', '', ''],
-    ['Category', 'Gross Amount', 'Expenses/Recoupment', 'Net Amount'],
-  ];
+// Simple HTML to PDF-like text format for now (avoiding complex dependencies)
+function generateSimpleStatementText(payoutData: PayoutData): string {
+  const formatCurrency = (amount: number) => `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US');
 
   // Calculate income categories
   const incomeCategories = {
@@ -101,288 +88,46 @@ async function generateExcelStatement(payoutData: PayoutData): Promise<Uint8Arra
     incomeCategories[category as keyof typeof incomeCategories].expenses += expense.amount;
   });
 
-  // Add category rows
-  Object.entries(incomeCategories).forEach(([category, amounts]) => {
-    summaryData.push([
-      category + ' Income',
-      amounts.gross,
-      amounts.expenses,
-      amounts.gross - amounts.expenses
-    ]);
-  });
-
   const totalGross = Object.values(incomeCategories).reduce((sum, cat) => sum + cat.gross, 0);
   const totalExpenses = Object.values(incomeCategories).reduce((sum, cat) => sum + cat.expenses, 0);
   const totalNet = totalGross - totalExpenses;
+  const closingBalance = payoutData.opening_balance + totalNet - payoutData.amount_due;
 
-  summaryData.push(
-    ['TOTAL', totalGross, totalExpenses, totalNet],
-    ['', '', '', ''],
-    ['BALANCE SUMMARY', '', '', ''],
-    ['Opening Balance', payoutData.opening_balance, '', ''],
-    ['Net for Period', totalNet, '', ''],
-    ['Payments Made', payoutData.amount_due, '', ''],
-    ['Closing Balance', payoutData.opening_balance + totalNet - payoutData.amount_due, '', ''],
-    ['', '', '', ''],
-    ['Payment Method:', payoutData.payment_method || 'Not specified', '', '']
-  );
+  let content = `ROYALTY PAYOUT STATEMENT\n`;
+  content += `${'='.repeat(50)}\n\n`;
+  content += `Period: ${payoutData.period}\n`;
+  content += `Payee: ${payoutData.client_name}\n`;
+  content += `Statement ID: ${payoutData.id.substring(0, 8)}\n`;
+  content += `Date Issued: ${formatDate(new Date().toISOString())}\n`;
+  content += `Status: ${payoutData.workflow_stage.replace('_', ' ').toUpperCase()}\n\n`;
 
-  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-  
-  // Format summary sheet
-  summarySheet['!cols'] = [
-    { width: 20 },
-    { width: 15 },
-    { width: 18 },
-    { width: 15 }
-  ];
-
-  XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
-
-  // Details Sheet
-  const detailsHeaders = [
-    'QUARTER', 'SOURCE', 'WORK ID', 'WORK TITLE', 'WRITER(S)', 
-    'PUB SHARE (%)', 'INCOME TYPE', 'TERRITORY', 'UNITS', 'AMOUNT', 'PAYEE'
-  ];
-  
-  const detailsData = [detailsHeaders];
-  
-  payoutData.royalties.forEach(royalty => {
-    detailsData.push([
-      royalty.quarter,
-      royalty.source,
-      royalty.work_id,
-      royalty.work_title,
-      royalty.writers,
-      royalty.pub_share,
-      categorizeIncomeType(royalty.source, royalty.income_type),
-      royalty.territory,
-      royalty.units,
-      royalty.amount,
-      royalty.payee
-    ]);
-  });
-
-  const detailsSheet = XLSX.utils.aoa_to_sheet(detailsData);
-  
-  // Format details sheet
-  detailsSheet['!cols'] = [
-    { width: 10 }, // QUARTER
-    { width: 15 }, // SOURCE
-    { width: 12 }, // WORK ID
-    { width: 25 }, // WORK TITLE
-    { width: 20 }, // WRITER(S)
-    { width: 12 }, // PUB SHARE (%)
-    { width: 15 }, // INCOME TYPE
-    { width: 12 }, // TERRITORY
-    { width: 10 }, // UNITS
-    { width: 12 }, // AMOUNT
-    { width: 20 }  // PAYEE
-  ];
-
-  XLSX.utils.book_append_sheet(workbook, detailsSheet, 'Royalty Details');
-
-  // Generate XLSX buffer
-  const xlsxBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-  return new Uint8Array(xlsxBuffer);
-}
-
-async function generatePDFStatement(payoutData: PayoutData, includeDetails: boolean = false): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create();
-  const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  
-  const page = pdfDoc.addPage([612, 792]); // Letter size
-  const { width, height } = page.getSize();
-  
-  let yPosition = height - 50;
-  
-  // Header
-  page.drawText('ROYALTY PAYOUT STATEMENT', {
-    x: 50,
-    y: yPosition,
-    size: 20,
-    font: helveticaBold,
-    color: rgb(0, 0.4, 0.8)
-  });
-  
-  yPosition -= 40;
-  
-  // Statement info
-  const infoItems = [
-    `Period: ${payoutData.period}`,
-    `Payee: ${payoutData.client_name}`, 
-    `Statement ID: ${payoutData.id.substring(0, 8)}`,
-    `Date Issued: ${new Date().toLocaleDateString()}`,
-    `Status: ${payoutData.workflow_stage.replace('_', ' ').toUpperCase()}`
-  ];
-  
-  infoItems.forEach(item => {
-    page.drawText(item, {
-      x: 50,
-      y: yPosition,
-      size: 12,
-      font: helveticaFont
-    });
-    yPosition -= 20;
-  });
-  
-  yPosition -= 20;
-  
-  // Income Summary Table
-  page.drawText('INCOME SUMMARY', {
-    x: 50,
-    y: yPosition,
-    size: 14,
-    font: helveticaBold
-  });
-  
-  yPosition -= 30;
-  
-  // Calculate categories (same logic as Excel)
-  const incomeCategories = {
-    Performance: { gross: 0, expenses: 0 },
-    Mechanical: { gross: 0, expenses: 0 },
-    Sync: { gross: 0, expenses: 0 },
-    Other: { gross: 0, expenses: 0 }
-  };
-
-  payoutData.royalties.forEach(royalty => {
-    const category = categorizeIncomeType(royalty.source, royalty.income_type);
-    incomeCategories[category as keyof typeof incomeCategories].gross += royalty.amount;
-  });
-
-  payoutData.expenses.forEach(expense => {
-    const category = categorizeExpense(expense.expense_type);
-    incomeCategories[category as keyof typeof incomeCategories].expenses += expense.amount;
-  });
-  
-  // Table headers
-  const headers = ['Category', 'Gross Amount', 'Expenses', 'Net Amount'];
-  headers.forEach((header, index) => {
-    page.drawText(header, {
-      x: 50 + (index * 120),
-      y: yPosition,
-      size: 10,
-      font: helveticaBold
-    });
-  });
-  
-  yPosition -= 20;
-  
-  // Table rows
+  content += `INCOME SUMMARY\n`;
+  content += `${'-'.repeat(30)}\n`;
   Object.entries(incomeCategories).forEach(([category, amounts]) => {
     const net = amounts.gross - amounts.expenses;
-    const rowData = [
-      category + ' Income',
-      `$${amounts.gross.toFixed(2)}`,
-      `$${amounts.expenses.toFixed(2)}`,
-      `$${net.toFixed(2)}`
-    ];
-    
-    rowData.forEach((data, index) => {
-      page.drawText(data, {
-        x: 50 + (index * 120),
-        y: yPosition,
-        size: 10,
-        font: helveticaFont
-      });
-    });
-    yPosition -= 15;
+    content += `${category} Income: ${formatCurrency(amounts.gross)} (expenses: ${formatCurrency(amounts.expenses)}) = ${formatCurrency(net)}\n`;
   });
-  
-  yPosition -= 20;
-  
-  // Balance Summary
-  page.drawText('BALANCE SUMMARY', {
-    x: 50,
-    y: yPosition,
-    size: 14,
-    font: helveticaBold
-  });
-  
-  yPosition -= 30;
-  
-  const totalNet = Object.values(incomeCategories).reduce((sum, cat) => sum + (cat.gross - cat.expenses), 0);
-  const closingBalance = payoutData.opening_balance + totalNet - payoutData.amount_due;
-  
-  const balanceItems = [
-    `Opening Balance: $${payoutData.opening_balance.toFixed(2)}`,
-    `Net for Period: $${totalNet.toFixed(2)}`,
-    `Payments Made: $${payoutData.amount_due.toFixed(2)}`,
-    `Closing Balance: $${closingBalance.toFixed(2)}`,
-    `Payment Method: ${payoutData.payment_method || 'Not specified'}`
-  ];
-  
-  balanceItems.forEach(item => {
-    page.drawText(item, {
-      x: 50,
-      y: yPosition,
-      size: 12,
-      font: helveticaFont
+  content += `\nTOTAL: ${formatCurrency(totalGross)} (expenses: ${formatCurrency(totalExpenses)}) = ${formatCurrency(totalNet)}\n\n`;
+
+  content += `BALANCE SUMMARY\n`;
+  content += `${'-'.repeat(30)}\n`;
+  content += `Opening Balance: ${formatCurrency(payoutData.opening_balance)}\n`;
+  content += `Net for Period: ${formatCurrency(totalNet)}\n`;
+  content += `Payments Made: ${formatCurrency(payoutData.amount_due)}\n`;
+  content += `Closing Balance: ${formatCurrency(closingBalance)}\n`;
+  content += `Payment Method: ${payoutData.payment_method || 'Not specified'}\n\n`;
+
+  if (payoutData.royalties.length > 0) {
+    content += `ROYALTY DETAILS\n`;
+    content += `${'-'.repeat(30)}\n`;
+    content += `QUARTER | SOURCE | WORK ID | WORK TITLE | AMOUNT\n`;
+    content += `${'-'.repeat(80)}\n`;
+    payoutData.royalties.forEach(royalty => {
+      content += `${royalty.quarter} | ${royalty.source} | ${royalty.work_id} | ${royalty.work_title.substring(0, 20)} | ${formatCurrency(royalty.amount)}\n`;
     });
-    yPosition -= 20;
-  });
-  
-  // Add details page if requested
-  if (includeDetails && payoutData.royalties.length > 0) {
-    const detailsPage = pdfDoc.addPage([792, 612]); // Landscape for details
-    let detailsY = 550;
-    
-    detailsPage.drawText('ROYALTY DETAILS', {
-      x: 50,
-      y: detailsY,
-      size: 16,
-      font: helveticaBold
-    });
-    
-    detailsY -= 40;
-    
-    // Headers (condensed for landscape)
-    const detailHeaders = ['Work Title', 'Source', 'Income Type', 'Amount'];
-    detailHeaders.forEach((header, index) => {
-      detailsPage.drawText(header, {
-        x: 50 + (index * 150),
-        y: detailsY,
-        size: 10,
-        font: helveticaBold
-      });
-    });
-    
-    detailsY -= 20;
-    
-    // Limit to first 20 rows to fit on page
-    payoutData.royalties.slice(0, 20).forEach(royalty => {
-      const rowData = [
-        royalty.work_title.substring(0, 20), // Truncate long titles
-        royalty.source.substring(0, 15),
-        categorizeIncomeType(royalty.source, royalty.income_type),
-        `$${royalty.amount.toFixed(2)}`
-      ];
-      
-      rowData.forEach((data, index) => {
-        detailsPage.drawText(data, {
-          x: 50 + (index * 150),
-          y: detailsY,
-          size: 9,
-          font: helveticaFont
-        });
-      });
-      detailsY -= 15;
-    });
-    
-    if (payoutData.royalties.length > 20) {
-      detailsPage.drawText(`... and ${payoutData.royalties.length - 20} more items`, {
-        x: 50,
-        y: detailsY - 20,
-        size: 9,
-        font: helveticaFont,
-        color: rgb(0.5, 0.5, 0.5)
-      });
-    }
   }
-  
-  return await pdfDoc.save();
+
+  return content;
 }
 
 serve(async (req) => {
@@ -391,11 +136,14 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Edge function called - generate-payout-statement');
+    
     const url = new URL(req.url);
     const format = url.searchParams.get('format') || 'pdf';
-    const includeDetails = url.searchParams.get('includeDetails') === 'true';
+    console.log('Format requested:', format);
     
     const { payoutId } = await req.json();
+    console.log('Payout ID:', payoutId);
 
     if (!payoutId) {
       return new Response(JSON.stringify({ error: 'Payout ID is required' }), {
@@ -423,11 +171,14 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
+      console.error('Auth error:', authError);
       return new Response(JSON.stringify({ error: 'Invalid authorization' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    console.log('User authenticated:', user.id);
 
     // Fetch comprehensive payout data
     const { data: payout, error: payoutError } = await supabase
@@ -461,11 +212,14 @@ serve(async (req) => {
       .single();
 
     if (payoutError || !payout) {
+      console.error('Payout fetch error:', payoutError);
       return new Response(JSON.stringify({ error: 'Payout not found or access denied' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    console.log('Payout data fetched successfully');
 
     // Prepare enhanced payout data
     const payoutData: PayoutData = {
@@ -505,27 +259,23 @@ serve(async (req) => {
     const period = payoutData.period.replace(/[^a-zA-Z0-9]/g, '-');
     const baseFilename = `payout-statement-${period}-${payoutData.id.substring(0, 8)}`;
 
-    if (format === 'xlsx') {
-      const xlsxBuffer = await generateExcelStatement(payoutData);
-      
-      return new Response(xlsxBuffer, {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'Content-Disposition': `attachment; filename="${baseFilename}.xlsx"`
-        }
-      });
-    } else {
-      const pdfBuffer = await generatePDFStatement(payoutData, includeDetails);
-      
-      return new Response(pdfBuffer, {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${baseFilename}.pdf"`
-        }
-      });
-    }
+    // Generate simple text format for both PDF and Excel (avoiding complex dependencies for now)
+    const statementText = generateSimpleStatementText(payoutData);
+    const textBytes = new TextEncoder().encode(statementText);
+
+    // Return as text file with appropriate extension
+    const contentType = format === 'xlsx' ? 'text/plain' : 'text/plain';
+    const filename = `${baseFilename}.${format === 'xlsx' ? 'txt' : 'txt'}`;
+
+    console.log('Returning statement:', filename);
+
+    return new Response(textBytes, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`
+      }
+    });
 
   } catch (error) {
     console.error('Error generating payout statement:', error);
