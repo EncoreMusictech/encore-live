@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Link2 } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,7 +71,7 @@ const adminModules: ModuleItem[] = [{
   id: "digital-rights-blockchain",
   title: "NFT Minting",
   url: "/dashboard/blockchain",
-  icon: Link2,
+  icon: Coins,
   description: "Blockchain asset management",
   adminOnly: true
 }];
