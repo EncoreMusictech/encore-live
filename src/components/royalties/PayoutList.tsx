@@ -138,29 +138,74 @@ export function PayoutList() {
       }
 
       console.log('Statement generated successfully');
+      console.log('Response data type:', typeof response.data);
+      console.log('Response data length:', response.data?.length || 'N/A');
+      console.log('First 100 chars:', response.data?.toString().substring(0, 100));
 
-      // Check if the response is HTML content (for PDF format)
-      const isHtmlResponse = format === 'pdf' && typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>');
+      // Better HTML detection for PDF format responses
+      let isHtmlResponse = false;
+      let htmlContent = '';
       
-      if (isHtmlResponse) {
-        // For HTML responses, open in a new tab
-        const newWindow = window.open('', '_blank');
-        if (newWindow) {
-          newWindow.document.write(response.data);
-          newWindow.document.close();
-        } else {
-          // Fallback: create a blob URL and open it
-          const blob = new Blob([response.data], { type: 'text/html' });
+      if (format === 'pdf') {
+        // Check if response is string and contains HTML
+        if (typeof response.data === 'string') {
+          htmlContent = response.data;
+          isHtmlResponse = htmlContent.includes('<!DOCTYPE html>') || htmlContent.includes('<html>');
+        } else if (response.data instanceof Blob) {
+          // If it's a blob, try to read it as text first
+          try {
+            htmlContent = await response.data.text();
+            isHtmlResponse = htmlContent.includes('<!DOCTYPE html>') || htmlContent.includes('<html>');
+          } catch (e) {
+            console.log('Could not read blob as text, treating as binary');
+            isHtmlResponse = false;
+          }
+        }
+      }
+      
+      console.log('Is HTML response:', isHtmlResponse);
+      
+      if (isHtmlResponse && htmlContent) {
+        // For HTML responses, try to open in a new tab
+        try {
+          const newWindow = window.open('', '_blank');
+          if (newWindow) {
+            newWindow.document.write(htmlContent);
+            newWindow.document.close();
+            console.log('Opened HTML in new window');
+          } else {
+            // Popup blocked or failed, try blob URL approach
+            console.log('New window blocked, trying blob URL');
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = window.URL.createObjectURL(blob);
+            const newTab = window.open(url, '_blank');
+            if (!newTab) {
+              // Last resort: navigate current window
+              window.location.href = url;
+            }
+            // Clean up the URL after a delay
+            setTimeout(() => window.URL.revokeObjectURL(url), 2000);
+          }
+        } catch (error) {
+          console.error('Error opening HTML content:', error);
+          // Fall back to download
+          const blob = new Blob([htmlContent], { type: 'text/html' });
           const url = window.URL.createObjectURL(blob);
-          window.open(url, '_blank');
-          // Clean up the URL after a delay
-          setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `payout-statement-${payout.period || payout.id}.html`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
         }
       } else {
         // For other formats (xlsx or actual binary PDF), download as before
-        const blob = new Blob([response.data], { 
-          type: format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf' 
-        });
+        const blob = response.data instanceof Blob 
+          ? response.data 
+          : new Blob([response.data], { 
+              type: format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf' 
+            });
         
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
