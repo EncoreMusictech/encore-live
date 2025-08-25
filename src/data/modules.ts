@@ -7,7 +7,8 @@ import {
   Users,
   Archive,
   Music,
-  CreditCard
+  CreditCard,
+  Link2
 } from "lucide-react";
 
 export const modules = [
@@ -199,6 +200,45 @@ export const modules = [
       "Vendor collaboration",
       "Permission-based content",
       "Custom reporting views"
+    ]
+  },
+  {
+    id: "digital-rights-blockchain",
+    title: "Digital Rights & Blockchain",
+    description: "Mint contracts, copyrights, and royalty transactions as NFTs with smart contract automation",
+    icon: Link2,
+    tier: "Enterprise" as const,
+    isPopular: false,
+    subModules: [
+      {
+        id: "asset-minting",
+        title: "Asset Minting",
+        description: "Mint contracts, copyrights, and royalty transactions as blockchain NFTs",
+        icon: Link2,
+        path: "/dashboard/blockchain"
+      },
+      {
+        id: "smart-contracts",
+        title: "Smart Contracts",
+        description: "Automated royalty distribution and rights management on-chain",
+        icon: Archive,
+        path: "/dashboard/blockchain"
+      },
+      {
+        id: "nft-marketplace",
+        title: "Rights Marketplace",
+        description: "Trade tokenized music rights with verified ownership",
+        icon: DollarSign,
+        path: "/dashboard/blockchain"
+      }
+    ],
+    features: [
+      "NFT minting for all assets",
+      "Automated royalty splits",
+      "Blockchain provenance tracking",
+      "Smart contract execution",
+      "Decentralized rights trading",
+      "Web3 wallet integration"
     ]
   }
 ];
