@@ -54,7 +54,7 @@ const mainModules: ModuleItem[] = [{
   description: "Processing & payouts"
 }, {
   id: "digital-rights-blockchain",
-  title: "Digital Rights & Blockchain",
+  title: "NFT Minting",
   url: "/dashboard/blockchain",
   icon: Link2,
   description: "Blockchain asset management"
