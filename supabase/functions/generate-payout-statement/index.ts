@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -131,15 +131,16 @@ function generateSimpleStatementText(payoutData: PayoutData): string {
 }
 
 serve(async (req) => {
+  console.log('🚀 Function started: generate-payout-statement');
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('📋 CORS preflight request handled');
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    console.log('Edge function called - generate-payout-statement');
-    console.log('Request method:', req.method);
-    console.log('Request URL:', req.url);
+    console.log('✅ Processing request:', req.method, req.url);
     
     const url = new URL(req.url);
     const format = url.searchParams.get('format') || 'pdf';
