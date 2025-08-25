@@ -469,8 +469,7 @@ serve(async (req) => {
       // Generate HTML for PDF conversion
       const htmlContent = generateHTMLStatement(payoutData);
       
-      // Simple PDF-like response (basic HTML to PDF conversion would go here)
-      // For now, return as HTML that browsers can display properly
+      // Return as HTML that browsers can display and print as PDF
       const filename = `${baseFilename}.html`;
       
       console.log('Returning HTML statement:', filename);
