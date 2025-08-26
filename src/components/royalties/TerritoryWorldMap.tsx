@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
 interface TerritoryData {
   name: string;
@@ -13,29 +13,17 @@ interface TerritoryWorldMapProps {
 }
 
 const TerritoryWorldMap: React.FC<TerritoryWorldMapProps> = ({ territoryData }) => {
-  // Territory color mapping for donut chart
-  const continentColors = [
-    'hsl(var(--chart-1))',
-    'hsl(var(--chart-2))',
-    'hsl(var(--chart-3))',
-    'hsl(var(--chart-4))',
-    'hsl(var(--chart-5))',
-    'hsl(var(--primary))',
-    'hsl(var(--secondary))',
-    'hsl(var(--accent))',
-  ];
-
-  // Prepare data for the donut chart
-  const chartData = territoryData.map((territory, index) => ({
-    name: territory.name,
-    value: territory.value,
-    fill: continentColors[index % continentColors.length],
+  // Prepare data for the bar chart
+  const chartData = territoryData.map((territory) => ({
+    territory: territory.name,
+    amount: territory.value,
   }));
 
   // Chart configuration
   const chartConfig = {
-    value: {
+    amount: {
       label: "Revenue",
+      color: "hsl(var(--chart-1))",
     },
   };
 
@@ -43,36 +31,36 @@ const TerritoryWorldMap: React.FC<TerritoryWorldMapProps> = ({ territoryData }) 
     <Card>
       <CardHeader>
         <CardTitle>Royalties x Territory</CardTitle>
-        <CardDescription>Revenue distribution by territory (donut chart)</CardDescription>
+        <CardDescription>Revenue distribution by territory (bar chart)</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-[300px]"
+          className="h-[400px] w-full"
         >
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={100}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-              ))}
-            </Pie>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-              formatter={(value, name) => [
-                `$${Number(value).toLocaleString()}`,
-                name
-              ]}
+          <BarChart data={chartData}>
+            <XAxis 
+              dataKey="territory" 
+              tick={{ fontSize: 12 }}
+              angle={-45}
+              textAnchor="end"
+              height={100}
             />
-          </PieChart>
+            <YAxis 
+              tick={{ fontSize: 12 }}
+              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+            />
+            <ChartTooltip
+              cursor={{ fill: 'hsl(var(--muted))' }}
+              content={<ChartTooltipContent />}
+              formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Revenue']}
+            />
+            <Bar 
+              dataKey="amount" 
+              fill="hsl(var(--chart-1))"
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
         </ChartContainer>
       </CardContent>
     </Card>
