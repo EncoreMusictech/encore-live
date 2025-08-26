@@ -661,10 +661,20 @@ export function RoyaltiesAnalyticsDashboard() {
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analyticsData.source}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="name" />
-                  <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
+                <PieChart>
+                  <Pie
+                    data={analyticsData.source}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {analyticsData.source.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
                   <Tooltip 
                     formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
                     labelStyle={{ color: 'hsl(var(--foreground))' }}
@@ -674,12 +684,7 @@ export function RoyaltiesAnalyticsDashboard() {
                       borderRadius: '6px'
                     }}
                   />
-                  <Bar 
-                    dataKey="value" 
-                    fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
+                </PieChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
