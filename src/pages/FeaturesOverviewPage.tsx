@@ -76,7 +76,7 @@ export default function FeaturesOverviewPage() {
       </section>
 
       {/* All Features - Horizontal Sections with 3D Graphics */}
-      {modules.map((module, index) => {
+      {modules.filter(module => module.id !== 'digital-rights-blockchain').map((module, index) => {
         const Icon = module.icon;
         const isEven = index % 2 === 0;
         const graphic3D = get3DComponent(module.id);
