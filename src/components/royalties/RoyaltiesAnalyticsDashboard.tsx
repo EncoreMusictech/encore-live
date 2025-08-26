@@ -221,32 +221,24 @@ export function RoyaltiesAnalyticsDashboard() {
     const topSong = Object.entries(songPerformance)
       .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
 
-    // Calculate top performing controlled songwriter
+    // Calculate top performing songwriter based on available data
     const songwriterPerformance = filtered.reduce((acc, allocation) => {
-      // Only consider controlled allocations
-      if (allocation.controlled_status === 'Controlled') {
-        // Find controlled writers associated with this specific allocation
-        const associatedWriters = controlledWriters.filter(writer => 
-          allocation.song_title && 
-          writer.name &&
-          // Check if this writer is associated with this specific song/allocation
-          (allocation.work_writers?.includes(writer.name) || 
-           allocation.song_title.toLowerCase().includes(writer.name.toLowerCase()) ||
-           allocation.artist?.toLowerCase().includes(writer.name.toLowerCase()))
-        );
-        
-        if (associatedWriters.length > 0) {
-          associatedWriters.forEach(writer => {
-            acc[writer.name] = (acc[writer.name] || 0) + allocation.gross_royalty_amount;
-          });
-        } else if (allocation.work_writers) {
-          // If no controlled writer match found but work_writers exists, use the first writer name from work_writers
-          const writerNames = allocation.work_writers.split(/[,;&|]/).map(w => w.trim()).filter(w => w);
-          if (writerNames.length > 0) {
-            acc[writerNames[0]] = (acc[writerNames[0]] || 0) + allocation.gross_royalty_amount;
-          }
-        }
+      let writerName = null;
+      
+      // Try different sources for writer name in order of preference
+      if (allocation.work_writers) {
+        // Extract first writer from work_writers field
+        const writerNames = allocation.work_writers.split(/[,;&|]/).map(w => w.trim()).filter(w => w);
+        writerName = writerNames[0];
+      } else if (allocation.artist) {
+        // Use artist name as fallback
+        writerName = allocation.artist;
       }
+      
+      if (writerName) {
+        acc[writerName] = (acc[writerName] || 0) + allocation.gross_royalty_amount;
+      }
+      
       return acc;
     }, {} as Record<string, number>);
 
