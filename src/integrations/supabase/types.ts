@@ -4997,6 +4997,101 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_configurations: {
+        Row: {
+          brand_config: Json
+          company_info: Json
+          created_at: string
+          custom_domain: string | null
+          enabled_modules: Json
+          feature_flags: Json
+          id: string
+          max_users: number | null
+          ssl_enabled: boolean | null
+          status: Database["public"]["Enums"]["tenant_status"]
+          subdomain: string | null
+          subscription_tier: string | null
+          tenant_name: string
+          tenant_slug: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brand_config?: Json
+          company_info?: Json
+          created_at?: string
+          custom_domain?: string | null
+          enabled_modules?: Json
+          feature_flags?: Json
+          id?: string
+          max_users?: number | null
+          ssl_enabled?: boolean | null
+          status?: Database["public"]["Enums"]["tenant_status"]
+          subdomain?: string | null
+          subscription_tier?: string | null
+          tenant_name: string
+          tenant_slug: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brand_config?: Json
+          company_info?: Json
+          created_at?: string
+          custom_domain?: string | null
+          enabled_modules?: Json
+          feature_flags?: Json
+          id?: string
+          max_users?: number | null
+          ssl_enabled?: boolean | null
+          status?: Database["public"]["Enums"]["tenant_status"]
+          subdomain?: string | null
+          subscription_tier?: string | null
+          tenant_name?: string
+          tenant_slug?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tenant_users: {
+        Row: {
+          created_at: string
+          id: string
+          permissions: Json
+          role: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permissions?: Json
+          role?: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permissions?: Json
+          role?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_users_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_configurations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       track_tags: {
         Row: {
           album: string | null
@@ -5648,6 +5743,27 @@ export type Database = {
           subscriber_user_id: string
         }[]
       }
+      get_tenant_by_domain: {
+        Args: { domain_name: string }
+        Returns: {
+          brand_config: Json
+          company_info: Json
+          created_at: string
+          custom_domain: string | null
+          enabled_modules: Json
+          feature_flags: Json
+          id: string
+          max_users: number | null
+          ssl_enabled: boolean | null
+          status: Database["public"]["Enums"]["tenant_status"]
+          subdomain: string | null
+          subscription_tier: string | null
+          tenant_name: string
+          tenant_slug: string
+          updated_at: string
+          user_id: string
+        }
+      }
       has_active_trial: {
         Args: { p_modules: string[]; p_user_id: string }
         Returns: boolean
@@ -5795,6 +5911,7 @@ export type Database = {
         | "NBC"
       sender_code_status: "not_submitted" | "submitted" | "verified"
       sync_type: "one_time" | "mfn" | "perpetual" | "term_limited"
+      tenant_status: "active" | "inactive" | "suspended"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -5975,6 +6092,7 @@ export const Constants = {
       ],
       sender_code_status: ["not_submitted", "submitted", "verified"],
       sync_type: ["one_time", "mfn", "perpetual", "term_limited"],
+      tenant_status: ["active", "inactive", "suspended"],
     },
   },
 } as const

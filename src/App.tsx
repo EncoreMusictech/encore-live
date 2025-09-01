@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { DemoAccessProvider } from "@/hooks/useDemoAccess";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { TenantProvider } from "@/contexts/TenantContext";
+import { WhitelabelThemeProvider } from "@/components/WhitelabelThemeProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminOrProtectedRoute from "@/components/AdminOrProtectedRoute";
 import DemoUpgradeModal from "@/components/DemoUpgradeModal";
@@ -38,6 +40,7 @@ import CRMOperationsPage from "./pages/CRMOperationsPage";
 import CRMBlockchainPage from "./pages/CRMBlockchainPage";
 import FeaturesOverviewPage from "./pages/FeaturesOverviewPage";
 import ModuleWalkthroughsPage from "./pages/ModuleWalkthroughsPage";
+import WhitelabelDashboard from "./pages/WhitelabelDashboard";
 
 
 
@@ -64,8 +67,9 @@ const App = () => {
         <SecurityProvider>
           <AuthProvider>
             <DemoAccessProvider>
-              <ThemeProvider defaultTheme="dark" storageKey="encore-ui-theme">
-                <TooltipProvider>
+              <TenantProvider>
+                <WhitelabelThemeProvider>
+                  <TooltipProvider>
                   <Toaster />
                   <Sonner />
                   <DemoUpgradeModal />
@@ -116,6 +120,13 @@ const App = () => {
                         <Route path="/pricing" element={<PricingPage />} />
                         <Route path="/contact" element={<ContactPage />} />
                         <Route path="/documentation" element={<DocumentationPage />} />
+                        <Route path="/whitelabel" element={
+                          <ProtectedRoute>
+                            <ErrorBoundary>
+                              <WhitelabelDashboard />
+                            </ErrorBoundary>
+                          </ProtectedRoute>
+                        } />
                         <Route path="/client-admin" element={
                           <ProtectedRoute>
                             <EmailRestrictedRoute allowedEmails={["info@encoremusic.tech"]}>
@@ -132,13 +143,14 @@ const App = () => {
          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                          <Route path="*" element={<NotFound />} />
                        </Routes>
-                     </TourProvider>
-                   </BrowserRouter>
-                 </TooltipProvider>
-               </ThemeProvider>
-             </DemoAccessProvider>
-           </AuthProvider>
-         </SecurityProvider>
+                      </TourProvider>
+                    </BrowserRouter>
+                  </TooltipProvider>
+                </WhitelabelThemeProvider>
+              </TenantProvider>
+            </DemoAccessProvider>
+          </AuthProvider>
+        </SecurityProvider>
        </QueryClientProvider>
      </ErrorBoundary>
    );
