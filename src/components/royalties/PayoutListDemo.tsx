@@ -14,43 +14,19 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 const demoPayouts = [
   {
     id: "1",
-    period: "Q4 2024",
-    gross_royalties: 15000,
-    net_payable: 12750,
-    amount_due: 12750,
-    payment_method: "ACH",
-    workflow_stage: "pending_review",
-    client_name: "Taylor Swift Publishing"
-  },
-  {
-    id: "2", 
-    period: "Q3 2024",
-    gross_royalties: 8500,
-    net_payable: 7225,
-    amount_due: 7225,
-    payment_method: "Wire",
-    workflow_stage: "approved",
-    client_name: "Kendrick Lamar Music"
-  },
-  {
-    id: "3",
-    period: "Q2 2024", 
-    gross_royalties: 22000,
-    net_payable: 18700,
-    amount_due: 18700,
-    payment_method: "PayPal",
-    workflow_stage: "processing",
-    client_name: "Drake Enterprises"
-  },
-  {
-    id: "4",
-    period: "Q1 2024",
-    gross_royalties: 5200,
-    net_payable: 4420,
-    amount_due: 4420,
-    payment_method: "Check",
-    workflow_stage: "paid",
-    client_name: "Artist #1"
+    period: "Q3 2025",
+    payee_name: "Janishia Jones",
+    total_royalties: 500120.44,
+    commissions: 75018.066,
+    gross_royalties: 425102.37,
+    total_expenses: 100000,
+    net_royalties: 325102.37,
+    royalties_to_date: 500120.44,
+    payments_to_date: 0,
+    net_payable: 325102.37,
+    amount_due: 325102.37,
+    payment_method: "",
+    status: "paid"
   }
 ];
 
@@ -61,8 +37,8 @@ export function PayoutListDemo() {
 
   const filteredPayouts = demoPayouts.filter(payout => {
     const matchesSearch = payout.period.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payout.client_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || payout.workflow_stage === statusFilter;
+                         payout.payee_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || payout.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -148,7 +124,7 @@ export function PayoutListDemo() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by period or client name..."
+            placeholder="Search by period or payee name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -194,95 +170,115 @@ export function PayoutListDemo() {
       {/* Enhanced Table with Workflow Management */}
       <div className="border rounded-md">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={selectedPayouts.length === filteredPayouts.length && filteredPayouts.length > 0}
-                  onCheckedChange={handleSelectAll}
-                />
-              </TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Period</TableHead>
-              <TableHead>Gross Royalties</TableHead>
-              <TableHead>Net Payable</TableHead>
-              <TableHead>Amount Due</TableHead>
-              <TableHead>Payment Method</TableHead>
-              <TableHead>Workflow Stage</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPayouts.map((payout) => (
-              <TableRow key={payout.id}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedPayouts.includes(payout.id)}
-                    onCheckedChange={(checked) => handleSelectPayout(payout.id, checked as boolean)}
-                  />
-                </TableCell>
-                <TableCell className="font-medium">
-                  {payout.client_name}
-                </TableCell>
-                <TableCell>{payout.period}</TableCell>
-                <TableCell>${payout.gross_royalties.toLocaleString()}</TableCell>
-                <TableCell>${payout.net_payable.toLocaleString()}</TableCell>
-                <TableCell className="font-medium">
-                  ${payout.amount_due.toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <Badge className={getPaymentMethodColor(payout.payment_method)}>
-                    {payout.payment_method}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="gap-2">
-                        <Badge className={getWorkflowStageColor(payout.workflow_stage)}>
-                          {getWorkflowStageIcon(payout.workflow_stage)}
-                          {payout.workflow_stage.replace('_', ' ')}
-                        </Badge>
-                        <ChevronDown className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => handleWorkflowUpdate(payout.id, 'pending_review')}>
-                        Move to Pending Review
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleWorkflowUpdate(payout.id, 'approved')}>
-                        Approve
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleWorkflowUpdate(payout.id, 'processing')}>
-                        Start Processing
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleWorkflowUpdate(payout.id, 'paid')}>
-                        Mark as Paid
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => console.log('Export statement for:', payout)}
-                      title="Export PDF Statement"
-                    >
-                      <FileText className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
+           <TableHeader>
+             <TableRow>
+               <TableHead className="w-12">
+                 <Checkbox
+                   checked={selectedPayouts.length === filteredPayouts.length && filteredPayouts.length > 0}
+                   onCheckedChange={handleSelectAll}
+                 />
+               </TableHead>
+               <TableHead>Period</TableHead>
+               <TableHead>Payee Name</TableHead>
+               <TableHead>Total Royalties</TableHead>
+               <TableHead>Commissions</TableHead>
+               <TableHead>Gross Royalties</TableHead>
+               <TableHead>Total Expenses</TableHead>
+               <TableHead>Net Royalties</TableHead>
+               <TableHead>Royalties to Date</TableHead>
+               <TableHead>Payments to Date</TableHead>
+               <TableHead>Net Payable</TableHead>
+               <TableHead>Amount Due</TableHead>
+               <TableHead>Payment Method</TableHead>
+               <TableHead>Status</TableHead>
+               <TableHead>Actions</TableHead>
+             </TableRow>
+           </TableHeader>
+           <TableBody>
+             {filteredPayouts.map((payout) => (
+               <TableRow key={payout.id}>
+                 <TableCell>
+                   <Checkbox
+                     checked={selectedPayouts.includes(payout.id)}
+                     onCheckedChange={(checked) => handleSelectPayout(payout.id, checked as boolean)}
+                   />
+                 </TableCell>
+                 <TableCell>{payout.period}</TableCell>
+                 <TableCell className="font-medium">
+                   {payout.payee_name}
+                 </TableCell>
+                 <TableCell className="text-blue-600 font-medium">
+                   ${payout.total_royalties.toLocaleString()}
+                 </TableCell>
+                 <TableCell className="text-orange-600">
+                   ${payout.commissions.toLocaleString()}
+                 </TableCell>
+                 <TableCell>${payout.gross_royalties.toLocaleString()}</TableCell>
+                 <TableCell className="text-red-600">
+                   ${payout.total_expenses.toLocaleString()}
+                 </TableCell>
+                 <TableCell>${payout.net_royalties.toLocaleString()}</TableCell>
+                 <TableCell>${payout.royalties_to_date.toLocaleString()}</TableCell>
+                 <TableCell>${payout.payments_to_date.toLocaleString()}</TableCell>
+                 <TableCell>${payout.net_payable.toLocaleString()}</TableCell>
+                 <TableCell className="text-green-600 font-medium">
+                   ${payout.amount_due.toLocaleString()}
+                 </TableCell>
+                 <TableCell>
+                   {payout.payment_method && (
+                     <Badge className={getPaymentMethodColor(payout.payment_method)}>
+                       {payout.payment_method}
+                     </Badge>
+                   )}
+                 </TableCell>
+                 <TableCell>
+                   <DropdownMenu>
+                     <DropdownMenuTrigger asChild>
+                       <Button variant="ghost" size="sm" className="gap-2">
+                         <Badge className={getWorkflowStageColor(payout.status)}>
+                           {getWorkflowStageIcon(payout.status)}
+                           {payout.status.replace('_', ' ')}
+                         </Badge>
+                         <ChevronDown className="h-3 w-3" />
+                       </Button>
+                     </DropdownMenuTrigger>
+                     <DropdownMenuContent>
+                       <DropdownMenuItem onClick={() => handleWorkflowUpdate(payout.id, 'pending_review')}>
+                         Move to Pending Review
+                       </DropdownMenuItem>
+                       <DropdownMenuItem onClick={() => handleWorkflowUpdate(payout.id, 'approved')}>
+                         Approve
+                       </DropdownMenuItem>
+                       <DropdownMenuItem onClick={() => handleWorkflowUpdate(payout.id, 'processing')}>
+                         Start Processing
+                       </DropdownMenuItem>
+                       <DropdownMenuItem onClick={() => handleWorkflowUpdate(payout.id, 'paid')}>
+                         Mark as Paid
+                       </DropdownMenuItem>
+                     </DropdownMenuContent>
+                   </DropdownMenu>
+                 </TableCell>
+                 <TableCell>
+                   <div className="flex items-center gap-2">
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       onClick={() => console.log('Export statement for:', payout)}
+                       title="Export PDF Statement"
+                     >
+                       <FileText className="h-4 w-4" />
+                     </Button>
+                     <Button variant="ghost" size="sm">
+                       <Edit className="h-4 w-4" />
+                     </Button>
+                     <Button variant="ghost" size="sm">
+                       <Trash2 className="h-4 w-4" />
+                     </Button>
+                   </div>
+                 </TableCell>
+               </TableRow>
+             ))}
+           </TableBody>
         </Table>
       </div>
 
