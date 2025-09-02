@@ -18,12 +18,15 @@ import { ReconciliationBatchList } from "@/components/royalties/ReconciliationBa
 import { ReconciliationBatchForm } from "@/components/royalties/ReconciliationBatchForm";
 import { ReconciliationAnalytics } from "@/components/royalties/ReconciliationAnalytics";
 import { PayoutList } from "@/components/royalties/PayoutList";
+import { PayoutListDemo } from "@/components/royalties/PayoutListDemo";
 import { PayoutForm } from "@/components/royalties/PayoutForm";
 import { AccountBalancesTable } from "@/components/royalties/AccountBalancesTable";
 import { PayeesTable } from "@/components/royalties/PayeesTable";
 import { ExpensesTable } from "@/components/royalties/ExpensesTable";
+import { useDemoAccess } from "@/hooks/useDemoAccess";
 
 export default function CRMRoyaltiesPage() {
+  const { isDemo } = useDemoAccess();
   const [showForm, setShowForm] = useState(false);
   const [showPayoutForm, setShowPayoutForm] = useState(false);
   const [showBatchForm, setShowBatchForm] = useState(false);
@@ -327,7 +330,7 @@ export default function CRMRoyaltiesPage() {
                 </TabsContent>
 
                 <TabsContent value="payouts">
-                  <PayoutList />
+                  {isDemo ? <PayoutListDemo /> : <PayoutList />}
                 </TabsContent>
               </Tabs>
             </CardContent>
