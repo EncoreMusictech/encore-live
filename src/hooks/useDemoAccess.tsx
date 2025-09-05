@@ -82,7 +82,7 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
 
   // Determine if user is demo or admin
   const isAdmin = user?.email === ADMIN_EMAIL;
-  const isDemo = (!user || user?.email === DEMO_EMAIL || user?.user_metadata?.role === 'demo') && !isAdmin; // Unauthenticated users, demo account, or users with demo role are demo users, but exclude admin users
+  const isDemo = user && (user?.email === DEMO_EMAIL || user?.user_metadata?.role === 'demo') && !isAdmin; // Only authenticated demo account users are demo users
 
   // Load demo limits from localStorage on mount
   useEffect(() => {
@@ -118,30 +118,10 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
     // Admin users have full access
     if (isAdmin) return true;
     
-    // Demo account users have limited access (same as unauthenticated demo users)
-    if (user?.email === DEMO_EMAIL) {
-      switch (module) {
-        case 'catalogValuation':
-          return demoLimits.catalogValuation.searches < demoLimits.catalogValuation.maxSearches;
-        case 'contractManagement':
-          return demoLimits.contractManagement.contracts < demoLimits.contractManagement.maxContracts;
-        case 'copyrightManagement':
-          return demoLimits.copyrightManagement.registrations < demoLimits.copyrightManagement.maxRegistrations;
-        case 'royaltiesProcessing':
-          return demoLimits.royaltiesProcessing.imports < demoLimits.royaltiesProcessing.maxImports;
-        case 'syncLicensing':
-          return demoLimits.syncLicensing.licenses < demoLimits.syncLicensing.maxLicenses;
-        case 'dealSimulator':
-          return demoLimits.dealSimulator.scenarios < demoLimits.dealSimulator.maxScenarios;
-        default:
-          return false;
-      }
-    }
-    
     // Authenticated non-admin, non-demo users have full access
     if (user && !isDemo) return true;
     
-    // Unauthenticated demo users have limited access
+    // Demo account users have limited access
     if (isDemo) {
       switch (module) {
         case 'catalogValuation':
@@ -167,8 +147,8 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
   const incrementUsage = (module: string): void => {
     if (isAdmin) return; // Admin never has limits
     
-    // Track usage for demo account and unauthenticated demo users
-    if (user?.email === DEMO_EMAIL || isDemo) {
+    // Track usage for demo account users
+    if (isDemo) {
       setDemoLimits(prev => {
         const newLimits = { ...prev };
         
@@ -201,8 +181,8 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
   const showUpgradeModalForModule = (module: string): void => {
     if (isAdmin) return; // Admin never sees upgrade modals
     
-    // Show upgrade modal for demo account and unauthenticated demo users
-    if (user?.email === DEMO_EMAIL || isDemo) {
+    // Show upgrade modal for demo account users
+    if (isDemo) {
       switch (module) {
         case 'catalogValuation':
           setUpgradeMessage('Demo complete! You\'ve used your free catalog valuation. Sign up to unlock unlimited valuations and deal simulations.');
@@ -230,8 +210,8 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
   const getRemainingUsage = (module: string): number => {
     if (isAdmin) return Infinity; // Admin has unlimited access
     
-    // Demo account and unauthenticated demo users have limited access
-    if (user?.email === DEMO_EMAIL || isDemo) {
+    // Demo account users have limited access
+    if (isDemo) {
       switch (module) {
         case 'catalogValuation':
           return demoLimits.catalogValuation.maxSearches - demoLimits.catalogValuation.searches;
