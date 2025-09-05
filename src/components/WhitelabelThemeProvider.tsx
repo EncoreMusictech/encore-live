@@ -63,7 +63,7 @@ export function WhitelabelThemeProvider({ children }: WhitelabelThemeProviderPro
   }, [tenantConfig, loading]);
 
   return (
-    <ThemeProvider>
+    <ThemeProvider defaultTheme="dark">
       {children}
     </ThemeProvider>
   );

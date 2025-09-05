@@ -69,8 +69,7 @@ const App = () => {
             <DemoAccessProvider>
               <TenantProvider>
                 <WhitelabelThemeProvider>
-                  <ThemeProvider defaultTheme="dark">
-                     <TooltipProvider>
+                    <TooltipProvider>
                        <Toaster />
                        <Sonner />
                        <DemoUpgradeModal />
@@ -147,7 +146,6 @@ const App = () => {
                          </TourProvider>
                        </BrowserRouter>
                      </TooltipProvider>
-                   </ThemeProvider>
                  </WhitelabelThemeProvider>
               </TenantProvider>
             </DemoAccessProvider>
