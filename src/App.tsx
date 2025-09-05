@@ -69,84 +69,86 @@ const App = () => {
             <DemoAccessProvider>
               <TenantProvider>
                 <WhitelabelThemeProvider>
-                  <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
-                  <DemoUpgradeModal />
-                  <BrowserRouter>
-                    <TourProvider>
-                      <TourOverlay />
-                      <Routes>
-                        <Route path="/auth" element={<Auth />} />
-                        <Route index element={<Index />} />
-                        
-                        
-                        {/* Dashboard Routes */}
-                        <Route path="/dashboard" element={<CRMLayout />}>
-                          <Route index element={<CRMPage />} />
-                          <Route path="catalog-valuation" element={<CRMCatalogValuationPage />} />
-                          <Route path="contracts" element={<CRMContractsPage />} />
-                          <Route path="copyright" element={<CRMCopyrightPage />} />
-                          <Route path="sync" element={<CRMSyncPage />} />
-                          <Route path="royalties" element={<CRMRoyaltiesPage />} />
-                          <Route path="client-admin" element={<CRMClientsPage />} />
-                          <Route path="operations" element={<CRMOperationsPage />} />
-                          <Route path="blockchain" element={<CRMBlockchainPage />} />
-                          <Route path="walkthroughs" element={<ModuleWalkthroughsPage />} />
-                        </Route>
-                        
-                        {/* Client Portal - Accessible to invited clients */}
-                        <Route path="/client-portal" element={
-                          <ProtectedRoute>
-                            <ErrorBoundary>
-                              <ClientPortal />
-                            </ErrorBoundary>
-                          </ProtectedRoute>
-                        } />
-                        
-                        {/* Features Routes */}
-                        <Route path="/features" element={<FeaturesOverviewPage />} />
-                        
-                        
-                        <Route path="/use-cases/:userCaseId" element={<UserCasePage />} />
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        <Route path="/pricing" element={<PricingPage />} />
-                        <Route path="/contact" element={<ContactPage />} />
-                        <Route path="/documentation" element={<DocumentationPage />} />
-                        <Route path="/whitelabel" element={
-                          <ProtectedRoute>
-                            <ErrorBoundary>
-                              <WhitelabelDashboard />
-                            </ErrorBoundary>
-                          </ProtectedRoute>
-                        } />
-                        <Route path="/client-admin" element={
-                          <ProtectedRoute>
-                            <EmailRestrictedRoute allowedEmails={["info@encoremusic.tech"]}>
-                              <ErrorBoundary>
-                                <ClientAdminPage />
-                              </ErrorBoundary>
-                            </EmailRestrictedRoute>
-                          </ProtectedRoute>
-        } />
-        
-        {/* Demo Routes */}
-        
-        
-         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                         <Route path="*" element={<NotFound />} />
-                       </Routes>
-                      </TourProvider>
-                    </BrowserRouter>
-                  </TooltipProvider>
-                </WhitelabelThemeProvider>
+                  <ThemeProvider defaultTheme="dark">
+                     <TooltipProvider>
+                       <Toaster />
+                       <Sonner />
+                       <DemoUpgradeModal />
+                       <BrowserRouter>
+                         <TourProvider>
+                           <TourOverlay />
+                           <Routes>
+                             <Route path="/auth" element={<Auth />} />
+                             <Route index element={<Index />} />
+                             
+                             
+                             {/* Dashboard Routes */}
+                             <Route path="/dashboard" element={<CRMLayout />}>
+                               <Route index element={<CRMPage />} />
+                               <Route path="catalog-valuation" element={<CRMCatalogValuationPage />} />
+                               <Route path="contracts" element={<CRMContractsPage />} />
+                               <Route path="copyright" element={<CRMCopyrightPage />} />
+                               <Route path="sync" element={<CRMSyncPage />} />
+                               <Route path="royalties" element={<CRMRoyaltiesPage />} />
+                               <Route path="client-admin" element={<CRMClientsPage />} />
+                               <Route path="operations" element={<CRMOperationsPage />} />
+                               <Route path="blockchain" element={<CRMBlockchainPage />} />
+                               <Route path="walkthroughs" element={<ModuleWalkthroughsPage />} />
+                             </Route>
+                             
+                             {/* Client Portal - Accessible to invited clients */}
+                             <Route path="/client-portal" element={
+                               <ProtectedRoute>
+                                 <ErrorBoundary>
+                                   <ClientPortal />
+                                 </ErrorBoundary>
+                               </ProtectedRoute>
+                             } />
+                             
+                             {/* Features Routes */}
+                             <Route path="/features" element={<FeaturesOverviewPage />} />
+                             
+                             
+                             <Route path="/use-cases/:userCaseId" element={<UserCasePage />} />
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             <Route path="/pricing" element={<PricingPage />} />
+                             <Route path="/contact" element={<ContactPage />} />
+                             <Route path="/documentation" element={<DocumentationPage />} />
+                             <Route path="/whitelabel" element={
+                               <ProtectedRoute>
+                                 <ErrorBoundary>
+                                   <WhitelabelDashboard />
+                                 </ErrorBoundary>
+                               </ProtectedRoute>
+                             } />
+                             <Route path="/client-admin" element={
+                               <ProtectedRoute>
+                                 <EmailRestrictedRoute allowedEmails={["info@encoremusic.tech"]}>
+                                   <ErrorBoundary>
+                                     <ClientAdminPage />
+                                   </ErrorBoundary>
+                                 </EmailRestrictedRoute>
+                               </ProtectedRoute>
+                             } />
+                             
+                             {/* Demo Routes */}
+                             
+                             
+                              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                              <Route path="*" element={<NotFound />} />
+                           </Routes>
+                         </TourProvider>
+                       </BrowserRouter>
+                     </TooltipProvider>
+                   </ThemeProvider>
+                 </WhitelabelThemeProvider>
               </TenantProvider>
             </DemoAccessProvider>
           </AuthProvider>
