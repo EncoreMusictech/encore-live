@@ -471,3 +471,101 @@ Based on comprehensive analysis, **ZERO functions are placeholder-only**. All 46
 3. **Third-party Marketplace** - Leverage existing integration framework
 
 **STATUS: The backend is architecturally complete and production-ready. Only external API keys are needed for full functionality.**
+
+---
+
+## 🚀 IMMEDIATE ACTION REQUIRED: API Key Configuration
+
+### Critical API Keys Needed for Full Platform Functionality
+
+The platform is **100% code-complete** but requires external service API keys. Configure these to activate all features:
+
+#### 🔑 Required API Keys & Configuration Tasks
+
+##### ✅ **OpenAI API Key** - Powers 15+ AI Functions
+- **Functions Affected**: `generate-report`, `generate-contract-clause`, `analyze-audio`, `enhanced-bmi-agent`, `bulk-bmi-lookup`
+- **Features Enabled**: 
+  - AI-powered valuation reports
+  - Contract clause generation
+  - Audio analysis for sync licensing
+  - Enhanced PRO repertoire search
+- **Setup**: Add `OPENAI_API_KEY` to Supabase edge function secrets
+- **Priority**: 🔴 **CRITICAL** - Blocks major AI features
+
+##### ✅ **Perplexity API Key** - Research & Lookup Functions  
+- **Functions Affected**: `ascap-lookup`, `generate-report`
+- **Features Enabled**:
+  - ASCAP repertoire searches
+  - Market research in valuation reports
+- **Setup**: Add `PERPLEXITY_API_KEY` to Supabase edge function secrets
+- **Priority**: 🟡 **HIGH** - Enhances research capabilities
+
+##### ✅ **Stripe Secret Key** - Payment Processing (3 Functions)
+- **Functions Affected**: `check-subscription`, `create-checkout`, `customer-portal`
+- **Features Enabled**:
+  - Subscription management
+  - Payment processing
+  - Customer billing portal
+- **Setup**: Add `STRIPE_SECRET_KEY` to Supabase edge function secrets
+- **Priority**: 🔴 **CRITICAL** - Required for monetization
+
+##### ✅ **DocuSign Integration Keys** - Contract Management (4 Variables)
+- **Functions Affected**: `docusign-import`, `docusign-send`
+- **Features Enabled**:
+  - Import contracts from DocuSign
+  - Send contracts for electronic signature
+- **Setup Required**:
+  - `DOCUSIGN_INTEGRATION_KEY`
+  - `DOCUSIGN_SECRET_KEY`
+  - `DOCUSIGN_USER_ID`
+  - `DOCUSIGN_ACCOUNT_ID`
+- **Priority**: 🟡 **HIGH** - Professional contract workflows
+
+##### ✅ **Resend API Key** - Email Services (6+ Functions)
+- **Functions Affected**: `client-invitation-lifecycle`, `send-client-invitation`, `send-catalog-valuation-onboarding`, `send-contract-email`, `send-support-ticket`
+- **Features Enabled**:
+  - Client portal invitations
+  - Automated email workflows
+  - Support ticket notifications
+  - Onboarding sequences
+- **Setup**: Add `RESEND_API_KEY` to Supabase edge function secrets
+- **Priority**: 🟡 **HIGH** - Client communication system
+
+### 🟢 Already Configured & Working
+- **Supabase** - Database, auth, storage (✅ Fully configured)
+- **Spotify API** - Music catalog data (✅ Built-in credentials)
+- **MusicBrainz** - Music database (✅ No key required)
+- **PRO Websites** - Web scraping (✅ No keys required)
+
+### 📋 Configuration Checklist
+
+**Phase 1: Core Platform Activation**
+- [ ] **OpenAI API Key** → Enables AI features across platform
+- [ ] **Stripe Secret Key** → Enables subscription/payment system
+- [ ] **Resend API Key** → Enables email communication system
+
+**Phase 2: Enhanced Features**  
+- [ ] **Perplexity API Key** → Enhances research capabilities
+- [ ] **DocuSign Keys (4)** → Enables professional contract workflows
+
+**Phase 3: Testing & Validation**
+- [ ] Test all AI functions with OpenAI integration
+- [ ] Verify payment flows with Stripe
+- [ ] Confirm email delivery with Resend
+- [ ] Validate DocuSign contract import/send workflows
+- [ ] Test Perplexity-powered research features
+
+### 🎯 Expected Outcome After Configuration
+With all API keys configured, the platform becomes a **fully functional enterprise music IP management system** with:
+- ✅ AI-powered catalog valuation and reporting
+- ✅ Professional contract management with e-signatures  
+- ✅ Comprehensive royalty processing and statements
+- ✅ Advanced sync licensing workflows
+- ✅ Complete copyright and PRO integration
+- ✅ Automated client communication and billing
+- ✅ Audio analysis and tagging system
+
+---
+
+*Generated: January 2025*
+*Version: 1.0*
