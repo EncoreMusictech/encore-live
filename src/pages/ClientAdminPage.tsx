@@ -562,20 +562,22 @@ export default function ClientAdminPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {clientAccess.length === 0 ? (
-                    <p className="text-muted-foreground">No active client access</p>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Client</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-center">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {clientAccess.filter(access => access.status === 'active').map((access) => (
+                  {(() => {
+                    const activeClients = clientAccess.filter(access => access.status === 'active');
+                    return activeClients.length === 0 ? (
+                      <p className="text-muted-foreground">No active client access</p>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Client</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-center">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {activeClients.map((access) => (
                           <TableRow key={access.id}>
                             <TableCell>
                               <div>
@@ -612,10 +614,11 @@ export default function ClientAdminPage() {
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
+                          ))}
+                        </TableBody>
+                      </Table>
+                    );
+                  })()}
                 </CardContent>
               </Card>
 
