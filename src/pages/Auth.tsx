@@ -17,6 +17,9 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showSetNewPassword, setShowSetNewPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const { signIn, signUp, user, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,7 +30,27 @@ const Auth = () => {
     updatePageMetadata('auth');
   }, []);
 
-  // Redirect authenticated users to appropriate page
+useEffect(() => {
+  // Detect Supabase recovery link and auth event
+  const hash = window.location.hash || '';
+  const search = window.location.search || '';
+  const hasRecoveryInHash = hash.includes('type=recovery');
+  const params = new URLSearchParams(search);
+  if (hasRecoveryInHash || params.get('recovery') === '1') {
+    setShowSetNewPassword(true);
+    if (hasRecoveryInHash) {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      setShowSetNewPassword(true);
+    }
+  });
+  return () => subscription.unsubscribe();
+}, []);
+
+// Redirect authenticated users to appropriate page
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -68,6 +91,33 @@ const Auth = () => {
     await resetPassword(email);
     setLoading(false);
     setShowForgotPassword(false);
+  };
+
+  const handleSetNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (newPassword.length < 6) {
+        setLoading(false);
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setLoading(false);
+        return;
+      }
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        console.error('Update password error:', error);
+      } else {
+        await supabase.auth.signOut();
+        setShowSetNewPassword(false);
+        setNewPassword('');
+        setConfirmPassword('');
+        navigate('/auth', { replace: true });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDemoLogin = async () => {
@@ -124,7 +174,45 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="signin">
-              {showForgotPassword ? (
+              {showSetNewPassword ? (
+                <form onSubmit={handleSetNewPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      placeholder="Enter new password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? 'Updating...' : 'Update Password'}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    className="w-full"
+                    onClick={() => setShowSetNewPassword(false)}
+                  >
+                    Back to Sign In
+                  </Button>
+                </form>
+              ) : showForgotPassword ? (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="reset-email">Email</Label>

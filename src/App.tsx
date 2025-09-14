@@ -41,6 +41,7 @@ import CRMBlockchainPage from "./pages/CRMBlockchainPage";
 import FeaturesOverviewPage from "./pages/FeaturesOverviewPage";
 import ModuleWalkthroughsPage from "./pages/ModuleWalkthroughsPage";
 import WhitelabelDashboard from "./pages/WhitelabelDashboard";
+import RecoveryRedirect from "@/components/RecoveryRedirect";
 
 
 
@@ -76,6 +77,7 @@ const App = () => {
                        <BrowserRouter>
                          <TourProvider>
                            <TourOverlay />
+                           <RecoveryRedirect />
                            <Routes>
                              <Route path="/auth" element={<Auth />} />
                              <Route index element={<Index />} />
