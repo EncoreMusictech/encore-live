@@ -26,7 +26,7 @@ import NotFound from "./pages/NotFound";
 import UserCasePage from "./pages/UserCasePage";
 import PricingPage from "./pages/PricingPage";
 import ClientPortal from "./components/ClientPortal";
-import ClientAdminPage from "./pages/ClientAdminPage";
+
 import ContactPage from "./pages/ContactPage";
 import DocumentationPage from "./pages/DocumentationPage";
 import CRMPage from "./pages/CRMPage";
@@ -137,15 +137,6 @@ const App = () => {
                                   </ErrorBoundary>
                                 </ProtectedRoute>
                               } />
-                             <Route path="/client-admin" element={
-                               <ProtectedRoute>
-                                 <EmailRestrictedRoute allowedEmails={["info@encoremusic.tech"]}>
-                                   <ErrorBoundary>
-                                     <ClientAdminPage />
-                                   </ErrorBoundary>
-                                 </EmailRestrictedRoute>
-                               </ProtectedRoute>
-                             } />
                              
                              {/* Demo Routes */}
                              
