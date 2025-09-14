@@ -53,6 +53,10 @@ useEffect(() => {
 // Redirect authenticated users to appropriate page
   useEffect(() => {
     if (!user) return;
+    
+    // Don't redirect if we're in password recovery mode
+    if (showSetNewPassword) return;
+    
     (async () => {
       const ADMIN_EMAIL = 'info@encoremusic.tech';
       try {
@@ -69,7 +73,7 @@ useEffect(() => {
       const from = (location.state as any)?.from?.pathname || defaultRedirect;
       navigate(from, { replace: true });
     })();
-  }, [user, navigate, location, isClient]);
+  }, [user, navigate, location, isClient, showSetNewPassword]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
