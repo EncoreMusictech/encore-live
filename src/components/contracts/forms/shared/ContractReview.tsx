@@ -26,22 +26,23 @@ export function ContractReview({
   const basicValidation: ValidationCheck[] = [
     {
       label: "Agreement title provided",
-      isValid: !!(data.title),
+      isValid: !!(data.agreementTitle || data.title),
       required: true
     },
     {
       label: "Counterparty information complete",
-      isValid: !!(data.counterparty_name),
+      isValid: !!(data.counterparty || data.counterparty_name),
       required: true
     },
     {
       label: "Contact information provided",
-      isValid: !!(data.party1_contact_name || data.contact_name) && !!(data.party1_email || data.recipient_email),
+      isValid: !!(data.firstParty?.contactName || data.party1_contact_name || data.contact_name) && 
+               !!(data.firstParty?.email || data.party1_email || data.recipient_email),
       required: true
     },
     {
       label: "Effective date set",
-      isValid: !!(data.effective_date),
+      isValid: !!(data.effectiveDate || data.effective_date),
       required: false
     }
   ];
@@ -122,19 +123,19 @@ export function ContractReview({
                 <div>
                   <span className="text-sm font-medium">Title:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.title || "Not specified"}
+                    {data.agreementTitle || data.title || "Not specified"}
                   </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Counterparty:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.counterparty_name || "Not specified"}
+                    {data.counterparty || data.counterparty_name || "Not specified"}
                   </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Territory:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.territory || "Worldwide"}
+                    {data.territory || "worldwide"}
                   </p>
                 </div>
               </div>
@@ -148,19 +149,21 @@ export function ContractReview({
                 <div>
                   <span className="text-sm font-medium">Effective Date:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.effective_date ? format(new Date(data.effective_date), "PPP") : "Not set"}
+                    {(data.effectiveDate || data.effective_date) ? 
+                      format(new Date(data.effectiveDate || data.effective_date), "PPP") : "Not set"}
                   </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Expiration Date:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.end_date ? format(new Date(data.end_date), "PPP") : "Not set"}
+                    {(data.expirationDate || data.end_date) ? 
+                      format(new Date(data.expirationDate || data.end_date), "PPP") : "Not set"}
                   </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Governing Law:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.governing_law || "Not specified"}
+                    {data.governingLaw || data.governing_law || "Not specified"}
                   </p>
                 </div>
               </div>
@@ -178,19 +181,19 @@ export function ContractReview({
                 <div>
                   <span className="text-sm font-medium">Name:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.party1_contact_name || data.contact_name || "Not provided"}
+                    {data.firstParty?.contactName || data.party1_contact_name || data.contact_name || "Not provided"}
                   </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Email:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.party1_email || data.recipient_email || "Not provided"}
+                    {data.firstParty?.email || data.party1_email || data.recipient_email || "Not provided"}
                   </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Phone:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.party1_phone || data.contact_phone || "Not provided"}
+                    {data.firstParty?.phone || data.party1_phone || data.contact_phone || "Not provided"}
                   </p>
                 </div>
               </div>
@@ -204,19 +207,19 @@ export function ContractReview({
                 <div>
                   <span className="text-sm font-medium">Company/Name:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.party2_contact_name || data.counterparty_name || "Not provided"}
+                    {data.secondParty?.contactName || data.party2_contact_name || data.counterparty || data.counterparty_name || "Not provided"}
                   </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Email:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.party2_email || "Not provided"}
+                    {data.secondParty?.email || data.party2_email || "Not provided"}
                   </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Phone:</span>
                   <p className="text-sm text-muted-foreground">
-                    {data.party2_phone || "Not provided"}
+                    {data.secondParty?.phone || data.party2_phone || "Not provided"}
                   </p>
                 </div>
               </div>
