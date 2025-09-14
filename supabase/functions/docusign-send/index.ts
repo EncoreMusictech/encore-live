@@ -166,24 +166,63 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
   return bytes.buffer;
 }
 
+function encodeDerLength(len: number): Uint8Array {
+  if (len < 128) return new Uint8Array([len]);
+  const bytes: number[] = [];
+  let val = len;
+  while (val > 0) {
+    bytes.unshift(val & 0xff);
+    val >>= 8;
+  }
+  return new Uint8Array([0x80 | bytes.length, ...bytes]);
+}
+
+function concatBytes(...arrays: Uint8Array[]): Uint8Array {
+  const total = arrays.reduce((sum, a) => sum + a.length, 0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const a of arrays) { out.set(a, offset); offset += a.length; }
+  return out;
+}
+
+function wrapPkcs1ToPkcs8(pkcs1: Uint8Array): Uint8Array {
+  const version = new Uint8Array([0x02, 0x01, 0x00]);
+  const oid = new Uint8Array([0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01]);
+  const nullDer = new Uint8Array([0x05, 0x00]);
+  const algIdBody = concatBytes(oid, nullDer);
+  const algId = concatBytes(new Uint8Array([0x30]), encodeDerLength(algIdBody.length), algIdBody);
+  const pkOctet = concatBytes(new Uint8Array([0x04]), encodeDerLength(pkcs1.length), pkcs1);
+  const topBody = concatBytes(version, algId, pkOctet);
+  const topSeq = concatBytes(new Uint8Array([0x30]), encodeDerLength(topBody.length), topBody);
+  return topSeq;
+}
+
 async function importPrivateKey(privateKeyPem: string): Promise<CryptoKey> {
-  const keyData = pemToArrayBuffer(privateKeyPem)
+  const normalized = (privateKeyPem || '').replace(/\\n/g, '\n');
+  const isPkcs1 = /-----BEGIN RSA PRIVATE KEY-----/.test(normalized);
+  const rawDer = new Uint8Array(pemToArrayBuffer(privateKeyPem));
+  const pkcs8Der = isPkcs1 ? wrapPkcs1ToPkcs8(rawDer) : rawDer;
   try {
     return await crypto.subtle.importKey(
       'pkcs8',
-      keyData,
+      pkcs8Der.buffer,
       { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
       false,
       ['sign']
-    )
-  } catch (_) {
-    return await crypto.subtle.importKey(
-      'pkcs1',
-      keyData,
-      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-      false,
-      ['sign']
-    )
+    );
+  } catch (e1) {
+    try {
+      const wrapped = wrapPkcs1ToPkcs8(rawDer);
+      return await crypto.subtle.importKey(
+        'pkcs8',
+        wrapped.buffer,
+        { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+    } catch (e2) {
+      throw e2;
+    }
   }
 }
 
