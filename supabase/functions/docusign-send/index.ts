@@ -134,30 +134,67 @@ serve(async (req) => {
   }
 });
 
-// Helper function to generate JWT token (simplified version)
-async function generateJWTToken(integrationKey: string, userId: string, privateKey: string): Promise<string> {
-  const header = {
-    alg: 'RS256',
-    typ: 'JWT'
-  };
+// Helper utilities for JWT
+function base64UrlEncode(input: Uint8Array | string): string {
+  const raw = typeof input === 'string' ? new TextEncoder().encode(input) : input
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(raw)))
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+}
 
-  const now = Math.floor(Date.now() / 1000);
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const cleaned = pem
+    .replace('-----BEGIN PRIVATE KEY-----', '')
+    .replace('-----END PRIVATE KEY-----', '')
+    .replace('-----BEGIN RSA PRIVATE KEY-----', '')
+    .replace('-----END RSA PRIVATE KEY-----', '')
+    .replace(/\r?\n|\r/g, '')
+    .trim()
+  const binary = atob(cleaned)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes.buffer
+}
+
+async function importPrivateKey(privateKeyPem: string): Promise<CryptoKey> {
+  const keyData = pemToArrayBuffer(privateKeyPem)
+  try {
+    return await crypto.subtle.importKey(
+      'pkcs8',
+      keyData,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+  } catch (_) {
+    return await crypto.subtle.importKey(
+      'pkcs1',
+      keyData,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+  }
+}
+
+// Helper function to generate JWT token (RS256)
+async function generateJWTToken(integrationKey: string, userId: string, privateKeyPem: string): Promise<string> {
+  const header = { alg: 'RS256', typ: 'JWT' }
+  const now = Math.floor(Date.now() / 1000)
   const payload = {
     iss: integrationKey,
     sub: userId,
     aud: 'account-d.docusign.com',
     iat: now,
-    exp: now + 3600, // 1 hour
+    exp: now + 3600,
     scope: 'signature impersonation'
-  };
-
-  // For simplicity, we'll use a basic JWT implementation
-  // In production, you might want to use a more robust JWT library
-  const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, '');
-  const encodedPayload = btoa(JSON.stringify(payload)).replace(/=/g, '');
-  
-  // Note: This is a simplified version. In production, you'd properly sign with the private key
-  const signature = btoa(`${encodedHeader}.${encodedPayload}.signature`).replace(/=/g, '');
-  
-  return `${encodedHeader}.${encodedPayload}.${signature}`;
+  }
+  const encodedHeader = base64UrlEncode(JSON.stringify(header))
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload))
+  const signingInput = `${encodedHeader}.${encodedPayload}`
+  const key = await importPrivateKey(privateKeyPem)
+  const signature = new Uint8Array(
+    await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(signingInput))
+  )
+  const encodedSignature = base64UrlEncode(signature)
+  return `${encodedHeader}.${encodedPayload}.${encodedSignature}`
 }
