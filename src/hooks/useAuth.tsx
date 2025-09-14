@@ -17,6 +17,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -230,6 +231,79 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    // Rate limiting for reset password attempts
+    const clientIp = 'reset-password-attempt';
+    if (!clientRateLimit(clientIp, 5, 900000)) { // 5 attempts per 15 minutes
+      const rateLimitError = { message: "Too many reset password attempts. Please try again later." };
+      logSecurityEvent('reset_password_rate_limit_exceeded', { email: sanitizeInput(email) });
+      toast({
+        title: "Reset failed",
+        description: rateLimitError.message,
+        variant: "destructive",
+      });
+      return { error: rateLimitError };
+    }
+
+    // Input validation and sanitization
+    if (!email?.trim()) {
+      const validationError = { message: "Email is required" };
+      logSecurityEvent('reset_password_missing_email', {});
+      toast({
+        title: "Reset failed",
+        description: validationError.message,
+        variant: "destructive",
+      });
+      return { error: validationError };
+    }
+
+    const sanitizedEmail = sanitizeInput(email.trim().toLowerCase(), 320);
+    
+    if (!validateEmail(sanitizedEmail)) {
+      const validationError = { message: "Please enter a valid email address" };
+      logSecurityEvent('reset_password_invalid_email', { email: sanitizedEmail });
+      toast({
+        title: "Reset failed",
+        description: validationError.message,
+        variant: "destructive",
+      });
+      return { error: validationError };
+    }
+
+    const redirectUrl = `${window.location.origin}/auth`;
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
+      redirectTo: redirectUrl,
+    });
+
+    if (error) {
+      logSecurityEvent('reset_password_failed', { 
+        email: sanitizedEmail, 
+        error: error.message,
+        timestamp: Date.now()
+      });
+      
+      let errorMessage = "Reset password failed. Please try again.";
+      if (error.message.includes('rate')) {
+        errorMessage = "Too many requests. Please try again later.";
+      }
+      
+      toast({
+        title: "Reset failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } else {
+      logSecurityEvent('reset_password_success', { email: sanitizedEmail });
+      toast({
+        title: "Check your email",
+        description: "We've sent you a password reset link",
+      });
+    }
+
+    return { error };
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -238,6 +312,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signUp,
       signIn,
       signOut,
+      resetPassword,
     }}>
       {children}
     </AuthContext.Provider>
