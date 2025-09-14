@@ -42,6 +42,12 @@ export function DocuSignImport({ onBack, onSuccess }: DocuSignImportProps) {
   const [contractType, setContractType] = useState<string>("");
   const [title, setTitle] = useState<string>("");
   const [counterpartyName, setCounterpartyName] = useState<string>("");
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [testResults, setTestResults] = useState<{
+    authentication: boolean | null;
+    envelopeCount: number | null;
+    error: string | null;
+  }>({ authentication: null, envelopeCount: null, error: null });
   const { toast } = useToast();
   const { user } = useAuth();
   const { canAccess, incrementUsage, showUpgradeModalForModule, isDemo } = useDemoAccess();
@@ -187,6 +193,63 @@ export function DocuSignImport({ onBack, onSuccess }: DocuSignImportProps) {
     }
   };
 
+  const testConnection = async () => {
+    setIsTestingConnection(true);
+    setTestResults({ authentication: null, envelopeCount: null, error: null });
+    
+    try {
+      // Test authentication
+      const { data: authData, error: authError } = await supabase.functions.invoke('docusign-import', {
+        body: { action: 'authenticate' }
+      });
+
+      if (authError) throw authError;
+
+      if (authData.success) {
+        setTestResults(prev => ({ ...prev, authentication: true }));
+        
+        // Test envelope listing
+        const { data: envData, error: envError } = await supabase.functions.invoke('docusign-import', {
+          body: { 
+            action: 'listEnvelopes',
+            accessToken: authData.accessToken
+          }
+        });
+
+        if (envError) throw envError;
+
+        if (envData.success) {
+          setTestResults(prev => ({ 
+            ...prev, 
+            envelopeCount: envData.envelopes?.length || 0 
+          }));
+          
+          toast({
+            title: "Connection Test Successful! ✅",
+            description: `DocuSign connected successfully. Found ${envData.envelopes?.length || 0} envelopes.`,
+          });
+        }
+      } else {
+        throw new Error('Authentication failed');
+      }
+    } catch (error: any) {
+      console.error('Connection test error:', error);
+      setTestResults(prev => ({ 
+        ...prev, 
+        authentication: false, 
+        error: error.message || 'Connection test failed' 
+      }));
+      
+      toast({
+        title: "Connection Test Failed ❌",
+        description: error.message || "Failed to connect to DocuSign. Please check your credentials.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
   if (!accessToken) {
     return (
       <div className="space-y-6">
@@ -205,18 +268,62 @@ export function DocuSignImport({ onBack, onSuccess }: DocuSignImportProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={authenticate} 
-              disabled={isLoading}
-              className="w-full gap-2"
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <FileText className="h-4 w-4" />
+            <div className="space-y-4">
+              <Button 
+                onClick={testConnection} 
+                disabled={isTestingConnection}
+                variant="outline"
+                className="w-full gap-2"
+              >
+                {isTestingConnection ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                {isTestingConnection ? "Testing Connection..." : "Test DocuSign Connection"}
+              </Button>
+              
+              {/* Test Results */}
+              {(testResults.authentication !== null || testResults.error) && (
+                <Card className="bg-muted/50">
+                  <CardContent className="p-4">
+                    <h4 className="font-medium mb-2">Connection Test Results:</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span>Authentication:</span>
+                        {testResults.authentication === true && <Badge variant="default">✅ Success</Badge>}
+                        {testResults.authentication === false && <Badge variant="destructive">❌ Failed</Badge>}
+                        {testResults.authentication === null && <Badge variant="secondary">⏳ Pending</Badge>}
+                      </div>
+                      {testResults.envelopeCount !== null && (
+                        <div className="flex items-center gap-2">
+                          <span>Envelopes found:</span>
+                          <Badge variant="outline">{testResults.envelopeCount}</Badge>
+                        </div>
+                      )}
+                      {testResults.error && (
+                        <div className="text-destructive">
+                          <strong>Error:</strong> {testResults.error}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
-              {isLoading ? "Connecting..." : "Connect to DocuSign"}
-            </Button>
+              
+              <Button 
+                onClick={authenticate} 
+                disabled={isLoading}
+                className="w-full gap-2"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                {isLoading ? "Connecting..." : "Connect to DocuSign"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
