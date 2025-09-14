@@ -325,8 +325,8 @@ export function ContractList({ onEdit, contracts: propContracts }: ContractListP
           });
         } else {
           toast({
-            title: "No Contracts Deleted",
-            description: "No eligible contracts were deleted. They may be protected by permissions.",
+            title: "Delete Blocked",
+            description: `The selected contract${contractsToDelete.length > 1 ? 's are' : ' is'} protected and cannot be deleted. This may be due to their status or active connections.`,
             variant: "destructive",
           });
         }
