@@ -240,18 +240,28 @@ function base64UrlEncode(input: Uint8Array | string): string {
 }
 
 function pemToArrayBuffer(pem: string): ArrayBuffer {
-  // Support both PKCS#8 and PKCS#1 PEM formats
-  const cleaned = pem
-    .replace('-----BEGIN PRIVATE KEY-----', '')
-    .replace('-----END PRIVATE KEY-----', '')
-    .replace('-----BEGIN RSA PRIVATE KEY-----', '')
-    .replace('-----END RSA PRIVATE KEY-----', '')
-    .replace(/\r?\n|\r/g, '')
-    .trim()
-  const binary = atob(cleaned)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-  return bytes.buffer
+  // Normalize escaped newlines and whitespace from secrets storage
+  let normalized = (pem || '').replace(/\\n/g, '\n').trim();
+
+  // If the PEM contains header/footer, strip them and newlines
+  let base64Body = normalized.includes('BEGIN')
+    ? normalized
+        .replace('-----BEGIN PRIVATE KEY-----', '')
+        .replace('-----END PRIVATE KEY-----', '')
+        .replace('-----BEGIN RSA PRIVATE KEY-----', '')
+        .replace('-----END RSA PRIVATE KEY-----', '')
+        .replace(/\r?\n|\r/g, '')
+        .trim()
+    : normalized;
+
+  // Support URL-safe base64 just in case and ensure proper padding
+  base64Body = base64Body.replace(/-/g, '+').replace(/_/g, '/');
+  while (base64Body.length % 4 !== 0) base64Body += '=';
+
+  const binary = atob(base64Body);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
 }
 
 async function importPrivateKey(privateKeyPem: string): Promise<CryptoKey> {
