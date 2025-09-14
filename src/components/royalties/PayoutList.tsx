@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -27,20 +27,24 @@ export function PayoutList() {
   const [exportingStatement, setExportingStatement] = useState<string | null>(null);
   const [isClientPortal, setIsClientPortal] = useState(false);
   const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts, getPayoutExpenses, recalculatePayoutExpenses } = usePayouts();
+  const initialized = useRef(false);
 
   // Check if this is client portal view - only hide columns for actual client portal routes
   useEffect(() => {
     const checkClientStatus = async () => {
-      // Only hide columns if we're actually in a client portal route context
       const isClientRoute = window.location.pathname.includes('/client-portal');
       const clientStatus = isClientRoute ? await isClient() : false;
       setIsClientPortal(clientStatus);
     };
     checkClientStatus();
-    
-    // Force refresh payouts to ensure we get the latest data with new columns
-    refreshPayouts();
-  }, [isClient, refreshPayouts]);
+
+    // Refresh payouts only once on mount to avoid loops from changing dependencies
+    if (!initialized.current) {
+      initialized.current = true;
+      refreshPayouts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredPayouts = payouts.filter(payout => {
     const matchesSearch = payout.period?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
