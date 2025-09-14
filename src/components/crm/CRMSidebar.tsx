@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { supabase } from "@/integrations/supabase/client";
 interface ModuleItem {
   id: string;
@@ -103,6 +104,7 @@ export function CRMSidebar() {
     canAccess: canAccessDemo,
     isDemo
   } = useDemoAccess();
+  const { isSuperAdmin } = useSuperAdmin();
   const location = useLocation();
   const [userModules, setUserModules] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState(false);
@@ -120,14 +122,27 @@ export function CRMSidebar() {
     };
     fetchUserModules();
   }, [user]);
-  const email = user?.email?.toLowerCase() || '';
-  const isAdministrator = ['info@encoremusic.tech', 'support@encoremusic.tech'].includes(email) || isAdmin;
+  // Regular admin modules (without Super Admin)
+  const regularAdminModules = adminModules.filter(module => module.id !== 'platform-admin');
+  
+  // Super admin modules (only platform-admin)
+  const superAdminModules = adminModules.filter(module => module.id === 'platform-admin');
 
-  // Include admin modules if user is administrator
-  const availableModules = isAdministrator ? [...mainModules, ...adminModules] : mainModules;
+  // Include modules based on user privileges
+  let availableModules = [...mainModules];
+  
+  // Add regular admin modules for admins
+  if (isAdmin) {
+    availableModules = [...availableModules, ...regularAdminModules];
+  }
+  
+  // Add super admin modules only for super admins (Encore team)
+  if (isSuperAdmin) {
+    availableModules = [...availableModules, ...superAdminModules];
+  }
 
   // Filter modules based on user access or demo access
-  const accessibleModules = isAdministrator ? availableModules : availableModules.filter(module => {
+  const accessibleModules = (isAdmin || isSuperAdmin) ? availableModules : availableModules.filter(module => {
     if (module.id === 'dashboard') return true;
     // Check if user has database access or demo access
     // Map module IDs to demo access keys
@@ -211,7 +226,7 @@ export function CRMSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-4">
         {!collapsed && <div className="text-center">
             <p className="text-xs text-muted-foreground">
-              {accessibleModules.length} of {mainModules.length + (isAdministrator ? adminModules.length : 0)} modules active
+              {accessibleModules.length} of {mainModules.length + (isAdmin ? regularAdminModules.length : 0) + (isSuperAdmin ? superAdminModules.length : 0)} modules active
             </p>
           </div>}
       </SidebarFooter>
