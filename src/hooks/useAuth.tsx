@@ -9,6 +9,7 @@ import {
   clientRateLimit, 
   logSecurityEvent 
 } from '@/lib/security';
+import { SecureSessionManager } from '@/lib/securityMonitor';
 
 interface AuthContextType {
   user: User | null;
@@ -35,6 +36,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Handle refresh token failures or unexpected sign-outs
+        const ev = event as unknown as string;
+        if (ev === 'TOKEN_REFRESH_FAILED' || (event === 'SIGNED_OUT' && !session)) {
+          logSecurityEvent('auth_token_refresh_failed', {
+            reason: 'invalid_or_missing_refresh_token',
+            timestamp: Date.now()
+          });
+          try {
+            SecureSessionManager.clearSession();
+          } catch (e) {
+            // no-op
+          }
+          toast({
+            title: 'Session expired',
+            description: 'Please sign in again.',
+            variant: 'destructive',
+          });
+          // Defer Supabase calls to avoid deadlocks inside the callback
+          setTimeout(() => {
+            supabase.auth.signOut();
+          }, 0);
+        }
       }
     );
 

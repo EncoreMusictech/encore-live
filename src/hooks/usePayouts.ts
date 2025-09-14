@@ -164,14 +164,25 @@ export function usePayouts() {
     } catch (error: any) {
       console.error('Error fetching payouts:', error);
       
-      // More specific error handling
-      if (error.code === 'PGRST301') {
+      // Handle expired/invalid session
+      const msg = (error?.message || '') as string;
+      if (error?.code === 'PGRST401' || /jwt|token|unauthorized/i.test(msg)) {
+        toast({
+          title: "Session expired",
+          description: "Please sign in again.",
+          variant: "destructive",
+        });
+        // Defer sign-out to avoid interfering with current render
+        setTimeout(() => {
+          supabase.auth.signOut();
+        }, 0);
+      } else if (error?.code === 'PGRST301') {
         toast({
           title: "Access Denied",
           description: "You don't have permission to view payouts",
           variant: "destructive",
         });
-      } else if (error.message?.includes('network')) {
+      } else if (/network/i.test(msg)) {
         toast({
           title: "Network Error",
           description: "Check your connection and try again",
