@@ -575,7 +575,7 @@ export default function ClientAdminPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {clientAccess.map((access) => (
+                        {clientAccess.filter(access => access.status === 'active').map((access) => (
                           <TableRow key={access.id}>
                             <TableCell>
                               <div>
