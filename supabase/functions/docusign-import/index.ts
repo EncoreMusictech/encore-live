@@ -30,6 +30,41 @@ serve(async (req) => {
     const authUrl = 'https://account-d.docusign.com/oauth/token';
 
     switch (action) {
+      case 'testAuth': {
+        // Attempt auth but always return 200 with details
+        try {
+          const jwtToken = await generateJWTToken(integrationKey, userId, secretKey);
+          const authResponse = await fetch(authUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwtToken}`,
+          });
+
+          const text = await authResponse.text();
+          let json: any = {};
+          try { json = text ? JSON.parse(text) : {}; } catch { /* keep as text */ }
+
+          if (!authResponse.ok) {
+            const code = json.error || 'auth_failed';
+            const description = json.error_description || text || 'Failed to authenticate with DocuSign';
+            const consentUrl = code === 'consent_required'
+              ? `https://account-d.docusign.com/oauth/auth?response_type=code&scope=signature%20impersonation&client_id=${integrationKey}&redirect_uri=${encodeURIComponent('https://plxsenykjisqutxcvjeg.supabase.co')}`
+              : undefined;
+            return new Response(JSON.stringify({ success: false, errorCode: code, error: description, consentUrl }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          return new Response(JSON.stringify({ success: true, accessToken: json.access_token }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (e: any) {
+          return new Response(JSON.stringify({ success: false, errorCode: 'exception', error: e.message || 'Unexpected error' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
       case 'authenticate': {
         // Get JWT token for authentication
         const jwtToken = await generateJWTToken(integrationKey, userId, secretKey);
@@ -43,7 +78,8 @@ serve(async (req) => {
         });
 
         if (!authResponse.ok) {
-          throw new Error('Failed to authenticate with DocuSign');
+          const text = await authResponse.text();
+          throw new Error(`Failed to authenticate with DocuSign: ${text}`);
         }
 
         const authData = await authResponse.json();

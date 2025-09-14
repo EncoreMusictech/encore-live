@@ -200,7 +200,7 @@ export function DocuSignImport({ onBack, onSuccess }: DocuSignImportProps) {
     try {
       // Test authentication
       const { data: authData, error: authError } = await supabase.functions.invoke('docusign-import', {
-        body: { action: 'authenticate' }
+        body: { action: 'testAuth' }
       });
 
       if (authError) throw authError;
@@ -230,7 +230,8 @@ export function DocuSignImport({ onBack, onSuccess }: DocuSignImportProps) {
           });
         }
       } else {
-        throw new Error('Authentication failed');
+        const extra = authData?.consentUrl ? ` Grant consent here: ${authData.consentUrl}` : '';
+        throw new Error(authData?.error ? `${authData.error}.${extra}` : 'Authentication failed');
       }
     } catch (error: any) {
       console.error('Connection test error:', error);
