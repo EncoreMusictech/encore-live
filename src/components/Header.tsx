@@ -11,6 +11,7 @@ import {
 import { Music, Menu, User, LogOut, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useSubscription } from "@/hooks/useSubscription";
 import { SubscriptionBadge } from "@/components/SubscriptionBadge";
 import { modules } from "@/data/modules";
@@ -19,6 +20,7 @@ import { userCases } from "@/data/user-cases";
 const Header = () => {
   const { user, signOut } = useAuth();
   const { subscribed } = useSubscription();
+  const { isSuperAdmin } = useSuperAdmin();
   
   // Check if user has paid access (admin or subscriber)
   const isAdministrator = user?.email === 'info@encoremusic.tech';
@@ -90,6 +92,11 @@ const Header = () => {
               Dashboard
             </Link>
           )}
+          {isSuperAdmin && (
+            <Link to="/admin" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-red-400 transition-colors duration-300">
+              Admin
+            </Link>
+          )}
           <Link to="/pricing" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-dusty-gold transition-colors duration-300">
             Pricing
           </Link>
@@ -132,6 +139,14 @@ const Header = () => {
                     className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
                   >
                     Dashboard
+                  </Link>
+                )}
+                {isSuperAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className="text-lg font-medium text-red-400/60 hover:text-red-400 transition-colors py-2"
+                  >
+                    Admin Panel
                   </Link>
                 )}
                 <Link 
