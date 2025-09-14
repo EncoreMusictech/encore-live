@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins, Shield } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,13 @@ const mainModules: ModuleItem[] = [{
   description: "Processing & payouts"
 }];
 const adminModules: ModuleItem[] = [{
+  id: "platform-admin",
+  title: "Super Admin",
+  url: "/admin",
+  icon: Shield,
+  description: "Platform administration",
+  adminOnly: true
+}, {
   id: "client-portal",
   title: "Client Portal",
   url: "/dashboard/client-admin",
@@ -113,10 +120,11 @@ export function CRMSidebar() {
     };
     fetchUserModules();
   }, [user]);
-  const isAdministrator = user?.email === 'info@encoremusic.tech' || isAdmin;
+  const email = user?.email?.toLowerCase() || '';
+  const isAdministrator = ['info@encoremusic.tech', 'support@encoremusic.tech'].includes(email) || isAdmin;
 
-  // Include admin modules if user is admin
-  const availableModules = isAdmin ? [...mainModules, ...adminModules] : mainModules;
+  // Include admin modules if user is administrator
+  const availableModules = isAdministrator ? [...mainModules, ...adminModules] : mainModules;
 
   // Filter modules based on user access or demo access
   const accessibleModules = isAdministrator ? availableModules : availableModules.filter(module => {
@@ -203,7 +211,7 @@ export function CRMSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-4">
         {!collapsed && <div className="text-center">
             <p className="text-xs text-muted-foreground">
-              {accessibleModules.length} of {mainModules.length + (isAdmin ? adminModules.length : 0)} modules active
+              {accessibleModules.length} of {mainModules.length + (isAdministrator ? adminModules.length : 0)} modules active
             </p>
           </div>}
       </SidebarFooter>
