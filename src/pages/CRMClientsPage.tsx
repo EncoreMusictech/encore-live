@@ -774,11 +774,13 @@ export default function CRMClientsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {clientAccess.length === 0 ? (
-                  <p className="text-muted-foreground">No active client access</p>
-                ) : (
-                  <div className="space-y-2">
-                    {clientAccess.map((access) => (
+                {(() => {
+                  const activeClients = clientAccess.filter(access => access.status === 'active');
+                  return activeClients.length === 0 ? (
+                    <p className="text-muted-foreground">No active client access</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {activeClients.map((access) => (
                       <div key={access.id} className="flex items-center justify-between p-3 border rounded">
                          <div>
                            <p className="font-medium">Email: {getClientEmail(access.client_user_id) ?? 'Unknown'}</p>
@@ -806,10 +808,11 @@ export default function CRMClientsPage() {
                              Revoke
                            </Button>
                          </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                       </div>
+                     ))}
+                   </div>
+                 );
+                })()}
               </CardContent>
             </Card>
 
