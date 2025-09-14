@@ -8,8 +8,9 @@ export const useAdmin = () => {
 
   useEffect(() => {
     const checkAdminStatus = () => {
-      // Check if user is the admin email
-      const adminStatus = user?.email === 'info@encoremusic.tech';
+      // Check if user is an admin (case-insensitive)
+      const email = user?.email?.toLowerCase() || '';
+      const adminStatus = ['info@encoremusic.tech','support@encoremusic.tech'].includes(email);
       setIsAdmin(adminStatus);
       setLoading(false);
     };

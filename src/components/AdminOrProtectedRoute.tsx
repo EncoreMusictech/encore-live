@@ -7,7 +7,7 @@ interface AdminOrProtectedRouteProps {
   children: React.ReactNode;
 }
 
-const ADMIN_EMAIL = 'info@encoremusic.tech';
+const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech'];
 
 const AdminOrProtectedRoute = ({ children }: AdminOrProtectedRouteProps) => {
   const { user, session, loading } = useAuth();
@@ -25,8 +25,9 @@ const AdminOrProtectedRoute = ({ children }: AdminOrProtectedRouteProps) => {
     );
   }
 
-  // Allow admin access without authentication
-  if (user?.email === ADMIN_EMAIL || isAdmin) {
+  // Allow admin access (supports demo access and both admin emails)
+  const userEmail = user?.email?.toLowerCase() || '';
+  if (ADMIN_EMAILS.includes(userEmail) || isAdmin) {
     return <>{children}</>;
   }
 

@@ -8,8 +8,9 @@ export const useSuperAdmin = () => {
 
   useEffect(() => {
     const checkSuperAdminStatus = () => {
-      // Check if user is the super admin email
-      const superAdminStatus = user?.email === 'support@encoremusic.tech' || user?.email === 'info@encoremusic.tech';
+      // Check if user is a super admin (case-insensitive)
+      const email = user?.email?.toLowerCase() || '';
+      const superAdminStatus = ['support@encoremusic.tech','info@encoremusic.tech'].includes(email);
       setIsSuperAdmin(superAdminStatus);
       setLoading(false);
     };
