@@ -443,6 +443,7 @@ export default function CRMContractsPage() {
                     setIsCreateDialogOpen(false);
                     setCreationMethod(null);
                     setShowDocuSignImport(false);
+                    refetch();
                   }} 
                 />
               ) : (
@@ -452,6 +453,7 @@ export default function CRMContractsPage() {
                     setIsCreateDialogOpen(false);
                     setCreationMethod(null);
                     setShowContractUpload(false);
+                    refetch();
                   }} 
                 />
               )
@@ -478,6 +480,7 @@ export default function CRMContractsPage() {
                       setIsCreateDialogOpen(false);
                       setSelectedContractType(null);
                       setCreationMethod(null);
+                      refetch();
                       toast({
                         title: "Success",
                         description: loadingDemoContract ? "Demo contract loaded successfully" : "Publishing agreement created successfully"
@@ -492,6 +495,7 @@ export default function CRMContractsPage() {
                       setIsCreateDialogOpen(false);
                       setSelectedContractType(null);
                       setCreationMethod(null);
+                      refetch();
                       toast({
                         title: "Success",
                         description: loadingDemoContract ? "Demo contract loaded successfully" : "Artist agreement created successfully"
@@ -506,6 +510,7 @@ export default function CRMContractsPage() {
                       setIsCreateDialogOpen(false);
                       setSelectedContractType(null);
                       setCreationMethod(null);
+                      refetch();
                       toast({
                         title: "Success",
                         description: loadingDemoContract ? "Demo contract loaded successfully" : "Producer agreement created successfully"
@@ -520,6 +525,7 @@ export default function CRMContractsPage() {
                       setIsCreateDialogOpen(false);
                       setSelectedContractType(null);
                       setCreationMethod(null);
+                      refetch();
                       toast({
                         title: "Success",
                         description: loadingDemoContract ? "Demo contract loaded successfully" : "Sync license created successfully"
@@ -534,6 +540,7 @@ export default function CRMContractsPage() {
                       setIsCreateDialogOpen(false);
                       setSelectedContractType(null);
                       setCreationMethod(null);
+                      refetch();
                       toast({
                         title: "Success",
                         description: loadingDemoContract ? "Demo contract loaded successfully" : "Distribution agreement created successfully"
