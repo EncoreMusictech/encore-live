@@ -41,6 +41,7 @@ import CRMBlockchainPage from "./pages/CRMBlockchainPage";
 import FeaturesOverviewPage from "./pages/FeaturesOverviewPage";
 import ModuleWalkthroughsPage from "./pages/ModuleWalkthroughsPage";
 import WhitelabelDashboard from "./pages/WhitelabelDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import RecoveryRedirect from "@/components/RecoveryRedirect";
 
 
@@ -122,13 +123,20 @@ const App = () => {
                              <Route path="/pricing" element={<PricingPage />} />
                              <Route path="/contact" element={<ContactPage />} />
                              <Route path="/documentation" element={<DocumentationPage />} />
-                             <Route path="/whitelabel" element={
-                               <ProtectedRoute>
-                                 <ErrorBoundary>
-                                   <WhitelabelDashboard />
-                                 </ErrorBoundary>
-                               </ProtectedRoute>
-                             } />
+                              <Route path="/admin" element={
+                                <ProtectedRoute>
+                                  <ErrorBoundary>
+                                    <AdminDashboard />
+                                  </ErrorBoundary>
+                                </ProtectedRoute>
+                              } />
+                              <Route path="/whitelabel" element={
+                                <ProtectedRoute>
+                                  <ErrorBoundary>
+                                    <WhitelabelDashboard />
+                                  </ErrorBoundary>
+                                </ProtectedRoute>
+                              } />
                              <Route path="/client-admin" element={
                                <ProtectedRoute>
                                  <EmailRestrictedRoute allowedEmails={["info@encoremusic.tech"]}>

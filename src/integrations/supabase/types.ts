@@ -4343,6 +4343,155 @@ export type Database = {
         }
         Relationships: []
       }
+      sub_accounts_field_mappings: {
+        Row: {
+          created_at: string | null
+          default_values: Json | null
+          field_mappings: Json
+          file_type: string
+          id: string
+          is_active: boolean | null
+          mapping_name: string
+          transformation_rules: Json | null
+          updated_at: string | null
+          validation_rules: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_values?: Json | null
+          field_mappings: Json
+          file_type: string
+          id?: string
+          is_active?: boolean | null
+          mapping_name: string
+          transformation_rules?: Json | null
+          updated_at?: string | null
+          validation_rules?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          default_values?: Json | null
+          field_mappings?: Json
+          file_type?: string
+          id?: string
+          is_active?: boolean | null
+          mapping_name?: string
+          transformation_rules?: Json | null
+          updated_at?: string | null
+          validation_rules?: Json | null
+        }
+        Relationships: []
+      }
+      sub_accounts_staging: {
+        Row: {
+          created_at: string | null
+          id: string
+          mapped_data: Json | null
+          processed: boolean | null
+          raw_data: Json
+          row_number: number
+          target_subscriber_id: string | null
+          upload_job_id: string | null
+          validation_errors: Json | null
+          validation_status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mapped_data?: Json | null
+          processed?: boolean | null
+          raw_data: Json
+          row_number: number
+          target_subscriber_id?: string | null
+          upload_job_id?: string | null
+          validation_errors?: Json | null
+          validation_status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mapped_data?: Json | null
+          processed?: boolean | null
+          raw_data?: Json
+          row_number?: number
+          target_subscriber_id?: string | null
+          upload_job_id?: string | null
+          validation_errors?: Json | null
+          validation_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_accounts_staging_upload_job_id_fkey"
+            columns: ["upload_job_id"]
+            isOneToOne: false
+            referencedRelation: "sub_accounts_upload_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_accounts_upload_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          error_log: Json | null
+          failed_records: number | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          job_name: string
+          processed_records: number | null
+          processing_stats: Json | null
+          started_at: string | null
+          status: string | null
+          successful_records: number | null
+          total_records: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          error_log?: Json | null
+          failed_records?: number | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          job_name: string
+          processed_records?: number | null
+          processing_stats?: Json | null
+          started_at?: string | null
+          status?: string | null
+          successful_records?: number | null
+          total_records?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          error_log?: Json | null
+          failed_records?: number | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          job_name?: string
+          processed_records?: number | null
+          processing_stats?: Json | null
+          started_at?: string | null
+          status?: string | null
+          successful_records?: number | null
+          total_records?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           created_at: string
