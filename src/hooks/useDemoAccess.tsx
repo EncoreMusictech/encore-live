@@ -44,7 +44,7 @@ interface DemoAccessContextType {
 
 const DemoAccessContext = createContext<DemoAccessContextType | undefined>(undefined);
 
-const ADMIN_EMAIL = 'info@encoremusic.tech';
+const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech'];
 const DEMO_EMAIL = 'demo@encoremusic.tech';
 
 const INITIAL_DEMO_LIMITS: DemoLimits = {
@@ -81,7 +81,7 @@ export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) 
   const [upgradeMessage, setUpgradeMessage] = useState('');
 
   // Determine if user is demo or admin
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase() || '');
   const isDemo = user && (user?.email === DEMO_EMAIL || user?.user_metadata?.role === 'demo') && !isAdmin; // Only authenticated demo account users are demo users
 
   // Load demo limits from localStorage on mount

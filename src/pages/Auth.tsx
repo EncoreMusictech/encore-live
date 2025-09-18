@@ -58,10 +58,10 @@ useEffect(() => {
     if (showSetNewPassword) return;
     
     (async () => {
-      const ADMIN_EMAIL = 'info@encoremusic.tech';
+      const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech'];
       try {
         const hasPortal = await isClient();
-        if (hasPortal && user.email !== ADMIN_EMAIL) {
+        if (hasPortal && !ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
           navigate('/client-portal', { replace: true });
           return;
         }

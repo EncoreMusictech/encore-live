@@ -49,7 +49,8 @@ export default function CRMCatalogValuationPage() {
   const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
   const { user } = useAuth();
   const { toast } = useToast();
-  const isAllowedSongEstimator = (user?.email?.toLowerCase() === 'info@encoremusic.tech');
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech'];
+  const isAllowedSongEstimator = adminEmails.includes(user?.email?.toLowerCase() || '');
 
   useEffect(() => {
     updatePageMetadata('catalog-valuation');

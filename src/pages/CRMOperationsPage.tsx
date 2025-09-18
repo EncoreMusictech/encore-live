@@ -11,7 +11,8 @@ export default function CRMOperationsPage() {
   const { isAdmin, loading } = useUserRoles();
 
   // Check if user has operations access
-  const isAdministrator = user?.email === 'info@encoremusic.tech' || isAdmin;
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech'];
+  const isAdministrator = adminEmails.includes(user?.email?.toLowerCase() || '') || isAdmin;
 
   if (loading) {
     return (
