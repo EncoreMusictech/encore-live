@@ -93,6 +93,11 @@ const Header = () => {
               Dashboard
             </Link>
           )}
+          {isAdministrator && (
+            <Link to="/client-portal" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-dusty-gold transition-colors duration-300">
+              View Client Portal
+            </Link>
+          )}
           {isSuperAdmin && (
             <Link to="/admin" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-red-400 transition-colors duration-300">
               Admin
@@ -140,6 +145,14 @@ const Header = () => {
                     className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
                   >
                     Dashboard
+                  </Link>
+                )}
+                {isAdministrator && (
+                  <Link 
+                    to="/client-portal" 
+                    className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
+                  >
+                    View Client Portal
                   </Link>
                 )}
                 {isSuperAdmin && (

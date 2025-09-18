@@ -50,12 +50,15 @@ useEffect(() => {
   return () => subscription.unsubscribe();
 }, []);
 
-// Redirect authenticated users to appropriate page
+  // Redirect authenticated users to appropriate page
   useEffect(() => {
     if (!user) return;
     
     // Don't redirect if we're in password recovery mode
     if (showSetNewPassword) return;
+    
+    // Don't redirect if user is already on client portal (allow admins to view it)
+    if (location.pathname === '/client-portal') return;
     
     (async () => {
       const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech'];
