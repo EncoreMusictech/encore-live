@@ -83,21 +83,24 @@ const App = () => {
                            <Routes>
                              <Route path="/auth" element={<Auth />} />
                              <Route index element={<Index />} />
-                             
-                             
-                             {/* Dashboard Routes */}
-                             <Route path="/dashboard" element={<CRMLayout />}>
-                               <Route index element={<CRMPage />} />
-                               <Route path="catalog-valuation" element={<CRMCatalogValuationPage />} />
-                               <Route path="contracts" element={<CRMContractsPage />} />
-                               <Route path="copyright" element={<CRMCopyrightPage />} />
-                               <Route path="sync" element={<CRMSyncPage />} />
-                               <Route path="royalties" element={<CRMRoyaltiesPage />} />
-                               <Route path="client-admin" element={<CRMClientsPage />} />
-                               <Route path="operations" element={<CRMOperationsPage />} />
-                               <Route path="blockchain" element={<CRMBlockchainPage />} />
-                               <Route path="walkthroughs" element={<ModuleWalkthroughsPage />} />
-                             </Route>
+                              
+                              {/* Redirect old admin route to new location */}
+                              <Route path="/admin" element={<Navigate to="/dashboard/admin" replace />} />
+                              
+                              {/* Dashboard Routes */}
+                              <Route path="/dashboard" element={<CRMLayout />}>
+                                <Route index element={<CRMPage />} />
+                                <Route path="catalog-valuation" element={<CRMCatalogValuationPage />} />
+                                <Route path="contracts" element={<CRMContractsPage />} />
+                                <Route path="copyright" element={<CRMCopyrightPage />} />
+                                <Route path="sync" element={<CRMSyncPage />} />
+                                <Route path="royalties" element={<CRMRoyaltiesPage />} />
+                                <Route path="client-admin" element={<CRMClientsPage />} />
+                                <Route path="operations" element={<CRMOperationsPage />} />
+                                <Route path="blockchain" element={<CRMBlockchainPage />} />
+                                <Route path="walkthroughs" element={<ModuleWalkthroughsPage />} />
+                                <Route path="admin" element={<AdminDashboard />} />
+                              </Route>
                              
                               {/* Client Portal - Accessible to invited clients */}
                               <Route path="/client-portal" element={
@@ -133,13 +136,6 @@ const App = () => {
                              <Route path="/pricing" element={<PricingPage />} />
                              <Route path="/contact" element={<ContactPage />} />
                              <Route path="/documentation" element={<DocumentationPage />} />
-                              <Route path="/admin" element={
-                                <ProtectedRoute>
-                                  <ErrorBoundary>
-                                    <AdminDashboard />
-                                  </ErrorBoundary>
-                                </ProtectedRoute>
-                              } />
                               <Route path="/whitelabel" element={
                                 <ProtectedRoute>
                                   <ErrorBoundary>
