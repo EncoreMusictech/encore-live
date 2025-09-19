@@ -681,69 +681,25 @@ export function useReconciliationBatches() {
         }
       }
 
+      // Update the batch to mark it as processed
+      const { error: updateError } = await supabase
+        .from('reconciliation_batches')
+        .update({
+          processed_at: new Date().toISOString(),
+          processed_by_user_id: user.id,
+          processing_count: (batch?.processing_count || 0) + 1,
+        })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+
       toast({
-        title: "Success", 
-        description: `Created ${payoutResults.length} payouts from batch processing. Writers with royalty data now have corresponding contacts.`,
+        title: "Success",
+        description: `Batch processed successfully. Created ${payoutResults.length} contact-based payouts.`,
       });
 
-        if (payees && payees.length > 0) {
-          for (const payee of payees) {
-            // Check if quarterly report exists
-            const { data: existingReport } = await supabase
-              .from('quarterly_balance_reports')
-              .select('id, opening_balance')
-              .eq('user_id', user.id)
-              .eq('payee_id', payee.id)
-              .eq('quarter', selectedQuarter)
-              .eq('year', selectedYear)
-              .single();
-
-            if (existingReport) {
-              // Update existing report
-              await supabase
-                .from('quarterly_balance_reports')
-                .update({
-                  royalties_amount: totalAmount,
-                  closing_balance: (existingReport.opening_balance || 0) + totalAmount,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', existingReport.id);
-            } else {
-              // Create new quarterly report
-              await supabase
-                .from('quarterly_balance_reports')
-                .insert({
-                  user_id: user.id,
-                  payee_id: payee.id,
-                  quarter: selectedQuarter,
-                  year: selectedYear,
-                  opening_balance: 0,
-                  royalties_amount: totalAmount,
-                  expenses_amount: 0,
-                  payments_amount: 0,
-                  closing_balance: totalAmount,
-                });
-            }
-          }
-        }
-
-          payoutResults.push({
-            writer_name: writer.writer_name,
-            writer_id: writer.writer_id,
-            payout_id: payout.id,
-            amount: totalAmount,
-            royalty_count: writerRoyalties.length,
-            payee_count: payees?.length || 0,
-          });
-        } catch (error) {
-          console.error(`Error processing writer ${writer.writer_name}:`, error);
-          toast({
-            title: "Warning",
-            description: `Failed to create payout for writer ${writer.writer_name}`,
-            variant: "destructive",
-          });
-        }
-      }
+      await fetchBatches();
+      return true;
 
       // Handle unmatched royalties (create a general payout if needed)
       if (unmatched.length > 0) {
@@ -824,26 +780,6 @@ export function useReconciliationBatches() {
           }
         }
       }
-
-      // Update the batch to mark it as processed
-      const { error: updateError } = await supabase
-        .from('reconciliation_batches')
-        .update({
-          processed_at: new Date().toISOString(),
-          processed_by_user_id: user.id,
-          processing_count: (batch?.processing_count || 0) + 1,
-        })
-        .eq('id', id);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Success",
-        description: `Batch processed successfully. Created ${payoutResults.length} writer-specific payouts.`,
-      });
-
-      await fetchBatches();
-      return true;
     } catch (error: any) {
       console.error('Error processing batch:', error);
       toast({
