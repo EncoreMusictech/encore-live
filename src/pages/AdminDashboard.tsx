@@ -29,51 +29,64 @@ const AdminDashboard = () => {
   return (
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex items-center space-x-4">
-        <Shield className="h-8 w-8 text-primary" />
+        <Users className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">Platform Administration</h1>
+          <h1 className="text-3xl font-bold">Sub-Accounts Management</h1>
           <p className="text-muted-foreground">
-            Super admin dashboard for ENCORE RMS platform management
+            Manage sub-accounts, team members, modules, and customer data migration
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sub Accounts</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Accounts</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Active Management</div>
+            <div className="text-2xl font-bold">24</div>
             <p className="text-xs text-muted-foreground">
-              Manage platform sub-accounts and permissions
+              Sub-accounts with active subscriptions
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Data Import</CardTitle>
+            <CardTitle className="text-sm font-medium">Team Members</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">156</div>
+            <p className="text-xs text-muted-foreground">
+              Total team members across accounts
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Data Migration</CardTitle>
             <Upload className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">CSV/PDF Processing</div>
+            <div className="text-2xl font-bold">12</div>
             <p className="text-xs text-muted-foreground">
-              Bulk import and migration tools
+              Pending migration requests
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">System Status</CardTitle>
+            <CardTitle className="text-sm font-medium">System Health</CardTitle>
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">Operational</div>
+            <div className="text-2xl font-bold text-green-600">Healthy</div>
             <p className="text-xs text-muted-foreground">
-              All systems running normally
+              All services operational
             </p>
           </CardContent>
         </Card>
@@ -125,17 +138,7 @@ const AdminDashboard = () => {
             </TabsList>
 
             <TabsContent value="sub-accounts" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sub Account Management</CardTitle>
-                  <CardDescription>
-                    Manage platform sub-accounts, permissions, and access control
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <SubAccountManager />
-                </CardContent>
-              </Card>
+              <SubAccountManager />
             </TabsContent>
 
             <TabsContent value="data-import" className="space-y-6">
