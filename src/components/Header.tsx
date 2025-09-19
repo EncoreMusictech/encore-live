@@ -88,11 +88,6 @@ const Header = () => {
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
-          {hasPaidAccess && (
-            <Link to="/dashboard" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300">
-              Dashboard
-            </Link>
-          )}
           {isAdministrator && (
             <Link to="/client-portal" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-dusty-gold transition-colors duration-300">
               View Client Portal
