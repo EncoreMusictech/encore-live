@@ -3295,6 +3295,8 @@ export type Database = {
           last_name: string | null
           onboarding_complete: boolean
           phone: string | null
+          terms_accepted: boolean | null
+          terms_accepted_at: string | null
           updated_at: string
         }
         Insert: {
@@ -3305,6 +3307,8 @@ export type Database = {
           last_name?: string | null
           onboarding_complete?: boolean
           phone?: string | null
+          terms_accepted?: boolean | null
+          terms_accepted_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -3315,6 +3319,8 @@ export type Database = {
           last_name?: string | null
           onboarding_complete?: boolean
           phone?: string | null
+          terms_accepted?: boolean | null
+          terms_accepted_at?: string | null
           updated_at?: string
         }
         Relationships: []
