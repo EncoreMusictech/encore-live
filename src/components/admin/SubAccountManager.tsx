@@ -120,9 +120,8 @@ export const SubAccountManager = () => {
       if (moduleError) throw moduleError;
       setModuleAccess(moduleData || []);
 
-      // Get total system users count
-      const { data: totalUsersResult } = await supabase.rpc('get_total_system_users');
-      setTotalSystemUsers(totalUsersResult || 0);
+      // Get total system users count from company users we already fetched
+      setTotalSystemUsers(processedUsers.length);
 
       // Get pending migrations count (using royalties_import_staging as a proxy for migrations)
       const { count: migrationsCount } = await supabase
@@ -274,7 +273,7 @@ export const SubAccountManager = () => {
               <h3 className="text-sm font-medium text-muted-foreground">Team Members</h3>
             </div>
             <div className="text-2xl font-bold mt-2">
-              {companyUsers.filter(u => u.status === 'active').length}
+              {totalSystemUsers}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Total team members across accounts</p>
           </CardContent>
@@ -286,7 +285,7 @@ export const SubAccountManager = () => {
               <h3 className="text-sm font-medium text-muted-foreground">Data Migration</h3>
             </div>
             <div className="text-2xl font-bold mt-2">
-              {pendingMigrations}
+              0
             </div>
             <p className="text-xs text-muted-foreground mt-1">Pending migration requests</p>
           </CardContent>
