@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { updatePageMetadata } from "@/utils/seo";
+import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import { userCases } from "@/data/user-cases";
@@ -11,16 +12,23 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 const Index = () => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [selectedTier, setSelectedTier] = useState<"Free" | "Pro" | "Enterprise">("Pro");
   const [selectedUserCase, setSelectedUserCase] = useState<typeof userCases[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
   useEffect(() => {
     updatePageMetadata('home');
   }, []);
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
   const handleGetStarted = (userCaseId: string) => {
     navigate(`/use-cases/${userCaseId}`);
   };
