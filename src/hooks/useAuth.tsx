@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const isHandlingSignOut = useRef(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -39,25 +40,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Handle refresh token failures or unexpected sign-outs
         const ev = event as unknown as string;
-        if (ev === 'TOKEN_REFRESH_FAILED' || (event === 'SIGNED_OUT' && !session)) {
-          logSecurityEvent('auth_token_refresh_failed', {
-            reason: 'invalid_or_missing_refresh_token',
-            timestamp: Date.now()
-          });
+        if (ev === 'TOKEN_REFRESH_FAILED' && !isHandlingSignOut.current) {
+          isHandlingSignOut.current = true;
+          
+          // Clear all auth data immediately
           try {
+            localStorage.removeItem('sb-plxsenykjisqutxcvjeg-auth-token');
             SecureSessionManager.clearSession();
           } catch (e) {
-            // no-op
+            // Clear all localStorage as fallback
+            try {
+              localStorage.clear();
+            } catch (clearError) {
+              // no-op
+            }
           }
+
+          // Set state to signed out immediately
+          setSession(null);
+          setUser(null);
+          
           toast({
             title: 'Session expired',
             description: 'Please sign in again.',
             variant: 'destructive',
           });
-          // Defer Supabase calls to avoid deadlocks inside the callback
+
+          // Reset flag after a delay
           setTimeout(() => {
-            supabase.auth.signOut();
-          }, 0);
+            isHandlingSignOut.current = false;
+          }, 1000);
         }
       }
     );
