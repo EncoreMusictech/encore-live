@@ -85,7 +85,7 @@ const App = () => {
                              <Route index element={<Index />} />
                               
                               {/* Redirect old admin route to new location */}
-                              <Route path="/admin" element={<Navigate to="/dashboard/admin" replace />} />
+                              <Route path="/admin" element={<Navigate to="/dashboard/sub_accounts" replace />} />
                               
                               {/* Dashboard Routes */}
                               <Route path="/dashboard" element={<CRMLayout />}>
@@ -99,7 +99,7 @@ const App = () => {
                                 <Route path="operations" element={<CRMOperationsPage />} />
                                 <Route path="blockchain" element={<CRMBlockchainPage />} />
                                 <Route path="walkthroughs" element={<ModuleWalkthroughsPage />} />
-                                <Route path="admin" element={<AdminDashboard />} />
+                                <Route path="sub_accounts" element={<AdminDashboard />} />
                               </Route>
                              
                               {/* Client Portal - Accessible to invited clients */}

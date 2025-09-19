@@ -56,10 +56,10 @@ const mainModules: ModuleItem[] = [{
 }];
 const adminModules: ModuleItem[] = [{
   id: "platform-admin",
-  title: "Super Admin",
-  url: "/dashboard/admin",
+  title: "Sub Accounts",
+  url: "/dashboard/sub_accounts",
   icon: Shield,
-  description: "Platform administration",
+  description: "Sub-account management",
   adminOnly: true
 }, {
   id: "client-portal",
