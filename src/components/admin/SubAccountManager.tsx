@@ -65,6 +65,10 @@ export const SubAccountManager = () => {
     contact_email: '',
     subscription_tier: 'basic'
   });
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [showManageUsers, setShowManageUsers] = useState(false);
+  const [showManageModules, setShowManageModules] = useState(false);
+  const [companyModules, setCompanyModules] = useState<string[]>([]);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -261,6 +265,126 @@ export const SubAccountManager = () => {
       toast({
         title: "Error",
         description: "Failed to update company status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleManageUsers = (company: Company) => {
+    setSelectedCompany(company);
+    setShowManageUsers(true);
+  };
+
+  const handleManageModules = async (company: Company) => {
+    setSelectedCompany(company);
+    
+    // Fetch current modules for this company
+    try {
+      const { data, error } = await supabase
+        .from('company_module_access')
+        .select('module_id')
+        .eq('company_id', company.id);
+      
+      if (error) throw error;
+      setCompanyModules(data?.map(m => m.module_id) || []);
+    } catch (error) {
+      console.error('Error fetching company modules:', error);
+      setCompanyModules([]);
+    }
+    
+    setShowManageModules(true);
+  };
+
+  const updateCompanyModules = async (moduleIds: string[]) => {
+    if (!selectedCompany) return;
+
+    try {
+      // Remove existing modules
+      await supabase
+        .from('company_module_access')
+        .delete()
+        .eq('company_id', selectedCompany.id);
+
+      // Add new modules
+      if (moduleIds.length > 0) {
+        const moduleData = moduleIds.map(moduleId => ({
+          company_id: selectedCompany.id,
+          module_id: moduleId,
+          access_source: 'admin_assigned',
+          granted_at: new Date().toISOString()
+        }));
+
+        const { error } = await supabase
+          .from('company_module_access')
+          .insert(moduleData);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Company modules updated successfully",
+      });
+
+      setShowManageModules(false);
+      fetchData(); // Refresh data
+    } catch (error) {
+      console.error('Error updating company modules:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update company modules",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeUserFromCompany = async (userId: string, companyId: string) => {
+    try {
+      const { error } = await supabase
+        .from('company_users')
+        .delete()
+        .eq('user_id', userId)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User removed from company successfully",
+      });
+
+      fetchData(); // Refresh data
+    } catch (error) {
+      console.error('Error removing user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove user from company",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateUserRole = async (userId: string, companyId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from('company_users')
+        .update({ role: newRole })
+        .eq('user_id', userId)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      });
+
+      fetchData(); // Refresh data
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user role",
         variant: "destructive",
       });
     }
@@ -555,10 +679,10 @@ export const SubAccountManager = () => {
                             >
                               {company.subscription_status === 'active' ? 'Deactivate' : 'Activate'}
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleManageUsers(company)}>
                               Manage Users
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleManageModules(company)}>
                               Manage Modules
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -706,6 +830,122 @@ export const SubAccountManager = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Manage Users Dialog */}
+      <Dialog open={showManageUsers} onOpenChange={setShowManageUsers}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Manage Users - {selectedCompany?.display_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {companyUsers
+                  .filter(user => user.company_id === selectedCompany?.id)
+                  .map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{user.user_name}</div>
+                          <div className="text-sm text-muted-foreground">{user.user_email}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Select 
+                          value={user.role} 
+                          onValueChange={(newRole) => updateUserRole(user.user_id, user.company_id, newRole)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="owner">Owner</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="user">User</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
+                          {user.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.joined_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => removeUserFromCompany(user.user_id, user.company_id)}
+                        >
+                          Remove
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Modules Dialog */}
+      <Dialog open={showManageModules} onOpenChange={setShowManageModules}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Modules - {selectedCompany?.display_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                'catalog-valuation',
+                'deal-simulator',
+                'contract-management',
+                'copyright-management',
+                'royalties-processing',
+                'sync-licensing'
+              ].map((moduleId) => (
+                <div key={moduleId} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={moduleId}
+                    checked={companyModules.includes(moduleId)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setCompanyModules([...companyModules, moduleId]);
+                      } else {
+                        setCompanyModules(companyModules.filter(m => m !== moduleId));
+                      }
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor={moduleId} className="text-sm">
+                    {moduleId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowManageModules(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => updateCompanyModules(companyModules)}>
+                Update Modules
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
