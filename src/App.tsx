@@ -43,6 +43,7 @@ import ModuleWalkthroughsPage from "./pages/ModuleWalkthroughsPage";
 import WhitelabelDashboard from "./pages/WhitelabelDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import RecoveryRedirect from "@/components/RecoveryRedirect";
+import TermsAndConditions from "./pages/TermsAndConditions";
 
 
 
@@ -98,16 +99,25 @@ const App = () => {
                                <Route path="walkthroughs" element={<ModuleWalkthroughsPage />} />
                              </Route>
                              
-                             {/* Client Portal - Accessible to invited clients */}
-                             <Route path="/client-portal" element={
-                               <ProtectedRoute>
-                                 <ErrorBoundary>
-                                   <ClientPortal />
-                                 </ErrorBoundary>
-                               </ProtectedRoute>
-                             } />
-                             
-                             {/* Features Routes */}
+                              {/* Client Portal - Accessible to invited clients */}
+                              <Route path="/client-portal" element={
+                                <ProtectedRoute>
+                                  <ErrorBoundary>
+                                    <ClientPortal />
+                                  </ErrorBoundary>
+                                </ProtectedRoute>
+                              } />
+                              
+                              {/* Terms and Conditions - Required for new users */}
+                              <Route path="/terms" element={
+                                <ProtectedRoute>
+                                  <ErrorBoundary>
+                                    <TermsAndConditions />
+                                  </ErrorBoundary>
+                                </ProtectedRoute>
+                              } />
+                              
+                              {/* Features Routes */}
                              <Route path="/features" element={<FeaturesOverviewPage />} />
                              
                              

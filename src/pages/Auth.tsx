@@ -63,6 +63,19 @@ useEffect(() => {
     (async () => {
       const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech'];
       try {
+        // Check if user has accepted terms and completed onboarding
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('terms_accepted, onboarding_complete')
+          .eq('id', user.id)
+          .single();
+
+        // If user hasn't accepted terms, redirect to terms page
+        if (!profile?.terms_accepted) {
+          navigate('/terms', { replace: true });
+          return;
+        }
+
         const hasPortal = await isClient();
         if (hasPortal && !ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
           navigate('/client-portal', { replace: true });
