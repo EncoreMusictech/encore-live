@@ -88,11 +88,6 @@ const Header = () => {
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
-          {isAdministrator && (
-            <Link to="/client-portal" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-dusty-gold transition-colors duration-300">
-              View Client Portal
-            </Link>
-          )}
           {isSuperAdmin && (
             <Link to="/admin" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-red-400 transition-colors duration-300">
               Admin
