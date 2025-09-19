@@ -11,6 +11,7 @@ import { PlayCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientPortal } from '@/hooks/useClientPortal';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -24,6 +25,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isClient } = useClientPortal();
+  const { subscribed } = useSubscription();
 
   // Update page metadata
   useEffect(() => {
@@ -81,6 +83,12 @@ useEffect(() => {
           navigate('/client-portal', { replace: true });
           return;
         }
+
+        // If user has an active subscription, redirect to dashboard
+        if (subscribed) {
+          navigate('/dashboard', { replace: true });
+          return;
+        }
       } catch (e) {
         // ignore and fallback
       }
@@ -89,7 +97,7 @@ useEffect(() => {
       const from = (location.state as any)?.from?.pathname || defaultRedirect;
       navigate(from, { replace: true });
     })();
-  }, [user, navigate, location, isClient, showSetNewPassword]);
+  }, [user, navigate, location, isClient, showSetNewPassword, subscribed]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
