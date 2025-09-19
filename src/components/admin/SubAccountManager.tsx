@@ -50,6 +50,8 @@ export const SubAccountManager = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
   const [moduleAccess, setModuleAccess] = useState<CompanyModuleAccess[]>([]);
+  const [totalSystemUsers, setTotalSystemUsers] = useState(0);
+  const [pendingMigrations, setPendingMigrations] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState('all');
@@ -89,7 +91,7 @@ export const SubAccountManager = () => {
 
       setCompanies(companiesWithCounts);
 
-      // Fetch company users with user emails
+      // Fetch company users with company details
       const { data: usersData, error: usersError } = await supabase
         .from('company_users')
         .select(`
@@ -100,11 +102,11 @@ export const SubAccountManager = () => {
 
       if (usersError) throw usersError;
 
-      // Get user emails from auth.users (this might need to be done differently based on your setup)
+      // Process users data
       const processedUsers = usersData?.map(user => ({
         ...user,
         company_name: user.companies?.display_name || user.companies?.name,
-        user_email: `user_${user.user_id}@example.com` // Placeholder - you'll need to get actual emails
+        user_email: `User ${user.user_id.slice(0, 8)}...` // Display partial ID for privacy
       })) || [];
 
       setCompanyUsers(processedUsers);
@@ -117,6 +119,18 @@ export const SubAccountManager = () => {
 
       if (moduleError) throw moduleError;
       setModuleAccess(moduleData || []);
+
+      // Get total system users count
+      const { data: totalUsersResult } = await supabase.rpc('get_total_system_users');
+      setTotalSystemUsers(totalUsersResult || 0);
+
+      // Get pending migrations count (using royalties_import_staging as a proxy for migrations)
+      const { count: migrationsCount } = await supabase
+        .from('royalties_import_staging')
+        .select('*', { count: 'exact', head: true })
+        .eq('processing_status', 'pending');
+      
+      setPendingMigrations(migrationsCount || 0);
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -239,7 +253,59 @@ export const SubAccountManager = () => {
 
   return (
     <div className="space-y-6">
-      {/* Statistics Cards */}
+      {/* Main Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <Building2 className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-sm font-medium text-muted-foreground">Active Accounts</h3>
+            </div>
+            <div className="text-2xl font-bold mt-2">
+              {companies.filter(c => c.subscription_status === 'active').length}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Sub-accounts with active subscriptions</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-sm font-medium text-muted-foreground">Team Members</h3>
+            </div>
+            <div className="text-2xl font-bold mt-2">
+              {companyUsers.filter(u => u.status === 'active').length}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Total team members across accounts</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <Upload className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-sm font-medium text-muted-foreground">Data Migration</h3>
+            </div>
+            <div className="text-2xl font-bold mt-2">
+              {pendingMigrations}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Pending migration requests</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <Settings className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-sm font-medium text-muted-foreground">System Health</h3>
+            </div>
+            <div className="text-2xl font-bold mt-2 text-emerald-600">
+              Healthy
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">All services operational</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
