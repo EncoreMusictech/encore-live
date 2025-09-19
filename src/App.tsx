@@ -31,6 +31,7 @@ import ContactPage from "./pages/ContactPage";
 import DocumentationPage from "./pages/DocumentationPage";
 import CRMPage from "./pages/CRMPage";
 import CRMCatalogValuationPage from "./pages/CRMCatalogValuationPage";
+import LuminateCatalogTestPage from "./pages/LuminateCatalogTestPage";
 import CRMContractsPage from "./pages/CRMContractsPage";
 import CRMCopyrightPage from "./pages/CRMCopyrightPage";
 import CRMSyncPage from "./pages/CRMSyncPage";
@@ -91,6 +92,7 @@ const App = () => {
                               <Route path="/dashboard" element={<CRMLayout />}>
                                 <Route index element={<CRMPage />} />
                                 <Route path="catalog-valuation" element={<CRMCatalogValuationPage />} />
+                                <Route path="luminate-test" element={<LuminateCatalogTestPage />} />
                                 <Route path="contracts" element={<CRMContractsPage />} />
                                 <Route path="copyright" element={<CRMCopyrightPage />} />
                                 <Route path="sync" element={<CRMSyncPage />} />
