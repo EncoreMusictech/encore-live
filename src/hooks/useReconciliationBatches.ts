@@ -363,10 +363,6 @@ export function useReconciliationBatches() {
 
       const allRoyalties = [...(allocations || []), ...linkedStatementRoyalties];
 
-      // Determine controlled writers per royalty based on agreements and copyrights
-      const writerGroups = new Map<string, any[]>();
-      const unmatched: any[] = [];
-
       // Get all writers for matching
       const { data: writers, error: writersError } = await supabase
         .from('writers')
@@ -376,16 +372,76 @@ export function useReconciliationBatches() {
 
       const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
 
-      // Map of normalized writer name -> writer record
-      const writerNameMap = new Map(
-        (writers || []).map((w) => [normalize(w.writer_name), w])
-      );
-
       const splitWriters = (s: string): string[] =>
         s
           .split(/;|,|\&|\/|\band\b/gi)
           .map((t) => t.trim())
           .filter(Boolean);
+
+      // Extract all unique writer names from royalty data and ensure contacts exist
+      const allWriterNames = new Set<string>();
+      for (const royalty of allRoyalties) {
+        if (royalty.work_writers) {
+          const names = splitWriters(royalty.work_writers);
+          names.forEach(name => {
+            if (name && name.trim()) {
+              allWriterNames.add(name.trim());
+            }
+          });
+        }
+      }
+
+      // Get existing contacts for writers
+      const { data: existingContacts } = await supabase
+        .from('contacts')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .eq('contact_type', 'writer');
+
+      const contactNameMap = new Map(
+        (existingContacts || []).map((c) => [normalize(c.name), c])
+      );
+
+      // Create contacts for any new writer names
+      const newContactsCreated: string[] = [];
+      for (const writerName of allWriterNames) {
+        const normalizedName = normalize(writerName);
+        if (!contactNameMap.has(normalizedName)) {
+          try {
+            const { data: newContact, error: contactError } = await supabase
+              .from('contacts')
+              .insert({
+                user_id: user.id,
+                name: writerName,
+                contact_type: 'writer',
+              })
+              .select('id, name')
+              .single();
+
+            if (contactError) {
+              console.error(`Error creating contact for ${writerName}:`, contactError);
+            } else {
+              contactNameMap.set(normalizedName, newContact);
+              newContactsCreated.push(writerName);
+              console.log(`Created contact for writer: ${writerName}`);
+            }
+          } catch (error) {
+            console.error(`Error creating contact for ${writerName}:`, error);
+          }
+        }
+      }
+
+      if (newContactsCreated.length > 0) {
+        toast({
+          title: "Contacts Created",
+          description: `Automatically created ${newContactsCreated.length} new contacts for writers: ${newContactsCreated.slice(0, 3).join(', ')}${newContactsCreated.length > 3 ? '...' : ''}`,
+        });
+      }
+
+      // Map of normalized writer name -> writer record (keep for backward compatibility)
+      const writerNameMap = new Map(
+        (writers || []).map((w) => [normalize(w.writer_name), w])
+      );
 
       // Preload control information by copyright and agreements
       const uniqueCopyrightIds = Array.from(
@@ -443,50 +499,49 @@ export function useReconciliationBatches() {
         parties.forEach((p: any) => set.add(normalize(p.name)));
       }
 
-      // Iterate royalties and only allocate amounts to controlled writers
-      let anyControlled = false;
+      // Simplified approach: Group royalties by writer names and create payouts for contacts
+      const writerGroups = new Map<string, any[]>();
+      const unmatched: any[] = [];
 
       for (const royalty of allRoyalties) {
         const gross = royalty.gross_royalty_amount || 0;
         const names = royalty.work_writers ? splitWriters(royalty.work_writers) : [];
-        const cid = royalty.copyright_id as string | null;
-
-        const controlledNames = names.filter((n: string) => {
-          const norm = normalize(n);
-          if (!cid) return false;
-          const byCopyright = controlledByCopyright.get(cid)?.has(norm);
-          const byAgreement = controlledByAgreement.get(cid)?.has(norm);
-          return Boolean(byCopyright || byAgreement);
-        });
-
-        if (controlledNames.length === 0) {
+        
+        if (names.length === 0 || gross <= 0) {
           unmatched.push(royalty);
           continue;
         }
 
-        anyControlled = true;
+        // Find matching contacts for these writer names
+        const matchingContacts = names
+          .map((name: string) => contactNameMap.get(normalize(name)))
+          .filter(Boolean);
 
-        // Match controlled names to writer records
-        const matches = controlledNames
-          .map((n: string) => writerNameMap.get(normalize(n)))
-          .filter((w): w is { id: string; writer_name: string; writer_id: string } => Boolean(w));
-
-        if (matches.length === 0) {
+        if (matchingContacts.length === 0) {
           unmatched.push(royalty);
           continue;
         }
 
-        const perWriter = gross / matches.length;
-        for (const w of matches) {
-          if (!writerGroups.has(w.id)) writerGroups.set(w.id, []);
-          writerGroups.get(w.id)!.push({ ...royalty, writer_info: w, allocated_amount: perWriter });
+        // Split the royalty amount evenly among matching contacts
+        const perContact = gross / matchingContacts.length;
+        for (const contact of matchingContacts) {
+          const contactKey = `contact_${contact.id}`;
+          if (!writerGroups.has(contactKey)) {
+            writerGroups.set(contactKey, []);
+          }
+          writerGroups.get(contactKey)!.push({ 
+            ...royalty, 
+            contact_info: contact, 
+            allocated_amount: perContact 
+          });
         }
       }
 
-      if (!anyControlled) {
+      // Check if we have any royalties to process
+      if (writerGroups.size === 0 && unmatched.length === 0) {
         toast({
           title: "Info",
-          description: "No eligible royalties found to process",
+          description: "No royalties found to process",
         });
         return false;
       }
@@ -494,50 +549,19 @@ export function useReconciliationBatches() {
       // Create payouts for each writer group
       const payoutResults: any[] = [];
 
-      for (const [writerId, writerRoyalties] of writerGroups) {
-        const writer = writerRoyalties[0].writer_info;
-        const totalAmount = writerRoyalties.reduce((sum, r) => sum + (r.allocated_amount ?? r.gross_royalty_amount ?? 0), 0);
+      for (const [contactKey, contactRoyalties] of writerGroups) {
+        const contact = contactRoyalties[0].contact_info;
+        const totalAmount = contactRoyalties.reduce((sum, r) => sum + (r.allocated_amount ?? r.gross_royalty_amount ?? 0), 0);
 
         if (totalAmount <= 0) continue;
 
         try {
-          // First, ensure a contact exists for this writer
-          let contact;
-          const { data: existingContact } = await supabase
-            .from('contacts')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('name', writer.writer_name)
-            .eq('contact_type', 'writer')
-            .maybeSingle();
-
-          if (existingContact) {
-            contact = existingContact;
-          } else {
-            // Create a contact for this writer
-            const { data: newContact, error: contactError } = await supabase
-              .from('contacts')
-              .insert({
-                user_id: user.id,
-                name: writer.writer_name,
-                contact_type: 'writer'
-              })
-              .select('id')
-              .single();
-
-            if (contactError) {
-              console.error(`Error creating contact for writer ${writer.writer_name}:`, contactError);
-              continue;
-            }
-            contact = newContact;
-          }
-
-          // Create writer-specific payout using contact_id
+          // Create payout for this contact
           const { data: payout, error: payoutError } = await supabase
             .from('payouts')
             .insert({
               user_id: user.id,
-              client_id: contact.id, // Use contact ID instead of writer ID
+              client_id: contact.id,
               period: `Q${selectedQuarter} ${selectedYear}`,
               period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,
               period_end: `${selectedYear}-${selectedQuarter * 3}-${selectedQuarter === 4 ? 31 : 30}`,
@@ -546,38 +570,121 @@ export function useReconciliationBatches() {
               net_payable: totalAmount,
               amount_due: totalAmount,
               status: 'pending',
-              notes: `Auto-generated for writer ${writer.writer_name} from batch ${batch?.batch_id || id} - Q${selectedQuarter} ${selectedYear}`,
+              notes: `Auto-generated for ${contact.name} from batch ${batch?.batch_id || id} - Q${selectedQuarter} ${selectedYear}`,
             })
             .select()
             .single();
 
           if (payoutError) {
-            console.error(`Error creating payout for writer ${writer.writer_name}:`, payoutError);
+            console.error(`Error creating payout for ${contact.name}:`, payoutError);
             continue;
           }
 
-        // Link royalties to the payout (use allocated_amount when provided)
-        const payoutRoyalties = writerRoyalties.map(royalty => ({
-          payout_id: payout.id,
-          royalty_id: royalty.id,
-          allocated_amount: royalty.allocated_amount ?? (royalty.gross_royalty_amount || 0),
-        }));
+          // Link royalties to the payout
+          const payoutRoyalties = contactRoyalties.map(royalty => ({
+            payout_id: payout.id,
+            royalty_id: royalty.id,
+            allocated_amount: royalty.allocated_amount ?? (royalty.gross_royalty_amount || 0),
+          }));
 
-        const { error: linkError } = await supabase
-          .from('payout_royalties')
-          .insert(payoutRoyalties);
+          const { error: linkError } = await supabase
+            .from('payout_royalties')
+            .insert(payoutRoyalties);
 
-        if (linkError) {
-          console.error(`Error linking royalties for writer ${writer.writer_name}:`, linkError);
-          continue;
+          if (linkError) {
+            console.error(`Error linking royalties for ${contact.name}:`, linkError);
+            continue;
+          }
+
+          payoutResults.push({
+            contact_name: contact.name,
+            contact_id: contact.id,
+            payout_id: payout.id,
+            amount: totalAmount,
+            royalty_count: contactRoyalties.length,
+          });
+        } catch (error) {
+          console.error(`Error processing contact ${contact.name}:`, error);
+          toast({
+            title: "Warning",
+            description: `Failed to create payout for ${contact.name}`,
+            variant: "destructive",
+          });
         }
+      }
 
-        // Update quarterly balance reports for writer's payees
-        const { data: payees } = await supabase
-          .from('payees')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('writer_id', writerId);
+      // Handle unmatched royalties (create a general payout if needed)
+      if (unmatched.length > 0) {
+        const unmatchedTotal = unmatched.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0);
+        
+        if (unmatchedTotal > 0) {
+          // Create or find an "Unmatched" contact for unmatched royalties
+          let unmatchedContact;
+          const { data: existingUnmatchedContact } = await supabase
+            .from('contacts')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('name', 'Unmatched Royalties')
+            .eq('contact_type', 'other')
+            .maybeSingle();
+
+          if (existingUnmatchedContact) {
+            unmatchedContact = existingUnmatchedContact;
+          } else {
+            const { data: newUnmatchedContact, error: unmatchedContactError } = await supabase
+              .from('contacts')
+              .insert({
+                user_id: user.id,
+                name: 'Unmatched Royalties',
+                contact_type: 'other'
+              })
+              .select('id')
+              .single();
+
+            if (unmatchedContactError) {
+              console.error('Error creating unmatched contact:', unmatchedContactError);
+              unmatchedContact = null;
+            } else {
+              unmatchedContact = newUnmatchedContact;
+            }
+          }
+
+          if (unmatchedContact) {
+            const { data: unmatchedPayout, error: unmatchedError } = await supabase
+              .from('payouts')
+              .insert({
+                user_id: user.id,
+                client_id: unmatchedContact.id,
+                period: `Q${selectedQuarter} ${selectedYear}`,
+                period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,  
+                period_end: `${selectedYear}-${selectedQuarter * 3}-${selectedQuarter === 4 ? 31 : 30}`,
+                gross_royalties: unmatchedTotal,
+                total_expenses: 0,
+                net_payable: unmatchedTotal,
+                amount_due: unmatchedTotal,
+                status: 'pending',
+                notes: `Unmatched royalties from batch ${batch?.batch_id || id} - Q${selectedQuarter} ${selectedYear}`,
+              })
+              .select()
+              .single();
+
+            if (!unmatchedError) {
+              const unmatchedRoyalties = unmatched.map(royalty => ({
+                payout_id: unmatchedPayout.id,
+                royalty_id: royalty.id,
+                allocated_amount: royalty.gross_royalty_amount || 0,
+              }));
+
+              await supabase.from('payout_royalties').insert(unmatchedRoyalties);
+            }
+          }
+        }
+      }
+
+      toast({
+        title: "Success", 
+        description: `Created ${payoutResults.length} payouts from batch processing. Writers with royalty data now have corresponding contacts.`,
+      });
 
         if (payees && payees.length > 0) {
           for (const payee of payees) {
