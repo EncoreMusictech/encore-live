@@ -64,24 +64,30 @@ export const SubAccountManager = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch companies with user count
+      // Fetch companies data
       const { data: companiesData, error: companiesError } = await supabase
         .from('companies')
-        .select(`
-          *,
-          company_users!inner(count)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (companiesError) throw companiesError;
 
-      // Process companies data to include user count
-      const processedCompanies = companiesData?.map(company => ({
-        ...company,
-        user_count: company.company_users?.length || 0
-      })) || [];
+      // Fetch user counts for each company
+      const companiesWithCounts = await Promise.all(
+        (companiesData || []).map(async (company) => {
+          const { count } = await supabase
+            .from('company_users')
+            .select('*', { count: 'exact', head: true })
+            .eq('company_id', company.id);
+          
+          return {
+            ...company,
+            user_count: count || 0
+          };
+        })
+      );
 
-      setCompanies(processedCompanies);
+      setCompanies(companiesWithCounts);
 
       // Fetch company users with user emails
       const { data: usersData, error: usersError } = await supabase
