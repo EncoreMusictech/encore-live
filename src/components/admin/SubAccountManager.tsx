@@ -50,8 +50,8 @@ export const SubAccountManager = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
   const [moduleAccess, setModuleAccess] = useState<CompanyModuleAccess[]>([]);
-  const [totalSystemUsers, setTotalSystemUsers] = useState(0);
-  const [pendingMigrations, setPendingMigrations] = useState(0);
+  const [totalSystemUsers, setTotalSystemUsers] = useState<number>(0);
+  const [pendingMigrations, setPendingMigrations] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState('all');
