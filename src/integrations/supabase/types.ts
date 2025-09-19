@@ -734,6 +734,157 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          address: Json | null
+          billing_info: Json | null
+          contact_email: string | null
+          created_at: string
+          created_by: string | null
+          display_name: string
+          id: string
+          logo_url: string | null
+          module_access: Json | null
+          name: string
+          phone: string | null
+          settings: Json | null
+          slug: string
+          subscription_end: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: Json | null
+          billing_info?: Json | null
+          contact_email?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          id?: string
+          logo_url?: string | null
+          module_access?: Json | null
+          name: string
+          phone?: string | null
+          settings?: Json | null
+          slug: string
+          subscription_end?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: Json | null
+          billing_info?: Json | null
+          contact_email?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          id?: string
+          logo_url?: string | null
+          module_access?: Json | null
+          name?: string
+          phone?: string | null
+          settings?: Json | null
+          slug?: string
+          subscription_end?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      company_module_access: {
+        Row: {
+          access_source: string
+          company_id: string
+          created_at: string
+          expires_at: string | null
+          granted_at: string | null
+          id: string
+          module_id: string
+          settings: Json | null
+        }
+        Insert: {
+          access_source?: string
+          company_id: string
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string | null
+          id?: string
+          module_id: string
+          settings?: Json | null
+        }
+        Update: {
+          access_source?: string
+          company_id?: string
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string | null
+          id?: string
+          module_id?: string
+          settings?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_module_access_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_users: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          joined_at: string | null
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           address: string | null
@@ -5919,12 +6070,24 @@ export type Database = {
           user_id: string
         }
       }
+      get_user_company_role: {
+        Args: { company_id_param: string; user_id_param?: string }
+        Returns: string
+      }
       has_active_trial: {
         Args: { p_modules: string[]; p_user_id: string }
         Returns: boolean
       }
       has_client_portal_access: {
         Args: { _module?: string; _user_id: string }
+        Returns: boolean
+      }
+      has_company_module_access: {
+        Args: {
+          company_id_param: string
+          module_id_param: string
+          user_id_param?: string
+        }
         Returns: boolean
       }
       has_role: {
@@ -6064,6 +6227,7 @@ export type Database = {
         | "Test Source"
         | "Shondaland"
         | "NBC"
+        | "SoundExchange"
       sender_code_status: "not_submitted" | "submitted" | "verified"
       sync_type: "one_time" | "mfn" | "perpetual" | "term_limited"
       tenant_status: "active" | "inactive" | "suspended"
@@ -6244,6 +6408,7 @@ export const Constants = {
         "Test Source",
         "Shondaland",
         "NBC",
+        "SoundExchange",
       ],
       sender_code_status: ["not_submitted", "submitted", "verified"],
       sync_type: ["one_time", "mfn", "perpetual", "term_limited"],
