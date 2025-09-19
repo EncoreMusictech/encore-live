@@ -29,6 +29,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const isHandlingSignOut = useRef(false);
+  const lastTokenRefreshFailAt = useRef<number>(0);
+  const autoRefreshStopped = useRef<boolean>(false);
+  const lastSessionToastAt = useRef<number>(0);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -38,38 +41,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Handle refresh token failures or unexpected sign-outs
+        // Reset controls when a fresh session is established
+        if ((event as unknown as string) === 'SIGNED_IN') {
+          autoRefreshStopped.current = false;
+          lastTokenRefreshFailAt.current = 0;
+        }
+
+        // Handle refresh token failures with debounce and safe sign-out
         const ev = event as unknown as string;
-        if (ev === 'TOKEN_REFRESH_FAILED' && !isHandlingSignOut.current) {
-          isHandlingSignOut.current = true;
-          
-          // Clear all auth data immediately
+        if (ev === 'TOKEN_REFRESH_FAILED') {
+          const now = Date.now();
+          if (now - lastTokenRefreshFailAt.current < 2000) {
+            return; // debounce repeated events
+          }
+          lastTokenRefreshFailAt.current = now;
+
+          logSecurityEvent('auth_token_refresh_failed', {
+            path: window.location.pathname,
+            timestamp: now,
+          });
+
+          // Clear stored session immediately to stop auto-refresh loop
           try {
             localStorage.removeItem('sb-plxsenykjisqutxcvjeg-auth-token');
             SecureSessionManager.clearSession();
-          } catch (e) {
-            // Clear all localStorage as fallback
-            try {
-              localStorage.clear();
-            } catch (clearError) {
-              // no-op
-            }
-          }
+          } catch {}
 
-          // Set state to signed out immediately
+          // Ensure UI reflects signed-out state immediately
           setSession(null);
           setUser(null);
-          
-          toast({
-            title: 'Session expired',
-            description: 'Please sign in again.',
-            variant: 'destructive',
-          });
 
-          // Reset flag after a delay
-          setTimeout(() => {
-            isHandlingSignOut.current = false;
-          }, 1000);
+          if (now - lastSessionToastAt.current > 5000) {
+            toast({
+              title: 'Session expired',
+              description: 'Please sign in again.',
+              variant: 'destructive',
+            });
+            lastSessionToastAt.current = now;
+          }
+
+          if (!autoRefreshStopped.current && !isHandlingSignOut.current) {
+            isHandlingSignOut.current = true;
+            // Defer Supabase call to avoid deadlocks inside callback
+            setTimeout(() => {
+              supabase.auth.signOut().finally(() => {
+                isHandlingSignOut.current = false;
+                autoRefreshStopped.current = true;
+              });
+            }, 0);
+          }
         }
       }
     );
