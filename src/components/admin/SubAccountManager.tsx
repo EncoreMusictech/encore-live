@@ -35,7 +35,10 @@ interface CompanyUser {
   status: string;
   joined_at: string | null;
   user_email?: string;
+  user_name?: string;
   company_name?: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 interface CompanyModuleAccess {
@@ -102,12 +105,44 @@ export const SubAccountManager = () => {
 
       if (usersError) throw usersError;
 
-      // Process users data
-      const processedUsers = usersData?.map(user => ({
-        ...user,
-        company_name: user.companies?.display_name || user.companies?.name,
-        user_email: `User ${user.user_id.slice(0, 8)}...` // Display partial ID for privacy
-      })) || [];
+      // Get user details (names and emails) from edge function
+      let processedUsers = usersData || [];
+      
+      if (usersData && usersData.length > 0) {
+        try {
+          const userIds = usersData.map(user => user.user_id);
+          const { data: userDetailsResponse, error: userDetailsError } = await supabase.functions.invoke('get-user-details', {
+            body: { userIds }
+          });
+
+          if (userDetailsError) {
+            console.error('Error fetching user details:', userDetailsError);
+          } else if (userDetailsResponse?.users) {
+            processedUsers = usersData.map(user => {
+              const userDetail = userDetailsResponse.users.find((u: any) => u.id === user.user_id);
+              return {
+                ...user,
+                company_name: user.companies?.display_name || user.companies?.name,
+                user_name: userDetail?.name || `User ${user.user_id.slice(0, 8)}...`,
+                user_email: userDetail?.email || `${user.user_id.slice(0, 8)}@system.local`,
+                first_name: userDetail?.first_name || '',
+                last_name: userDetail?.last_name || ''
+              };
+            });
+          }
+        } catch (error) {
+          console.error('Error calling get-user-details function:', error);
+          // Fallback to basic processing
+          processedUsers = usersData.map(user => ({
+            ...user,
+            company_name: user.companies?.display_name || user.companies?.name,
+            user_name: `User ${user.user_id.slice(0, 8)}...`,
+            user_email: `${user.user_id.slice(0, 8)}@system.local`,
+            first_name: '',
+            last_name: ''
+          }));
+        }
+      }
 
       setCompanyUsers(processedUsers);
 
@@ -566,7 +601,12 @@ export const SubAccountManager = () => {
                 <TableBody>
                   {companyUsers.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell>{user.user_email}</TableCell>
+                       <TableCell>
+                         <div>
+                           <div className="font-medium">{user.user_name}</div>
+                           <div className="text-sm text-muted-foreground">{user.user_email}</div>
+                         </div>
+                       </TableCell>
                       <TableCell>{user.company_name}</TableCell>
                       <TableCell>
                         <Badge variant={
