@@ -6228,6 +6228,7 @@ export type Database = {
         | "Shondaland"
         | "NBC"
         | "SoundExchange"
+        | "NFL Productions"
       sender_code_status: "not_submitted" | "submitted" | "verified"
       sync_type: "one_time" | "mfn" | "perpetual" | "term_limited"
       tenant_status: "active" | "inactive" | "suspended"
@@ -6409,6 +6410,7 @@ export const Constants = {
         "Shondaland",
         "NBC",
         "SoundExchange",
+        "NFL Productions",
       ],
       sender_code_status: ["not_submitted", "submitted", "verified"],
       sync_type: ["one_time", "mfn", "perpetual", "term_limited"],
