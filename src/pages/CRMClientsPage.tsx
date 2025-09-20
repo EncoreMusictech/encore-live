@@ -71,6 +71,62 @@ export default function CRMClientsPage() {
   const [nameMap, setNameMap] = useState<Record<string, string>>({});
   const getDataLabel = (a: any) => nameMap[`${a.data_type}:${a.data_id}`] || a.data_id;
   
+  // Store user emails fetched from the edge function
+  const [userEmails, setUserEmails] = useState<Record<string, string>>({});
+
+  // Fetch user emails using the edge function
+  useEffect(() => {
+    const fetchUserEmails = async () => {
+      if (!clientAccess || clientAccess.length === 0) return;
+      
+      const userIds = clientAccess.map(access => access.client_user_id);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('get-user-details', {
+          body: { userIds }
+        });
+        
+        if (error) {
+          console.error('Error fetching user emails:', error);
+          return;
+        }
+        
+        if (data && Array.isArray(data)) {
+          const emailMap: Record<string, string> = {};
+          data.forEach((user: any) => {
+            if (user.id && user.email) {
+              emailMap[user.id] = user.email;
+            }
+          });
+          setUserEmails(emailMap);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user emails:', err);
+      }
+    };
+    
+    fetchUserEmails();
+  }, [clientAccess]);
+
+  const getClientEmail = (clientUserId: string) => {
+    // First check if we have the email from the edge function
+    if (userEmails[clientUserId]) {
+      return userEmails[clientUserId];
+    }
+    
+    // Fallback to checking invitations
+    const matches = invitations
+      .filter((inv: any) => inv.accepted_by_user_id === clientUserId);
+    if (matches.length > 0) {
+      matches.sort((a: any, b: any) =>
+        new Date(b.accepted_at || b.created_at).getTime() -
+        new Date(a.accepted_at || a.created_at).getTime()
+      );
+      return matches[0]?.email as string | undefined;
+    }
+    return undefined;
+  };
+  
   // Load data labels for associations
   useEffect(() => {
     const loadLabels = async () => {
@@ -158,16 +214,19 @@ export default function CRMClientsPage() {
   // Combine client access records and invitations for display
   const allClients = [
     // Active clients - using client_user_id as identifier
-    ...clientAccess.map(access => ({
-      id: access.id,
-      name: `Client ${access.client_user_id.slice(0, 8)}...`, // Shortened user ID as name
-      type: access.role === 'admin' ? 'Admin' : 'Client',
-      status: access.status,
-      email: 'N/A', // Email not available in access record
-      modules: access.permissions ? Object.keys(access.permissions as any).filter(key => (access.permissions as any)[key]) : [],
-      lastActive: access.updated_at ? new Date(access.updated_at).toLocaleDateString() : 'Never',
-      isInvitation: false
-    })),
+    ...clientAccess.map(access => {
+      const email = getClientEmail(access.client_user_id);
+      return {
+        id: access.id,
+        name: email ? email.split('@')[0] : `Client ${access.client_user_id.slice(0, 8)}...`,
+        type: access.role === 'admin' ? 'Admin' : 'Client',
+        status: access.status,
+        email: email || 'Unknown',
+        modules: access.permissions ? Object.keys(access.permissions as any).filter(key => (access.permissions as any)[key]) : [],
+        lastActive: access.updated_at ? new Date(access.updated_at).toLocaleDateString() : 'Never',
+        isInvitation: false
+      };
+    }),
     // Pending invitations
     ...invitations.filter(inv => inv.status === 'pending').map(invitation => {
       const statusInfo = getInvitationStatus(invitation);
@@ -392,28 +451,6 @@ export default function CRMClientsPage() {
     }
     
     return <Badge variant="secondary" className="flex items-center gap-1"><Clock className="h-3 w-3" />Pending ({status.daysUntilExpiry}d)</Badge>;
-  };
-
-  const getClientEmail = (clientUserId: string) => {
-    // If this is the current logged-in user, return their email directly
-    const currentUser = supabase.auth.getUser();
-    if (currentUser && currentUser.then) {
-      // For the current user, we know their email from the auth token
-      if (clientUserId === "5f377ef9-10fe-413c-a3db-3a7b1c77ed6b") {
-        return "info@encoremusic.tech";
-      }
-    }
-    
-    const matches = invitations
-      .filter((inv: any) => inv.accepted_by_user_id === clientUserId);
-    if (matches.length > 0) {
-      matches.sort((a: any, b: any) =>
-        new Date(b.accepted_at || b.created_at).getTime() -
-        new Date(a.accepted_at || a.created_at).getTime()
-      );
-      return matches[0]?.email as string | undefined;
-    }
-    return undefined;
   };
 
   // Filter invitations to only show users and admins for permissions tab
