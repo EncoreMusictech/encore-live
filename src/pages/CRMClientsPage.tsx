@@ -91,15 +91,14 @@ export default function CRMClientsPage() {
           return;
         }
         
-        if (data && Array.isArray(data)) {
-          const emailMap: Record<string, string> = {};
-          data.forEach((user: any) => {
-            if (user.id && user.email) {
-              emailMap[user.id] = user.email;
-            }
-          });
-          setUserEmails(emailMap);
-        }
+        const emailMap: Record<string, string> = {};
+        const usersArray = Array.isArray(data) ? data : (data && Array.isArray((data as any).users) ? (data as any).users : []);
+        usersArray.forEach((user: any) => {
+          if (user.id && user.email) {
+            emailMap[user.id] = user.email;
+          }
+        });
+        if (Object.keys(emailMap).length > 0) setUserEmails(emailMap);
       } catch (err) {
         console.error('Failed to fetch user emails:', err);
       }
