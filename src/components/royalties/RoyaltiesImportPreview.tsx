@@ -438,19 +438,21 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
                     <TableBody>
                       {mappedData.slice(0, 100).map((row: any, index) => (
                         <TableRow key={index}>
-                          {getOrderedHeaders().map((header, cellIndex) => {
-                            const originalFieldName = getOriginalFieldName(header);
-                            return (
-                              <TableCell key={cellIndex} className={header === 'WORK TITLE' ? 'font-medium' : ''}>
-                                {header === 'STATEMENT ID' ? (
-                                  String(localRecord.statement_id || '-')
-                                ) : header === 'GROSS' || header === 'NET' 
-                                  ? (typeof row[originalFieldName] === 'number' ? `$${row[originalFieldName].toLocaleString()}` : String(row[originalFieldName] || '-'))
-                                  : String(row[originalFieldName] || '-')
-                                }
-                              </TableCell>
-                            );
-                          })}
+                           {getOrderedHeaders().map((header, cellIndex) => {
+                             const originalFieldName = getOriginalFieldName(header);
+                             const cellValue = row[originalFieldName];
+                             console.log(`Header: ${header}, Original Field: ${originalFieldName}, Value:`, cellValue);
+                             return (
+                               <TableCell key={cellIndex} className={header === 'WORK TITLE' ? 'font-medium' : ''}>
+                                 {header === 'STATEMENT ID' ? (
+                                   String(localRecord.statement_id || '-')
+                                 ) : header === 'GROSS' || header === 'NET' 
+                                   ? (typeof cellValue === 'number' ? `$${cellValue.toLocaleString()}` : String(cellValue || '-'))
+                                   : String(cellValue || '-')
+                                 }
+                               </TableCell>
+                             );
+                           })}
                         </TableRow>
                       ))}
                     </TableBody>
