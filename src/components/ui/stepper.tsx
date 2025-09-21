@@ -21,7 +21,7 @@ export function Stepper({ steps, orientation = 'horizontal', className }: Steppe
       className
     )}>
       {steps.map((step, index) => (
-        <React.Fragment key={index}>
+        <div key={index} className="flex items-start">
           {/* Step Container */}
           <div className="flex flex-col items-center relative">
             {/* Step Box */}
@@ -81,7 +81,7 @@ export function Stepper({ steps, orientation = 'horizontal', className }: Steppe
               />
             </div>
           )}
-        </React.Fragment>
+        </div>
       ))}
     </div>
   );

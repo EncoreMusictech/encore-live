@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { CalendarIcon, FileText, Users } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useCallback, memo } from "react";
 
 interface ContractBasicInfoAndPartiesProps {
   data: any;
@@ -21,7 +22,7 @@ interface ContractBasicInfoAndPartiesProps {
   };
 }
 
-export function ContractBasicInfoAndParties({ 
+function ContractBasicInfoAndPartiesComponent({ 
   data, 
   onChange, 
   contractType,
@@ -30,10 +31,10 @@ export function ContractBasicInfoAndParties({
     secondParty: "Second Party"
   }
 }: ContractBasicInfoAndPartiesProps) {
-  const updateData = (field: string, value: any) => {
+  const updateData = useCallback((field: string, value: any) => {
     // Use functional update to prevent unnecessary re-renders
     onChange(prev => ({ ...prev, [field]: value }));
-  };
+  }, [onChange]);
 
   return (
     <div className="space-y-6">
@@ -341,3 +342,5 @@ export function ContractBasicInfoAndParties({
     </div>
   );
 }
+
+export const ContractBasicInfoAndParties = memo(ContractBasicInfoAndPartiesComponent);
