@@ -29,7 +29,7 @@ export const ENCORE_STANDARD_FIELDS = [
   'ISRC'
 ] as const;
 
-// Media Type Standardization Mapping
+// Media Type Standardization Mapping - Based on ENCORE Media Type Lookup Table
 export const MEDIA_TYPE_STANDARDIZATION: Record<string, string> = {
   // Performance types
   'PR': 'PERF',
@@ -41,6 +41,7 @@ export const MEDIA_TYPE_STANDARDIZATION: Record<string, string> = {
   'YouTube': 'PERF',
   'Terrestrial Radio': 'PERF',
   'Television': 'PERF',
+  'PERF': 'PERF',
   
   // Mechanical types
   'N/A': 'MECH',
@@ -61,9 +62,6 @@ export const MEDIA_TYPE_STANDARDIZATION: Record<string, string> = {
   
   // Other types
   'OTHER': 'OTHER',
-  
-  // Performance variations (PERF is default for performance)
-  'PERF': 'PERF',
 };
 
 // Source-specific media type column mappings
