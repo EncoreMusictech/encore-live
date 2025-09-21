@@ -76,7 +76,47 @@ export function AllocationSongMatchDialog({
       const selectedWork = copyrights.find(c => c.id === selectedCopyright);
       if (!selectedWork) return;
 
-      const { error } = await supabase
+      // First, get the current allocation to find its work_id
+      const { data: currentAllocation, error: fetchError } = await supabase
+        .from('royalty_allocations')
+        .select('work_id, work_identifier, mapped_data')
+        .eq('id', allocationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Get the work identifier from various possible sources
+      const workId = currentAllocation.work_id || 
+                    currentAllocation.work_identifier || 
+                    currentAllocation.mapped_data?.['WORK IDENTIFIER'] ||
+                    currentAllocation.mapped_data?.['Work ID'];
+
+      if (!workId) {
+        // If no work ID found, just update this allocation
+        const { error } = await supabase
+          .from('royalty_allocations')
+          .update({
+            copyright_id: selectedCopyright,
+            song_title: selectedWork.work_title,
+            controlled_status: 'Controlled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', allocationId);
+
+        if (error) throw error;
+
+        onMatch(selectedCopyright, selectedWork.work_title);
+        onOpenChange(false);
+        
+        toast({
+          title: "Success",
+          description: `Successfully matched to "${selectedWork.work_title}"`,
+        });
+        return;
+      }
+
+      // Update all allocations with the same work ID
+      const { error: updateError, count } = await supabase
         .from('royalty_allocations')
         .update({
           copyright_id: selectedCopyright,
@@ -84,16 +124,16 @@ export function AllocationSongMatchDialog({
           controlled_status: 'Controlled',
           updated_at: new Date().toISOString()
         })
-        .eq('id', allocationId);
+        .or(`work_id.eq.${workId},work_identifier.eq.${workId},mapped_data->>WORK IDENTIFIER.eq.${workId},mapped_data->>Work ID.eq.${workId}`);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       onMatch(selectedCopyright, selectedWork.work_title);
       onOpenChange(false);
       
       toast({
         title: "Success",
-        description: `Successfully matched to "${selectedWork.work_title}"`,
+        description: `Successfully matched ${count || 1} allocation(s) to "${selectedWork.work_title}"`,
       });
     } catch (error) {
       console.error('Error matching song:', error);

@@ -17,6 +17,7 @@ import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { useContacts } from "@/hooks/useContacts";
 import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
+import { toast } from "@/hooks/use-toast";
 import { RoyaltyAllocationForm } from "./RoyaltyAllocationForm";
 import { AllocationSongMatchDialog } from "./AllocationSongMatchDialog";
 import { ENCORE_STANDARD_FIELDS } from "@/lib/encore-mapper";
@@ -74,6 +75,10 @@ export function RoyaltyAllocationList() {
   };
 
   const handleSongMatch = async (copyrightId: string, workTitle: string) => {
+    toast({
+      title: "Match Complete",
+      description: `All allocations with the same work ID have been updated to match "${workTitle}"`,
+    });
     await refreshAllocations();
     setMatchingAllocation(null);
   };
