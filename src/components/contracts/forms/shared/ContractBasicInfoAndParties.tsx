@@ -36,7 +36,7 @@ function ContractBasicInfoAndPartiesComponent({
   }, [onChange, data]);
 
   return (
-    <div className="space-y-6" onMouseDownCapture={(e) => e.stopPropagation()} onClickCapture={(e) => e.stopPropagation()} onFocusCapture={(e) => e.stopPropagation()} onKeyDownCapture={(e) => e.stopPropagation()}>
+    <div className="space-y-6" onMouseDownCapture={(e) => e.stopPropagation()} onClickCapture={(e) => e.stopPropagation()} onFocusCapture={(e) => e.stopPropagation()} onKeyDownCapture={(e) => { if (e.key !== 'Tab') e.stopPropagation(); }}>
       {/* Basic Information Section */}
       <Card>
         <CardHeader>

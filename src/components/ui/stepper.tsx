@@ -22,7 +22,7 @@ export function Stepper({ steps, orientation = 'horizontal', className }: Steppe
     )}
       onMouseDownCapture={(e) => e.stopPropagation()}
       onClickCapture={(e) => e.stopPropagation()}
-      onKeyDownCapture={(e) => e.stopPropagation()}
+      onKeyDownCapture={(e) => { if (e.key !== 'Tab') e.stopPropagation(); }}
       onFocusCapture={(e) => e.stopPropagation()}
     >
       {steps.map((step, index) => (
