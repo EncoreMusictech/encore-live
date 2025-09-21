@@ -108,6 +108,7 @@ export function CRMSidebar() {
   const location = useLocation();
   const [userModules, setUserModules] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState(false);
+  
   useEffect(() => {
     const fetchUserModules = async () => {
       if (!user) return;
@@ -122,6 +123,16 @@ export function CRMSidebar() {
     };
     fetchUserModules();
   }, [user]);
+
+  // Auto-collapse sidebar when user returns to window
+  useEffect(() => {
+    const handleWindowFocus = () => {
+      setCollapsed(true);
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+    return () => window.removeEventListener('focus', handleWindowFocus);
+  }, []);
   // Regular admin modules (without Super Admin)
   const regularAdminModules = adminModules.filter(module => module.id !== 'platform-admin');
   
