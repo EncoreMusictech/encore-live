@@ -570,15 +570,27 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                           })()}
                          </div>
                        </TableCell>
-                        <TableCell>
+                         <TableCell>
                           <div className="space-y-1">
                             {(() => {
                               // Use CWR validation logic for proper compliance checking
                               const validation = validateCWRCompliance(copyright, copyrightWriters);
+                              console.log(`${copyright.work_title} CWR Validation:`, {
+                                isValid: validation.isValid,
+                                errors: validation.errors.length,
+                                warnings: validation.warnings.length,
+                                writersCount: copyrightWriters.length
+                              });
                               const cwrReady = validation.isValid;
                               
                               // DDEX readiness - simplified requirements
                               const ddexReady = copyright.work_title && copyright.iswc && copyright.language_code;
+                              console.log(`${copyright.work_title} DDEX Check:`, {
+                                hasTitle: !!copyright.work_title,
+                                hasISWC: !!copyright.iswc, 
+                                hasLanguage: !!copyright.language_code,
+                                ddexReady
+                              });
                               
                               return (
                                 <div className="flex flex-col gap-1">
