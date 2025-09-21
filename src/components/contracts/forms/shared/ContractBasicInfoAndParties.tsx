@@ -31,7 +31,8 @@ export function ContractBasicInfoAndParties({
   }
 }: ContractBasicInfoAndPartiesProps) {
   const updateData = (field: string, value: any) => {
-    onChange({ ...data, [field]: value });
+    // Use functional update to prevent unnecessary re-renders
+    onChange(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -55,6 +56,8 @@ export function ContractBasicInfoAndParties({
                 id="title"
                 value={data.agreementTitle || data.title || ""}
                 onChange={(e) => updateData('agreementTitle', e.target.value)}
+                onMouseDown={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
                 placeholder="Enter agreement title"
               />
             </div>
@@ -65,6 +68,8 @@ export function ContractBasicInfoAndParties({
                 id="counterparty"
                 value={data.counterparty || data.counterparty_name || data.counterpartyName || ""}
                 onChange={(e) => updateData('counterparty', e.target.value)}
+                onMouseDown={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
                 placeholder="Name of the other party"
               />
             </div>
@@ -173,6 +178,8 @@ export function ContractBasicInfoAndParties({
               id="notes"
               value={data.notes || ""}
               onChange={(e) => updateData('notes', e.target.value)}
+              onMouseDown={(e) => e.stopPropagation()}
+              onFocus={(e) => e.stopPropagation()}
               placeholder="Any additional information or special terms"
               rows={3}
             />
@@ -204,6 +211,8 @@ export function ContractBasicInfoAndParties({
                 <Input
                   value={data.firstParty?.contactName || ""}
                   onChange={(e) => updateData('firstParty', { ...data.firstParty, contactName: e.target.value })}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onFocus={(e) => e.stopPropagation()}
                   placeholder="Contact person name"
                 />
               </div>
@@ -214,6 +223,8 @@ export function ContractBasicInfoAndParties({
                   type="email"
                   value={data.firstParty?.email || ""}
                   onChange={(e) => updateData('firstParty', { ...data.firstParty, email: e.target.value })}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onFocus={(e) => e.stopPropagation()}
                   placeholder="contact@example.com"
                 />
               </div>
@@ -225,6 +236,8 @@ export function ContractBasicInfoAndParties({
                 <Input
                   value={data.firstParty?.phone || ""}
                   onChange={(e) => updateData('firstParty', { ...data.firstParty, phone: e.target.value })}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onFocus={(e) => e.stopPropagation()}
                   placeholder="+1 (555) 123-4567"
                 />
               </div>
@@ -234,6 +247,8 @@ export function ContractBasicInfoAndParties({
                 <Input
                   value={data.firstParty?.taxId || ""}
                   onChange={(e) => updateData('firstParty', { ...data.firstParty, taxId: e.target.value })}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onFocus={(e) => e.stopPropagation()}
                   placeholder="Tax identification number"
                 />
               </div>
@@ -244,6 +259,8 @@ export function ContractBasicInfoAndParties({
               <Textarea
                 value={data.firstParty?.address || ""}
                 onChange={(e) => updateData('firstParty', { ...data.firstParty, address: e.target.value })}
+                onMouseDown={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
                 placeholder="Full mailing address"
                 rows={3}
               />
@@ -264,6 +281,8 @@ export function ContractBasicInfoAndParties({
                 <Input
                   value={data.secondParty?.contactName || ""}
                   onChange={(e) => updateData('secondParty', { ...data.secondParty, contactName: e.target.value })}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onFocus={(e) => e.stopPropagation()}
                   placeholder="Company or contact person name"
                 />
               </div>
@@ -274,6 +293,8 @@ export function ContractBasicInfoAndParties({
                   type="email"
                   value={data.secondParty?.email || ""}
                   onChange={(e) => updateData('secondParty', { ...data.secondParty, email: e.target.value })}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onFocus={(e) => e.stopPropagation()}
                   placeholder="contact@company.com"
                 />
               </div>
@@ -285,6 +306,8 @@ export function ContractBasicInfoAndParties({
                 <Input
                   value={data.secondParty?.phone || ""}
                   onChange={(e) => updateData('secondParty', { ...data.secondParty, phone: e.target.value })}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onFocus={(e) => e.stopPropagation()}
                   placeholder="+1 (555) 123-4567"
                 />
               </div>
@@ -294,6 +317,8 @@ export function ContractBasicInfoAndParties({
                 <Input
                   value={data.secondParty?.taxId || ""}
                   onChange={(e) => updateData('secondParty', { ...data.secondParty, taxId: e.target.value })}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onFocus={(e) => e.stopPropagation()}
                   placeholder="Company tax ID"
                 />
               </div>
@@ -304,6 +329,8 @@ export function ContractBasicInfoAndParties({
               <Textarea
                 value={data.secondParty?.address || ""}
                 onChange={(e) => updateData('secondParty', { ...data.secondParty, address: e.target.value })}
+                onMouseDown={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
                 placeholder="Full business address"
                 rows={3}
               />
