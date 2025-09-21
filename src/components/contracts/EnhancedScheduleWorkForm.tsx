@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AudioPlayer } from '../copyright/AudioPlayer';
 import { ArtistSelector } from '../copyright/ArtistSelector';
 import { formatSpotifyMetadata } from '@/lib/music-metadata-formats';
+import { useFormPersistence } from '@/hooks/useFormPersistence';
 
 interface Writer {
   id: string;
@@ -163,6 +164,29 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
   const [spotifyMetadata, setSpotifyMetadata] = useState<SpotifyMetadata | null>(null);
   const [spotifyAlternatives, setSpotifyAlternatives] = useState<SpotifyTrackMetadata[]>([]);
   const [newAka, setNewAka] = useState('');
+  const [showRestoreNotification, setShowRestoreNotification] = useState(false);
+
+  // Form persistence - auto-save form data to prevent loss when navigating away
+  const formPersistenceData = {
+    formData,
+    writers,
+    publishers,
+    recordings,
+    spotifyMetadata,
+    newAka
+  };
+
+  const {
+    loadFromStorage,
+    clearSavedData,
+    hasSavedData,
+    getSavedDataTimestamp
+  } = useFormPersistence({
+    key: `contract_schedule_work_${contractId}`,
+    data: formPersistenceData,
+    enabled: true, // Always enabled for contract forms
+    delay: 3000 // Save after 3 seconds of inactivity
+  });
 
   // Calculate total shares
   const totalWriterShare = writers.reduce((sum, w) => sum + w.share, 0);

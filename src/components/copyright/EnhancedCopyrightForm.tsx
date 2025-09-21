@@ -27,6 +27,7 @@ import { CMORegistration, getAllPROs } from '@/data/cmo-territories';
 import { DocumentUpload } from '@/components/ui/document-upload';
 import { MLCMetadataEnrichment } from './MLCMetadataEnrichment';
 import { formatSpotifyMetadata } from '@/lib/music-metadata-formats';
+import { useFormPersistence } from '@/hooks/useFormPersistence';
 
 interface EnhancedCopyrightFormProps {
   onSuccess?: () => void;
@@ -131,6 +132,28 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
   const [spotifyAlternatives, setSpotifyAlternatives] = useState<SpotifyTrackMetadata[]>([]);
   const [newAka, setNewAka] = useState('');
   const [cmoRegistrations, setCmoRegistrations] = useState<CMORegistration[]>([]);
+  const [showRestoreNotification, setShowRestoreNotification] = useState(false);
+
+  // Form persistence - auto-save form data to prevent loss when navigating away
+  const formPersistenceData = {
+    formData,
+    writers,
+    spotifyMetadata,
+    cmoRegistrations,
+    newAka
+  };
+
+  const {
+    loadFromStorage,
+    clearSavedData,
+    hasSavedData,
+    getSavedDataTimestamp
+  } = useFormPersistence({
+    key: editingCopyright ? `copyright_edit_${editingCopyright.id}` : 'copyright_new',
+    data: formPersistenceData,
+    enabled: true, // Always enabled for copyright forms
+    delay: 3000 // Save after 3 seconds of inactivity
+  });
 
   // Calculate total controlled share
   const totalControlledShare = writers
@@ -389,6 +412,87 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
     loadWriters();
   }, [editingCopyright?.id]); // Only depend on the ID to prevent infinite loops
+
+  // Restore saved form data on component mount (only for new copyrights)
+  useEffect(() => {
+    if (editingCopyright) return; // Don't restore for editing mode
+    
+    if (hasSavedData()) {
+      const savedData = loadFromStorage();
+      if (savedData?.data) {
+        const data = savedData.data;
+        const timestamp = getSavedDataTimestamp();
+        
+        // Check if saved data is recent (within last 24 hours)
+        const isRecent = timestamp && (new Date().getTime() - new Date(timestamp).getTime()) < 24 * 60 * 60 * 1000;
+        
+        if (isRecent) {
+          setShowRestoreNotification(true);
+          
+          // Show toast notification
+          toast({
+            title: "Draft Found",
+            description: `Found unsaved changes from ${new Date(timestamp).toLocaleString()}. Click "Restore Draft" to continue where you left off.`,
+            duration: 10000, // Show for 10 seconds
+          });
+        } else {
+          // Clear old saved data
+          clearSavedData();
+        }
+      }
+    }
+  }, [hasSavedData, loadFromStorage, getSavedDataTimestamp, clearSavedData, editingCopyright, toast]);
+
+  // Function to restore saved draft
+  const restoreSavedDraft = () => {
+    const savedData = loadFromStorage();
+    if (savedData?.data) {
+      const data = savedData.data;
+      
+      // Restore form data
+      if (data.formData) {
+        setFormData(data.formData);
+      }
+      
+      // Restore writers
+      if (data.writers && Array.isArray(data.writers)) {
+        setWriters(data.writers);
+      }
+      
+      // Restore Spotify metadata
+      if (data.spotifyMetadata) {
+        setSpotifyMetadata(data.spotifyMetadata);
+      }
+      
+      // Restore CMO registrations
+      if (data.cmoRegistrations && Array.isArray(data.cmoRegistrations)) {
+        setCmoRegistrations(data.cmoRegistrations);
+      }
+      
+      // Restore other state
+      if (data.newAka) {
+        setNewAka(data.newAka);
+      }
+      
+      setShowRestoreNotification(false);
+      
+      toast({
+        title: "Draft Restored",
+        description: "Your previous work has been restored successfully.",
+      });
+    }
+  };
+
+  // Function to dismiss restore notification
+  const dismissRestoreNotification = () => {
+    setShowRestoreNotification(false);
+    clearSavedData();
+    
+    toast({
+      title: "Draft Discarded",
+      description: "Previous draft has been discarded.",
+    });
+  };
 
   const searchASCAP = () => {
     window.open('https://www.ascap.com/repertory#/', '_blank');
@@ -652,6 +756,9 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
         resetForm();
       }
       
+      // Clear saved draft data after successful submission
+      clearSavedData();
+      
       console.log('Copyright saved successfully, waiting for real-time propagation...');
       
       // Allow more time for real-time updates to propagate and avoid race conditions
@@ -675,6 +782,45 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Restore Draft Notification */}
+      {showRestoreNotification && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-blue-600" />
+                <div>
+                  <h4 className="font-medium text-blue-900">Draft Found</h4>
+                  <p className="text-sm text-blue-700">
+                    You have unsaved changes. Would you like to restore your previous work?
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={restoreSavedDraft}
+                  className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                >
+                  Restore Draft
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={dismissRestoreNotification}
+                  className="text-blue-600 hover:bg-blue-100"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Metadata Section */}
       <Collapsible open={metadataOpen} onOpenChange={setMetadataOpen}>
         <Card>
