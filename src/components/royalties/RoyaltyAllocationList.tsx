@@ -181,13 +181,15 @@ export function RoyaltyAllocationList() {
         }
         return null;
       case 'SOURCE':
-        // For manual royalties (no staging_record_id), get source from linked batch
-        if (!allocation.staging_record_id && allocation.batch_id) {
+        // Priority 1: If linked to a batch, show batch source
+        if (allocation.batch_id) {
           const linkedBatch = batches?.find(batch => batch.id === allocation.batch_id);
-          return linkedBatch?.source || null;
+          if (linkedBatch?.source) {
+            return linkedBatch.source;
+          }
         }
-        // For imported royalties, use the normal logic
-        return allocation.mapped_data?.['SOURCE'] || allocation.mapped_data?.['Statement Source'] || allocation.source;
+        // Priority 2: Show source from imported statement (mapped data)
+        return allocation.mapped_data?.['SOURCE'] || allocation.mapped_data?.['Statement Source'] || allocation.source || null;
       case 'QUARTER':
         return allocation.mapped_data?.['QUARTER'] || allocation.quarter;
       case 'WORK IDENTIFIER':
