@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { useContacts } from "@/hooks/useContacts";
+import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { RoyaltyAllocationForm } from "./RoyaltyAllocationForm";
 import { AllocationSongMatchDialog } from "./AllocationSongMatchDialog";
 import { ENCORE_STANDARD_FIELDS } from "@/lib/encore-mapper";
@@ -32,6 +33,7 @@ export function RoyaltyAllocationList() {
   const { allocations, loading, deleteAllocation, refreshAllocations } = useRoyaltyAllocations();
   const { batches } = useReconciliationBatches();
   const { contacts } = useContacts();
+  const { stagingRecords } = useRoyaltiesImport();
 
   const filteredAllocations = allocations.filter(allocation => {
     const matchesSearch = allocation.song_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -181,14 +183,21 @@ export function RoyaltyAllocationList() {
         }
         return null;
       case 'SOURCE':
-        // Priority 1: If linked to a batch, show batch source
+        // Priority 1: Use detected_source from original import staging record
+        if (allocation.staging_record_id) {
+          const stagingRecord = stagingRecords?.find(record => record.id === allocation.staging_record_id);
+          if (stagingRecord?.detected_source) {
+            return stagingRecord.detected_source;
+          }
+        }
+        // Priority 2: If linked to a batch, show batch source
         if (allocation.batch_id) {
           const linkedBatch = batches?.find(batch => batch.id === allocation.batch_id);
           if (linkedBatch?.source) {
             return linkedBatch.source;
           }
         }
-        // Priority 2: Show source from imported statement (mapped data)
+        // Priority 3: Show source from imported statement (mapped data) - fallback
         return allocation.mapped_data?.['SOURCE'] || allocation.mapped_data?.['Statement Source'] || allocation.source || null;
       case 'QUARTER':
         return allocation.mapped_data?.['QUARTER'] || allocation.quarter;
