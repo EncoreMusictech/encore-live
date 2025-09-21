@@ -134,6 +134,114 @@ export const useContracts = () => {
     }
   };
 
+  const duplicateContract = async (originalId: string) => {
+    try {
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) throw new Error('No authenticated user');
+
+      // Fetch the original contract with all related data
+      const { data: originalContract, error: fetchError } = await supabase
+        .from('contracts')
+        .select(`
+          *,
+          contract_interested_parties(*),
+          contract_schedule_works(*)
+        `)
+        .eq('id', originalId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!originalContract) throw new Error('Contract not found');
+
+      // Create duplicate contract data, excluding fields that should be unique/auto-generated
+      const {
+        id,
+        created_at,
+        updated_at,
+        user_id,
+        version,
+        agreement_id,
+        contract_interested_parties,
+        contract_schedule_works,
+        ...contractData
+      } = originalContract;
+
+      const duplicateData = {
+        ...contractData,
+        title: `${contractData.title} (Copy)`,
+        version: 1, // Reset version for the duplicate
+        contract_status: 'draft' as const, // Set as draft for the duplicate
+        user_id: user.data.user.id
+      };
+
+      // Create the new contract
+      const { data: newContract, error: createError } = await supabase
+        .from('contracts')
+        .insert(duplicateData)
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      // Duplicate interested parties if they exist
+      if (contract_interested_parties && contract_interested_parties.length > 0) {
+        const interestedPartiesData = contract_interested_parties.map(party => {
+          const { id, contract_id, created_at, updated_at, ...partyData } = party;
+          return {
+            ...partyData,
+            contract_id: newContract.id
+          };
+        });
+
+        const { error: partiesError } = await supabase
+          .from('contract_interested_parties')
+          .insert(interestedPartiesData);
+
+        if (partiesError) {
+          console.error('Error duplicating interested parties:', partiesError);
+          // Don't throw, just log the error
+        }
+      }
+
+      // Duplicate schedule works if they exist
+      if (contract_schedule_works && contract_schedule_works.length > 0) {
+        const scheduleWorksData = contract_schedule_works.map(work => {
+          const { id, contract_id, created_at, updated_at, ...workData } = work;
+          return {
+            ...workData,
+            contract_id: newContract.id
+          };
+        });
+
+        const { error: worksError } = await supabase
+          .from('contract_schedule_works')
+          .insert(scheduleWorksData);
+
+        if (worksError) {
+          console.error('Error duplicating schedule works:', worksError);
+          // Don't throw, just log the error
+        }
+      }
+
+      await fetchContracts(); // Refresh the list
+      
+      toast({
+        title: "Success",
+        description: "Contract duplicated successfully",
+      });
+      
+      return newContract;
+    } catch (error) {
+      console.error('Error duplicating contract:', error);
+      toast({
+        title: "Error",
+        description: "Failed to duplicate contract",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   // Interested Parties Management
   const addInterestedParty = async (contractId: string, partyData: Omit<ContractInterestedParty, 'id' | 'contract_id' | 'created_at' | 'updated_at'>) => {
     try {
@@ -401,6 +509,7 @@ export const useContracts = () => {
     createContract,
     updateContract,
     deleteContract,
+    duplicateContract,
     addInterestedParty,
     updateInterestedParty,
     removeInterestedParty,

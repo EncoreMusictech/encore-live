@@ -6,13 +6,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { FileText, MoreHorizontal, Edit, Eye, Download, Trash2, Loader2, X } from "lucide-react";
+import { FileText, MoreHorizontal, Edit, Eye, Download, Trash2, Loader2, X, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ContractViewDialog } from "./ContractViewDialog";
 import { usePDFGeneration } from "@/hooks/usePDFGeneration";
 import { useBulkOperations } from "@/hooks/useBulkOperations";
+import { useContracts } from "@/hooks/useContracts";
 
 interface Contract {
   id: string;
@@ -48,9 +49,11 @@ export function ContractList({ onEdit, contracts: propContracts }: ContractListP
   const [viewContract, setViewContract] = useState<Contract | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [downloadingContractId, setDownloadingContractId] = useState<string | null>(null);
+  const [duplicatingContractId, setDuplicatingContractId] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { generatePDF, downloadPDF, isGenerating } = usePDFGeneration();
+  const { duplicateContract } = useContracts();
   
   const {
     operations,
@@ -115,6 +118,19 @@ export function ContractList({ onEdit, contracts: propContracts }: ContractListP
       console.error('PDF download failed:', error);
     } finally {
       setDownloadingContractId(null);
+    }
+  };
+
+  const handleDuplicate = async (contract: Contract) => {
+    setDuplicatingContractId(contract.id);
+    
+    try {
+      await duplicateContract(contract.id);
+      await fetchContracts(); // Refresh the contracts list
+    } catch (error) {
+      console.error('Contract duplication failed:', error);
+    } finally {
+      setDuplicatingContractId(null);
     }
   };
 
@@ -515,6 +531,17 @@ export function ContractList({ onEdit, contracts: propContracts }: ContractListP
                       <DropdownMenuItem onClick={() => onEdit?.(contract)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDuplicate(contract)}
+                        disabled={duplicatingContractId === contract.id}
+                      >
+                        {duplicatingContractId === contract.id ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Copy className="h-4 w-4 mr-2" />
+                        )}
+                        Duplicate
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => handleDownloadPDF(contract)}
