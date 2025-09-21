@@ -359,6 +359,9 @@ export class EncoreMapper {
         return stringValue.replace(/\s+/g, ' ').trim();
         
       case 'REVENUE SOURCE':
+        // Keep revenue source as raw data (e.g., DSP Name)
+        return stringValue.replace(/\s+/g, ' ').trim();
+        
       case 'MEDIA TYPE':
         // Apply media type standardization
         const cleanMediaType = stringValue.replace(/\s+/g, ' ').trim();
