@@ -26,6 +26,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   const { 
     loading: calculationLoading,
     getClientAgreements,
+    getPayeeAgreements,
     getAgreementWriters,
     calculateAgreementBasedRoyalties,
     calculateManualRoyalties
@@ -36,7 +37,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   const [availableAgreements, setAvailableAgreements] = useState<AgreementTerms[]>([]);
   const [agreementWriters, setAgreementWriters] = useState<ContractWriter[]>([]);
   const [calculationResult, setCalculationResult] = useState<any>(null);
-  const [calculationMethod, setCalculationMethod] = useState<'agreement' | 'manual'>('manual');
+  const [calculationMethod, setCalculationMethod] = useState<'agreement' | 'manual'>('agreement');
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
@@ -98,11 +99,13 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
     try {
       let result = null;
       
-      if (calculationMethod === 'agreement' && selectedAgreement) {
-        // Use agreement-based calculation
+      // Always try agreement-based calculation first if agreements are available
+      if (calculationMethod === 'agreement' && availableAgreements.length > 0 && selectedAgreement) {
+        console.log('Using agreement-based calculation with agreement:', selectedAgreement);
         result = await calculateAgreementBasedRoyalties(selectedAgreement, clientId, periodStart, periodEnd);
-      } else {
-        // Use manual calculation (legacy method)
+      } else if (calculationMethod === 'manual' || availableAgreements.length === 0) {
+        // Use manual calculation as fallback or when explicitly selected
+        console.log('Using manual calculation');
         result = await calculateManualRoyalties(clientId, periodStart, periodEnd);
       }
       
@@ -113,6 +116,13 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
             setValue(key as any, value);
           }
         });
+
+        // Show success message with calculation method used
+        const message = calculationMethod === 'agreement' && selectedAgreement 
+          ? `Payout calculated using agreement terms. Commission: ${availableAgreements.find(a => a.id === selectedAgreement)?.commission_percentage || 0}%`
+          : 'Payout calculated using manual method (no commission applied)';
+        
+        console.log(message);
       }
     } catch (error) {
       console.error('Error calculating totals:', error);
@@ -133,17 +143,46 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   useEffect(() => {
     const clientId = watch('client_id');
     if (clientId && hasAgreementModule) {
-      getClientAgreements(clientId).then(agreements => {
-        setAvailableAgreements(agreements);
-        if (agreements.length > 0) {
-          setCalculationMethod('agreement');
-        }
-      });
+      const clientContact = contacts.find(c => c.id === clientId);
+      if (clientContact) {
+        console.log('Loading agreements for client:', clientContact.name);
+        
+        // Try both direct contract lookup and payee hierarchy lookup
+        Promise.all([
+          getClientAgreements(clientId),
+          getPayeeAgreements(clientContact.name)
+        ]).then(([directAgreements, payeeAgreements]) => {
+          // Combine and deduplicate agreements
+          const allAgreements = [...directAgreements];
+          payeeAgreements.forEach(payeeAgreement => {
+            if (!allAgreements.find(a => a.id === payeeAgreement.id)) {
+              allAgreements.push(payeeAgreement);
+            }
+          });
+          
+          console.log('Total agreements found:', allAgreements.length);
+          setAvailableAgreements(allAgreements);
+          
+          // Auto-select first agreement and set to agreement method
+          if (allAgreements.length > 0) {
+            setSelectedAgreement(allAgreements[0].id);
+            setCalculationMethod('agreement');
+            console.log('Auto-selected agreement:', allAgreements[0].title);
+          } else {
+            setCalculationMethod('manual');
+            console.log('No agreements found, using manual calculation');
+          }
+        }).catch(error => {
+          console.error('Error loading agreements:', error);
+          setAvailableAgreements([]);
+          setCalculationMethod('manual');
+        });
+      }
     } else {
       setAvailableAgreements([]);
       setCalculationMethod('manual');
     }
-  }, [watch('client_id'), hasAgreementModule]);
+  }, [watch('client_id'), hasAgreementModule, contacts]);
 
   // Load agreement writers when agreement changes
   useEffect(() => {
@@ -211,8 +250,8 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
         </div>
       </div>
 
-      {/* Calculation Method Selection */}
-      {hasAgreementModule && availableAgreements.length > 0 && (
+      {/* Calculation Method Selection - Always show, prioritize Agreement-Based */}
+      {hasAgreementModule && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -229,9 +268,14 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
                   name="calculation-method"
                   checked={calculationMethod === 'agreement'}
                   onChange={() => setCalculationMethod('agreement')}
+                  disabled={availableAgreements.length === 0}
                 />
-                <Label htmlFor="method-agreement">Agreement-Based Calculation</Label>
-                <Badge variant="outline">Recommended</Badge>
+                <Label htmlFor="method-agreement" className={availableAgreements.length === 0 ? "text-muted-foreground" : ""}>
+                  Agreement-Based Calculation
+                </Label>
+                <Badge variant={availableAgreements.length > 0 ? "default" : "outline"}>
+                  {availableAgreements.length > 0 ? "Active" : "No Agreements"}
+                </Badge>
               </div>
               <div className="flex items-center space-x-2">
                 <input
@@ -242,8 +286,20 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
                   onChange={() => setCalculationMethod('manual')}
                 />
                 <Label htmlFor="method-manual">Manual Calculation</Label>
+                <Badge variant="outline">Fallback</Badge>
               </div>
             </div>
+
+            {availableAgreements.length === 0 && calculationMethod === 'agreement' && (
+              <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+                <p>No agreements found for this client. Agreement-based calculation requires:</p>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>A contract with matching counterparty name, or</li>
+                  <li>A payee hierarchy (Agreement → Publisher → Writer → Payee) linked to this client</li>
+                </ul>
+                <p className="mt-2">Consider creating an agreement or use manual calculation.</p>
+              </div>
+            )}
 
             {calculationMethod === 'agreement' && (
               <div className="space-y-2">
@@ -270,11 +326,12 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
         <Button
           type="button"
           onClick={handleCalculateTotals}
-          disabled={calculating || calculationLoading || !watch('client_id') || !watch('period_start') || !watch('period_end') || (calculationMethod === 'agreement' && !selectedAgreement)}
+          disabled={calculating || calculationLoading || !watch('client_id') || !watch('period_start') || !watch('period_end') || (calculationMethod === 'agreement' && availableAgreements.length === 0)}
           className="gap-2"
         >
           <DollarSign className="h-4 w-4" />
-          {calculating || calculationLoading ? 'Calculating...' : 'Calculate Totals'}
+          {calculating || calculationLoading ? 'Calculating...' : 
+           calculationMethod === 'agreement' ? 'Calculate with Agreement Terms' : 'Calculate Totals'}
         </Button>
       </div>
 

@@ -53,8 +53,11 @@ export function useAgreementCalculation() {
 
       console.log('Looking for agreements for client:', contact.name);
 
-      // Find contracts where client is the counterparty
-      const { data: agreements, error } = await supabase
+      // Try multiple approaches to find agreements
+      let allAgreements: AgreementTerms[] = [];
+
+      // Method 1: Direct contract match by counterparty name
+      const { data: directAgreements, error: directError } = await supabase
         .from('contracts')
         .select(`
           id,
@@ -69,47 +72,119 @@ export function useAgreementCalculation() {
           contract_status
         `)
         .eq('user_id', user?.id)
-        .ilike('counterparty_name', `%${contact.name}%`)
-        .eq('contract_status', 'active');
+        .or(`counterparty_name.eq.${contact.name},counterparty_name.ilike.%${contact.name}%`)
+        .in('contract_status', ['active', 'signed']);
+
+      if (!directError && directAgreements) {
+        allAgreements.push(...directAgreements.map(agreement => ({
+          ...agreement,
+          territory_restrictions: (agreement.contract_data as any)?.territory_restrictions || []
+        })));
+      }
+
+      // Method 2: Find through payee hierarchy (Payee → Writer → Original Publisher → Agreement)
+      const { data: payeeAgreements, error: payeeError } = await supabase
+        .from('payees')
+        .select(`
+          writer_id,
+          writers!inner(
+            original_publisher_id,
+            original_publishers!inner(
+              agreement_id,
+              contracts!inner(
+                id,
+                title,
+                commission_percentage,
+                advance_amount,
+                start_date,
+                end_date,
+                controlled_percentage,
+                contract_data,
+                counterparty_name,
+                contract_status
+              )
+            )
+          )
+        `)
+        .eq('user_id', user?.id)
+        .ilike('payee_name', `%${contact.name}%`);
+
+      if (!payeeError && payeeAgreements) {
+        const hierarchyAgreements = payeeAgreements
+          .map(p => p.writers?.original_publishers?.contracts)
+          .filter(Boolean)
+          .filter(contract => ['active', 'signed'].includes(contract.contract_status));
+        
+        hierarchyAgreements.forEach(contract => {
+          if (!allAgreements.find(a => a.id === contract.id)) {
+            allAgreements.push({
+              ...contract,
+              territory_restrictions: (contract.contract_data as any)?.territory_restrictions || []
+            });
+          }
+        });
+      }
+
+      console.log('Found agreements (all methods):', allAgreements);
+      return allAgreements;
+    } catch (error: any) {
+      console.error('Error fetching client agreements:', error);
+      return [];
+    }
+  };
+
+  const getPayeeAgreements = async (payeeName: string) => {
+    try {
+      console.log('Looking for agreements through payee hierarchy for:', payeeName);
+
+      // Find agreements through the payee hierarchy
+      const { data: payeeData, error } = await supabase
+        .from('payees')
+        .select(`
+          id,
+          payee_name,
+          writer_id,
+          writers!inner(
+            id,
+            writer_name,
+            original_publisher_id,
+            original_publishers!inner(
+              id,
+              publisher_name,
+              agreement_id,
+              contracts!inner(
+                id,
+                title,
+                commission_percentage,
+                advance_amount,
+                start_date,
+                end_date,
+                controlled_percentage,
+                contract_data,
+                counterparty_name,
+                contract_status
+              )
+            )
+          )
+        `)
+        .eq('user_id', user?.id)
+        .or(`payee_name.eq.${payeeName},payee_name.ilike.%${payeeName}%`)
+        .eq('writers.original_publishers.contracts.contract_status', 'active');
 
       if (error) throw error;
 
-      console.log('Found agreements:', agreements);
+      const agreements = payeeData
+        ?.map(p => p.writers?.original_publishers?.contracts)
+        .filter(Boolean)
+        .map(contract => ({
+          ...contract,
+          territory_restrictions: (contract.contract_data as any)?.territory_restrictions || []
+        })) as AgreementTerms[];
 
-      // Also try finding by exact match if fuzzy search fails
-      if (!agreements || agreements.length === 0) {
-        const { data: exactMatch, error: exactError } = await supabase
-          .from('contracts')
-          .select(`
-            id,
-            title,
-            commission_percentage,
-            advance_amount,
-            start_date,
-            end_date,
-            controlled_percentage,
-            contract_data,
-            counterparty_name,
-            contract_status
-          `)
-          .eq('user_id', user?.id)
-          .eq('counterparty_name', contact.name)
-          .eq('contract_status', 'active');
-
-        if (exactError) throw exactError;
-        console.log('Exact match results:', exactMatch);
-        return (exactMatch?.map(agreement => ({
-          ...agreement,
-          territory_restrictions: (agreement.contract_data as any)?.territory_restrictions || []
-        })) as AgreementTerms[]) || [];
-      }
-
-      return agreements?.map(agreement => ({
-        ...agreement,
-        territory_restrictions: (agreement.contract_data as any)?.territory_restrictions || []
-      })) as AgreementTerms[] || [];
+      console.log('Found payee agreements:', agreements);
+      return agreements || [];
     } catch (error: any) {
-      console.error('Error fetching client agreements:', error);
+      console.error('Error fetching payee agreements:', error);
       return [];
     }
   };
@@ -320,6 +395,7 @@ export function useAgreementCalculation() {
   return {
     loading,
     getClientAgreements,
+    getPayeeAgreements,
     getAgreementWriters,
     calculateAgreementBasedRoyalties,
     calculateManualRoyalties
