@@ -406,82 +406,9 @@ export function usePayeeHierarchy() {
 
       if (error) throw error;
 
-      // Import the quarterly balance reports hook function
-      const { useQuarterlyBalanceReports } = await import('@/hooks/useQuarterlyBalanceReports');
-      
-      // Initialize quarterly balance reports for the new payee
-      // We'll need to get the contact_id and agreement_id from the writer hierarchy
-      try {
-        // Get writer details to extract contact and agreement info
-        const { data: writerData } = await supabase
-          .from('writers')
-          .select(`
-            id,
-            original_publisher_id,
-            original_publishers!inner(
-              agreement_id,
-              contracts!inner(id)
-            )
-          `)
-          .eq('id', payeeData.writer_id)
-          .single();
-
-        const contactId = payeeData.contact_info?.email ? data.id : undefined;
-        const agreementId = writerData?.original_publishers?.agreement_id;
-
-        // Call the initialization function directly using the Supabase client
-        // Since we can't easily access the hook function here, we'll duplicate the logic
-        const currentDate = new Date();
-        const currentYear = currentDate.getFullYear();
-        const currentQuarter = Math.floor((currentDate.getMonth() + 3) / 3);
-        
-        // Generate reports for current quarter and next 7 quarters (2 years)
-        const reportsToCreate = [];
-        
-        for (let i = 0; i < 8; i++) {
-          let year = currentYear;
-          let quarter = currentQuarter + i;
-          
-          // Handle year rollover
-          while (quarter > 4) {
-            quarter -= 4;
-            year += 1;
-          }
-          
-          reportsToCreate.push({
-            user_id: user.id,
-            payee_id: data.id,
-            contact_id: contactId || null,
-            agreement_id: agreementId || null,
-            year,
-            quarter,
-            opening_balance: 0,
-            royalties_amount: 0,
-            expenses_amount: 0,
-            payments_amount: 0,
-            closing_balance: 0,
-            is_calculated: false
-          });
-        }
-
-        // Insert all quarterly balance reports
-        const { error: reportsError } = await supabase
-          .from('quarterly_balance_reports')
-          .insert(reportsToCreate);
-
-        if (reportsError) {
-          console.error('Error initializing quarterly balance reports:', reportsError);
-        } else {
-          console.log(`Initialized ${reportsToCreate.length} quarterly balance reports for payee ${data.id}`);
-        }
-      } catch (initError) {
-        console.error('Error during payee initialization:', initError);
-        // Don't fail the payee creation if report initialization fails
-      }
-
       toast({
         title: "Success",
-        description: "Payee created successfully with quarterly balance reports initialized",
+        description: "Payee created successfully",
       });
 
       await fetchPayees();

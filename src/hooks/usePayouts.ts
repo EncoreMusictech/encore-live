@@ -309,6 +309,9 @@ export function usePayouts() {
       // If status changed to 'paid', specifically notify for payment status change
       if (payoutData.status === 'paid' && existingPayout.status !== 'paid') {
         dispatchPayoutEvent('payoutStatusChanged', data);
+        
+        // Create quarterly balance report for the paid period
+        await createQuarterlyReportForPaidPayout(data);
       }
 
       toast({
@@ -744,6 +747,123 @@ export function usePayouts() {
       totalAmount,
     };
   }, [payouts]);
+
+  // Create quarterly balance report for paid payout
+  const createQuarterlyReportForPaidPayout = async (payout: any) => {
+    try {
+      console.log('Creating quarterly report for paid payout:', payout.id);
+      
+      // Extract period information from payout
+      const period = payout.period; // e.g., "Q1 2025"
+      let year: number;
+      let quarter: number;
+      
+      if (period && period.includes('Q')) {
+        const match = period.match(/Q(\d)\s+(\d{4})/);
+        if (match) {
+          quarter = parseInt(match[1]);
+          year = parseInt(match[2]);
+        } else {
+          // Fallback: use current date
+          const now = new Date();
+          year = now.getFullYear();
+          quarter = Math.floor((now.getMonth() + 3) / 3);
+        }
+      } else {
+        // Fallback: use current date
+        const now = new Date();
+        year = now.getFullYear();
+        quarter = Math.floor((now.getMonth() + 3) / 3);
+      }
+
+      // Find the payee for this payout
+      const { data: contact, error: contactError } = await supabase
+        .from('contacts')
+        .select('name')
+        .eq('id', payout.client_id)
+        .single();
+      
+      if (contactError) throw contactError;
+      
+      // Find payee by name
+      const { data: payee, error: payeeError } = await supabase
+        .from('payees')
+        .select(`
+          id,
+          payee_name,
+          writer_id,
+          writers!inner(
+            original_publisher_id,
+            original_publishers!inner(
+              agreement_id
+            )
+          )
+        `)
+        .eq('user_id', user?.id)
+        .ilike('payee_name', `%${contact.name}%`)
+        .single();
+      
+      if (payeeError || !payee) {
+        console.log('No payee found for contact:', contact.name);
+        return;
+      }
+      
+      const agreementId = payee.writers?.original_publishers?.agreement_id;
+      
+      // Check if quarterly report already exists for this period
+      const { data: existingReport, error: checkError } = await supabase
+        .from('quarterly_balance_reports')
+        .select('id')
+        .eq('user_id', user?.id)
+        .eq('payee_id', payee.id)
+        .eq('year', year)
+        .eq('quarter', quarter)
+        .single();
+      
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+      
+      if (existingReport) {
+        console.log(`Quarterly report already exists for ${payee.payee_name} ${year} Q${quarter}`);
+        return;
+      }
+      
+      // Create new quarterly balance report
+      const reportData = {
+        user_id: user?.id,
+        payee_id: payee.id,
+        contact_id: payout.client_id,
+        agreement_id: agreementId || null,
+        year,
+        quarter,
+        opening_balance: 0, // TODO: Calculate from previous quarter
+        royalties_amount: payout.gross_royalties || 0,
+        expenses_amount: payout.total_expenses || 0,
+        payments_amount: payout.amount_due || 0,
+        closing_balance: (payout.gross_royalties || 0) - (payout.total_expenses || 0) - (payout.amount_due || 0),
+        is_calculated: true,
+        calculation_date: new Date().toISOString()
+      };
+      
+      const { data: newReport, error: insertError } = await supabase
+        .from('quarterly_balance_reports')
+        .insert(reportData)
+        .select()
+        .single();
+      
+      if (insertError) throw insertError;
+      
+      console.log('Created quarterly balance report:', newReport.id);
+      
+      // Dispatch event to refresh quarterly reports
+      dispatchPayoutEvent('quarterlyReportCreated', newReport);
+      
+    } catch (error: any) {
+      console.error('Error creating quarterly report for paid payout:', error);
+      // Don't fail the payout update if quarterly report creation fails
+    }
+  };
 
   return {
     payouts,
