@@ -11,7 +11,21 @@ interface PublishingFormProps {
 
 export function PublishingForm({ data, onChange }: PublishingFormProps) {
   const updateData = (field: string, value: any) => {
-    onChange({ ...data, [field]: value });
+    const updatedData = { ...data, [field]: value };
+    
+    // Auto-calculate commission percentage based on royalty splits
+    if (['writer_share', 'publisher_share', 'mechanical_rate', 'performance_rate', 'sync_rate'].includes(field)) {
+      const writerShare = field === 'writer_share' ? parseFloat(value) || 0 : parseFloat(updatedData.writer_share) || 0;
+      const publisherShare = field === 'publisher_share' ? parseFloat(value) || 0 : parseFloat(updatedData.publisher_share) || 0;
+      
+      // Calculate commission as the percentage the publisher takes from the split
+      // This represents the administrative/commission fee from the total revenue
+      const commissionPercentage = publisherShare > 0 ? publisherShare : 0;
+      
+      updatedData.commission_percentage = commissionPercentage;
+    }
+    
+    onChange(updatedData);
   };
 
   return (
@@ -137,6 +151,21 @@ export function PublishingForm({ data, onChange }: PublishingFormProps) {
                 placeholder="e.g., 50"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Commission (%)</Label>
+            <Input
+              type="number"
+              max="100"
+              value={data.commission_percentage || ""}
+              readOnly
+              className="bg-muted"
+              placeholder="Auto-calculated from publisher share"
+            />
+            <p className="text-xs text-muted-foreground">
+              Auto-calculated from publisher share: {data.publisher_share || 0}%
+            </p>
           </div>
 
           <Separator />
