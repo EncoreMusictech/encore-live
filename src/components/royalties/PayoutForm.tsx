@@ -47,6 +47,8 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       period_start: payout?.period_start || '',
       period_end: payout?.period_end || '',
       gross_royalties: payout?.gross_royalties || 0,
+      total_royalties: payout?.total_royalties || payout?.gross_royalties || 0,
+      commissions_amount: payout?.commissions_amount || 0,
       net_royalties: payout?.net_royalties || 0,
       total_expenses: payout?.total_expenses || 0,
       net_payable: payout?.net_payable || 0,
@@ -58,7 +60,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       payment_reference: payout?.payment_reference || '',
       notes: payout?.notes || '',
       status: payout?.status || 'pending',
-      calculation_method: payout?.calculation_method || 'manual',
+      calculation_method: payout?.calculation_method || 'agreement',
     }
   });
 
@@ -69,8 +71,15 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
 
   const onSubmit = async (data: any) => {
     try {
+      const commissions = data.commissions_amount ?? (calculationResult?.commission_deduction || 0);
+      const totalRoyalties = data.total_royalties ?? data.gross_royalties ?? 0;
+      const amountDue = data.amount_due ?? data.net_payable ?? 0;
+
       const payoutData = {
         ...data,
+        total_royalties: totalRoyalties,
+        commissions_amount: commissions,
+        amount_due: amountDue,
         calculation_method: calculationMethod,
         agreement_id: calculationMethod === 'agreement' ? selectedAgreement : null,
       };
@@ -111,18 +120,17 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       
       if (result) {
         setCalculationResult(result);
-        Object.entries(result).forEach(([key, value]) => {
-          if (key !== 'calculation_method' && key !== 'agreement_id' && key !== 'territory_adjustments') {
-            setValue(key as any, value);
-          }
-        });
-
-        // Show success message with calculation method used
-        const message = calculationMethod === 'agreement' && selectedAgreement 
-          ? `Payout calculated using agreement terms. Commission: ${availableAgreements.find(a => a.id === selectedAgreement)?.commission_percentage || 0}%`
-          : 'Payout calculated using manual method (no commission applied)';
-        
-        console.log(message);
+        // Map result fields to form
+        setValue('gross_royalties', result.gross_royalties || 0);
+        setValue('net_royalties', result.net_royalties || 0);
+        setValue('total_expenses', result.total_expenses || 0);
+        // commissions_amount is used by list UI
+        setValue('commissions_amount', (result as any).commission_deduction || 0);
+        // total_royalties shown in list - align with gross by default
+        setValue('total_royalties', result.gross_royalties || 0);
+        // amount_due should mirror net_payable by default
+        setValue('net_payable', result.net_payable || 0);
+        setValue('amount_due', result.net_payable || 0);
       }
     } catch (error) {
       console.error('Error calculating totals:', error);
@@ -367,6 +375,30 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
               type="number"
               step="0.01"
               {...register('net_royalties', { valueAsNumber: true })}
+              className="bg-muted"
+              readOnly
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="total_royalties">Total Royalties</Label>
+            <Input
+              id="total_royalties"
+              type="number"
+              step="0.01"
+              {...register('total_royalties', { valueAsNumber: true })}
+              className="bg-muted"
+              readOnly
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="commissions_amount">Commission (Agreement)</Label>
+            <Input
+              id="commissions_amount"
+              type="number"
+              step="0.01"
+              {...register('commissions_amount', { valueAsNumber: true })}
               className="bg-muted"
               readOnly
             />
