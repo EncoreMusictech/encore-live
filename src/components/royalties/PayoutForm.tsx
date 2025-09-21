@@ -62,9 +62,8 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   });
 
   const clientContacts = contacts.filter(c => c.contact_type === 'client');
-  const hasAgreementModule = subscription?.subscribed && 
-                             (subscription?.subscription_tier === 'enterprise' || 
-                              subscription?.subscription_tier === 'professional');
+  // Agreement-based calculations should be available to all users with contracts
+  const hasAgreementModule = true;
   const hasRoyaltiesModule = true; // Always available since we're in the royalties module
 
   const onSubmit = async (data: any) => {

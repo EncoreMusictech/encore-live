@@ -51,6 +51,8 @@ export function useAgreementCalculation() {
 
       if (contactError) throw contactError;
 
+      console.log('Looking for agreements for client:', contact.name);
+
       // Find contracts where client is the counterparty
       const { data: agreements, error } = await supabase
         .from('contracts')
@@ -62,7 +64,9 @@ export function useAgreementCalculation() {
           start_date,
           end_date,
           controlled_percentage,
-          contract_data
+          contract_data,
+          counterparty_name,
+          contract_status
         `)
         .eq('user_id', user?.id)
         .ilike('counterparty_name', `%${contact.name}%`)
@@ -70,7 +74,40 @@ export function useAgreementCalculation() {
 
       if (error) throw error;
 
-      return agreements as AgreementTerms[];
+      console.log('Found agreements:', agreements);
+
+      // Also try finding by exact match if fuzzy search fails
+      if (!agreements || agreements.length === 0) {
+        const { data: exactMatch, error: exactError } = await supabase
+          .from('contracts')
+          .select(`
+            id,
+            title,
+            commission_percentage,
+            advance_amount,
+            start_date,
+            end_date,
+            controlled_percentage,
+            contract_data,
+            counterparty_name,
+            contract_status
+          `)
+          .eq('user_id', user?.id)
+          .eq('counterparty_name', contact.name)
+          .eq('contract_status', 'active');
+
+        if (exactError) throw exactError;
+        console.log('Exact match results:', exactMatch);
+        return (exactMatch?.map(agreement => ({
+          ...agreement,
+          territory_restrictions: (agreement.contract_data as any)?.territory_restrictions || []
+        })) as AgreementTerms[]) || [];
+      }
+
+      return agreements?.map(agreement => ({
+        ...agreement,
+        territory_restrictions: (agreement.contract_data as any)?.territory_restrictions || []
+      })) as AgreementTerms[] || [];
     } catch (error: any) {
       console.error('Error fetching client agreements:', error);
       return [];
