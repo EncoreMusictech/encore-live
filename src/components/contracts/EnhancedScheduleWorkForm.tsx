@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AudioPlayer } from '../copyright/AudioPlayer';
 import { ArtistSelector } from '../copyright/ArtistSelector';
+import { formatSpotifyMetadata } from '@/lib/music-metadata-formats';
 
 interface Writer {
   id: string;
@@ -190,32 +191,37 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
       }
 
       if (data?.success && data?.bestMatch) {
+        // Apply formatting to Spotify metadata for ISWC/ISRC
+        const formattedBestMatch = formatSpotifyMetadata(data.bestMatch);
+        
         const metadata: SpotifyMetadata = {
-          albumTitle: data.bestMatch.albumName,
-          masterOwner: data.bestMatch.label,
-          previewUrl: data.bestMatch.previewUrl,
-          popularity: data.bestMatch.popularity,
-          isrc: data.bestMatch.isrc,
-          artist: data.bestMatch.artist,
-          duration: data.bestMatch.duration,
-          releaseDate: data.bestMatch.releaseDate,
-          trackName: data.bestMatch.trackName,
-          albumName: data.bestMatch.albumName,
-          label: data.bestMatch.label
+          albumTitle: formattedBestMatch.albumName,
+          masterOwner: formattedBestMatch.label,
+          previewUrl: formattedBestMatch.previewUrl,
+          popularity: formattedBestMatch.popularity,
+          isrc: formattedBestMatch.isrc,
+          artist: formattedBestMatch.artist,
+          duration: formattedBestMatch.duration,
+          releaseDate: formattedBestMatch.releaseDate,
+          trackName: formattedBestMatch.trackName,
+          albumName: formattedBestMatch.albumName,
+          label: formattedBestMatch.label
         };
 
         setSpotifyMetadata(metadata);
         
-        // Store alternatives if available
+        // Store formatted alternatives if available
+        let formattedAlternatives = [];
         if (data.alternatives && data.alternatives.length > 0) {
-          console.log(`Received ${data.alternatives.length} alternatives from Spotify:`, data.alternatives);
-          setSpotifyAlternatives(data.alternatives);
+          formattedAlternatives = data.alternatives.map((alt: any) => formatSpotifyMetadata(alt));
+          console.log(`Received ${formattedAlternatives.length} alternatives from Spotify:`, formattedAlternatives);
+          setSpotifyAlternatives(formattedAlternatives);
         } else {
           console.log('No alternatives received from Spotify');
           setSpotifyAlternatives([]);
         }
         
-        // Auto-populate form fields
+        // Auto-populate form fields with formatted data
         setFormData(prev => ({
           ...prev,
           album_title: metadata.albumTitle || prev.album_title,
@@ -224,7 +230,8 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
           duration_seconds: metadata.duration || prev.duration_seconds,
           creation_date: metadata.releaseDate || prev.creation_date,
           artist_name: metadata.artist || prev.artist_name,
-          isrc: metadata.isrc || prev.isrc
+          isrc: formattedBestMatch.isrc || prev.isrc,
+          iswc: formattedBestMatch.iswc || prev.iswc
         }));
 
         const totalOptions = 1 + (data.alternatives?.length || 0);
