@@ -183,10 +183,17 @@ export function RoyaltyAllocationList() {
         }
         return null;
       case 'SOURCE':
-        // Priority 1: Use detected_source from original import staging record
+        // Priority 1: Use detected_source from original import staging record, but fix common issues
         if (allocation.staging_record_id) {
           const stagingRecord = stagingRecords?.find(record => record.id === allocation.staging_record_id);
           if (stagingRecord?.detected_source) {
+            // Fix case where BMI statements were incorrectly detected as 'ENCORE'
+            if (stagingRecord.detected_source === 'ENCORE' && allocation.statement_id?.startsWith('STMT-')) {
+              // Check if this looks like a BMI statement based on media type
+              if (allocation.mapped_data?.['MEDIA TYPE'] === 'PERF' || allocation.media_type === 'PERF') {
+                return 'BMI';
+              }
+            }
             return stagingRecord.detected_source;
           }
         }
