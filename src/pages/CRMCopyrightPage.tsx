@@ -18,7 +18,6 @@ import { CopyrightTable } from "@/components/copyright/CopyrightTable";
 import { BulkUpload } from "@/components/copyright/BulkUpload";
 import { ActivityLog } from "@/components/copyright/ActivityLog";
 import { CopyrightValidationPanel } from "@/components/copyright/CopyrightValidationPanel";
-import { EnhancedCWRValidation } from "@/components/copyright/EnhancedCWRValidation";
 import { ExportDialog } from "@/components/copyright/ExportDialog";
 import { SenderCodeOnboarding } from "@/components/copyright/SenderCodeOnboarding";
 import { TransmissionHistory } from "@/components/copyright/TransmissionHistory";
@@ -477,7 +476,7 @@ export default function CRMCopyrightPage() {
               
               <TabsContent value="compliance" className="mt-6">
                 {editingCopyright && (
-                  <EnhancedCWRValidation
+                  <CopyrightValidationPanel
                     copyright={editingCopyright}
                     writers={writers[editingCopyright.id] || []}
                     publishers={[]}
