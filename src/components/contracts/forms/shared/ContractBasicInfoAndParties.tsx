@@ -32,12 +32,11 @@ function ContractBasicInfoAndPartiesComponent({
   }
 }: ContractBasicInfoAndPartiesProps) {
   const updateData = useCallback((field: string, value: any) => {
-    // Use functional update to prevent unnecessary re-renders
-    onChange(prev => ({ ...prev, [field]: value }));
-  }, [onChange]);
+    onChange({ ...data, [field]: value });
+  }, [onChange, data]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onMouseDownCapture={(e) => e.stopPropagation()} onClickCapture={(e) => e.stopPropagation()} onFocusCapture={(e) => e.stopPropagation()} onKeyDownCapture={(e) => e.stopPropagation()}>
       {/* Basic Information Section */}
       <Card>
         <CardHeader>
@@ -55,8 +54,8 @@ function ContractBasicInfoAndPartiesComponent({
               <Label htmlFor="title">Agreement Title *</Label>
               <Input
                 id="title"
-                value={data.agreementTitle || data.title || ""}
-                onChange={(e) => updateData('agreementTitle', e.target.value)}
+                defaultValue={data.agreementTitle || data.title || ""}
+                onBlur={(e) => updateData('agreementTitle', e.currentTarget.value)}
                 onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
                 placeholder="Enter agreement title"
@@ -67,8 +66,8 @@ function ContractBasicInfoAndPartiesComponent({
               <Label htmlFor="counterparty">Counterparty Name *</Label>
               <Input
                 id="counterparty"
-                value={data.counterparty || data.counterparty_name || data.counterpartyName || ""}
-                onChange={(e) => updateData('counterparty', e.target.value)}
+                defaultValue={data.counterparty || data.counterparty_name || data.counterpartyName || ""}
+                onBlur={(e) => updateData('counterparty', e.currentTarget.value)}
                 onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
                 placeholder="Name of the other party"
@@ -177,8 +176,8 @@ function ContractBasicInfoAndPartiesComponent({
             <Label htmlFor="notes">Additional Notes</Label>
             <Textarea
               id="notes"
-              value={data.notes || ""}
-              onChange={(e) => updateData('notes', e.target.value)}
+              defaultValue={data.notes || ""}
+              onBlur={(e) => updateData('notes', e.currentTarget.value)}
               onMouseDown={(e) => e.stopPropagation()}
               onFocus={(e) => e.stopPropagation()}
               placeholder="Any additional information or special terms"
@@ -210,8 +209,8 @@ function ContractBasicInfoAndPartiesComponent({
               <div className="space-y-2">
                 <Label>Contact Name</Label>
                 <Input
-                  value={data.firstParty?.contactName || ""}
-                  onChange={(e) => updateData('firstParty', { ...data.firstParty, contactName: e.target.value })}
+                  defaultValue={data.firstParty?.contactName || ""}
+                  onBlur={(e) => updateData('firstParty', { ...data.firstParty, contactName: e.currentTarget.value })}
                   onMouseDown={(e) => e.stopPropagation()}
                   onFocus={(e) => e.stopPropagation()}
                   placeholder="Contact person name"
@@ -222,8 +221,8 @@ function ContractBasicInfoAndPartiesComponent({
                 <Label>Email Address</Label>
                 <Input
                   type="email"
-                  value={data.firstParty?.email || ""}
-                  onChange={(e) => updateData('firstParty', { ...data.firstParty, email: e.target.value })}
+                  defaultValue={data.firstParty?.email || ""}
+                  onBlur={(e) => updateData('firstParty', { ...data.firstParty, email: e.currentTarget.value })}
                   onMouseDown={(e) => e.stopPropagation()}
                   onFocus={(e) => e.stopPropagation()}
                   placeholder="contact@example.com"
@@ -235,8 +234,8 @@ function ContractBasicInfoAndPartiesComponent({
               <div className="space-y-2">
                 <Label>Phone Number</Label>
                 <Input
-                  value={data.firstParty?.phone || ""}
-                  onChange={(e) => updateData('firstParty', { ...data.firstParty, phone: e.target.value })}
+                  defaultValue={data.firstParty?.phone || ""}
+                  onBlur={(e) => updateData('firstParty', { ...data.firstParty, phone: e.currentTarget.value })}
                   onMouseDown={(e) => e.stopPropagation()}
                   onFocus={(e) => e.stopPropagation()}
                   placeholder="+1 (555) 123-4567"
@@ -246,8 +245,8 @@ function ContractBasicInfoAndPartiesComponent({
               <div className="space-y-2">
                 <Label>Tax ID</Label>
                 <Input
-                  value={data.firstParty?.taxId || ""}
-                  onChange={(e) => updateData('firstParty', { ...data.firstParty, taxId: e.target.value })}
+                  defaultValue={data.firstParty?.taxId || ""}
+                  onBlur={(e) => updateData('firstParty', { ...data.firstParty, taxId: e.currentTarget.value })}
                   onMouseDown={(e) => e.stopPropagation()}
                   onFocus={(e) => e.stopPropagation()}
                   placeholder="Tax identification number"
@@ -258,8 +257,8 @@ function ContractBasicInfoAndPartiesComponent({
             <div className="space-y-2">
               <Label>Address</Label>
               <Textarea
-                value={data.firstParty?.address || ""}
-                onChange={(e) => updateData('firstParty', { ...data.firstParty, address: e.target.value })}
+                defaultValue={data.firstParty?.address || ""}
+                onBlur={(e) => updateData('firstParty', { ...data.firstParty, address: e.currentTarget.value })}
                 onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
                 placeholder="Full mailing address"
@@ -280,8 +279,8 @@ function ContractBasicInfoAndPartiesComponent({
               <div className="space-y-2">
                 <Label>Company/Contact Name</Label>
                 <Input
-                  value={data.secondParty?.contactName || ""}
-                  onChange={(e) => updateData('secondParty', { ...data.secondParty, contactName: e.target.value })}
+                  defaultValue={data.secondParty?.contactName || ""}
+                  onBlur={(e) => updateData('secondParty', { ...data.secondParty, contactName: e.currentTarget.value })}
                   onMouseDown={(e) => e.stopPropagation()}
                   onFocus={(e) => e.stopPropagation()}
                   placeholder="Company or contact person name"
@@ -292,8 +291,8 @@ function ContractBasicInfoAndPartiesComponent({
                 <Label>Email Address</Label>
                 <Input
                   type="email"
-                  value={data.secondParty?.email || ""}
-                  onChange={(e) => updateData('secondParty', { ...data.secondParty, email: e.target.value })}
+                  defaultValue={data.secondParty?.email || ""}
+                  onBlur={(e) => updateData('secondParty', { ...data.secondParty, email: e.currentTarget.value })}
                   onMouseDown={(e) => e.stopPropagation()}
                   onFocus={(e) => e.stopPropagation()}
                   placeholder="contact@company.com"
@@ -305,8 +304,8 @@ function ContractBasicInfoAndPartiesComponent({
               <div className="space-y-2">
                 <Label>Phone Number</Label>
                 <Input
-                  value={data.secondParty?.phone || ""}
-                  onChange={(e) => updateData('secondParty', { ...data.secondParty, phone: e.target.value })}
+                  defaultValue={data.secondParty?.phone || ""}
+                  onBlur={(e) => updateData('secondParty', { ...data.secondParty, phone: e.currentTarget.value })}
                   onMouseDown={(e) => e.stopPropagation()}
                   onFocus={(e) => e.stopPropagation()}
                   placeholder="+1 (555) 123-4567"
@@ -316,8 +315,8 @@ function ContractBasicInfoAndPartiesComponent({
               <div className="space-y-2">
                 <Label>Tax ID</Label>
                 <Input
-                  value={data.secondParty?.taxId || ""}
-                  onChange={(e) => updateData('secondParty', { ...data.secondParty, taxId: e.target.value })}
+                  defaultValue={data.secondParty?.taxId || ""}
+                  onBlur={(e) => updateData('secondParty', { ...data.secondParty, taxId: e.currentTarget.value })}
                   onMouseDown={(e) => e.stopPropagation()}
                   onFocus={(e) => e.stopPropagation()}
                   placeholder="Company tax ID"
@@ -328,8 +327,8 @@ function ContractBasicInfoAndPartiesComponent({
             <div className="space-y-2">
               <Label>Business Address</Label>
               <Textarea
-                value={data.secondParty?.address || ""}
-                onChange={(e) => updateData('secondParty', { ...data.secondParty, address: e.target.value })}
+                defaultValue={data.secondParty?.address || ""}
+                onBlur={(e) => updateData('secondParty', { ...data.secondParty, address: e.currentTarget.value })}
                 onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
                 placeholder="Full business address"

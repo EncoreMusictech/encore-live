@@ -19,7 +19,12 @@ export function Stepper({ steps, orientation = 'horizontal', className }: Steppe
       "flex items-start justify-center",
       orientation === 'horizontal' ? "flex-row" : "flex-col",
       className
-    )}>
+    )}
+      onMouseDownCapture={(e) => e.stopPropagation()}
+      onClickCapture={(e) => e.stopPropagation()}
+      onKeyDownCapture={(e) => e.stopPropagation()}
+      onFocusCapture={(e) => e.stopPropagation()}
+    >
       {steps.map((step, index) => (
         <div key={index} className="flex items-start">
           {/* Step Container */}
