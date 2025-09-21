@@ -23,6 +23,7 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
   const [showMappingDialog, setShowMappingDialog] = useState(false);
   const [showSongMatchingDialog, setShowSongMatchingDialog] = useState(false);
   const [localRecord, setLocalRecord] = useState(record);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { updateStagingRecord, updateMappingConfig, mappingConfigs } = useRoyaltiesImport();
   
   // Get existing mapping for this source
@@ -272,6 +273,72 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
     }
   };
 
+  const handleRefreshMapping = async () => {
+    try {
+      setIsRefreshing(true);
+      console.log('Refreshing mapping with updated ENCORE logic...');
+      
+      // Get the current raw data and existing mapping
+      const rawData = localRecord.raw_data;
+      const existingMapping = getExistingMapping();
+      
+      if (!Array.isArray(rawData) || rawData.length === 0) {
+        console.error('No raw data available for refresh');
+        return;
+      }
+
+      // Find saved mapping configuration for this source
+      const savedConfig = mappingConfigs.find(config => config.source_name === localRecord.detected_source);
+      const mapper = new EncoreMapper(undefined, savedConfig ? [savedConfig] : []);
+      
+      // Re-process the data with existing mapping but updated ENCORE logic
+      const result = mapper.mapData(rawData, localRecord.detected_source, existingMapping);
+      console.log('Refresh result:', result);
+
+      // Update the staging record with the refreshed mapped data
+      await updateStagingRecord(localRecord.id, {
+        mapped_data: result.mappedData,
+        unmapped_fields: result.unmappedFields,
+        validation_status: {
+          errors: result.validationErrors,
+          hasErrors: result.validationErrors.length > 0,
+          hasUnmapped: result.unmappedFields.length > 0,
+          last_validated: new Date().toISOString(),
+        },
+        processing_status: result.validationErrors.length > 0 ? 'needs_review' : 'pending',
+      });
+
+      // Update the local record state with the refreshed mapped data
+      const updatedRecord = {
+        ...localRecord,
+        mapped_data: result.mappedData,
+        unmapped_fields: result.unmappedFields,
+        validation_status: {
+          errors: result.validationErrors,
+          hasErrors: result.validationErrors.length > 0,
+          hasUnmapped: result.unmappedFields.length > 0,
+          last_validated: new Date().toISOString(),
+        },
+        processing_status: (result.validationErrors.length > 0 ? 'needs_review' : 'pending') as 'pending' | 'processed' | 'failed' | 'needs_review',
+      };
+      setLocalRecord(updatedRecord);
+
+      toast({
+        title: "Success",
+        description: "Data refreshed with updated mapping logic",
+      });
+    } catch (error) {
+      console.error('Error refreshing mapping:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh mapping data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'processed':
@@ -355,15 +422,27 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
                   </Badge>
                 )}
               </CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMappingDialog(true)}
-                className="gap-2"
-              >
-                <Settings className="h-4 w-4" />
-                Map Fields
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshMapping}
+                  disabled={isRefreshing}
+                  className="gap-2"
+                >
+                  <Wrench className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Refreshing...' : 'Refresh Mapping'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowMappingDialog(true)}
+                  className="gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  Map Fields
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -441,7 +520,6 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
                            {getOrderedHeaders().map((header, cellIndex) => {
                              const originalFieldName = getOriginalFieldName(header);
                              const cellValue = row[originalFieldName];
-                             console.log(`Header: ${header}, Original Field: ${originalFieldName}, Value:`, cellValue);
                              return (
                                <TableCell key={cellIndex} className={header === 'WORK TITLE' ? 'font-medium' : ''}>
                                  {header === 'STATEMENT ID' ? (
