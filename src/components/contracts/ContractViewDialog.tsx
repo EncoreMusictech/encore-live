@@ -267,7 +267,7 @@ export function ContractViewDialog({ contract, open, onOpenChange, onEdit }: Con
                       <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-blue-50 to-blue-100">
                         <p className="text-2xl font-bold text-blue-600">{contract.commission_percentage}%</p>
                         <p className="text-sm text-muted-foreground">Commission (%)</p>
-                        <p className="text-xs text-blue-600 mt-1">Of Net Receipts</p>
+                        <p className="text-xs text-blue-600 mt-1">Of Gross Receipts</p>
                       </div>
                     )}
                     {contract.rate_reduction_percentage !== undefined && contract.rate_reduction_percentage > 0 && (
