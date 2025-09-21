@@ -66,7 +66,16 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
     if (!file) return;
 
     setProcessing(true);
-    const parser = new StatementParser();
+    
+    // Create custom source rules from saved mapping configs
+    const customRules = mappingConfigs?.map(config => ({
+      source: config.source_name,
+      headerPatterns: config.header_patterns || [],
+      requiredFields: config.header_patterns?.slice(0, 2) || [], // Use first 2 patterns as required fields
+      confidence: 0.8
+    })) || [];
+    
+    const parser = new StatementParser(customRules.length > 0 ? [...customRules] : undefined);
     const mapper = new EncoreMapper();
 
     try {
@@ -85,6 +94,9 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
         isCustomSource = true;
       } else if (manualSource && manualSource !== "auto-detect") {
         detectedSource = manualSource;
+        // Check if this is a saved custom source (not a default one)
+        const isDefaultSource = ['BMI', 'ASCAP', 'YouTube', 'SoundExchange'].includes(manualSource);
+        isCustomSource = !isDefaultSource && manualSource !== "custom";
       } else {
         detectedSource = parsedData.detectedSource;
       }
@@ -260,6 +272,15 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
                 <SelectItem value="ASCAP">ASCAP</SelectItem>
                 <SelectItem value="YouTube">YouTube</SelectItem>
                 <SelectItem value="SoundExchange">SoundExchange</SelectItem>
+                {/* Add saved custom sources */}
+                {mappingConfigs
+                  ?.filter(config => !['BMI', 'ASCAP', 'YouTube', 'SoundExchange'].includes(config.source_name))
+                  .map(config => (
+                    <SelectItem key={config.source_name} value={config.source_name}>
+                      {config.source_name}
+                    </SelectItem>
+                  ))
+                }
                 <SelectItem value="custom">Custom/Other</SelectItem>
               </SelectContent>
             </Select>
