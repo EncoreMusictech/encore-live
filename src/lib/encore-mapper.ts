@@ -355,6 +355,9 @@ export class EncoreMapper {
         return stringValue.replace(/\s+/g, ' ').trim();
 
       case 'SOURCE':
+        // SOURCE should just be cleaned, not standardized as media type
+        return stringValue.replace(/\s+/g, ' ').trim();
+        
       case 'REVENUE SOURCE':
       case 'MEDIA TYPE':
         // Apply media type standardization

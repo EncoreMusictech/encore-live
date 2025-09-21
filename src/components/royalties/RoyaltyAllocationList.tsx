@@ -185,14 +185,11 @@ export function RoyaltyAllocationList() {
         if (allocation.batch_id) {
           const linkedBatch = batches?.find(batch => batch.id === allocation.batch_id);
           if (linkedBatch?.source) {
-            console.log('Using batch source:', linkedBatch.source, 'for allocation:', allocation.royalty_id);
             return linkedBatch.source;
           }
         }
         // Priority 2: Show source from imported statement (mapped data)
-        const sourceValue = allocation.mapped_data?.['SOURCE'] || allocation.mapped_data?.['Statement Source'] || allocation.source || null;
-        console.log('Using statement source:', sourceValue, 'for allocation:', allocation.royalty_id);
-        return sourceValue;
+        return allocation.mapped_data?.['SOURCE'] || allocation.mapped_data?.['Statement Source'] || allocation.source || null;
       case 'QUARTER':
         return allocation.mapped_data?.['QUARTER'] || allocation.quarter;
       case 'WORK IDENTIFIER':
