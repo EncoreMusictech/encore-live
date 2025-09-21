@@ -6,8 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, User } from 'lucide-react';
+import { Plus, Trash2, User, Search, Database, Calendar } from 'lucide-react';
 import { CopyrightWriter } from '@/hooks/useCopyright';
+import { MLCLookupModal } from './MLCLookupModal';
+import { MLCResultsDrawer } from './MLCResultsDrawer';
+import { useMLCCache } from '@/hooks/useMLCCache';
+import { mergeWritersWithExisting } from '@/lib/mlc-utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface WritersSectionProps {
   copyrightId?: string;
@@ -29,6 +34,15 @@ export const WritersSection: React.FC<WritersSectionProps> = ({
   onWritersChange
 }) => {
   const [showForm, setShowForm] = useState(false);
+  const [showISWCModal, setShowISWCModal] = useState(false);
+  const [showISRCModal, setShowISRCModal] = useState(false);
+  const [showResultsDrawer, setShowResultsDrawer] = useState(false);
+  const [mlcResults, setMLCResults] = useState<any>(null);
+  const [lastSyncInfo, setLastSyncInfo] = useState<{ date: string; type: string; value: string } | null>(null);
+  
+  const { getCachedResult, setCachedResult } = useMLCCache();
+  const { toast } = useToast();
+  
   const [formData, setFormData] = useState<WriterFormData>({
     writer_name: '',
     ipi_number: '',
@@ -85,6 +99,55 @@ export const WritersSection: React.FC<WritersSectionProps> = ({
     onWritersChange(writers.filter(w => w.id !== writerId));
   };
 
+  const handleMLCResults = (results: any) => {
+    // Check cache first
+    const cached = getCachedResult(results.searchType, results.searchValue);
+    if (cached) {
+      setMLCResults(cached);
+      setShowResultsDrawer(true);
+      return;
+    }
+
+    // Cache the new results
+    setCachedResult(results.searchType, results.searchValue, results);
+    setMLCResults(results);
+    setShowResultsDrawer(true);
+  };
+
+  const handleAddMLCWriters = (mlcWriters: CopyrightWriter[]) => {
+    const { merged, conflicts } = mergeWritersWithExisting(mlcWriters, writers);
+    
+    if (conflicts.length > 0) {
+      toast({
+        title: "Writer Conflicts Detected",
+        description: `${conflicts.length} writer(s) already exist. Duplicates were skipped.`,
+        variant: "destructive"
+      });
+    }
+
+    // Update writers with new ones (existing ones are preserved)
+    const newWriters = mlcWriters.filter(mlcWriter => 
+      !writers.some(existing => 
+        (existing.ipi_number && mlcWriter.ipi_number && existing.ipi_number === mlcWriter.ipi_number) ||
+        existing.writer_name.toLowerCase() === mlcWriter.writer_name.toLowerCase()
+      )
+    );
+
+    if (newWriters.length > 0) {
+      onWritersChange([...writers, ...newWriters]);
+      setLastSyncInfo({
+        date: new Date().toLocaleString(),
+        type: mlcResults?.searchType || 'MLC',
+        value: mlcResults?.searchValue || 'Unknown'
+      });
+      
+      toast({
+        title: "Writers Added Successfully",
+        description: `Added ${newWriters.length} writer(s) from MLC data.`,
+      });
+    }
+  };
+
   const totalOwnership = writers.reduce((sum, writer) => sum + writer.ownership_percentage, 0);
   const isOwnershipValid = totalOwnership <= 100;
 
@@ -92,22 +155,50 @@ export const WritersSection: React.FC<WritersSectionProps> = ({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Writers & Composers
-            <Badge variant={writers.length > 0 ? "default" : "secondary"}>
-              {writers.length} writer{writers.length !== 1 ? 's' : ''}
-            </Badge>
-          </CardTitle>
-          <Button 
-            type="button"
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowForm(!showForm)}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Writer
-          </Button>
+          <div className="flex items-center gap-3">
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Writers & Composers
+              <Badge variant={writers.length > 0 ? "default" : "secondary"}>
+                {writers.length} writer{writers.length !== 1 ? 's' : ''}
+              </Badge>
+            </CardTitle>
+            {lastSyncInfo && (
+              <Badge variant="outline" className="text-xs">
+                <Calendar className="h-3 w-3 mr-1" />
+                Last synced from MLC {lastSyncInfo.date}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              type="button"
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowISWCModal(true)}
+            >
+              <Database className="h-4 w-4 mr-1" />
+              Lookup by ISWC
+            </Button>
+            <Button 
+              type="button"
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowISRCModal(true)}
+            >
+              <Search className="h-4 w-4 mr-1" />
+              Lookup by ISRC
+            </Button>
+            <Button 
+              type="button"
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowForm(!showForm)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Writer
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -265,6 +356,30 @@ export const WritersSection: React.FC<WritersSectionProps> = ({
             <p className="text-sm">Add at least one writer to continue</p>
           </div>
         )}
+
+        {/* MLC Lookup Modals */}
+        <MLCLookupModal
+          open={showISWCModal}
+          onOpenChange={setShowISWCModal}
+          type="ISWC"
+          onResults={handleMLCResults}
+        />
+        
+        <MLCLookupModal
+          open={showISRCModal}
+          onOpenChange={setShowISRCModal}
+          type="ISRC"
+          onResults={handleMLCResults}
+        />
+
+        {/* MLC Results Drawer */}
+        <MLCResultsDrawer
+          open={showResultsDrawer}
+          onOpenChange={setShowResultsDrawer}
+          results={mlcResults}
+          onAddSelected={handleAddMLCWriters}
+          existingWriters={writers}
+        />
       </CardContent>
     </Card>
   );
