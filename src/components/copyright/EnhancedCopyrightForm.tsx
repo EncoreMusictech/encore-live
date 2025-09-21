@@ -28,6 +28,9 @@ import { DocumentUpload } from '@/components/ui/document-upload';
 import { MLCMetadataEnrichment } from './MLCMetadataEnrichment';
 import { formatSpotifyMetadata, autoFormatField, handleISWCInput, handleISRCInput } from '@/lib/music-metadata-formats';
 import { useFormPersistence } from '@/hooks/useFormPersistence';
+import { useSessionPersistence } from '@/hooks/useSessionPersistence';
+import { usePreventDataLoss } from '@/hooks/usePreventDataLoss';
+import { SafeExternalLink } from '@/components/ui/safe-external-link';
 
 interface EnhancedCopyrightFormProps {
   onSuccess?: () => void;
@@ -153,6 +156,46 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
     data: formPersistenceData,
     enabled: true, // Always enabled for copyright forms
     delay: 3000 // Save after 3 seconds of inactivity
+  });
+
+  // Additional session persistence for external window access
+  const sessionPersistenceData = {
+    formData,
+    writers,
+    spotifyMetadata,
+    cmoRegistrations,
+    currentSection: {
+      metadataOpen,
+      writersOpen,
+      proRegistrationOpen,
+      legalFilingOpen,
+      contractLinkOpen
+    }
+  };
+
+  useSessionPersistence({
+    key: editingCopyright ? `copyright_session_${editingCopyright.id}` : 'copyright_session_new',
+    data: sessionPersistenceData,
+    enabled: true
+  });
+
+  // Prevent data loss when navigating away
+  const hasUnsavedChanges = !editingCopyright && (
+    formData.work_title !== '' || 
+    writers.length > 0 || 
+    formData.notes !== '' ||
+    Object.values(formData).some(val => val !== '' && val !== false && val !== 0 && val !== null && val !== undefined)
+  );
+
+  const { handleNavigationAttempt } = usePreventDataLoss({
+    hasUnsavedChanges,
+    onSaveBeforeLeave: async () => {
+      // Force save current state
+      if (hasSavedData()) {
+        clearSavedData();
+      }
+    },
+    enabled: true
   });
 
   // Calculate total controlled share
@@ -495,7 +538,15 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
   };
 
   const searchASCAP = () => {
-    window.open('https://www.ascap.com/repertory#/', '_blank');
+    // Save state before opening external window
+    if (hasUnsavedChanges) {
+      toast({
+        title: "Auto-Saving",
+        description: "Saving your progress before opening ASCAP...",
+      });
+    }
+    
+    window.open('https://www.ascap.com/repertory#/', '_blank', 'noopener,noreferrer');
   };
 
   const addWriter = () => {
@@ -1069,15 +1120,23 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
               {/* ASCAP Lookup Button */}
               <div className="flex justify-start">
-                <Button 
-                  type="button" 
-                  onClick={searchASCAP}
+                <SafeExternalLink
+                  href="https://www.ascap.com/repertory#/"
                   variant="outline"
                   className="flex items-center gap-2"
+                  showIcon={false}
+                  onBeforeNavigate={() => {
+                    if (hasUnsavedChanges) {
+                      toast({
+                        title: "Auto-Saving",
+                        description: "Saving your progress before opening ASCAP...",
+                      });
+                    }
+                  }}
                 >
                   <Search className="h-4 w-4" />
                   Search ASCAP Database
-                </Button>
+                </SafeExternalLink>
               </div>
             </CardContent>
           </CollapsibleContent>
