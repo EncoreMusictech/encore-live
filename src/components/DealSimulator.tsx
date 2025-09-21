@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Calculator, TrendingUp, DollarSign, Users } from "lucide-react";
 import { useCatalogCalculations } from "@/hooks/usePerformanceOptimization";
+import { useRightsBasedCalculations } from "@/hooks/useRightsBasedCalculations";
 import { DealSimulatorSkeleton, AsyncLoading } from "@/components/LoadingStates";
 
 interface DealTerms {
@@ -15,6 +16,7 @@ interface DealTerms {
   royaltyRate: number;
   termLength: number;
   dealType: 'acquisition' | 'licensing' | 'co-publishing';
+  rightsType: 'master' | 'publishing' | 'both';
   recoupmentRate: number;
   minimumGuarantee: number;
   ownershipPercentage: number;
@@ -42,6 +44,7 @@ const DealSimulator = memo(({ selectedTracks, artistName, onSaveScenario }: Deal
     royaltyRate: 50,
     termLength: 5,
     dealType: 'acquisition',
+    rightsType: 'both',
     recoupmentRate: 75,
     minimumGuarantee: 50000,
     ownershipPercentage: 100
@@ -50,7 +53,10 @@ const DealSimulator = memo(({ selectedTracks, artistName, onSaveScenario }: Deal
   const [scenarioName, setScenarioName] = useState("");
   const [projections, setProjections] = useState<DealProjection[]>([]);
   
-  // Use optimized calculations hook
+  // Use rights-based calculations hook
+  const rightsCalculation = useRightsBasedCalculations(selectedTracks, dealTerms, artistName);
+  
+  // Use optimized calculations hook as fallback
   const calculatedData = useCatalogCalculations(selectedTracks, dealTerms, dealTerms.termLength);
 
   // Calculate base streams from selected tracks (memoized)
@@ -70,10 +76,13 @@ const DealSimulator = memo(({ selectedTracks, artistName, onSaveScenario }: Deal
   }, [selectedTracks]);
 
   const calculateProjections = useCallback(() => {
-    if (calculatedData?.projections) {
+    // Use rights-based calculations as primary source
+    if (rightsCalculation?.projections && rightsCalculation.projections.length > 0) {
+      setProjections(rightsCalculation.projections);
+    } else if (calculatedData?.projections) {
       setProjections(calculatedData.projections);
     }
-  }, [calculatedData]);
+  }, [rightsCalculation, calculatedData]);
 
   const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -100,13 +109,98 @@ const DealSimulator = memo(({ selectedTracks, artistName, onSaveScenario }: Deal
     setScenarioName("");
   }, [scenarioName, artistName, selectedTracks, dealTerms, projections, onSaveScenario]);
 
-  // Use optimized calculations or fallback to projections
-  const totalProjectedRevenue = calculatedData?.totalProjectedRevenue || projections.reduce((sum, p) => sum + p.acquirerEarnings, 0);
-  const finalROI = calculatedData?.finalROI || (projections.length > 0 ? projections[projections.length - 1].roi : 0);
-  const paybackPeriod = calculatedData?.paybackPeriod || (projections.findIndex(p => p.roi > 0) + 1) || null;
+  // Use rights-based calculations or fallback to optimized calculations
+  const totalProjectedRevenue = rightsCalculation?.totalProjectedRevenue || calculatedData?.totalProjectedRevenue || projections.reduce((sum, p) => sum + p.acquirerEarnings, 0);
+  const finalROI = rightsCalculation?.finalROI || calculatedData?.finalROI || (projections.length > 0 ? projections[projections.length - 1].roi : 0);
+  const paybackPeriod = rightsCalculation?.paybackPeriod || calculatedData?.paybackPeriod || (projections.findIndex(p => p.roi > 0) + 1) || null;
 
   return (
     <div className="space-y-6">
+      {/* Rights Information Panel */}
+      {rightsCalculation?.rightsData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-music-purple" />
+              Rights Analysis
+            </CardTitle>
+            <CardDescription>
+              Based on copyright data in your system for selected tracks
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Master Rights Info */}
+              {(dealTerms.rightsType === 'master' || dealTerms.rightsType === 'both') && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-music-purple">Master/Recording Rights</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Recordings Found:</span>
+                      <span className="font-medium">{rightsCalculation.rightsData.masterRights.recordings.length}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      <p>• Streaming revenue from recorded performances</p>
+                      <p>• Master sync licensing for film/TV/ads</p>
+                      <p>• Digital sales and downloads</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Publishing Rights Info */}
+              {(dealTerms.rightsType === 'publishing' || dealTerms.rightsType === 'both') && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-music-purple">Publishing/Composition Rights</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Compositions Found:</span>
+                      <span className="font-medium">{rightsCalculation.rightsData.publishingRights.compositions.length}</span>
+                    </div>
+                    {rightsCalculation.rightsData.publishingRights.ownership > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Publishing Ownership:</span>
+                        <span className="font-medium">{rightsCalculation.rightsData.publishingRights.ownership.toFixed(1)}%</span>
+                      </div>
+                    )}
+                    <div className="text-xs text-muted-foreground">
+                      <p>• Performance royalties (radio, streaming)</p>
+                      <p>• Mechanical royalties (reproductions)</p>
+                      <p>• Synchronization licensing</p>
+                      <p>• Print and other rights</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Rights Type Explanation */}
+            <Separator className="my-4" />
+            <div className="bg-accent/50 p-4 rounded-lg">
+              <h5 className="font-medium mb-2">Rights Type: {dealTerms.rightsType.charAt(0).toUpperCase() + dealTerms.rightsType.slice(1)}</h5>
+              {dealTerms.rightsType === 'master' && (
+                <p className="text-sm text-muted-foreground">
+                  Master rights deals focus on the recorded performances. Revenue typically peaks earlier but may decline faster as recordings age.
+                  Multiplier: ~12x annual revenue.
+                </p>
+              )}
+              {dealTerms.rightsType === 'publishing' && (
+                <p className="text-sm text-muted-foreground">
+                  Publishing rights deals focus on the underlying compositions. Revenue is more stable long-term through covers, sync, and performance royalties.
+                  Multiplier: ~18x annual revenue.
+                </p>
+              )}
+              {dealTerms.rightsType === 'both' && (
+                <p className="text-sm text-muted-foreground">
+                  360 deals capturing both master and publishing rights provide complete revenue control but require higher investment.
+                  Combined multiplier: ~25x annual revenue.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Deal Terms Configuration */}
       <Card>
         <CardHeader>
@@ -138,6 +232,30 @@ const DealSimulator = memo(({ selectedTracks, artistName, onSaveScenario }: Deal
                     <SelectItem value="co-publishing">Co-Publishing</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="rightsType">Rights Type</Label>
+                <Select 
+                  value={dealTerms.rightsType} 
+                  onValueChange={(value: 'master' | 'publishing' | 'both') => 
+                    setDealTerms({...dealTerms, rightsType: value})
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="master">Master/Recording Rights</SelectItem>
+                    <SelectItem value="publishing">Publishing/Composition Rights</SelectItem>
+                    <SelectItem value="both">Both Rights (360 Deal)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {dealTerms.rightsType === 'master' && 'Rights to recorded performances (streaming, sales, sync of recordings)'}
+                  {dealTerms.rightsType === 'publishing' && 'Rights to musical compositions (performance, mechanical, sync of songs)'}
+                  {dealTerms.rightsType === 'both' && 'Complete rights package including both master and publishing'}
+                </p>
               </div>
 
               <div>
