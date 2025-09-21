@@ -20,7 +20,7 @@ import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Cl
 import { Copyright, CopyrightWriter } from '@/hooks/useCopyright';
 import { AudioPlayer } from './AudioPlayer';
 import { ExportDialog } from './ExportDialog';
-import { validateCWRCompliance } from '@/lib/cwr-validation';
+
 
 interface CopyrightTableProps {
   copyrights: Copyright[];
@@ -573,24 +573,20 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                          <TableCell>
                           <div className="space-y-1">
                             {(() => {
-                              // Use CWR validation logic for proper compliance checking
-                              const validation = validateCWRCompliance(copyright, copyrightWriters);
-                              console.log(`${copyright.work_title} CWR Validation:`, {
-                                isValid: validation.isValid,
-                                errors: validation.errors.length,
-                                warnings: validation.warnings.length,
-                                writersCount: copyrightWriters.length
-                              });
-                              const cwrReady = validation.isValid;
+                              // Badge logic should reflect whether compliance checks are 100%
+                              const proStatuses = getProRegistrationStatuses(copyright);
+                              const cwrReady = (
+                                (copyright as any).cwr_compliance === 100 ||
+                                (copyright as any).cwr_score === 100 ||
+                                proStatuses.some((s: any) => s.status === 'registered' || s.status === 'fully_registered')
+                              );
                               
-                              // DDEX readiness - simplified requirements
-                              const ddexReady = copyright.work_title && copyright.iswc && copyright.language_code;
-                              console.log(`${copyright.work_title} DDEX Check:`, {
-                                hasTitle: !!copyright.work_title,
-                                hasISWC: !!copyright.iswc, 
-                                hasLanguage: !!copyright.language_code,
-                                ddexReady
-                              });
+                              // DDEX readiness: true only when checks are complete (100%) or core fields present
+                              const ddexReady = Boolean(
+                                (copyright as any).ddex_compliance === 100 ||
+                                (copyright as any).ddex_score === 100 ||
+                                (copyright.work_title && copyright.iswc && copyright.language_code)
+                              );
                               
                               return (
                                 <div className="flex flex-col gap-1">
