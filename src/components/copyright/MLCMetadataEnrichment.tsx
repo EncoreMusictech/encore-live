@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Database, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { handleISWCInput, handleISRCInput } from '@/lib/music-metadata-formats';
 
 interface MLCResult {
   found: boolean;
@@ -165,8 +166,17 @@ export const MLCMetadataEnrichment: React.FC<MLCMetadataEnrichmentProps> = ({
             <Input
               id="mlc-iswc"
               value={searchParams.iswc}
-              onChange={(e) => setSearchParams(prev => ({ ...prev, iswc: e.target.value }))}
-              placeholder="T-123456789-0"
+              onChange={(e) => {
+                const formattedValue = handleISWCInput(e.target.value);
+                setSearchParams(prev => ({ ...prev, iswc: formattedValue }));
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text');
+                const formattedValue = handleISWCInput(pastedData);
+                setSearchParams(prev => ({ ...prev, iswc: formattedValue }));
+              }}
+              placeholder="T-123.456.789-0"
             />
           </div>
           <div>
@@ -174,7 +184,16 @@ export const MLCMetadataEnrichment: React.FC<MLCMetadataEnrichmentProps> = ({
             <Input
               id="mlc-isrc"
               value={searchParams.isrc}
-              onChange={(e) => setSearchParams(prev => ({ ...prev, isrc: e.target.value }))}
+              onChange={(e) => {
+                const formattedValue = handleISRCInput(e.target.value);
+                setSearchParams(prev => ({ ...prev, isrc: formattedValue }));
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text');
+                const formattedValue = handleISRCInput(pastedData);
+                setSearchParams(prev => ({ ...prev, isrc: formattedValue }));
+              }}
               placeholder="USAT21234567"
             />
           </div>

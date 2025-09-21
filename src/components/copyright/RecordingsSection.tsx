@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CopyrightRecording } from '@/hooks/useCopyright';
+import { handleISRCInput } from '@/lib/music-metadata-formats';
 
 interface RecordingsSectionProps {
   copyrightId?: string;
@@ -136,8 +137,17 @@ export const RecordingsSection: React.FC<RecordingsSectionProps> = ({
                 <Input
                   id="isrc"
                   value={formData.isrc}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isrc: e.target.value }))}
-                  placeholder="USRC17607839"
+                  onChange={(e) => {
+                    const formattedValue = handleISRCInput(e.target.value);
+                    setFormData(prev => ({ ...prev, isrc: formattedValue }));
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pastedData = e.clipboardData.getData('text');
+                    const formattedValue = handleISRCInput(pastedData);
+                    setFormData(prev => ({ ...prev, isrc: formattedValue }));
+                  }}
+                  placeholder="USAT21234567"
                 />
               </div>
               

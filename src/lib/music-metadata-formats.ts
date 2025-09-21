@@ -4,7 +4,7 @@
  */
 
 /**
- * Format ISWC (International Standard Musical Work Code) to T-123456789-0 format
+ * Format ISWC (International Standard Musical Work Code) to T-XXX.XXX.XXX-X format
  * @param iswc - Raw ISWC string from various sources
  * @returns Formatted ISWC string or original if invalid
  */
@@ -24,15 +24,20 @@ export const formatISWC = (iswc: string): string => {
   
   // ISWC should be 10 digits total (9 digits + 1 check digit)
   if (workingString.length === 10 && /^\d+$/.test(workingString)) {
-    const mainCode = workingString.substring(0, 9);
+    const part1 = workingString.substring(0, 3);
+    const part2 = workingString.substring(3, 6);
+    const part3 = workingString.substring(6, 9);
     const checkDigit = workingString.substring(9, 10);
-    return `T-${mainCode}-${checkDigit}`;
+    return `T-${part1}.${part2}.${part3}-${checkDigit}`;
   }
   
   // If it's 9 digits, calculate check digit (simplified - would need proper algorithm)
   if (workingString.length === 9 && /^\d+$/.test(workingString)) {
+    const part1 = workingString.substring(0, 3);
+    const part2 = workingString.substring(3, 6);
+    const part3 = workingString.substring(6, 9);
     // For now, append 0 as check digit (in real implementation, calculate proper check digit)
-    return `T-${workingString}-0`;
+    return `T-${part1}.${part2}.${part3}-0`;
   }
   
   // Return original if we can't format it properly
@@ -82,8 +87,8 @@ export const formatISRC = (isrc: string): string => {
 export const validateISWC = (iswc: string): boolean => {
   if (!iswc) return false;
   
-  // Check for T-xxxxxxxxx-x format
-  const iswcRegex = /^T-\d{9}-\d$/;
+  // Check for T-XXX.XXX.XXX-X format
+  const iswcRegex = /^T-\d{3}\.\d{3}\.\d{3}-\d$/;
   return iswcRegex.test(iswc);
 };
 
@@ -113,4 +118,39 @@ export const formatSpotifyMetadata = (metadata: any) => {
     iswc: metadata.iswc ? formatISWC(metadata.iswc) : metadata.iswc,
     isrc: metadata.isrc ? formatISRC(metadata.isrc) : metadata.isrc
   };
+};
+
+/**
+ * Auto-format input handler for ISWC fields
+ * @param value - Input value
+ * @returns Formatted ISWC value
+ */
+export const handleISWCInput = (value: string): string => {
+  return formatISWC(value);
+};
+
+/**
+ * Auto-format input handler for ISRC fields
+ * @param value - Input value
+ * @returns Formatted ISRC value
+ */
+export const handleISRCInput = (value: string): string => {
+  return formatISRC(value);
+};
+
+/**
+ * Generic format handler that detects field type and applies appropriate formatting
+ * @param value - Input value
+ * @param fieldType - Type of field ('iswc' | 'isrc')
+ * @returns Formatted value
+ */
+export const autoFormatField = (value: string, fieldType: 'iswc' | 'isrc'): string => {
+  switch (fieldType) {
+    case 'iswc':
+      return handleISWCInput(value);
+    case 'isrc':
+      return handleISRCInput(value);
+    default:
+      return value;
+  }
 };

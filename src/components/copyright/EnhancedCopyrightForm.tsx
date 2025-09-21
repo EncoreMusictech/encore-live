@@ -26,7 +26,7 @@ import { ContractIntegrationPanel } from './ContractIntegrationPanel';
 import { CMORegistration, getAllPROs } from '@/data/cmo-territories';
 import { DocumentUpload } from '@/components/ui/document-upload';
 import { MLCMetadataEnrichment } from './MLCMetadataEnrichment';
-import { formatSpotifyMetadata } from '@/lib/music-metadata-formats';
+import { formatSpotifyMetadata, autoFormatField, handleISWCInput, handleISRCInput } from '@/lib/music-metadata-formats';
 import { useFormPersistence } from '@/hooks/useFormPersistence';
 
 interface EnhancedCopyrightFormProps {
@@ -925,7 +925,16 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                   <Input
                     id="iswc"
                     value={formData.iswc || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, iswc: e.target.value }))}
+                    onChange={(e) => {
+                      const formattedValue = handleISWCInput(e.target.value);
+                      setFormData(prev => ({ ...prev, iswc: formattedValue }));
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pastedData = e.clipboardData.getData('text');
+                      const formattedValue = handleISWCInput(pastedData);
+                      setFormData(prev => ({ ...prev, iswc: formattedValue }));
+                    }}
                     placeholder="T-123.456.789-0"
                   />
                 </div>
@@ -936,7 +945,14 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                     id="isrc"
                     value={spotifyMetadata?.isrc || ''}
                     onChange={(e) => {
-                      setSpotifyMetadata(prev => ({ ...prev, isrc: e.target.value }));
+                      const formattedValue = handleISRCInput(e.target.value);
+                      setSpotifyMetadata(prev => ({ ...prev, isrc: formattedValue }));
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pastedData = e.clipboardData.getData('text');
+                      const formattedValue = handleISRCInput(pastedData);
+                      setSpotifyMetadata(prev => ({ ...prev, isrc: formattedValue }));
                     }}
                     placeholder={spotifyMetadata?.isrc ? "Auto-filled from Spotify" : "USAT21234567"}
                   />

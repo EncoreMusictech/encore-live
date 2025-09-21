@@ -18,7 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AudioPlayer } from '../copyright/AudioPlayer';
 import { ArtistSelector } from '../copyright/ArtistSelector';
-import { formatSpotifyMetadata } from '@/lib/music-metadata-formats';
+import { formatSpotifyMetadata, autoFormatField, handleISWCInput, handleISRCInput } from '@/lib/music-metadata-formats';
 import { useFormPersistence } from '@/hooks/useFormPersistence';
 
 interface Writer {
@@ -692,8 +692,17 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
                   <Input
                     id="isrc"
                     value={formData.isrc}
-                    onChange={(e) => setFormData({...formData, isrc: e.target.value})}
-                    placeholder="International Standard Recording Code"
+                    onChange={(e) => {
+                      const formattedValue = handleISRCInput(e.target.value);
+                      setFormData({...formData, isrc: formattedValue});
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pastedData = e.clipboardData.getData('text');
+                      const formattedValue = handleISRCInput(pastedData);
+                      setFormData({...formData, isrc: formattedValue});
+                    }}
+                    placeholder="USAT21234567"
                   />
                 </div>
                 
@@ -702,8 +711,17 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
                   <Input
                     id="iswc"
                     value={formData.iswc}
-                    onChange={(e) => setFormData({...formData, iswc: e.target.value})}
-                    placeholder="International Standard Work Code"
+                    onChange={(e) => {
+                      const formattedValue = handleISWCInput(e.target.value);
+                      setFormData({...formData, iswc: formattedValue});
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pastedData = e.clipboardData.getData('text');
+                      const formattedValue = handleISWCInput(pastedData);
+                      setFormData({...formData, iswc: formattedValue});
+                    }}
+                    placeholder="T-123.456.789-0"
                   />
                 </div>
               </div>

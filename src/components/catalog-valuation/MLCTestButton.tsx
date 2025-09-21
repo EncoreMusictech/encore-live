@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Database, Music, Users, Building } from 'lucide-react';
 import { useMLCLookup } from '@/hooks/useMLCLookup';
+import { handleISWCInput, handleISRCInput } from '@/lib/music-metadata-formats';
 
 export function MLCTestButton() {
   const [workTitle, setWorkTitle] = useState('');
@@ -60,8 +61,17 @@ export function MLCTestButton() {
               <Input
                 id="isrc"
                 value={isrc}
-                onChange={(e) => setIsrc(e.target.value)}
-                placeholder="e.g., USRC17607839"
+                onChange={(e) => {
+                  const formattedValue = handleISRCInput(e.target.value);
+                  setIsrc(formattedValue);
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pastedData = e.clipboardData.getData('text');
+                  const formattedValue = handleISRCInput(pastedData);
+                  setIsrc(formattedValue);
+                }}
+                placeholder="USAT21234567"
               />
             </div>
             <div className="space-y-2">
@@ -69,8 +79,17 @@ export function MLCTestButton() {
               <Input
                 id="iswc"
                 value={iswc}
-                onChange={(e) => setIswc(e.target.value)}
-                placeholder="e.g., T-345246800-1"
+                onChange={(e) => {
+                  const formattedValue = handleISWCInput(e.target.value);
+                  setIswc(formattedValue);
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pastedData = e.clipboardData.getData('text');
+                  const formattedValue = handleISWCInput(pastedData);
+                  setIswc(formattedValue);
+                }}
+                placeholder="T-123.456.789-0"
               />
             </div>
           </div>
