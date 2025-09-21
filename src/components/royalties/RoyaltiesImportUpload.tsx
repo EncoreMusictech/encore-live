@@ -211,9 +211,29 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Statement Source Selection */}
+          <div>
+            <h3 className="text-lg font-medium mb-4">1. Select Statement Source</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Choose the statement source or use auto-detect during processing
+            </p>
+            <Select value={manualSource} onValueChange={setManualSource}>
+              <SelectTrigger>
+                <SelectValue placeholder="Auto-detect source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto-detect">Auto-detect</SelectItem>
+                <SelectItem value="BMI">BMI</SelectItem>
+                <SelectItem value="ASCAP">ASCAP</SelectItem>
+                <SelectItem value="YouTube">YouTube</SelectItem>
+                <SelectItem value="SoundExchange">SoundExchange</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* File Upload */}
           <div>
-            <h3 className="text-lg font-medium mb-4">1. Upload Statement File</h3>
+            <h3 className="text-lg font-medium mb-4">2. Upload Statement File</h3>
             <div
               {...getRootProps()}
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -241,28 +261,6 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
               )}
             </div>
           </div>
-
-          {/* Manual Source Selection */}
-          {file && (
-            <div>
-              <h3 className="text-lg font-medium mb-4">2. Source Selection (Optional)</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Select the source if automatic detection fails
-              </p>
-              <Select value={manualSource} onValueChange={setManualSource}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Auto-detect source" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto-detect">Auto-detect</SelectItem>
-                  <SelectItem value="BMI">BMI</SelectItem>
-                  <SelectItem value="ASCAP">ASCAP</SelectItem>
-                  <SelectItem value="YouTube">YouTube</SelectItem>
-                  <SelectItem value="SoundExchange">SoundExchange</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           {/* Process Button */}
           {file && (
