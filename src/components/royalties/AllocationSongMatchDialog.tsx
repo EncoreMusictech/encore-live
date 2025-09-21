@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Link2, Music } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useRoyaltySplitting } from "@/hooks/useRoyaltySplitting";
 
 interface AllocationSongMatchDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function AllocationSongMatchDialog({
   const [copyrights, setCopyrights] = useState<Copyright[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCopyright, setSelectedCopyright] = useState<string>("");
+  const { autoSplitIfNeeded } = useRoyaltySplitting();
 
   const searchCopyrights = async () => {
     if (!searchTerm.trim()) return;
@@ -91,6 +93,8 @@ export function AllocationSongMatchDialog({
                     currentAllocation.mapped_data?.['WORK IDENTIFIER'] ||
                     currentAllocation.mapped_data?.['Work ID'];
 
+      let updatedAllocations: string[] = [allocationId];
+
       if (!workId) {
         // If no work ID found, just update this allocation
         const { error } = await supabase
@@ -104,36 +108,39 @@ export function AllocationSongMatchDialog({
           .eq('id', allocationId);
 
         if (error) throw error;
+      } else {
+        // Update all allocations with the same work ID and get their IDs
+        const { error: updateError, data: updated } = await supabase
+          .from('royalty_allocations')
+          .update({
+            copyright_id: selectedCopyright,
+            song_title: selectedWork.work_title,
+            controlled_status: 'Controlled',
+            updated_at: new Date().toISOString()
+          })
+          .or(`work_id.eq.${workId},work_identifier.eq.${workId},mapped_data->>WORK IDENTIFIER.eq.${workId},mapped_data->>Work ID.eq.${workId}`)
+          .select('id');
 
-        onMatch(selectedCopyright, selectedWork.work_title);
-        onOpenChange(false);
-        
-        toast({
-          title: "Success",
-          description: `Successfully matched to "${selectedWork.work_title}"`,
-        });
-        return;
+        if (updateError) throw updateError;
+        updatedAllocations = updated?.map(u => u.id) || [allocationId];
       }
 
-      // Update all allocations with the same work ID
-      const { error: updateError, count } = await supabase
-        .from('royalty_allocations')
-        .update({
-          copyright_id: selectedCopyright,
-          song_title: selectedWork.work_title,
-          controlled_status: 'Controlled',
-          updated_at: new Date().toISOString()
-        })
-        .or(`work_id.eq.${workId},work_identifier.eq.${workId},mapped_data->>WORK IDENTIFIER.eq.${workId},mapped_data->>Work ID.eq.${workId}`);
-
-      if (updateError) throw updateError;
+      // Auto-split all updated allocations by controlled writers
+      for (const allocationIdToSplit of updatedAllocations) {
+        try {
+          await autoSplitIfNeeded(allocationIdToSplit);
+        } catch (splitError) {
+          console.warn(`Failed to auto-split allocation ${allocationIdToSplit}:`, splitError);
+          // Continue with other allocations even if one fails
+        }
+      }
 
       onMatch(selectedCopyright, selectedWork.work_title);
       onOpenChange(false);
       
       toast({
         title: "Success",
-        description: `Successfully matched ${count || 1} allocation(s) to "${selectedWork.work_title}"`,
+        description: `Successfully matched ${updatedAllocations.length} allocation(s) to "${selectedWork.work_title}" and split by controlled writers`,
       });
     } catch (error) {
       console.error('Error matching song:', error);
