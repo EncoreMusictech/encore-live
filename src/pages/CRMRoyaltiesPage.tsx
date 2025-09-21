@@ -7,6 +7,7 @@ import { Plus, Music, DollarSign, Users, AlertTriangle, FileText, TrendingUp, Ca
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { usePayouts } from "@/hooks/usePayouts";
 import { useExpenses } from "@/hooks/useExpenses";
+import { useCRMTabPersistence } from "@/hooks/useCRMTabPersistence";
 import { RoyaltyAllocationForm } from "@/components/royalties/RoyaltyAllocationForm";
 import { RoyaltyAllocationList } from "@/components/royalties/RoyaltyAllocationList";
 
@@ -30,7 +31,7 @@ export default function CRMRoyaltiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [showPayoutForm, setShowPayoutForm] = useState(false);
   const [showBatchForm, setShowBatchForm] = useState(false);
-  const [activeTab, setActiveTab] = useState("analytics");
+  const { activeTab, setActiveTab } = useCRMTabPersistence('/dashboard/royalties', 'analytics');
   
   const {
     allocations,

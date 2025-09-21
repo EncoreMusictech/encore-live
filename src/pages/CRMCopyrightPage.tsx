@@ -11,6 +11,7 @@ import { Plus, Search, Music, FileText, Users, CheckCircle, Clock, AlertTriangle
 import { useToast } from "@/hooks/use-toast";
 import { useCopyright } from "@/hooks/useCopyright";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { useCRMTabPersistence } from "@/hooks/useCRMTabPersistence";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { EnhancedCopyrightForm } from "@/components/copyright/EnhancedCopyrightForm";
 import { AudioPlayer } from "@/components/copyright/AudioPlayer";
@@ -23,6 +24,7 @@ import { SenderCodeOnboarding } from "@/components/copyright/SenderCodeOnboardin
 import { TransmissionHistory } from "@/components/copyright/TransmissionHistory";
 import { MLCBulkEnrichment } from "@/components/copyright/MLCBulkEnrichment";
 import { CWRRegistrationStatusTracker } from "@/components/copyright/CWRRegistrationStatusTracker";
+import { CRMTabStatus } from "@/components/ui/crm-tab-status";
 
 export default function CRMCopyrightPage() {
   const { toast } = useToast();
@@ -31,7 +33,7 @@ export default function CRMCopyrightPage() {
   const [writers, setWriters] = useState<{[key: string]: any[]}>({});
   const [editingCopyright, setEditingCopyright] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("copyrights");
+  const { activeTab, setActiveTab } = useCRMTabPersistence('/dashboard/copyright', 'copyrights');
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [selectedCopyrights, setSelectedCopyrights] = useState<any[]>([]);
 
@@ -501,6 +503,8 @@ export default function CRMCopyrightPage() {
           return acc;
         }, {})}
       />
+
+      <CRMTabStatus />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { updatePageMetadata } from "@/utils/seo";
 import DemoLimitBanner from "@/components/DemoLimitBanner";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { useCRMTabPersistence } from "@/hooks/useCRMTabPersistence";
 import { ContractList } from "@/components/contracts/ContractList";
 import { StandardizedPublishingForm } from "@/components/contracts/StandardizedPublishingForm";
 import { StandardizedArtistForm } from "@/components/contracts/StandardizedArtistForm";
@@ -34,7 +35,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 export default function CRMContractsPage() {
-  const [activeTab, setActiveTab] = useState("contracts");
+  const { activeTab, setActiveTab } = useCRMTabPersistence('/dashboard/contracts', 'contracts');
   const { contracts, loading, refetch } = useContracts();
   const { canAccess, isDemo } = useDemoAccess();
   const { toast } = useToast();
