@@ -183,29 +183,28 @@ export function RoyaltyAllocationList() {
         }
         return null;
       case 'SOURCE':
-        // Priority 1: Use detected_source from original import staging record, but fix common issues
-        if (allocation.staging_record_id) {
-          const stagingRecord = stagingRecords?.find(record => record.id === allocation.staging_record_id);
-          if (stagingRecord?.detected_source) {
-            // Fix case where BMI statements were incorrectly detected as 'ENCORE'
-            if (stagingRecord.detected_source === 'ENCORE' && allocation.statement_id?.startsWith('STMT-')) {
-              // Check if this looks like a BMI statement based on media type
-              if (allocation.mapped_data?.['MEDIA TYPE'] === 'PERF' || allocation.media_type === 'PERF') {
-                return 'BMI';
-              }
-            }
-            return stagingRecord.detected_source;
-          }
-        }
-        // Priority 2: If linked to a batch, show batch source
+        // Show either the Source from the linked batch or the Statement Source from the import
+        // 1) If linked to a batch, show the batch source
         if (allocation.batch_id) {
           const linkedBatch = batches?.find(batch => batch.id === allocation.batch_id);
           if (linkedBatch?.source) {
             return linkedBatch.source;
           }
         }
-        // Priority 3: Show source from imported statement (mapped data) - fallback
-        return allocation.mapped_data?.['SOURCE'] || allocation.mapped_data?.['Statement Source'] || allocation.source || null;
+        // 2) Prefer the Statement Source captured at import time (true origin e.g., 'BMI')
+        const statementSource = allocation.mapped_data?.['Statement Source'];
+        if (statementSource) return statementSource;
+        
+        // 3) Fallback to detected_source from staging record if available
+        if (allocation.staging_record_id) {
+          const stagingRecord = stagingRecords?.find(record => record.id === allocation.staging_record_id);
+          if (stagingRecord?.detected_source) {
+            return stagingRecord.detected_source;
+          }
+        }
+        
+        // 4) Final fallback to any existing source field on the allocation
+        return allocation.source || null;
       case 'QUARTER':
         return allocation.mapped_data?.['QUARTER'] || allocation.quarter;
       case 'WORK IDENTIFIER':
