@@ -149,7 +149,8 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
       { original: 'WORK WRITERS', display: 'WRITERS' },
       { original: 'SHARE', display: 'SHARES (%)' },
       { original: 'QUANTITY', display: 'QUANTITY' },
-      { original: 'REVENUE SOURCE', display: 'MEDIA TYPE' },
+      { original: 'REVENUE SOURCE', display: 'REVENUE SOURCE' },
+      { original: 'MEDIA TYPE', display: 'MEDIA TYPE' },
       { original: 'COUNTRY', display: 'TERRITORY' },
       { original: 'GROSS', display: 'GROSS' }
     ];
@@ -185,7 +186,8 @@ export function RoyaltiesImportPreview({ record, onBack }: RoyaltiesImportPrevie
       { original: 'WORK WRITERS', display: 'WRITERS' },
       { original: 'SHARE', display: 'SHARES (%)' },
       { original: 'QUANTITY', display: 'QUANTITY' },
-      { original: 'REVENUE SOURCE', display: 'MEDIA TYPE' },
+      { original: 'REVENUE SOURCE', display: 'REVENUE SOURCE' },
+      { original: 'MEDIA TYPE', display: 'MEDIA TYPE' },
       { original: 'COUNTRY', display: 'TERRITORY' },
       { original: 'GROSS', display: 'GROSS' }
     ];
