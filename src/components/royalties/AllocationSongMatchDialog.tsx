@@ -125,10 +125,12 @@ export function AllocationSongMatchDialog({
         updatedAllocations = updated?.map(u => u.id) || [allocationId];
       }
 
-      // Auto-split all updated allocations by controlled writers
+      // Auto-split all updated allocations by controlled writers immediately when matched
+      let splitCount = 0;
       for (const allocationIdToSplit of updatedAllocations) {
         try {
-          await autoSplitIfNeeded(allocationIdToSplit);
+          const wasSplit = await autoSplitIfNeeded(allocationIdToSplit);
+          if (wasSplit) splitCount++;
         } catch (splitError) {
           console.warn(`Failed to auto-split allocation ${allocationIdToSplit}:`, splitError);
           // Continue with other allocations even if one fails
@@ -138,9 +140,10 @@ export function AllocationSongMatchDialog({
       onMatch(selectedCopyright, selectedWork.work_title);
       onOpenChange(false);
       
+      const splitMessage = splitCount > 0 ? ` and automatically split ${splitCount} allocation(s) by controlled writers` : '';
       toast({
         title: "Success",
-        description: `Successfully matched ${updatedAllocations.length} allocation(s) to "${selectedWork.work_title}" and split by controlled writers`,
+        description: `Successfully matched ${updatedAllocations.length} allocation(s) to "${selectedWork.work_title}"${splitMessage}`,
       });
     } catch (error) {
       console.error('Error matching song:', error);

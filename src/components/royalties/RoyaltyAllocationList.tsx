@@ -10,14 +10,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Edit, Trash2, AlertTriangle, CheckCircle, Link2, ExternalLink, CalendarIcon, Filter, X, Split } from "lucide-react";
+import { Search, Edit, Trash2, AlertTriangle, CheckCircle, Link2, ExternalLink, CalendarIcon, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useRoyaltyAllocations } from "@/hooks/useRoyaltyAllocations";
 import { useReconciliationBatches } from "@/hooks/useReconciliationBatches";
 import { useContacts } from "@/hooks/useContacts";
 import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
-import { useRoyaltySplitting } from "@/hooks/useRoyaltySplitting";
 import { toast } from "@/hooks/use-toast";
 import { RoyaltyAllocationForm } from "./RoyaltyAllocationForm";
 import { AllocationSongMatchDialog } from "./AllocationSongMatchDialog";
@@ -36,7 +35,6 @@ export function RoyaltyAllocationList() {
   const { batches } = useReconciliationBatches();
   const { contacts } = useContacts();
   const { stagingRecords } = useRoyaltiesImport();
-  const { autoSplitIfNeeded } = useRoyaltySplitting();
 
   const filteredAllocations = allocations.filter(allocation => {
     const matchesSearch = allocation.song_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -78,28 +76,11 @@ export function RoyaltyAllocationList() {
 
   const handleSongMatch = async (copyrightId: string, workTitle: string) => {
     toast({
-      title: "Match Complete",
-      description: `All allocations with the same work ID have been updated to match "${workTitle}" and split by controlled writers`,
+      title: "Match Complete", 
+      description: `All allocations with the same work ID have been updated to match "${workTitle}"`,
     });
     await refreshAllocations();
     setMatchingAllocation(null);
-  };
-
-  const handleSplitByWriters = async (allocationId: string) => {
-    try {
-      await autoSplitIfNeeded(allocationId);
-      toast({
-        title: "Split Complete",
-        description: "Royalty allocation has been split by controlled writers",
-      });
-      await refreshAllocations();
-    } catch (error) {
-      toast({
-        title: "Split Failed",
-        description: "Could not split allocation - ensure it's linked to a copyright with controlled writers",
-        variant: "destructive",
-      });
-    }
   };
 
   // Removed contract-related filters
@@ -530,18 +511,6 @@ export function RoyaltyAllocationList() {
                                title="Match to copyright"
                              >
                                <Link2 className="h-4 w-4" />
-                             </Button>
-                           )}
-                           
-                           {allocation.copyright_id && (
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={() => handleSplitByWriters(allocation.id)}
-                               title="Split by controlled writers"
-                               className="text-blue-600 hover:text-blue-700"
-                             >
-                               <Split className="h-4 w-4" />
                              </Button>
                            )}
                            
