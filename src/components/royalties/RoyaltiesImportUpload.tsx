@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Upload, FileText, AlertCircle, CheckCircle, X } from "lucide-react";
 import { StatementParser } from "@/lib/statement-parser";
 import { EncoreMapper } from "@/lib/encore-mapper";
@@ -25,6 +27,8 @@ interface ProcessingStep {
 export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [manualSource, setManualSource] = useState<string>("");
+  const [customSourceName, setCustomSourceName] = useState<string>("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [steps, setSteps] = useState<ProcessingStep[]>([
     { name: "Parse File", status: 'pending' },
@@ -73,12 +77,35 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
 
       // Step 2: Detect Source (or use manual selection)
       updateStep(1, 'processing');
-      let detectedSource = (manualSource && manualSource !== "auto-detect") ? manualSource : parsedData.detectedSource;
+      let detectedSource: string;
+      let isCustomSource = false;
+
+      if (manualSource === "custom" && customSourceName.trim()) {
+        detectedSource = customSourceName.trim();
+        isCustomSource = true;
+      } else if (manualSource && manualSource !== "auto-detect") {
+        detectedSource = manualSource;
+      } else {
+        detectedSource = parsedData.detectedSource;
+      }
+
       if (detectedSource === 'Unknown' && (!manualSource || manualSource === "auto-detect")) {
-        updateStep(1, 'error', 'Could not detect source. Please select manually.');
+        updateStep(1, 'error', 'Could not detect source. Please select "Custom/Other" and name the source.');
+        setShowCustomInput(true);
         return;
       }
-      updateStep(1, 'completed', `Detected: ${detectedSource} (${Math.round(parsedData.confidence * 100)}% confidence)`);
+
+      if (manualSource === "custom" && !customSourceName.trim()) {
+        updateStep(1, 'error', 'Please enter a name for the custom source.');
+        return;
+      }
+
+      updateStep(1, 'completed', `Source: ${detectedSource}${isCustomSource ? ' (Custom)' : ''}`);
+
+      // If this is a custom source, save it for future use
+      if (isCustomSource) {
+        await updateMappingConfig(detectedSource, {}, parsedData.headers);
+      }
 
       // Step 3: Map Fields with saved mappings
       updateStep(2, 'processing');
@@ -217,7 +244,13 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
             <p className="text-sm text-muted-foreground mb-4">
               Choose the statement source or use auto-detect during processing
             </p>
-            <Select value={manualSource} onValueChange={setManualSource}>
+            <Select value={manualSource} onValueChange={(value) => {
+              setManualSource(value);
+              setShowCustomInput(value === "custom");
+              if (value !== "custom") {
+                setCustomSourceName("");
+              }
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Auto-detect source" />
               </SelectTrigger>
@@ -227,8 +260,25 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
                 <SelectItem value="ASCAP">ASCAP</SelectItem>
                 <SelectItem value="YouTube">YouTube</SelectItem>
                 <SelectItem value="SoundExchange">SoundExchange</SelectItem>
+                <SelectItem value="custom">Custom/Other</SelectItem>
               </SelectContent>
             </Select>
+            
+            {(showCustomInput || manualSource === "custom") && (
+              <div className="mt-4">
+                <Label htmlFor="customSource">Custom Source Name</Label>
+                <Input
+                  id="customSource"
+                  value={customSourceName}
+                  onChange={(e) => setCustomSourceName(e.target.value)}
+                  placeholder="Enter the name for this statement source (e.g., 'Digital Music Services', 'Custom PRO')"
+                  className="mt-2"
+                />
+                <p className="text-sm text-muted-foreground mt-2">
+                  This name will be saved for future auto-detection of similar statements.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* File Upload */}
