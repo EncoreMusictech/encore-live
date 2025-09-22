@@ -102,6 +102,13 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       const totalRoyalties = data.total_royalties ?? data.gross_royalties ?? 0;
       const amountDue = data.amount_due ?? data.net_payable ?? 0;
 
+      console.log('Form submission data:', {
+        original_data: data,
+        calculated_commissions: commissions,
+        commission_from_result: calculationResult?.commission_deduction,
+        final_commissions: commissions
+      });
+
       const payoutData = {
         ...data,
         total_royalties: totalRoyalties,
@@ -109,6 +116,8 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
         amount_due: amountDue,
         calculation_method: calculationMethod,
       };
+      
+      console.log('Final payout data being submitted:', payoutData);
       
       if (payout) {
         await updatePayout(payout.id, payoutData);
