@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins, Shield } from "lucide-react";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -107,15 +107,17 @@ export function CRMSidebar() {
   const { isSuperAdmin } = useSuperAdmin();
   const location = useLocation();
   const [userModules, setUserModules] = useState<string[]>([]);
-  const [collapsed, setCollapsed] = useState(false);
+  const { state } = useSidebar();
+  const collapsed = state === 'collapsed';
   
   useEffect(() => {
     const fetchUserModules = async () => {
       if (!user) return;
       try {
-        const {
-          data
-        } = await supabase.from('user_module_access').select('module_id').eq('user_id', user.id);
+        const { data } = await supabase
+          .from('user_module_access')
+          .select('module_id')
+          .eq('user_id', user.id);
         setUserModules(data?.map(item => item.module_id) || []);
       } catch (error) {
         console.error('Error fetching user modules:', error);
@@ -123,16 +125,6 @@ export function CRMSidebar() {
     };
     fetchUserModules();
   }, [user]);
-
-  // Auto-collapse sidebar when user returns to window
-  useEffect(() => {
-    const handleWindowFocus = () => {
-      setCollapsed(true);
-    };
-
-    window.addEventListener('focus', handleWindowFocus);
-    return () => window.removeEventListener('focus', handleWindowFocus);
-  }, []);
   // Regular admin modules (without Super Admin)
   const regularAdminModules = adminModules.filter(module => module.id !== 'platform-admin');
   

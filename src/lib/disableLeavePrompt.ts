@@ -5,7 +5,7 @@
     // Clear any property-based handler and block future assignments
     (window as any).onbeforeunload = null;
     Object.defineProperty(window, 'onbeforeunload', {
-      configurable: true,
+      configurable: false,
       get() { return null; },
       set() { /* Block assignments to onbeforeunload */ }
     });
