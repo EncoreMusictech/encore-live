@@ -204,6 +204,22 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
             setSelectedAgreement(allAgreements[0].id);
             setCalculationMethod('agreement');
             console.log('Auto-selected agreement:', allAgreements[0].title);
+            
+            // Auto-calculate for existing payouts to populate commissions
+            if (payout) {
+              const periodStart = watch('period_start');
+              const periodEnd = watch('period_end');
+              if (periodStart && periodEnd) {
+                calculateAgreementBasedRoyalties(allAgreements[0].id, clientId, periodStart, periodEnd)
+                  .then(result => {
+                    if (result) {
+                      setCalculationResult(result);
+                      setValue('commissions_amount', (result as any).commission_deduction || 0);
+                    }
+                  })
+                  .catch(error => console.error('Auto-calculation error:', error));
+              }
+            }
           } else {
             setCalculationMethod('manual');
             console.log('No agreements found, using manual calculation');
