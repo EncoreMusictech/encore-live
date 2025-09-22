@@ -10,7 +10,7 @@ import { updatePageMetadata } from "@/utils/seo";
 // Import team member photos
 import janishiaPhoto from "@/assets/janishia-jones.png";
 import lawrencePhoto from "@/assets/lawrence-berment.png";
-import nataliePhoto from "@/assets/natalie-jacobs.png";
+import nataliePhoto from "@/assets/natalie-jacobs-new.png";
 import anthonyPhoto from "@/assets/anthony-griffith.png";
 import kebuPhoto from "@/assets/kebu-commissiong.png";
 
