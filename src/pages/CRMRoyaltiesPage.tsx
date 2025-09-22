@@ -228,9 +228,6 @@ export default function CRMRoyaltiesPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline">
-                Create Demo Data
-              </Button>
               <Button onClick={() => setShowPayoutForm(true)} className="gap-2">
                 <Plus className="h-4 w-4" />
                 New Payout
