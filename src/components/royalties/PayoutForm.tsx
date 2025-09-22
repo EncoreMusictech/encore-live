@@ -44,8 +44,8 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
     defaultValues: {
       client_id: String(payout?.client_id ?? ''),
       period: payout?.period || '',
-      period_start: payout?.period_start || '',
-      period_end: payout?.period_end || '',
+      period_start: payout?.period_start || null,
+      period_end: payout?.period_end || null,
       gross_royalties: payout?.gross_royalties || 0,
       total_royalties: payout?.total_royalties || payout?.gross_royalties || 0,
       commissions_amount: payout?.commissions_amount || 0,
@@ -55,7 +55,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       royalties_to_date: payout?.royalties_to_date || 0,
       payments_to_date: payout?.payments_to_date || 0,
       amount_due: payout?.amount_due || 0,
-      payment_date: payout?.payment_date || '',
+      payment_date: payout?.payment_date || null,
       payment_method: payout?.payment_method || '',
       payment_reference: payout?.payment_reference || '',
       notes: payout?.notes || '',
@@ -68,8 +68,8 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
     if (payout) {
       setValue('client_id', String(payout.client_id ?? ''));
       setValue('period', payout.period || '');
-      setValue('period_start', payout.period_start || '');
-      setValue('period_end', payout.period_end || '');
+      setValue('period_start', payout.period_start || null);
+      setValue('period_end', payout.period_end || null);
       setValue('gross_royalties', payout.gross_royalties || 0);
       setValue('total_royalties', payout.total_royalties || payout.gross_royalties || 0);
       setValue('commissions_amount', payout.commissions_amount || 0);
@@ -79,7 +79,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       setValue('royalties_to_date', payout.royalties_to_date || 0);
       setValue('payments_to_date', payout.payments_to_date || 0);
       setValue('amount_due', payout.amount_due || 0);
-      setValue('payment_date', payout.payment_date || '');
+      setValue('payment_date', payout.payment_date || null);
       setValue('payment_method', payout.payment_method || '');
       setValue('payment_reference', payout.payment_reference || '');
       setValue('notes', payout.notes || '');
@@ -111,8 +111,19 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
         }
       }
 
+      // Convert empty date strings to null to avoid database errors
+      const cleanDateField = (dateValue: string) => {
+        if (!dateValue || dateValue.trim() === '') return null;
+        return dateValue;
+      };
+
       const payoutData = {
         ...data,
+        // Clean date fields - convert empty strings to null
+        period_start: cleanDateField(data.period_start),
+        period_end: cleanDateField(data.period_end),
+        payment_date: cleanDateField(data.payment_date),
+        // Financial fields
         total_royalties: totalRoyalties,
         commissions_amount: commissions,
         amount_due: amountDue,
