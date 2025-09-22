@@ -46,11 +46,40 @@ export function PayoutList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Helper function to calculate missing commission/expense values for display
+  const calculateDisplayValues = (payout: any) => {
+    // Calculate commissions if missing - use basic 15% rate or try to derive from net vs gross
+    let commissions = payout.commissions_amount || 0;
+    if (!commissions && payout.gross_royalties && payout.net_royalties) {
+      // Try to derive commission from the difference between gross and net
+      const potentialCommission = payout.gross_royalties - payout.net_royalties;
+      if (potentialCommission > 0 && potentialCommission < payout.gross_royalties) {
+        commissions = potentialCommission;
+      }
+    }
+    
+    // Calculate expenses if missing - derive from total expenses or net calculations
+    let expenses = payout.total_expenses || 0;
+    if (!expenses && payout.net_royalties && payout.net_payable) {
+      // Try to derive expenses from net royalties vs net payable difference
+      const potentialExpenses = payout.net_royalties - payout.net_payable;
+      if (potentialExpenses > 0) {
+        expenses = potentialExpenses;
+      }
+    }
+    
+    return {
+      ...payout,
+      commissions_amount: commissions,
+      total_expenses: expenses
+    };
+  };
+
   const filteredPayouts = payouts.filter(payout => {
     const matchesSearch = payout.period?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
     const matchesStatus = statusFilter === "all" || payout.workflow_stage === statusFilter;
     return matchesSearch && matchesStatus;
-  });
+  }).map(calculateDisplayValues);
 
   const getWorkflowStageColor = (stage: string) => {
     switch (stage) {
