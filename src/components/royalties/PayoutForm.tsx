@@ -56,7 +56,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       payments_to_date: payout?.payments_to_date || 0,
       amount_due: payout?.amount_due || 0,
       payment_date: payout?.payment_date || null,
-      payment_method: payout?.payment_method || '',
+      payment_method: payout?.payment_method || null,
       payment_reference: payout?.payment_reference || '',
       notes: payout?.notes || '',
       status: payout?.status || 'pending',
@@ -80,7 +80,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       setValue('payments_to_date', payout.payments_to_date || 0);
       setValue('amount_due', payout.amount_due || 0);
       setValue('payment_date', payout.payment_date || null);
-      setValue('payment_method', payout.payment_method || '');
+      setValue('payment_method', payout.payment_method || null);
       setValue('payment_reference', payout.payment_reference || '');
       setValue('notes', payout.notes || '');
       setValue('status', payout.status || 'pending');
@@ -117,12 +117,20 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
         return dateValue;
       };
 
+      // Convert empty enum strings to null to avoid database errors
+      const cleanEnumField = (enumValue: string) => {
+        if (!enumValue || enumValue.trim() === '') return null;
+        return enumValue;
+      };
+
       const payoutData = {
         ...data,
         // Clean date fields - convert empty strings to null
         period_start: cleanDateField(data.period_start),
         period_end: cleanDateField(data.period_end),
         payment_date: cleanDateField(data.payment_date),
+        // Clean enum fields - convert empty strings to null
+        payment_method: cleanEnumField(data.payment_method),
         // Financial fields
         total_royalties: totalRoyalties,
         commissions_amount: commissions,
@@ -491,7 +499,10 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="payment_method">Payment Method</Label>
-            <Select onValueChange={(value) => setValue('payment_method', value)} defaultValue={watch('payment_method')}>
+            <Select 
+              onValueChange={(value) => setValue('payment_method', value)} 
+              value={watch('payment_method') || undefined}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select payment method" />
               </SelectTrigger>
