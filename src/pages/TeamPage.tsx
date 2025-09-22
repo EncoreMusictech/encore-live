@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Linkedin, Twitter, Mail, ExternalLink } from "lucide-react";
+import { ArrowLeft, Linkedin, Mail, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import { updatePageMetadata } from "@/utils/seo";
@@ -23,7 +23,6 @@ const TeamPage = () => {
       image: "/placeholder.svg",
       bio: "Former Head of Digital Strategy at Universal Music Group with 15+ years in music tech innovation.",
       linkedin: "#",
-      twitter: "#",
       email: "janishia@encore.tech"
     },
     {
@@ -32,7 +31,6 @@ const TeamPage = () => {
       image: "/placeholder.svg",
       bio: "Previously led engineering at Spotify's creator platform. Expert in music data analytics and scalable systems.",
       linkedin: "#",
-      twitter: "#", 
       email: "marcus@encore.tech"
     },
     {
@@ -41,7 +39,6 @@ const TeamPage = () => {
       image: "/placeholder.svg",
       bio: "Former Product Lead at ASCAP, specializing in rights management workflows and industry compliance.",
       linkedin: "#",
-      twitter: "#",
       email: "jennifer@encore.tech"
     },
     {
@@ -50,7 +47,6 @@ const TeamPage = () => {
       image: "/placeholder.svg", 
       bio: "Ex-Google senior engineer with expertise in AI/ML applications for music catalog analysis and valuation.",
       linkedin: "#",
-      twitter: "#",
       email: "david@encore.tech"
     }
   ];
@@ -157,9 +153,6 @@ const TeamPage = () => {
                   <div className="flex justify-center space-x-3">
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                       <Linkedin className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Twitter className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                       <Mail className="h-4 w-4" />
