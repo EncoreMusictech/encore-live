@@ -18,13 +18,13 @@ const TeamPage = () => {
 
   const teamMembers = [
     {
-      name: "Sarah Chen",
+      name: "Janishia Jones",
       role: "CEO & Co-Founder",
       image: "/placeholder.svg",
       bio: "Former Head of Digital Strategy at Universal Music Group with 15+ years in music tech innovation.",
       linkedin: "#",
       twitter: "#",
-      email: "sarah@encore.tech"
+      email: "janishia@encore.tech"
     },
     {
       name: "Marcus Rodriguez", 
