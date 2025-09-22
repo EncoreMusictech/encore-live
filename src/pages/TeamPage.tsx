@@ -66,11 +66,7 @@ const TeamPage = () => {
       role: "Technology Advisor", 
       company: "Former Head of Product at Pex and Exactuals",
       image: chrisPhoto,
-      bio: [
-        "Founder of Dart Music, the first digital distributor for classical music with genre-specific metadata support",
-        "Former label executive with deep experience in classical music and rights technology", 
-        "Recognized by Billboard as a Digital Power Player for contributions to music-tech innovation"
-      ]
+      bio: "A former classical label exec turned product visionary, Chris has built pioneering metadata and rights payment platforms across music tech. As founder of Dart Music and Head of Product at Exactuals and Pex, he's spent over a decade solving attribution, data accuracy, and automation issues for global rights holders. Named one of Billboard's Digital Power Players, Chris now advises ENCORE on infrastructure, interoperability, and product-market fit."
     },
     {
       name: "Hazel Savage",
