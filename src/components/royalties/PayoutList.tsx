@@ -406,7 +406,8 @@ export function PayoutList() {
       const calculatedTotals = await calculatePayoutTotals(
         payout.client_id,
         payout.period_start || '',
-        payout.period_end || ''
+        payout.period_end || '',
+        (payout as any).agreement_id
       );
 
       console.log('Calculated totals result:', calculatedTotals);
@@ -427,6 +428,8 @@ export function PayoutList() {
         await updatePayout(payoutId, updateData);
 
         console.log('Payout updated successfully');
+        
+        await refreshPayouts();
         
         toast({
           title: "Success",
