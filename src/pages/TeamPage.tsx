@@ -14,7 +14,7 @@ import nataliePhoto from "@/assets/natalie-jacobs.png";
 import anthonyPhoto from "@/assets/anthony-griffith.png";
 import kebuPhoto from "@/assets/kebu-commissiong.png";
 import chrisPhoto from "@/assets/chris-mcmurtry.png";
-import hazelPhoto from "@/assets/hazel-savage.jpg";
+import hazelPhoto from "@/assets/hazel-savage-new.jpg";
 
 const TeamPage = () => {
   useEffect(() => {
