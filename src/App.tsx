@@ -25,6 +25,7 @@ import NotFound from "./pages/NotFound";
 
 import UserCasePage from "./pages/UserCasePage";
 import PricingPage from "./pages/PricingPage";
+import TeamPage from "./pages/TeamPage";
 import ClientPortal from "./components/ClientPortal";
 
 import ContactPage from "./pages/ContactPage";
@@ -138,6 +139,7 @@ const App = () => {
                              
                              
                              <Route path="/pricing" element={<PricingPage />} />
+                             <Route path="/team" element={<TeamPage />} />
                              <Route path="/contact" element={<ContactPage />} />
                              <Route path="/documentation" element={<DocumentationPage />} />
                               <Route path="/whitelabel" element={

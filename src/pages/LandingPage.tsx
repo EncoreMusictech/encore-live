@@ -246,6 +246,15 @@ const LandingPage = () => {
               >
                 Schedule Demo
               </Button>
+              <Link to="/team">
+                <Button 
+                  variant="ghost" 
+                  size="lg"
+                  className="text-muted-foreground hover:text-foreground transition-all duration-300"
+                >
+                  Meet Our Team
+                </Button>
+              </Link>
             </div>
 
             {/* Trust Indicators */}
