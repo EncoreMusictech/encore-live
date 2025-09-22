@@ -79,6 +79,32 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
     }
   });
 
+  // Set form values when editing existing payout
+  useEffect(() => {
+    if (payout) {
+      setValue('client_id', payout.client_id || '');
+      setValue('agreement_id', payout.agreement_id || '');
+      setValue('period', payout.period || '');
+      setValue('period_start', payout.period_start || '');
+      setValue('period_end', payout.period_end || '');
+      setValue('gross_royalties', payout.gross_royalties || 0);
+      setValue('total_royalties', payout.total_royalties || payout.gross_royalties || 0);
+      setValue('commissions_amount', payout.commissions_amount || 0);
+      setValue('net_royalties', payout.net_royalties || 0);
+      setValue('total_expenses', payout.total_expenses || 0);
+      setValue('net_payable', payout.net_payable || 0);
+      setValue('royalties_to_date', payout.royalties_to_date || 0);
+      setValue('payments_to_date', payout.payments_to_date || 0);
+      setValue('amount_due', payout.amount_due || 0);
+      setValue('payment_date', payout.payment_date || '');
+      setValue('payment_method', payout.payment_method || '');
+      setValue('payment_reference', payout.payment_reference || '');
+      setValue('notes', payout.notes || '');
+      setValue('status', payout.status || 'pending');
+      setValue('calculation_method', payout.calculation_method || 'agreement');
+    }
+  }, [payout, setValue]);
+
   const clientContacts = contacts.filter(c => c.contact_type === 'client');
   // Agreement-based calculations should be available to all users with contracts
   const hasAgreementModule = true;
