@@ -233,7 +233,11 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="client_id">Payee Name *</Label>
-          <Select onValueChange={(value) => setValue('client_id', value)} value={watch('client_id') ? String(watch('client_id')) : ''}>
+          <Select 
+            onValueChange={(value) => setValue('client_id', value)} 
+            value={watch('client_id') ? String(watch('client_id')) : ''}
+            defaultValue={payout?.client_id ? String(payout.client_id) : ''}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select payee" />
             </SelectTrigger>
