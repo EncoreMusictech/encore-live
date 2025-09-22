@@ -110,7 +110,6 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
         commissions_amount: commissions,
         amount_due: amountDue,
         calculation_method: calculationMethod,
-        agreement_id: calculationMethod === 'agreement' ? selectedAgreement : null,
       };
       
       if (payout) {
