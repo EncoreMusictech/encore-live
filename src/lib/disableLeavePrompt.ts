@@ -12,11 +12,10 @@
   } catch {}
 
   try {
-    // Capturing listener that prevents the native prompt and stops other handlers
+    // Capturing listener that suppresses other handlers without triggering the prompt
     window.addEventListener('beforeunload', (e: BeforeUnloadEvent) => {
       try { e.stopImmediatePropagation(); } catch {}
-      e.preventDefault();
-      try { delete (e as any).returnValue; } catch {}
+      // DO NOT call preventDefault or set returnValue here.
     }, { capture: true });
   } catch {}
 
