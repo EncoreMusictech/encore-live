@@ -42,7 +42,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
-      client_id: payout?.client_id || '',
+      client_id: String(payout?.client_id ?? ''),
       agreement_id: payout?.agreement_id || '',
       period: payout?.period || '',
       period_start: payout?.period_start || '',
@@ -68,7 +68,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   // Set form values when editing existing payout
   useEffect(() => {
     if (payout) {
-      setValue('client_id', payout.client_id || '');
+      setValue('client_id', String(payout.client_id ?? ''));
       setValue('agreement_id', payout.agreement_id || '');
       setValue('period', payout.period || '');
       setValue('period_start', payout.period_start || '');
@@ -233,13 +233,13 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="client_id">Payee Name *</Label>
-          <Select onValueChange={(value) => setValue('client_id', value)} value={watch('client_id')}>
+          <Select onValueChange={(value) => setValue('client_id', value)} value={watch('client_id') ? String(watch('client_id')) : ''}>
             <SelectTrigger>
               <SelectValue placeholder="Select payee" />
             </SelectTrigger>
             <SelectContent>
               {clientContacts.map((contact) => (
-                <SelectItem key={contact.id} value={contact.id}>
+                <SelectItem key={contact.id} value={String(contact.id)}>
                   {contact.name}
                 </SelectItem>
               ))}
