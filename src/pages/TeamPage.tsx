@@ -7,6 +7,13 @@ import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import { updatePageMetadata } from "@/utils/seo";
 
+// Import team member photos
+import janishiaPhoto from "@/assets/janishia-jones.jpg";
+import lawrencePhoto from "@/assets/lawrence-berment.jpg";
+import nataliePhoto from "@/assets/natalie-jacobs.jpg";
+import anthonyPhoto from "@/assets/anthony-griffith.jpg";
+import kebuPhoto from "@/assets/kebu-commissiong.jpg";
+
 const TeamPage = () => {
   useEffect(() => {
     updatePageMetadata({
@@ -20,32 +27,32 @@ const TeamPage = () => {
     {
       name: "Janishia Jones",
       role: "CEO & Founder",
-      image: "/placeholder.svg",
-      bio: "Former Head of Digital Strategy at Universal Music Group with 15+ years in music tech innovation.",
+      image: janishiaPhoto,
+      bio: "15-year rights & royalties management expert & advisor. Formerly UMG / EONE / Kobalt Music Publishing / Empire / Crunchyroll.",
       linkedin: "#",
       email: "janishia@encore.tech"
     },
     {
       name: "Lawrence Berment", 
       role: "CTO",
-      image: "/placeholder.svg",
-      bio: "Previously led engineering at Spotify's creator platform. Expert in music data analytics and scalable systems.",
+      image: lawrencePhoto,
+      bio: "20+ year infrastructure architect & Grammy-nominated creator. Formerly BlueKai (Oracle) / LA Promise Fund / PayPal / IGT / Mynd Sound.",
       linkedin: "#",
       email: "lawrence@encore.tech"
     },
     {
       name: "Natalie Jacobs",
-      role: "COO",
-      image: "/placeholder.svg",
-      bio: "Former Product Lead at ASCAP, specializing in rights management workflows and industry compliance.",
+      role: "COO", 
+      image: nataliePhoto,
+      bio: "20-year music ops leader & data educator. Formerly Warner Music Group / NBCUniversal / Rhino Entertainment / Equalizer Consulting.",
       linkedin: "#",
       email: "natalie@encore.tech"
     },
     {
       name: "Anthony Griffith",
       role: "Head of Customer Success",
-      image: "/placeholder.svg", 
-      bio: "Ex-Google senior engineer with expertise in AI/ML applications for music catalog analysis and valuation.",
+      image: anthonyPhoto,
+      bio: "10+ year A&R strategist & royalties executive. Formerly UMG / Sony / NVLG Music / Entertainment Business Affairs.",
       linkedin: "#",
       email: "anthony@encore.tech"
     }
@@ -65,6 +72,13 @@ const TeamPage = () => {
       company: "Former VP, BMI",
       image: "/placeholder.svg",
       bio: "20+ years in performance rights organizations. Specialist in royalty distribution and industry compliance."
+    },
+    {
+      name: "Kebu Commissiong",
+      role: "Strategic Advisor",
+      company: "VP, Sales & Growth",
+      image: kebuPhoto,
+      bio: "15+ year strategic advisor, global rights & royalties expert with A&R + catalog monetization focus. Formerly TuneCore / Sentric Music / Revelator / Tommy Boy / Believe."
     },
     {
       name: "Robert Chen",
@@ -177,7 +191,7 @@ const TeamPage = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
             {advisors.map((advisor, index) => (
               <Card key={index} className="text-center group hover:shadow-elegant transition-all duration-300 hover:scale-105">
                 <CardHeader className="pb-4">
