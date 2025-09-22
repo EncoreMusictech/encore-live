@@ -212,9 +212,11 @@ const TeamPage = () => {
                   <CardDescription className="text-dusty-gold font-medium">
                     {advisor.role}
                   </CardDescription>
-                  <Badge variant="secondary" className="mt-2 text-xs text-center">
-                    {advisor.company}
-                  </Badge>
+                  <div className="flex justify-center">
+                    <Badge variant="secondary" className="mt-2 text-xs text-center">
+                      {advisor.company}
+                    </Badge>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {Array.isArray(advisor.bio) ? (
