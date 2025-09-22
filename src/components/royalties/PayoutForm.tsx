@@ -96,9 +96,20 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
 
   const onSubmit = async (data: any) => {
     try {
-      const commissions = data.commissions_amount ?? (calculationResult?.commission_deduction || 0);
+      // Start with existing value or calculated result
+      let commissions = data.commissions_amount ?? (calculationResult?.commission_deduction || 0);
       const totalRoyalties = data.total_royalties ?? data.gross_royalties ?? 0;
       const amountDue = data.amount_due ?? data.net_payable ?? 0;
+
+      // Fallback: if commissions are still zero/empty, derive from selected agreement's commission % and gross
+      if ((!commissions || commissions === 0) && (availableAgreements.length > 0)) {
+        const activeAgreement = availableAgreements.find(a => a.id === selectedAgreement) || availableAgreements[0];
+        const commissionRate = Number(activeAgreement?.commission_percentage) || 0;
+        const gross = Number(data.gross_royalties ?? data.total_royalties ?? 0) || 0;
+        if (commissionRate > 0 && gross > 0) {
+          commissions = parseFloat(((gross * commissionRate) / 100).toFixed(2));
+        }
+      }
 
       const payoutData = {
         ...data,
@@ -210,9 +221,23 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
                     if (result) {
                       setCalculationResult(result);
                       setValue('commissions_amount', (result as any).commission_deduction || 0);
+                    } else {
+                      // Fallback if result is empty
+                      const gross = Number(watch('gross_royalties') ?? watch('total_royalties') ?? 0) || 0;
+                      const rate = Number(allAgreements[0]?.commission_percentage) || 0;
+                      if (gross > 0 && rate > 0) {
+                        setValue('commissions_amount', parseFloat(((gross * rate) / 100).toFixed(2)));
+                      }
                     }
                   })
                   .catch(error => console.error('Auto-calculation error:', error));
+              } else {
+                // No explicit dates: derive commission from agreement % and current gross
+                const gross = Number(watch('gross_royalties') ?? watch('total_royalties') ?? 0) || 0;
+                const rate = Number(allAgreements[0]?.commission_percentage) || 0;
+                if (gross > 0 && rate > 0) {
+                  setValue('commissions_amount', parseFloat(((gross * rate) / 100).toFixed(2)));
+                }
               }
             }
           } else {
