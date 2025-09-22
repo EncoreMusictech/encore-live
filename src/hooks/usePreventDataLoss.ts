@@ -18,27 +18,28 @@ export const usePreventDataLoss = ({
 }: PreventDataLossOptions) => {
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // Handle browser navigation attempts
+  // Handle browser navigation attempts without showing native prompts
   useEffect(() => {
-    if (!enabled || !hasUnsavedChanges) return;
+    if (!enabled) return;
 
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        const message = 'You have unsaved changes. Are you sure you want to leave?';
-        e.preventDefault();
-        e.returnValue = message;
-        return message;
+    const handleBeforeUnload = () => {
+      // Attempt a best-effort save, but NEVER trigger the native prompt
+      if (hasUnsavedChanges && onSaveBeforeLeave) {
+        try {
+          onSaveBeforeLeave();
+        } catch (e) {
+          // ignore
+        }
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [hasUnsavedChanges, enabled]);
+  }, [enabled, hasUnsavedChanges, onSaveBeforeLeave]);
 
-  // Handle programmatic navigation
+  // Handle programmatic navigation without blocking prompts
   const handleNavigationAttempt = useCallback(async (callback: () => void) => {
     if (!hasUnsavedChanges) {
       callback();
@@ -47,37 +48,25 @@ export const usePreventDataLoss = ({
 
     setIsNavigating(true);
 
-    // Show save prompt
-    const shouldSave = window.confirm(
-      'You have unsaved changes. Would you like to save before leaving?'
-    );
-
-    if (shouldSave && onSaveBeforeLeave) {
-      try {
+    try {
+      if (onSaveBeforeLeave) {
         await onSaveBeforeLeave();
         toast({
           title: "Changes Saved",
           description: "Your changes have been saved successfully.",
         });
-        callback();
-      } catch (error) {
-        console.error('Error saving before navigation:', error);
-        toast({
-          title: "Save Failed",
-          description: "Failed to save changes. Please try again.",
-          variant: "destructive",
-        });
       }
-    } else {
-      const proceedAnyway = window.confirm(
-        'Are you sure you want to leave without saving?'
-      );
-      if (proceedAnyway) {
-        callback();
-      }
+    } catch (error) {
+      console.error('Error saving before navigation:', error);
+      toast({
+        title: "Save Failed",
+        description: "Navigating without saving.",
+        variant: "destructive",
+      });
+    } finally {
+      callback();
+      setIsNavigating(false);
     }
-
-    setIsNavigating(false);
   }, [hasUnsavedChanges, onSaveBeforeLeave]);
 
   return {
