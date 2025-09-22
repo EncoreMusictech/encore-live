@@ -75,8 +75,8 @@ export function AgreementTermsPreview({ agreement, writers, calculationResult }:
               <div className="grid gap-2">
                 {controlledWriters.map(writer => (
                   <div key={writer.id} className="flex items-center justify-between p-2 bg-green-50 rounded">
-                    <span className="text-sm font-medium">{writer.name}</span>
-                    <div className="flex gap-2 text-xs">
+                    <span className="text-sm font-medium text-green-900">{writer.name}</span>
+                    <div className="flex gap-2 text-xs text-green-800">
                       <span>Perf: {writer.performance_percentage}%</span>
                       <span>Mech: {writer.mechanical_percentage}%</span>
                       <span>Sync: {writer.synch_percentage}%</span>
@@ -93,8 +93,8 @@ export function AgreementTermsPreview({ agreement, writers, calculationResult }:
               <div className="grid gap-2">
                 {uncontrolledWriters.map(writer => (
                   <div key={writer.id} className="flex items-center justify-between p-2 bg-amber-50 rounded">
-                    <span className="text-sm font-medium">{writer.name}</span>
-                    <div className="flex gap-2 text-xs">
+                    <span className="text-sm font-medium text-amber-900">{writer.name}</span>
+                    <div className="flex gap-2 text-xs text-amber-800">
                       <span>Perf: {writer.performance_percentage}%</span>
                       <span>Mech: {writer.mechanical_percentage}%</span>
                       <span>Sync: {writer.synch_percentage}%</span>
@@ -115,8 +115,8 @@ export function AgreementTermsPreview({ agreement, writers, calculationResult }:
               
               {calculationResult.commission_deduction > 0 && (
                 <div className="flex items-center justify-between p-2 bg-blue-50 rounded">
-                  <span className="text-sm font-medium">Commission Deduction</span>
-                  <span className="text-sm font-mono">${calculationResult.commission_deduction.toFixed(2)}</span>
+                  <span className="text-sm font-medium text-blue-900">Commission Deduction</span>
+                  <span className="text-sm font-mono text-blue-900">${calculationResult.commission_deduction.toFixed(2)}</span>
                 </div>
               )}
               
@@ -128,8 +128,8 @@ export function AgreementTermsPreview({ agreement, writers, calculationResult }:
                   </p>
                   <div className="grid gap-1">
                     {Object.entries(calculationResult.territory_adjustments).map(([territory, amount]) => (
-                      <div key={territory} className="flex items-center justify-between p-1 text-xs">
-                        <span>{territory}</span>
+                      <div key={territory} className="flex items-center justify-between p-1 text-xs text-foreground">
+                        <span className="font-medium">{territory}</span>
                         <span className="font-mono">${amount.toFixed(2)}</span>
                       </div>
                     ))}
