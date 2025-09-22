@@ -8,11 +8,11 @@ import { useEffect } from "react";
 import { updatePageMetadata } from "@/utils/seo";
 
 // Import team member photos
-import janishiaPhoto from "@/assets/janishia-jones.jpg";
-import lawrencePhoto from "@/assets/lawrence-berment.jpg";
-import nataliePhoto from "@/assets/natalie-jacobs.jpg";
-import anthonyPhoto from "@/assets/anthony-griffith.jpg";
-import kebuPhoto from "@/assets/kebu-commissiong.jpg";
+import janishiaPhoto from "@/assets/janishia-jones.png";
+import lawrencePhoto from "@/assets/lawrence-berment.png";
+import nataliePhoto from "@/assets/natalie-jacobs.png";
+import anthonyPhoto from "@/assets/anthony-griffith.png";
+import kebuPhoto from "@/assets/kebu-commissiong.png";
 
 const TeamPage = () => {
   useEffect(() => {
