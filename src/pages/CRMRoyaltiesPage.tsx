@@ -227,12 +227,6 @@ export default function CRMRoyaltiesPage() {
                 Handle periodic statements and payments for clients
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setShowPayoutForm(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                New Payout
-              </Button>
-            </div>
           </div>
 
           {/* Overview Cards */}
