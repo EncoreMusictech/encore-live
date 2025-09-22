@@ -497,13 +497,19 @@ export function usePayouts() {
       // If agreement-based calculation is requested and agreementId is provided
       if (agreementId) {
         try {
+          console.log('Using agreement-based calculation with agreementId:', agreementId);
           const { data: agreement, error: agreementError } = await supabase
             .from('contracts')
             .select('commission_percentage, advance_amount')
             .eq('id', agreementId)
             .single();
             
-          if (agreementError) throw agreementError;
+          if (agreementError) {
+            console.error('Agreement error:', agreementError);
+            throw agreementError;
+          }
+          
+          console.log('Agreement data:', agreement);
           
           // Get commission expenses for this period and client
           const { data: commissionExpenses, error: expensesError } = await supabase
@@ -515,11 +521,18 @@ export function usePayouts() {
             .gte('created_at', periodStart)
             .lte('created_at', periodEnd + 'T23:59:59');
 
-          if (expensesError) throw expensesError;
+          if (expensesError) {
+            console.error('Commission expenses error:', expensesError);
+            throw expensesError;
+          }
+          
+          console.log('Commission expenses found:', commissionExpenses);
           
           // Calculate commission from agreement percentage
           const commissionRate = agreement?.commission_percentage || 0;
           let commissionDeduction = grossRoyalties * (commissionRate / 100);
+          
+          console.log('Agreement commission rate:', commissionRate, 'Amount:', commissionDeduction);
           
           // Add commission expenses
           if (commissionExpenses && commissionExpenses.length > 0) {
@@ -531,6 +544,7 @@ export function usePayouts() {
               }
             }, 0);
             commissionDeduction += additionalCommissions;
+            console.log('Additional commission from expenses:', additionalCommissions, 'Total:', commissionDeduction);
           }
           
           const netRoyalties = grossRoyalties - commissionDeduction;
@@ -554,8 +568,39 @@ export function usePayouts() {
         }
       }
       
-      // Manual calculation (original logic)
-      const netRoyalties = grossRoyalties;
+      // Manual calculation - now includes commission expenses
+      console.log('Using manual calculation - checking for commission expenses');
+      
+      let commissionDeduction = 0;
+      
+      // Even in manual calculation, check for commission expenses
+      try {
+        const { data: commissionExpenses, error: expensesError } = await supabase
+          .from('payout_expenses')
+          .select('amount, is_percentage, percentage_rate')
+          .eq('user_id', user.id)
+          .eq('expense_status', 'approved')
+          .or('is_commission_fee.eq.true,expense_flags->>commission_fee.eq.true')
+          .gte('created_at', periodStart)
+          .lte('created_at', periodEnd + 'T23:59:59');
+
+        if (!expensesError && commissionExpenses && commissionExpenses.length > 0) {
+          commissionDeduction = commissionExpenses.reduce((sum, expense) => {
+            if (expense.is_percentage && expense.percentage_rate) {
+              return sum + (grossRoyalties * (expense.percentage_rate / 100));
+            } else {
+              return sum + (expense.amount || 0);
+            }
+          }, 0);
+          console.log('Manual calculation - commission from expenses:', commissionDeduction);
+        } else {
+          console.log('Manual calculation - no commission expenses found');
+        }
+      } catch (error) {
+        console.error('Error fetching commission expenses in manual calculation:', error);
+      }
+      
+      const netRoyalties = grossRoyalties - commissionDeduction;
       const netPayable = Math.max(0, netRoyalties - totalRecoupableExpenses);
       
       return {
@@ -566,6 +611,7 @@ export function usePayouts() {
         royalties_to_date: grossRoyalties,
         payments_to_date: 0,
         amount_due: netPayable,
+        commission_deduction: commissionDeduction,
         calculation_method: 'manual'
       };
     } catch (error: any) {
