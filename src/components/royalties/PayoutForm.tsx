@@ -39,20 +39,6 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   const [calculationResult, setCalculationResult] = useState<any>(null);
   const [calculationMethod, setCalculationMethod] = useState<'agreement' | 'manual'>('agreement');
 
-  // Prevent browser's "Leave site?" popup for this form
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Prevent the browser's default "unsaved changes" warning
-      e.preventDefault();
-      delete e.returnValue;
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
