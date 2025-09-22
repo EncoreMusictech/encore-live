@@ -60,7 +60,6 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       payment_reference: payout?.payment_reference || '',
       notes: payout?.notes || '',
       status: payout?.status || 'pending',
-      calculation_method: payout?.calculation_method || 'agreement',
     }
   });
 
@@ -85,7 +84,6 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       setValue('payment_reference', payout.payment_reference || '');
       setValue('notes', payout.notes || '');
       setValue('status', payout.status || 'pending');
-      setValue('calculation_method', payout.calculation_method || 'agreement');
     }
   }, [payout, setValue]);
 
@@ -102,22 +100,12 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       const totalRoyalties = data.total_royalties ?? data.gross_royalties ?? 0;
       const amountDue = data.amount_due ?? data.net_payable ?? 0;
 
-      console.log('Form submission data:', {
-        original_data: data,
-        calculated_commissions: commissions,
-        commission_from_result: calculationResult?.commission_deduction,
-        final_commissions: commissions
-      });
-
       const payoutData = {
         ...data,
         total_royalties: totalRoyalties,
         commissions_amount: commissions,
         amount_due: amountDue,
-        calculation_method: calculationMethod,
       };
-      
-      console.log('Final payout data being submitted:', payoutData);
       
       if (payout) {
         await updatePayout(payout.id, payoutData);
