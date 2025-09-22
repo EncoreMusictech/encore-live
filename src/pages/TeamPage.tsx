@@ -19,7 +19,7 @@ const TeamPage = () => {
   const teamMembers = [
     {
       name: "Janishia Jones",
-      role: "CEO & Co-Founder",
+      role: "CEO & Founder",
       image: "/placeholder.svg",
       bio: "Former Head of Digital Strategy at Universal Music Group with 15+ years in music tech innovation.",
       linkedin: "#",
