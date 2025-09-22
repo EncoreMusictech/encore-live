@@ -212,7 +212,7 @@ const TeamPage = () => {
                   <CardDescription className="text-dusty-gold font-medium">
                     {advisor.role}
                   </CardDescription>
-                  <Badge variant="secondary" className="mt-2 text-xs">
+                  <Badge variant="secondary" className="mt-2 text-xs text-center">
                     {advisor.company}
                   </Badge>
                 </CardHeader>
