@@ -380,63 +380,36 @@ export function PayoutList() {
   };
 
   const handleRecalculateRoyalties = async (payoutId: string) => {
-    console.log('=== STARTING RECALCULATION ===');
-    console.log('Payout ID:', payoutId);
-    
     try {
       // Get the payout to get client_id and period info
       const payout = payouts.find(p => p.id === payoutId);
       if (!payout) {
-        console.error('Payout not found in payouts array');
         throw new Error('Payout not found');
       }
 
-      console.log('Found payout:', {
-        id: payout.id,
-        client_id: payout.client_id,
-        period_start: payout.period_start,
-        period_end: payout.period_end,
-        current_gross: payout.gross_royalties,
-        current_net: payout.net_royalties,
-        current_commissions: payout.commissions_amount
-      });
-
       // Recalculate totals using the same method as new payouts
-      console.log('Calling calculatePayoutTotals...');
       const calculatedTotals = await calculatePayoutTotals(
         payout.client_id,
         payout.period_start || '',
-        payout.period_end || '',
-        (payout as any).agreement_id
+        payout.period_end || ''
       );
 
-      console.log('Calculated totals result:', calculatedTotals);
-
       if (calculatedTotals) {
-        const updateData = {
+        // Update the payout with recalculated values
+        await updatePayout(payoutId, {
           gross_royalties: calculatedTotals.gross_royalties,
           net_royalties: calculatedTotals.net_royalties,
           total_expenses: calculatedTotals.total_expenses,
           net_payable: calculatedTotals.net_payable,
           commissions_amount: calculatedTotals.commission_deduction || 0,
           amount_due: calculatedTotals.amount_due
-        };
-        
-        console.log('Updating payout with data:', updateData);
-        
-        // Update the payout with recalculated values
-        await updatePayout(payoutId, updateData);
+        });
 
-        console.log('Payout updated successfully');
-        
-        await refreshPayouts();
-        
         toast({
           title: "Success",
           description: "Payout royalties recalculated successfully",
         });
       } else {
-        console.error('calculatePayoutTotals returned null');
         throw new Error('Failed to calculate payout totals');
       }
     } catch (error) {
