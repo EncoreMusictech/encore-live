@@ -13,6 +13,7 @@ import lawrencePhoto from "@/assets/lawrence-berment.png";
 import nataliePhoto from "@/assets/natalie-jacobs-new.png";
 import anthonyPhoto from "@/assets/anthony-griffith.png";
 import kebuPhoto from "@/assets/kebu-commissiong.png";
+import chrisPhoto from "@/assets/chris-mcmurtry.png";
 
 const TeamPage = () => {
   useEffect(() => {
@@ -60,11 +61,11 @@ const TeamPage = () => {
 
   const advisors = [
     {
-      name: "Michael Thompson",
-      role: "Strategic Advisor",
-      company: "Former CEO, Warner Music Publishing",
-      image: "/placeholder.svg",
-      bio: "30+ years leading global music publishing operations. Expert in catalog acquisitions and international rights management."
+      name: "Chris McMurtry",
+      role: "Technology Advisor",
+      company: "Former Head of Product at Pex and Exactuals",
+      image: chrisPhoto,
+      bio: "Founder of Dart Music, the first digital distributor for classical music with genre-specific metadata support. Former label executive with deep experience in classical music and rights technology. Recognized by Billboard as a Digital Power Player for contributions to music-tech innovation."
     },
     {
       name: "Lisa Martinez",
