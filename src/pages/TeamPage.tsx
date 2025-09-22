@@ -57,6 +57,14 @@ const TeamPage = () => {
       bio: "10+ year A&R strategist & royalties executive. Formerly UMG / Sony / NVLG Music / Entertainment Business Affairs.",
       linkedin: "#",
       email: "anthony@encore.tech"
+    },
+    {
+      name: "Kebu Commissiong",
+      role: "Industry Advisor",
+      image: kebuPhoto,
+      bio: "15+ year strategic advisor, global rights & royalties expert with A&R + catalog monetization focus. Formerly TuneCore / Sentric Music / Revelator / Tommy Boy / Believe.",
+      linkedin: "#",
+      email: "kebu@encore.tech"
     }
   ];
 
@@ -74,13 +82,6 @@ const TeamPage = () => {
       company: "CEO at Syntho",
       image: hazelPhoto,
       bio: "With 18 years experience in the industry, Hazel is a music-tech lifer, guitarist and former CEO/Co-Founder at Musiio. She started her music-tech journey as an early employee at Shazam and spent time understanding the pain points of the industry at Pandora, Universal and HMV before launching Musiio in 2018 and then selling the business to SoundCloud in 2022. Hazel joined Syntho as CEO in 2025."
-    },
-    {
-      name: "Kebu Commissiong",
-      role: "Industry Advisor",
-      company: "VP, Sales & Growth",
-      image: kebuPhoto,
-      bio: "15+ year strategic advisor, global rights & royalties expert with A&R + catalog monetization focus. Formerly TuneCore / Sentric Music / Revelator / Tommy Boy / Believe."
     }
   ];
 
@@ -140,7 +141,7 @@ const TeamPage = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {teamMembers.map((member, index) => (
               <Card key={index} className="text-center group hover:shadow-elegant transition-all duration-300 hover:scale-105">
                 <CardHeader className="pb-4">
@@ -186,7 +187,7 @@ const TeamPage = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {advisors.map((advisor, index) => (
               <Card key={index} className="text-center group hover:shadow-elegant transition-all duration-300 hover:scale-105">
                 <CardHeader className="pb-4">
