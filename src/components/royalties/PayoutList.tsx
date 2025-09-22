@@ -26,7 +26,7 @@ export function PayoutList() {
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [exportingStatement, setExportingStatement] = useState<string | null>(null);
   const [isClientPortal, setIsClientPortal] = useState(false);
-  const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts, getPayoutExpenses, recalculatePayoutExpenses } = usePayouts();
+  const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts, getPayoutExpenses, calculatePayoutTotals, updatePayout } = usePayouts();
   const initialized = useRef(false);
 
   // Check if this is client portal view - only hide columns for actual client portal routes
@@ -379,14 +379,44 @@ export function PayoutList() {
     }
   };
 
-  const handleRecalculateExpenses = async (payoutId: string) => {
+  const handleRecalculateRoyalties = async (payoutId: string) => {
     try {
-      await recalculatePayoutExpenses(payoutId);
+      // Get the payout to get client_id and period info
+      const payout = payouts.find(p => p.id === payoutId);
+      if (!payout) {
+        throw new Error('Payout not found');
+      }
+
+      // Recalculate totals using the same method as new payouts
+      const calculatedTotals = await calculatePayoutTotals(
+        payout.client_id,
+        payout.period_start || '',
+        payout.period_end || ''
+      );
+
+      if (calculatedTotals) {
+        // Update the payout with recalculated values
+        await updatePayout(payoutId, {
+          gross_royalties: calculatedTotals.gross_royalties,
+          net_royalties: calculatedTotals.net_royalties,
+          total_expenses: calculatedTotals.total_expenses,
+          net_payable: calculatedTotals.net_payable,
+          commissions_amount: calculatedTotals.commission_deduction || 0,
+          amount_due: calculatedTotals.amount_due
+        });
+
+        toast({
+          title: "Success",
+          description: "Payout royalties recalculated successfully",
+        });
+      } else {
+        throw new Error('Failed to calculate payout totals');
+      }
     } catch (error) {
-      console.error('Error recalculating expenses:', error);
+      console.error('Error recalculating royalties:', error);
       toast({
         title: "Error",
-        description: "Failed to recalculate expenses",
+        description: "Failed to recalculate royalties",
         variant: "destructive",
       });
     }
@@ -579,9 +609,9 @@ export function PayoutList() {
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Payout
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleRecalculateExpenses(payout.id)}>
+                        <DropdownMenuItem onClick={() => handleRecalculateRoyalties(payout.id)}>
                           <RefreshCw className="h-4 w-4 mr-2" />
-                          Recalculate Expenses
+                          Recalculate Royalties
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleExportStatement(payout, 'pdf')}>
                           <FileText className="h-4 w-4 mr-2" />
