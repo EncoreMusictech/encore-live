@@ -43,7 +43,6 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
       client_id: String(payout?.client_id ?? ''),
-      agreement_id: payout?.agreement_id || '',
       period: payout?.period || '',
       period_start: payout?.period_start || '',
       period_end: payout?.period_end || '',
@@ -69,7 +68,6 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   useEffect(() => {
     if (payout) {
       setValue('client_id', String(payout.client_id ?? ''));
-      setValue('agreement_id', payout.agreement_id || '');
       setValue('period', payout.period || '');
       setValue('period_start', payout.period_start || '');
       setValue('period_end', payout.period_end || '');
