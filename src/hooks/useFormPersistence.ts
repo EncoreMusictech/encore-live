@@ -107,11 +107,11 @@ export const useFormPersistence = ({
     };
   }, [data, enabled, delay, saveToStorage]);
 
-  // Save immediately on page unload
+  // Save immediately when the page is hidden (no browser prompt)
   useEffect(() => {
     if (!enabled) return;
 
-    const handleBeforeUnload = () => {
+    const handlePageHide = () => {
       saveToStorage();
     };
 
@@ -122,11 +122,11 @@ export const useFormPersistence = ({
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [enabled, saveToStorage]);

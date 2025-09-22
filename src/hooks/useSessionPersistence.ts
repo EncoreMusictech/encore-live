@@ -70,8 +70,8 @@ export const useSessionPersistence = ({
       }
     };
 
-    // Save state before page unload
-    const handleBeforeUnload = () => {
+    // Save state when the page is being hidden (no native prompt)
+    const handlePageHide = () => {
       saveSessionState();
     };
 
@@ -95,13 +95,13 @@ export const useSessionPersistence = ({
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
     window.addEventListener('blur', handleWindowBlur);
     window.addEventListener('focus', handleWindowFocus);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('focus', handleWindowFocus);
     };

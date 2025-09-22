@@ -22,8 +22,8 @@ export const usePreventDataLoss = ({
   useEffect(() => {
     if (!enabled) return;
 
-    const handleBeforeUnload = () => {
-      // Attempt a best-effort save, but NEVER trigger the native prompt
+    const handlePageHide = () => {
+      // Attempt a best-effort save with no native prompt
       if (hasUnsavedChanges && onSaveBeforeLeave) {
         try {
           onSaveBeforeLeave();
@@ -33,9 +33,9 @@ export const usePreventDataLoss = ({
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
     };
   }, [enabled, hasUnsavedChanges, onSaveBeforeLeave]);
 
