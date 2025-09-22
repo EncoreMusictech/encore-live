@@ -84,13 +84,6 @@ const TeamPage = () => {
       company: "VP, Sales & Growth",
       image: kebuPhoto,
       bio: "15+ year strategic advisor, global rights & royalties expert with A&R + catalog monetization focus. Formerly TuneCore / Sentric Music / Revelator / Tommy Boy / Believe."
-    },
-    {
-      name: "Robert Chen",
-      role: "Technology Advisor",
-      company: "Former CTO, Pandora",
-      image: "/placeholder.svg",
-      bio: "Pioneer in music streaming technology and data science. Expert in music recommendation and analytics systems."
     }
   ];
 
@@ -196,7 +189,7 @@ const TeamPage = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {advisors.map((advisor, index) => (
               <Card key={index} className="text-center group hover:shadow-elegant transition-all duration-300 hover:scale-105">
                 <CardHeader className="pb-4">
