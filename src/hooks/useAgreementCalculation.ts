@@ -73,7 +73,7 @@ export function useAgreementCalculation() {
         `)
         .eq('user_id', user?.id)
         .or(`counterparty_name.eq.${contact.name},counterparty_name.ilike.%${contact.name}%`)
-        .in('contract_status', ['active', 'signed']);
+        .in('contract_status', ['active', 'signed', 'draft']);
 
       if (!directError && directAgreements) {
         allAgreements.push(...directAgreements.map(agreement => ({
@@ -113,7 +113,7 @@ export function useAgreementCalculation() {
         const hierarchyAgreements = payeeAgreements
           .map(p => p.writers?.original_publishers?.contracts)
           .filter(Boolean)
-          .filter(contract => ['active', 'signed'].includes(contract.contract_status));
+          .filter(contract => ['active', 'signed', 'draft'].includes(contract.contract_status));
         
         hierarchyAgreements.forEach(contract => {
           if (!allAgreements.find(a => a.id === contract.id)) {
@@ -168,8 +168,7 @@ export function useAgreementCalculation() {
           )
         `)
         .eq('user_id', user?.id)
-        .or(`payee_name.eq.${payeeName},payee_name.ilike.%${payeeName}%`)
-        .eq('writers.original_publishers.contracts.contract_status', 'active');
+        .or(`payee_name.eq.${payeeName},payee_name.ilike.%${payeeName}%`);
 
       if (error) throw error;
 
