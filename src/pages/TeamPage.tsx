@@ -31,7 +31,7 @@ const TeamPage = () => {
       role: "CEO & Founder",
       image: janishiaPhoto,
       bio: "15-year rights & royalties management expert & advisor. Formerly UMG / EONE / Kobalt Music Publishing / Empire / Crunchyroll.",
-      linkedin: "#",
+      linkedin: "https://linkedin.com/in/janishiajones",
       email: "janishia@encore.tech"
     },
     {
@@ -39,7 +39,7 @@ const TeamPage = () => {
       role: "CTO",
       image: lawrencePhoto,
       bio: "20+ year infrastructure architect & Grammy-nominated creator. Formerly BlueKai (Oracle) / LA Promise Fund / PayPal / IGT / Mynd Sound.",
-      linkedin: "#",
+      linkedin: "https://linkedin.com/in/lawrenceberment",
       email: "lawrence@encore.tech"
     },
     {
@@ -47,7 +47,7 @@ const TeamPage = () => {
       role: "COO", 
       image: nataliePhoto,
       bio: "20-year music ops leader & data educator. Formerly Warner Music Group / NBCUniversal / Rhino Entertainment / Equalizer Consulting.",
-      linkedin: "#",
+      linkedin: "https://linkedin.com/in/nataliekjacobs",
       email: "natalie@encore.tech"
     },
     {
@@ -55,7 +55,7 @@ const TeamPage = () => {
       role: "Head of Customer Success",
       image: anthonyPhoto,
       bio: "10+ year A&R strategist & royalties executive. Formerly UMG / Sony / NVLG Music / Entertainment Business Affairs.",
-      linkedin: "#",
+      linkedin: "https://linkedin.com/in/anthony-griffith-id",
       email: "anthony@encore.tech"
     },
     {
@@ -63,7 +63,7 @@ const TeamPage = () => {
       role: "VP, Sales & Growth",
       image: kebuPhoto,
       bio: "15+ year strategic advisor, global rights & royalties expert with A&R + catalog monetization focus. Formerly TuneCore / Sentric Music / Revelator / Tommy Boy / Believe.",
-      linkedin: "#",
+      linkedin: "https://linkedin.com/in/kebu-commissiong-02559047",
       email: "kebu@encore.tech"
     }
   ];
@@ -161,10 +161,20 @@ const TeamPage = () => {
                 <CardContent className="space-y-4">
                   <p className="text-sm text-muted-foreground leading-relaxed">{member.bio}</p>
                   <div className="flex justify-center space-x-3">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => window.open(member.linkedin, "_blank")}
+                    >
                       <Linkedin className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => window.open(`mailto:${member.email}`, "_blank")}
+                    >
                       <Mail className="h-4 w-4" />
                     </Button>
                   </div>
