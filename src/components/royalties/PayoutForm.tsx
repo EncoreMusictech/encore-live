@@ -91,7 +91,9 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
     }
   }, [payout, setValue]);
 
-  const clientContacts = contacts.filter(c => c.contact_type === 'client' || String(c.id) === String(watch('client_id') || payout?.client_id || ''));
+  const clientContacts = contacts.filter(c => 
+    payout ? String(c.id) === String(payout.client_id) : c.contact_type === 'client'
+  );
   // Agreement-based calculations should be available to all users with contracts
   const hasAgreementModule = true;
   const hasRoyaltiesModule = true; // Always available since we're in the royalties module
