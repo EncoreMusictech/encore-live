@@ -14,6 +14,7 @@ import nataliePhoto from "@/assets/natalie-jacobs.png";
 import anthonyPhoto from "@/assets/anthony-griffith.png";
 import kebuPhoto from "@/assets/kebu-commissiong.png";
 import chrisPhoto from "@/assets/chris-mcmurtry.png";
+import hazelPhoto from "@/assets/hazel-savage.jpg";
 
 const TeamPage = () => {
   useEffect(() => {
@@ -72,11 +73,11 @@ const TeamPage = () => {
       ]
     },
     {
-      name: "Lisa Martinez",
-      role: "Industry Advisor", 
-      company: "Former VP, BMI",
-      image: "/placeholder.svg",
-      bio: "20+ years in performance rights organizations. Specialist in royalty distribution and industry compliance."
+      name: "Hazel Savage",
+      role: "Strategic Advisor", 
+      company: "CEO at Syntho",
+      image: hazelPhoto,
+      bio: "With 18 years experience in the industry, Hazel is a music-tech lifer, guitarist and former CEO/Co-Founder at Musiio. She started her music-tech journey as an early employee at Shazam and spent time understanding the pain points of the industry at Pandora, Universal and HMV before launching Musiio in 2018 and then selling the business to SoundCloud in 2022. Hazel joined Syntho as CEO in 2025."
     },
     {
       name: "Kebu Commissiong",
