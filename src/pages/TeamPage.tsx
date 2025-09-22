@@ -26,28 +26,28 @@ const TeamPage = () => {
       email: "janishia@encore.tech"
     },
     {
-      name: "Marcus Rodriguez", 
-      role: "CTO & Co-Founder",
+      name: "Lawrence Berment", 
+      role: "CTO",
       image: "/placeholder.svg",
       bio: "Previously led engineering at Spotify's creator platform. Expert in music data analytics and scalable systems.",
       linkedin: "#",
-      email: "marcus@encore.tech"
+      email: "lawrence@encore.tech"
     },
     {
-      name: "Jennifer Walsh",
-      role: "VP of Product",
+      name: "Natalie Jacobs",
+      role: "COO",
       image: "/placeholder.svg",
       bio: "Former Product Lead at ASCAP, specializing in rights management workflows and industry compliance.",
       linkedin: "#",
-      email: "jennifer@encore.tech"
+      email: "natalie@encore.tech"
     },
     {
-      name: "David Kim",
-      role: "Head of Engineering",
+      name: "Anthony Griffith",
+      role: "Head of Customer Success",
       image: "/placeholder.svg", 
       bio: "Ex-Google senior engineer with expertise in AI/ML applications for music catalog analysis and valuation.",
       linkedin: "#",
-      email: "david@encore.tech"
+      email: "anthony@encore.tech"
     }
   ];
 
