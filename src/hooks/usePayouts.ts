@@ -505,8 +505,34 @@ export function usePayouts() {
             
           if (agreementError) throw agreementError;
           
+          // Get commission expenses for this period and client
+          const { data: commissionExpenses, error: expensesError } = await supabase
+            .from('payout_expenses')
+            .select('amount, is_percentage, percentage_rate')
+            .eq('user_id', user.id)
+            .eq('expense_status', 'approved')
+            .or('is_commission_fee.eq.true,expense_flags->>commission_fee.eq.true')
+            .gte('created_at', periodStart)
+            .lte('created_at', periodEnd + 'T23:59:59');
+
+          if (expensesError) throw expensesError;
+          
+          // Calculate commission from agreement percentage
           const commissionRate = agreement?.commission_percentage || 0;
-          const commissionDeduction = grossRoyalties * (commissionRate / 100);
+          let commissionDeduction = grossRoyalties * (commissionRate / 100);
+          
+          // Add commission expenses
+          if (commissionExpenses && commissionExpenses.length > 0) {
+            const additionalCommissions = commissionExpenses.reduce((sum, expense) => {
+              if (expense.is_percentage && expense.percentage_rate) {
+                return sum + (grossRoyalties * (expense.percentage_rate / 100));
+              } else {
+                return sum + (expense.amount || 0);
+              }
+            }, 0);
+            commissionDeduction += additionalCommissions;
+          }
+          
           const netRoyalties = grossRoyalties - commissionDeduction;
           const netPayable = Math.max(0, netRoyalties - totalRecoupableExpenses);
           
