@@ -20,14 +20,14 @@
   } catch {}
 
   try {
-    // Block future registrations of beforeunload on window
-    const originalAdd = window.addEventListener.bind(window);
-    (window as any).addEventListener = ((type: any, listener: any, options?: any) => {
+    // Block future registrations of beforeunload on any EventTarget (window, etc.)
+    const originalProtoAdd = EventTarget.prototype.addEventListener;
+    EventTarget.prototype.addEventListener = function(type: any, listener: any, options?: any) {
       if (type === 'beforeunload') {
-        // Silently ignore
+        // Silently ignore registration attempts
         return;
       }
-      return originalAdd(type, listener as any, options as any);
-    }) as any;
+      return originalProtoAdd.call(this, type, listener, options);
+    };
   } catch {}
 })();
