@@ -205,10 +205,10 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="client_id">Client *</Label>
+          <Label htmlFor="client_id">Payee Name *</Label>
           <Select onValueChange={(value) => setValue('client_id', value)} defaultValue={watch('client_id')}>
             <SelectTrigger>
-              <SelectValue placeholder="Select client" />
+              <SelectValue placeholder="Select payee" />
             </SelectTrigger>
             <SelectContent>
               {clientContacts.map((contact) => (
@@ -219,7 +219,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
             </SelectContent>
           </Select>
           {errors.client_id && (
-            <p className="text-sm text-red-600">Client is required</p>
+            <p className="text-sm text-red-600">Payee is required</p>
           )}
         </div>
 
@@ -258,77 +258,6 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
         </div>
       </div>
 
-      {/* Calculation Method Selection - Always show, prioritize Agreement-Based */}
-      {hasAgreementModule && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileTextIcon className="h-4 w-4" />
-              Calculation Method
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="method-agreement"
-                  name="calculation-method"
-                  checked={calculationMethod === 'agreement'}
-                  onChange={() => setCalculationMethod('agreement')}
-                  disabled={availableAgreements.length === 0}
-                />
-                <Label htmlFor="method-agreement" className={availableAgreements.length === 0 ? "text-muted-foreground" : ""}>
-                  Agreement-Based Calculation
-                </Label>
-                <Badge variant={availableAgreements.length > 0 ? "default" : "outline"}>
-                  {availableAgreements.length > 0 ? "Active" : "No Agreements"}
-                </Badge>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="method-manual"
-                  name="calculation-method"
-                  checked={calculationMethod === 'manual'}
-                  onChange={() => setCalculationMethod('manual')}
-                />
-                <Label htmlFor="method-manual">Manual Calculation</Label>
-                <Badge variant="outline">Fallback</Badge>
-              </div>
-            </div>
-
-            {availableAgreements.length === 0 && calculationMethod === 'agreement' && (
-              <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
-                <p>No agreements found for this client. Agreement-based calculation requires:</p>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  <li>A contract with matching counterparty name, or</li>
-                  <li>A payee hierarchy (Agreement → Publisher → Writer → Payee) linked to this client</li>
-                </ul>
-                <p className="mt-2">Consider creating an agreement or use manual calculation.</p>
-              </div>
-            )}
-
-            {calculationMethod === 'agreement' && (
-              <div className="space-y-2">
-                <Label htmlFor="agreement_id">Select Agreement</Label>
-                <Select value={selectedAgreement} onValueChange={setSelectedAgreement}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose an agreement for calculation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableAgreements.map((agreement) => (
-                      <SelectItem key={agreement.id} value={agreement.id}>
-                        {agreement.title} ({agreement.commission_percentage || 0}% commission)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       <div className="flex justify-end">
         <Button
