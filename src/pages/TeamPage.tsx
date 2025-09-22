@@ -62,10 +62,14 @@ const TeamPage = () => {
   const advisors = [
     {
       name: "Chris McMurtry",
-      role: "Technology Advisor",
+      role: "Technology Advisor", 
       company: "Former Head of Product at Pex and Exactuals",
       image: chrisPhoto,
-      bio: "Founder of Dart Music, the first digital distributor for classical music with genre-specific metadata support. Former label executive with deep experience in classical music and rights technology. Recognized by Billboard as a Digital Power Player for contributions to music-tech innovation."
+      bio: [
+        "Founder of Dart Music, the first digital distributor for classical music with genre-specific metadata support",
+        "Former label executive with deep experience in classical music and rights technology", 
+        "Recognized by Billboard as a Digital Power Player for contributions to music-tech innovation"
+      ]
     },
     {
       name: "Lisa Martinez",
@@ -213,7 +217,18 @@ const TeamPage = () => {
                   </Badge>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{advisor.bio}</p>
+                  {Array.isArray(advisor.bio) ? (
+                    <ul className="text-sm text-muted-foreground leading-relaxed space-y-1">
+                      {advisor.bio.map((point, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground leading-relaxed">{advisor.bio}</p>
+                  )}
                 </CardContent>
               </Card>
             ))}
