@@ -81,7 +81,7 @@ const TeamPage = () => {
     },
     {
       name: "Kebu Commissiong",
-      role: "Strategic Advisor",
+      role: "Industry Advisor",
       company: "VP, Sales & Growth",
       image: kebuPhoto,
       bio: "15+ year strategic advisor, global rights & royalties expert with A&R + catalog monetization focus. Formerly TuneCore / Sentric Music / Revelator / Tommy Boy / Believe."
