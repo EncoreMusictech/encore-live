@@ -45,6 +45,7 @@ import WhitelabelDashboard from "./pages/WhitelabelDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import RecoveryRedirect from "@/components/RecoveryRedirect";
 import TermsAndConditions from "./pages/TermsAndConditions";
+import { DisableLeavePrompt } from "@/components/DisableLeavePrompt";
 
 
 
@@ -76,6 +77,7 @@ const App = () => {
                     <TooltipProvider>
                        <Toaster />
                        <Sonner />
+                       <DisableLeavePrompt />
                        <DemoUpgradeModal />
                        <BrowserRouter>
                          <TourProvider>
