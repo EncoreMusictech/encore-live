@@ -13,7 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Calculator, Search, Music, BarChart3, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Brain, Calculator, Search, Music, BarChart3, Loader2, AlertTriangle } from "lucide-react";
 
 interface Artist {
   id: string;
@@ -238,6 +239,13 @@ export default function CRMCatalogValuationPage() {
 
         <TabsContent value="catalog-valuation" className="space-y-6">
           <DemoLimitBanner module="catalogValuation" />
+          
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              *Not an investment recommendation
+            </AlertDescription>
+          </Alert>
           
           <CatalogValuationWithSuspense />
         </TabsContent>
