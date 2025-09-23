@@ -125,6 +125,20 @@ export default function CRMClientsPage() {
     }
     return undefined;
   };
+
+  // Helper function to get the correct user ID for an email
+  const getUserIdByEmail = (email: string) => {
+    // Find user ID by email from userEmails mapping
+    for (const [userId, userEmail] of Object.entries(userEmails)) {
+      if (userEmail === email) {
+        return userId;
+      }
+    }
+    
+    // Fallback to checking invitations
+    const invitation = invitations.find((inv: any) => inv.email === email);
+    return invitation?.accepted_by_user_id;
+  };
   
   // Load data labels for associations
   useEffect(() => {
@@ -829,8 +843,15 @@ export default function CRMClientsPage() {
                             <Button
                               size="sm"
                               onClick={() => {
-                                console.log('🔍 Navigating to client portal for:', access.client_user_id);
-                                window.open(`/client-portal?client_id=${access.client_user_id}`, '_blank');
+                                const clientEmail = getClientEmail(access.client_user_id);
+                                const correctClientId = clientEmail ? getUserIdByEmail(clientEmail) : access.client_user_id;
+                                console.log('🔍 Navigating to client portal for:', {
+                                  displayed_email: clientEmail,
+                                  stored_client_id: access.client_user_id,
+                                  correct_client_id: correctClientId,
+                                  access_record: access
+                                });
+                                window.open(`/client-portal?client_id=${correctClientId}`, '_blank');
                               }}
                             >
                              <Eye className="h-4 w-4 mr-1" />
