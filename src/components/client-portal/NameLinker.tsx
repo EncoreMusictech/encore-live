@@ -63,9 +63,29 @@ export function NameLinker() {
           return;
         }
         
+        // Normalize edge function response into an array of users
+        let users: any[] = [];
+        const payload: any = data;
+        if (Array.isArray(payload)) {
+          users = payload;
+        } else if (payload?.users && Array.isArray(payload.users)) {
+          users = payload.users;
+        } else if (payload?.data && Array.isArray(payload.data)) {
+          users = payload.data;
+        } else if (typeof payload === 'string') {
+          try {
+            const parsed = JSON.parse(payload);
+            if (Array.isArray(parsed)) users = parsed;
+            else if (parsed?.users && Array.isArray(parsed.users)) users = parsed.users;
+            else if (parsed?.data && Array.isArray(parsed.data)) users = parsed.data;
+          } catch (e) {
+            console.warn('Unable to parse get-user-details payload as JSON');
+          }
+        }
+        
         const emailMap: Record<string, string> = {};
-        data.forEach((user: any) => {
-          if (user.email) {
+        users.forEach((user: any) => {
+          if (user?.id && user?.email) {
             emailMap[user.id] = user.email;
           }
         });
@@ -83,11 +103,7 @@ export function NameLinker() {
 
   // Helper function to get client email from user ID
   const getClientEmail = (clientUserId: string) => {
-    const email = clientEmails[clientUserId];
-    if (!email && !emailsLoading) {
-      console.log('No email found for client ID:', clientUserId, 'Available emails:', clientEmails);
-    }
-    return email || `Loading...`;
+    return clientEmails[clientUserId];
   };
 
   const toggleSearchType = (key: keyof typeof searchTypes, checked: boolean | "indeterminate") => {
@@ -330,7 +346,7 @@ export function NameLinker() {
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             <Label>Client</Label>
-            <Select value={clientUserId} onValueChange={setClientUserId} disabled={emailsLoading}>
+            <Select value={clientUserId} onValueChange={setClientUserId}>
               <SelectTrigger>
                 <SelectValue placeholder={emailsLoading ? "Loading clients..." : "Select a client"} />
               </SelectTrigger>
@@ -339,7 +355,7 @@ export function NameLinker() {
                   const email = getClientEmail(a.client_user_id);
                   return (
                     <SelectItem key={a.id} value={a.client_user_id}>
-                      {email}
+                      {email || a.client_user_id}
                     </SelectItem>
                   );
                 })}
