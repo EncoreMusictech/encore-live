@@ -32,11 +32,63 @@ const ClientPortal = () => {
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
   const [greeting, setGreeting] = useState<string>('');
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isAdminViewing, setIsAdminViewing] = useState(false);
+  const [viewingClientId, setViewingClientId] = useState<string | null>(null);
   useEffect(() => {
     const handleInvitationAndAccess = async () => {
       if (!user) return;
       
       try {
+        // Check if admin is viewing a specific client's portal
+        const clientId = searchParams.get('client_id');
+        
+        if (clientId) {
+          // Check if current user is admin by checking user roles
+          const { data: userRoles, error: rolesError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id);
+            
+          const isAdmin = !rolesError && userRoles?.some(r => r.role === 'admin');
+          
+          if (isAdmin) {
+            // Admin viewing client portal - fetch client's permissions
+            const { data: clientAccess, error: accessError } = await supabase
+              .from('client_portal_access')
+              .select('permissions, status')
+              .eq('client_user_id', clientId)
+              .eq('status', 'active')
+              .single();
+            
+            if (!accessError && clientAccess) {
+              setIsAdminViewing(true);
+              setViewingClientId(clientId);
+              setClientAccess(true);
+              setPermissions((clientAccess.permissions as Record<string, any>) || {});
+              
+              // Get client's profile for greeting
+              const { data: clientProfile } = await supabase.functions.invoke('get-user-details', {
+                body: { userIds: [clientId] }
+              });
+              
+              if (clientProfile && Array.isArray(clientProfile) && clientProfile[0]) {
+                setProfile(clientProfile[0]);
+                setGreeting(`Admin View: ${clientProfile[0].name || clientProfile[0].email || 'Client'}'s Portal`);
+              }
+            } else {
+              toast({
+                title: 'Client Not Found',
+                description: 'The specified client does not have active portal access.',
+                variant: 'destructive'
+              });
+              setClientAccess(false);
+            }
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Regular client portal flow
         // Check if there's an invitation token in the URL
         const token = searchParams.get('token');
         
@@ -104,7 +156,7 @@ const ClientPortal = () => {
 
   // Load profile and set greeting
   useEffect(() => {
-    if (!user) return;
+    if (!user || isAdminViewing) return; // Skip profile loading in admin viewing mode
     const fetchProfile = async () => {
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
       if (data) setProfile(data as any);
@@ -113,7 +165,7 @@ const ClientPortal = () => {
       setGreeting(msg);
     };
     fetchProfile();
-  }, [user]);
+  }, [user, isAdminViewing]);
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -211,7 +263,8 @@ const ClientPortal = () => {
 
           <div className="flex items-center gap-4">
             <Badge className="bg-white/10 text-white border-white/20 flex items-center gap-1">
-              <ShieldCheck className="h-4 w-4" /> Secured Client Access
+              <ShieldCheck className="h-4 w-4" /> 
+              {isAdminViewing ? 'Admin Viewing Client Portal' : 'Secured Client Access'}
             </Badge>
             <Button
               variant="outline"

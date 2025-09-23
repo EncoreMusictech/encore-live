@@ -826,13 +826,13 @@ export default function CRMClientsPage() {
                           </p>
                         </div>
                          <div className="flex gap-2">
-                           <Button
-                             size="sm"
-                             onClick={() => {
-                               console.log('🔍 Navigating to client portal for:', access.client_user_id);
-                               window.open(`/client-portal?client_id=${access.client_user_id}`, '_blank');
-                             }}
-                           >
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                console.log('🔍 Navigating to client portal for:', access.client_user_id);
+                                window.open(`/client-portal?client_id=${access.client_user_id}`, '_blank');
+                              }}
+                            >
                              <Eye className="h-4 w-4 mr-1" />
                              View Portal
                            </Button>
