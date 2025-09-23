@@ -25,6 +25,7 @@ export function NameLinker() {
   const [clientUserId, setClientUserId] = useState("");
   const [nameQuery, setNameQuery] = useState("");
   const [clientEmails, setClientEmails] = useState<Record<string, string>>({});
+  const [emailsLoading, setEmailsLoading] = useState(false);
   const [searchTypes, setSearchTypes] = useState({
     copyrights: true,
     contracts: true,
@@ -49,6 +50,7 @@ export function NameLinker() {
     const fetchClientEmails = async () => {
       if (clientAccess.length === 0) return;
       
+      setEmailsLoading(true);
       const userIds = clientAccess.map(access => access.client_user_id);
       
       try {
@@ -71,6 +73,8 @@ export function NameLinker() {
         setClientEmails(emailMap);
       } catch (error) {
         console.error('Error fetching client emails:', error);
+      } finally {
+        setEmailsLoading(false);
       }
     };
 
@@ -79,7 +83,11 @@ export function NameLinker() {
 
   // Helper function to get client email from user ID
   const getClientEmail = (clientUserId: string) => {
-    return clientEmails[clientUserId] || clientUserId;
+    const email = clientEmails[clientUserId];
+    if (!email && !emailsLoading) {
+      console.log('No email found for client ID:', clientUserId, 'Available emails:', clientEmails);
+    }
+    return email || `Loading...`;
   };
 
   const toggleSearchType = (key: keyof typeof searchTypes, checked: boolean | "indeterminate") => {
@@ -322,16 +330,16 @@ export function NameLinker() {
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             <Label>Client</Label>
-            <Select value={clientUserId} onValueChange={setClientUserId}>
+            <Select value={clientUserId} onValueChange={setClientUserId} disabled={emailsLoading}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a client" />
+                <SelectValue placeholder={emailsLoading ? "Loading clients..." : "Select a client"} />
               </SelectTrigger>
               <SelectContent className="z-50 bg-popover">
                 {clientAccess.map((a) => {
                   const email = getClientEmail(a.client_user_id);
                   return (
                     <SelectItem key={a.id} value={a.client_user_id}>
-                      {email || a.client_user_id}
+                      {email}
                     </SelectItem>
                   );
                 })}
