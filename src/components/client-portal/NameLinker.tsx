@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientPortal } from "@/hooks/useClientPortal";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,7 @@ export function NameLinker() {
 
   const [clientUserId, setClientUserId] = useState("");
   const [nameQuery, setNameQuery] = useState("");
+  const [clientEmails, setClientEmails] = useState<Record<string, string>>({});
   const [searchTypes, setSearchTypes] = useState({
     copyrights: true,
     contracts: true,
@@ -43,23 +44,42 @@ export function NameLinker() {
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
 
+  // Fetch client emails when clientAccess changes
+  useEffect(() => {
+    const fetchClientEmails = async () => {
+      if (clientAccess.length === 0) return;
+      
+      const userIds = clientAccess.map(access => access.client_user_id);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('get-user-details', {
+          body: { userIds }
+        });
+        
+        if (error) {
+          console.error('Error fetching client emails:', error);
+          return;
+        }
+        
+        const emailMap: Record<string, string> = {};
+        data.forEach((user: any) => {
+          if (user.email) {
+            emailMap[user.id] = user.email;
+          }
+        });
+        
+        setClientEmails(emailMap);
+      } catch (error) {
+        console.error('Error fetching client emails:', error);
+      }
+    };
+
+    fetchClientEmails();
+  }, [clientAccess]);
+
   // Helper function to get client email from user ID
   const getClientEmail = (clientUserId: string) => {
-    // If this is the current logged-in user, return their email directly
-    if (clientUserId === "5f377ef9-10fe-413c-a3db-3a7b1c77ed6b") {
-      return "info@encoremusic.tech";
-    }
-    
-    const matches = invitations
-      .filter((inv: any) => inv.accepted_by_user_id === clientUserId);
-    if (matches.length > 0) {
-      matches.sort((a: any, b: any) =>
-        new Date(b.accepted_at || b.created_at).getTime() -
-        new Date(a.accepted_at || a.created_at).getTime()
-      );
-      return matches[0]?.email as string | undefined;
-    }
-    return undefined;
+    return clientEmails[clientUserId] || clientUserId;
   };
 
   const toggleSearchType = (key: keyof typeof searchTypes, checked: boolean | "indeterminate") => {
