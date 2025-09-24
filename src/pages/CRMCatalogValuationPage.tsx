@@ -240,10 +240,10 @@ export default function CRMCatalogValuationPage() {
         <TabsContent value="catalog-valuation" className="space-y-6">
           <DemoLimitBanner module="catalogValuation" />
           
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Important Disclaimer</AlertTitle>
-            <AlertDescription>
+          <Alert variant="destructive" className="border-yellow-500/50">
+            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+            <AlertTitle className="text-red-500">Important Disclaimer</AlertTitle>
+            <AlertDescription className="text-white">
               *Not an investment recommendation
             </AlertDescription>
           </Alert>
