@@ -1335,6 +1335,35 @@ Actual market values may vary significantly based on numerous factors not captur
               return <TerritoryBreakdownCard territory={selectedTerritory} territoryMultiplier={territoryMultiplier} totalValuation={adjustedValuation} domesticShare={0.7} internationalShare={0.3} />;
             })()}
 
+              {/* Industry Benchmarks */}
+              {result.industry_benchmarks && <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      Industry Benchmarks
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        HISTORICAL DATA
+                      </Badge>
+                    </CardTitle>
+                    <CardDescription>Genre-specific market data for {result.industry_benchmarks.genre} - based on historical transaction multiples</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm font-medium">Revenue Multiple</p>
+                        <p className="text-2xl font-bold">{result.industry_benchmarks.revenue_multiple}x</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Risk Factor</p>
+                        <p className="text-2xl font-bold">{(result.industry_benchmarks.risk_factor * 100).toFixed(1)}%</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Growth Rate</p>
+                        <p className="text-2xl font-bold">{(result.industry_benchmarks.growth_assumption * 100).toFixed(1)}%</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>}
+
               {/* Artist Spotify Information */}
               <Card>
                 <CardHeader>
@@ -1463,34 +1492,6 @@ Actual market values may vary significantly based on numerous factors not captur
                 </CardContent>
               </Card>
 
-              {/* Industry Benchmarks */}
-              {result.industry_benchmarks && <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      Industry Benchmarks
-                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                        HISTORICAL DATA
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>Genre-specific market data for {result.industry_benchmarks.genre} - based on historical transaction multiples</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm font-medium">Revenue Multiple</p>
-                        <p className="text-2xl font-bold">{result.industry_benchmarks.revenue_multiple}x</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Risk Factor</p>
-                        <p className="text-2xl font-bold">{(result.industry_benchmarks.risk_factor * 100).toFixed(1)}%</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Growth Rate</p>
-                        <p className="text-2xl font-bold">{(result.industry_benchmarks.growth_assumption * 100).toFixed(1)}%</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>}
             </TabsContent>
 
             <TabsContent value="analysis" className="space-y-6">
