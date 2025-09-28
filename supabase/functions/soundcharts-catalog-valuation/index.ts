@@ -438,13 +438,20 @@ class ValuationEngine {
 }
 
 serve(async (req) => {
+  console.log('[SOUNDCHARTS] Function started, method:', req.method);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('[SOUNDCHARTS] Handling OPTIONS request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { artistName, valuationParams, catalogValuationId, userId } = await req.json();
+    console.log('[SOUNDCHARTS] Processing request...');
+    const requestBody = await req.text();
+    console.log('[SOUNDCHARTS] Request body:', requestBody);
+    
+    const { artistName, valuationParams, catalogValuationId, userId } = JSON.parse(requestBody);
     console.log(`DEBUGGING: Received territory parameter: "${valuationParams?.territory}"`);
     console.log(`DEBUGGING: Received discount rate parameter: ${valuationParams?.discountRate || 0.12}`);
     const territory = valuationParams?.territory || 'global';
@@ -484,8 +491,12 @@ serve(async (req) => {
     // Get Soundcharts API credentials
     const soundchartsApiKey = Deno.env.get('SOUNDCHARTS_API_KEY');
     const soundchartsAppId = Deno.env.get('SOUNDCHARTS_APP_ID');
+    
+    console.log('[SOUNDCHARTS] API Key present:', !!soundchartsApiKey);
+    console.log('[SOUNDCHARTS] App ID present:', !!soundchartsAppId);
 
     if (!soundchartsApiKey || !soundchartsAppId) {
+      console.error('[SOUNDCHARTS] Missing credentials - API Key:', !!soundchartsApiKey, 'App ID:', !!soundchartsAppId);
       throw new Error('Soundcharts credentials not configured');
     }
 
@@ -754,7 +765,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in soundcharts-catalog-valuation function:', error);
+    console.error('[SOUNDCHARTS] Error in soundcharts-catalog-valuation function:', error);
+    console.error('[SOUNDCHARTS] Error type:', typeof error);
+    console.error('[SOUNDCHARTS] Error message:', error instanceof Error ? error.message : String(error));
+    console.error('[SOUNDCHARTS] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     const errorStack = error instanceof Error ? error.stack : undefined;
