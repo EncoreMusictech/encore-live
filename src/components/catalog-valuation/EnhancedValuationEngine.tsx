@@ -28,10 +28,60 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
   revenueSources,
   revenueMetrics,
 }) => {
+  // Calculate confidence-adjusted additional revenue value
+  const calculateConfidenceAdjustedAdditionalValue = () => {
+    const multipliers = {
+      streaming: 12,
+      sync: 8,
+      performance: 10,
+      mechanical: 15,
+      merchandise: 5,
+      touring: 3,
+      publishing: 18,
+      master_licensing: 12,
+      other: 6,
+    };
+
+    const confidenceMultipliers = {
+      high: 1.1,
+      medium: 1.0,
+      low: 0.8,
+    };
+
+    let totalAdditionalValue = 0;
+    let totalRevenue = 0;
+    let weightedMultiplier = 0;
+
+    // Apply confidence multipliers to each individual revenue source
+    revenueSources.forEach((source) => {
+      const baseMultiplier = multipliers[source.revenue_type as keyof typeof multipliers] || 6;
+      const confidenceMultiplier = confidenceMultipliers[source.confidence_level] || 1.0;
+      
+      // Apply confidence multiplier to the revenue, then multiply by type multiplier
+      const adjustedRevenue = source.annual_revenue * confidenceMultiplier;
+      const sourceValue = adjustedRevenue * baseMultiplier;
+      
+      totalAdditionalValue += sourceValue;
+      totalRevenue += source.annual_revenue;
+    });
+
+    // Calculate weighted multiplier for display purposes
+    if (totalRevenue > 0) {
+      Object.entries(revenueMetrics.revenueBreakdown).forEach(([type, revenue]) => {
+        const weight = revenue / totalRevenue;
+        weightedMultiplier += (multipliers[type as keyof typeof multipliers] || 6) * weight;
+      });
+    }
+
+    return {
+      additionalValue: totalAdditionalValue,
+      weightedMultiplier,
+    };
+  };
+
   // Calculate blended valuation
   const calculateBlendedValuation = () => {
-    const additionalRevenueMultiplier = getRevenueTypeMultiplier();
-    const additionalValue = revenueMetrics.totalAdditionalRevenue * additionalRevenueMultiplier;
+    const { additionalValue, weightedMultiplier } = calculateConfidenceAdjustedAdditionalValue();
     
     // Diversification bonus (up to 20% increase for fully diversified portfolio)
     const diversificationBonus = revenueMetrics.revenueDiversificationScore * 0.2;
@@ -232,13 +282,14 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
                         </div>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
+                     <TooltipContent className="max-w-xs">
                       <p className="font-medium mb-1">Additional Revenue Value</p>
                       <p className="text-sm">
-                        Calculated by applying industry-standard revenue multiples to each revenue type: 
+                        Calculated by applying confidence multipliers (High: 1.1x, Medium: 1.0x, Low: 0.8x) 
+                        to individual revenue sources, then applying industry-standard revenue multiples: 
                         Publishing (18x), Mechanical (15x), Streaming (12x), Master Licensing (12x), 
                         Performance (10x), Sync (8x), Other (6x), Merchandise (5x), Touring (3x). 
-                        Total value = Sum of (Annual Revenue × Type Multiplier).
+                        Total value = Sum of (Confidence-Adjusted Annual Revenue × Type Multiplier).
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -295,13 +346,20 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
                 comprehensive additional revenue analysis to provide a more accurate fair market value.
               </p>
               
-              <h5>Valuation Components:</h5>
-              <ul>
-                <li><strong>Base Catalog Valuation (70% weight):</strong> Traditional DCF and comparable analysis</li>
-                <li><strong>Additional Revenue Valuation (30% weight):</strong> Revenue type-specific multipliers</li>
-                <li><strong>Diversification Bonus:</strong> Up to 20% increase for revenue diversification</li>
-                <li><strong>Confidence Enhancement:</strong> Data quality and quantity improvements</li>
-              </ul>
+               <h5>Valuation Components:</h5>
+               <ul>
+                 <li><strong>Base Catalog Valuation (70% weight):</strong> Traditional DCF and comparable analysis</li>
+                 <li><strong>Additional Revenue Valuation (30% weight):</strong> Confidence-adjusted revenue with type-specific multipliers</li>
+                 <li><strong>Diversification Bonus:</strong> Up to 20% increase for revenue diversification</li>
+                 <li><strong>Confidence Enhancement:</strong> Data quality improvements at source level</li>
+               </ul>
+
+               <h5>Confidence Multipliers (Applied to Individual Sources):</h5>
+               <div className="grid grid-cols-3 gap-2 text-sm mb-4">
+                 <div>• High confidence: 1.1x</div>
+                 <div>• Medium confidence: 1.0x</div>
+                 <div>• Low confidence: 0.8x</div>
+               </div>
 
               <h5>Revenue Type Multipliers:</h5>
               <div className="grid grid-cols-2 gap-2 text-sm">
