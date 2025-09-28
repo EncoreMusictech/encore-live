@@ -228,12 +228,19 @@ Deno.serve(async (req) => {
           }
 
           payeeId = newPayee.id;
-          payeeByName.set(contactNameLower, payeeId);
+          if (payeeId) {
+            payeeByName.set(contactNameLower, payeeId);
+          }
           console.log(`✅ Created new payee "${contactName}" with ID: ${payeeId}`);
         } catch (error) {
           console.error(`Error creating payee for "${contactName}":`, error);
           continue;
         }
+      }
+
+      if (!payeeId) {
+        console.error(`No payee ID found for contact: ${contactName}`);
+        continue;
       }
 
       const key = `${payeeId}-${year}-Q${quarter}`;

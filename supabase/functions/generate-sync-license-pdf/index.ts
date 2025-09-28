@@ -397,7 +397,7 @@ serve(async (req: Request): Promise<Response> => {
     console.log('Template generation completed:', {
       contentLength: htmlContent.length,
       hasContent: htmlContent.includes('<body>'),
-      bodyHasContent: htmlContent.match(/<body[^>]*>(.*?)<\/body>/s)?.[1]?.trim().length > 0
+      bodyHasContent: (htmlContent.match(/<body[^>]*>(.*?)<\/body>/s)?.[1]?.trim().length || 0) > 0
     });
 
     return new Response(JSON.stringify({ 

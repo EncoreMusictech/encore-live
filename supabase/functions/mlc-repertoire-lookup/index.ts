@@ -40,7 +40,7 @@ async function getMlcAccessToken() {
     return { success: true, token: data.access_token };
   } catch (error) {
     console.error('Error getting MLC access token:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -99,7 +99,7 @@ async function searchMlcRepertoire(accessToken: string, params: any) {
     console.error('Error in MLC repertoire search:', error);
     return { 
       found: false, 
-      error: error.message,
+      error: (error as Error).message,
       message: 'Search error occurred'
     };
   }
@@ -138,7 +138,7 @@ serve(async (req) => {
     console.error('MLC repertoire lookup failed:', error);
     return new Response(JSON.stringify({
       found: false,
-      error: error.message,
+      error: (error as Error).message,
       message: 'Internal server error'
     }), {
       status: 500,

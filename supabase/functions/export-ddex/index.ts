@@ -274,7 +274,7 @@ serve(async (req) => {
       ];
 
       // Use territories from contract or copyright, defaulting to worldwide
-      const territories = contractData?.territories || copyright.collection_territories || ['WORLD'];
+      const territories = (contractData as any)?.territories || copyright.collection_territories || ['WORLD'];
 
       return {
         title: copyright.work_title,

@@ -373,7 +373,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in operations-data-seeder function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Failed to seed operations data'
+      error: (error as Error).message || 'Failed to seed operations data'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
