@@ -353,8 +353,10 @@ const CatalogValuation = memo(() => {
         const {
           data,
           error
-        } = await supabase.functions.invoke('spotify-catalog-valuation', {
-          body: requestBody
+        } = await supabase.functions.invoke('chartmetric-catalog-valuation', {
+          body: {
+            artistName: artistName.trim()
+          }
         });
         console.log("=== API RESPONSE ===");
         console.log("Data:", data);
@@ -1011,7 +1013,7 @@ Actual market values may vary significantly based on numerous factors not captur
             Advanced Catalog Valuation
           </CardTitle>
           <CardDescription>
-            Discover the estimated value of any artist's music catalog using real streaming data from Spotify.
+            Discover the estimated value of any artist's music catalog using real-time streaming data from Chartmetric.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1163,7 +1165,7 @@ Actual market values may vary significantly based on numerous factors not captur
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
                               <p><strong>Enhanced Valuation</strong></p>
-                              <p>Combines Spotify streaming data (70% weight) with user-provided additional revenue sources (30% weight). Based on verified streaming metrics and declared revenue streams with confidence adjustments.</p>
+                              <p>Combines Chartmetric streaming data (70% weight) with user-provided additional revenue sources (30% weight). Based on verified streaming metrics and declared revenue streams with confidence adjustments.</p>
                             </TooltipContent>
                           </UITooltip>
                          : 
@@ -1214,7 +1216,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p><strong>DCF (Discounted Cash Flow) Valuation</strong></p>
-                            <p>10-year revenue projection using Spotify streaming trends, discounted at 12% risk rate. Based on verified streaming history and exponential decay models from industry transaction data.</p>
+                            <p>10-year revenue projection using Chartmetric streaming trends, discounted at 12% risk rate. Based on verified streaming history and exponential decay models from industry transaction data.</p>
                           </TooltipContent>
                         </UITooltip>
 
@@ -1239,7 +1241,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p><strong>Multiple Valuation</strong></p>
-                            <p>Spotify-derived LTM revenue × genre-specific industry multiples (4x-18x). Based on public catalog transaction data and streaming-to-revenue conversion rates by genre.</p>
+                            <p>Chartmetric-derived LTM revenue × genre-specific industry multiples (4x-18x). Based on public catalog transaction data and streaming-to-revenue conversion rates by genre.</p>
                           </TooltipContent>
                         </UITooltip>
 
@@ -1261,7 +1263,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                            <TooltipContent className="max-w-xs">
                              <p><strong>Confidence Score</strong></p>
-                             <p>Data completeness metric based on Spotify API coverage, track history depth, and revenue verification. 90+ indicates institutional-grade data quality for transactions.</p>
+                             <p>Data completeness metric based on Chartmetric API coverage, track history depth, and revenue verification. 90+ indicates institutional-grade data quality for transactions.</p>
                            </TooltipContent>
                         </UITooltip>
 
@@ -1283,7 +1285,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                            <TooltipContent className="max-w-xs">
                              <p><strong>LTM Revenue</strong></p>
-                             <p>Calculated from Spotify streaming data using verified genre-specific per-stream rates ($0.002-$0.004). Additional revenues user-reported and confidence-weighted.</p>
+                             <p>Calculated from Chartmetric streaming data using verified genre-specific per-stream rates ($0.002-$0.004). Additional revenues user-reported and confidence-weighted.</p>
                            </TooltipContent>
                         </UITooltip>
 
@@ -1305,7 +1307,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                            <TooltipContent className="max-w-xs">
                              <p><strong>Popularity Score</strong></p>
-                             <p>Direct from Spotify API (0-100 scale). Reflects current market heat based on recent plays, playlist adds, and algorithmic performance. Key risk factor for catalog sustainability.</p>
+                             <p>Direct from Chartmetric API (0-100 scale). Reflects current market heat based on recent plays, playlist adds, and algorithmic performance. Key risk factor for catalog sustainability.</p>
                            </TooltipContent>
                         </UITooltip>
                       </>;
@@ -1329,10 +1331,10 @@ Actual market values may vary significantly based on numerous factors not captur
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Music className="h-5 w-5 text-primary" />
-                    Spotify Artist Information
+                    Chartmetric Artist Information
                   </CardTitle>
                   <CardDescription>
-                    Artist profile data and top performing tracks from Spotify
+                    Artist profile data and top performing tracks from Chartmetric
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
