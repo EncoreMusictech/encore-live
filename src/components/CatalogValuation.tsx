@@ -246,23 +246,23 @@ const CatalogValuation = memo(() => {
   const adjustedValuations = useMemo(() => {
     if (!result) return null;
 
-    const baseCagr = result.growth_metrics.estimated_cagr || 7; // Default base case CAGR
+    const baseCagr = result.growth_metrics?.estimated_cagr || 7; // Default base case CAGR
     const cagrMultiplier = customCagr / baseCagr;
     
-    // Calculate adjusted values for current scenario
-    const baseValuation = result.valuations[selectedScenario].current;
-    const baseYear5 = result.valuations[selectedScenario].year5;
+    // Calculate adjusted values for current scenario - handle missing fields gracefully
+    const baseValuation = result.valuations?.[selectedScenario]?.current || result.risk_adjusted_value || result.valuation_amount || 0;
+    const baseYear5 = result.valuations?.[selectedScenario]?.year5 || baseValuation;
     
     // Apply CAGR adjustment to year 5 valuation
     const adjustedYear5 = baseValuation * Math.pow(1 + (customCagr / 100), 5);
     
-    // Calculate adjusted forecasts for the selected scenario
-    const adjustedForecasts = result.forecasts[selectedScenario].map(year => ({
+    // Calculate adjusted forecasts for the selected scenario - handle missing forecasts
+    const adjustedForecasts = result.forecasts?.[selectedScenario]?.map(year => ({
       ...year,
       valuation: baseValuation * Math.pow(1 + (customCagr / 100), year.year),
       revenue: year.revenue * Math.pow(1 + (customCagr / 100), year.year),
       streams: Math.round(year.streams * Math.pow(1 + (customCagr / 100), year.year))
-    }));
+    })) || [];
 
     return {
       current: baseValuation,
@@ -410,7 +410,7 @@ const CatalogValuation = memo(() => {
                 error: updateError
               } = await supabase.from('catalog_valuations').update({
                 user_id: user.user.id,
-                artist_name: data.artist_name,
+                artist_name: data.artist?.name || artistName,
                 total_streams: data.total_streams,
                 monthly_listeners: data.monthly_listeners,
                 top_tracks: data.top_tracks,
@@ -443,7 +443,7 @@ const CatalogValuation = memo(() => {
                 error: insertError
               } = await supabase.from('catalog_valuations').insert({
                 user_id: user.user.id,
-                artist_name: data.artist_name,
+                artist_name: data.artist?.name || artistName,
                 total_streams: data.total_streams,
                 monthly_listeners: data.monthly_listeners,
                 top_tracks: data.top_tracks,
@@ -596,7 +596,7 @@ Actual market values may vary significantly based on numerous factors not captur
         high: 0
       };
       const comp = result.valuations?.base;
-      const cagr = comp?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 0) * 100) / 100}%`;
+      const cagr = comp?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 7) * 100) / 100}%`;
       return `
         <section>
           <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
@@ -2057,7 +2057,7 @@ Actual market values may vary significantly based on numerous factors not captur
                   <CardContent>
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between"><span>Valuation</span><span className="font-semibold">{formatCurrency(result.risk_adjusted_value || result.valuation_amount)}</span></div>
-                      <div className="flex justify-between"><span>5Y CAGR</span><span className="font-semibold">{result.valuations?.base?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 0) * 100) / 100}%`}</span></div>
+                      <div className="flex justify-between"><span>5Y CAGR</span><span className="font-semibold">{result.valuations?.base?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 7) * 100) / 100}%`}</span></div>
                       <div className="flex justify-between"><span>Confidence</span><span className="font-semibold">{result.confidence_score || 0}/100</span></div>
                     </div>
                     <div className="mt-4">
