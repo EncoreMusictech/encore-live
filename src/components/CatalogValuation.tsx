@@ -1324,18 +1324,43 @@ Actual market values may vary significantly based on numerous factors not captur
                 </div>
               </TooltipProvider>
 
-              {/* Territory Analysis */}
-              {(() => {
-              // Calculate territory multiplier
-              const selectedTerritory = result.territory_focus || valuationParams.territory;
-              const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : selectedTerritory === 'us-only' ? 1.2 : 1.0;
+              {/* Enhanced Valuation Insights */}
+              {result.has_additional_revenue && <Card className="col-span-full border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5 text-primary" />
+                      Enhanced Valuation Insights
+                    </CardTitle>
+                    <CardDescription>
+                      Advanced analysis incorporating additional revenue streams
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Revenue Diversification</p>
+                        <div className="flex items-center gap-2">
+                          <Progress value={(result.revenue_diversification_score || 0) * 100} className="flex-1" />
+                          <span className="text-sm font-bold">{((result.revenue_diversification_score || 0) * 100).toFixed(1)}%</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Additional Revenue</p>
+                        <p className="text-lg font-bold text-green-600">
+                          {formatCurrency(result.total_additional_revenue || 0)}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Methodology</p>
+                        <Badge variant="outline" className="text-primary">
+                          {result.valuation_methodology_v2 === 'enhanced' ? 'Enhanced Blended' : 'Traditional DCF'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>}
 
-              // Apply territory adjustment to all valuations
-              const adjustedValuation = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
-              return <TerritoryBreakdownCard territory={selectedTerritory} territoryMultiplier={territoryMultiplier} totalValuation={adjustedValuation} domesticShare={0.7} internationalShare={0.3} />;
-            })()}
-
-              {/* Industry Benchmarks */}
+              {/* Confidence Meter */}
               {result.industry_benchmarks && <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -1491,6 +1516,17 @@ Actual market values may vary significantly based on numerous factors not captur
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Territory Analysis */}
+              {(() => {
+              // Calculate territory multiplier
+              const selectedTerritory = result.territory_focus || valuationParams.territory;
+              const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : selectedTerritory === 'us-only' ? 1.2 : 1.0;
+
+              // Apply territory adjustment to all valuations
+              const adjustedValuation = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
+              return <TerritoryBreakdownCard territory={selectedTerritory} territoryMultiplier={territoryMultiplier} totalValuation={adjustedValuation} domesticShare={0.7} internationalShare={0.3} />;
+            })()}
 
             </TabsContent>
 
