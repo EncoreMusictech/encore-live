@@ -340,7 +340,7 @@ const CatalogValuation = memo(() => {
           artistName: artistName.trim(),
           valuationParams: {
             ...valuationParams,
-            catalogAge: calculatedCatalogAge, // Use calculated age
+            catalogAge: catalogAge, // Use the newly calculated age
             customCagr
           },
           catalogValuationId,
