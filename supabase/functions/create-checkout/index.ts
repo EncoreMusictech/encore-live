@@ -80,7 +80,7 @@ serve(async (req) => {
       const moduleNames = [];
       
       for (const moduleId of trialModules) {
-        const pricing = modulePricing[moduleId];
+        const pricing = modulePricing[moduleId as keyof typeof modulePricing];
         if (pricing) {
           totalPrice += billingInterval === 'year' ? pricing.annual : pricing.monthly;
           moduleNames.push(moduleId.charAt(0).toUpperCase() + moduleId.slice(1));
@@ -114,7 +114,7 @@ serve(async (req) => {
         'enterprise': { monthly: 849, annual: 8490 }
       };
       
-      const pricing = bundlePricing[productId];
+      const pricing = bundlePricing[productId as keyof typeof bundlePricing];
       if (!pricing) throw new Error(`Invalid bundle product ID: ${productId}`);
       
       const price = billingInterval === 'year' ? pricing.annual : pricing.monthly;
@@ -141,7 +141,7 @@ serve(async (req) => {
         'dashboard': { monthly: 149, annual: 1490 }
       };
       
-      const pricing = modulePricing[productId];
+      const pricing = modulePricing[productId as keyof typeof modulePricing];
       if (!pricing) throw new Error(`Invalid module product ID: ${productId}`);
       
       const price = billingInterval === 'year' ? pricing.annual : pricing.monthly;

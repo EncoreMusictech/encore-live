@@ -140,7 +140,7 @@ serve(async (req) => {
             return {
               songId: song.id,
               success: false,
-              error: error.message,
+              error: error instanceof Error ? error.message : 'Unknown error occurred',
               enhanced_metadata: null
             };
           }
@@ -188,11 +188,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in bulk-bmi-lookup function:', error);
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message 
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

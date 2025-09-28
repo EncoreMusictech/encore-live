@@ -151,7 +151,7 @@ serve(async (req) => {
     }
 
     // Use known accurate ISWC mappings for specific songs (based on your screenshots)
-    const knownISWCs = {
+    const knownISWCs: Record<string, string> = {
       'true blue': 'T0701865260', // From BMI Songview screenshot
       'express yourself': 'T0700835206', // Example from your knowledge base
     };
@@ -325,10 +325,10 @@ Return data in this exact JSON format:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in BMI lookup:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
       found: false,
       writers: [],
       publishers: []
