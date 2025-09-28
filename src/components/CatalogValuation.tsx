@@ -149,6 +149,7 @@ const CatalogValuation = memo(() => {
   const [revenueMetrics, setRevenueMetrics] = useState<any>(null);
   const [customCagr, setCustomCagr] = useState<number>(5);
   const [isCagrSectionOpen, setIsCagrSectionOpen] = useState(true);
+  const [isTopTracksOpen, setIsTopTracksOpen] = useState(true);
   const [valuationParams, setValuationParams] = useState<ValuationParams>({
     discountRate: 0.12,
     catalogAge: 5, // Will be overridden by calculated age
@@ -1401,24 +1402,38 @@ Actual market values may vary significantly based on numerous factors not captur
                     </div>
                   </div>
                   
-                  {result.top_tracks && result.top_tracks.length > 0 && <div className="space-y-3">
-                      <h4 className="font-medium text-sm">Top Tracks</h4>
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {result.top_tracks.slice(0, 10).map((track, index) => <div key={index} className="flex items-center justify-between p-2 border rounded-lg bg-secondary/20">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{track.name}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs">
-                                  {track.popularity}/100
-                                </Badge>
-                                {track.spotify_url && <a href={track.spotify_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
-                                    View on Spotify
-                                  </a>}
+                  {result.top_tracks && result.top_tracks.length > 0 && (
+                    <Collapsible open={isTopTracksOpen} onOpenChange={setIsTopTracksOpen}>
+                      <CollapsibleTrigger className="w-full">
+                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/30 transition-colors cursor-pointer">
+                          <h4 className="font-medium text-sm">Top Tracks</h4>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {result.top_tracks.slice(0, 10).length} tracks
+                            </Badge>
+                            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isTopTracksOpen ? 'rotate-180' : ''}`} />
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-2">
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {result.top_tracks.slice(0, 10).map((track, index) => <div key={index} className="flex items-center justify-between p-2 border rounded-lg bg-secondary/20">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">{track.name}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {track.popularity}/100
+                                  </Badge>
+                                  {track.spotify_url && <a href={track.spotify_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                                      View on Spotify
+                                    </a>}
+                                </div>
                               </div>
-                            </div>
-                          </div>)}
-                      </div>
-                    </div>}
+                            </div>)}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
                 </CardContent>
               </Card>
 
