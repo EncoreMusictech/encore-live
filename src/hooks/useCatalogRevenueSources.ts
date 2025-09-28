@@ -25,7 +25,39 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
   const [revenueSources, setRevenueSources] = useState<RevenueSource[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [effectiveCatalogValuationId, setEffectiveCatalogValuationId] = useState<string | null>(catalogValuationId || null);
   const { toast } = useToast();
+
+  // Auto-fetch the most recent catalog valuation if none provided
+  useEffect(() => {
+    const fetchMostRecentValuation = async () => {
+      if (catalogValuationId) {
+        setEffectiveCatalogValuationId(catalogValuationId);
+        return;
+      }
+
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData.user) return;
+
+        const { data, error } = await supabase
+          .from('catalog_valuations')
+          .select('id')
+          .eq('user_id', userData.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!error && data) {
+          setEffectiveCatalogValuationId(data.id);
+        }
+      } catch (error) {
+        console.log('Could not fetch most recent catalog valuation:', error);
+      }
+    };
+
+    fetchMostRecentValuation();
+  }, [catalogValuationId]);
 
   // Fetch revenue sources for a specific catalog valuation
   const fetchRevenueSources = async (valuationId: string) => {
@@ -58,10 +90,10 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
 
   // Add a new revenue source
   const addRevenueSource = async (revenueSource: RevenueSource) => {
-    if (!catalogValuationId) {
+    if (!effectiveCatalogValuationId) {
       toast({
         title: 'Error',
-        description: 'No catalog valuation selected',
+        description: 'No catalog valuation found. Please complete a catalog valuation first.',
         variant: 'destructive',
       });
       return false;
@@ -76,7 +108,7 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
         .from('catalog_revenue_sources')
         .insert({
           ...revenueSource,
-          catalog_valuation_id: catalogValuationId,
+          catalog_valuation_id: effectiveCatalogValuationId,
           user_id: userData.user.id,
         })
         .select()
@@ -189,10 +221,10 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
 
   // Import revenue sources from CSV data
   const importRevenueSources = async (csvData: RevenueSource[]) => {
-    if (!catalogValuationId) {
+    if (!effectiveCatalogValuationId) {
       toast({
         title: 'Error',
-        description: 'No catalog valuation selected',
+        description: 'No catalog valuation found. Please complete a catalog valuation first.',
         variant: 'destructive',
       });
       return false;
@@ -203,11 +235,11 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('User not authenticated');
 
-      const sourcesToInsert = csvData.map(source => ({
-        ...source,
-        catalog_valuation_id: catalogValuationId,
-        user_id: userData.user.id,
-      }));
+        const sourcesToInsert = csvData.map(source => ({
+          ...source,
+          catalog_valuation_id: effectiveCatalogValuationId,
+          user_id: userData.user.id,
+        }));
 
       const { data, error } = await supabase
         .from('catalog_revenue_sources')
@@ -236,12 +268,12 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
     }
   };
 
-  // Load revenue sources when catalogValuationId changes
+  // Load revenue sources when effectiveCatalogValuationId changes
   useEffect(() => {
-    if (catalogValuationId) {
-      fetchRevenueSources(catalogValuationId);
+    if (effectiveCatalogValuationId) {
+      fetchRevenueSources(effectiveCatalogValuationId);
     }
-  }, [catalogValuationId]);
+  }, [effectiveCatalogValuationId]);
 
   return {
     revenueSources,
@@ -252,6 +284,6 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
     deleteRevenueSource,
     importRevenueSources,
     calculateRevenueMetrics,
-    refetch: () => catalogValuationId && fetchRevenueSources(catalogValuationId),
+    refetch: () => effectiveCatalogValuationId && fetchRevenueSources(effectiveCatalogValuationId),
   };
 };
