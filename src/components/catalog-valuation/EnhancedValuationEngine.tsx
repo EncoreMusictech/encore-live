@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, PieChart, Calculator, Target } from 'lucide-react';
+import { TrendingUp, PieChart, Calculator, Target, HelpCircle } from 'lucide-react';
 import { RevenueSource } from '@/hooks/useCatalogRevenueSources';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 interface EnhancedValuationEngineProps {
   baseValuation: {
     risk_adjusted_value?: number;
@@ -110,14 +111,15 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
   const enhancedConfidence = Math.min(baseConfidence + blendedResults.confidenceBoost, 100);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calculator className="h-5 w-5" />
-          Enhanced Valuation Analysis
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <TooltipProvider>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calculator className="h-5 w-5" />
+            Enhanced Valuation Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -131,10 +133,24 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="text-center p-6 border rounded-lg bg-gradient-to-br from-primary/5 to-primary/10">
-                  <div className="text-3xl font-bold text-primary mb-2">
-                    {formatCurrency(blendedResults.blendedValue)}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Enhanced Fair Market Value</div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="cursor-help">
+                        <div className="text-3xl font-bold text-primary mb-2 flex items-center justify-center gap-2">
+                          {formatCurrency(blendedResults.blendedValue)}
+                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="text-sm text-muted-foreground">Enhanced Fair Market Value</div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-medium mb-1">Enhanced Fair Market Value</p>
+                      <p className="text-sm">
+                        Calculated as: (Base Valuation × 70%) + (Additional Revenue Value × 30%) × (1 + Diversification Bonus).
+                        Combines traditional catalog valuation with additional revenue streams using industry-standard multipliers.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                   <Badge variant="secondary" className="mt-2">
                     {blendedResults.baseValue > 0 ? 
                       ((blendedResults.blendedValue / blendedResults.baseValue - 1) * 100).toFixed(1) : 
@@ -144,10 +160,25 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
                 </div>
 
                 <div className="text-center p-4 border rounded-lg">
-                  <div className="text-xl font-bold">
-                    {enhancedConfidence.toFixed(1)}%
-                  </div>
-                  <div className="text-sm text-muted-foreground mb-2">Enhanced Confidence Score</div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="cursor-help">
+                        <div className="text-xl font-bold flex items-center justify-center gap-2">
+                          {enhancedConfidence.toFixed(1)}%
+                          <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                        <div className="text-sm text-muted-foreground mb-2">Enhanced Confidence Score</div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-medium mb-1">Enhanced Confidence Score</p>
+                      <p className="text-sm">
+                        Base confidence score enhanced by additional data quality. Boost calculated from: 
+                        number of revenue sources (up to +25%) + quality weighting (high confidence = +3%, medium = +1.5% each). 
+                        Maximum total boost: +30%.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                   <Progress value={enhancedConfidence} className="h-2" />
                 </div>
               </div>
@@ -158,12 +189,27 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
                     <PieChart className="h-4 w-4" />
                     <span className="font-medium">Revenue Diversification</span>
                   </div>
-                  <div className="text-2xl font-bold mb-1">
-                    {Math.round(revenueMetrics.revenueDiversificationScore * 100)}%
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Diversification Score
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="cursor-help">
+                        <div className="text-2xl font-bold mb-1 flex items-center gap-2">
+                          {Math.round(revenueMetrics.revenueDiversificationScore * 100)}%
+                          <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Diversification Score
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-medium mb-1">Revenue Diversification Score</p>
+                      <p className="text-sm">
+                        Calculated as: (Number of unique revenue types ÷ 9 possible types) × 100%. 
+                        Higher diversification reduces risk and provides up to 20% valuation bonus. 
+                        Maximum 9 revenue types: Streaming, Sync, Performance, Mechanical, Merch, Touring, Publishing, Master Licensing, Other.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                   <Badge variant="outline" className="mt-2">
                     +{blendedResults.diversificationBonus.toFixed(1)}% Valuation Bonus
                   </Badge>
@@ -174,19 +220,50 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
                     <TrendingUp className="h-4 w-4" />
                     <span className="font-medium">Additional Revenue Value</span>
                   </div>
-                  <div className="text-xl font-bold">
-                    {formatCurrency(blendedResults.additionalValue)}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    From {revenueSources.length} additional sources
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="cursor-help">
+                        <div className="text-xl font-bold flex items-center gap-2">
+                          {formatCurrency(blendedResults.additionalValue)}
+                          <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          From {revenueSources.length} additional sources
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-medium mb-1">Additional Revenue Value</p>
+                      <p className="text-sm">
+                        Calculated by applying industry-standard revenue multiples to each revenue type: 
+                        Publishing (18x), Mechanical (15x), Streaming (12x), Master Licensing (12x), 
+                        Performance (10x), Sync (8x), Other (6x), Merchandise (5x), Touring (3x). 
+                        Total value = Sum of (Annual Revenue × Type Multiplier).
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             </div>
 
             {/* Valuation Range */}
             <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-3">Valuation Range Analysis</h4>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h4 className="font-medium mb-3 flex items-center gap-2 cursor-help">
+                    Valuation Range Analysis
+                    <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                  </h4>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-medium mb-1">Valuation Range Analysis</p>
+                  <p className="text-sm">
+                    Conservative: 80% of enhanced valuation (accounts for market volatility).
+                    Fair Market: Full enhanced valuation calculation.
+                    Optimistic: 125% of enhanced valuation (best-case scenario with favorable market conditions).
+                  </p>
+                </TooltipContent>
+              </Tooltip>
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
                   <div className="text-lg font-bold text-red-600">
@@ -362,5 +439,6 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
         </Tabs>
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 };
