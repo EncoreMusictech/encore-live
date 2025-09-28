@@ -272,7 +272,8 @@ class ValuationEngine {
     initialStreams: number, 
     decayRate: number, 
     years: number,
-    streamsToRevenue: number = 0.003
+    streamsToRevenue: number = 0.003,
+    discountRate: number = 0.12
   ): CashFlowProjection[] {
     const projections: CashFlowProjection[] = [];
     
@@ -285,7 +286,7 @@ class ValuationEngine {
         year,
         revenue: Math.floor(revenue),
         growth: growth * 100,
-        discountedValue: revenue / Math.pow(1.12, year) // 12% discount rate
+        discountedValue: revenue / Math.pow(1 + discountRate, year)
       });
     }
     
@@ -566,11 +567,14 @@ const { data: benchmarkData } = await supabase
 
     // Advanced cash flow projections using exponential decay model
     const decayRate = Math.max(0.05, 1 - benchmark.growth_rate_assumption); // Higher decay for lower growth genres
+    const userDiscountRate = valuationParams?.discountRate || 0.12;
+    console.log(`Using discount rate: ${userDiscountRate * 100}%`);
     const cashFlowProjections = ValuationEngine.exponentialDecayForecast(
       estimatedTotalStreams,
       decayRate,
       10, // 10-year projection
-      benchmark.streams_to_revenue_ratio
+      benchmark.streams_to_revenue_ratio,
+      userDiscountRate
     );
 
     // DCF Valuation
