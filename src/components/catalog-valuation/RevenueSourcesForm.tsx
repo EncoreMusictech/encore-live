@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Upload, Download, BarChart3 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
+import { Plus, Trash2, Upload, Download, BarChart3, FileText, AlertTriangle, CheckCircle, Info, HelpCircle } from 'lucide-react';
 import { RevenueSource, useCatalogRevenueSources } from '@/hooks/useCatalogRevenueSources';
 import { useToast } from '@/hooks/use-toast';
+import { RevenueTypeGuide } from '@/components/catalog-valuation/RevenueTypeGuide';
+import { 
+  generateCsvTemplateData, 
+  validateRevenueSourceRow,
+  calculateAdditionalRevenueValuation,
+  REVENUE_TYPE_MULTIPLIERS 
+} from '@/utils/revenueCalculations';
 
 interface RevenueSourcesFormProps {
   catalogValuationId?: string;
@@ -47,6 +57,14 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importData, setImportData] = useState<RevenueSource[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importProgress, setImportProgress] = useState(0);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const revenueTypeOptions = [
     { value: 'streaming', label: 'Streaming Revenue' },
@@ -149,7 +167,239 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
     }).format(amount);
   };
 
+  // Generate CSV template using utility function
+  const generateCsvTemplate = () => {
+    const { csvContent } = generateCsvTemplateData();
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'revenue_sources_template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: 'Template Downloaded',
+      description: 'Revenue sources template with sample data has been downloaded',
+    });
+  };
+
+  // Parse CSV file with enhanced validation
+  const parseCsvFile = (file: File): Promise<RevenueSource[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const csv = e.target?.result as string;
+          const lines = csv.split('\n').filter(line => line.trim());
+          
+          if (lines.length < 2) {
+            reject(new Error('CSV file must contain at least a header row and one data row'));
+            return;
+          }
+
+          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+          const { headers: expectedHeaders } = generateCsvTemplateData();
+
+          // Validate headers
+          const missingHeaders = expectedHeaders.filter(h => !headers.includes(h));
+          if (missingHeaders.length > 0) {
+            reject(new Error(`Missing required headers: ${missingHeaders.join(', ')}`));
+            return;
+          }
+
+          const data: RevenueSource[] = [];
+          const allErrors: string[] = [];
+
+          for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+            const row: any = {};
+            
+            headers.forEach((header, index) => {
+              row[header] = values[index] || '';
+            });
+
+            // Use enhanced validation
+            const validation = validateRevenueSourceRow(row, i + 1);
+            
+            if (!validation.isValid) {
+              allErrors.push(...validation.errors);
+            } else {
+              // Transform data
+              const revenueSource: RevenueSource = {
+                revenue_type: row.revenue_type as RevenueSource['revenue_type'],
+                revenue_source: row.revenue_source,
+                annual_revenue: parseFloat(row.annual_revenue) || 0,
+                currency: row.currency || 'USD',
+                growth_rate: parseFloat(row.growth_rate) || 0,
+                confidence_level: row.confidence_level as RevenueSource['confidence_level'],
+                start_date: row.start_date || undefined,
+                end_date: row.end_date || undefined,
+                is_recurring: row.is_recurring?.toLowerCase() === 'true',
+                notes: row.notes || undefined,
+              };
+
+              data.push(revenueSource);
+            }
+          }
+
+          if (allErrors.length > 0) {
+            setImportErrors(allErrors);
+          }
+
+          resolve(data);
+        } catch (err) {
+          reject(new Error('Failed to parse CSV file: ' + (err instanceof Error ? err.message : 'Unknown error')));
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
+    });
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Please select a CSV file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setImportFile(file);
+    setImportErrors([]);
+    
+    try {
+      setImportProgress(25);
+      const data = await parseCsvFile(file);
+      setImportProgress(50);
+      setImportData(data);
+      setImportProgress(100);
+      
+      if (data.length === 0) {
+        toast({
+          title: 'No Valid Data',
+          description: 'No valid revenue sources found in the CSV file',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'File Processed',
+          description: `Found ${data.length} valid revenue source${data.length === 1 ? '' : 's'}`,
+        });
+      }
+    } catch (err) {
+      toast({
+        title: 'Import Error',
+        description: err instanceof Error ? err.message : 'Failed to process CSV file',
+        variant: 'destructive',
+      });
+      setImportErrors([err instanceof Error ? err.message : 'Unknown error']);
+    }
+  };
+
+  // Execute import
+  const handleImport = async () => {
+    if (!importData.length) return;
+
+    setIsImporting(true);
+    const success = await importRevenueSources(importData);
+    
+    if (success) {
+      setShowImportDialog(false);
+      setImportFile(null);
+      setImportData([]);
+      setImportErrors([]);
+      setImportProgress(0);
+      
+      // Update metrics
+      if (onMetricsUpdate) {
+        setTimeout(() => {
+          const metrics = calculateRevenueMetrics();
+          onMetricsUpdate(metrics);
+        }, 100);
+      }
+      
+      // Trigger valuation update
+      if (onValuationUpdate) {
+        setTimeout(() => {
+          onValuationUpdate();
+        }, 200);
+      }
+    }
+    setIsImporting(false);
+  };
+
+  // Export current data to CSV
+  const exportToCsv = () => {
+    if (revenueSources.length === 0) {
+      toast({
+        title: 'No Data',
+        description: 'No revenue sources to export',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const headers = [
+      'revenue_type', 'revenue_source', 'annual_revenue', 'currency',
+      'growth_rate', 'confidence_level', 'start_date', 'end_date',
+      'is_recurring', 'notes'
+    ];
+
+    const csvData = [
+      headers,
+      ...revenueSources.map(source => [
+        source.revenue_type,
+        source.revenue_source,
+        source.annual_revenue.toString(),
+        source.currency,
+        source.growth_rate.toString(),
+        source.confidence_level,
+        source.start_date || '',
+        source.end_date || '',
+        source.is_recurring.toString(),
+        source.notes || ''
+      ])
+    ];
+
+    const csvContent = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `revenue_sources_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: 'Export Complete',
+      description: 'Revenue sources exported successfully',
+    });
+  };
+
   const metrics = calculateRevenueMetrics();
+  
+  // Calculate enhanced valuation metrics
+  const enhancedMetrics = calculateAdditionalRevenueValuation(
+    revenueSources.map(source => ({
+      revenue_type: source.revenue_type,
+      annual_revenue: source.annual_revenue,
+      confidence_level: source.confidence_level,
+      is_recurring: source.is_recurring
+    }))
+  );
 
   return (
     <div className="space-y-6">
@@ -162,12 +412,18 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="text-center p-4 border rounded-lg">
               <div className="text-2xl font-bold text-primary">
                 {formatCurrency(metrics.totalAdditionalRevenue)}
               </div>
               <div className="text-sm text-muted-foreground">Total Additional Revenue</div>
+            </div>
+            <div className="text-center p-4 border rounded-lg">
+              <div className="text-2xl font-bold text-primary">
+                {formatCurrency(enhancedMetrics.totalValuation)}
+              </div>
+              <div className="text-sm text-muted-foreground">Enhanced Valuation</div>
             </div>
             <div className="text-center p-4 border rounded-lg">
               <div className="text-2xl font-bold text-primary">
@@ -188,14 +444,194 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
               <Plus className="h-4 w-4" />
               Add Revenue Source
             </Button>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              Import CSV
+
+            <Button 
+              variant="outline" 
+              onClick={() => setShowGuide(true)} 
+              className="flex items-center gap-2"
+            >
+              <HelpCircle className="h-4 w-4" />
+              Revenue Guide
             </Button>
-            <Button variant="outline" className="flex items-center gap-2">
+            
+            <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Import CSV
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Import Revenue Sources
+                  </DialogTitle>
+                  <DialogDescription>
+                    Import additional revenue sources from a CSV file to enhance your catalog valuation
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-6">
+                  {/* Template Download */}
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Need a Template?</AlertTitle>
+                    <AlertDescription className="mt-2">
+                      Download our CSV template with sample data to get started quickly.
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={generateCsvTemplate}
+                        className="ml-2"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download Template
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+
+                  {/* File Upload */}
+                  <div className="space-y-2">
+                    <Label htmlFor="csv-file">Select CSV File</Label>
+                    <Input
+                      id="csv-file"
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileUpload}
+                      ref={fileInputRef}
+                    />
+                    {importFile && (
+                      <p className="text-sm text-muted-foreground">
+                        Selected: {importFile.name} ({(importFile.size / 1024).toFixed(1)} KB)
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Progress Bar */}
+                  {importProgress > 0 && importProgress < 100 && (
+                    <div className="space-y-2">
+                      <Label>Processing...</Label>
+                      <Progress value={importProgress} />
+                    </div>
+                  )}
+
+                  {/* Import Errors */}
+                  {importErrors.length > 0 && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Import Errors</AlertTitle>
+                      <AlertDescription>
+                        <div className="mt-2 space-y-1">
+                          {importErrors.slice(0, 5).map((error, index) => (
+                            <div key={index} className="text-sm">• {error}</div>
+                          ))}
+                          {importErrors.length > 5 && (
+                            <div className="text-sm text-muted-foreground">
+                              ... and {importErrors.length - 5} more errors
+                            </div>
+                          )}
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Preview Data */}
+                  {importData.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Preview ({importData.length} revenue sources)</Label>
+                      <div className="max-h-40 overflow-y-auto border rounded-lg p-3 space-y-2">
+                        {importData.slice(0, 3).map((source, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                            <div>
+                              <span className="font-medium">{source.revenue_source}</span>
+                              <Badge variant="outline" className="ml-2">
+                                {revenueTypeOptions.find(opt => opt.value === source.revenue_type)?.label}
+                              </Badge>
+                            </div>
+                            <span className="text-sm font-medium">
+                              {formatCurrency(source.annual_revenue)}
+                            </span>
+                          </div>
+                        ))}
+                        {importData.length > 3 && (
+                          <div className="text-sm text-muted-foreground text-center">
+                            ... and {importData.length - 3} more sources
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Revenue Type Multipliers Info */}
+                  <Alert>
+                    <BarChart3 className="h-4 w-4" />
+                    <AlertTitle>Enhanced Valuation Impact</AlertTitle>
+                    <AlertDescription>
+                      <div className="mt-2 text-sm space-y-2">
+                        <p>These revenue sources will enhance your valuation using industry multipliers:</p>
+                        <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                          {Object.entries(REVENUE_TYPE_MULTIPLIERS)
+                            .sort(([,a], [,b]) => b.multiplier - a.multiplier)
+                            .slice(0, 6)
+                            .map(([key, multiplier]) => (
+                            <div key={key}>• {multiplier.label}: {multiplier.multiplier}x</div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Final valuation = (Base × 0.7) + (Additional Revenue × 0.3) + Diversification Bonus
+                        </p>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowImportDialog(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleImport}
+                      disabled={importData.length === 0 || isImporting || importErrors.length > 0}
+                    >
+                      {isImporting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Importing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Import {importData.length} Sources
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Button variant="outline" onClick={exportToCsv} className="flex items-center gap-2">
               <Download className="h-4 w-4" />
               Export Data
             </Button>
+          </div>
+
+          {/* Revenue Type Guide Dialog */}
+          <Dialog open={showGuide} onOpenChange={setShowGuide}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Revenue Types & Valuation Guide</DialogTitle>
+                <DialogDescription>
+                  Understand how different revenue types impact your catalog valuation
+                </DialogDescription>
+              </DialogHeader>
+              <RevenueTypeGuide currentRevenueSources={revenueSources} />
+            </DialogContent>
+          </Dialog>
           </div>
 
           {/* Add/Edit Form */}
