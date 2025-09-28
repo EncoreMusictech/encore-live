@@ -137,6 +137,29 @@ interface ValuationParams {
   cagr?: number;
 }
 const CatalogValuation = memo(() => {
+  // Helper function to get default CAGR based on genre
+  const getDefaultCAGR = useCallback((genre?: string) => {
+    // Industry benchmark CAGR rates by genre (annual %)
+    const genreCAGRs: Record<string, number> = {
+      'hip-hop': 8.0,
+      'r&b': 7.0,
+      'pop': 5.0,
+      'electronic': 6.0,
+      'country': 4.0,
+      'rock': 3.0,
+      'alternative': 4.0,
+      'folk': 3.0,
+      'classical': 2.0,
+      'jazz': 2.0
+    };
+    
+    if (genre) {
+      const normalizedGenre = genre.toLowerCase().replace(/\s+/g, '-');
+      return genreCAGRs[normalizedGenre] || 5.0; // Default to 5% if genre not found
+    }
+    return 5.0; // Default CAGR if no genre
+  }, []);
+
   const [artistName, setArtistName] = useState("");
   const [result, setResult] = useState<ValuationResult | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<"pessimistic" | "base" | "optimistic">("base");
@@ -149,7 +172,7 @@ const CatalogValuation = memo(() => {
     catalogAge: 5,
     methodology: 'advanced',
     territory: 'global',
-    cagr: 5 // Default 5%, will be updated based on genre
+    cagr: 5.0 // Default CAGR
   });
   const {
     revenueSources,
@@ -182,6 +205,26 @@ const CatalogValuation = memo(() => {
     loading: aiLoading,
     generateReport
   } = useReportAI();
+
+  // Update CAGR when industry benchmarks are available
+  React.useEffect(() => {
+    if (result?.industry_benchmarks?.growth_assumption && !valuationParams.cagr) {
+      // Only auto-update if user hasn't manually set a CAGR value
+      const industryCAGR = result.industry_benchmarks.growth_assumption * 100; // Convert to percentage
+      setValuationParams(prev => ({
+        ...prev,
+        cagr: industryCAGR
+      }));
+    } else if (result?.genre && !result?.industry_benchmarks && valuationParams.cagr === 5.0) {
+      // Fallback to our default genre-based CAGR if no industry benchmarks
+      const defaultCAGR = getDefaultCAGR(result.genre);
+      setValuationParams(prev => ({
+        ...prev,
+        cagr: defaultCAGR
+      }));
+    }
+  }, [result?.industry_benchmarks, result?.genre, getDefaultCAGR, valuationParams.cagr]);
+
   const handleSearch = useCallback(async () => {
     console.log("=== SEARCH STARTED ===");
     console.log("Artist name:", artistName);
@@ -211,10 +254,7 @@ const CatalogValuation = memo(() => {
         console.log("Calling advanced Spotify catalog valuation function...");
         const requestBody = {
           artistName: artistName.trim(),
-          valuationParams: {
-            ...valuationParams,
-            cagr: valuationParams.cagr || 5
-          },
+          valuationParams,
           catalogValuationId,
           userId: user?.id
         };
@@ -365,40 +405,6 @@ const CatalogValuation = memo(() => {
       currency: 'USD'
     }).format(amount);
   }, []);
-
-  // Get default CAGR based on genre industry benchmarks
-  const getDefaultCAGRByGenre = useCallback((genre: string): number => {
-    const genreCAGRMap: Record<string, number> = {
-      'hip-hop': 8,
-      'r&b': 7,
-      'pop': 5,
-      'electronic': 6,
-      'country': 4,
-      'rock': 3,
-      'alternative': 4,
-      'folk': 3,
-      'classical': 2,
-      'jazz': 2
-    };
-    return genreCAGRMap[genre?.toLowerCase()] || 5;
-  }, []);
-
-  // Update CAGR when result changes
-  React.useEffect(() => {
-    if (result?.genre && result.industry_benchmarks?.growth_assumption) {
-      const industryCAGR = result.industry_benchmarks.growth_assumption * 100;
-      setValuationParams(prev => ({
-        ...prev,
-        cagr: industryCAGR
-      }));
-    } else if (result?.genre) {
-      const defaultCAGR = getDefaultCAGRByGenre(result.genre);
-      setValuationParams(prev => ({
-        ...prev,
-        cagr: defaultCAGR
-      }));
-    }
-  }, [result?.genre, result?.industry_benchmarks, getDefaultCAGRByGenre]);
   const generateAdvancedReport = useCallback(() => {
     if (!result) return;
     const reportText = `
@@ -937,7 +943,7 @@ Actual market values may vary significantly based on numerous factors not captur
             </Button>
           </div>
 
-          {showAdvancedInputs && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-secondary/30">
+          {showAdvancedInputs && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-4 border rounded-lg bg-secondary/30">
               <div className="space-y-2">
                 <Label htmlFor="territory">Territory Focus</Label>
                 <Select value={valuationParams.territory || 'global'} onValueChange={(value: 'global' | 'us-only' | 'international') => setValuationParams(prev => ({
@@ -982,6 +988,27 @@ Actual market values may vary significantly based on numerous factors not captur
                 ...prev,
                 catalogAge: parseInt(e.target.value)
               }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cagr">Expected CAGR (%)</Label>
+                <Input 
+                  id="cagr" 
+                  type="number" 
+                  min="0" 
+                  max="20" 
+                  step="0.5" 
+                  value={valuationParams.cagr || 5.0} 
+                  onChange={e => setValuationParams(prev => ({
+                    ...prev,
+                    cagr: parseFloat(e.target.value)
+                  }))} 
+                  placeholder="Industry benchmark"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {result?.industry_benchmarks?.genre ? 
+                    `${result.industry_benchmarks.genre} industry avg: ${(result.industry_benchmarks.growth_assumption * 100).toFixed(1)}%` 
+                    : 'Industry benchmark will auto-populate'}
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="methodology">Valuation Method</Label>
@@ -1408,66 +1435,6 @@ Actual market values may vary significantly based on numerous factors not captur
             </TabsContent>
 
             <TabsContent value="forecasts" className="space-y-6">
-              {/* CAGR Input Controls */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Growth Assumptions</CardTitle>
-                  <CardDescription>
-                    Adjust the Compound Annual Growth Rate (CAGR) based on your market expectations
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cagr">CAGR (%)</Label>
-                      <Input
-                        id="cagr"
-                        type="number"
-                        min="0"
-                        max="50"
-                        step="0.1"
-                        value={valuationParams.cagr || 5}
-                        onChange={(e) => setValuationParams(prev => ({
-                          ...prev,
-                          cagr: parseFloat(e.target.value) || 5
-                        }))}
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Industry Benchmark</Label>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium">
-                          {result?.industry_benchmarks ? 
-                            `${(result.industry_benchmarks.growth_assumption * 100).toFixed(1)}%` : 
-                            result?.genre ? `${getDefaultCAGRByGenre(result.genre)}%` : 'N/A'
-                          }
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          ({result?.genre || 'Unknown'} genre)
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Current Setting</Label>
-                      <div className="text-sm">
-                        <span className="font-medium text-primary">
-                          {valuationParams.cagr?.toFixed(1)}%
-                        </span>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {(valuationParams.cagr || 5) > (result?.industry_benchmarks?.growth_assumption ? result.industry_benchmarks.growth_assumption * 100 : getDefaultCAGRByGenre(result?.genre || '')) ?
-                            'Above industry benchmark' :
-                            (valuationParams.cagr || 5) < (result?.industry_benchmarks?.growth_assumption ? result.industry_benchmarks.growth_assumption * 100 : getDefaultCAGRByGenre(result?.genre || '')) ?
-                            'Below industry benchmark' :
-                            'At industry benchmark'
-                          }
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Traditional Forecast Analysis */}
               <Card>
                 <CardHeader>
