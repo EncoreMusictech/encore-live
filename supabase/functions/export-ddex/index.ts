@@ -318,7 +318,7 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to generate DDEX export' 
+        error: error instanceof Error ? error.message : 'Failed to generate DDEX export' 
       }),
       {
         status: 500,

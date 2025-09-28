@@ -387,7 +387,7 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to generate CWR export' 
+        error: error instanceof Error ? error.message : 'Failed to generate CWR export' 
       }),
       {
         status: 500,

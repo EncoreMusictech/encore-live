@@ -502,7 +502,7 @@ serve(async (req) => {
     console.error('Error generating payout statement:', error);
     return new Response(JSON.stringify({ 
       error: 'Failed to generate statement',
-      details: error.message 
+      details: error instanceof Error ? error.message : 'Unknown error' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

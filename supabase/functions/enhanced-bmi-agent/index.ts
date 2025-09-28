@@ -384,7 +384,7 @@ Always prioritize verified database information over training data.`;
       found: false,
       source: 'agent_search',
       confidence: 0,
-      verification_notes: `Agent search failed: ${error.message}`
+      verification_notes: `Agent search failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
   }
 }
@@ -421,8 +421,7 @@ async function getCachedResult(searchKey: string, supabase: any): Promise<BMISea
         iswc: iswcData.iswc,
         found: true,
         source: 'cache',
-        confidence: iswcData.verification_confidence || 85,
-        iswcSource: 'verified_cache'
+        confidence: iswcData.verification_confidence || 85
       };
     }
 
@@ -432,8 +431,7 @@ async function getCachedResult(searchKey: string, supabase: any): Promise<BMISea
       iswc: data.iswc,
       found: data.bmi_verified || false,
       source: 'cache',
-      confidence: data.verification_confidence || 0,
-      iswcSource: data.metadata_source || 'cache'
+      confidence: data.verification_confidence || 0
     };
   } catch (error) {
     console.error('Cache lookup error:', error);
@@ -480,7 +478,7 @@ async function cleanupOldCacheEntries(searchKey: string, supabase: any): Promise
 
     // Delete entries beyond the 3 most recent
     const entriesToDelete = allEntries.slice(3);
-    const idsToDelete = entriesToDelete.map(entry => entry.id);
+    const idsToDelete = entriesToDelete.map((entry: any) => entry.id);
 
     if (idsToDelete.length > 0) {
       const { error: deleteError } = await supabase
@@ -548,7 +546,7 @@ serve(async (req) => {
     console.error('Enhanced BMI Agent error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         writers: [],
         publishers: [],
         found: false,

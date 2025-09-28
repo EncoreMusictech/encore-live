@@ -86,7 +86,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in encore-chatbot function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Internal server error',
+      error: error instanceof Error ? error.message : 'Internal server error',
       message: 'I apologize, but I\'m experiencing technical difficulties. Please try again or contact our support team directly.'
     }), {
       status: 500,

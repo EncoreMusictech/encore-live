@@ -458,7 +458,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Enhanced MLC lookup error:', error);
     return json({ 
-      error: error.message || 'Unexpected error during enhanced MLC lookup',
+      error: error instanceof Error ? error.message : 'Unexpected error during enhanced MLC lookup',
       found: false,
       writers: [],
       publishers: [],

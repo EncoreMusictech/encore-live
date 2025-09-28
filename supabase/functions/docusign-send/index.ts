@@ -125,7 +125,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in docusign-send function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'An unexpected error occurred',
+      error: error instanceof Error ? error.message : 'An unexpected error occurred',
       success: false
     }), {
       status: 500,

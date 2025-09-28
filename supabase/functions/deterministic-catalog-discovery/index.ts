@@ -308,13 +308,15 @@ serve(async (req) => {
     for (const w of selected) {
       // Respect rate limits
       await new Promise((res) => setTimeout(res, 300));
+      
+      const work = w as any; // Type assertion for work object
 
-      let title = (w.title || 'Untitled');
-      let finalISWC: string | null = (w.iswc as string) || null;
+      let title = (work.title || 'Untitled');
+      let finalISWC: string | null = (work.iswc as string) || null;
       let coWritersMB: string[] = [];
 
-      if (w.id) {
-        const details = await getWorkDetails(w.id);
+      if (work.id) {
+        const details = await getWorkDetails(work.id);
         if (details) {
           title = details?.title || title;
           finalISWC = (details?.iswcs && details.iswcs[0]) || finalISWC;
@@ -325,7 +327,7 @@ serve(async (req) => {
         }
       }
 
-      const proDetails = (w.proDetails || {}) as Record<string, any>;
+      const proDetails = (work.proDetails || {}) as Record<string, any>;
       const proOrder = ['ascap','bmi','sesac'];
       const chosen = proOrder.find((k) => !!proDetails[k]) || null;
       const chosenDetails = chosen ? proDetails[chosen] : null;
@@ -385,7 +387,7 @@ serve(async (req) => {
       if (!finalISWC) registration_gaps.push('missing_iswc');
 
       // MB author present but no PRO registration
-      const hasMB = Array.isArray(w.sources) && w.sources.includes('musicbrainz');
+      const hasMB = Array.isArray(work.sources) && work.sources.includes('musicbrainz');
       const hasAnyPRO = proFlags.ASCAP || proFlags.BMI || proFlags.SESAC;
       if (hasMB && !hasAnyPRO) registration_gaps.push('unregistered_in_pros');
 
@@ -394,8 +396,8 @@ serve(async (req) => {
       if (presentPROs.length >= 2) {
         // writers conflict
         const sets = presentPROs.map((k) => new Set((proDetails[k].writers || []).map((x: any) => (x?.name || '').toLowerCase()).filter(Boolean)));
-        const union = new Set<string>(); sets.forEach((s) => s.forEach((v) => union.add(v)));
-        const allEqual = sets.every((s) => s.size === union.size && Array.from(s).every((v) => union.has(v)));
+        const union = new Set<string>(); sets.forEach((s) => s.forEach((v) => union.add(v as string)));
+        const allEqual = sets.every((s) => s.size === union.size && Array.from(s).every((v) => union.has(v as string)));
         if (!allEqual) registration_gaps.push('conflicting_writers');
 
         // splits conflict
@@ -413,8 +415,8 @@ serve(async (req) => {
 
         // publishers conflict
         const pubSets = presentPROs.map((k) => new Set((proDetails[k].publishers || []).map((p: any) => (p?.name || '').toLowerCase()).filter(Boolean)));
-        const pubUnion = new Set<string>(); pubSets.forEach((s) => s.forEach((v) => pubUnion.add(v)));
-        const pubsAllEqual = pubSets.every((s) => s.size === pubUnion.size && Array.from(s).every((v) => pubUnion.has(v)));
+        const pubUnion = new Set<string>(); pubSets.forEach((s) => s.forEach((v) => pubUnion.add(v as string)));
+        const pubsAllEqual = pubSets.every((s) => s.size === pubUnion.size && Array.from(s).every((v) => pubUnion.has(v as string)));
         if (!pubsAllEqual) registration_gaps.push('conflicting_publishers');
       }
 
@@ -435,7 +437,7 @@ serve(async (req) => {
         metadata_completeness_score: metadataScore,
         verification_status,
         last_verified_at: new Date().toISOString(),
-        source_data: { source: Array.isArray(w.sources) ? (w.sources[0] || 'merged') : 'merged', work_id: w.id || null, primary_territory: primaryTerritory }
+        source_data: { source: Array.isArray(work.sources) ? (work.sources[0] || 'merged') : 'merged', work_id: work.id || null, primary_territory: primaryTerritory }
       });
     }
 
