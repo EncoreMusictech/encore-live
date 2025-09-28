@@ -632,7 +632,6 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
               <RevenueTypeGuide currentRevenueSources={revenueSources} />
             </DialogContent>
           </Dialog>
-          </div>
 
           {/* Add/Edit Form */}
           {showForm && (
