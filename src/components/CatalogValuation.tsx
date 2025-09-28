@@ -1123,10 +1123,10 @@ Actual market values may vary significantly based on numerous factors not captur
 
             <TabsContent value="overview" className="space-y-6">
               {/* Data Accuracy Disclaimer */}
-              <Alert className="border-blue-200 bg-blue-50">
-                <Eye className="h-4 w-4" />
-                <AlertDescription className="text-sm font-medium leading-relaxed text-gray-800">
-                  <strong className="font-semibold text-gray-900">Data Accuracy Notice:</strong> This valuation combines direct Spotify data (followers, popularity scores, genres) with proprietary estimates (streams, revenue calculations) and industry benchmarks. All financial projections are estimates based on modeling assumptions and should not be considered as investment advice or guaranteed values.
+              <Alert className="border-yellow-400 bg-gray-900 text-white">
+                <Eye className="h-4 w-4 text-yellow-400" />
+                <AlertDescription className="text-sm font-medium leading-relaxed text-white">
+                  <strong className="font-semibold text-red-400">Data Accuracy Notice:</strong> This valuation combines direct Spotify data (followers, popularity scores, genres) with proprietary estimates (streams, revenue calculations) and industry benchmarks. All financial projections are estimates based on modeling assumptions and should not be considered as investment advice or guaranteed values.
                 </AlertDescription>
               </Alert>
 
