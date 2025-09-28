@@ -21,7 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft, ChevronDown } from "lucide-react";
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, Area, AreaChart, ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar } from 'recharts';
 import { CatalogValuationSkeleton, AsyncLoading } from "@/components/LoadingStates";
 import { usePDFGeneration } from "@/hooks/usePDFGeneration";
@@ -147,6 +148,7 @@ const CatalogValuation = memo(() => {
   const [catalogValuationId, setCatalogValuationId] = useState<string | null>(null);
   const [revenueMetrics, setRevenueMetrics] = useState<any>(null);
   const [customCagr, setCustomCagr] = useState<number>(5);
+  const [isCagrSectionOpen, setIsCagrSectionOpen] = useState(true);
   const [valuationParams, setValuationParams] = useState<ValuationParams>({
     discountRate: 0.12,
     catalogAge: 5, // Will be overridden by calculated age
@@ -1571,68 +1573,81 @@ Actual market values may vary significantly based on numerous factors not captur
                 <CardContent>
                   <div className="space-y-4">
                     {/* CAGR Control Slider */}
-                    <div className="p-6 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Label className="text-base font-semibold">Growth Rate (CAGR)</Label>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Compound Annual Growth Rate - Industry benchmark: {getDefaultCagr}%
-                              {customCagr !== getDefaultCagr && (
-                                <span className="ml-2 text-primary font-medium">
-                                  (Custom: {customCagr.toFixed(1)}%)
-                                </span>
-                              )}
-                            </p>
+                    <Collapsible open={isCagrSectionOpen} onOpenChange={setIsCagrSectionOpen}>
+                      <CollapsibleTrigger className="w-full">
+                        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border hover:bg-gradient-to-r hover:from-primary/10 hover:to-secondary/10 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold">Growth Rate Controls</h3>
+                            <Badge variant="secondary">CAGR</Badge>
                           </div>
-                          <div className="text-right">
-                            <span className="text-2xl font-bold text-primary">{customCagr.toFixed(1)}%</span>
-                            <p className="text-xs text-muted-foreground">Current Rate</p>
+                          <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${isCagrSectionOpen ? 'rotate-180' : ''}`} />
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-4">
+                        <div className="p-6 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border border-t-0 rounded-t-none">
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <Label className="text-base font-semibold">Growth Rate (CAGR)</Label>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  Compound Annual Growth Rate - Industry benchmark: {getDefaultCagr}%
+                                  {customCagr !== getDefaultCagr && (
+                                    <span className="ml-2 text-primary font-medium">
+                                      (Custom: {customCagr.toFixed(1)}%)
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-2xl font-bold text-primary">{customCagr.toFixed(1)}%</span>
+                                <p className="text-xs text-muted-foreground">Current Rate</p>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Slider
+                                value={[customCagr]}
+                                onValueChange={([value]) => setCustomCagr(value)}
+                                max={20}
+                                min={-5}
+                                step={0.1}
+                                className="w-full"
+                              />
+                              <div className="flex justify-between text-xs text-muted-foreground px-1">
+                                <span>-5%</span>
+                                <span>0%</span>
+                                <span>5%</span>
+                                <span>10%</span>
+                                <span>15%</span>
+                                <span>20%</span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-xs">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCustomCagr(getDefaultCagr)}
+                                className="h-7 text-xs"
+                              >
+                                Reset to Industry Benchmark
+                              </Button>
+                              <div className="flex gap-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  Conservative: 0-3%
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  Market: 4-8%
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  Aggressive: 9%+
+                                </Badge>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Slider
-                            value={[customCagr]}
-                            onValueChange={([value]) => setCustomCagr(value)}
-                            max={20}
-                            min={-5}
-                            step={0.1}
-                            className="w-full"
-                          />
-                          <div className="flex justify-between text-xs text-muted-foreground px-1">
-                            <span>-5%</span>
-                            <span>0%</span>
-                            <span>5%</span>
-                            <span>10%</span>
-                            <span>15%</span>
-                            <span>20%</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 text-xs">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCustomCagr(getDefaultCagr)}
-                            className="h-7 text-xs"
-                          >
-                            Reset to Industry Benchmark
-                          </Button>
-                          <div className="flex gap-1">
-                            <Badge variant="secondary" className="text-xs">
-                              Conservative: 0-3%
-                            </Badge>
-                            <Badge variant="secondary" className="text-xs">
-                              Market: 4-8%
-                            </Badge>
-                            <Badge variant="secondary" className="text-xs">
-                              Aggressive: 9%+
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      </CollapsibleContent>
+                    </Collapsible>
 
                     <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/30 rounded-lg">
                       <div>
