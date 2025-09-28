@@ -41,13 +41,13 @@ serve(async (req) => {
     - Average per Royalty: $${dataSummary.averagePerRoyalty.toFixed(2)}
 
     Quarterly Performance:
-    ${dataSummary.quarterlyTrends.map(q => `- ${q.quarter}: $${q.amount.toLocaleString()}`).join('\n')}
+    ${dataSummary.quarterlyTrends.map((q: any) => `- ${q.quarter}: $${q.amount.toLocaleString()}`).join('\n')}
 
     Controlled Status Distribution:
-    ${dataSummary.controlledDistribution.map(c => `- ${c.name}: $${c.value.toLocaleString()}`).join('\n')}
+    ${dataSummary.controlledDistribution.map((c: any) => `- ${c.name}: $${c.value.toLocaleString()}`).join('\n')}
 
     Top Performing Songs:
-    ${dataSummary.topSongs.map((s, i) => `${i + 1}. ${s.song}: $${s.amount.toLocaleString()}`).join('\n')}
+    ${dataSummary.topSongs.map((s: any, i: number) => `${i + 1}. ${s.song}: $${s.amount.toLocaleString()}`).join('\n')}
 
     Applied Filters: ${Object.entries(dataSummary.appliedFilters).filter(([k, v]) => v !== 'all').map(([k, v]) => `${k}: ${v}`).join(', ') || 'None'}
 

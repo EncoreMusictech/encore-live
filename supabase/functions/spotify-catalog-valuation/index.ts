@@ -261,8 +261,8 @@ async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): 
   }
   
   // If no genre data available, return 'pop' as default
-  console.log(`No genre data found, defaulting to pop`);
-  return 'pop';
+    console.log(`No genre data found, using 'unknown' genre`);
+    return 'unknown';
 }
 
 // Advanced mathematical models
@@ -990,7 +990,7 @@ if (primaryGenre) {
         artist_id: artist.id,
         genres: artist.genres,
         popularity: artist.popularity,
-        followers: artist.followers.total
+        followers: artist.followers.total // Real data from Spotify API
       },
       // Traditional metrics
       forecasts,
@@ -1002,26 +1002,38 @@ if (primaryGenre) {
         industry_growth: benchmark.growth_rate_assumption * 100,
         base_multiple: benchmark.revenue_multiple_avg
       },
-// Advanced valuation metrics
-ltm_revenue: Math.floor(ltmRevenue),
-catalog_age_years: catalogAge,
-genre: primaryGenre,
-primary_genre: primaryGenre,
-popularity_score: artist.popularity,
-discount_rate: valuationParams?.discountRate || 0.12,
+      // Advanced valuation metrics
+      ltm_revenue: Math.floor(ltmRevenue),
+      catalog_age_years: catalogAge,
+      genre: primaryGenre,
+      primary_genre: primaryGenre,
+      popularity_score: artist.popularity,
+      discount_rate: valuationParams?.discountRate || 0.12,
       dcf_valuation: dcfValuation,
       multiple_valuation: multipleValuation,
       risk_adjusted_value: riskAdjustedValue,
       confidence_score: enhancedConfidenceScore,
       valuation_methodology: revenueSources.length > 0 ? 'enhanced_blended_valuation' : 'advanced_dcf_with_risk_adjustment',
       
-      // Enhanced Valuation Data
+  // Enhanced Valuation Data
       has_additional_revenue: revenueSources.length > 0,
       total_additional_revenue: totalAdditionalRevenue,
       revenue_diversification_score: revenueDiversificationScore,
       blended_valuation: enhancedValuation.blendedValue,
       valuation_methodology_v2: revenueSources.length > 0 ? 'enhanced' : 'basic',
       cash_flow_projections: cashFlowProjections.slice(0, 5),
+      data_quality: {
+        data_sources: 'Real-time Spotify API data for artist metrics, industry benchmarks estimated',
+        follower_data_note: 'Follower count is actual data from Spotify API, not monthly listeners',
+        stream_estimates_note: 'Stream counts are estimated based on popularity and industry averages',
+        valuation_disclaimer: 'Valuations are estimates for informational purposes only, not investment advice',
+        confidence_factors: [
+          'Real Spotify follower data available',
+          artist.genres.length > 0 ? 'Artist genre data available' : 'Genre classification estimated',
+          artist.popularity > 50 ? 'High artist popularity score' : 'Limited popularity data',
+          'Industry benchmarks based on public market data'
+        ]
+      },
       industry_benchmarks: {
         genre: benchmark.genre,
         revenue_multiple: benchmark.revenue_multiple_avg,
@@ -1031,10 +1043,8 @@ discount_rate: valuationParams?.discountRate || 0.12,
       comparable_multiples: {
         ev_revenue_multiple: benchmark.revenue_multiple_avg,
         peer_average_multiple: benchmark.revenue_multiple_avg * 1.1,
-      market_premium_discount: artist.popularity > 80 ? 1.15 : artist.popularity < 40 ? 0.85 : 1.0
-    },
-    territory_focus: territory,
-    territory_multiplier: territoryBenchmarkAdjustment,
+        market_premium_discount: artist.popularity > 80 ? 1.15 : artist.popularity < 40 ? 0.85 : 1.0
+      }
   };
 
   console.log(`Advanced valuation complete - DCF: $${dcfValuation}, Multiple: $${multipleValuation}, Risk-Adjusted: $${riskAdjustedValue}`);

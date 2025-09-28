@@ -160,7 +160,7 @@ serve(async (req) => {
     console.error('Error in spotify-track-metadata function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Internal server error',
+        error: (error as Error).message || 'Internal server error',
         success: false
       }),
       {

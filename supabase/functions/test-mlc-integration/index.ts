@@ -40,7 +40,7 @@ async function getMlcAccessToken() {
     return { success: true, token: data.access_token, data };
   } catch (error) {
     console.error('Error getting MLC access token:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -75,7 +75,7 @@ async function testMlcLookup(accessToken: string) {
     return { success: true, data };
   } catch (error) {
     console.error('Error in MLC lookup:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -116,7 +116,7 @@ serve(async (req) => {
     console.error('Test failed:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: (error as Error).message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
