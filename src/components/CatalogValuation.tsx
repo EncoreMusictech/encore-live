@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft } from "lucide-react";
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, Area, AreaChart, ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar } from 'recharts';
 import { CatalogValuationSkeleton, AsyncLoading } from "@/components/LoadingStates";
@@ -1121,6 +1122,14 @@ Actual market values may vary significantly based on numerous factors not captur
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
+              {/* Data Accuracy Disclaimer */}
+              <Alert className="border-blue-200 bg-blue-50">
+                <Eye className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Data Accuracy Notice:</strong> This valuation combines direct Spotify data (followers, popularity scores, genres) with proprietary estimates (streams, revenue calculations) and industry benchmarks. All financial projections are estimates based on modeling assumptions and should not be considered as investment advice or guaranteed values.
+                </AlertDescription>
+              </Alert>
+
               {/* Key Metrics Grid */}
               <TooltipProvider>
                 <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
@@ -1163,7 +1172,7 @@ Actual market values may vary significantly based on numerous factors not captur
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
                               <p><strong>Enhanced Valuation</strong></p>
-                              <p>Combines Spotify streaming data (70% weight) with user-provided additional revenue sources (30% weight). Based on verified streaming metrics and declared revenue streams with confidence adjustments.</p>
+                              <p><strong>⚠️ ESTIMATE:</strong> Combines estimated streaming revenue (70% weight) with user-declared additional revenue (30% weight). Stream counts and revenue conversion rates are proprietary calculations, not actual platform data.</p>
                             </TooltipContent>
                           </UITooltip>
                          : 
@@ -1188,7 +1197,7 @@ Actual market values may vary significantly based on numerous factors not captur
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
                               <p><strong>Risk-Adjusted Value</strong></p>
-                              <p>Base Spotify streaming data adjusted for artist popularity score, genre risk factors, and catalog age. Uses industry benchmarks for genre-specific risk multipliers and decay rates.</p>
+                              <p><strong>⚠️ ESTIMATE:</strong> Based on estimated streaming calculations adjusted for verified Spotify popularity scores and proprietary risk factors. Revenue projections use modeled conversion rates, not actual platform payouts.</p>
                             </TooltipContent>
                           </UITooltip>
                         }
@@ -1350,9 +1359,17 @@ Actual market values may vary significantly based on numerous factors not captur
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Total Streams</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">Total Streams</p>
+                        <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                          ESTIMATED
+                        </Badge>
+                      </div>
                       <p className="text-lg font-bold text-primary">
                         {formatNumber(result.total_streams || 0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Calculated from track popularity scores, not actual streaming data
                       </p>
                     </div>
                   </div>
@@ -1422,6 +1439,9 @@ Actual market values may vary significantly based on numerous factors not captur
                     <Shield className="h-5 w-5 text-primary" />
                     Valuation Confidence Analysis
                   </CardTitle>
+                  <CardDescription>
+                    Proprietary confidence scoring based on data availability and model assumptions
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -1444,8 +1464,13 @@ Actual market values may vary significantly based on numerous factors not captur
               {/* Industry Benchmarks */}
               {result.industry_benchmarks && <Card>
                   <CardHeader>
-                    <CardTitle>Industry Benchmarks</CardTitle>
-                    <CardDescription>Genre-specific market data for {result.industry_benchmarks.genre}</CardDescription>
+                    <CardTitle className="flex items-center gap-2">
+                      Industry Benchmarks
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        HISTORICAL DATA
+                      </Badge>
+                    </CardTitle>
+                    <CardDescription>Genre-specific market data for {result.industry_benchmarks.genre} - based on historical transaction multiples</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1467,18 +1492,31 @@ Actual market values may vary significantly based on numerous factors not captur
             </TabsContent>
 
             <TabsContent value="analysis" className="space-y-6">
+              {/* Cash Flow Projections Disclaimer */}
+              <Alert className="border-yellow-200 bg-yellow-50">
+                <Activity className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Forward-Looking Estimates:</strong> All cash flow projections are theoretical calculations based on estimated current performance and industry decay models. Actual future performance may vary significantly from these projections.
+                </AlertDescription>
+              </Alert>
+
               {/* DCF Components */}
               <Card>
                 <CardHeader>
                   <CardTitle>Discounted Cash Flow Analysis</CardTitle>
                   <CardDescription>
-                    Intrinsic value based on projected future cash flows
+                    Intrinsic value based on projected future cash flows - all projections are estimates
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {result.cash_flow_projections && result.cash_flow_projections.length > 0 ? <div className="space-y-2">
-                        <h4 className="font-medium">Cash Flow Projections</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">Cash Flow Projections</h4>
+                          <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                            PROJECTIONS
+                          </Badge>
+                        </div>
                         {result.cash_flow_projections.map(cf => <div key={cf.year} className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
                               <p className="font-medium">Year {cf.year}</p>
