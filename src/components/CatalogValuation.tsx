@@ -246,23 +246,23 @@ const CatalogValuation = memo(() => {
   const adjustedValuations = useMemo(() => {
     if (!result) return null;
 
-    const baseCagr = result.growth_metrics?.estimated_cagr || 7; // Default base case CAGR
+    const baseCagr = result.growth_metrics.estimated_cagr || 7; // Default base case CAGR
     const cagrMultiplier = customCagr / baseCagr;
     
-    // Calculate adjusted values for current scenario - handle missing fields gracefully
-    const baseValuation = result.valuations?.[selectedScenario]?.current || result.risk_adjusted_value || result.valuation_amount || 0;
-    const baseYear5 = result.valuations?.[selectedScenario]?.year5 || baseValuation;
+    // Calculate adjusted values for current scenario
+    const baseValuation = result.valuations[selectedScenario].current;
+    const baseYear5 = result.valuations[selectedScenario].year5;
     
     // Apply CAGR adjustment to year 5 valuation
     const adjustedYear5 = baseValuation * Math.pow(1 + (customCagr / 100), 5);
     
-    // Calculate adjusted forecasts for the selected scenario - handle missing forecasts
-    const adjustedForecasts = result.forecasts?.[selectedScenario]?.map(year => ({
+    // Calculate adjusted forecasts for the selected scenario
+    const adjustedForecasts = result.forecasts[selectedScenario].map(year => ({
       ...year,
       valuation: baseValuation * Math.pow(1 + (customCagr / 100), year.year),
       revenue: year.revenue * Math.pow(1 + (customCagr / 100), year.year),
       streams: Math.round(year.streams * Math.pow(1 + (customCagr / 100), year.year))
-    })) || [];
+    }));
 
     return {
       current: baseValuation,
@@ -353,10 +353,8 @@ const CatalogValuation = memo(() => {
         const {
           data,
           error
-        } = await supabase.functions.invoke('chartmetric-catalog-valuation', {
-          body: {
-            artistName: artistName.trim()
-          }
+        } = await supabase.functions.invoke('spotify-catalog-valuation', {
+          body: requestBody
         });
         console.log("=== API RESPONSE ===");
         console.log("Data:", data);
@@ -410,7 +408,7 @@ const CatalogValuation = memo(() => {
                 error: updateError
               } = await supabase.from('catalog_valuations').update({
                 user_id: user.user.id,
-                artist_name: data.artist?.name || artistName,
+                artist_name: data.artist_name,
                 total_streams: data.total_streams,
                 monthly_listeners: data.monthly_listeners,
                 top_tracks: data.top_tracks,
@@ -443,7 +441,7 @@ const CatalogValuation = memo(() => {
                 error: insertError
               } = await supabase.from('catalog_valuations').insert({
                 user_id: user.user.id,
-                artist_name: data.artist?.name || artistName,
+                artist_name: data.artist_name,
                 total_streams: data.total_streams,
                 monthly_listeners: data.monthly_listeners,
                 top_tracks: data.top_tracks,
@@ -596,7 +594,7 @@ Actual market values may vary significantly based on numerous factors not captur
         high: 0
       };
       const comp = result.valuations?.base;
-      const cagr = comp?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 7) * 100) / 100}%`;
+      const cagr = comp?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 0) * 100) / 100}%`;
       return `
         <section>
           <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
@@ -1013,7 +1011,7 @@ Actual market values may vary significantly based on numerous factors not captur
             Advanced Catalog Valuation
           </CardTitle>
           <CardDescription>
-            Discover the estimated value of any artist's music catalog using real-time streaming data from Chartmetric.
+            Discover the estimated value of any artist's music catalog using real streaming data from Spotify.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1165,7 +1163,7 @@ Actual market values may vary significantly based on numerous factors not captur
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
                               <p><strong>Enhanced Valuation</strong></p>
-                              <p>Combines Chartmetric streaming data (70% weight) with user-provided additional revenue sources (30% weight). Based on verified streaming metrics and declared revenue streams with confidence adjustments.</p>
+                              <p>Combines Spotify streaming data (70% weight) with user-provided additional revenue sources (30% weight). Based on verified streaming metrics and declared revenue streams with confidence adjustments.</p>
                             </TooltipContent>
                           </UITooltip>
                          : 
@@ -1216,7 +1214,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p><strong>DCF (Discounted Cash Flow) Valuation</strong></p>
-                            <p>10-year revenue projection using Chartmetric streaming trends, discounted at 12% risk rate. Based on verified streaming history and exponential decay models from industry transaction data.</p>
+                            <p>10-year revenue projection using Spotify streaming trends, discounted at 12% risk rate. Based on verified streaming history and exponential decay models from industry transaction data.</p>
                           </TooltipContent>
                         </UITooltip>
 
@@ -1241,7 +1239,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p><strong>Multiple Valuation</strong></p>
-                            <p>Chartmetric-derived LTM revenue × genre-specific industry multiples (4x-18x). Based on public catalog transaction data and streaming-to-revenue conversion rates by genre.</p>
+                            <p>Spotify-derived LTM revenue × genre-specific industry multiples (4x-18x). Based on public catalog transaction data and streaming-to-revenue conversion rates by genre.</p>
                           </TooltipContent>
                         </UITooltip>
 
@@ -1263,7 +1261,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                            <TooltipContent className="max-w-xs">
                              <p><strong>Confidence Score</strong></p>
-                             <p>Data completeness metric based on Chartmetric API coverage, track history depth, and revenue verification. 90+ indicates institutional-grade data quality for transactions.</p>
+                             <p>Data completeness metric based on Spotify API coverage, track history depth, and revenue verification. 90+ indicates institutional-grade data quality for transactions.</p>
                            </TooltipContent>
                         </UITooltip>
 
@@ -1285,7 +1283,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                            <TooltipContent className="max-w-xs">
                              <p><strong>LTM Revenue</strong></p>
-                             <p>Calculated from Chartmetric streaming data using verified genre-specific per-stream rates ($0.002-$0.004). Additional revenues user-reported and confidence-weighted.</p>
+                             <p>Calculated from Spotify streaming data using verified genre-specific per-stream rates ($0.002-$0.004). Additional revenues user-reported and confidence-weighted.</p>
                            </TooltipContent>
                         </UITooltip>
 
@@ -1307,7 +1305,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                            <TooltipContent className="max-w-xs">
                              <p><strong>Popularity Score</strong></p>
-                             <p>Direct from Chartmetric API (0-100 scale). Reflects current market heat based on recent plays, playlist adds, and algorithmic performance. Key risk factor for catalog sustainability.</p>
+                             <p>Direct from Spotify API (0-100 scale). Reflects current market heat based on recent plays, playlist adds, and algorithmic performance. Key risk factor for catalog sustainability.</p>
                            </TooltipContent>
                         </UITooltip>
                       </>;
@@ -1331,10 +1329,10 @@ Actual market values may vary significantly based on numerous factors not captur
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Music className="h-5 w-5 text-primary" />
-                    Chartmetric Artist Information
+                    Spotify Artist Information
                   </CardTitle>
                   <CardDescription>
-                    Artist profile data and top performing tracks from Chartmetric
+                    Artist profile data and top performing tracks from Spotify
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -2057,7 +2055,7 @@ Actual market values may vary significantly based on numerous factors not captur
                   <CardContent>
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between"><span>Valuation</span><span className="font-semibold">{formatCurrency(result.risk_adjusted_value || result.valuation_amount)}</span></div>
-                      <div className="flex justify-between"><span>5Y CAGR</span><span className="font-semibold">{result.valuations?.base?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 7) * 100) / 100}%`}</span></div>
+                      <div className="flex justify-between"><span>5Y CAGR</span><span className="font-semibold">{result.valuations?.base?.cagr || `${Math.round((result.growth_metrics?.estimated_cagr || 0) * 100) / 100}%`}</span></div>
                       <div className="flex justify-between"><span>Confidence</span><span className="font-semibold">{result.confidence_score || 0}/100</span></div>
                     </div>
                     <div className="mt-4">
