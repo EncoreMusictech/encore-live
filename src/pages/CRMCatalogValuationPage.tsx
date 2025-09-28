@@ -69,7 +69,7 @@ export default function CRMCatalogValuationPage() {
 
     setLoading(true);
     try {
-      const { data: artistData, error: artistError } = await supabase.functions.invoke('spotify-catalog-valuation', {
+      const { data: artistData, error: artistError } = await supabase.functions.invoke('soundcharts-catalog-valuation', {
         body: { artistName: artistName.trim() }
       });
 
