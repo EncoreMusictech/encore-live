@@ -321,8 +321,9 @@ const CatalogValuation = memo(() => {
       });
       return;
     }
-    console.log("Clearing previous result");
+    console.log("Clearing previous result and revenue sources");
     setResult(null);
+    setCatalogValuationId(null); // Reset catalog valuation ID to clear revenue sources
 
     // Calculate catalog age from discography data
     console.log("Calculating catalog age from discography...");

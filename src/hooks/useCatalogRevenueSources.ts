@@ -272,6 +272,9 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
   useEffect(() => {
     if (effectiveCatalogValuationId) {
       fetchRevenueSources(effectiveCatalogValuationId);
+    } else {
+      // Clear revenue sources when no catalog valuation ID is available
+      setRevenueSources([]);
     }
   }, [effectiveCatalogValuationId]);
 
