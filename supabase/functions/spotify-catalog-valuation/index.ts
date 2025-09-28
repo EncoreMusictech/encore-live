@@ -249,7 +249,7 @@ async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): 
         console.log(`Most common genre from related artists: ${primaryGenre} (${max} occurrences)`);
       }
     } catch (_e) {
-      console.log(`Error fetching related artists: ${_e.message}`);
+      console.log(`Error fetching related artists: ${(_e as Error).message}`);
     }
   }
   
@@ -462,7 +462,7 @@ serve(async (req) => {
           console.log(`Found ${revenueSources.length} additional revenue sources`);
         }
       } catch (error) {
-        console.warn(`Error fetching revenue sources: ${error.message}`);
+        console.warn(`Error fetching revenue sources: ${(error as Error).message}`);
       }
     }
 
@@ -638,8 +638,8 @@ const { data: benchmarkData } = await supabase
     };
 
     // Calculate traditional forecasts
-    const forecasts = {};
-    const valuations = {};
+    const forecasts: Record<string, any[]> = {};
+    const valuations: Record<string, any> = {};
     
     Object.entries(scenarios).forEach(([scenario, { growthRate, multipleRange }]) => {
       const yearlyForecasts = [];
@@ -674,7 +674,7 @@ const { data: benchmarkData } = await supabase
     };
 
     // Find comparable artists using multiple search strategies
-    let comparableArtists = [];
+    let comparableArtists: any[] = [];
     console.log(`Starting comparable artist search. Artist genres: ${JSON.stringify(artist.genres)}`);
     
 // Strategy 1: Search by genre
@@ -725,7 +725,7 @@ if (primaryGenre) {
           }
         }
       } catch (error) {
-        console.log(`Error searching for similar artists by genre: ${error.message}`);
+        console.log(`Error searching for similar artists by genre: ${(error as Error).message}`);
       }
     } else {
       console.log(`Artist has no genres, skipping genre-based search`);
@@ -779,7 +779,7 @@ if (primaryGenre) {
           }
         }
       } catch (error) {
-        console.log(`Error searching for additional comparable artists: ${error.message}`);
+        console.log(`Error searching for additional comparable artists: ${(error as Error).message}`);
       }
     }
 
@@ -824,7 +824,7 @@ if (primaryGenre) {
           }
         }
       } catch (error) {
-        console.log(`Error searching for related artists: ${error.message}`);
+        console.log(`Error searching for related artists: ${(error as Error).message}`);
       }
     }
 
@@ -905,13 +905,13 @@ if (primaryGenre) {
               }
             }
           } catch (error) {
-            console.log(`Error searching for artists with query "${query}": ${error.message}`);
+            console.log(`Error searching for artists with query "${query}": ${(error as Error).message}`);
           }
         }
         
         console.log(`Found ${comparableArtists.length} total comparable artists through follower similarity search`);
       } catch (error) {
-        console.log(`Error in follower similarity search: ${error.message}`);
+        console.log(`Error in follower similarity search: ${(error as Error).message}`);
       }
     }
     
@@ -976,7 +976,7 @@ if (primaryGenre) {
     const valuationData = {
       artist_name: artist.name,
       total_streams: estimatedTotalStreams,
-      monthly_listeners: artist.followers.total,
+      followers: artist.followers.total,
       territory_focus: territory,
       territory_multiplier: territoryBenchmarkAdjustment,
       top_tracks: topTracks.map(track => ({
@@ -1050,7 +1050,7 @@ discount_rate: valuationParams?.discountRate || 0.12,
   } catch (error) {
     console.error('Error in spotify-catalog-valuation function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

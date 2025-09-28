@@ -123,7 +123,7 @@ TRL01000000002`,
             console.error(`Error processing ACK record ${ackRecord.workId}:`, recordError);
             processingErrors.push({
               workId: ackRecord.workId,
-              error: recordError.message
+              error: (recordError as Error).message
             });
             errorsFound++;
           }
@@ -156,7 +156,7 @@ TRL01000000002`,
           worksUpdated: 0,
           errorsFound: 1,
           success: false,
-          error: fileError.message
+          error: (fileError as Error).message
         });
       }
     }
@@ -173,7 +173,7 @@ TRL01000000002`,
 
   } catch (error) {
     console.error('Error in process-ack-files:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });

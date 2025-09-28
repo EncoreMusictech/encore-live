@@ -100,7 +100,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in royalties-ai-insights function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Failed to generate insights'
+      error: (error as Error).message || 'Failed to generate insights'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -126,7 +126,7 @@ async function retryWithBackoff<T>(
       }
       
       // Check if it's a rate limit error
-      if (error.message?.includes('Too Many Requests') || error.message?.includes('rate limit')) {
+      if ((error as Error).message?.includes('Too Many Requests') || (error as Error).message?.includes('rate limit')) {
         const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
         console.log(`Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -503,12 +503,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('=== EDGE FUNCTION ERROR ===');
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
+    console.error('Error message:', (error as Error).message);
+    console.error('Error stack:', (error as Error).stack);
     
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Unknown error occurred',
+      error: (error as Error).message || 'Unknown error occurred',
       message: 'Failed to process contract'
     }), {
       status: 500,
