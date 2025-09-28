@@ -102,22 +102,51 @@ class ChartmetricClient {
       await this.authenticate()
     }
 
-    // For now, we'll provide mock data based on the artist name to test the integration
-    // This allows the system to work while we resolve API access issues
-    console.log(`Searching for artist: ${artistName}`)
-    
-    // Create realistic mock data based on the search term
-    const mockArtist: ChartmetricArtist = {
-      id: Math.floor(Math.random() * 100000) + 1000,
-      name: this.capitalizeArtistName(artistName),
-      image_url: 'https://via.placeholder.com/300x300',
-      spotify_popularity_score: Math.floor(Math.random() * 40) + 60, // 60-100
-      spotify_followers: Math.floor(Math.random() * 10000000) + 500000, // 500k-10M
-      genres: this.getGenreForArtist(artistName.toLowerCase())
+    console.log(`Searching Chartmetric for artist: ${artistName}`)
+    const doRequest = async () => {
+      return await fetch(`${CHARTMETRIC_API_BASE}/artist/search?query=${encodeURIComponent(artistName)}&limit=1`, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        }
+      })
     }
 
-    console.log(`Mock artist created: ${mockArtist.name} (ID: ${mockArtist.id})`)
-    return mockArtist
+    let response = await doRequest()
+    if (response.status === 401) {
+      console.warn('Chartmetric token expired, re-authenticating and retrying search...')
+      this.accessToken = null
+      await this.authenticate()
+      response = await doRequest()
+    }
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '')
+      console.error(`Artist search failed: ${response.status} ${errText}`)
+      throw new Error(`Artist search failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+    // Chartmetric typically returns { data: [...] }
+    const item = (data?.data && data.data[0]) || data?.[0] || data?.results?.[0]
+    if (!item) {
+      console.log('No artist found on Chartmetric')
+      return null
+    }
+
+    const artist: ChartmetricArtist = {
+      id: item.id,
+      name: item.name || this.capitalizeArtistName(artistName),
+      image_url: item.image_url || item.image || item.images?.[0]?.url,
+      spotify_popularity_score: item.spotify_popularity_score ?? item.spotify_popularity ?? item.popularity?.spotify,
+      spotify_followers: item.spotify_followers ?? item.followers?.spotify,
+      apple_music_id: item.apple_music_id,
+      youtube_channel_id: item.youtube_channel_id || item.youtube?.channel_id,
+      genres: item.genres || (typeof item.genre === 'string' ? [item.genre] : item.genre) || []
+    }
+
+    console.log(`Found artist on Chartmetric: ${artist.name} (ID: ${artist.id})`)
+    return artist
   }
 
   private capitalizeArtistName(name: string): string {
@@ -158,55 +187,137 @@ class ChartmetricClient {
   }
 
   async getArtistStreamingStats(artistId: number): Promise<ChartmetricStreamingStats> {
-    console.log(`Generating streaming stats for artist ID: ${artistId}`)
-    
-    // Generate realistic streaming statistics for the mock artist
-    const baseListeners = Math.floor(Math.random() * 50000000) + 1000000 // 1M - 50M monthly listeners
-    
-    const stats: ChartmetricStreamingStats = {
-      spotify: {
-        monthly_listeners: baseListeners,
-        followers: Math.floor(baseListeners * (0.3 + Math.random() * 0.4)), // 30-70% of listeners
-        popularity_score: Math.floor(Math.random() * 40) + 60 // 60-100
-      },
-      apple_music: {
-        followers: Math.floor(baseListeners * (0.15 + Math.random() * 0.25)) // 15-40% of Spotify listeners
-      },
-      youtube: {
-        subscribers: Math.floor(baseListeners * (0.1 + Math.random() * 0.3)), // 10-40% of Spotify listeners  
-        views: Math.floor(baseListeners * (50 + Math.random() * 100)) // 50-150x monthly listeners in total views
-      }
+    if (!this.accessToken) {
+      await this.authenticate()
     }
 
-    console.log(`Generated stats - Monthly listeners: ${stats.spotify?.monthly_listeners?.toLocaleString()}`)
-    return stats
+    const authHeaders = {
+      'Authorization': `Bearer ${this.accessToken}`,
+      'Content-Type': 'application/json',
+    } as Record<string, string>
+
+    const fetchWithRetry = async (url: string) => {
+      let res = await fetch(url, { headers: authHeaders })
+      if (res.status === 401) {
+        console.warn('Chartmetric token expired, re-authenticating and retrying stats...')
+        this.accessToken = null
+        await this.authenticate()
+        res = await fetch(url, { headers: { ...authHeaders, 'Authorization': `Bearer ${this.accessToken}` } })
+      }
+      return res
+    }
+
+    // Try to get Spotify stats
+    let spotifyMonthlyListeners: number | undefined
+    let spotifyFollowers: number | undefined
+    let spotifyPopularity: number | undefined
+
+    // Preferred endpoint
+    let res = await fetchWithRetry(`${CHARTMETRIC_API_BASE}/artist/${artistId}/stat/spotify`)
+    if (!res.ok) {
+      // Fallback to general artist profile which often contains high-level stats
+      res = await fetchWithRetry(`${CHARTMETRIC_API_BASE}/artist/${artistId}`)
+    }
+
+    if (res.ok) {
+      const body = await res.json().catch(() => ({}))
+      const spotify = (body as any).spotify || (body as any).data?.spotify || (body as any).stats?.spotify || (body as any)
+      spotifyMonthlyListeners = spotify?.monthly_listeners ?? spotify?.listeners_monthly ?? spotify?.ml
+      spotifyFollowers = spotify?.followers ?? spotify?.followers_total ?? (body as any).spotify_followers
+      spotifyPopularity = spotify?.popularity ?? (body as any).spotify_popularity ?? (body as any).spotify_popularity_score
+    } else {
+      const errText = await res.text().catch(() => '')
+      console.error(`Failed to fetch artist stats: ${res.status} ${errText}`)
+    }
+
+    // Try Apple Music followers (best-effort)
+    let appleFollowers: number | undefined
+    let appleRes = await fetchWithRetry(`${CHARTMETRIC_API_BASE}/artist/${artistId}/stat/apple_music`)
+    if (appleRes.ok) {
+      const apple = await appleRes.json().catch(() => ({}))
+      const a = (apple as any).apple_music || (apple as any).data?.apple_music || (apple as any).stats?.apple_music || (apple as any)
+      appleFollowers = a?.followers ?? a?.followers_total
+    }
+
+    // Try YouTube stats (best-effort)
+    let ytSubscribers: number | undefined
+    let ytViews: number | undefined
+    let ytRes = await fetchWithRetry(`${CHARTMETRIC_API_BASE}/artist/${artistId}/stat/youtube`)
+    if (ytRes.ok) {
+      const yt = await ytRes.json().catch(() => ({}))
+      const y = (yt as any).youtube || (yt as any).data?.youtube || (yt as any).stats?.youtube || (yt as any)
+      ytSubscribers = y?.subscribers ?? y?.subscribers_total
+      ytViews = y?.views ?? y?.views_total
+    }
+
+    return {
+      spotify: {
+        monthly_listeners: spotifyMonthlyListeners,
+        followers: spotifyFollowers,
+        popularity_score: spotifyPopularity,
+      },
+      apple_music: {
+        followers: appleFollowers,
+      },
+      youtube: {
+        subscribers: ytSubscribers,
+        views: ytViews,
+      }
+    }
   }
 
   async getTopTracks(artistId: number, limit: number = 10): Promise<ChartmetricTrack[]> {
-    console.log(`Generating ${limit} top tracks for artist ID: ${artistId}`)
-    
-    const trackNames = [
-      'Perfect Storm', 'Midnight Dreams', 'Electric Nights', 'Golden Hour', 'Neon Lights',
-      'Broken Wings', 'City Rain', 'Summer Vibes', 'Dancing Queen', 'Heartbreak Hotel',
-      'Fire & Ice', 'Lost in You', 'Starlight', 'Wild Child', 'Forever Young',
-      'Magic Moments', 'Runaway', 'Sweet Escape', 'Thunder Road', 'Crazy Love'
-    ]
-
-    const tracks: ChartmetricTrack[] = []
-    
-    for (let i = 0; i < Math.min(limit, trackNames.length); i++) {
-      tracks.push({
-        id: artistId * 1000 + i,
-        name: trackNames[i],
-        artist_names: [], // Will be filled with actual artist name
-        spotify_popularity: Math.floor(Math.random() * 50) + 50, // 50-100
-        spotify_streams: Math.floor(Math.random() * 500000000) + 10000000, // 10M - 500M streams
-        release_date: this.getRandomReleaseDate(),
-        isrc: `US${String(artistId).slice(-3)}${String(i).padStart(2, '0')}${Math.floor(Math.random() * 10000)}`
-      })
+    if (!this.accessToken) {
+      await this.authenticate()
     }
 
-    return tracks.sort((a, b) => (b.spotify_streams || 0) - (a.spotify_streams || 0))
+    const headers = {
+      'Authorization': `Bearer ${this.accessToken}`,
+      'Content-Type': 'application/json',
+    }
+
+    const tryEndpoints = [
+      `${CHARTMETRIC_API_BASE}/artist/${artistId}/tracks?limit=${limit}&source=spotify`,
+      `${CHARTMETRIC_API_BASE}/artist/${artistId}/songs?limit=${limit}`,
+      `${CHARTMETRIC_API_BASE}/artist/${artistId}/top-tracks?limit=${limit}&provider=spotify`,
+    ]
+
+    let data: any = null
+    for (const url of tryEndpoints) {
+      let res = await fetch(url, { headers })
+      if (res.status === 401) {
+        this.accessToken = null
+        await this.authenticate()
+        res = await fetch(url, { headers: { ...headers, 'Authorization': `Bearer ${this.accessToken}` } })
+      }
+      if (res.ok) {
+        data = await res.json().catch(() => null)
+        if (data) break
+      } else {
+        const t = await res.text().catch(() => '')
+        console.warn(`Tracks endpoint failed (${res.status}) for ${url}: ${t}`)
+      }
+    }
+
+    const list = data?.data || data?.tracks || data?.songs || data || []
+    const tracks: ChartmetricTrack[] = (Array.isArray(list) ? list : []).slice(0, limit).map((t: any, idx: number) => ({
+      id: Number(t.id ?? t.track_id ?? `${artistId}${idx}`),
+      name: t.name ?? t.title ?? 'Unknown',
+      artist_names: t.artist_names ?? t.artists ?? [],
+      spotify_popularity: t.spotify_popularity ?? t.popularity?.spotify ?? t.popularity,
+      spotify_streams: t.spotify_streams ?? t.streams?.spotify,
+      release_date: t.release_date ?? t.released_at ?? t.date,
+      isrc: t.isrc,
+    }))
+
+    return tracks.sort((a, b) => {
+      const sa = a.spotify_streams ?? 0
+      const sb = b.spotify_streams ?? 0
+      if (sa !== sb) return sb - sa
+      const pa = a.spotify_popularity ?? 0
+      const pb = b.spotify_popularity ?? 0
+      return pb - pa
+    })
   }
 
   private getRandomReleaseDate(): string {
