@@ -1,8 +1,5 @@
 project_id = "plxsenykjisqutxcvjeg"
 
-[functions.chartmetric-catalog-valuation]
-verify_jwt = true
-
 [functions.songwriter-career-summary]
 verify_jwt = false
 

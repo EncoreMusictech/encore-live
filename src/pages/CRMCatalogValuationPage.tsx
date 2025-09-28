@@ -14,8 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Brain, Calculator, Search, Music, BarChart3, Loader2, AlertTriangle, Database } from "lucide-react";
+import { Brain, Calculator, Search, Music, BarChart3, Loader2, AlertTriangle } from "lucide-react";
 
 interface Artist {
   id: string;
@@ -41,7 +40,6 @@ export default function CRMCatalogValuationPage() {
   const [dealSubTab, setDealSubTab] = useState('search');
   const [currentArtist, setCurrentArtist] = useState<Artist | null>(null);
   const [artistName, setArtistName] = useState("");
-  const [dataSource, setDataSource] = useState<'spotify' | 'chartmetric'>('spotify');
   const [loading, setLoading] = useState(false);
   const [discographyData, setDiscographyData] = useState<{
     albums: Album[];
@@ -71,90 +69,49 @@ export default function CRMCatalogValuationPage() {
 
     setLoading(true);
     try {
-      const functionName = dataSource === 'chartmetric' ? 'chartmetric-catalog-valuation' : 'spotify-catalog-valuation';
-      console.log(`Searching for artist: ${artistName} using ${dataSource} API`);
-      
-      const { data: artistData, error: artistError } = await supabase.functions.invoke(functionName, {
+      const { data: artistData, error: artistError } = await supabase.functions.invoke('spotify-catalog-valuation', {
         body: { artistName: artistName.trim() }
       });
 
       if (artistError || artistData.error) {
-        throw new Error(artistError?.message || artistData.error || `Failed to find artist using ${dataSource}`);
+        throw new Error(artistError?.message || artistData.error || 'Failed to find artist');
       }
 
-      // Handle different response structures between Spotify and Chartmetric
-      const artist = dataSource === 'chartmetric' 
-        ? {
-            id: artistData.chartmetric_id?.toString() || artistData.artist_name,
-            name: artistData.artist_name
-          }
-        : {
-            id: artistData.spotify_data.artist_id,
-            name: artistData.artist_name
-          };
+      const artist = {
+        id: artistData.spotify_data.artist_id,
+        name: artistData.artist_name
+      };
 
       setCurrentArtist(artist);
 
-      // For Chartmetric, we might not have traditional discography data yet
-      // So we'll skip the discography fetch for now and proceed to deal analysis
-      if (dataSource === 'chartmetric') {
-        setDiscographyData({
-          albums: [],
-          singles: []
-        });
-        
-        toast({
-          title: "Success",
-          description: `Found ${artist.name} in Chartmetric database with enhanced analytics data`,
-        });
-        
-        // For Chartmetric, we'll go straight to catalog valuation since we have the data
-        setActiveTab('catalog-valuation');
-      } else {
-        // Original Spotify workflow
-        const { data: discographyData, error: discographyError } = await supabase.functions.invoke('artist-discography', {
-          body: { 
-            artistId: artist.id, 
-            artistName: artist.name 
-          }
-        });
-
-        if (discographyError || discographyData.error) {
-          throw new Error(discographyError?.message || discographyData.error || 'Failed to fetch discography');
+      const { data: discographyData, error: discographyError } = await supabase.functions.invoke('artist-discography', {
+        body: { 
+          artistId: artist.id, 
+          artistName: artist.name 
         }
+      });
 
-        setDiscographyData({
-          albums: discographyData.albums || [],
-          singles: discographyData.singles || []
-        });
-
-        setDealSubTab("selection");
-
-        toast({
-          title: "Success",
-          description: `Loaded discography for ${artist.name} - ${discographyData.albums?.length || 0} albums, ${discographyData.singles?.length || 0} singles`,
-        });
+      if (discographyError || discographyData.error) {
+        throw new Error(discographyError?.message || discographyData.error || 'Failed to fetch discography');
       }
+
+      setDiscographyData({
+        albums: discographyData.albums || [],
+        singles: discographyData.singles || []
+      });
+
+      setDealSubTab("selection");
+
+      toast({
+        title: "Success",
+        description: `Loaded discography for ${artist.name} - ${discographyData.albums?.length || 0} albums, ${discographyData.singles?.length || 0} singles`,
+      });
 
     } catch (error) {
       console.error("Artist search error:", error);
-      
-      // Enhanced error handling for different data sources
-      let errorMessage = "Failed to search artist";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      // Suggest alternative data source if one fails
-      if (dataSource === 'chartmetric' && error instanceof Error && error.message.includes('not found')) {
-        errorMessage += ". Try switching to Spotify data source.";
-      } else if (dataSource === 'spotify' && error instanceof Error) {
-        errorMessage += ". You might want to try the Chartmetric data source for more comprehensive analytics.";
-      }
-      
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error instanceof Error ? error.message : "Failed to search artist",
         variant: "destructive",
       });
     } finally {
@@ -328,86 +285,45 @@ export default function CRMCatalogValuationPage() {
 
                 <div className="p-6">
                   <TabsContent value="search" className="mt-0">
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                            <Search className="h-4 w-4 text-purple-500" />
-                            Artist Search
-                          </h3>
-                          <p className="text-muted-foreground text-sm mb-4">
-                            Search for an artist to analyze their catalog for potential deals
-                          </p>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">Data Source</label>
-                            <Select value={dataSource} onValueChange={(value: 'spotify' | 'chartmetric') => setDataSource(value)}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="spotify">
-                                  <div className="flex items-center gap-2">
-                                    <Music className="h-4 w-4" />
-                                    <div>
-                                      <div className="font-medium">Spotify API</div>
-                                      <div className="text-xs text-muted-foreground">Basic streaming data & discography</div>
-                                    </div>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="chartmetric">
-                                  <div className="flex items-center gap-2">
-                                    <Database className="h-4 w-4" />
-                                    <div>
-                                      <div className="font-medium">Chartmetric API</div>
-                                      <div className="text-xs text-muted-foreground">Real analytics, historical data & cross-platform metrics</div>
-                                    </div>
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Enter artist name..."
-                              value={artistName}
-                              onChange={(e) => setArtistName(e.target.value)}
-                              onKeyPress={(e) => e.key === 'Enter' && handleArtistSearch()}
-                              disabled={loading}
-                            />
-                            <Button onClick={handleArtistSearch} disabled={loading || !artistName.trim()}>
-                              {loading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Search className="h-4 w-4" />
-                              )}
-                              {loading ? "Searching..." : "Search"}
-                            </Button>
-                          </div>
-                        </div>
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                          <Search className="h-4 w-4 text-purple-500" />
+                          Artist Search
+                        </h3>
+                        <p className="text-muted-foreground text-sm mb-4">
+                          Search for an artist to analyze their catalog for potential deals
+                        </p>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Enter artist name..."
+                          value={artistName}
+                          onChange={(e) => setArtistName(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleArtistSearch()}
+                          disabled={loading}
+                        />
+                        <Button onClick={handleArtistSearch} disabled={loading || !artistName.trim()}>
+                          {loading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Search className="h-4 w-4" />
+                          )}
+                          {loading ? "Searching..." : "Search"}
+                        </Button>
+                      </div>
 
-                        {currentArtist && (
-                          <div className="p-4 border rounded-lg bg-secondary/30">
-                            <div className="flex items-center justify-between mb-2">
-                              <p className="font-medium">Current Artist: {currentArtist.name}</p>
-                              <Badge variant={dataSource === 'chartmetric' ? 'default' : 'secondary'}>
-                                {dataSource === 'chartmetric' ? 'Chartmetric' : 'Spotify'} Data
-                              </Badge>
-                            </div>
-                            {discographyData && dataSource === 'spotify' && (
-                              <p className="text-sm text-muted-foreground">
-                                {discographyData.albums.length} albums, {discographyData.singles.length} singles available
-                              </p>
-                            )}
-                            {dataSource === 'chartmetric' && (
-                              <p className="text-sm text-muted-foreground">
-                                Enhanced analytics data available - proceed to Catalog Valuation for detailed analysis
-                              </p>
-                            )}
-                          </div>
-                        )}
+                      {currentArtist && (
+                        <div className="p-4 border rounded-lg bg-secondary/30">
+                          <p className="font-medium">Current Artist: {currentArtist.name}</p>
+                          {discographyData && (
+                            <p className="text-sm text-muted-foreground">
+                              {discographyData.albums.length} albums, {discographyData.singles.length} singles available
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </TabsContent>
 
