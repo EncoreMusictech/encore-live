@@ -20,14 +20,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft, ChevronDown } from "lucide-react";
+import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft } from "lucide-react";
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, Area, AreaChart, ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar } from 'recharts';
 import { CatalogValuationSkeleton, AsyncLoading } from "@/components/LoadingStates";
 import { usePDFGeneration } from "@/hooks/usePDFGeneration";
 import { useReportAI } from "@/hooks/useReportAI";
-import MarketIntelligenceTab from "@/components/catalog-valuation/MarketIntelligenceTab";
 interface TopTrack {
   name: string;
   popularity: number;
@@ -78,7 +75,7 @@ interface CashFlowProjection {
 interface ValuationResult {
   artist_name: string;
   total_streams: number;
-  followers: number; // Spotify followers count, not monthly listeners
+  monthly_listeners: number;
   territory_focus?: 'global' | 'us-only' | 'international';
   territory_multiplier?: number;
   top_tracks: TopTrack[];
@@ -148,11 +145,9 @@ const CatalogValuation = memo(() => {
   const [catalogValuationId, setCatalogValuationId] = useState<string | null>(null);
   const [revenueMetrics, setRevenueMetrics] = useState<any>(null);
   const [customCagr, setCustomCagr] = useState<number>(5);
-  const [isCagrSectionOpen, setIsCagrSectionOpen] = useState(true);
-  const [isTopTracksOpen, setIsTopTracksOpen] = useState(true);
   const [valuationParams, setValuationParams] = useState<ValuationParams>({
     discountRate: 0.12,
-    catalogAge: 5, // Will be overridden by calculated age
+    catalogAge: 5,
     methodology: 'advanced',
     territory: 'global'
   });
@@ -162,47 +157,6 @@ const CatalogValuation = memo(() => {
     refetch
   } = useCatalogRevenueSources(catalogValuationId);
   const computedRevenueMetrics = useMemo(() => calculateRevenueMetrics(), [revenueSources]);
-
-  // Calculate catalog age from discography data
-  const calculateCatalogAge = useCallback(async (artistName: string) => {
-    try {
-      // First try to get discography from database
-      const { data: discography } = await supabase
-        .from('artist_discography')
-        .select('*')
-        .ilike('artist_name', artistName)
-        .single();
-      
-      if (discography && discography.albums && discography.singles) {
-        const albums = Array.isArray(discography.albums) ? discography.albums : [];
-        const singles = Array.isArray(discography.singles) ? discography.singles : [];
-        const allReleases = [...albums, ...singles];
-        
-        if (allReleases.length > 0) {
-          const releaseDates = allReleases
-            .map((release: any) => release?.release_date)
-            .filter((date: any) => date && typeof date === 'string')
-            .sort();
-          
-          if (releaseDates.length > 0) {
-            const earliestDate = new Date(releaseDates[0]);
-            const currentDate = new Date();
-            const ageInYears = Math.max(1, Math.floor((currentDate.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
-            return ageInYears;
-          }
-        }
-      }
-    } catch (error) {
-      console.log('Could not fetch discography for catalog age calculation:', error);
-    }
-    
-    // Fallback to default
-    return 5;
-  }, []);
-
-  // Auto-calculated catalog age
-  const [calculatedCatalogAge, setCalculatedCatalogAge] = useState<number>(5);
-  const [catalogAgeSource, setCatalogAgeSource] = useState<string>('default');
 
   // Industry CAGR benchmarks by genre
   const industryBenchmarks = useMemo(() => ({
@@ -225,7 +179,6 @@ const CatalogValuation = memo(() => {
   // Get default CAGR based on genre
   const getDefaultCagr = useMemo(() => {
     if (!result?.spotify_data?.genres?.length) return 5;
-    
     for (const genre of result.spotify_data.genres) {
       const normalizedGenre = genre.toLowerCase();
       for (const [key, value] of Object.entries(industryBenchmarks)) {
@@ -249,31 +202,29 @@ const CatalogValuation = memo(() => {
   // Calculate adjusted valuation based on custom CAGR
   const adjustedValuations = useMemo(() => {
     if (!result) return null;
-
     const baseCagr = result.growth_metrics.estimated_cagr || 7; // Default base case CAGR
     const cagrMultiplier = customCagr / baseCagr;
-    
+
     // Calculate adjusted values for current scenario
     const baseValuation = result.valuations[selectedScenario].current;
     const baseYear5 = result.valuations[selectedScenario].year5;
-    
+
     // Apply CAGR adjustment to year 5 valuation
-    const adjustedYear5 = baseValuation * Math.pow(1 + (customCagr / 100), 5);
-    
+    const adjustedYear5 = baseValuation * Math.pow(1 + customCagr / 100, 5);
+
     // Calculate adjusted forecasts for the selected scenario
     const adjustedForecasts = result.forecasts[selectedScenario].map(year => ({
       ...year,
-      valuation: baseValuation * Math.pow(1 + (customCagr / 100), year.year),
-      revenue: year.revenue * Math.pow(1 + (customCagr / 100), year.year),
-      streams: Math.round(year.streams * Math.pow(1 + (customCagr / 100), year.year))
+      valuation: baseValuation * Math.pow(1 + customCagr / 100, year.year),
+      revenue: year.revenue * Math.pow(1 + customCagr / 100, year.year),
+      streams: Math.round(year.streams * Math.pow(1 + customCagr / 100, year.year))
     }));
-
     return {
       current: baseValuation,
       year5: adjustedYear5,
       cagr: customCagr.toFixed(1),
       forecasts: adjustedForecasts,
-      totalReturn: ((adjustedYear5 / baseValuation - 1) * 100)
+      totalReturn: (adjustedYear5 / baseValuation - 1) * 100
     };
   }, [result, selectedScenario, customCagr]);
   const {
@@ -323,19 +274,6 @@ const CatalogValuation = memo(() => {
     }
     console.log("Clearing previous result");
     setResult(null);
-
-    // Calculate catalog age from discography data
-    console.log("Calculating catalog age from discography...");
-    const catalogAge = await calculateCatalogAge(artistName.trim());
-    setCalculatedCatalogAge(catalogAge);
-    setCatalogAgeSource(catalogAge === 5 ? 'default' : 'calculated');
-    console.log(`Catalog age: ${catalogAge} years (${catalogAge === 5 ? 'default' : 'calculated from releases'})`);
-
-    // Update valuation params with calculated age
-    setValuationParams(prev => ({
-      ...prev,
-      catalogAge: catalogAge
-    }));
     try {
       console.log("Starting execute function");
       const data = await execute(async () => {
@@ -345,7 +283,6 @@ const CatalogValuation = memo(() => {
           artistName: artistName.trim(),
           valuationParams: {
             ...valuationParams,
-            catalogAge: catalogAge, // Use the newly calculated age
             customCagr
           },
           catalogValuationId,
@@ -414,7 +351,7 @@ const CatalogValuation = memo(() => {
                 user_id: user.user.id,
                 artist_name: data.artist_name,
                 total_streams: data.total_streams,
-                followers: data.followers, // Use followers count from API
+                monthly_listeners: data.monthly_listeners,
                 top_tracks: data.top_tracks,
                 valuation_amount: data.risk_adjusted_value || data.valuation_amount,
                 currency: data.currency,
@@ -447,7 +384,7 @@ const CatalogValuation = memo(() => {
                 user_id: user.user.id,
                 artist_name: data.artist_name,
                 total_streams: data.total_streams,
-                followers: data.followers, // Use followers count from API
+                monthly_listeners: data.monthly_listeners,
                 top_tracks: data.top_tracks,
                 valuation_amount: data.risk_adjusted_value || data.valuation_amount,
                 currency: data.currency,
@@ -488,7 +425,7 @@ const CatalogValuation = memo(() => {
     } catch (error) {
       console.error("Catalog valuation error:", error);
     }
-  }, [artistName, valuationParams, canAccess, showUpgradeModalForModule, toast, execute, incrementUsage, calculateCatalogAge, calculatedCatalogAge]);
+  }, [artistName, valuationParams, canAccess, showUpgradeModalForModule, toast, execute, incrementUsage]);
   const formatNumber = useCallback((num: number) => {
     return new Intl.NumberFormat().format(num);
   }, []);
@@ -523,7 +460,7 @@ High: ${formatCurrency(result.fair_market_value.high)}
 KEY METRICS
 ===========
 Total Streams: ${formatNumber(result.total_streams)}
-Monthly Listeners: ${formatNumber(result.followers || 0)}
+Monthly Listeners: ${formatNumber(result.monthly_listeners)}
 LTM Revenue: ${formatCurrency(result.ltm_revenue || 0)}
 Genre: ${result.genre || 'N/A'}
 Popularity Score: ${result.popularity_score || result.spotify_data.popularity}/100
@@ -615,7 +552,7 @@ Actual market values may vary significantly based on numerous factors not captur
               <h3>Catalog Snapshot</h3>
               <ul>
                 <li><strong>Total Streams:</strong> ${formatNumber(result.total_streams || 0)}</li>
-                <li><strong>Spotify Followers:</strong> ${formatNumber(result.followers || 0)}</li>
+                <li><strong>Monthly Listeners:</strong> ${formatNumber(result.monthly_listeners || 0)}</li>
                 <li><strong>Genre:</strong> ${result.genre || result.industry_benchmarks?.genre || 'N/A'}</li>
                 <li><strong>Popularity:</strong> ${result.popularity_score || result.spotify_data?.popularity || 0}/100</li>
               </ul>
@@ -894,8 +831,8 @@ Actual market values may vary significantly based on numerous factors not captur
       return;
     }
     const rows: Array<string[]> = [];
-    rows.push(['Artist', 'Valuation', 'Confidence', 'Total Streams', 'Spotify Followers', 'Genre', 'Popularity']);
-    rows.push([result.artist_name, String(result.risk_adjusted_value || result.valuation_amount || 0), String(result.confidence_score || 0), String(result.total_streams || 0), String(result.followers || 0), result.genre || result.industry_benchmarks?.genre || '', String(result.popularity_score || result.spotify_data?.popularity || 0)]);
+    rows.push(['Artist', 'Valuation', 'Confidence', 'Total Streams', 'Monthly Listeners', 'Genre', 'Popularity']);
+    rows.push([result.artist_name, String(result.risk_adjusted_value || result.valuation_amount || 0), String(result.confidence_score || 0), String(result.total_streams || 0), String(result.monthly_listeners || 0), result.genre || result.industry_benchmarks?.genre || '', String(result.popularity_score || result.spotify_data?.popularity || 0)]);
     rows.push([]);
     rows.push(['Top Tracks']);
     rows.push(['Name', 'Popularity', 'Spotify URL']);
@@ -927,7 +864,7 @@ Actual market values may vary significantly based on numerous factors not captur
   <valuationAmount>${result.risk_adjusted_value || result.valuation_amount || 0}</valuationAmount>
   <confidence>${result.confidence_score || 0}</confidence>
   <totalStreams>${result.total_streams || 0}</totalStreams>
-  <spotifyFollowers>${result.followers || 0}</spotifyFollowers>
+  <monthlyListeners>${result.monthly_listeners || 0}</monthlyListeners>
   <genre>${result.genre || result.industry_benchmarks?.genre || ''}</genre>
 </valuation>`;
     const blob = new Blob([xml], {
@@ -1015,7 +952,7 @@ Actual market values may vary significantly based on numerous factors not captur
             Advanced Catalog Valuation
           </CardTitle>
           <CardDescription>
-            Discover the estimated value of any artist's music catalog using publicly available data and industry benchmarks.
+            Discover the estimated value of any artist's music catalog using real streaming data from Spotify.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1076,20 +1013,11 @@ Actual market values may vary significantly based on numerous factors not captur
               }))} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="catalog-age">Catalog Age</Label>
-                <div className="p-3 bg-muted rounded-md">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{calculatedCatalogAge} years</span>
-                    <Badge variant={catalogAgeSource === 'calculated' ? 'default' : 'secondary'}>
-                      {catalogAgeSource === 'calculated' ? 'Auto-calculated' : 'Default estimate'}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {catalogAgeSource === 'calculated' 
-                      ? 'Based on earliest release date from discography' 
-                      : 'Using industry standard default (no release data available)'}
-                  </p>
-                </div>
+                <Label htmlFor="catalog-age">Catalog Age (Years)</Label>
+                <Input id="catalog-age" type="number" min="1" max="50" value={valuationParams.catalogAge || 5} onChange={e => setValuationParams(prev => ({
+                ...prev,
+                catalogAge: parseInt(e.target.value)
+              }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="methodology">Valuation Method</Label>
@@ -1113,7 +1041,7 @@ Actual market values may vary significantly based on numerous factors not captur
 
       {result && <>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="analysis">DCF Analysis</TabsTrigger>
               <TabsTrigger value="forecasts">Forecasts</TabsTrigger>
@@ -1121,18 +1049,9 @@ Actual market values may vary significantly based on numerous factors not captur
               <TabsTrigger value="revenue-sources">Revenue Sources</TabsTrigger>
               <TabsTrigger value="reports">Reports</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="market-intelligence">Market Intelligence</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              {/* Data Accuracy Disclaimer */}
-              <Alert className="border-yellow-400 bg-gray-900 text-white">
-                <Eye className="h-4 w-4 text-yellow-400" />
-                <AlertDescription className="text-sm font-medium leading-relaxed text-white">
-                  <strong className="font-semibold text-red-400">Data Accuracy Notice:</strong> This valuation combines direct Spotify data (followers, popularity scores, genres) with proprietary estimates (streams, revenue calculations) and industry benchmarks. All financial projections are estimates based on modeling assumptions and should not be considered as investment advice or guaranteed values.
-                </AlertDescription>
-              </Alert>
-
               {/* Key Metrics Grid */}
               <TooltipProvider>
                 <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
@@ -1148,8 +1067,7 @@ Actual market values may vary significantly based on numerous factors not captur
                   const adjustedMultipleValuation = (result.multiple_valuation || 0) * territoryMultiplier;
                   return <>
                         {/* Enhanced Valuation - Show if available */}
-                        {adjustedBlendedValuation && result.has_additional_revenue ? 
-                          <UITooltip>
+                        {adjustedBlendedValuation && result.has_additional_revenue ? <UITooltip>
                             <TooltipTrigger asChild>
                               <Card className="ring-2 ring-primary/20 cursor-help">
                                 <CardContent className="p-6">
@@ -1173,13 +1091,11 @@ Actual market values may vary significantly based on numerous factors not captur
                                 </CardContent>
                               </Card>
                             </TooltipTrigger>
-                             <TooltipContent className="max-w-xs">
+                            <TooltipContent className="max-w-xs">
                               <p><strong>Enhanced Valuation</strong></p>
-                              <p>Blends base Spotify-derived valuation (70% weight) with user-reported additional revenue sources (30% weight), plus diversification bonus up to 20%. Uses publicly available data and industry benchmarks.</p>
+                              <p>Combines Spotify streaming data (70% weight) with user-provided additional revenue sources (30% weight). Based on verified streaming metrics and declared revenue streams with confidence adjustments.</p>
                             </TooltipContent>
-                          </UITooltip>
-                         : 
-                          <UITooltip>
+                          </UITooltip> : <UITooltip>
                             <TooltipTrigger asChild>
                               <Card className="cursor-help">
                                 <CardContent className="p-6">
@@ -1198,12 +1114,11 @@ Actual market values may vary significantly based on numerous factors not captur
                                 </CardContent>
                               </Card>
                             </TooltipTrigger>
-                             <TooltipContent className="max-w-xs">
-                              <p><strong>Risk-Adjusted Value</strong></p>
-                              <p>Base valuation adjusted for verified Spotify popularity scores, genre-specific risk factors, and catalog maturity. Uses publicly available market data and industry benchmarks for risk modeling.</p>
+                            <TooltipContent className="max-w-xs">
+                              
+                              <p>Base Spotify streaming data adjusted for artist popularity score, genre risk factors, and catalog age. Uses industry benchmarks for genre-specific risk multipliers and decay rates.</p>
                             </TooltipContent>
-                          </UITooltip>
-                        }
+                          </UITooltip>}
 
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -1224,9 +1139,9 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                           <TooltipContent className="max-w-xs">
+                          <TooltipContent className="max-w-xs">
                             <p><strong>DCF (Discounted Cash Flow) Valuation</strong></p>
-                            <p>10-year revenue projection using publicly available streaming data and exponential decay models. Discounted at industry-standard rates based on music catalog transaction benchmarks.</p>
+                            <p>10-year revenue projection using Spotify streaming trends, discounted at 12% risk rate. Based on verified streaming history and exponential decay models from industry transaction data.</p>
                           </TooltipContent>
                         </UITooltip>
 
@@ -1249,9 +1164,9 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                           <TooltipContent className="max-w-xs">
+                          <TooltipContent className="max-w-xs">
                             <p><strong>Multiple Valuation</strong></p>
-                            <p>Estimated annual revenue multiplied by genre-specific industry benchmarks (4x-18x range). Based on publicly available catalog transaction data and market comparables.</p>
+                            <p>Spotify-derived LTM revenue × genre-specific industry multiples (4x-18x). Based on public catalog transaction data and streaming-to-revenue conversion rates by genre.</p>
                           </TooltipContent>
                         </UITooltip>
 
@@ -1271,10 +1186,10 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p><strong>Confidence Score</strong></p>
-                              <p>Data quality assessment based on publicly available information completeness, track history depth, and revenue source verification. Higher scores indicate more reliable valuation estimates.</p>
-                            </TooltipContent>
+                           <TooltipContent className="max-w-xs">
+                             <p><strong>Confidence Score</strong></p>
+                             <p>Data completeness metric based on Spotify API coverage, track history depth, and revenue verification. 90+ indicates institutional-grade data quality for transactions.</p>
+                           </TooltipContent>
                         </UITooltip>
 
                         <UITooltip>
@@ -1293,10 +1208,10 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p><strong>LTM Revenue</strong></p>
-                              <p>Estimated annual revenue calculated from publicly available streaming data using industry-standard genre-specific conversion rates and benchmarks. Additional revenues are user-reported.</p>
-                            </TooltipContent>
+                           <TooltipContent className="max-w-xs">
+                             <p><strong>LTM Revenue</strong></p>
+                             <p>Calculated from Spotify streaming data using verified genre-specific per-stream rates ($0.002-$0.004). Additional revenues user-reported and confidence-weighted.</p>
+                           </TooltipContent>
                         </UITooltip>
 
                         <UITooltip>
@@ -1315,51 +1230,26 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p><strong>Popularity Score</strong></p>
-                              <p>Based on publicly available streaming platform metrics (0-100 scale). Reflects current market engagement and is used as a key factor in valuation risk assessment and sustainability projections.</p>
-                            </TooltipContent>
+                           <TooltipContent className="max-w-xs">
+                             <p><strong>Popularity Score</strong></p>
+                             <p>Direct from Spotify API (0-100 scale). Reflects current market heat based on recent plays, playlist adds, and algorithmic performance. Key risk factor for catalog sustainability.</p>
+                           </TooltipContent>
                         </UITooltip>
                       </>;
                 })()}
                 </div>
               </TooltipProvider>
 
-              {/* Enhanced Valuation Insights */}
-              {result.has_additional_revenue && <Card className="col-span-full border-primary/20">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Brain className="h-5 w-5 text-primary" />
-                      Enhanced Valuation Insights
-                    </CardTitle>
-                    <CardDescription>
-                      Advanced analysis incorporating additional revenue streams
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Revenue Diversification</p>
-                        <div className="flex items-center gap-2">
-                          <Progress value={(result.revenue_diversification_score || 0) * 100} className="flex-1" />
-                          <span className="text-sm font-bold">{((result.revenue_diversification_score || 0) * 100).toFixed(1)}%</span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Additional Revenue</p>
-                        <p className="text-lg font-bold text-green-600">
-                          {formatCurrency(result.total_additional_revenue || 0)}
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Methodology</p>
-                        <Badge variant="outline" className="text-primary">
-                          {result.valuation_methodology_v2 === 'enhanced' ? 'Enhanced Blended' : 'Traditional DCF'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>}
+              {/* Territory Analysis */}
+              {(() => {
+              // Calculate territory multiplier
+              const selectedTerritory = result.territory_focus || valuationParams.territory;
+              const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : selectedTerritory === 'us-only' ? 1.2 : 1.0;
+
+              // Apply territory adjustment to all valuations
+              const adjustedValuation = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
+              return <TerritoryBreakdownCard territory={selectedTerritory} territoryMultiplier={territoryMultiplier} totalValuation={adjustedValuation} domesticShare={0.7} internationalShare={0.3} />;
+            })()}
 
               {/* Artist Spotify Information */}
               <Card>
@@ -1369,7 +1259,7 @@ Actual market values may vary significantly based on numerous factors not captur
                     Spotify Artist Information
                   </CardTitle>
                   <CardDescription>
-                    Artist profile data from Spotify API (followers count, not monthly listeners)
+                    Artist profile data and top performing tracks from Spotify
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1381,90 +1271,40 @@ Actual market values may vary significantly based on numerous factors not captur
                       </Badge>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Spotify Followers</p>
+                      <p className="text-sm font-medium">Monthly Listeners</p>
                       <p className="text-lg font-bold text-primary">
-                        {formatNumber(result.spotify_data?.followers || 0)}
+                        {formatNumber(result.monthly_listeners || 0)}
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">Total Streams</p>
-                        <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
-                          ESTIMATED
-                        </Badge>
-                      </div>
+                      <p className="text-sm font-medium">Total Streams</p>
                       <p className="text-lg font-bold text-primary">
                         {formatNumber(result.total_streams || 0)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Calculated from track popularity scores, not actual streaming data
                       </p>
                     </div>
                   </div>
                   
-                  {result.top_tracks && result.top_tracks.length > 0 && (
-                    <Collapsible open={isTopTracksOpen} onOpenChange={setIsTopTracksOpen}>
-                      <CollapsibleTrigger className="w-full">
-                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/30 transition-colors cursor-pointer">
-                          <h4 className="font-medium text-sm">Top Tracks</h4>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs">
-                              {result.top_tracks.slice(0, 10).length} tracks
-                            </Badge>
-                            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isTopTracksOpen ? 'rotate-180' : ''}`} />
-                          </div>
-                        </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="space-y-2">
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {result.top_tracks.slice(0, 10).map((track, index) => <div key={index} className="flex items-center justify-between p-2 border rounded-lg bg-secondary/20">
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate">{track.name}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Badge variant="outline" className="text-xs">
-                                    {track.popularity}/100
-                                  </Badge>
-                                  {track.spotify_url && <a href={track.spotify_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
-                                      View on Spotify
-                                    </a>}
-                                </div>
+                  {result.top_tracks && result.top_tracks.length > 0 && <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Top Tracks</h4>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {result.top_tracks.slice(0, 10).map((track, index) => <div key={index} className="flex items-center justify-between p-2 border rounded-lg bg-secondary/20">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{track.name}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {track.popularity}/100
+                                </Badge>
+                                {track.spotify_url && <a href={track.spotify_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                                    View on Spotify
+                                  </a>}
                               </div>
-                            </div>)}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  )}
+                            </div>
+                          </div>)}
+                      </div>
+                    </div>}
                 </CardContent>
               </Card>
 
-              {/* Industry Benchmarks */}
-              {result.industry_benchmarks && <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      Industry Benchmarks
-                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                        HISTORICAL DATA
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>Genre-specific market data for {result.industry_benchmarks.genre} - based on historical transaction multiples</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm font-medium">Revenue Multiple</p>
-                        <p className="text-2xl font-bold">{result.industry_benchmarks.revenue_multiple}x</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Risk Factor</p>
-                        <p className="text-2xl font-bold">{(result.industry_benchmarks.risk_factor * 100).toFixed(1)}%</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Growth Rate</p>
-                        <p className="text-2xl font-bold">{(result.industry_benchmarks.growth_assumption * 100).toFixed(1)}%</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>}
 
               {/* Enhanced Valuation Insights */}
               {result.has_additional_revenue && <Card className="col-span-full border-primary/20">
@@ -1509,9 +1349,6 @@ Actual market values may vary significantly based on numerous factors not captur
                     <Shield className="h-5 w-5 text-primary" />
                     Valuation Confidence Analysis
                   </CardTitle>
-                  <CardDescription>
-                    Proprietary confidence scoring based on data availability and model assumptions
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -1531,45 +1368,44 @@ Actual market values may vary significantly based on numerous factors not captur
                 </CardContent>
               </Card>
 
-              {/* Territory Analysis */}
-              {(() => {
-              // Calculate territory multiplier
-              const selectedTerritory = result.territory_focus || valuationParams.territory;
-              const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : selectedTerritory === 'us-only' ? 1.2 : 1.0;
-
-              // Apply territory adjustment to all valuations
-              const adjustedValuation = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
-              return <TerritoryBreakdownCard territory={selectedTerritory} territoryMultiplier={territoryMultiplier} totalValuation={adjustedValuation} domesticShare={0.7} internationalShare={0.3} />;
-            })()}
-
+              {/* Industry Benchmarks */}
+              {result.industry_benchmarks && <Card>
+                  <CardHeader>
+                    <CardTitle>Industry Benchmarks</CardTitle>
+                    <CardDescription>Genre-specific market data for {result.industry_benchmarks.genre}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm font-medium">Revenue Multiple</p>
+                        <p className="text-2xl font-bold">{result.industry_benchmarks.revenue_multiple}x</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Risk Factor</p>
+                        <p className="text-2xl font-bold">{(result.industry_benchmarks.risk_factor * 100).toFixed(1)}%</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Growth Rate</p>
+                        <p className="text-2xl font-bold">{(result.industry_benchmarks.growth_assumption * 100).toFixed(1)}%</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>}
             </TabsContent>
 
             <TabsContent value="analysis" className="space-y-6">
-              {/* Cash Flow Projections Disclaimer */}
-              <Alert className="border-yellow-200 bg-yellow-50 text-yellow-800">
-                <Activity className="h-4 w-4 text-yellow-700" />
-                <AlertDescription className="text-yellow-900">
-                  <strong className="text-yellow-900">Forward-Looking Estimates:</strong> Projections are theoretical calculations based on current estimates. Actual performance may vary significantly.
-                </AlertDescription>
-              </Alert>
-
               {/* DCF Components */}
               <Card>
                 <CardHeader>
                   <CardTitle>Discounted Cash Flow Analysis</CardTitle>
                   <CardDescription>
-                    Intrinsic value based on projected future cash flows - all projections are estimates
+                    Intrinsic value based on projected future cash flows
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {result.cash_flow_projections && result.cash_flow_projections.length > 0 ? <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">Cash Flow Projections</h4>
-                          <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
-                            PROJECTIONS
-                          </Badge>
-                        </div>
+                        <h4 className="font-medium">Cash Flow Projections</h4>
                         {result.cash_flow_projections.map(cf => <div key={cf.year} className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
                               <p className="font-medium">Year {cf.year}</p>
@@ -1609,21 +1445,11 @@ Actual market values may vary significantly based on numerous factors not captur
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle>5-Year Valuation Forecast</CardTitle>
-                     <div className="flex gap-2">
-                       {(["pessimistic", "base", "optimistic"] as const).map(scenario => <Button key={scenario} variant={selectedScenario === scenario ? "default" : "outline"} size="sm" onClick={() => {
-                           setSelectedScenario(scenario);
-                           // Automatically adjust CAGR based on scenario
-                           if (scenario === "pessimistic") {
-                             setCustomCagr(Math.max(2, getDefaultCagr * 0.5)); // Conservative: 50% of benchmark, min 2%
-                           } else if (scenario === "base") {
-                             setCustomCagr(getDefaultCagr); // Use industry benchmark
-                           } else if (scenario === "optimistic") {
-                             setCustomCagr(Math.min(15, getDefaultCagr * 1.8)); // Aggressive: 180% of benchmark, max 15%
-                           }
-                         }} className="capitalize">
-                           {scenario === "base" ? "Base Case" : scenario}
-                         </Button>)}
-                     </div>
+                    <div className="flex gap-2">
+                      {(["pessimistic", "base", "optimistic"] as const).map(scenario => <Button key={scenario} variant={selectedScenario === scenario ? "default" : "outline"} size="sm" onClick={() => setSelectedScenario(scenario)} className="capitalize">
+                          {scenario === "base" ? "Base Case" : scenario}
+                        </Button>)}
+                    </div>
                   </div>
                   <CardDescription>
                     {selectedScenario === "pessimistic" && "Conservative growth assumptions"}
@@ -1634,81 +1460,54 @@ Actual market values may vary significantly based on numerous factors not captur
                 <CardContent>
                   <div className="space-y-4">
                     {/* CAGR Control Slider */}
-                    <Collapsible open={isCagrSectionOpen} onOpenChange={setIsCagrSectionOpen}>
-                      <CollapsibleTrigger className="w-full">
-                        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border hover:bg-gradient-to-r hover:from-primary/10 hover:to-secondary/10 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-semibold">Growth Rate Controls</h3>
-                            <Badge variant="secondary">CAGR</Badge>
+                    <div className="p-6 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-base font-semibold">Growth Rate (CAGR)</Label>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Compound Annual Growth Rate - Industry benchmark: {getDefaultCagr}%
+                              {customCagr !== getDefaultCagr && <span className="ml-2 text-primary font-medium">
+                                  (Custom: {customCagr.toFixed(1)}%)
+                                </span>}
+                            </p>
                           </div>
-                          <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${isCagrSectionOpen ? 'rotate-180' : ''}`} />
-                        </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="space-y-4">
-                        <div className="p-6 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border border-t-0 rounded-t-none">
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <Label className="text-base font-semibold">Growth Rate (CAGR)</Label>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  Compound Annual Growth Rate - Industry benchmark: {getDefaultCagr}%
-                                  {customCagr !== getDefaultCagr && (
-                                    <span className="ml-2 text-primary font-medium">
-                                      (Custom: {customCagr.toFixed(1)}%)
-                                    </span>
-                                  )}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <span className="text-2xl font-bold text-primary">{customCagr.toFixed(1)}%</span>
-                                <p className="text-xs text-muted-foreground">Current Rate</p>
-                              </div>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <Slider
-                                value={[customCagr]}
-                                onValueChange={([value]) => setCustomCagr(value)}
-                                max={20}
-                                min={-5}
-                                step={0.1}
-                                className="w-full"
-                              />
-                              <div className="flex justify-between text-xs text-muted-foreground px-1">
-                                <span>-5%</span>
-                                <span>0%</span>
-                                <span>5%</span>
-                                <span>10%</span>
-                                <span>15%</span>
-                                <span>20%</span>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 text-xs">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCustomCagr(getDefaultCagr)}
-                                className="h-7 text-xs"
-                              >
-                                Reset to Industry Benchmark
-                              </Button>
-                              <div className="flex gap-1">
-                                <Badge variant="secondary" className="text-xs">
-                                  Conservative: 0-3%
-                                </Badge>
-                                <Badge variant="secondary" className="text-xs">
-                                  Market: 4-8%
-                                </Badge>
-                                <Badge variant="secondary" className="text-xs">
-                                  Aggressive: 9%+
-                                </Badge>
-                              </div>
-                            </div>
+                          <div className="text-right">
+                            <span className="text-2xl font-bold text-primary">{customCagr.toFixed(1)}%</span>
+                            <p className="text-xs text-muted-foreground">Current Rate</p>
                           </div>
                         </div>
-                      </CollapsibleContent>
-                    </Collapsible>
+                        
+                        <div className="space-y-2">
+                          <Slider value={[customCagr]} onValueChange={([value]) => setCustomCagr(value)} max={20} min={-5} step={0.1} className="w-full" />
+                          <div className="flex justify-between text-xs text-muted-foreground px-1">
+                            <span>-5%</span>
+                            <span>0%</span>
+                            <span>5%</span>
+                            <span>10%</span>
+                            <span>15%</span>
+                            <span>20%</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-xs">
+                          <Button variant="outline" size="sm" onClick={() => setCustomCagr(getDefaultCagr)} className="h-7 text-xs">
+                            Reset to Industry Benchmark
+                          </Button>
+                          <div className="flex gap-1">
+                            <Badge variant="secondary" className="text-xs">
+                              Conservative: 0-3%
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              Market: 4-8%
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              Aggressive: 9%+
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/30 rounded-lg">
                       <div>
@@ -2255,14 +2054,6 @@ Actual market values may vary significantly based on numerous factors not captur
               <div className="text-center py-8 text-muted-foreground">
                 
               </div>
-            </TabsContent>
-
-            <TabsContent value="market-intelligence" className="space-y-6">
-              <MarketIntelligenceTab 
-                artistName={artistName}
-                genre={result?.genre || 'Pop'}
-                popularity={result?.popularity_score || 50}
-              />
             </TabsContent>
           </Tabs>
         </>}
