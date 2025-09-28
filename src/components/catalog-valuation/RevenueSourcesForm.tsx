@@ -563,28 +563,6 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
                     </div>
                   )}
 
-                  {/* Revenue Type Multipliers Info */}
-                  <Alert>
-                    <BarChart3 className="h-4 w-4" />
-                    <AlertTitle>Enhanced Valuation Impact</AlertTitle>
-                    <AlertDescription>
-                      <div className="mt-2 text-sm space-y-2">
-                        <p>These revenue sources will enhance your valuation using industry multipliers:</p>
-                        <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
-                          {Object.entries(REVENUE_TYPE_MULTIPLIERS)
-                            .sort(([,a], [,b]) => b.multiplier - a.multiplier)
-                            .slice(0, 6)
-                            .map(([key, multiplier]) => (
-                            <div key={key}>• {multiplier.label}: {multiplier.multiplier}x</div>
-                          ))}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Final valuation = (Base × 0.7) + (Additional Revenue × 0.3) + Diversification Bonus
-                        </p>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-
                   {/* Action Buttons */}
                   <div className="flex justify-end gap-2">
                     <Button
