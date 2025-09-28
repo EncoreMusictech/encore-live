@@ -1019,7 +1019,7 @@ Actual market values may vary significantly based on numerous factors not captur
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
                               <p><strong>Enhanced Valuation</strong></p>
-                              <p>This is your catalog's total worth when we include all revenue streams beyond just streaming. We combine your Spotify streaming value (70%) with additional revenues like publishing, sync licensing, and merchandise (30%) to give you a more complete picture of your catalog's true market value.</p>
+                              <p>Combines Spotify streaming data (70% weight) with user-provided additional revenue sources (30% weight). Based on verified streaming metrics and declared revenue streams with confidence adjustments.</p>
                             </TooltipContent>
                           </UITooltip>
                          : 
@@ -1044,7 +1044,7 @@ Actual market values may vary significantly based on numerous factors not captur
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
                               <p><strong>Risk-Adjusted Value</strong></p>
-                              <p>This is your catalog's estimated fair market value after accounting for risks like artist popularity, genre trends, and catalog age. We adjust the base valuation up or down based on how likely your music is to maintain its earning power over time.</p>
+                              <p>Base Spotify streaming data adjusted for artist popularity score, genre risk factors, and catalog age. Uses industry benchmarks for genre-specific risk multipliers and decay rates.</p>
                             </TooltipContent>
                           </UITooltip>
                         }
@@ -1070,7 +1070,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p><strong>DCF (Discounted Cash Flow) Valuation</strong></p>
-                            <p>This calculates what your future earnings are worth in today's money. We forecast your catalog's revenue for the next 10 years, then discount it back to present value using a risk rate (typically 12%). It's like asking: "How much would someone pay today for your future earnings?"</p>
+                            <p>10-year revenue projection using Spotify streaming trends, discounted at 12% risk rate. Based on verified streaming history and exponential decay models from industry transaction data.</p>
                           </TooltipContent>
                         </UITooltip>
 
@@ -1095,7 +1095,7 @@ Actual market values may vary significantly based on numerous factors not captur
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p><strong>Multiple Valuation</strong></p>
-                            <p>This uses market standards to value your catalog. We take your last 12 months of revenue and multiply it by industry benchmarks (typically 8-18x depending on genre). For example, if you earned $100K last year and your genre typically sells for 12x revenue, your catalog would be worth $1.2M.</p>
+                            <p>Spotify-derived LTM revenue × genre-specific industry multiples (4x-18x). Based on public catalog transaction data and streaming-to-revenue conversion rates by genre.</p>
                           </TooltipContent>
                         </UITooltip>
 
@@ -1115,10 +1115,10 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p><strong>Confidence Score</strong></p>
-                            <p>This shows how reliable our valuation is based on available data. Higher scores (90+) mean we have complete streaming data, established track record, and comprehensive market information. Lower scores suggest limited data or newer catalogs that are harder to value accurately.</p>
-                          </TooltipContent>
+                           <TooltipContent className="max-w-xs">
+                             <p><strong>Confidence Score</strong></p>
+                             <p>Data completeness metric based on Spotify API coverage, track history depth, and revenue verification. 90+ indicates institutional-grade data quality for transactions.</p>
+                           </TooltipContent>
                         </UITooltip>
 
                         <UITooltip>
@@ -1137,10 +1137,10 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p><strong>LTM (Last Twelve Months) Revenue</strong></p>
-                            <p>This is your catalog's total earnings over the past 12 months from all sources we can track. It includes streaming royalties, licensing fees, and other income streams. This number is crucial because it's the baseline we use for projecting future earnings and calculating market multiples.</p>
-                          </TooltipContent>
+                           <TooltipContent className="max-w-xs">
+                             <p><strong>LTM Revenue</strong></p>
+                             <p>Calculated from Spotify streaming data using verified genre-specific per-stream rates ($0.002-$0.004). Additional revenues user-reported and confidence-weighted.</p>
+                           </TooltipContent>
                         </UITooltip>
 
                         <UITooltip>
@@ -1159,10 +1159,10 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p><strong>Popularity Score</strong></p>
-                            <p>This is Spotify's measure of how "hot" your music is right now (0-100 scale). It factors in recent play counts, playlist additions, and listener engagement. Higher scores mean your music is trending and likely to maintain strong performance, while lower scores might indicate declining interest or niche appeal.</p>
-                          </TooltipContent>
+                           <TooltipContent className="max-w-xs">
+                             <p><strong>Popularity Score</strong></p>
+                             <p>Direct from Spotify API (0-100 scale). Reflects current market heat based on recent plays, playlist adds, and algorithmic performance. Key risk factor for catalog sustainability.</p>
+                           </TooltipContent>
                         </UITooltip>
                       </>;
                 })()}
