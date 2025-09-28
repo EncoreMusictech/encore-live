@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft } from "lucide-react";
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, Area, AreaChart, ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar } from 'recharts';
@@ -143,6 +144,7 @@ const CatalogValuation = memo(() => {
   const [activeTab, setActiveTab] = useState("overview");
   const [catalogValuationId, setCatalogValuationId] = useState<string | null>(null);
   const [revenueMetrics, setRevenueMetrics] = useState<any>(null);
+  const [customCagr, setCustomCagr] = useState<number>(5);
   const [valuationParams, setValuationParams] = useState<ValuationParams>({
     discountRate: 0.12,
     catalogAge: 5,
@@ -155,6 +157,48 @@ const CatalogValuation = memo(() => {
     refetch
   } = useCatalogRevenueSources(catalogValuationId);
   const computedRevenueMetrics = useMemo(() => calculateRevenueMetrics(), [revenueSources]);
+
+  // Industry CAGR benchmarks by genre
+  const industryBenchmarks = useMemo(() => ({
+    'hip-hop': 8,
+    'hip hop': 8,
+    'rap': 8,
+    'r&b': 7,
+    'rnb': 7,
+    'pop': 5,
+    'electronic': 6,
+    'edm': 6,
+    'country': 4,
+    'rock': 3,
+    'alternative': 4,
+    'folk': 3,
+    'classical': 2,
+    'jazz': 2
+  }), []);
+
+  // Get default CAGR based on genre
+  const getDefaultCagr = useMemo(() => {
+    if (!result?.spotify_data?.genres?.length) return 5;
+    
+    for (const genre of result.spotify_data.genres) {
+      const normalizedGenre = genre.toLowerCase();
+      for (const [key, value] of Object.entries(industryBenchmarks)) {
+        if (normalizedGenre.includes(key)) {
+          return value;
+        }
+      }
+    }
+    return 5; // Default fallback
+  }, [result?.spotify_data?.genres, industryBenchmarks]);
+
+  // Update custom CAGR when result changes
+  const prevResultRef = React.useRef<ValuationResult | null>(null);
+  React.useEffect(() => {
+    if (result && result !== prevResultRef.current) {
+      setCustomCagr(getDefaultCagr);
+      prevResultRef.current = result;
+    }
+  }, [result, getDefaultCagr]);
   const {
     toast
   } = useToast();
@@ -209,7 +253,10 @@ const CatalogValuation = memo(() => {
         console.log("Calling advanced Spotify catalog valuation function...");
         const requestBody = {
           artistName: artistName.trim(),
-          valuationParams,
+          valuationParams: {
+            ...valuationParams,
+            customCagr
+          },
           catalogValuationId,
           userId: user?.id
         };
@@ -1388,6 +1435,65 @@ Actual market values may vary significantly based on numerous factors not captur
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {/* CAGR Control Slider */}
+                    <div className="p-6 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-base font-semibold">Growth Rate (CAGR)</Label>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Compound Annual Growth Rate - Industry benchmark: {getDefaultCagr}%
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-2xl font-bold text-primary">{customCagr.toFixed(1)}%</span>
+                            <p className="text-xs text-muted-foreground">Current Rate</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Slider
+                            value={[customCagr]}
+                            onValueChange={([value]) => setCustomCagr(value)}
+                            max={20}
+                            min={-5}
+                            step={0.1}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-muted-foreground px-1">
+                            <span>-5%</span>
+                            <span>0%</span>
+                            <span>5%</span>
+                            <span>10%</span>
+                            <span>15%</span>
+                            <span>20%</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-xs">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCustomCagr(getDefaultCagr)}
+                            className="h-7 text-xs"
+                          >
+                            Reset to Industry Benchmark
+                          </Button>
+                          <div className="flex gap-1">
+                            <Badge variant="secondary" className="text-xs">
+                              Conservative: 0-3%
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              Market: 4-8%
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              Aggressive: 9%+
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/30 rounded-lg">
                       <div>
                         <p className="text-sm font-medium">Current Valuation</p>
