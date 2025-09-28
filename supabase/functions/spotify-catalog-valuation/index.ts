@@ -431,6 +431,7 @@ serve(async (req) => {
   try {
   const { artistName, valuationParams, catalogValuationId, userId } = await req.json();
   console.log(`DEBUGGING: Received territory parameter: "${valuationParams?.territory}"`);
+  console.log(`DEBUGGING: Received discount rate parameter: ${valuationParams?.discountRate || 0.12}`);
   const territory = valuationParams?.territory || 'global';
 
     if (!artistName) {
@@ -581,8 +582,9 @@ const { data: benchmarkData } = await supabase
     const dcfValuation = ValuationEngine.calculateDCFValuation(
       cashFlowProjections.slice(0, 5), // Use first 5 years for DCF
       benchmark.growth_rate_assumption * 0.5, // Terminal growth rate
-      valuationParams?.discountRate || 0.12
+      userDiscountRate
     );
+    console.log(`DCF Valuation calculated with ${userDiscountRate * 100}% discount rate: $${dcfValuation.toLocaleString()}`);
 
     // Multiple-based valuation
     const multipleValuation = Math.floor(ltmRevenue * benchmark.revenue_multiple_avg);
