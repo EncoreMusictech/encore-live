@@ -96,16 +96,6 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
       return;
     }
 
-    // If no catalogValuationId, we need to inform the user
-    if (!catalogValuationId) {
-      toast({
-        title: 'Valuation Required',
-        description: 'Please complete a catalog valuation first before adding revenue sources',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     const success = editingId
       ? await updateRevenueSource(editingId, newSource)
       : await addRevenueSource(newSource);
