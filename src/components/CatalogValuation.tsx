@@ -199,6 +199,37 @@ const CatalogValuation = memo(() => {
       prevResultRef.current = result;
     }
   }, [result, getDefaultCagr]);
+
+  // Calculate adjusted valuation based on custom CAGR
+  const adjustedValuations = useMemo(() => {
+    if (!result) return null;
+
+    const baseCagr = result.growth_metrics.estimated_cagr || 7; // Default base case CAGR
+    const cagrMultiplier = customCagr / baseCagr;
+    
+    // Calculate adjusted values for current scenario
+    const baseValuation = result.valuations[selectedScenario].current;
+    const baseYear5 = result.valuations[selectedScenario].year5;
+    
+    // Apply CAGR adjustment to year 5 valuation
+    const adjustedYear5 = baseValuation * Math.pow(1 + (customCagr / 100), 5);
+    
+    // Calculate adjusted forecasts for the selected scenario
+    const adjustedForecasts = result.forecasts[selectedScenario].map(year => ({
+      ...year,
+      valuation: baseValuation * Math.pow(1 + (customCagr / 100), year.year),
+      revenue: year.revenue * Math.pow(1 + (customCagr / 100), year.year),
+      streams: Math.round(year.streams * Math.pow(1 + (customCagr / 100), year.year))
+    }));
+
+    return {
+      current: baseValuation,
+      year5: adjustedYear5,
+      cagr: customCagr.toFixed(1),
+      forecasts: adjustedForecasts,
+      totalReturn: ((adjustedYear5 / baseValuation - 1) * 100)
+    };
+  }, [result, selectedScenario, customCagr]);
   const {
     toast
   } = useToast();
@@ -1443,6 +1474,11 @@ Actual market values may vary significantly based on numerous factors not captur
                             <Label className="text-base font-semibold">Growth Rate (CAGR)</Label>
                             <p className="text-sm text-muted-foreground mt-1">
                               Compound Annual Growth Rate - Industry benchmark: {getDefaultCagr}%
+                              {customCagr !== getDefaultCagr && (
+                                <span className="ml-2 text-primary font-medium">
+                                  (Custom: {customCagr.toFixed(1)}%)
+                                </span>
+                              )}
                             </p>
                           </div>
                           <div className="text-right">
@@ -1498,32 +1534,32 @@ Actual market values may vary significantly based on numerous factors not captur
                       <div>
                         <p className="text-sm font-medium">Current Valuation</p>
                         <p className="text-xl font-bold text-primary">
-                          {formatCurrency(result.valuations[selectedScenario].current)}
+                          {adjustedValuations ? formatCurrency(adjustedValuations.current) : formatCurrency(result.valuations[selectedScenario].current)}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm font-medium">Year 5 Valuation</p>
                         <p className="text-xl font-bold text-primary">
-                          {formatCurrency(result.valuations[selectedScenario].year5)}
+                          {adjustedValuations ? formatCurrency(adjustedValuations.year5) : formatCurrency(result.valuations[selectedScenario].year5)}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm font-medium">5-Year CAGR</p>
                         <p className="text-xl font-bold text-green-600">
-                          {result.valuations[selectedScenario].cagr}%
+                          {adjustedValuations ? adjustedValuations.cagr : result.valuations[selectedScenario].cagr}%
                         </p>
                       </div>
                       <div>
                         <p className="text-sm font-medium">Total Return</p>
                         <p className="text-xl font-bold text-green-600">
-                          {((result.valuations[selectedScenario].year5 / result.valuations[selectedScenario].current - 1) * 100).toFixed(0)}%
+                          {adjustedValuations ? adjustedValuations.totalReturn.toFixed(0) : ((result.valuations[selectedScenario].year5 / result.valuations[selectedScenario].current - 1) * 100).toFixed(0)}%
                         </p>
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <p className="font-medium">Year-by-Year Breakdown</p>
-                      {result.forecasts[selectedScenario].map(year => <div key={year.year} className="flex items-center justify-between p-3 border rounded-lg">
+                      {(adjustedValuations ? adjustedValuations.forecasts : result.forecasts[selectedScenario]).map(year => <div key={year.year} className="flex items-center justify-between p-3 border rounded-lg">
                           <div>
                             <p className="font-medium">Year {year.year}</p>
                             <p className="text-sm text-muted-foreground">
