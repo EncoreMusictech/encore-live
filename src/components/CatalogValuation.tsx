@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2, Search, Download, TrendingUp, DollarSign, Users, BarChart3, Music, Target, PieChart, Calculator, Shield, Star, Zap, Brain, LineChart, Activity, TrendingDown, FileBarChart, Eye, ArrowLeft } from "lucide-react";
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, Area, AreaChart, ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar } from 'recharts';
 import { CatalogValuationSkeleton, AsyncLoading } from "@/components/LoadingStates";
@@ -977,134 +978,196 @@ Actual market values may vary significantly based on numerous factors not captur
 
             <TabsContent value="overview" className="space-y-6">
               {/* Key Metrics Grid */}
-              <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-                {(() => {
-                // Calculate territory multiplier
-                const selectedTerritory = result.territory_focus || valuationParams.territory;
-                const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : selectedTerritory === 'us-only' ? 1.2 : 1.0;
+              <TooltipProvider>
+                <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+                  {(() => {
+                  // Calculate territory multiplier
+                  const selectedTerritory = result.territory_focus || valuationParams.territory;
+                  const territoryMultiplier = selectedTerritory === 'international' ? 0.8 : selectedTerritory === 'us-only' ? 1.2 : 1.0;
 
-                // Apply territory adjustment to all valuations
-                const adjustedBlendedValuation = result.blended_valuation ? result.blended_valuation * territoryMultiplier : null;
-                const adjustedRiskAdjustedValue = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
-                const adjustedDcfValuation = (result.dcf_valuation || 0) * territoryMultiplier;
-                const adjustedMultipleValuation = (result.multiple_valuation || 0) * territoryMultiplier;
-                return <>
-                      {/* Enhanced Valuation - Show if available */}
-                      {adjustedBlendedValuation && result.has_additional_revenue ? <Card className="ring-2 ring-primary/20">
-                          <CardContent className="p-6">
-                            <div className="flex items-center space-x-2">
-                              <Zap className="h-4 w-4 text-primary" />
-                              <div className="space-y-1">
-                                <p className="text-sm font-medium leading-none">Enhanced Valuation</p>
-                                <p className="text-xl font-bold text-primary">
-                                  {formatCurrency(adjustedBlendedValuation)}
-                                </p>
-                                <div className="flex items-center gap-1">
-                                  <Badge variant="secondary" className="text-xs">
-                                    {((adjustedBlendedValuation - adjustedRiskAdjustedValue) / adjustedRiskAdjustedValue * 100).toFixed(1)}% uplift
-                                  </Badge>
-                                  {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
-                                      {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
-                                    </Badge>}
+                  // Apply territory adjustment to all valuations
+                  const adjustedBlendedValuation = result.blended_valuation ? result.blended_valuation * territoryMultiplier : null;
+                  const adjustedRiskAdjustedValue = (result.risk_adjusted_value || result.valuation_amount) * territoryMultiplier;
+                  const adjustedDcfValuation = (result.dcf_valuation || 0) * territoryMultiplier;
+                  const adjustedMultipleValuation = (result.multiple_valuation || 0) * territoryMultiplier;
+                  return <>
+                        {/* Enhanced Valuation - Show if available */}
+                        {adjustedBlendedValuation && result.has_additional_revenue ? 
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <Card className="ring-2 ring-primary/20 cursor-help">
+                                <CardContent className="p-6">
+                                  <div className="flex items-center space-x-2">
+                                    <Zap className="h-4 w-4 text-primary" />
+                                    <div className="space-y-1">
+                                      <p className="text-sm font-medium leading-none">Enhanced Valuation</p>
+                                      <p className="text-xl font-bold text-primary">
+                                        {formatCurrency(adjustedBlendedValuation)}
+                                      </p>
+                                      <div className="flex items-center gap-1">
+                                        <Badge variant="secondary" className="text-xs">
+                                          {((adjustedBlendedValuation - adjustedRiskAdjustedValue) / adjustedRiskAdjustedValue * 100).toFixed(1)}% uplift
+                                        </Badge>
+                                        {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
+                                            {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
+                                          </Badge>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p><strong>Enhanced Valuation</strong></p>
+                              <p>This is your catalog's total worth when we include all revenue streams beyond just streaming. We combine your Spotify streaming value (70%) with additional revenues like publishing, sync licensing, and merchandise (30%) to give you a more complete picture of your catalog's true market value.</p>
+                            </TooltipContent>
+                          </UITooltip>
+                         : 
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <Card className="cursor-help">
+                                <CardContent className="p-6">
+                                  <div className="flex items-center space-x-2">
+                                    <Target className="h-4 w-4 text-primary" />
+                                    <div className="space-y-1">
+                                      <p className="text-sm font-medium leading-none">Risk-Adjusted Value</p>
+                                      <p className="text-xl font-bold text-primary">
+                                        {formatCurrency(adjustedRiskAdjustedValue)}
+                                      </p>
+                                      {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
+                                          {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
+                                        </Badge>}
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p><strong>Risk-Adjusted Value</strong></p>
+                              <p>This is your catalog's estimated fair market value after accounting for risks like artist popularity, genre trends, and catalog age. We adjust the base valuation up or down based on how likely your music is to maintain its earning power over time.</p>
+                            </TooltipContent>
+                          </UITooltip>
+                        }
+
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Card className="cursor-help">
+                              <CardContent className="p-6">
+                                <div className="flex items-center space-x-2">
+                                  <Calculator className="h-4 w-4 text-blue-600" />
+                                  <div className="space-y-1">
+                                    <p className="text-sm font-medium leading-none">DCF Valuation</p>
+                                    <p className="text-xl font-bold text-blue-600">
+                                      {formatCurrency(adjustedDcfValuation)}
+                                    </p>
+                                    {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
+                                        {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
+                                      </Badge>}
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card> : <Card>
-                          <CardContent className="p-6">
-                            <div className="flex items-center space-x-2">
-                              <Target className="h-4 w-4 text-primary" />
-                              <div className="space-y-1">
-                                <p className="text-sm font-medium leading-none">Risk-Adjusted Value</p>
-                                <p className="text-xl font-bold text-primary">
-                                  {formatCurrency(adjustedRiskAdjustedValue)}
-                                </p>
-                                {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
-                                    {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
-                                  </Badge>}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>}
+                              </CardContent>
+                            </Card>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p><strong>DCF (Discounted Cash Flow) Valuation</strong></p>
+                            <p>This calculates what your future earnings are worth in today's money. We forecast your catalog's revenue for the next 10 years, then discount it back to present value using a risk rate (typically 12%). It's like asking: "How much would someone pay today for your future earnings?"</p>
+                          </TooltipContent>
+                        </UITooltip>
 
-                      <Card>
-                        <CardContent className="p-6">
-                          <div className="flex items-center space-x-2">
-                            <Calculator className="h-4 w-4 text-blue-600" />
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium leading-none">DCF Valuation</p>
-                              <p className="text-xl font-bold text-blue-600">
-                                {formatCurrency(adjustedDcfValuation)}
-                              </p>
-                              {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
-                                  {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
-                                </Badge>}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Card className="cursor-help">
+                              <CardContent className="p-6">
+                                <div className="flex items-center space-x-2">
+                                  <BarChart3 className="h-4 w-4 text-green-600" />
+                                  <div className="space-y-1">
+                                    <p className="text-sm font-medium leading-none">Multiple Valuation</p>
+                                    <p className="text-xl font-bold text-green-600">
+                                      {formatCurrency(adjustedMultipleValuation)}
+                                    </p>
+                                    {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
+                                        {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
+                                      </Badge>}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p><strong>Multiple Valuation</strong></p>
+                            <p>This uses market standards to value your catalog. We take your last 12 months of revenue and multiply it by industry benchmarks (typically 8-18x depending on genre). For example, if you earned $100K last year and your genre typically sells for 12x revenue, your catalog would be worth $1.2M.</p>
+                          </TooltipContent>
+                        </UITooltip>
 
-                      <Card>
-                        <CardContent className="p-6">
-                          <div className="flex items-center space-x-2">
-                            <BarChart3 className="h-4 w-4 text-green-600" />
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium leading-none">Multiple Valuation</p>
-                              <p className="text-xl font-bold text-green-600">
-                                {formatCurrency(adjustedMultipleValuation)}
-                              </p>
-                              {territoryMultiplier !== 1.0 && <Badge variant="outline" className="text-xs">
-                                  {selectedTerritory} {(territoryMultiplier * 100).toFixed(0)}%
-                                </Badge>}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Card className="cursor-help">
+                              <CardContent className="p-6">
+                                <div className="flex items-center space-x-2">
+                                  <Shield className="h-4 w-4 text-orange-600" />
+                                  <div className="space-y-1">
+                                    <p className="text-sm font-medium leading-none">Confidence Score</p>
+                                    <p className="text-xl font-bold text-orange-600">
+                                      {result.confidence_score || 0}/100
+                                    </p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p><strong>Confidence Score</strong></p>
+                            <p>This shows how reliable our valuation is based on available data. Higher scores (90+) mean we have complete streaming data, established track record, and comprehensive market information. Lower scores suggest limited data or newer catalogs that are harder to value accurately.</p>
+                          </TooltipContent>
+                        </UITooltip>
 
-                      <Card>
-                        <CardContent className="p-6">
-                          <div className="flex items-center space-x-2">
-                            <Shield className="h-4 w-4 text-orange-600" />
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium leading-none">Confidence Score</p>
-                              <p className="text-xl font-bold text-orange-600">
-                                {result.confidence_score || 0}/100
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Card className="cursor-help">
+                              <CardContent className="p-6">
+                                <div className="flex items-center space-x-2">
+                                  <DollarSign className="h-4 w-4 text-purple-600" />
+                                  <div className="space-y-1">
+                                    <p className="text-sm font-medium leading-none">LTM Revenue</p>
+                                    <p className="text-xl font-bold text-purple-600">
+                                      {formatCurrency(result.ltm_revenue || 0)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p><strong>LTM (Last Twelve Months) Revenue</strong></p>
+                            <p>This is your catalog's total earnings over the past 12 months from all sources we can track. It includes streaming royalties, licensing fees, and other income streams. This number is crucial because it's the baseline we use for projecting future earnings and calculating market multiples.</p>
+                          </TooltipContent>
+                        </UITooltip>
 
-                      <Card>
-                        <CardContent className="p-6">
-                          <div className="flex items-center space-x-2">
-                            <DollarSign className="h-4 w-4 text-purple-600" />
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium leading-none">LTM Revenue</p>
-                              <p className="text-xl font-bold text-purple-600">
-                                {formatCurrency(result.ltm_revenue || 0)}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardContent className="p-6">
-                          <div className="flex items-center space-x-2">
-                            <Star className="h-4 w-4 text-yellow-600" />
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium leading-none">Popularity</p>
-                              <p className="text-xl font-bold text-yellow-600">
-                                {result.popularity_score || result.spotify_data.popularity}/100
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </>;
-              })()}
-              </div>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Card className="cursor-help">
+                              <CardContent className="p-6">
+                                <div className="flex items-center space-x-2">
+                                  <Star className="h-4 w-4 text-yellow-600" />
+                                  <div className="space-y-1">
+                                    <p className="text-sm font-medium leading-none">Popularity</p>
+                                    <p className="text-xl font-bold text-yellow-600">
+                                      {result.popularity_score || result.spotify_data.popularity}/100
+                                    </p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p><strong>Popularity Score</strong></p>
+                            <p>This is Spotify's measure of how "hot" your music is right now (0-100 scale). It factors in recent play counts, playlist additions, and listener engagement. Higher scores mean your music is trending and likely to maintain strong performance, while lower scores might indicate declining interest or niche appeal.</p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </>;
+                })()}
+                </div>
+              </TooltipProvider>
 
               {/* Territory Analysis */}
               {(() => {
