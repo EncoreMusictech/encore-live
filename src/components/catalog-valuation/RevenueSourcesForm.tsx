@@ -310,6 +310,16 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
   const handleImport = async () => {
     if (!importData.length) return;
 
+    // Check for catalog valuation ID before importing
+    if (!catalogValuationId) {
+      toast({
+        title: 'Catalog Valuation Required',
+        description: 'Please complete a catalog valuation first before importing additional revenue sources. Go to the Overview tab to start a valuation.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsImporting(true);
     const success = await importRevenueSources(importData);
     
@@ -473,6 +483,26 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
                 </DialogHeader>
                 
                 <div className="space-y-6">
+                  {/* Requirement Notice */}
+                  {!catalogValuationId && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Catalog Valuation Required</AlertTitle>
+                      <AlertDescription>
+                        You must complete a catalog valuation first before importing additional revenue sources. 
+                        These revenue sources will enhance your existing valuation by adding 30% additional weighting.
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowImportDialog(false)}
+                          className="ml-2"
+                        >
+                          Complete Valuation First
+                        </Button>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {/* Template Download */}
                   <Alert>
                     <Info className="h-4 w-4" />
@@ -573,7 +603,7 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
                     </Button>
                     <Button
                       onClick={handleImport}
-                      disabled={importData.length === 0 || isImporting || importErrors.length > 0}
+                      disabled={importData.length === 0 || isImporting || importErrors.length > 0 || !catalogValuationId}
                     >
                       {isImporting ? (
                         <>
