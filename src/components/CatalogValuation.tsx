@@ -147,7 +147,7 @@ const CatalogValuation = memo(() => {
   const [customCagr, setCustomCagr] = useState<number>(5);
   const [valuationParams, setValuationParams] = useState<ValuationParams>({
     discountRate: 0.12,
-    catalogAge: 5,
+    catalogAge: 5, // Will be overridden by calculated age
     methodology: 'advanced',
     territory: 'global'
   });
@@ -157,6 +157,47 @@ const CatalogValuation = memo(() => {
     refetch
   } = useCatalogRevenueSources(catalogValuationId);
   const computedRevenueMetrics = useMemo(() => calculateRevenueMetrics(), [revenueSources]);
+
+  // Calculate catalog age from discography data
+  const calculateCatalogAge = useCallback(async (artistName: string) => {
+    try {
+      // First try to get discography from database
+      const { data: discography } = await supabase
+        .from('artist_discography')
+        .select('*')
+        .ilike('artist_name', artistName)
+        .single();
+      
+      if (discography && discography.albums && discography.singles) {
+        const albums = Array.isArray(discography.albums) ? discography.albums : [];
+        const singles = Array.isArray(discography.singles) ? discography.singles : [];
+        const allReleases = [...albums, ...singles];
+        
+        if (allReleases.length > 0) {
+          const releaseDates = allReleases
+            .map((release: any) => release?.release_date)
+            .filter((date: any) => date && typeof date === 'string')
+            .sort();
+          
+          if (releaseDates.length > 0) {
+            const earliestDate = new Date(releaseDates[0]);
+            const currentDate = new Date();
+            const ageInYears = Math.max(1, Math.floor((currentDate.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
+            return ageInYears;
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Could not fetch discography for catalog age calculation:', error);
+    }
+    
+    // Fallback to default
+    return 5;
+  }, []);
+
+  // Auto-calculated catalog age
+  const [calculatedCatalogAge, setCalculatedCatalogAge] = useState<number>(5);
+  const [catalogAgeSource, setCatalogAgeSource] = useState<string>('default');
 
   // Industry CAGR benchmarks by genre
   const industryBenchmarks = useMemo(() => ({
@@ -277,6 +318,19 @@ const CatalogValuation = memo(() => {
     }
     console.log("Clearing previous result");
     setResult(null);
+
+    // Calculate catalog age from discography data
+    console.log("Calculating catalog age from discography...");
+    const catalogAge = await calculateCatalogAge(artistName.trim());
+    setCalculatedCatalogAge(catalogAge);
+    setCatalogAgeSource(catalogAge === 5 ? 'default' : 'calculated');
+    console.log(`Catalog age: ${catalogAge} years (${catalogAge === 5 ? 'default' : 'calculated from releases'})`);
+
+    // Update valuation params with calculated age
+    setValuationParams(prev => ({
+      ...prev,
+      catalogAge: catalogAge
+    }));
     try {
       console.log("Starting execute function");
       const data = await execute(async () => {
@@ -286,6 +340,7 @@ const CatalogValuation = memo(() => {
           artistName: artistName.trim(),
           valuationParams: {
             ...valuationParams,
+            catalogAge: calculatedCatalogAge, // Use calculated age
             customCagr
           },
           catalogValuationId,
@@ -428,7 +483,7 @@ const CatalogValuation = memo(() => {
     } catch (error) {
       console.error("Catalog valuation error:", error);
     }
-  }, [artistName, valuationParams, canAccess, showUpgradeModalForModule, toast, execute, incrementUsage]);
+  }, [artistName, valuationParams, canAccess, showUpgradeModalForModule, toast, execute, incrementUsage, calculateCatalogAge, calculatedCatalogAge]);
   const formatNumber = useCallback((num: number) => {
     return new Intl.NumberFormat().format(num);
   }, []);
@@ -1016,11 +1071,20 @@ Actual market values may vary significantly based on numerous factors not captur
               }))} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="catalog-age">Catalog Age (Years)</Label>
-                <Input id="catalog-age" type="number" min="1" max="50" value={valuationParams.catalogAge || 5} onChange={e => setValuationParams(prev => ({
-                ...prev,
-                catalogAge: parseInt(e.target.value)
-              }))} />
+                <Label htmlFor="catalog-age">Catalog Age</Label>
+                <div className="p-3 bg-muted rounded-md">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{calculatedCatalogAge} years</span>
+                    <Badge variant={catalogAgeSource === 'calculated' ? 'default' : 'secondary'}>
+                      {catalogAgeSource === 'calculated' ? 'Auto-calculated' : 'Default estimate'}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {catalogAgeSource === 'calculated' 
+                      ? 'Based on earliest release date from discography' 
+                      : 'Using industry standard default (no release data available)'}
+                  </p>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="methodology">Valuation Method</Label>
