@@ -27,7 +27,7 @@ import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { CatalogValuationSkeleton, AsyncLoading } from "@/components/LoadingStates";
 import { usePDFGeneration } from "@/hooks/usePDFGeneration";
 import { useReportAI } from "@/hooks/useReportAI";
-import MarketIntelligenceTab from "@/components/catalog-valuation/MarketIntelligenceTab";
+
 interface TopTrack {
   name: string;
   popularity: number;
@@ -1113,7 +1113,7 @@ Actual market values may vary significantly based on numerous factors not captur
 
       {result && <>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="analysis">DCF Analysis</TabsTrigger>
               <TabsTrigger value="forecasts">Forecasts</TabsTrigger>
@@ -1121,7 +1121,7 @@ Actual market values may vary significantly based on numerous factors not captur
               <TabsTrigger value="revenue-sources">Revenue Sources</TabsTrigger>
               <TabsTrigger value="reports">Reports</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="market-intelligence">Market Intelligence</TabsTrigger>
+              
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -2257,13 +2257,6 @@ Actual market values may vary significantly based on numerous factors not captur
               </div>
             </TabsContent>
 
-            <TabsContent value="market-intelligence" className="space-y-6">
-              <MarketIntelligenceTab 
-                artistName={artistName}
-                genre={result?.genre || 'Pop'}
-                popularity={result?.popularity_score || 50}
-              />
-            </TabsContent>
           </Tabs>
         </>}
     </div>
