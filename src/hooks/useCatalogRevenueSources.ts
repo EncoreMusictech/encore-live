@@ -26,11 +26,18 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [effectiveCatalogValuationId, setEffectiveCatalogValuationId] = useState<string | null>(catalogValuationId || null);
+  const [isResetting, setIsResetting] = useState(false);
   const { toast } = useToast();
 
   // Auto-fetch the most recent catalog valuation if none provided
   useEffect(() => {
     const fetchMostRecentValuation = async () => {
+      // Don't auto-fetch if we're explicitly resetting or if catalogValuationId is explicitly null
+      if (catalogValuationId === null || isResetting) {
+        setEffectiveCatalogValuationId(null);
+        return;
+      }
+      
       if (catalogValuationId) {
         setEffectiveCatalogValuationId(catalogValuationId);
         return;
@@ -57,7 +64,7 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
     };
 
     fetchMostRecentValuation();
-  }, [catalogValuationId]);
+  }, [catalogValuationId, isResetting]);
 
   // Fetch revenue sources for a specific catalog valuation
   const fetchRevenueSources = async (valuationId: string) => {
@@ -278,6 +285,16 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
     }
   }, [effectiveCatalogValuationId]);
 
+  // Reset revenue sources and prevent auto-fetching
+  const resetRevenueSources = () => {
+    setIsResetting(true);
+    setRevenueSources([]);
+    setEffectiveCatalogValuationId(null);
+    setError(null);
+    // Reset the resetting flag after a short delay to allow for new searches
+    setTimeout(() => setIsResetting(false), 100);
+  };
+
   return {
     revenueSources,
     loading,
@@ -287,6 +304,7 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
     deleteRevenueSource,
     importRevenueSources,
     calculateRevenueMetrics,
+    resetRevenueSources,
     refetch: () => effectiveCatalogValuationId && fetchRevenueSources(effectiveCatalogValuationId),
   };
 };

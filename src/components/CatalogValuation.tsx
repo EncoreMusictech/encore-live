@@ -159,6 +159,7 @@ const CatalogValuation = memo(() => {
   const {
     revenueSources,
     calculateRevenueMetrics,
+    resetRevenueSources,
     refetch
   } = useCatalogRevenueSources(catalogValuationId);
   const computedRevenueMetrics = useMemo(() => calculateRevenueMetrics(), [revenueSources]);
@@ -323,7 +324,8 @@ const CatalogValuation = memo(() => {
     }
     console.log("Clearing previous result and revenue sources");
     setResult(null);
-    setCatalogValuationId(null); // Reset catalog valuation ID to clear revenue sources
+    setCatalogValuationId(null); // Reset catalog valuation ID
+    resetRevenueSources(); // Clear revenue sources and prevent auto-fetching old data
 
     // Calculate catalog age from discography data
     console.log("Calculating catalog age from discography...");
