@@ -1493,10 +1493,10 @@ Actual market values may vary significantly based on numerous factors not captur
 
             <TabsContent value="analysis" className="space-y-6">
               {/* Cash Flow Projections Disclaimer */}
-              <Alert className="border-yellow-200 bg-yellow-50">
-                <Activity className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Forward-Looking Estimates:</strong> All cash flow projections are theoretical calculations based on estimated current performance and industry decay models. Actual future performance may vary significantly from these projections.
+              <Alert className="border-yellow-200 bg-yellow-50 text-yellow-800">
+                <Activity className="h-4 w-4 text-yellow-700" />
+                <AlertDescription className="text-yellow-900">
+                  <strong className="text-yellow-900">Forward-Looking Estimates:</strong> All cash flow projections are theoretical calculations based on estimated current performance and industry decay models. Actual future performance may vary significantly from these projections.
                 </AlertDescription>
               </Alert>
 
