@@ -76,7 +76,7 @@ interface CashFlowProjection {
 interface ValuationResult {
   artist_name: string;
   total_streams: number;
-  monthly_listeners: number;
+  followers: number; // Spotify followers count, not monthly listeners
   territory_focus?: 'global' | 'us-only' | 'international';
   territory_multiplier?: number;
   top_tracks: TopTrack[];
@@ -410,7 +410,7 @@ const CatalogValuation = memo(() => {
                 user_id: user.user.id,
                 artist_name: data.artist_name,
                 total_streams: data.total_streams,
-                monthly_listeners: data.monthly_listeners,
+                followers: data.followers, // Use followers count from API
                 top_tracks: data.top_tracks,
                 valuation_amount: data.risk_adjusted_value || data.valuation_amount,
                 currency: data.currency,
@@ -443,7 +443,7 @@ const CatalogValuation = memo(() => {
                 user_id: user.user.id,
                 artist_name: data.artist_name,
                 total_streams: data.total_streams,
-                monthly_listeners: data.monthly_listeners,
+                followers: data.followers, // Use followers count from API
                 top_tracks: data.top_tracks,
                 valuation_amount: data.risk_adjusted_value || data.valuation_amount,
                 currency: data.currency,
@@ -519,7 +519,7 @@ High: ${formatCurrency(result.fair_market_value.high)}
 KEY METRICS
 ===========
 Total Streams: ${formatNumber(result.total_streams)}
-Monthly Listeners: ${formatNumber(result.monthly_listeners)}
+Monthly Listeners: ${formatNumber(result.followers || 0)}
 LTM Revenue: ${formatCurrency(result.ltm_revenue || 0)}
 Genre: ${result.genre || 'N/A'}
 Popularity Score: ${result.popularity_score || result.spotify_data.popularity}/100
@@ -611,7 +611,7 @@ Actual market values may vary significantly based on numerous factors not captur
               <h3>Catalog Snapshot</h3>
               <ul>
                 <li><strong>Total Streams:</strong> ${formatNumber(result.total_streams || 0)}</li>
-                <li><strong>Monthly Listeners:</strong> ${formatNumber(result.monthly_listeners || 0)}</li>
+                <li><strong>Spotify Followers:</strong> ${formatNumber(result.followers || 0)}</li>
                 <li><strong>Genre:</strong> ${result.genre || result.industry_benchmarks?.genre || 'N/A'}</li>
                 <li><strong>Popularity:</strong> ${result.popularity_score || result.spotify_data?.popularity || 0}/100</li>
               </ul>
@@ -890,8 +890,8 @@ Actual market values may vary significantly based on numerous factors not captur
       return;
     }
     const rows: Array<string[]> = [];
-    rows.push(['Artist', 'Valuation', 'Confidence', 'Total Streams', 'Monthly Listeners', 'Genre', 'Popularity']);
-    rows.push([result.artist_name, String(result.risk_adjusted_value || result.valuation_amount || 0), String(result.confidence_score || 0), String(result.total_streams || 0), String(result.monthly_listeners || 0), result.genre || result.industry_benchmarks?.genre || '', String(result.popularity_score || result.spotify_data?.popularity || 0)]);
+    rows.push(['Artist', 'Valuation', 'Confidence', 'Total Streams', 'Spotify Followers', 'Genre', 'Popularity']);
+    rows.push([result.artist_name, String(result.risk_adjusted_value || result.valuation_amount || 0), String(result.confidence_score || 0), String(result.total_streams || 0), String(result.followers || 0), result.genre || result.industry_benchmarks?.genre || '', String(result.popularity_score || result.spotify_data?.popularity || 0)]);
     rows.push([]);
     rows.push(['Top Tracks']);
     rows.push(['Name', 'Popularity', 'Spotify URL']);
@@ -923,7 +923,7 @@ Actual market values may vary significantly based on numerous factors not captur
   <valuationAmount>${result.risk_adjusted_value || result.valuation_amount || 0}</valuationAmount>
   <confidence>${result.confidence_score || 0}</confidence>
   <totalStreams>${result.total_streams || 0}</totalStreams>
-  <monthlyListeners>${result.monthly_listeners || 0}</monthlyListeners>
+  <spotifyFollowers>${result.followers || 0}</spotifyFollowers>
   <genre>${result.genre || result.industry_benchmarks?.genre || ''}</genre>
 </valuation>`;
     const blob = new Blob([xml], {
@@ -1332,7 +1332,7 @@ Actual market values may vary significantly based on numerous factors not captur
                     Spotify Artist Information
                   </CardTitle>
                   <CardDescription>
-                    Artist profile data and top performing tracks from Spotify
+                    Artist profile data from Spotify API (followers count, not monthly listeners)
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1344,9 +1344,9 @@ Actual market values may vary significantly based on numerous factors not captur
                       </Badge>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Monthly Listeners</p>
+                      <p className="text-sm font-medium">Spotify Followers</p>
                       <p className="text-lg font-bold text-primary">
-                        {formatNumber(result.monthly_listeners || 0)}
+                        {formatNumber(result.spotify_data?.followers || 0)}
                       </p>
                     </div>
                     <div className="space-y-2">
