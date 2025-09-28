@@ -134,9 +134,6 @@ async function resolvePrimaryGenre(accessToken: string, artist: SpotifyArtist): 
   
   // Known artist mappings for when Spotify doesn't provide genre data
   const knownArtistMappings: Record<string, string> = {
-    'k camp': 'hip-hop',
-    'k-camp': 'hip-hop', 
-    'kcamp': 'hip-hop',
     'dababy': 'hip-hop',
     'da baby': 'hip-hop',
     'lil baby': 'hip-hop',

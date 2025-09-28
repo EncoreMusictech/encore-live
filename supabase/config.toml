@@ -14,6 +14,3 @@ verify_jwt = true
 
 [functions.docusign-send]
 verify_jwt = true
-
-[functions.soundcharts-catalog-valuation]
-verify_jwt = false
