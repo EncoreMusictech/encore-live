@@ -134,32 +134,8 @@ interface ValuationParams {
   catalogAge?: number;
   methodology?: string;
   territory?: 'global' | 'us-only' | 'international';
-  cagr?: number;
 }
 const CatalogValuation = memo(() => {
-  // Helper function to get default CAGR based on genre
-  const getDefaultCAGR = useCallback((genre?: string) => {
-    // Industry benchmark CAGR rates by genre (annual %)
-    const genreCAGRs: Record<string, number> = {
-      'hip-hop': 8.0,
-      'r&b': 7.0,
-      'pop': 5.0,
-      'electronic': 6.0,
-      'country': 4.0,
-      'rock': 3.0,
-      'alternative': 4.0,
-      'folk': 3.0,
-      'classical': 2.0,
-      'jazz': 2.0
-    };
-    
-    if (genre) {
-      const normalizedGenre = genre.toLowerCase().replace(/\s+/g, '-');
-      return genreCAGRs[normalizedGenre] || 5.0; // Default to 5% if genre not found
-    }
-    return 5.0; // Default CAGR if no genre
-  }, []);
-
   const [artistName, setArtistName] = useState("");
   const [result, setResult] = useState<ValuationResult | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<"pessimistic" | "base" | "optimistic">("base");
@@ -171,8 +147,7 @@ const CatalogValuation = memo(() => {
     discountRate: 0.12,
     catalogAge: 5,
     methodology: 'advanced',
-    territory: 'global',
-    cagr: 5.0 // Default CAGR
+    territory: 'global'
   });
   const {
     revenueSources,
@@ -205,26 +180,6 @@ const CatalogValuation = memo(() => {
     loading: aiLoading,
     generateReport
   } = useReportAI();
-
-  // Update CAGR when industry benchmarks are available
-  React.useEffect(() => {
-    if (result?.industry_benchmarks?.growth_assumption && !valuationParams.cagr) {
-      // Only auto-update if user hasn't manually set a CAGR value
-      const industryCAGR = result.industry_benchmarks.growth_assumption * 100; // Convert to percentage
-      setValuationParams(prev => ({
-        ...prev,
-        cagr: industryCAGR
-      }));
-    } else if (result?.genre && !result?.industry_benchmarks && valuationParams.cagr === 5.0) {
-      // Fallback to our default genre-based CAGR if no industry benchmarks
-      const defaultCAGR = getDefaultCAGR(result.genre);
-      setValuationParams(prev => ({
-        ...prev,
-        cagr: defaultCAGR
-      }));
-    }
-  }, [result?.industry_benchmarks, result?.genre, getDefaultCAGR, valuationParams.cagr]);
-
   const handleSearch = useCallback(async () => {
     console.log("=== SEARCH STARTED ===");
     console.log("Artist name:", artistName);
@@ -943,7 +898,7 @@ Actual market values may vary significantly based on numerous factors not captur
             </Button>
           </div>
 
-          {showAdvancedInputs && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-4 border rounded-lg bg-secondary/30">
+          {showAdvancedInputs && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-secondary/30">
               <div className="space-y-2">
                 <Label htmlFor="territory">Territory Focus</Label>
                 <Select value={valuationParams.territory || 'global'} onValueChange={(value: 'global' | 'us-only' | 'international') => setValuationParams(prev => ({
@@ -988,27 +943,6 @@ Actual market values may vary significantly based on numerous factors not captur
                 ...prev,
                 catalogAge: parseInt(e.target.value)
               }))} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cagr">Expected CAGR (%)</Label>
-                <Input 
-                  id="cagr" 
-                  type="number" 
-                  min="0" 
-                  max="20" 
-                  step="0.5" 
-                  value={valuationParams.cagr || 5.0} 
-                  onChange={e => setValuationParams(prev => ({
-                    ...prev,
-                    cagr: parseFloat(e.target.value)
-                  }))} 
-                  placeholder="Industry benchmark"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {result?.industry_benchmarks?.genre ? 
-                    `${result.industry_benchmarks.genre} industry avg: ${(result.industry_benchmarks.growth_assumption * 100).toFixed(1)}%` 
-                    : 'Industry benchmark will auto-populate'}
-                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="methodology">Valuation Method</Label>
