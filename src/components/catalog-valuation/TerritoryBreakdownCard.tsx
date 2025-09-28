@@ -21,6 +21,7 @@ export function TerritoryBreakdownCard({
   internationalShare = 0.3
 }: TerritoryBreakdownProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const [isMarketCharacteristicsOpen, setIsMarketCharacteristicsOpen] = useState(false);
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -159,47 +160,53 @@ export function TerritoryBreakdownCard({
             </div>
 
             {/* Market Characteristics */}
-            <div className="space-y-4">
-              <h4 className="font-medium flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Market Characteristics
-              </h4>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Revenue Per Stream</p>
-                  <p className="text-xs text-muted-foreground">
-                    {territory === 'us-only' ? 'Higher ($0.003-0.004)' : 
-                     territory === 'international' ? 'Lower ($0.002-0.003)' : 
-                     'Blended ($0.003 avg)'}
-                  </p>
+            <Collapsible open={isMarketCharacteristicsOpen} onOpenChange={setIsMarketCharacteristicsOpen}>
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/30 transition-colors cursor-pointer">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Market Characteristics
+                  </h4>
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isMarketCharacteristicsOpen ? 'rotate-180' : ''}`} />
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Market Growth</p>
-                  <p className="text-xs text-muted-foreground">
-                    {territory === 'us-only' ? 'Mature (3-5%)' : 
-                     territory === 'international' ? 'Emerging (5-8%)' : 
-                     'Mixed (4-6%)'}
-                  </p>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Revenue Per Stream</p>
+                    <p className="text-xs text-muted-foreground">
+                      {territory === 'us-only' ? 'Higher ($0.003-0.004)' : 
+                       territory === 'international' ? 'Lower ($0.002-0.003)' : 
+                       'Blended ($0.003 avg)'}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Market Growth</p>
+                    <p className="text-xs text-muted-foreground">
+                      {territory === 'us-only' ? 'Mature (3-5%)' : 
+                       territory === 'international' ? 'Emerging (5-8%)' : 
+                       'Mixed (4-6%)'}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Collection Lag</p>
+                    <p className="text-xs text-muted-foreground">
+                      {territory === 'us-only' ? '3-4 months' : 
+                       territory === 'international' ? '6-8 months' : 
+                       '4-6 months avg'}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Risk Profile</p>
+                    <p className="text-xs text-muted-foreground">
+                      {territory === 'us-only' ? 'Lower risk' : 
+                       territory === 'international' ? 'Higher risk' : 
+                       'Diversified risk'}
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Collection Lag</p>
-                  <p className="text-xs text-muted-foreground">
-                    {territory === 'us-only' ? '3-4 months' : 
-                     territory === 'international' ? '6-8 months' : 
-                     '4-6 months avg'}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Risk Profile</p>
-                  <p className="text-xs text-muted-foreground">
-                    {territory === 'us-only' ? 'Lower risk' : 
-                     territory === 'international' ? 'Higher risk' : 
-                     'Diversified risk'}
-                  </p>
-                </div>
-              </div>
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
           </CardContent>
         </CollapsibleContent>
       </Card>
