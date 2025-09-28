@@ -1558,11 +1558,21 @@ Actual market values may vary significantly based on numerous factors not captur
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle>5-Year Valuation Forecast</CardTitle>
-                    <div className="flex gap-2">
-                      {(["pessimistic", "base", "optimistic"] as const).map(scenario => <Button key={scenario} variant={selectedScenario === scenario ? "default" : "outline"} size="sm" onClick={() => setSelectedScenario(scenario)} className="capitalize">
-                          {scenario === "base" ? "Base Case" : scenario}
-                        </Button>)}
-                    </div>
+                     <div className="flex gap-2">
+                       {(["pessimistic", "base", "optimistic"] as const).map(scenario => <Button key={scenario} variant={selectedScenario === scenario ? "default" : "outline"} size="sm" onClick={() => {
+                           setSelectedScenario(scenario);
+                           // Automatically adjust CAGR based on scenario
+                           if (scenario === "pessimistic") {
+                             setCustomCagr(Math.max(2, getDefaultCagr * 0.5)); // Conservative: 50% of benchmark, min 2%
+                           } else if (scenario === "base") {
+                             setCustomCagr(getDefaultCagr); // Use industry benchmark
+                           } else if (scenario === "optimistic") {
+                             setCustomCagr(Math.min(15, getDefaultCagr * 1.8)); // Aggressive: 180% of benchmark, max 15%
+                           }
+                         }} className="capitalize">
+                           {scenario === "base" ? "Base Case" : scenario}
+                         </Button>)}
+                     </div>
                   </div>
                   <CardDescription>
                     {selectedScenario === "pessimistic" && "Conservative growth assumptions"}
