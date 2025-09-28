@@ -1170,9 +1170,9 @@ Actual market values may vary significantly based on numerous factors not captur
                                 </CardContent>
                               </Card>
                             </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
+                             <TooltipContent className="max-w-xs">
                               <p><strong>Enhanced Valuation</strong></p>
-                              <p><strong>⚠️ ESTIMATE:</strong> Combines estimated streaming revenue (70% weight) with user-declared additional revenue (30% weight). Stream counts and revenue conversion rates are proprietary calculations, not actual platform data.</p>
+                              <p>Blends base Spotify-derived valuation (70% weight) with user-reported additional revenue sources (30% weight), plus diversification bonus up to 20%. Uses publicly available data and industry benchmarks.</p>
                             </TooltipContent>
                           </UITooltip>
                          : 
@@ -1195,9 +1195,9 @@ Actual market values may vary significantly based on numerous factors not captur
                                 </CardContent>
                               </Card>
                             </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
+                             <TooltipContent className="max-w-xs">
                               <p><strong>Risk-Adjusted Value</strong></p>
-                              <p><strong>⚠️ ESTIMATE:</strong> Based on estimated streaming calculations adjusted for verified Spotify popularity scores and proprietary risk factors. Revenue projections use modeled conversion rates, not actual platform payouts.</p>
+                              <p>Base valuation adjusted for verified Spotify popularity scores, genre-specific risk factors, and catalog maturity. Uses publicly available market data and industry benchmarks for risk modeling.</p>
                             </TooltipContent>
                           </UITooltip>
                         }
@@ -1221,9 +1221,9 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
+                           <TooltipContent className="max-w-xs">
                             <p><strong>DCF (Discounted Cash Flow) Valuation</strong></p>
-                            <p>10-year revenue projection using Spotify streaming trends, discounted at 12% risk rate. Based on verified streaming history and exponential decay models from industry transaction data.</p>
+                            <p>10-year revenue projection using publicly available streaming data and exponential decay models. Discounted at industry-standard rates based on music catalog transaction benchmarks.</p>
                           </TooltipContent>
                         </UITooltip>
 
@@ -1246,9 +1246,9 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
+                           <TooltipContent className="max-w-xs">
                             <p><strong>Multiple Valuation</strong></p>
-                            <p>Spotify-derived LTM revenue × genre-specific industry multiples (4x-18x). Based on public catalog transaction data and streaming-to-revenue conversion rates by genre.</p>
+                            <p>Estimated annual revenue multiplied by genre-specific industry benchmarks (4x-18x range). Based on publicly available catalog transaction data and market comparables.</p>
                           </TooltipContent>
                         </UITooltip>
 
@@ -1268,10 +1268,10 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                           <TooltipContent className="max-w-xs">
-                             <p><strong>Confidence Score</strong></p>
-                             <p>Data completeness metric based on Spotify API coverage, track history depth, and revenue verification. 90+ indicates institutional-grade data quality for transactions.</p>
-                           </TooltipContent>
+                            <TooltipContent className="max-w-xs">
+                              <p><strong>Confidence Score</strong></p>
+                              <p>Data quality assessment based on publicly available information completeness, track history depth, and revenue source verification. Higher scores indicate more reliable valuation estimates.</p>
+                            </TooltipContent>
                         </UITooltip>
 
                         <UITooltip>
@@ -1290,10 +1290,10 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                           <TooltipContent className="max-w-xs">
-                             <p><strong>LTM Revenue</strong></p>
-                             <p>Calculated from Spotify streaming data using verified genre-specific per-stream rates ($0.002-$0.004). Additional revenues user-reported and confidence-weighted.</p>
-                           </TooltipContent>
+                            <TooltipContent className="max-w-xs">
+                              <p><strong>LTM Revenue</strong></p>
+                              <p>Estimated annual revenue calculated from publicly available streaming data using industry-standard genre-specific conversion rates and benchmarks. Additional revenues are user-reported.</p>
+                            </TooltipContent>
                         </UITooltip>
 
                         <UITooltip>
@@ -1312,10 +1312,10 @@ Actual market values may vary significantly based on numerous factors not captur
                               </CardContent>
                             </Card>
                           </TooltipTrigger>
-                           <TooltipContent className="max-w-xs">
-                             <p><strong>Popularity Score</strong></p>
-                             <p>Direct from Spotify API (0-100 scale). Reflects current market heat based on recent plays, playlist adds, and algorithmic performance. Key risk factor for catalog sustainability.</p>
-                           </TooltipContent>
+                            <TooltipContent className="max-w-xs">
+                              <p><strong>Popularity Score</strong></p>
+                              <p>Based on publicly available streaming platform metrics (0-100 scale). Reflects current market engagement and is used as a key factor in valuation risk assessment and sustainability projections.</p>
+                            </TooltipContent>
                         </UITooltip>
                       </>;
                 })()}
