@@ -338,27 +338,52 @@ const DEMO_TOURS = {
     id: 'contracts',
     steps: [
       {
+        id: 'contracts-overview',
+        title: 'Contract Management Hub',
+        content: 'This is your central hub for creating and managing all types of music industry agreements. From publishing deals to artist contracts, everything is organized here.',
+        target: '.space-y-6',
+        position: 'bottom' as const
+      },
+      {
+        id: 'contract-stats',
+        title: 'Contract Overview Stats',
+        content: 'View key metrics: active contracts, pending signatures, expiring deals, and total portfolio value at a glance.',
+        target: '.grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-4',
+        position: 'bottom' as const
+      },
+      {
+        id: 'create-new-contract',
+        title: 'Step 1: Create New Contract',
+        content: '👆 Click the "New Contract" button to start creating an agreement. You can create from scratch, use templates, or upload existing contracts.',
+        target: 'button:has-text("New Contract"), button:has-text("Demo Limit Reached")',
+        position: 'bottom' as const
+      },
+      {
         id: 'contract-types',
-        title: 'Step 1: Choose Contract Type',
-        content: 'Select from Publishing Agreements, Artist Contracts, Producer Deals, Sync Licenses, or Distribution Agreements. Look for buttons to create new contracts.',
+        title: 'Choose Contract Type',
+        content: 'Select from Publishing Agreements, Artist Contracts, Producer Deals, Sync Licenses, or Distribution Agreements. Each type has specialized fields for that deal structure.',
+        target: '.grid.gap-4',
         position: 'bottom' as const
       },
       {
         id: 'guided-form',
         title: 'Step 2: Complete the Guided Form',
-        content: 'Our 7-step process guides you through: Agreement Type → Basic Info → Terms → Parties → Works → Interested Parties → Review',
+        content: 'Our 7-step process guides you through: Agreement Type → Basic Info → Terms → Parties → Works → Interested Parties → Review. Each step validates your data.',
+        target: '.space-y-6',
         position: 'bottom' as const
       },
       {
-        id: 'auto-populate',
-        title: 'Step 3: Use Auto-Population',
-        content: 'Upload existing contracts to auto-extract terms, or link to copyright registrations to inherit writer and publisher information.',
-        position: 'bottom' as const
+        id: 'contract-filters',
+        title: 'Filter and Search Contracts',
+        content: '👇 Use filters to find contracts by status, type, signature status, or date range. The search bar lets you find specific counterparties or titles.',
+        target: '.flex.gap-2',
+        position: 'top' as const
       },
       {
         id: 'templates',
-        title: 'Step 4: Save as Templates',
-        content: 'Create reusable templates for standard deals to speed up future contract creation.',
+        title: 'Step 3: Save as Templates',
+        content: 'After creating a contract, save it as a template for reuse. This speeds up future deals with similar structures.',
+        target: '.space-y-6',
         position: 'bottom' as const
       }
     ]
@@ -367,27 +392,59 @@ const DEMO_TOURS = {
     id: 'copyright',
     steps: [
       {
+        id: 'copyright-overview',
+        title: 'Copyright Registration System',
+        content: 'Register your musical works, manage writer and publisher splits, and prepare CWR files for PRO submissions. This is the foundation for royalty collection.',
+        target: '.space-y-6',
+        position: 'bottom' as const
+      },
+      {
+        id: 'copyright-tabs',
+        title: 'Three Main Sections',
+        content: '👉 Notice the tabs: Registrations (view all works), Register New Work (add songs), and Bulk Operations (mass import). We\'ll walk through each.',
+        target: '[role="tablist"]',
+        position: 'bottom' as const
+      },
+      {
         id: 'register-work',
         title: 'Step 1: Register a Musical Work',
-        content: 'Enter song details: title, writers, publishers, and ownership percentages. This creates the foundation for royalty collection. Look for registration buttons or forms.',
+        content: '👆 Click "Register New Work" tab. Enter song details: title, writers, publishers, and ownership percentages. This creates the foundation for royalty collection.',
+        target: '[value="register"]',
         position: 'bottom' as const
+      },
+      {
+        id: 'work-details',
+        title: 'Enter Work Information',
+        content: '👇 Fill in the song title, ISWC (if available), and select the musical genre. This metadata helps with PRO registration and royalty matching.',
+        target: 'form',
+        position: 'top' as const
       },
       {
         id: 'writer-splits',
         title: 'Step 2: Define Writer Splits',
-        content: 'Set writer and publisher shares (must total 100%). These splits determine how royalties are distributed.',
-        position: 'bottom' as const
+        content: '👇 Add writers and set their ownership percentages. Writer and publisher shares must total 100%. These splits determine how royalties are distributed.',
+        target: '.space-y-4',
+        position: 'top' as const
       },
       {
         id: 'pro-data',
         title: 'Step 3: Add PRO Information',
-        content: 'Include IPI/CAE numbers and PRO affiliations (ASCAP, BMI, SESAC) for proper royalty collection.',
-        position: 'bottom' as const
+        content: '👇 Include IPI/CAE numbers and PRO affiliations (ASCAP, BMI, SESAC) for each writer and publisher. This ensures proper royalty collection and distribution.',
+        target: '.space-y-4',
+        position: 'top' as const
       },
       {
         id: 'bulk-tools',
         title: 'Step 4: Use Bulk Tools',
-        content: 'For large catalogs, use bulk upload features and MLC data enrichment to speed up registration.',
+        content: '👆 Click "Bulk Operations" tab for large catalogs. Use bulk upload features and MLC data enrichment to speed up registration of hundreds of works.',
+        target: '[value="bulk"]',
+        position: 'bottom' as const
+      },
+      {
+        id: 'view-registrations',
+        title: 'View All Registered Works',
+        content: '👆 Click "Registrations" tab to see all your registered copyrights. Filter by writer, publisher, or search for specific songs.',
+        target: '[value="registrations"]',
         position: 'bottom' as const
       }
     ]
@@ -396,27 +453,52 @@ const DEMO_TOURS = {
     id: 'sync',
     steps: [
       {
+        id: 'sync-overview',
+        title: 'Sync Licensing Management',
+        content: 'Track sync opportunities for TV, film, advertising, and other media. Manage the complete lifecycle from inquiry to payment.',
+        target: '.space-y-6',
+        position: 'bottom' as const
+      },
+      {
+        id: 'sync-stats',
+        title: 'Pipeline Overview',
+        content: '👇 View your sync pipeline stats: total opportunities, deals in progress, approvals pending, and revenue generated. Track your success rate.',
+        target: '.grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-4',
+        position: 'bottom' as const
+      },
+      {
         id: 'create-opportunity',
-        title: 'Step 1: Log Sync Opportunity',
-        content: 'Create a new sync request with project details: TV show, film, commercial, or other media placement. Look for "New" or "Create" buttons.',
+        title: 'Step 1: Create New Sync Request',
+        content: '👆 Click "New Sync Request" to log a sync opportunity. Enter project details: TV show, film, commercial, or other media placement.',
+        target: 'button:has(svg)', 
+        position: 'bottom' as const
+      },
+      {
+        id: 'view-modes',
+        title: 'Choose Your View',
+        content: '👉 Switch between List (detailed view), Kanban (pipeline stages), and Calendar (timeline view) to manage deals how you prefer.',
+        target: '.inline-flex.h-9',
         position: 'bottom' as const
       },
       {
         id: 'track-progress',
         title: 'Step 2: Track Deal Progress',
-        content: 'Move deals through stages: Pitched → Quoted → Approved → Licensed → Paid. Use the kanban board or calendar view.',
-        position: 'bottom' as const
+        content: '👇 Move deals through stages: Pitched → Quoted → Approved → Licensed → Paid. Drag and drop in kanban view or update status in list view.',
+        target: '.space-y-4',
+        position: 'top' as const
       },
       {
         id: 'rights-clearance',
         title: 'Step 3: Handle Rights Clearance',
-        content: 'Specify what rights you control (master, sync, territory) and coordinate with other rights holders if needed.',
+        content: 'For each opportunity, specify what rights you control (master, sync, territory) and coordinate with other rights holders if needed.',
+        target: '.space-y-4',
         position: 'bottom' as const
       },
       {
         id: 'generate-invoice',
         title: 'Step 4: Generate Invoices',
-        content: 'Once approved, create professional invoices with custom terms, payment schedules, and usage restrictions.',
+        content: 'Once approved, create professional invoices with custom terms, payment schedules, and usage restrictions directly from the sync record.',
+        target: '.space-y-4',
         position: 'bottom' as const
       }
     ]
@@ -425,27 +507,66 @@ const DEMO_TOURS = {
     id: 'royalties',
     steps: [
       {
+        id: 'royalties-overview',
+        title: 'Royalties Processing System',
+        content: 'Import statements from PROs and distributors, reconcile data with your catalog, allocate payments to rights holders, and generate detailed statements.',
+        target: '.space-y-6',
+        position: 'bottom' as const
+      },
+      {
+        id: 'royalties-tabs',
+        title: 'Six Workflow Sections',
+        content: '👉 The tabs represent your workflow: Analytics → Allocation → Statements → Payees → Settings → Reports. Each handles a specific part of royalty processing.',
+        target: '[role="tablist"]',
+        position: 'bottom' as const
+      },
+      {
+        id: 'analytics-dashboard',
+        title: 'Revenue Analytics',
+        content: '👇 The Analytics tab shows total earnings, writer/publisher breakdowns, and revenue trends. Use this to understand your royalty income patterns.',
+        target: '[value="analytics"]',
+        position: 'bottom' as const
+      },
+      {
         id: 'import-statements',
         title: 'Step 1: Import Royalty Statements',
-        content: 'Upload CSV or Excel files from PROs, distributors, or streaming platforms. Our parser handles multiple formats. Look for import buttons.',
+        content: '👆 Click the "Statements" tab. Upload CSV or Excel files from PROs, distributors, or streaming platforms. Our parser handles multiple formats.',
+        target: '[value="statements"]',
         position: 'bottom' as const
+      },
+      {
+        id: 'statement-import-area',
+        title: 'Upload Statement Files',
+        content: '👇 Drag and drop files or click to browse. The system will automatically detect the source format and parse the data.',
+        target: '.space-y-6',
+        position: 'top' as const
       },
       {
         id: 'reconcile-data',
         title: 'Step 2: Reconcile and Match',
-        content: 'Review imported data, match songs to your catalog, and resolve any discrepancies or unmatched items.',
+        content: '👆 Switch to "Allocation" tab to review imported data. Match songs to your catalog and resolve any discrepancies or unmatched items.',
+        target: '[value="allocations"]',
         position: 'bottom' as const
       },
       {
         id: 'allocate-royalties',
         title: 'Step 3: Allocate to Payees',
-        content: 'Distribute earnings to writers and publishers based on their contractual shares and recoupment status.',
+        content: '👇 Distribute earnings to writers and publishers based on their contractual shares and recoupment status. The system calculates splits automatically.',
+        target: '.space-y-6',
+        position: 'top' as const
+      },
+      {
+        id: 'manage-payees',
+        title: 'Payee Management',
+        content: '👆 Click "Payees" tab to manage writer and publisher payment information, tax details, and payment preferences.',
+        target: '[value="payees"]',
         position: 'bottom' as const
       },
       {
         id: 'generate-statements',
         title: 'Step 4: Generate Statements',
-        content: 'Create detailed royalty statements for each payee showing earnings, deductions, and running balances.',
+        content: '👆 Use the "Reports" tab to create detailed royalty statements for each payee showing earnings, deductions, and running balances.',
+        target: '[value="reports"]',
         position: 'bottom' as const
       }
     ]
