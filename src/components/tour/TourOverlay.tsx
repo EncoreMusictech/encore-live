@@ -83,7 +83,7 @@ export const TourOverlay = () => {
           
           // Highlight the target element
           element.style.position = 'relative';
-          element.style.zIndex = '9999';
+          element.style.zIndex = '99997';
           element.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 0 8px rgba(59, 130, 246, 0.2)';
           element.style.borderRadius = '8px';
         } else if (attempts < maxAttempts) {
@@ -120,11 +120,11 @@ export const TourOverlay = () => {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={skipTour} />
+      <div className="fixed inset-0 bg-black/50 z-[99998]" onClick={skipTour} />
       
       {/* Tour Card */}
       <div 
-        className="fixed z-[9999] w-80"
+        className="fixed z-[99999] w-80"
         style={{ 
           top: `${overlayPosition.top}px`, 
           left: `${overlayPosition.left}px`,
