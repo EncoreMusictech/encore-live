@@ -14,7 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Brain, Calculator, Search, Music, BarChart3, Loader2, AlertTriangle } from "lucide-react";
+import { Brain, Calculator, Search, Music, BarChart3, Loader2, AlertTriangle, TrendingUp } from "lucide-react";
+import HistoricalStatementInput from "@/components/deal-analysis/HistoricalStatementInput";
 interface Artist {
   id: string;
   name: string;
@@ -237,7 +238,7 @@ export default function CRMCatalogValuationPage() {
             <CardContent className="p-0">
               <Tabs value={dealSubTab} onValueChange={setDealSubTab} className="space-y-6">
                 <div className="p-6 pb-0">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="search">
                       <Search className="w-4 h-4 mr-2" />
                       Search Artist
@@ -248,6 +249,10 @@ export default function CRMCatalogValuationPage() {
                       {selectedTracks.length > 0 && <Badge variant="secondary" className="ml-2">
                           {selectedTracks.length}
                         </Badge>}
+                    </TabsTrigger>
+                    <TabsTrigger value="historical-data" disabled={!currentArtist}>
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Historical Data
                     </TabsTrigger>
                     <TabsTrigger value="simulation" disabled={selectedTracks.length === 0}>
                       <Calculator className="w-4 h-4 mr-2" />
@@ -322,6 +327,17 @@ export default function CRMCatalogValuationPage() {
                             </Button>
                           </div>}
                       </div>}
+                  </TabsContent>
+
+                  <TabsContent value="historical-data" className="mt-0">
+                    {currentArtist && (
+                      <HistoricalStatementInput 
+                        artistName={currentArtist.name}
+                        onDataUpdate={() => {
+                          // Refresh will happen automatically via the hook
+                        }}
+                      />
+                    )}
                   </TabsContent>
 
                   <TabsContent value="simulation" className="mt-0">

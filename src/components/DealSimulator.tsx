@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Calculator, TrendingUp, DollarSign, Users } from "lucide-react";
+import { Calculator, TrendingUp, DollarSign, Users, Database } from "lucide-react";
 import { useCatalogCalculations } from "@/hooks/usePerformanceOptimization";
 import { useRightsBasedCalculations } from "@/hooks/useRightsBasedCalculations";
+import { useHistoricalStatements } from "@/hooks/useHistoricalStatements";
 import { DealSimulatorSkeleton, AsyncLoading } from "@/components/LoadingStates";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface DealTerms {
   advance: number;
@@ -53,11 +55,15 @@ const DealSimulator = memo(({ selectedTracks, artistName, onSaveScenario }: Deal
   const [scenarioName, setScenarioName] = useState("");
   const [projections, setProjections] = useState<DealProjection[]>([]);
   
+  // Fetch historical statements for this artist
+  const { statements, calculateMetrics } = useHistoricalStatements(artistName);
+  const metrics = calculateMetrics();
+  
   // Use rights-based calculations hook
   const rightsCalculation = useRightsBasedCalculations(selectedTracks, dealTerms, artistName);
   
-  // Use optimized calculations hook as fallback
-  const calculatedData = useCatalogCalculations(selectedTracks, dealTerms, dealTerms.termLength);
+  // Use optimized calculations hook with historical data
+  const calculatedData = useCatalogCalculations(selectedTracks, dealTerms, dealTerms.termLength, statements);
 
   // Calculate base streams from selected tracks (memoized)
   const calculateBaseStreams = useCallback(() => {
@@ -116,6 +122,18 @@ const DealSimulator = memo(({ selectedTracks, artistName, onSaveScenario }: Deal
 
   return (
     <div className="space-y-6">
+      {/* Historical Data Banner */}
+      {statements.length > 0 && metrics && (
+        <Alert className="bg-primary/5 border-primary/20">
+          <Database className="h-4 w-4 text-primary" />
+          <AlertTitle>Using Historical Statement Data</AlertTitle>
+          <AlertDescription className="text-sm">
+            Projections enhanced with {statements.length} quarters of actual data 
+            (Avg: ${metrics.averageRevenue.toLocaleString()}/quarter, Growth: {metrics.quarterOverQuarterGrowth > 0 ? '+' : ''}{metrics.quarterOverQuarterGrowth.toFixed(1)}%)
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Rights Information Panel */}
       {rightsCalculation?.rightsData && (
         <Card>

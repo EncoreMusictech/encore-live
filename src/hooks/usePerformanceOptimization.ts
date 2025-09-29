@@ -47,35 +47,71 @@ export function useThrottle<T extends (...args: any[]) => any>(
   );
 }
 
-// Memoized calculations for catalog valuations
+// Memoized calculations for catalog valuations with historical data support
 export function useCatalogCalculations(
   tracks: any[],
   dealTerms: any,
-  projectionLength: number = 5
+  projectionLength: number = 5,
+  historicalData?: any[]
 ) {
   return useMemo(() => {
     if (!tracks.length || !dealTerms) return null;
 
-    const baseStreams = tracks.reduce((total, track) => {
-      if (track.isAlbum) {
-        const avgPopularity = track.popularity || 50;
-        const estimatedStreamsPerTrack = avgPopularity * 100000;
-        return total + (estimatedStreamsPerTrack * track.total_tracks);
-      } else {
-        const popularity = track.popularity || 50;
-        return total + (popularity * 200000);
-      }
-    }, 0);
+    let baseRevenue: number;
+    let growthRate: number;
+    let useHistoricalData = false;
 
-    const baseRevenue = baseStreams * 0.003;
-    
+    // Use historical data if available (at least 2 quarters)
+    if (historicalData && historicalData.length >= 2) {
+      useHistoricalData = true;
+      
+      // Calculate average quarterly revenue
+      const avgQuarterlyRevenue = historicalData.reduce((sum, s) => sum + s.net_revenue, 0) / historicalData.length;
+      baseRevenue = avgQuarterlyRevenue * 4; // Annualize
+
+      // Calculate growth rate from historical trends
+      const qoqGrowths = [];
+      for (let i = 1; i < historicalData.length; i++) {
+        if (historicalData[i - 1].net_revenue > 0) {
+          qoqGrowths.push(((historicalData[i].net_revenue - historicalData[i - 1].net_revenue) / historicalData[i - 1].net_revenue));
+        }
+      }
+      
+      // Weighted average (more recent quarters weighted higher)
+      const weights = qoqGrowths.map((_, i) => 1 + i * 0.5);
+      const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+      growthRate = qoqGrowths.reduce((sum, g, i) => sum + g * weights[i], 0) / totalWeight;
+      
+      // Cap growth rate at realistic limits
+      growthRate = Math.max(-0.5, Math.min(2.0, growthRate));
+    } else {
+      // Fallback to stream-based estimates
+      const baseStreams = tracks.reduce((total, track) => {
+        if (track.isAlbum) {
+          const avgPopularity = track.popularity || 50;
+          const estimatedStreamsPerTrack = avgPopularity * 100000;
+          return total + (estimatedStreamsPerTrack * track.total_tracks);
+        } else {
+          const popularity = track.popularity || 50;
+          return total + (popularity * 200000);
+        }
+      }, 0);
+
+      baseRevenue = baseStreams * 0.003;
+      growthRate = 0.15; // Default 15% initial growth
+    }
+
     const projections = [];
     let currentRecoupment = dealTerms.advance || 0;
     
     for (let year = 1; year <= projectionLength; year++) {
-      const growthRate = Math.max(0.02, 0.15 - (year * 0.02));
-      const yearlyStreams = baseStreams * Math.pow(1 + growthRate, year - 1);
-      const grossRevenue = yearlyStreams * 0.003;
+      // Apply growth rate (with decay for non-historical estimates)
+      const yearGrowthRate = useHistoricalData 
+        ? growthRate 
+        : Math.max(0.02, growthRate - (year * 0.02));
+      
+      const yearlyRevenue = baseRevenue * Math.pow(1 + yearGrowthRate, year - 1);
+      const grossRevenue = yearlyRevenue;
       const netRevenue = grossRevenue * 0.7;
       const ownedRevenue = netRevenue * ((dealTerms.ownershipPercentage || 100) / 100);
       
@@ -103,14 +139,15 @@ export function useCatalogCalculations(
     }
 
     return {
-      baseStreams,
       baseRevenue,
       projections,
       totalProjectedRevenue: projections.reduce((sum, p) => sum + p.acquirerEarnings, 0),
       finalROI: projections[projections.length - 1]?.roi || 0,
-      paybackPeriod: projections.findIndex(p => p.roi > 0) + 1 || null
+      paybackPeriod: projections.findIndex(p => p.roi > 0) + 1 || null,
+      useHistoricalData,
+      historicalDataCount: historicalData?.length || 0
     };
-  }, [tracks, dealTerms, projectionLength]);
+  }, [tracks, dealTerms, projectionLength, historicalData]);
 }
 
 // Virtual scrolling hook for large lists

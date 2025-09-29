@@ -2222,6 +2222,87 @@ export type Database = {
           },
         ]
       }
+      deal_historical_statements: {
+        Row: {
+          artist_id: string | null
+          artist_name: string
+          catalog_name: string | null
+          created_at: string
+          expenses: number | null
+          file_url: string | null
+          gross_revenue: number
+          id: string
+          mechanical_royalties: number | null
+          net_revenue: number
+          notes: string | null
+          other_revenue: number | null
+          performance_royalties: number | null
+          period_label: string
+          quarter: number
+          revenue_sources: Json | null
+          source_detected: string | null
+          statement_type: string
+          streaming_revenue: number | null
+          streams: number | null
+          sync_revenue: number | null
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          artist_id?: string | null
+          artist_name: string
+          catalog_name?: string | null
+          created_at?: string
+          expenses?: number | null
+          file_url?: string | null
+          gross_revenue?: number
+          id?: string
+          mechanical_royalties?: number | null
+          net_revenue?: number
+          notes?: string | null
+          other_revenue?: number | null
+          performance_royalties?: number | null
+          period_label: string
+          quarter: number
+          revenue_sources?: Json | null
+          source_detected?: string | null
+          statement_type: string
+          streaming_revenue?: number | null
+          streams?: number | null
+          sync_revenue?: number | null
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          artist_id?: string | null
+          artist_name?: string
+          catalog_name?: string | null
+          created_at?: string
+          expenses?: number | null
+          file_url?: string | null
+          gross_revenue?: number
+          id?: string
+          mechanical_royalties?: number | null
+          net_revenue?: number
+          notes?: string | null
+          other_revenue?: number | null
+          performance_royalties?: number | null
+          period_label?: string
+          quarter?: number
+          revenue_sources?: Json | null
+          source_detected?: string | null
+          statement_type?: string
+          streaming_revenue?: number | null
+          streams?: number | null
+          sync_revenue?: number | null
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       deal_scenarios: {
         Row: {
           artist_id: string
