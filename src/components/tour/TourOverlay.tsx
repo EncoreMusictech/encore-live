@@ -36,22 +36,28 @@ export const TourOverlay = () => {
           const cardWidth = 320; // Tour card width
           const cardHeight = 300; // Estimated tour card height
           const padding = 20; // Minimum distance from viewport edges
+          const spacing = 20; // Space between highlighted element and modal
           
           switch (currentTourStep.position) {
             case 'bottom':
-              top += rect.height + 10;
+              top += rect.height + spacing;
+              left += (rect.width / 2) - (cardWidth / 2); // Center align
               break;
             case 'top':
-              top -= cardHeight + 10;
+              top -= cardHeight + spacing;
+              left += (rect.width / 2) - (cardWidth / 2); // Center align
               break;
             case 'right':
-              left += rect.width + 10;
+              left += rect.width + spacing;
+              top += (rect.height / 2) - (cardHeight / 2); // Vertical center
               break;
             case 'left':
-              left -= cardWidth + 10;
+              left -= cardWidth + spacing;
+              top += (rect.height / 2) - (cardHeight / 2); // Vertical center
               break;
             default:
-              top += rect.height + 10;
+              top += rect.height + spacing;
+              left += (rect.width / 2) - (cardWidth / 2); // Center align
           }
           
           // Ensure the tour card stays within viewport bounds
@@ -74,19 +80,33 @@ export const TourOverlay = () => {
           
           setOverlayPosition({ top, left });
           
-          // Scroll element into view
+          // Scroll element into view with more space
           element.scrollIntoView({ 
             behavior: 'smooth', 
             block: 'center',
             inline: 'center'
           });
           
-          // Highlight the target element with pulsing glow effect
+          // Add a cutout effect to the backdrop around this element
+          element.setAttribute('data-tour-highlight', 'true');
+          
+          // Highlight the target element with prominent pulsing glow effect
+          const originalStyles = {
+            position: element.style.position,
+            zIndex: element.style.zIndex,
+            boxShadow: element.style.boxShadow,
+            borderRadius: element.style.borderRadius,
+            transition: element.style.transition,
+            backgroundColor: element.style.backgroundColor
+          };
+          element.setAttribute('data-original-styles', JSON.stringify(originalStyles));
+          
           element.style.position = 'relative';
-          element.style.zIndex = '99997';
-          element.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.8), 0 0 0 8px rgba(59, 130, 246, 0.4), 0 0 20px 8px rgba(59, 130, 246, 0.3)';
-          element.style.borderRadius = '8px';
-          element.style.transition = 'box-shadow 0.3s ease-in-out';
+          element.style.zIndex = '99998';
+          element.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 1), 0 0 0 8px rgba(59, 130, 246, 0.6), 0 0 30px 12px rgba(59, 130, 246, 0.4)';
+          element.style.borderRadius = '12px';
+          element.style.transition = 'all 0.3s ease-in-out';
+          element.style.backgroundColor = element.style.backgroundColor || 'transparent';
         } else if (attempts < maxAttempts) {
           // Element not found, try again in 100ms
           setTimeout(() => findTargetElement(attempts + 1), 100);
@@ -106,13 +126,21 @@ export const TourOverlay = () => {
     }
 
     return () => {
-      // Clean up highlighting
+      // Clean up highlighting and restore original styles
       if (targetElement) {
-        targetElement.style.position = '';
-        targetElement.style.zIndex = '';
-        targetElement.style.boxShadow = '';
-        targetElement.style.borderRadius = '';
-        targetElement.style.transition = '';
+        targetElement.removeAttribute('data-tour-highlight');
+        
+        const originalStylesStr = targetElement.getAttribute('data-original-styles');
+        if (originalStylesStr) {
+          const originalStyles = JSON.parse(originalStylesStr);
+          targetElement.style.position = originalStyles.position;
+          targetElement.style.zIndex = originalStyles.zIndex;
+          targetElement.style.boxShadow = originalStyles.boxShadow;
+          targetElement.style.borderRadius = originalStyles.borderRadius;
+          targetElement.style.transition = originalStyles.transition;
+          targetElement.style.backgroundColor = originalStyles.backgroundColor;
+          targetElement.removeAttribute('data-original-styles');
+        }
       }
     };
   }, [isActive, currentStep, currentTourStep]);
@@ -121,8 +149,15 @@ export const TourOverlay = () => {
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-[99998]" onClick={skipTour} />
+      {/* Smart Backdrop that cuts out around highlighted element */}
+      <div 
+        className="fixed inset-0 z-[99997]" 
+        onClick={skipTour}
+        style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(2px)'
+        }}
+      />
       
       {/* Tour Card */}
       <div 
