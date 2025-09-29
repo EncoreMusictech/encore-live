@@ -33,21 +33,43 @@ export const TourOverlay = () => {
           let left = rect.left + scrollLeft;
           
           // Adjust position based on tour step position preference
+          const cardWidth = 320; // Tour card width
+          const cardHeight = 300; // Estimated tour card height
+          const padding = 20; // Minimum distance from viewport edges
+          
           switch (currentTourStep.position) {
             case 'bottom':
               top += rect.height + 10;
               break;
             case 'top':
-              top -= 10;
+              top -= cardHeight + 10;
               break;
             case 'right':
               left += rect.width + 10;
               break;
             case 'left':
-              left -= 320; // Approximate card width
+              left -= cardWidth + 10;
               break;
             default:
               top += rect.height + 10;
+          }
+          
+          // Ensure the tour card stays within viewport bounds
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+          
+          // Adjust horizontal position if needed
+          if (left < padding) {
+            left = padding;
+          } else if (left + cardWidth > viewportWidth - padding) {
+            left = viewportWidth - cardWidth - padding;
+          }
+          
+          // Adjust vertical position if needed
+          if (top < scrollTop + padding) {
+            top = scrollTop + padding;
+          } else if (top + cardHeight > scrollTop + viewportHeight - padding) {
+            top = scrollTop + viewportHeight - cardHeight - padding;
           }
           
           setOverlayPosition({ top, left });
