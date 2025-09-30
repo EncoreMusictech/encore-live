@@ -430,7 +430,12 @@ export const RevenueSourcesForm: React.FC<RevenueSourcesFormProps> = ({
           </div>
 
           <div className="flex gap-2 mb-4">
-            <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
+            <Button 
+              onClick={() => setShowForm(!showForm)} 
+              className="flex items-center gap-2"
+              disabled={!catalogValuationId}
+              title={!catalogValuationId ? 'Run a catalog valuation first to enable revenue sources' : undefined}
+            >
               <Plus className="h-4 w-4" />
               Add Revenue Source
             </Button>

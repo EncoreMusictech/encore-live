@@ -417,7 +417,7 @@ const CatalogValuation = memo(() => {
                 user_id: user.user.id,
                 artist_name: data.artist_name,
                 total_streams: data.total_streams,
-                followers: data.followers, // Use followers count from API
+                monthly_listeners: data.followers, // Store followers in monthly_listeners column
                 top_tracks: data.top_tracks,
                 valuation_amount: data.risk_adjusted_value || data.valuation_amount,
                 currency: data.currency,
@@ -450,7 +450,7 @@ const CatalogValuation = memo(() => {
                 user_id: user.user.id,
                 artist_name: data.artist_name,
                 total_streams: data.total_streams,
-                followers: data.followers, // Use followers count from API
+                monthly_listeners: data.followers, // Store followers in monthly_listeners column
                 top_tracks: data.top_tracks,
                 valuation_amount: data.risk_adjusted_value || data.valuation_amount,
                 currency: data.currency,
