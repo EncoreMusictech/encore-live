@@ -32,17 +32,24 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
   // Auto-fetch the most recent catalog valuation if none provided
   useEffect(() => {
     const fetchMostRecentValuation = async () => {
-      // Don't auto-fetch if we're explicitly resetting or if catalogValuationId is explicitly null
-      if (catalogValuationId === null || isResetting) {
+      console.log('[useCatalogRevenueSources] useEffect triggered', { catalogValuationId, isResetting });
+      
+      // If we're explicitly resetting, clear the effective ID
+      if (isResetting) {
+        console.log('[useCatalogRevenueSources] Resetting - clearing effectiveCatalogValuationId');
         setEffectiveCatalogValuationId(null);
         return;
       }
       
-      if (catalogValuationId) {
+      // If a catalogValuationId is provided (not undefined), use it (even if null)
+      if (catalogValuationId !== undefined) {
+        console.log('[useCatalogRevenueSources] Setting effectiveCatalogValuationId to:', catalogValuationId);
         setEffectiveCatalogValuationId(catalogValuationId);
         return;
       }
 
+      // Otherwise, try to fetch the most recent catalog valuation
+      console.log('[useCatalogRevenueSources] No catalogValuationId provided, fetching most recent');
       try {
         const { data: userData } = await supabase.auth.getUser();
         if (!userData.user) return;
@@ -56,7 +63,10 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
           .maybeSingle();
 
         if (!error && data) {
+          console.log('[useCatalogRevenueSources] Found most recent valuation:', data.id);
           setEffectiveCatalogValuationId(data.id);
+        } else {
+          console.log('[useCatalogRevenueSources] No recent valuation found');
         }
       } catch (error) {
         console.log('Could not fetch most recent catalog valuation:', error);
@@ -97,7 +107,10 @@ export const useCatalogRevenueSources = (catalogValuationId?: string) => {
 
   // Add a new revenue source
   const addRevenueSource = async (revenueSource: RevenueSource) => {
+    console.log('[useCatalogRevenueSources] addRevenueSource called', { effectiveCatalogValuationId, catalogValuationId });
+    
     if (!effectiveCatalogValuationId) {
+      console.error('[useCatalogRevenueSources] No effectiveCatalogValuationId available');
       toast({
         title: 'Error',
         description: 'No catalog valuation found. Please complete a catalog valuation first.',

@@ -480,6 +480,7 @@ const CatalogValuation = memo(() => {
               console.error("Error saving valuation:", saveError);
               // Don't throw here - saving is optional, the main result should still show
             } else if (savedValuation) {
+              console.log('[CatalogValuation] Setting catalogValuationId to:', savedValuation.id);
               setCatalogValuationId(savedValuation.id);
             }
           }
