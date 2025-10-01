@@ -8,14 +8,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, Edit, Trash2, Download, FileText, DollarSign, ChevronDown, Play, CheckCircle, AlertCircle, Clock, XCircle, RefreshCw, Wrench } from "lucide-react";
+import { Search, Edit, Trash2, Download, FileText, DollarSign, ChevronDown, Play, CheckCircle, AlertCircle, Clock, XCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePayouts } from "@/hooks/usePayouts";
 import { useAuth } from "@/hooks/useAuth";
 import { useClientPortal } from "@/hooks/useClientPortal";
 import { PayoutForm } from "./PayoutForm";
 import { toast } from "@/hooks/use-toast";
-import { fixUnmatchedRoyaltiesPayout } from "@/utils/fixUnmatchedRoyalties";
 
 export function PayoutList() {
   const { user } = useAuth();
@@ -27,7 +26,6 @@ export function PayoutList() {
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [exportingStatement, setExportingStatement] = useState<string | null>(null);
   const [isClientPortal, setIsClientPortal] = useState(false);
-  const [fixingPayout, setFixingPayout] = useState(false);
   const { payouts, loading, deletePayout, updateWorkflowStage, bulkUpdatePayouts, refreshPayouts, getPayoutExpenses, calculatePayoutTotals, updatePayout } = usePayouts();
   const initialized = useRef(false);
 
@@ -284,34 +282,6 @@ export function PayoutList() {
         description: "Failed to update workflow stage",
         variant: "destructive",
       });
-    }
-  };
-
-  const handleFixUnmatchedRoyalties = async (payoutId: string) => {
-    if (!user) return;
-    
-    setFixingPayout(true);
-    try {
-      const result = await fixUnmatchedRoyaltiesPayout(user.id);
-      
-      if (result.success) {
-        toast({
-          title: "Fixed Successfully",
-          description: `Payee created and payout corrected to $${result.correctedTotal}`,
-        });
-        await refreshPayouts();
-      } else {
-        throw result.error;
-      }
-    } catch (error) {
-      console.error('Error fixing unmatched royalties:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fix unmatched royalties payout",
-        variant: "destructive",
-      });
-    } finally {
-      setFixingPayout(false);
     }
   };
 
@@ -634,20 +604,11 @@ export function PayoutList() {
                           <Edit className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                       <DropdownMenuContent>
+                      <DropdownMenuContent>
                         <DropdownMenuItem onClick={() => setEditingPayout(payout)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Payout
                         </DropdownMenuItem>
-                        {payout.contacts?.name === 'Unmatched Royalties' && !payout.payees && (
-                          <DropdownMenuItem 
-                            onClick={() => handleFixUnmatchedRoyalties(payout.id)}
-                            disabled={fixingPayout}
-                          >
-                            <Wrench className="h-4 w-4 mr-2" />
-                            {fixingPayout ? 'Fixing...' : 'Fix Data Issue'}
-                          </DropdownMenuItem>
-                        )}
                         <DropdownMenuItem onClick={() => handleRecalculateRoyalties(payout.id)}>
                           <RefreshCw className="h-4 w-4 mr-2" />
                           Recalculate Royalties
