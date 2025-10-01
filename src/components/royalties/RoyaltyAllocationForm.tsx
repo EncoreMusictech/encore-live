@@ -234,7 +234,7 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
           }
 
           setWriters(updated);
-          console.log('Loaded writers from allocation (final):', updated);
+          console.log('Loaded writers from ownership_splits:', updated);
         };
         applyControl();
         return; // Stop further loading once writers are set
@@ -242,7 +242,50 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
         console.log('No writers extracted from ownership_splits');
       }
     }
-  }, [allocation, availableContacts, availableCopyrights]);
+
+    // Fallback: If no writers from ownership_splits and there's a linked copyright, load from it
+    if (allocation?.copyright_id && availableCopyrights.length > 0 && writers.length === 0) {
+      const linkedCopyright = availableCopyrights.find(c => c.id === allocation.copyright_id);
+      console.log('Fallback: Loading writers from linked copyright:', linkedCopyright?.work_title);
+      
+      if (linkedCopyright?.copyright_writers && linkedCopyright.copyright_writers.length > 0) {
+        const loadFromCopyright = async () => {
+          const copyrightWriters = linkedCopyright.copyright_writers.map((writer: any) => {
+            const matchingContact = availableContacts.find(contact => 
+              contact.name.toLowerCase().trim() === writer.writer_name.toLowerCase().trim()
+            );
+            
+            return {
+              id: Date.now() + Math.random(),
+              contact_id: matchingContact?.id || '',
+              writer_name: writer.writer_name,
+              writer_ipi: writer.ipi_number || '',
+              pro_affiliation: writer.pro_affiliation || '',
+              writer_role: writer.writer_role || '',
+              controlled_status: normalizeControlled(writer.controlled_status),
+              writer_share_percentage: writer.ownership_percentage || 0,
+              performance_share: writer.performance_share || 0,
+              mechanical_share: writer.mechanical_share || 0,
+              synchronization_share: writer.synchronization_share || 0,
+            };
+          });
+
+          // Overlay agreement-level control
+          const agreementMap = await getAgreementControlledMap(allocation.copyright_id!);
+          const finalWriters = copyrightWriters.map(w => {
+            const k = normalizeName(w.writer_name);
+            const isAgreementControlled = agreementMap.get(k) === true;
+            return { ...w, controlled_status: isAgreementControlled ? 'C' : w.controlled_status };
+          });
+
+          setWriters(finalWriters);
+          console.log('Loaded writers from linked copyright (fallback):', finalWriters);
+        };
+        
+        loadFromCopyright();
+      }
+    }
+  }, [allocation, availableContacts, availableCopyrights, writers.length]);
 
   // Handle copyright selection and auto-populate writers
   const handleCopyrightChange = async (copyrightId: string) => {
