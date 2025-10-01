@@ -21,6 +21,7 @@ import { toast } from "@/hooks/use-toast";
 import { RoyaltyAllocationForm } from "./RoyaltyAllocationForm";
 import { AllocationSongMatchDialog } from "./AllocationSongMatchDialog";
 import { ENCORE_STANDARD_FIELDS } from "@/lib/encore-mapper";
+import { normalizeMultipleTerritories, normalizeTerritoryCode } from '@/utils/territoryNormalizer';
 
 export function RoyaltyAllocationList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -293,7 +294,14 @@ export function RoyaltyAllocationList() {
       case 'QUANTITY':
         return allocation.mapped_data?.['QUANTITY'] || allocation.quantity;
       case 'TERRITORY':
-        return allocation.mapped_data?.['COUNTRY'] || allocation.country;
+        {
+          const raw = allocation.country || allocation.mapped_data?.['COUNTRY'];
+          if (!raw) return null;
+          const normalized = /[,;]/.test(raw)
+            ? normalizeMultipleTerritories(raw)
+            : normalizeTerritoryCode(raw);
+          return normalized;
+        }
       case 'GROSS':
         return allocation.mapped_data?.['GROSS'] || allocation.gross_royalty_amount;
       case 'ACTIONS':
