@@ -222,19 +222,30 @@ export function RoyaltyAllocationList() {
       case 'WORK TITLE':
         return allocation.mapped_data?.['WORK TITLE'] || allocation.song_title;
       case 'WRITERS':
-        // For copyright-linked allocations, prioritize controlled writers
+        // Prefer controlled writers from linked copyright if available
+        if (allocation.copyrights?.copyright_writers && Array.isArray(allocation.copyrights.copyright_writers)) {
+          const controlled = allocation.copyrights.copyright_writers
+            .filter((w: any) => w.controlled_status === 'C')
+            .map((w: any) => w.writer_name);
+          if (controlled.length > 0) {
+            return controlled.join(', ');
+          }
+        }
+        
+        // For copyright-linked allocations, prioritize controlled writers from ownership_splits
         if (allocation.copyright_id && allocation.ownership_splits && typeof allocation.ownership_splits === 'object') {
           const contactIds = Object.keys(allocation.ownership_splits);
           const copyrightWriters = contactIds
             .filter(id => id.startsWith('copyright_writer_'))
-            .map(id => allocation.ownership_splits[id].writer_name);
+            .map(id => allocation.ownership_splits[id].writer_name)
+            .filter(Boolean);
           
           if (copyrightWriters.length > 0) {
             return copyrightWriters.join(', ');
           }
         }
         
-        // First check if we have work_writers field (used for copyright writers)
+        // Fallbacks
         if (allocation.work_writers) {
           return allocation.work_writers;
         }
@@ -242,12 +253,12 @@ export function RoyaltyAllocationList() {
         if (allocation.mapped_data?.['WORK WRITERS']) {
           return allocation.mapped_data['WORK WRITERS'];
         }
-        // Finally try to extract from ownership_splits for contact-based writers
+        // Finally try to extract from ownership_splits for contact-based and manual writers
         if (allocation.ownership_splits && typeof allocation.ownership_splits === 'object') {
           const contactIds = Object.keys(allocation.ownership_splits);
           const writerNames = contactIds.map(contactId => {
-            // Check if this is a copyright writer (starts with "copyright_writer_")
-            if (contactId.startsWith('copyright_writer_')) {
+            // Handle copyright and manual writer keys that include names in the value
+            if (contactId.startsWith('copyright_writer_') || contactId.startsWith('manual_writer_')) {
               const writerData = allocation.ownership_splits[contactId];
               return writerData.writer_name || contactId;
             }
