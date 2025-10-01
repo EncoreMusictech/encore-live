@@ -24,7 +24,6 @@ import { PayoutForm } from "@/components/royalties/PayoutForm";
 import { AccountBalancesTable } from "@/components/royalties/AccountBalancesTable";
 import { PayeesTable } from "@/components/royalties/PayeesTable";
 import { ExpensesTable } from "@/components/royalties/ExpensesTable";
-import { TerritoryNormalizer } from "@/components/admin/TerritoryNormalizer";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 
 export default function CRMRoyaltiesPage() {
@@ -169,8 +168,6 @@ export default function CRMRoyaltiesPage() {
             </div>
           </div>
 
-          <TerritoryNormalizer />
-          
           <RoyaltiesImportStaging />
         </TabsContent>
 
