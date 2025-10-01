@@ -442,21 +442,45 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             await createAllocation(writerAllocationData);
           }
         } else {
-          // Create single allocation if no copyright linked or no writers
-          const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
+          // Create single allocation - include ALL writers (with or without contact_id)
+          const writersWithContact = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
+          const writersWithoutContact = writers.filter(writer => !writer.contact_id || writer.contact_id === 'none' || writer.contact_id === '');
+          
+          // Build ownership_splits including all writers
+          const ownership_splits = {};
+          
+          // Add writers with contact_id
+          writersWithContact.forEach(writer => {
+            ownership_splits[writer.contact_id] = {
+              writer_share: writer.writer_share_percentage || 0,
+              performance_share: writer.performance_share || 0,
+              mechanical_share: writer.mechanical_share || 0,
+              synchronization_share: writer.synchronization_share || 0,
+            };
+          });
+          
+          // Add writers without contact_id using temporary identifier
+          writersWithoutContact.forEach(writer => {
+            ownership_splits[`manual_writer_${writer.id}`] = {
+              writer_share: writer.writer_share_percentage || 0,
+              writer_name: writer.writer_name,
+              writer_ipi: writer.writer_ipi,
+              pro_affiliation: writer.pro_affiliation,
+              writer_role: writer.writer_role,
+              controlled_status: writer.controlled_status,
+              performance_share: writer.performance_share || 0,
+              mechanical_share: writer.mechanical_share || 0,
+              synchronization_share: writer.synchronization_share || 0,
+            };
+          });
+          
           const cleanedData = {
             ...baseData,
-            ownership_splits: validWriters.length > 0 ? validWriters.reduce((acc, writer) => {
-              acc[writer.contact_id] = {
-                writer_share: writer.writer_share_percentage || 0,
-                performance_share: writer.performance_share || 0,
-                mechanical_share: writer.mechanical_share || 0,
-                synchronization_share: writer.synchronization_share || 0,
-              };
-              return acc;
-            }, {}) : {},
+            ownership_splits: Object.keys(ownership_splits).length > 0 ? ownership_splits : {},
           };
-          console.log('Single allocation data:', cleanedData);
+          console.log('Single allocation data with all writers:', cleanedData);
+          console.log('Writers with contact:', writersWithContact.length);
+          console.log('Writers without contact:', writersWithoutContact.length);
           await createAllocation(cleanedData);
         }
       }
