@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, DollarSign, FileTextIcon } from "lucide-react";
 import { usePayouts } from "@/hooks/usePayouts";
-import { useContacts } from "@/hooks/useContacts";
+import { usePayees } from "@/hooks/usePayees";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAgreementCalculation, AgreementTerms, ContractWriter } from "@/hooks/useAgreementCalculation";
 import { AgreementTermsPreview } from "./AgreementTermsPreview";
@@ -21,7 +21,7 @@ interface PayoutFormProps {
 
 export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   const { createPayout, updatePayout, calculatePayoutTotals } = usePayouts();
-  const { contacts } = useContacts();
+  const { payees } = usePayees();
   const subscription = useSubscription();
   const { 
     loading: calculationLoading,
@@ -42,7 +42,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
-      client_id: String(payout?.client_id ?? ''),
+      payee_id: String(payout?.payee_id ?? ''),
       period: payout?.period || '',
       period_start: payout?.period_start || null,
       period_end: payout?.period_end || null,
@@ -66,7 +66,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   // Set form values when editing existing payout
   useEffect(() => {
     if (payout) {
-      setValue('client_id', String(payout.client_id ?? ''));
+      setValue('payee_id', String(payout.payee_id ?? ''));
       setValue('period', payout.period || '');
       setValue('period_start', payout.period_start || null);
       setValue('period_end', payout.period_end || null);
@@ -87,8 +87,8 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
     }
   }, [payout, setValue]);
 
-  const clientContacts = contacts.filter(c => 
-    payout ? String(c.id) === String(payout.client_id) : c.contact_type === 'client'
+  const activePayees = payees.filter(p => 
+    payout ? String(p.id) === String(payout.payee_id) : !p.is_archived
   );
   // Agreement-based calculations should be available to all users with contracts
   const hasAgreementModule = true;
@@ -149,11 +149,11 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
   };
 
   const handleCalculateTotals = async () => {
-    const clientId = watch('client_id');
+    const payeeId = watch('payee_id');
     const periodStart = watch('period_start');
     const periodEnd = watch('period_end');
 
-    if (!clientId || !periodStart || !periodEnd) {
+    if (!payeeId || !periodStart || !periodEnd) {
       return;
     }
 
@@ -164,11 +164,11 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       // Always try agreement-based calculation first if agreements are available
       if (calculationMethod === 'agreement' && availableAgreements.length > 0 && selectedAgreement) {
         console.log('Using agreement-based calculation with agreement:', selectedAgreement);
-        result = await calculateAgreementBasedRoyalties(selectedAgreement, clientId, periodStart, periodEnd);
+        result = await calculateAgreementBasedRoyalties(selectedAgreement, payeeId, periodStart, periodEnd);
       } else if (calculationMethod === 'manual' || availableAgreements.length === 0) {
         // Use manual calculation as fallback or when explicitly selected
         console.log('Using manual calculation');
-        result = await calculateManualRoyalties(clientId, periodStart, periodEnd);
+        result = await calculateManualRoyalties(payeeId, periodStart, periodEnd);
       }
       
       if (result) {
@@ -200,18 +200,18 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
     { value: `Q4 ${currentYear}`, label: `Q4 ${currentYear}` },
   ];
 
-  // Load client agreements when client changes
+  // Load payee agreements when payee changes
   useEffect(() => {
-    const clientId = watch('client_id');
-    if (clientId && hasAgreementModule) {
-      const clientContact = contacts.find(c => c.id === clientId);
-      if (clientContact) {
-        console.log('Loading agreements for client:', clientContact.name);
+    const payeeId = watch('payee_id');
+    if (payeeId && hasAgreementModule) {
+      const payee = payees.find(p => p.id === payeeId);
+      if (payee) {
+        console.log('Loading agreements for payee:', payee.payee_name);
         
         // Try both direct contract lookup and payee hierarchy lookup
         Promise.all([
-          getClientAgreements(clientId),
-          getPayeeAgreements(clientContact.name)
+          getClientAgreements(payeeId),
+          getPayeeAgreements(payee.payee_name)
         ]).then(([directAgreements, payeeAgreements]) => {
           // Combine and deduplicate agreements
           const allAgreements = [...directAgreements];
@@ -235,7 +235,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
               const periodStart = watch('period_start');
               const periodEnd = watch('period_end');
               if (periodStart && periodEnd) {
-                calculateAgreementBasedRoyalties(allAgreements[0].id, clientId, periodStart, periodEnd)
+                calculateAgreementBasedRoyalties(allAgreements[0].id, payeeId, periodStart, periodEnd)
                   .then(result => {
                     if (result) {
                       setCalculationResult(result);
@@ -273,7 +273,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
       setAvailableAgreements([]);
       setCalculationMethod('manual');
     }
-  }, [watch('client_id'), hasAgreementModule, contacts]);
+  }, [watch('payee_id'), hasAgreementModule, payees]);
 
   // Load agreement writers when agreement changes
   useEffect(() => {
@@ -288,24 +288,24 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="client_id">Payee Name *</Label>
+          <Label htmlFor="payee_id">Payee Name *</Label>
           <Select 
-            onValueChange={(value) => setValue('client_id', value)} 
-            value={watch('client_id') ? String(watch('client_id')) : ''}
-            defaultValue={payout?.client_id ? String(payout.client_id) : ''}
+            onValueChange={(value) => setValue('payee_id', value)} 
+            value={watch('payee_id') ? String(watch('payee_id')) : ''}
+            defaultValue={payout?.payee_id ? String(payout.payee_id) : ''}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select payee" />
             </SelectTrigger>
             <SelectContent>
-              {clientContacts.map((contact) => (
-                <SelectItem key={contact.id} value={String(contact.id)}>
-                  {contact.name}
+              {activePayees.map((payee) => (
+                <SelectItem key={payee.id} value={String(payee.id)}>
+                  {payee.payee_name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {errors.client_id && (
+          {errors.payee_id && (
             <p className="text-sm text-red-600">Payee is required</p>
           )}
         </div>
@@ -350,7 +350,7 @@ export function PayoutForm({ onCancel, payout }: PayoutFormProps) {
         <Button
           type="button"
           onClick={handleCalculateTotals}
-          disabled={calculating || calculationLoading || !watch('client_id') || !watch('period_start') || !watch('period_end') || (calculationMethod === 'agreement' && availableAgreements.length === 0)}
+          disabled={calculating || calculationLoading || !watch('payee_id') || !watch('period_start') || !watch('period_end') || (calculationMethod === 'agreement' && availableAgreements.length === 0)}
           className="gap-2"
         >
           <DollarSign className="h-4 w-4" />

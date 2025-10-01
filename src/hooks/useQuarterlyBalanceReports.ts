@@ -81,7 +81,7 @@ export function useQuarterlyBalanceReports() {
       // Fetch all payouts for this user, including paid ones
       const { data: payouts, error: payoutsError } = await supabase
         .from('payouts')
-        .select('id, client_id, gross_royalties, total_expenses, amount_due, status, workflow_stage, created_at, period_start, period_end, period')
+        .select('id, payee_id, gross_royalties, total_expenses, amount_due, status, workflow_stage, created_at, period_start, period_end, period')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
@@ -99,43 +99,26 @@ export function useQuarterlyBalanceReports() {
 
       console.log(`Found ${payouts.length} payouts for balance calculation`);
 
-      // Collect unique client (contact) ids
-      const clientIds = Array.from(new Set(payouts.map(p => p.client_id).filter(Boolean)));
+      // Collect unique payee ids
+      const payeeIds = Array.from(new Set(payouts.map(p => p.payee_id).filter(Boolean)));
 
-      // Load contacts for name/email mapping
-      const contactsMap = new Map<string, { name: string; email?: string }>();
-      if (clientIds.length > 0) {
-        const { data: contacts } = await supabase
-          .from('contacts')
-          .select('id, name, email')
-          .in('id', clientIds as string[])
+      // Load payees for name/email mapping
+      const payeesMap = new Map<string, { name: string }>();
+      if (payeeIds.length > 0) {
+        const { data: payees } = await supabase
+          .from('payees')
+          .select('id, payee_name')
+          .in('id', payeeIds as string[])
           .eq('user_id', user.id);
-        contacts?.forEach(c => contactsMap.set(c.id, { name: c.name, email: c.email ?? undefined }));
+        payees?.forEach(p => payeesMap.set(p.id, { name: p.payee_name }));
       }
-
-      // Load payees to map by name -> id and id -> name
-      const { data: payees } = await supabase
-        .from('payees')
-        .select('id, payee_name')
-        .eq('user_id', user.id);
       
-      console.log(`📊 Found ${payees?.length || 0} payees for mapping`);
-      payees?.forEach(p => console.log(`📊 Payee: "${p.payee_name}" -> ID: ${p.id}`));
-      
-      const payeeByName = new Map<string, string>(
-        (payees || []).map(p => [String(p.payee_name || '').toLowerCase().trim(), p.id])
-      );
-      const payeeNameById = new Map<string, string>(
-        (payees || []).map(p => [p.id, String(p.payee_name || '')])
-      );
-
-      console.log(`📊 PayeeByName map has ${payeeByName.size} entries`);
-      console.log(`📊 ContactsMap has ${contactsMap.size} entries`);
+      console.log(`📊 Found ${payeesMap.size} payees for mapping`);
 
       // Group by payee/year/quarter and calculate running balances
       type PayeeQuarterData = {
         payee_id: string;
-        contact: { name: string; email?: string } | undefined;
+        payee: { name: string } | undefined;
         year: number;
         quarter: number;
         royalties_amount: number;
@@ -153,34 +136,15 @@ export function useQuarterlyBalanceReports() {
         const d = new Date(periodDate);
         const year = d.getFullYear();
         const quarter = Math.ceil((d.getMonth() + 1) / 3);
-        const contact = payout.client_id ? contactsMap.get(payout.client_id) : undefined;
-        const contactName = contact?.name || 'Unknown';
+        const payeeId = payout.payee_id;
+        const payee = payeeId ? payeesMap.get(payeeId) : undefined;
+        const payeeName = payee?.name || 'Unknown';
         
-        console.log(`🔍 Processing payout for contact: "${contactName}" (client_id: ${payout.client_id})`);
+        console.log(`🔍 Processing payout for payee: "${payeeName}" (payee_id: ${payeeId})`);
         
-        // Try multiple mapping strategies to find payee
-        let payeeId = '';
-        const contactNameLower = contactName.toLowerCase().trim();
-        
-        // Strategy 1: Exact match
-        payeeId = payeeByName.get(contactNameLower) || '';
-        console.log(`🔍 Strategy 1 (exact): "${contactNameLower}" -> ${payeeId || 'NOT FOUND'}`);
-        
-        // Strategy 2: Check all payee names for partial matches
         if (!payeeId) {
-          for (const [payeeName, id] of payeeByName.entries()) {
-            if (payeeName.includes(contactNameLower) || contactNameLower.includes(payeeName)) {
-              payeeId = id;
-              console.log(`🔍 Strategy 2 (partial): "${contactNameLower}" matched "${payeeName}" -> ${id}`);
-              break;
-            }
-          }
-        }
-        
-        // Strategy 3: Create demo payee if no match
-        if (!payeeId) {
-          payeeId = `demo-${contactName}`;
-          console.log(`🔍 Strategy 3 (demo): Creating demo payee -> ${payeeId}`);
+          console.log('⚠️ Skipping payout without payee_id');
+          continue;
         }
         
         const key = `${payeeId}-${periodKey(year, quarter)}`;
@@ -188,7 +152,7 @@ export function useQuarterlyBalanceReports() {
         if (!quarterlyData.has(key)) {
           quarterlyData.set(key, {
             payee_id: payeeId,
-            contact,
+            payee,
             year,
             quarter,
             royalties_amount: 0,
@@ -207,9 +171,9 @@ export function useQuarterlyBalanceReports() {
                       String((payout as any).workflow_stage || '').toLowerCase() === 'paid';
         if (isPaid) {
           entry.payments_amount += Number(payout.amount_due || 0);
-          console.log(`✅ Added payment of $${payout.amount_due} for ${contactName} in ${periodLabel(year, quarter)}`);
+          console.log(`✅ Added payment of $${payout.amount_due} for ${payeeName} in ${periodLabel(year, quarter)}`);
         } else {
-          console.log(`⏳ Skipped payment for ${contactName} in ${periodLabel(year, quarter)} - status: ${payout.status}, workflow_stage: ${(payout as any).workflow_stage}`);
+          console.log(`⏳ Skipped payment for ${payeeName} in ${periodLabel(year, quarter)} - status: ${payout.status}, workflow_stage: ${(payout as any).workflow_stage}`);
         }
       }
 
@@ -247,13 +211,13 @@ export function useQuarterlyBalanceReports() {
             is_calculated: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            payee_name: payeeNameById.get(entry.payee_id) || entry.contact?.name || 'Unknown',
-            contacts: entry.contact,
+            payee_name: entry.payee?.name || 'Unknown',
+            payees: entry.payee ? { payee_name: entry.payee.name } : undefined,
             contracts: undefined,
           });
 
           runningBalance = closingBalance;
-          console.log(`${entry.contact?.name || 'Unknown'} ${periodLabel(entry.year, entry.quarter)}: Opening $${openingBalance}, Closing $${closingBalance}`);
+          console.log(`${entry.payee?.name || 'Unknown'} ${periodLabel(entry.year, entry.quarter)}: Opening $${openingBalance}, Closing $${closingBalance}`);
         }
       }
 

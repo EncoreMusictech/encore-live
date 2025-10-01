@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, DollarSign, Plus, Trash2, Calculator } from "lucide-react";
 import { usePayouts } from "@/hooks/usePayouts";
-import { useContacts } from "@/hooks/useContacts";
+import { usePayees } from "@/hooks/usePayees";
 import { toast } from "@/hooks/use-toast";
 
 interface ExpenseItem {
@@ -28,13 +28,13 @@ interface EnhancedPayoutFormProps {
 
 export function EnhancedPayoutForm({ onCancel, payout }: EnhancedPayoutFormProps) {
   const { createPayout, updatePayout, calculatePayoutTotals } = usePayouts();
-  const { contacts } = useContacts();
+  const { payees } = usePayees();
   const [calculating, setCalculating] = useState(false);
   const [autoCalculateExpenses, setAutoCalculateExpenses] = useState(true);
   
   const form = useForm({
     defaultValues: {
-      client_id: payout?.client_id || '',
+      payee_id: payout?.payee_id || '',
       period: payout?.period || '',
       period_start: payout?.period_start || '',
       period_end: payout?.period_end || '',
@@ -65,7 +65,7 @@ export function EnhancedPayoutForm({ onCancel, payout }: EnhancedPayoutFormProps
   });
 
   const watchedValues = watch();
-  const clientContacts = contacts.filter(c => c.contact_type === 'client');
+  const activePayees = payees.filter(p => !p.is_archived);
 
   // Auto-calculate amounts when relevant fields change
   useEffect(() => {
@@ -135,14 +135,14 @@ export function EnhancedPayoutForm({ onCancel, payout }: EnhancedPayoutFormProps
   };
 
   const handleCalculateTotals = async () => {
-    const clientId = watch('client_id');
+    const payeeId = watch('payee_id');
     const periodStart = watch('period_start');
     const periodEnd = watch('period_end');
 
-    if (!clientId || !periodStart || !periodEnd) {
+    if (!payeeId || !periodStart || !periodEnd) {
       toast({
         title: "Missing Information",
-        description: "Please select a client and date range before calculating totals.",
+        description: "Please select a payee and date range before calculating totals.",
         variant: "destructive",
       });
       return;
@@ -150,7 +150,7 @@ export function EnhancedPayoutForm({ onCancel, payout }: EnhancedPayoutFormProps
 
     setCalculating(true);
     try {
-      const totals = await calculatePayoutTotals(clientId, periodStart, periodEnd);
+      const totals = await calculatePayoutTotals(payeeId, periodStart, periodEnd);
       if (totals) {
         Object.entries(totals).forEach(([key, value]) => {
           setValue(key as any, value);
@@ -232,21 +232,21 @@ export function EnhancedPayoutForm({ onCancel, payout }: EnhancedPayoutFormProps
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="client_id">Client *</Label>
-            <Select onValueChange={(value) => setValue('client_id', value)} defaultValue={watch('client_id')}>
+            <Label htmlFor="payee_id">Payee *</Label>
+            <Select onValueChange={(value) => setValue('payee_id', value)} defaultValue={watch('payee_id')}>
               <SelectTrigger>
-                <SelectValue placeholder="Select client" />
+                <SelectValue placeholder="Select payee" />
               </SelectTrigger>
               <SelectContent>
-                {clientContacts.map((contact) => (
-                  <SelectItem key={contact.id} value={contact.id}>
-                    {contact.name}
+                {activePayees.map((payee) => (
+                  <SelectItem key={payee.id} value={payee.id}>
+                    {payee.payee_name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.client_id && (
-              <p className="text-sm text-destructive">Client is required</p>
+            {errors.payee_id && (
+              <p className="text-sm text-destructive">Payee is required</p>
             )}
           </div>
 
@@ -291,7 +291,7 @@ export function EnhancedPayoutForm({ onCancel, payout }: EnhancedPayoutFormProps
         <Button
           type="button"
           onClick={handleCalculateTotals}
-          disabled={calculating || !watch('client_id') || !watch('period_start') || !watch('period_end')}
+          disabled={calculating || !watch('payee_id') || !watch('period_start') || !watch('period_end')}
           className="gap-2"
           size="lg"
         >
