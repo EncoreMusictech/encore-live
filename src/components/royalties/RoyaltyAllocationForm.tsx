@@ -149,16 +149,16 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
 
     if (allocation && allocation.ownership_splits) {
       const extractedWriters = Object.entries(allocation.ownership_splits).map(([key, value]: [string, any]) => {
-        // Check if this is a copyright writer (temporary identifier)
-        if (key.startsWith('copyright_writer_')) {
+        // Treat both copyright-derived and manual non-contact writers the same
+        if (key.startsWith('copyright_writer_') || key.startsWith('manual_writer_')) {
           return {
             id: Date.now() + Math.random(),
-            contact_id: '', // No contact for copyright writers
+            contact_id: '', // No contact for these writers
             writer_name: value.writer_name || 'Unknown Writer',
-            writer_ipi: '',
-            pro_affiliation: '',
-            writer_role: 'composer',
-            controlled_status: 'NC',
+            writer_ipi: value.writer_ipi || '',
+            pro_affiliation: value.pro_affiliation || '',
+            writer_role: value.writer_role || 'composer',
+            controlled_status: value.controlled_status || 'NC',
             writer_share_percentage: value.writer_share || 0,
             performance_share: value.performance_share || 0,
             mechanical_share: value.mechanical_share || 0,
@@ -175,10 +175,10 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
             pro_affiliation: '',
             writer_role: 'composer',
             controlled_status: 'NC',
-            writer_share_percentage: value.writer_share || 0,
-            performance_share: value.performance_share || 0,
-            mechanical_share: value.mechanical_share || 0,
-            synchronization_share: value.synchronization_share || 0,
+            writer_share_percentage: (value as any).writer_share || 0,
+            performance_share: (value as any).performance_share || 0,
+            mechanical_share: (value as any).mechanical_share || 0,
+            synchronization_share: (value as any).synchronization_share || 0,
           };
         }
       });
@@ -373,19 +373,36 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
       console.log('Media type in baseData:', baseData.media_type);
 
       if (allocation) {
-        // For updates, keep the original behavior
-        const validWriters = writers.filter(writer => writer.contact_id && writer.contact_id !== 'none' && writer.contact_id !== '');
+        // For updates, preserve BOTH contact-linked and manual writers
+        const writersWithContact = writers.filter(w => w.contact_id && w.contact_id !== 'none' && w.contact_id !== '');
+        const writersWithoutContact = writers.filter(w => !w.contact_id || w.contact_id === '' || w.contact_id === 'none');
+
+        const ownership_splits: Record<string, any> = {};
+        writersWithContact.forEach(writer => {
+          ownership_splits[writer.contact_id] = {
+            writer_share: writer.writer_share_percentage || 0,
+            performance_share: writer.performance_share || 0,
+            mechanical_share: writer.mechanical_share || 0,
+            synchronization_share: writer.synchronization_share || 0,
+          };
+        });
+        writersWithoutContact.forEach(writer => {
+          ownership_splits[`manual_writer_${writer.id}`] = {
+            writer_share: writer.writer_share_percentage || 0,
+            writer_name: writer.writer_name,
+            writer_ipi: writer.writer_ipi,
+            pro_affiliation: writer.pro_affiliation,
+            writer_role: writer.writer_role,
+            controlled_status: writer.controlled_status,
+            performance_share: writer.performance_share || 0,
+            mechanical_share: writer.mechanical_share || 0,
+            synchronization_share: writer.synchronization_share || 0,
+          };
+        });
+
         const cleanedData = {
           ...baseData,
-          ownership_splits: validWriters.length > 0 ? validWriters.reduce((acc, writer) => {
-            acc[writer.contact_id] = {
-              writer_share: writer.writer_share_percentage || 0,
-              performance_share: writer.performance_share || 0,
-              mechanical_share: writer.mechanical_share || 0,
-              synchronization_share: writer.synchronization_share || 0,
-            };
-            return acc;
-          }, {}) : {},
+          ownership_splits,
         };
         await updateAllocation(allocation.id, cleanedData);
       } else {
