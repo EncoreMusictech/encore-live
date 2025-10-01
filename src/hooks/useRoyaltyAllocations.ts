@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
+import { normalizeTerritoryCode } from '@/utils/territoryNormalizer';
 
 export interface RoyaltyAllocation {
   id: string;
@@ -103,8 +104,14 @@ export function useRoyaltyAllocations() {
     try {
       console.log('createAllocation called with data:', allocationData);
       
+      // Normalize territory before insertion
+      const normalizedCountry = allocationData.country 
+        ? normalizeTerritoryCode(allocationData.country)
+        : undefined;
+      
       const insertData = {
         ...allocationData,
+        country: normalizedCountry,
         user_id: user.id,
       };
       
@@ -138,9 +145,17 @@ export function useRoyaltyAllocations() {
 
   const updateAllocation = async (id: string, allocationData: Partial<RoyaltyAllocation>) => {
     try {
+      // Normalize territory if present
+      const normalizedData = {
+        ...allocationData,
+        ...(allocationData.country && {
+          country: normalizeTerritoryCode(allocationData.country)
+        })
+      };
+      
       const { data, error } = await supabase
         .from('royalty_allocations')
-        .update(allocationData)
+        .update(normalizedData)
         .eq('id', id)
         .select()
         .single();
