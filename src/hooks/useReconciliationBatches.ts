@@ -579,6 +579,7 @@ export function useReconciliationBatches() {
             .from('payouts')
             .insert({
               user_id: user.id,
+              client_id: null as any, // Deprecated field, set to null per new architecture
               payee_id: payee.id,
               period: `Q${selectedQuarter} ${selectedYear}`,
               period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,
