@@ -157,6 +157,7 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
                   <TableHead>Source</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Records</TableHead>
+                  <TableHead>Royalty Amount</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Song Matching</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -188,6 +189,19 @@ export function RoyaltiesImportStaging({}: RoyaltiesImportStagingProps) {
                     </TableCell>
                     <TableCell>
                       {Array.isArray(record.mapped_data) ? record.mapped_data.length : 0}
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        if (!Array.isArray(record.mapped_data)) return '$0.00';
+                        const total = record.mapped_data.reduce((sum, row) => {
+                          const gross = parseFloat(row.GROSS || row.gross || row['Gross Amount'] || row.gross_amount || 0);
+                          return sum + (isNaN(gross) ? 0 : gross);
+                        }, 0);
+                        return new Intl.NumberFormat('en-US', { 
+                          style: 'currency', 
+                          currency: 'USD' 
+                        }).format(total);
+                      })()}
                     </TableCell>
                     <TableCell>
                       {new Date(record.created_at).toLocaleDateString()}
