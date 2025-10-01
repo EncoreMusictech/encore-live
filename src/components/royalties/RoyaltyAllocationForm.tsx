@@ -148,37 +148,56 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
     });
 
     if (allocation && allocation.ownership_splits) {
-      const extractedWriters = Object.entries(allocation.ownership_splits).map(([key, value]: [string, any]) => {
-        // Treat both copyright-derived and manual non-contact writers the same
-        if (key.startsWith('copyright_writer_') || key.startsWith('manual_writer_')) {
+      // Robustly parse ownership_splits (can be object, array, or stringified JSON)
+      let splits: any = allocation.ownership_splits as any;
+      try {
+        if (typeof splits === 'string') {
+          splits = JSON.parse(splits);
+        }
+      } catch (e) {
+        console.warn('Failed to parse ownership_splits string', e);
+      }
+
+      const entries: [string, any][] = Array.isArray(splits)
+        ? splits.map((v: any, idx: number) => [`manual_writer_${idx}`, v])
+        : Object.entries(splits || {});
+
+      console.log('Parsed ownership_splits entries:', entries.map(([k]) => k));
+
+      const extractedWriters = entries.map(([key, value]: [string, any]) => {
+        // If the value explicitly contains a contact_id (legacy format), prefer it
+        const valueHasContact = !!value?.contact_id;
+
+        // Treat manual/copyright writers (no contact linkage stored in key)
+        if (key.startsWith('copyright_writer_') || key.startsWith('manual_writer_') || !/^[0-9a-f-]{36}$/i.test(key)) {
           return {
             id: Date.now() + Math.random(),
-            contact_id: '', // No contact for these writers
+            contact_id: valueHasContact ? value.contact_id : '',
             writer_name: value.writer_name || 'Unknown Writer',
             writer_ipi: value.writer_ipi || '',
             pro_affiliation: value.pro_affiliation || '',
             writer_role: value.writer_role || 'composer',
             controlled_status: value.controlled_status || 'NC',
-            writer_share_percentage: value.writer_share || 0,
-            performance_share: value.performance_share || 0,
-            mechanical_share: value.mechanical_share || 0,
-            synchronization_share: value.synchronization_share || 0,
+            writer_share_percentage: Number(value.writer_share) || 0,
+            performance_share: Number(value.performance_share) || 0,
+            mechanical_share: Number(value.mechanical_share) || 0,
+            synchronization_share: Number(value.synchronization_share) || 0,
           };
         } else {
-          // This is a contact-based writer
-          const contact = availableContacts.find(c => c.id === key);
+          // Contact-based where key is the contact id
+          const contact = availableContacts.find(c => c.id === key || c.id === value.contact_id);
           return {
             id: Date.now() + Math.random(),
-            contact_id: key,
-            writer_name: contact?.name || 'Unknown Writer',
-            writer_ipi: '',
-            pro_affiliation: '',
-            writer_role: 'composer',
-            controlled_status: 'NC',
-            writer_share_percentage: (value as any).writer_share || 0,
-            performance_share: (value as any).performance_share || 0,
-            mechanical_share: (value as any).mechanical_share || 0,
-            synchronization_share: (value as any).synchronization_share || 0,
+            contact_id: contact?.id || key,
+            writer_name: contact?.name || value.writer_name || 'Unknown Writer',
+            writer_ipi: value.writer_ipi || '',
+            pro_affiliation: value.pro_affiliation || '',
+            writer_role: value.writer_role || 'composer',
+            controlled_status: value.controlled_status || 'NC',
+            writer_share_percentage: Number(value.writer_share) || 0,
+            performance_share: Number(value.performance_share) || 0,
+            mechanical_share: Number(value.mechanical_share) || 0,
+            synchronization_share: Number(value.synchronization_share) || 0,
           };
         }
       });
@@ -215,62 +234,12 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
           }
 
           setWriters(updated);
-          console.log('Loaded writers from allocation with control overlay:', updated);
+          console.log('Loaded writers from allocation (final):', updated);
         };
         applyControl();
-        return; // Stop further loading; we already applied control overlay
-      }
-    } 
-    
-    // Always try to load from copyright if we have a copyright_id and no writers were loaded yet
-    if (allocation && allocation.copyright_id && availableCopyrights.length > 0) {
-      console.log('Attempting to load writers from linked copyright...');
-      const linkedCopyright = availableCopyrights.find(c => c.id === allocation.copyright_id);
-      console.log('Found linked copyright:', linkedCopyright);
-      
-      if (linkedCopyright) {
-        const copyrightWriters = (linkedCopyright as any).copyright_writers;
-        console.log('Copyright writers:', copyrightWriters);
-        
-        if (copyrightWriters && copyrightWriters.length > 0) {
-          let mappedWriters = copyrightWriters.map((writer: any) => {
-            // Try to find a matching contact by name
-            const matchingContact = availableContacts.find(contact => 
-              contact.name.toLowerCase().trim() === writer.writer_name.toLowerCase().trim()
-            );
-            
-            return {
-              id: Date.now() + Math.random(), // Temporary ID for form
-              contact_id: matchingContact?.id || '', // Auto-select if found, otherwise empty
-              writer_name: writer.writer_name,
-              writer_ipi: writer.ipi_number || '',
-              pro_affiliation: writer.pro_affiliation || '',
-              writer_role: writer.writer_role || 'composer',
-              controlled_status: normalizeControlled(writer.controlled_status),
-              writer_share_percentage: writer.ownership_percentage || 0,
-              performance_share: writer.performance_share || 0,
-              mechanical_share: writer.mechanical_share || 0,
-              synchronization_share: writer.synchronization_share || 0,
-            };
-          });
-          
-          // Overlay agreement-level control as well
-          const applyAgreementOverlay = async () => {
-            const agreementMap = await getAgreementControlledMap(allocation.copyright_id);
-            const withOverlay = mappedWriters.map((w: any) => {
-              const key = normalizeName(w.writer_name);
-              const isAgreementControlled = agreementMap.get(key) === true;
-              return { ...w, controlled_status: isAgreementControlled ? 'C' : w.controlled_status };
-            });
-            setWriters(withOverlay);
-            console.log('Loaded writers from linked copyright for existing allocation:', withOverlay);
-          };
-          applyAgreementOverlay();
-        } else {
-          console.log('No writers found in linked copyright');
-        }
+        return; // Stop further loading once writers are set
       } else {
-        console.log('Linked copyright not found in available copyrights');
+        console.log('No writers extracted from ownership_splits');
       }
     }
   }, [allocation, availableContacts, availableCopyrights]);
