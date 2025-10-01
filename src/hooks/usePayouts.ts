@@ -148,6 +148,7 @@ export function usePayouts() {
         .select(`
           *,
           contacts(name, email),
+          payees(payee_id, payee_name, contact_info, payment_info),
           payout_royalties(
             id,
             allocated_amount,

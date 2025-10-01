@@ -539,7 +539,7 @@ export function PayoutList() {
                 </TableCell>
                 <TableCell>{payout.period}</TableCell>
                 <TableCell className="font-medium">
-                  {payout.contacts?.name || 'No Contact Assigned'}
+                  {payout.payees?.payee_name || payout.contacts?.name || 'No Payee Assigned'}
                 </TableCell>
                 {!isClientPortal && (
                   <TableCell className="text-blue-600 font-medium">

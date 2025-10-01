@@ -3239,6 +3239,7 @@ export type Database = {
           net_payable: number
           net_royalties: number | null
           notes: string | null
+          payee_id: string | null
           payment_completed_at: string | null
           payment_date: string | null
           payment_failed_at: string | null
@@ -3281,6 +3282,7 @@ export type Database = {
           net_payable?: number
           net_royalties?: number | null
           notes?: string | null
+          payee_id?: string | null
           payment_completed_at?: string | null
           payment_date?: string | null
           payment_failed_at?: string | null
@@ -3323,6 +3325,7 @@ export type Database = {
           net_payable?: number
           net_royalties?: number | null
           notes?: string | null
+          payee_id?: string | null
           payment_completed_at?: string | null
           payment_date?: string | null
           payment_failed_at?: string | null
@@ -3354,6 +3357,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_payee_id_fkey"
+            columns: ["payee_id"]
+            isOneToOne: false
+            referencedRelation: "payees"
             referencedColumns: ["id"]
           },
           {
