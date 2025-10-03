@@ -6112,13 +6112,14 @@ export type Database = {
       get_client_quarterly_balances: {
         Args: Record<PropertyKey, never>
         Returns: {
-          agreement_id: string
+          calculation_date: string
           closing_balance: number
-          contact_name: string
+          contact_id: string
           expenses_amount: number
           opening_balance: number
+          payee_id: string
+          payee_name: string
           payments_amount: number
-          period_label: string
           quarter: number
           royalties_amount: number
           year: number
