@@ -138,27 +138,6 @@ Deno.serve(async (req) => {
         continue;
       }
       console.log(`✅ Using existing payee_id: ${payeeId}`);
-
-        if (!payeeId) {
-          // Try partial matching against existing payees by name
-          const contactName = contactMap.get(payout.client_id) || 'Unknown';
-          const contactNameLower = contactName.toLowerCase().trim();
-
-          for (const [payeeName, id] of payeeByName.entries()) {
-            if (payeeName.includes(contactNameLower) || contactNameLower.includes(payeeName)) {
-              payeeId = id;
-              console.log(`🔗 Matched "${contactName}" to payee "${payeeName}"`);
-              break;
-            }
-          }
-
-          // If still unresolved, skip to avoid misattribution
-          if (!payeeId) {
-            console.warn(`⚠️ Skipping payout ${payout.id} — no payee_id and no reliable name match for contact "${contactName}"`);
-            continue;
-          }
-        }
-      }
       
       // Try to find the contract associated with this payout
       let agreementId: string | undefined;
