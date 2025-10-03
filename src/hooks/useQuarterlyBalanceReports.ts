@@ -310,7 +310,7 @@ export function useQuarterlyBalanceReports() {
 
         if (error) throw error;
 
-        // If we have stored reports and not in demo mode, use those
+        // If we have stored reports and not in demo mode, prefer those
         if (data && data.length > 0 && !isDemo) {
           console.log(`Using ${data.length} stored quarterly balance reports`);
           // Normalize Supabase join result so types match QuarterlyBalanceReport
@@ -323,7 +323,29 @@ export function useQuarterlyBalanceReports() {
               ? { payee_name: row.payees.payee_name as string }
               : undefined,
           }));
-          setReports(normalized);
+
+          // Fallback: if stored reports are missing payees present in payouts, rebuild from payouts
+          try {
+            const uniqueStoredPayees = new Set(normalized.map(r => r.payee_id).filter(Boolean));
+            const { data: payoutRows } = await supabase
+              .from('payouts')
+              .select('payee_id')
+              .eq('user_id', user.id);
+            const uniquePayoutPayees = new Set((payoutRows || []).map(p => p.payee_id).filter(Boolean));
+
+            if (uniquePayoutPayees.size > uniqueStoredPayees.size) {
+              console.log(
+                `Stored reports missing payees (stored: ${uniqueStoredPayees.size}, payouts: ${uniquePayoutPayees.size}). Using ephemeral build from payouts.`
+              );
+              const ephemeral = await buildEphemeralFromPayouts();
+              setReports(ephemeral);
+            } else {
+              setReports(normalized);
+            }
+          } catch (e) {
+            console.warn('Fallback comparison failed, using stored reports:', e);
+            setReports(normalized);
+          }
         } else {
           // Generate ephemeral reports from payouts - always build them if there are payouts
           console.log('Building quarterly balance reports from existing payouts');
