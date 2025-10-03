@@ -351,25 +351,61 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
             
             {/* Subscription Status */}
             {subscribed && subscription_tier && (
-              <div className="max-w-md mx-auto">
+              <div className="max-w-3xl mx-auto">
                 <Card className="bg-gradient-primary/10 border-primary/20">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Crown className="w-5 h-5 text-primary" />
-                      <span className="font-semibold">Active Subscription</span>
+                  <CardHeader>
+                    <div className="flex items-center justify-center gap-2">
+                      <Crown className="w-6 h-6 text-primary" />
+                      <CardTitle>Your Active Subscription</CardTitle>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Currently subscribed to: <span className="font-medium text-foreground">{subscription_tier}</span>
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-3"
-                      onClick={openCustomerPortal}
-                      disabled={loading}
-                    >
-                      Manage Subscription
-                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Current Plan */}
+                    <div className="text-center">
+                      <Badge className="mb-2 bg-primary text-primary-foreground px-4 py-1 text-base">
+                        {subscription_tier}
+                      </Badge>
+                      <p className="text-sm text-muted-foreground">
+                        Your current plan
+                      </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Button 
+                        onClick={openCustomerPortal}
+                        disabled={loading}
+                        className="bg-gradient-primary text-primary-foreground"
+                      >
+                        <Crown className="w-4 h-4 mr-2" />
+                        Manage Subscription
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={openCustomerPortal}
+                        disabled={loading}
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        View Billing & Cancel
+                      </Button>
+                    </div>
+
+                    {/* Upgrade Suggestion */}
+                    <div className="border-t pt-4">
+                      <div className="text-center space-y-2">
+                        <p className="text-sm font-medium">Want to unlock more features?</p>
+                        <p className="text-xs text-muted-foreground">
+                          Explore our bundles below to access additional modules and save up to 20%
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Help Text */}
+                    <div className="bg-secondary/30 rounded-lg p-4">
+                      <p className="text-xs text-muted-foreground text-center">
+                        Click "Manage Subscription" to upgrade your plan or "View Billing & Cancel" to access your billing portal where you can update payment methods or cancel your subscription.
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
