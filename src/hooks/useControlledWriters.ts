@@ -17,31 +17,27 @@ export function useControlledWriters() {
     if (!user) return;
     
     try {
-      // Get controlled writers from copyright_writers who are linked to royalty allocations
+      // Get controlled writers from copyright_writers table
       const { data, error } = await supabase
-        .from('royalty_writers')
+        .from('copyright_writers')
         .select(`
-          id,
-          contact_id,
-          contacts!inner(name),
-          royalty_allocations!inner(
-            controlled_status,
-            user_id
-          )
+          writer_name,
+          copyright_id,
+          copyrights!inner(user_id)
         `)
-        .eq('royalty_allocations.user_id', user.id)
-        .eq('royalty_allocations.controlled_status', 'Controlled');
+        .eq('copyrights.user_id', user.id)
+        .eq('controlled_status', 'C');
 
       if (error) throw error;
 
       // Transform the data to get unique writers
       const uniqueWriters = new Map();
       data?.forEach((item: any) => {
-        if (item.contacts?.name) {
-          uniqueWriters.set(item.contact_id, {
-            id: item.id,
-            name: item.contacts.name,
-            contact_id: item.contact_id
+        if (item.writer_name) {
+          uniqueWriters.set(item.writer_name, {
+            id: item.copyright_id,
+            name: item.writer_name,
+            contact_id: item.copyright_id // Using copyright_id as unique identifier
           });
         }
       });
