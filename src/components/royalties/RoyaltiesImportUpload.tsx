@@ -7,11 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, AlertCircle, CheckCircle, X } from "lucide-react";
+import { Upload, FileText, AlertCircle, CheckCircle, X, Settings } from "lucide-react";
 import { StatementParser } from "@/lib/statement-parser";
 import { EncoreMapper } from "@/lib/encore-mapper";
 import { useRoyaltiesImport } from "@/hooks/useRoyaltiesImport";
 import { toast } from "@/hooks/use-toast";
+import { SourceMappingManager } from "./SourceMappingManager";
 
 interface RoyaltiesImportUploadProps {
   onComplete: () => void;
@@ -29,6 +30,7 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
   const [manualSource, setManualSource] = useState<string>("");
   const [customSourceName, setCustomSourceName] = useState<string>("");
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [showSourceManager, setShowSourceManager] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [steps, setSteps] = useState<ProcessingStep[]>([
     { name: "Parse File", status: 'pending' },
@@ -252,10 +254,22 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
         <CardContent className="space-y-6">
           {/* Statement Source Selection */}
           <div>
-            <h3 className="text-lg font-medium mb-4">1. Select Statement Source</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Choose the statement source or use auto-detect during processing
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-medium">1. Select Statement Source</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Choose the statement source or use auto-detect during processing
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSourceManager(true)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Manage Sources
+              </Button>
+            </div>
             <Select value={manualSource} onValueChange={(value) => {
               setManualSource(value);
               setShowCustomInput(value === "custom");
@@ -380,6 +394,11 @@ export function RoyaltiesImportUpload({ onComplete, onCancel }: RoyaltiesImportU
           </CardContent>
         </Card>
       )}
+
+      <SourceMappingManager 
+        open={showSourceManager} 
+        onOpenChange={setShowSourceManager} 
+      />
     </div>
   );
 }
