@@ -256,8 +256,15 @@ export function useQuarterlyBalanceReports() {
 
         if (portalAccess && !isAdminLike) {
           // Client mode: use secure RPC that aggregates client-visible balances (incl. paid amounts)
+          console.log('[QBR] Client mode detected - calling get_client_quarterly_balances RPC');
           const { data: clientRows, error: clientErr } = await supabase.rpc('get_client_quarterly_balances');
-          if (clientErr) throw clientErr;
+          
+          if (clientErr) {
+            console.error('[QBR] Client RPC error:', clientErr);
+            throw clientErr;
+          }
+
+          console.log('[QBR] Client RPC returned', clientRows?.length || 0, 'rows:', clientRows);
 
           // Get contract titles for agreement IDs
           const agreementIds = [...new Set(clientRows?.map((row: any) => row.agreement_id).filter(Boolean))];
@@ -296,11 +303,12 @@ export function useQuarterlyBalanceReports() {
             is_calculated: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            payee_name: row.contact_name,
+            payee_name: row.contact_name || 'Unknown',
             contacts: row.contact_name ? { name: row.contact_name } : undefined,
             contracts: row.agreement_id ? contractsMap.get(row.agreement_id) : undefined,
           })) as QuarterlyBalanceReport[];
 
+          console.log('[QBR] Mapped client reports:', mapped);
           setReports(mapped);
           return;
         }
