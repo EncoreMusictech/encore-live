@@ -132,30 +132,12 @@ Deno.serve(async (req) => {
     for (const payout of payouts as any[]) {
       console.log(`\n--- Processing payout ${payout.id} ---`);
       
-      // If payout already has a payee_id, use it directly
-      let payeeId = payout.payee_id;
-      
-      if (payeeId) {
-        console.log(`✅ Using existing payee_id: ${payeeId}`);
-      } else {
-        // Fallback: try to match by contact name
-        const contactName = contactMap.get(payout.client_id) || 'Unknown';
-        const contactNameLower = contactName.toLowerCase().trim();
-        
-        console.log(`No payee_id, trying to match by contact name: "${contactName}"`);
-        payeeId = payeeByName.get(contactNameLower);
-        if (!payeeId) {
-          // Try partial matching
-          for (const [payeeName, id] of payeeByName.entries()) {
-            if (payeeName.includes(contactNameLower) || contactNameLower.includes(payeeName)) {
-              payeeId = id;
-              console.log(`🔗 Matched "${contactName}" to payee "${payeeName}"`);
-              break;
-            }
-          }
-        } else {
-          console.log(`✅ Found exact match for "${contactName}" -> payee ID: ${payeeId}`);
-        }
+      const payeeId = payout.payee_id as string | undefined;
+      if (!payeeId) {
+        console.warn(`⚠️ Skipping payout ${payout.id} — missing payee_id`);
+        continue;
+      }
+      console.log(`✅ Using existing payee_id: ${payeeId}`);
 
         if (!payeeId) {
           // Try partial matching against existing payees by name

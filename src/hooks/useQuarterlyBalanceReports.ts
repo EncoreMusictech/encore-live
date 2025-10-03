@@ -338,8 +338,10 @@ export function useQuarterlyBalanceReports() {
                 `Stored reports missing payees (stored: ${uniqueStoredPayees.size}, payouts: ${uniquePayoutPayees.size}). Using ephemeral build from payouts.`
               );
               const ephemeral = await buildEphemeralFromPayouts();
+              console.log('Ephemeral reports built:', { count: ephemeral.length, distinctPayees: new Set(ephemeral.map(e => e.payee_id)).size });
               setReports(ephemeral);
             } else {
+              console.log('Stored reports appear complete. Distinct payees:', uniqueStoredPayees.size);
               setReports(normalized);
             }
           } catch (e) {
