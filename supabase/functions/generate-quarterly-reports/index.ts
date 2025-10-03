@@ -56,11 +56,11 @@ Deno.serve(async (req) => {
 
     console.log(`Generating quarterly reports for user: ${user.id}`);
 
-    // Get all payouts with client contact information
+    // Get all payouts with payee information
     const { data: payouts, error: payoutsError } = await supabaseClient
       .from('payouts')
       .select(`
-        id, client_id, gross_royalties, total_expenses, amount_due, 
+        id, client_id, payee_id, gross_royalties, total_expenses, amount_due, 
         status, workflow_stage, created_at, period_start
       `)
       .eq('user_id', user.id)
@@ -132,13 +132,71 @@ Deno.serve(async (req) => {
     for (const payout of payouts as any[]) {
       console.log(`\n--- Processing payout ${payout.id} ---`);
       
-      const contactName = contactMap.get(payout.client_id) || 'Unknown';
-      const contactNameLower = contactName.toLowerCase().trim();
+      // If payout already has a payee_id, use it directly
+      let payeeId = payout.payee_id;
       
-      console.log(`Contact name: "${contactName}" (lowercase: "${contactNameLower}")`);
+      if (payeeId) {
+        console.log(`✅ Using existing payee_id: ${payeeId}`);
+      } else {
+        // Fallback: try to match by contact name
+        const contactName = contactMap.get(payout.client_id) || 'Unknown';
+        const contactNameLower = contactName.toLowerCase().trim();
+        
+        console.log(`No payee_id, trying to match by contact name: "${contactName}"`);
+        payeeId = payeeByName.get(contactNameLower);
+        if (!payeeId) {
+          // Try partial matching
+          for (const [payeeName, id] of payeeByName.entries()) {
+            if (payeeName.includes(contactNameLower) || contactNameLower.includes(payeeName)) {
+              payeeId = id;
+              console.log(`🔗 Matched "${contactName}" to payee "${payeeName}"`);
+              break;
+            }
+          }
+        } else {
+          console.log(`✅ Found exact match for "${contactName}" -> payee ID: ${payeeId}`);
+        }
+
+        if (!payeeId) {
+          console.log(`⚠️ No payee found for contact "${contactName}", creating new payee...`);
+          
+          // Create a new payee for this contact
+          try {
+            const { data: newPayee, error: payeeError } = await supabaseClient
+              .from('payees')
+              .insert({
+                user_id: user.id,
+                payee_name: contactName,
+                payee_type: 'writer',
+                writer_id: payout.client_id, // Use contact ID as writer reference
+                contact_info: {
+                  name: contactName,
+                  contact_id: payout.client_id
+                }
+              })
+              .select('id')
+              .single();
+
+            if (payeeError) {
+              console.error(`Failed to create payee for "${contactName}":`, payeeError);
+              continue;
+            }
+
+            payeeId = newPayee.id;
+            if (payeeId) {
+              payeeByName.set(contactNameLower, payeeId);
+            }
+            console.log(`✅ Created new payee "${contactName}" with ID: ${payeeId}`);
+          } catch (error) {
+            console.error(`Error creating payee for "${contactName}":`, error);
+            continue;
+          }
+        }
+      }
       
-      // Try to find the contract associated with this payout's client
+      // Try to find the contract associated with this payout
       let agreementId: string | undefined;
+      const contactName = contactMap.get(payout.client_id) || 'Unknown';
       try {
         // First, try to match by counterparty name
         const { data: matchingContracts } = await supabaseClient
@@ -172,6 +230,7 @@ Deno.serve(async (req) => {
 
       console.log('Payout data:', {
         id: payout.id,
+        payee_id: payeeId,
         client_id: payout.client_id,
         gross_royalties: payout.gross_royalties,
         period_start: payout.period_start,
@@ -186,57 +245,6 @@ Deno.serve(async (req) => {
       const quarter = Math.ceil((d.getMonth() + 1) / 3);
       
       console.log(`Calculated period: ${year} Q${quarter} from date ${periodDate}`);
-      
-      // Find matching payee ID with improved matching
-      let payeeId = payeeByName.get(contactNameLower);
-      if (!payeeId) {
-        // Try partial matching
-        for (const [payeeName, id] of payeeByName.entries()) {
-          if (payeeName.includes(contactNameLower) || contactNameLower.includes(payeeName)) {
-            payeeId = id;
-            console.log(`🔗 Matched "${contactName}" to payee "${payeeName}"`);
-            break;
-          }
-        }
-      } else {
-        console.log(`✅ Found exact match for "${contactName}" -> payee ID: ${payeeId}`);
-      }
-
-      if (!payeeId) {
-        console.log(`⚠️ No payee found for contact "${contactName}", creating new payee...`);
-        
-        // Create a new payee for this contact
-        try {
-          const { data: newPayee, error: payeeError } = await supabaseClient
-            .from('payees')
-            .insert({
-              user_id: user.id,
-              payee_name: contactName,
-              payee_type: 'writer',
-              writer_id: payout.client_id, // Use contact ID as writer reference
-              contact_info: {
-                name: contactName,
-                contact_id: payout.client_id
-              }
-            })
-            .select('id')
-            .single();
-
-          if (payeeError) {
-            console.error(`Failed to create payee for "${contactName}":`, payeeError);
-            continue;
-          }
-
-          payeeId = newPayee.id;
-          if (payeeId) {
-            payeeByName.set(contactNameLower, payeeId);
-          }
-          console.log(`✅ Created new payee "${contactName}" with ID: ${payeeId}`);
-        } catch (error) {
-          console.error(`Error creating payee for "${contactName}":`, error);
-          continue;
-        }
-      }
 
       if (!payeeId) {
         console.error(`No payee ID found for contact: ${contactName}`);
