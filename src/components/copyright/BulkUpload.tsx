@@ -378,7 +378,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
             await new Promise(resolve => setTimeout(resolve, 50));
           }
 
-          // Create copyright
+          // Create copyright with writers, publishers, and recordings
           const createdCopyright = await createCopyright({
             work_title: copyright.work_title,
             iswc: copyright.iswc,
@@ -389,7 +389,10 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
             work_type: copyright.work_type || 'original',
             contains_sample: copyright.contains_sample || false,
             duration_seconds: copyright.duration_seconds,
-            notes: copyright.notes
+            notes: copyright.notes,
+            writers: copyright.writers || [],
+            publishers: copyright.publishers || [],
+            recordings: copyright.recordings || []
           } as any);
 
           // Log bulk upload activity
