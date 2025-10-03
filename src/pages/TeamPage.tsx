@@ -10,7 +10,6 @@ import { updatePageMetadata } from "@/utils/seo";
 // Import team member photos
 import janishiaPhoto from "@/assets/janishia-jones.png";
 import lawrencePhoto from "@/assets/lawrence-berment.png";
-import nataliePhoto from "@/assets/natalie-jacobs.png";
 import anthonyPhoto from "@/assets/anthony-griffith.png";
 import kebuPhoto from "@/assets/kebu-commissiong.png";
 import chrisPhoto from "@/assets/chris-mcmurtry.png";
@@ -41,14 +40,6 @@ const TeamPage = () => {
       bio: "20+ year infrastructure architect & Grammy-nominated creator. Formerly BlueKai (Oracle) / LA Promise Fund / PayPal / IGT / Mynd Sound.",
       linkedin: "https://linkedin.com/in/lawrenceberment",
       email: "lawrence@encore.tech"
-    },
-    {
-      name: "Natalie Jacobs",
-      role: "COO", 
-      image: nataliePhoto,
-      bio: "20-year music ops leader & data educator. Formerly Warner Music Group / NBCUniversal / Rhino Entertainment / Equalizer Consulting.",
-      linkedin: "https://linkedin.com/in/nataliekjacobs",
-      email: "natalie@encore.tech"
     },
     {
       name: "Anthony Griffith",
