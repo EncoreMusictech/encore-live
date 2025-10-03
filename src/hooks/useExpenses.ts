@@ -82,10 +82,34 @@ export function useExpenses() {
     if (!user) return null;
 
     try {
+      // Auto-link to matching payout if not specified and expense is approved & recoupable
+      let finalExpenseData = { ...expenseData };
+      
+      if (!expenseData.payout_id && 
+          expenseData.expense_status === 'approved' && 
+          (expenseData.is_recoupable || expenseData.expense_flags?.recoupable) &&
+          expenseData.payee_id) {
+        
+        // Find matching payout
+        const { data: matchingPayout } = await supabase
+          .from('payouts')
+          .select('id')
+          .eq('payee_id', expenseData.payee_id)
+          .eq('user_id', user.id)
+          .in('status', ['pending', 'approved'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (matchingPayout) {
+          finalExpenseData.payout_id = matchingPayout.id;
+        }
+      }
+
       const { data, error } = await supabase
         .from('payout_expenses')
         .insert({
-          ...expenseData,
+          ...finalExpenseData,
           user_id: user.id
         })
         .select()
@@ -105,9 +129,33 @@ export function useExpenses() {
 
   const updateExpense = async (id: string, expenseData: Partial<PayoutExpense>) => {
     try {
+      let finalExpenseData = { ...expenseData };
+      
+      // Auto-link to matching payout if conditions are met
+      if (!expenseData.payout_id && 
+          expenseData.expense_status === 'approved' && 
+          (expenseData.is_recoupable || expenseData.expense_flags?.recoupable) &&
+          expenseData.payee_id) {
+        
+        // Find matching payout
+        const { data: matchingPayout } = await supabase
+          .from('payouts')
+          .select('id')
+          .eq('payee_id', expenseData.payee_id)
+          .eq('user_id', user?.id || '')
+          .in('status', ['pending', 'approved'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (matchingPayout) {
+          finalExpenseData.payout_id = matchingPayout.id;
+        }
+      }
+
       const { data, error } = await supabase
         .from('payout_expenses')
-        .update(expenseData)
+        .update(finalExpenseData)
         .eq('id', id)
         .eq('user_id', user?.id)
         .select()
