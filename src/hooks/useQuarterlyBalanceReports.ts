@@ -261,10 +261,18 @@ export function useQuarterlyBalanceReports() {
           
           if (clientErr) {
             console.error('[QBR] Client RPC error:', clientErr);
-            throw clientErr;
+            // Graceful fallback for client portal: avoid error toast and show empty state
+            setReports([]);
+            return;
           }
 
-          console.log('[QBR] Client RPC returned', clientRows?.length || 0, 'rows:', clientRows);
+          if (!clientRows || clientRows.length === 0) {
+            console.log('[QBR] No client rows returned from RPC – showing empty state');
+            setReports([]);
+            return;
+          }
+
+          console.log('[QBR] Client RPC returned', clientRows.length, 'rows:', clientRows);
 
           // Get contract titles for agreement IDs
           const agreementIds = [...new Set(clientRows?.map((row: any) => row.agreement_id).filter(Boolean))];
@@ -326,7 +334,12 @@ export function useQuarterlyBalanceReports() {
           .order('year', { ascending: false })
           .order('quarter', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.warn('[QBR] Stored reports query failed, falling back to payouts:', error);
+          const demoData = await buildEphemeralFromPayouts();
+          setReports(demoData);
+          return;
+        }
 
         // If we have stored reports and not in demo mode, prefer those
         if (data && data.length > 0 && !isDemo) {
