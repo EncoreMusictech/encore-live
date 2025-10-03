@@ -245,7 +245,7 @@ export function QuarterlyBalanceReportsTable() {
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <span className="cursor-help underline decoration-dotted">
-                                    {(report as any).agreement_id || 'N/A'}
+                                    {report.contracts?.agreement_id || 'N/A'}
                                   </span>
                                 </TooltipTrigger>
                                 <TooltipContent>
