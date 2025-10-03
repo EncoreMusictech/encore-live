@@ -9,7 +9,7 @@ import { ContractInterestedParties } from './forms/shared/ContractInterestedPart
 import { PublishingForm } from './forms/PublishingForm';
 import { useContracts } from '@/hooks/useContracts';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Users, Music, DollarSign, UserCheck, Eye, BookOpen, ListMusic } from 'lucide-react';
+import { FileText, Users, Music, DollarSign, UserCheck, Eye, BookOpen, ListMusic, Star } from 'lucide-react';
 import { ContractWorks } from './forms/shared/ContractWorks';
 
 // Publishing agreement types
@@ -45,6 +45,14 @@ const publishingTypes = [
     features: ['Shared investment', 'Profit sharing', 'Joint ownership', 'Strategic partnership'],
     icon: DollarSign,
     demoId: 'demo_jv'
+  },
+  {
+    id: 'catalog_acquisition',
+    title: 'Catalog Acquisition Agreement',
+    description: 'Purchase of existing music catalog with perpetual or term rights',
+    features: ['One-time purchase price', 'Rights transfer', 'Perpetual or term rights', 'Optional ongoing royalties'],
+    icon: Star,
+    demoId: 'demo_catalog_acquisition'
   }
 ];
 
