@@ -13,6 +13,7 @@ import { Upload, FileText, AlertCircle, CheckCircle, Download, X, Eye } from 'lu
 import { useToast } from '@/hooks/use-toast';
 import { useCopyright } from '@/hooks/useCopyright';
 import { useActivityLog } from '@/hooks/useActivityLog';
+import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 
@@ -378,7 +379,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
             await new Promise(resolve => setTimeout(resolve, 50));
           }
 
-          // Create copyright with writers, publishers, and recordings
+          // Create copyright (without related data)
           const createdCopyright = await createCopyright({
             work_title: copyright.work_title,
             iswc: copyright.iswc,
@@ -389,11 +390,69 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
             work_type: copyright.work_type || 'original',
             contains_sample: copyright.contains_sample || false,
             duration_seconds: copyright.duration_seconds,
-            notes: copyright.notes,
-            writers: copyright.writers || [],
-            publishers: copyright.publishers || [],
-            recordings: copyright.recordings || []
+            notes: copyright.notes
           } as any);
+
+          // Insert writers
+          if (copyright.writers && copyright.writers.length > 0) {
+            const { error: writersError } = await supabase
+              .from('copyright_writers')
+              .insert(
+                copyright.writers.map(writer => ({
+                  copyright_id: createdCopyright.id,
+                  writer_name: writer.writer_name,
+                  ownership_percentage: writer.ownership_percentage,
+                  writer_role: writer.writer_role,
+                  ipi_number: writer.ipi_number,
+                  controlled_status: writer.controlled_status,
+                  pro_affiliation: writer.pro_affiliation
+                }))
+              );
+            
+            if (writersError) {
+              console.error('Error inserting writers:', writersError);
+            }
+          }
+
+          // Insert publishers
+          if (copyright.publishers && copyright.publishers.length > 0) {
+            const { error: publishersError } = await supabase
+              .from('copyright_publishers')
+              .insert(
+                copyright.publishers.map(publisher => ({
+                  copyright_id: createdCopyright.id,
+                  publisher_name: publisher.publisher_name,
+                  ownership_percentage: publisher.ownership_percentage,
+                  publisher_role: publisher.publisher_role,
+                  ipi_number: publisher.ipi_number,
+                  pro_affiliation: publisher.pro_affiliation
+                }))
+              );
+            
+            if (publishersError) {
+              console.error('Error inserting publishers:', publishersError);
+            }
+          }
+
+          // Insert recordings
+          if (copyright.recordings && copyright.recordings.length > 0) {
+            const { error: recordingsError } = await supabase
+              .from('copyright_recordings')
+              .insert(
+                copyright.recordings.map(recording => ({
+                  copyright_id: createdCopyright.id,
+                  recording_title: recording.recording_title,
+                  artist_name: recording.artist_name,
+                  isrc: recording.isrc,
+                  release_date: recording.release_date,
+                  duration_seconds: recording.duration_seconds
+                }))
+              );
+            
+            if (recordingsError) {
+              console.error('Error inserting recordings:', recordingsError);
+            }
+          }
 
           // Log bulk upload activity
           await logActivity({
