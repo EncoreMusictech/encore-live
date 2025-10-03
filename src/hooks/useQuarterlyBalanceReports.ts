@@ -324,24 +324,24 @@ export function useQuarterlyBalanceReports() {
               : undefined,
           }));
 
-          // Fallback: if stored reports are missing payees present in payouts, rebuild from payouts
+          // Compare with ephemeral build from payouts; prefer whichever has more distinct payees and rows
           try {
-            const uniqueStoredPayees = new Set(normalized.map(r => r.payee_id).filter(Boolean));
-            const { data: payoutRows } = await supabase
-              .from('payouts')
-              .select('payee_id')
-              .eq('user_id', user.id);
-            const uniquePayoutPayees = new Set((payoutRows || []).map(p => p.payee_id).filter(Boolean));
+            const ephemeral = await buildEphemeralFromPayouts();
+            const storedPayees = new Set(normalized.map(r => r.payee_id).filter(Boolean));
+            const ephemeralPayees = new Set(ephemeral.map(e => e.payee_id).filter(Boolean));
 
-            if (uniquePayoutPayees.size > uniqueStoredPayees.size) {
-              console.log(
-                `Stored reports missing payees (stored: ${uniqueStoredPayees.size}, payouts: ${uniquePayoutPayees.size}). Using ephemeral build from payouts.`
-              );
-              const ephemeral = await buildEphemeralFromPayouts();
-              console.log('Ephemeral reports built:', { count: ephemeral.length, distinctPayees: new Set(ephemeral.map(e => e.payee_id)).size });
+            console.log('[QBR] Stored vs Ephemeral comparison:', {
+              storedRows: normalized.length,
+              ephemeralRows: ephemeral.length,
+              storedDistinctPayees: storedPayees.size,
+              ephemeralDistinctPayees: ephemeralPayees.size,
+            });
+
+            if (ephemeralPayees.size > storedPayees.size || ephemeral.length > normalized.length) {
+              console.log('[QBR] Using ephemeral reports from payouts (better coverage)');
               setReports(ephemeral);
             } else {
-              console.log('Stored reports appear complete. Distinct payees:', uniqueStoredPayees.size);
+              console.log('[QBR] Using stored quarterly balance reports');
               setReports(normalized);
             }
           } catch (e) {
