@@ -90,7 +90,22 @@ export const useWriterPayouts = () => {
 
     for (const writerMatch of writerMatches) {
       try {
-        // First, ensure a contact exists for this writer
+        // First, find the payee for this writer
+        const { data: payee, error: payeeError } = await supabase
+          .from('payees')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('writer_id', writerMatch.writer_uuid)
+          .maybeSingle();
+
+        if (payeeError) throw payeeError;
+        
+        if (!payee) {
+          console.warn(`No payee found for writer ${writerMatch.writer_name}`);
+          continue;
+        }
+
+        // Ensure a contact exists for this writer
         let contact;
         const { data: existingContact } = await supabase
           .from('contacts')
@@ -118,11 +133,12 @@ export const useWriterPayouts = () => {
           contact = newContact;
         }
 
-        // Create payout for this writer using the contact_id
+        // Create payout for this writer with both payee_id and client_id
         const { data: payout, error: payoutError } = await supabase
           .from('payouts')
           .insert({
             user_id: user.id,
+            payee_id: payee.id, // Required by validation trigger
             client_id: contact.id, // Use contact ID
             period: `Q${quarter} ${year}`,
             period_start: `${year}-${(quarter - 1) * 3 + 1}-01`,
