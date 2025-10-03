@@ -171,11 +171,9 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
         </CardHeader>
         <CardContent>
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="methodology">Methodology</TabsTrigger>
             <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
-            <TabsTrigger value="sensitivity">Sensitivity</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -338,43 +336,6 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
             </div>
           </TabsContent>
 
-          <TabsContent value="methodology" className="space-y-4">
-            <div className="prose prose-sm max-w-none">
-              <h4>Enhanced Valuation Methodology</h4>
-              <p>
-                The enhanced valuation combines traditional catalog valuation methods with 
-                comprehensive additional revenue analysis to provide a more accurate fair market value.
-              </p>
-              
-               <h5>Valuation Components:</h5>
-               <ul>
-                 <li><strong>Base Catalog Valuation (70% weight):</strong> Traditional DCF and comparable analysis</li>
-                 <li><strong>Additional Revenue Valuation (30% weight):</strong> Confidence-adjusted revenue with type-specific multipliers</li>
-                 <li><strong>Diversification Bonus:</strong> Up to 20% increase for revenue diversification</li>
-                 <li><strong>Confidence Enhancement:</strong> Data quality improvements at source level</li>
-               </ul>
-
-               <h5>Confidence Multipliers (Applied to Individual Sources):</h5>
-               <div className="grid grid-cols-3 gap-2 text-sm mb-4">
-                 <div>• High confidence: 1.1x</div>
-                 <div>• Medium confidence: 1.0x</div>
-                 <div>• Low confidence: 0.8x</div>
-               </div>
-
-              <h5>Revenue Type Multipliers:</h5>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>• Publishing: 18x annual revenue</div>
-                <div>• Mechanical: 15x annual revenue</div>
-                <div>• Streaming: 12x annual revenue</div>
-                <div>• Master Licensing: 12x annual revenue</div>
-                <div>• Performance: 10x annual revenue</div>
-                <div>• Sync/Licensing: 8x annual revenue</div>
-                <div>• Other: 6x annual revenue</div>
-                <div>• Merchandise: 5x annual revenue</div>
-                <div>• Touring: 3x annual revenue</div>
-              </div>
-            </div>
-          </TabsContent>
 
           <TabsContent value="breakdown" className="space-y-4">
             <div className="grid grid-cols-2 gap-6">
@@ -459,41 +420,6 @@ export const EnhancedValuationEngine: React.FC<EnhancedValuationEngineProps> = (
             </div>
           </TabsContent>
 
-          <TabsContent value="sensitivity" className="space-y-4">
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-medium mb-3">Revenue Growth Sensitivity</h4>
-                <div className="space-y-2 text-sm">
-                  {[-10, -5, 0, 5, 10, 20].map(growthRate => {
-                    const adjustedRevenue = revenueMetrics.totalAdditionalRevenue * (1 + growthRate / 100);
-                    const adjustedValue = blendedResults.blendedValue + 
-                      ((adjustedRevenue - revenueMetrics.totalAdditionalRevenue) * getRevenueTypeMultiplier() * 0.3);
-                    return (
-                      <div key={growthRate} className="flex justify-between">
-                        <span>{growthRate > 0 ? '+' : ''}{growthRate}% Revenue Growth</span>
-                        <span>{formatCurrency(adjustedValue)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-medium mb-3">Multiple Sensitivity</h4>
-                <div className="space-y-2 text-sm">
-                  {[0.8, 0.9, 1.0, 1.1, 1.2, 1.3].map(multiplier => {
-                    const adjustedValue = blendedResults.blendedValue * multiplier;
-                    return (
-                      <div key={multiplier} className="flex justify-between">
-                        <span>{multiplier}x Multiple</span>
-                        <span>{formatCurrency(adjustedValue)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
