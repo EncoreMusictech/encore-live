@@ -48,25 +48,12 @@ export function PayoutList() {
 
   // Helper function to calculate missing commission/expense values for display
   const calculateDisplayValues = (payout: any) => {
-    // Calculate commissions if missing - use basic 15% rate or try to derive from net vs gross
-    let commissions = payout.commissions_amount || 0;
-    if (!commissions && payout.gross_royalties && payout.net_royalties) {
-      // Try to derive commission from the difference between gross and net
-      const potentialCommission = payout.gross_royalties - payout.net_royalties;
-      if (potentialCommission > 0 && potentialCommission < payout.gross_royalties) {
-        commissions = potentialCommission;
-      }
-    }
+    // Use commissions_amount directly - 0 is a valid value (no commissions)
+    // Only derive if the field is truly missing (null/undefined)
+    let commissions = payout.commissions_amount ?? 0;
     
-    // Calculate expenses if missing - derive from total expenses or net calculations
-    let expenses = payout.total_expenses || 0;
-    if (!expenses && payout.net_royalties && payout.net_payable) {
-      // Try to derive expenses from net royalties vs net payable difference
-      const potentialExpenses = payout.net_royalties - payout.net_payable;
-      if (potentialExpenses > 0) {
-        expenses = potentialExpenses;
-      }
-    }
+    // Use total_expenses directly - 0 is a valid value (no expenses)
+    let expenses = payout.total_expenses ?? 0;
     
     return {
       ...payout,
