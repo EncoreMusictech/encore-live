@@ -25,7 +25,7 @@ export function ReconciliationBatchList() {
   const [editingBatch, setEditingBatch] = useState<any>(null);
   const [batchProgressData, setBatchProgressData] = useState<Map<string, { progress: number; allocatedAmount: number }>>(new Map());
   
-  const { batches, loading, deleteBatch, refreshBatches } = useReconciliationBatches();
+  const { batches, loading, deleteBatch, unprocessBatch, refreshBatches } = useReconciliationBatches();
   const { allocations } = useRoyaltyAllocations();
   const { user } = useAuth();
 
@@ -206,6 +206,15 @@ export function ReconciliationBatchList() {
     }
   };
 
+  const handleUnprocess = async (id: string) => {
+    try {
+      await unprocessBatch(id);
+      refreshBatches();
+    } catch (error) {
+      console.error('Error unprocessing batch:', error);
+    }
+  };
+
   const getBatchStatus = (progress: number) => {
     if (Math.abs(progress - 100) < 0.01) { // Account for floating point precision
       return 'Complete';
@@ -326,28 +335,41 @@ export function ReconciliationBatchList() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setEditingBatch(batch)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setProcessingBatch(batch)}
-                        disabled={!canProcessBatch(progress, batch)}
-                      >
-                        <Play className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleDelete(batch.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {batch.processed_at ? (
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleUnprocess(batch.id)}
+                          className="text-orange-600 hover:text-orange-700"
+                        >
+                          Unprocess
+                        </Button>
+                      ) : (
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setEditingBatch(batch)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setProcessingBatch(batch)}
+                            disabled={!canProcessBatch(progress, batch)}
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDelete(batch.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

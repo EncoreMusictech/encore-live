@@ -574,13 +574,49 @@ export function useReconciliationBatches() {
         if (totalAmount <= 0) continue;
 
         try {
+          // Get or create contact for this payee's writer
+          let contactId = null;
+          if (payee.writer_id && payee.writers) {
+            const { data: existingContact } = await supabase
+              .from('contacts')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('name', payee.writers.writer_name)
+              .eq('contact_type', 'writer')
+              .maybeSingle();
+
+            if (existingContact) {
+              contactId = existingContact.id;
+            } else {
+              const { data: newContact, error: contactError } = await supabase
+                .from('contacts')
+                .insert({
+                  user_id: user.id,
+                  name: payee.writers.writer_name,
+                  contact_type: 'writer'
+                })
+                .select('id')
+                .single();
+
+              if (!contactError && newContact) {
+                contactId = newContact.id;
+              }
+            }
+          }
+
+          // Skip if we couldn't get a contact_id
+          if (!contactId) {
+            console.error(`Could not find or create contact for payee ${payee.payee_name}`);
+            continue;
+          }
+
           // Create payout for this payee using single object (not array)
           const { data: payout, error: payoutError } = await supabase
             .from('payouts')
             .insert({
               user_id: user.id,
-              client_id: null as any, // Deprecated field, set to null per new architecture
-              payee_id: payee.id,
+              client_id: contactId, // Required by NOT NULL constraint
+              payee_id: payee.id, // Required by validation trigger
               period: `Q${selectedQuarter} ${selectedYear}`,
               period_start: `${selectedYear}-${(selectedQuarter - 1) * 3 + 1}-01`,
               period_end: `${selectedYear}-${selectedQuarter * 3}-${selectedQuarter === 4 ? 31 : 30}`,
@@ -719,6 +755,8 @@ export function useReconciliationBatches() {
       const { error: updateError } = await supabase
         .from('reconciliation_batches')
         .update({
+          processed_at: null,
+          processing_count: 0,
           unprocessed_at: new Date().toISOString(),
           unprocessed_by_user_id: user.id,
         })
