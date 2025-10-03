@@ -236,7 +236,15 @@ export function useQuarterlyBalanceReports() {
     try {
       if (user) {
         console.log('🔍 User exists, proceeding with report fetch');
-        // Detect if current user is a client by checking active portal access
+        // Determine role to avoid using client mode for admins/subscribers
+        const { data: roleRow } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        const isAdminLike = !!roleRow && ['admin', 'owner', 'manager'].includes(String(roleRow.role || '').toLowerCase());
+
+        // Detect if current user also has client portal access
         const { data: portalAccess } = await supabase
           .from('client_portal_access')
           .select('id')
@@ -244,7 +252,9 @@ export function useQuarterlyBalanceReports() {
           .eq('status', 'active')
           .maybeSingle();
 
-        if (portalAccess) {
+        console.log('[QBR] Access context:', { isAdminLike, hasClientPortal: !!portalAccess });
+
+        if (portalAccess && !isAdminLike) {
           // Client mode: use secure RPC that aggregates client-visible balances (incl. paid amounts)
           const { data: clientRows, error: clientErr } = await supabase.rpc('get_client_quarterly_balances');
           if (clientErr) throw clientErr;
