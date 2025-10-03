@@ -236,6 +236,11 @@ export function useQuarterlyBalanceReports() {
     try {
       if (user) {
         console.log('🔍 User exists, proceeding with report fetch');
+        console.log('🔍 Current user details:', { 
+          id: user.id, 
+          email: user.email 
+        });
+        
         // Determine role to avoid using client mode for admins/subscribers
         const { data: roleRow } = await supabase
           .from('user_roles')
@@ -245,29 +250,75 @@ export function useQuarterlyBalanceReports() {
         const isAdminLike = !!roleRow && ['admin', 'owner', 'manager'].includes(String(roleRow.role || '').toLowerCase());
 
         // Detect if current user also has client portal access
-        const { data: portalAccess } = await supabase
+        const { data: portalAccess, error: portalError } = await supabase
           .from('client_portal_access')
-          .select('id')
+          .select('id, subscriber_user_id, status')
           .eq('client_user_id', user.id)
           .eq('status', 'active')
           .maybeSingle();
 
-        console.log('[QBR] Access context:', { isAdminLike, hasClientPortal: !!portalAccess });
+        console.log('[QBR] Portal access query result:', { 
+          portalAccess, 
+          portalError, 
+          isAdminLike, 
+          hasClientPortal: !!portalAccess 
+        });
 
         if (portalAccess && !isAdminLike) {
           // Client mode: use secure RPC that aggregates client-visible balances (incl. paid amounts)
           console.log('[QBR] Client mode detected - calling get_client_quarterly_balances RPC');
+          console.log('[QBR] Current user context:', { 
+            userId: user.id, 
+            userEmail: user.email,
+            hasPortalAccess: !!portalAccess 
+          });
+          
+          // Add debugging before RPC call
+          console.log('[QBR] About to call RPC with auth token present:', !!supabase.auth.getSession());
+          
           const { data: clientRows, error: clientErr } = await supabase.rpc('get_client_quarterly_balances');
           
           if (clientErr) {
             console.error('[QBR] Client RPC error:', clientErr);
+            console.error('[QBR] RPC Error details:', JSON.stringify(clientErr, null, 2));
             // Graceful fallback for client portal: avoid error toast and show empty state
             setReports([]);
             return;
           }
 
+          console.log('[QBR] Client RPC returned:', {
+            rowCount: clientRows?.length || 0,
+            rows: clientRows,
+            rawResponse: clientRows
+          });
+
           if (!clientRows || clientRows.length === 0) {
-            console.log('[QBR] No client rows returned from RPC – showing empty state');
+            console.log('[QBR] No client rows returned from RPC – checking if there should be data');
+            
+            // Debug: Check what associations exist for this client
+            const { data: associations } = await supabase
+              .from('client_data_associations')
+              .select('*')
+              .eq('client_user_id', user.id);
+            console.log('[QBR] Client data associations:', associations);
+            
+            // Debug: Check what payouts exist for the subscriber
+            const { data: portalInfo } = await supabase
+              .from('client_portal_access')
+              .select('subscriber_user_id')
+              .eq('client_user_id', user.id)
+              .eq('status', 'active')
+              .maybeSingle();
+            
+            if (portalInfo?.subscriber_user_id) {
+              const { data: payouts } = await supabase
+                .from('payouts')
+                .select('id, payee_id, gross_royalties, amount_due, status')
+                .eq('user_id', portalInfo.subscriber_user_id)
+                .limit(5);
+              console.log('[QBR] Subscriber payouts sample:', payouts);
+            }
+            
             setReports([]);
             return;
           }
