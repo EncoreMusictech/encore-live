@@ -4,6 +4,7 @@ import { updatePageMetadata } from "@/utils/seo";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useFreeTrial } from "@/hooks/useFreeTrial";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -257,6 +258,7 @@ const PricingPage = () => {
   const { user } = useAuth();
   const { subscribed, subscription_tier, loading, createCheckout, openCustomerPortal } = useSubscription();
   const { createTrialCheckout } = useFreeTrial();
+  const { isAdmin } = useUserRoles();
 
   useEffect(() => {
     updatePageMetadata('pricing');
@@ -349,32 +351,39 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
             
             
             
-            {/* Subscription Status */}
-            {subscribed && subscription_tier && (
+            {/* Subscription Status - Show for subscribed users or admins */}
+            {(subscribed && subscription_tier) || (isAdmin && !subscribed) ? (
               <div className="max-w-3xl mx-auto">
                 <Card className="bg-gradient-primary/10 border-primary/20">
                   <CardHeader>
                     <div className="flex items-center justify-center gap-2">
                       <Crown className="w-6 h-6 text-primary" />
-                      <CardTitle>Your Active Subscription</CardTitle>
+                      <CardTitle>
+                        {subscribed ? 'Your Active Subscription' : 'Subscription Management (Admin Preview)'}
+                      </CardTitle>
                     </div>
+                    {!subscribed && isAdmin && (
+                      <p className="text-xs text-center text-muted-foreground mt-2">
+                        This is a preview of what paid subscribers see
+                      </p>
+                    )}
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {/* Current Plan */}
                     <div className="text-center">
                       <Badge className="mb-2 bg-primary text-primary-foreground px-4 py-1 text-base">
-                        {subscription_tier}
+                        {subscription_tier || 'Pro Plan (Demo)'}
                       </Badge>
                       <p className="text-sm text-muted-foreground">
-                        Your current plan
+                        {subscribed ? 'Your current plan' : 'Example subscription tier'}
                       </p>
                     </div>
 
                     {/* Action Buttons */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Button 
-                        onClick={openCustomerPortal}
-                        disabled={loading}
+                        onClick={subscribed ? openCustomerPortal : undefined}
+                        disabled={!subscribed || loading}
                         className="bg-gradient-primary text-primary-foreground"
                       >
                         <Crown className="w-4 h-4 mr-2" />
@@ -382,8 +391,8 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                       </Button>
                       <Button 
                         variant="outline"
-                        onClick={openCustomerPortal}
-                        disabled={loading}
+                        onClick={subscribed ? openCustomerPortal : undefined}
+                        disabled={!subscribed || loading}
                       >
                         <Shield className="w-4 h-4 mr-2" />
                         View Billing & Cancel
@@ -406,10 +415,19 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                         Click "Manage Subscription" to upgrade your plan or "View Billing & Cancel" to access your billing portal where you can update payment methods or cancel your subscription.
                       </p>
                     </div>
+
+                    {!subscribed && isAdmin && (
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                        <p className="text-xs text-center text-primary">
+                          <Shield className="w-3 h-3 inline mr-1" />
+                          Admin Note: Buttons are disabled in preview mode. Actual subscribers can click them to access Stripe's customer portal.
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
