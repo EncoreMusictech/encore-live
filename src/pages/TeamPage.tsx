@@ -132,7 +132,7 @@ const TeamPage = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {teamMembers.map((member, index) => (
               <Card key={index} className="text-center group hover:shadow-elegant transition-all duration-300 hover:scale-105">
                 <CardHeader className="pb-4">
