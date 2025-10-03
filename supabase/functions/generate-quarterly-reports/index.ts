@@ -158,37 +158,21 @@ Deno.serve(async (req) => {
         }
 
         if (!payeeId) {
-          console.log(`⚠️ No payee found for contact "${contactName}", creating new payee...`);
-          
-          // Create a new payee for this contact
-          try {
-            const { data: newPayee, error: payeeError } = await supabaseClient
-              .from('payees')
-              .insert({
-                user_id: user.id,
-                payee_name: contactName,
-                payee_type: 'writer',
-                writer_id: payout.client_id, // Use contact ID as writer reference
-                contact_info: {
-                  name: contactName,
-                  contact_id: payout.client_id
-                }
-              })
-              .select('id')
-              .single();
+          // Try partial matching against existing payees by name
+          const contactName = contactMap.get(payout.client_id) || 'Unknown';
+          const contactNameLower = contactName.toLowerCase().trim();
 
-            if (payeeError) {
-              console.error(`Failed to create payee for "${contactName}":`, payeeError);
-              continue;
+          for (const [payeeName, id] of payeeByName.entries()) {
+            if (payeeName.includes(contactNameLower) || contactNameLower.includes(payeeName)) {
+              payeeId = id;
+              console.log(`🔗 Matched "${contactName}" to payee "${payeeName}"`);
+              break;
             }
+          }
 
-            payeeId = newPayee.id;
-            if (payeeId) {
-              payeeByName.set(contactNameLower, payeeId);
-            }
-            console.log(`✅ Created new payee "${contactName}" with ID: ${payeeId}`);
-          } catch (error) {
-            console.error(`Error creating payee for "${contactName}":`, error);
+          // If still unresolved, skip to avoid misattribution
+          if (!payeeId) {
+            console.warn(`⚠️ Skipping payout ${payout.id} — no payee_id and no reliable name match for contact "${contactName}"`);
             continue;
           }
         }
