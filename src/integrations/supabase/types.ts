@@ -6115,7 +6115,6 @@ export type Database = {
           agreement_id: string
           closing_balance: number
           contact_name: string
-          contract_title: string
           expenses_amount: number
           opening_balance: number
           payments_amount: number
