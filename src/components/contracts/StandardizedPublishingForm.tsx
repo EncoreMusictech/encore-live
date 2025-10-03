@@ -216,6 +216,38 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
           taxId: '55-6677889',
           address: '654 Strategic Ave, Austin, TX 78701'
         }
+      },
+      demo_catalog_acquisition: {
+        agreementTitle: 'Catalog Acquisition Agreement',
+        counterparty: 'Legacy Music Holdings',
+        effectiveDate: new Date().toISOString().split('T')[0],
+        expirationDate: '', // Perpetual rights, no expiration
+        territory: 'worldwide',
+        governingLaw: 'new_york',
+        notes: 'Purchase of established catalog containing 150 works. Perpetual rights with one-time purchase price of $2.5M. Includes all master and publishing rights.',
+        publisherShare: '100',
+        writerShare: '0',
+        advanceAmount: '2500000',
+        acquisitionPrice: '2500000',
+        perpetualRights: true,
+        ongoingRoyaltyPercentage: '0',
+        catalogAge: '15',
+        numberOfWorks: '150',
+        termLength: '',
+        firstParty: {
+          contactName: 'Legacy Music Holdings LLC',
+          email: 'acquisitions@legacymusic.com',
+          phone: '(555) 777-8888',
+          taxId: '77-8899001',
+          address: '789 Catalog Lane, Nashville, TN 37203'
+        },
+        secondParty: {
+          contactName: 'Selling Rights Holder',
+          email: 'seller@example.com',
+          phone: '(555) 999-0000',
+          taxId: '99-0011223',
+          address: '321 Seller St, Los Angeles, CA 90028'
+        }
       }
     };
 
