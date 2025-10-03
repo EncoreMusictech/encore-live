@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { usePayeeHierarchy } from "@/hooks/usePayeeHierarchy";
 import { useContracts } from "@/hooks/useContracts";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useControlledWriters } from "@/hooks/useControlledWriters";
 import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,7 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
   
   const { createContract } = useContracts();
   const { subscribed } = useSubscription();
+  const { writers: controlledWriters } = useControlledWriters();
 
   const [loading, setLoading] = useState(false);
   
@@ -474,13 +476,21 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor="counterparty_name" className="text-sm">Counterparty Name *</Label>
-                          <Input
-                            id="counterparty_name"
+                          <Select
                             value={contractData.counterparty_name}
-                            onChange={(e) => handleContractDataChange("counterparty_name", e.target.value)}
-                            placeholder="e.g., ABC Music Publishing"
-                            className="h-8"
-                          />
+                            onValueChange={(value) => handleContractDataChange("counterparty_name", value)}
+                          >
+                            <SelectTrigger className="h-8">
+                              <SelectValue placeholder="Select controlled writer" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {controlledWriters.map((writer) => (
+                                <SelectItem key={writer.id} value={writer.name}>
+                                  {writer.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                       <div className="space-y-1">
