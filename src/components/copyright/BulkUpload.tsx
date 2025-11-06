@@ -7,8 +7,9 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Upload, FileText, AlertCircle, CheckCircle, Download, X, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCopyright } from '@/hooks/useCopyright';
@@ -77,6 +78,12 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [currentStep, setCurrentStep] = useState<'upload' | 'preview' | 'processing' | 'complete'>('upload');
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [uploadResults, setUploadResults] = useState<{
+    successCount: number;
+    failureCount: number;
+    errors: Array<{ row: number; title: string; error: string }>;
+  }>({ successCount: 0, failureCount: 0, errors: [] });
 
   // Sample CSV template data
   const csvTemplate = `work_title,iswc,album_title,creation_date,copyright_date,language_code,work_type,contains_sample,duration_seconds,notes,writer_1_name,writer_1_ownership,writer_1_role,writer_1_ipi,writer_1_controlled,writer_1_pro,writer_2_name,writer_2_ownership,writer_2_role,writer_2_ipi,writer_2_controlled,writer_2_pro,publisher_1_name,publisher_1_ownership,publisher_1_role,publisher_1_ipi,publisher_1_pro,recording_title,recording_artist,recording_isrc,recording_release_date,recording_duration
@@ -439,7 +446,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     const batchId = crypto.randomUUID();
     let successCount = 0;
     let failureCount = 0;
-    const uploadErrors: string[] = [];
+    const detailedErrors: Array<{ row: number; title: string; error: string }> = [];
 
     console.log(`Starting bulk upload of ${validData.length} copyrights`);
 
@@ -565,7 +572,11 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
             failureCount++;
             const errorMsg = result.reason instanceof Error ? result.reason.message : 'Upload failed';
             console.error(`Failed to upload row ${copyright.row_number}: ${errorMsg}`);
-            uploadErrors.push(`Row ${copyright.row_number} (${copyright.work_title}): ${errorMsg}`);
+            detailedErrors.push({
+              row: copyright.row_number,
+              title: copyright.work_title,
+              error: errorMsg
+            });
           }
         });
 
@@ -577,15 +588,24 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       
       console.log(`Bulk upload complete: ${successCount} successful, ${failureCount} failed`);
       
-      toast({
-        title: "Bulk Upload Complete",
-        description: `Successfully uploaded ${successCount} of ${validData.length} copyrights.${failureCount > 0 ? ` ${failureCount} failed.` : ''}`,
-        variant: successCount > 0 ? "default" : "destructive"
+      // Store results for modal
+      setUploadResults({
+        successCount,
+        failureCount,
+        errors: detailedErrors
       });
 
-      if (uploadErrors.length > 0) {
-        console.error('Upload errors:', uploadErrors);
-        setErrors(uploadErrors);
+      // Show success toast only if all succeeded
+      if (failureCount === 0) {
+        toast({
+          title: "Upload Successful",
+          description: `Successfully uploaded all ${successCount} copyrights!`,
+          variant: "default",
+          className: "bg-green-600 text-white"
+        });
+      } else {
+        // Show results modal for failures
+        setShowResultsModal(true);
       }
 
       if (onSuccess && successCount > 0) {
@@ -867,6 +887,72 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               )}
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload Results Modal */}
+      <Dialog open={showResultsModal} onOpenChange={setShowResultsModal}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Bulk Upload Results</DialogTitle>
+            <DialogDescription>
+              Upload completed with {uploadResults.successCount} successful and {uploadResults.failureCount} failed entries.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="bg-green-50 border-green-200">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-600">{uploadResults.successCount}</div>
+                    <div className="text-sm text-green-600 mt-1">Successful Uploads</div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-red-50 border-red-200">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-red-600">{uploadResults.failureCount}</div>
+                    <div className="text-sm text-red-600 mt-1">Failed Uploads</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Failed Entries Table */}
+            {uploadResults.failureCount > 0 && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted px-4 py-2 font-semibold">Failed Entries</div>
+                <ScrollArea className="h-[400px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-24">Row #</TableHead>
+                        <TableHead>Work Title</TableHead>
+                        <TableHead>Error Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {uploadResults.errors.map((error, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{error.row}</TableCell>
+                          <TableCell className="font-semibold">{error.title}</TableCell>
+                          <TableCell className="text-destructive text-sm">{error.error}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setShowResultsModal(false)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
