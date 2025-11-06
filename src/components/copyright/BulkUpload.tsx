@@ -186,34 +186,54 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       let rawData: any[] = [];
 
       if (fileExtension === 'csv') {
-        // Parse CSV
+        // Parse CSV with proper blank space handling
         const text = await uploadedFile.text();
         const result = Papa.parse(text, {
           header: true,
-          skipEmptyLines: true,
-          transformHeader: (header) => header.trim()
+          skipEmptyLines: 'greedy', // Skip rows that are completely empty
+          transformHeader: (header) => header.trim(),
+          transform: (value) => {
+            // Trim all values and convert empty strings to null
+            const trimmed = value.trim();
+            return trimmed === '' ? null : trimmed;
+          }
         });
         
         if (result.errors.length > 0) {
-          setErrors(result.errors.map(err => `Row ${err.row}: ${err.message}`));
-          return;
+          // Only show critical parsing errors, ignore empty row warnings
+          const criticalErrors = result.errors.filter(err => 
+            err.type !== 'FieldMismatch' && !err.message.includes('Too few fields')
+          );
+          if (criticalErrors.length > 0) {
+            setErrors(criticalErrors.map(err => `Row ${err.row}: ${err.message}`));
+          }
         }
         
         rawData = result.data;
       } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-        // Parse Excel
+        // Parse Excel with proper blank handling
         const buffer = await uploadedFile.arrayBuffer();
         const workbook = XLSX.read(buffer, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        rawData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        rawData = XLSX.utils.sheet_to_json(sheet, { 
+          defval: null, // Use null for empty cells instead of empty string
+          raw: false // Convert values to strings
+        });
       } else {
         setErrors(['Unsupported file format. Please upload CSV or Excel files only.']);
         return;
       }
 
+      // Filter out completely empty rows
+      const filteredData = rawData.filter(row => {
+        return Object.values(row).some(val => val !== null && val !== undefined && String(val).trim() !== '');
+      });
+
+      console.log(`Parsed ${filteredData.length} rows from file (${rawData.length} total, ${rawData.length - filteredData.length} empty rows removed)`);
+
       // Process and validate data
-      const processed = processRawData(rawData);
+      const processed = processRawData(filteredData);
       
       // Check for duplicates against existing copyrights
       await checkForDuplicates(processed);
@@ -223,9 +243,13 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       const valid = processed.filter(item => !item.errors || item.errors.length === 0);
       setValidData(valid);
       
+      console.log(`Valid records: ${valid.length} of ${processed.length} processed rows`);
+      
       if (processed.length > 0) {
         setCurrentStep('preview');
         setShowPreview(true);
+      } else {
+        setErrors(['No valid data found in the file. Please check the format and ensure there is at least one row with a work title.']);
       }
       
     } catch (error) {
@@ -237,9 +261,16 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
   }, [checkForDuplicates]);
 
   const processRawData = (rawData: any[]): ParsedCopyright[] => {
+    // Helper function to clean and check if value is truly empty
+    const cleanValue = (value: any): string | undefined => {
+      if (value === null || value === undefined) return undefined;
+      const cleaned = String(value).trim();
+      return cleaned === '' ? undefined : cleaned;
+    };
+
     return rawData.map((row, index) => {
       const processed: ParsedCopyright = {
-        work_title: row.work_title?.trim() || '',
+        work_title: cleanValue(row.work_title) || '',
         row_number: index + 2, // +2 because of header row and 0-based index
         errors: []
       };
@@ -249,93 +280,134 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
         processed.errors!.push('Work title is required');
       }
 
-      // Process optional fields
-      if (row.iswc) processed.iswc = row.iswc.trim();
-      if (row.album_title) processed.album_title = row.album_title.trim();
-      if (row.creation_date) processed.creation_date = row.creation_date;
-      if (row.copyright_date) processed.copyright_date = row.copyright_date;
-      if (row.language_code) processed.language_code = row.language_code.trim();
-      if (row.work_type) processed.work_type = row.work_type.trim();
-      if (row.notes) processed.notes = row.notes.trim();
+      // Process optional fields with proper blank space handling
+      const iswc = cleanValue(row.iswc);
+      if (iswc) processed.iswc = iswc;
       
-      // Parse boolean fields
-      if (row.contains_sample !== undefined) {
-        processed.contains_sample = ['true', '1', 'yes', 'y'].includes(String(row.contains_sample).toLowerCase());
+      const albumTitle = cleanValue(row.album_title);
+      if (albumTitle) processed.album_title = albumTitle;
+      
+      const creationDate = cleanValue(row.creation_date);
+      if (creationDate) processed.creation_date = creationDate;
+      
+      const copyrightDate = cleanValue(row.copyright_date);
+      if (copyrightDate) processed.copyright_date = copyrightDate;
+      
+      const languageCode = cleanValue(row.language_code);
+      if (languageCode) processed.language_code = languageCode;
+      
+      const workType = cleanValue(row.work_type);
+      if (workType) processed.work_type = workType;
+      
+      const notes = cleanValue(row.notes);
+      if (notes) processed.notes = notes;
+      
+      // Parse boolean fields - ignore blank spaces
+      const containsSample = cleanValue(row.contains_sample);
+      if (containsSample) {
+        processed.contains_sample = ['true', '1', 'yes', 'y'].includes(containsSample.toLowerCase());
       }
       
-      // Parse numeric fields
-      if (row.duration_seconds) {
-        const duration = parseInt(row.duration_seconds);
-        if (!isNaN(duration)) processed.duration_seconds = duration;
+      // Parse numeric fields - ignore blank spaces
+      const durationStr = cleanValue(row.duration_seconds);
+      if (durationStr) {
+        const duration = parseInt(durationStr);
+        if (!isNaN(duration) && duration > 0) processed.duration_seconds = duration;
       }
 
-      // Process writers
+      // Process writers - ignore blank entries
       processed.writers = [];
       for (let i = 1; i <= 5; i++) {
-        const writerName = row[`writer_${i}_name`]?.trim();
+        const writerName = cleanValue(row[`writer_${i}_name`]);
         if (writerName) {
+          const ownershipStr = cleanValue(row[`writer_${i}_ownership`]);
+          const ownership = ownershipStr ? parseFloat(ownershipStr) : 0;
+          
           const writer: ParsedWriter = {
             writer_name: writerName,
-            ownership_percentage: parseFloat(row[`writer_${i}_ownership`]) || 0
+            ownership_percentage: isNaN(ownership) ? 0 : ownership
           };
           
-          if (row[`writer_${i}_role`]) writer.writer_role = row[`writer_${i}_role`].trim();
-          if (row[`writer_${i}_ipi`]) writer.ipi_number = row[`writer_${i}_ipi`].trim();
-          if (row[`writer_${i}_controlled`]) writer.controlled_status = row[`writer_${i}_controlled`].trim();
-          if (row[`writer_${i}_pro`]) writer.pro_affiliation = row[`writer_${i}_pro`].trim();
+          const writerRole = cleanValue(row[`writer_${i}_role`]);
+          if (writerRole) writer.writer_role = writerRole;
+          
+          const writerIpi = cleanValue(row[`writer_${i}_ipi`]);
+          if (writerIpi) writer.ipi_number = writerIpi;
+          
+          const writerControlled = cleanValue(row[`writer_${i}_controlled`]);
+          if (writerControlled) writer.controlled_status = writerControlled;
+          
+          const writerPro = cleanValue(row[`writer_${i}_pro`]);
+          if (writerPro) writer.pro_affiliation = writerPro;
           
           processed.writers.push(writer);
         }
       }
 
-      // Process publishers
+      // Process publishers - ignore blank entries
       processed.publishers = [];
       for (let i = 1; i <= 3; i++) {
-        const publisherName = row[`publisher_${i}_name`]?.trim();
+        const publisherName = cleanValue(row[`publisher_${i}_name`]);
         if (publisherName) {
+          const ownershipStr = cleanValue(row[`publisher_${i}_ownership`]);
+          const ownership = ownershipStr ? parseFloat(ownershipStr) : 0;
+          
           const publisher: ParsedPublisher = {
             publisher_name: publisherName,
-            ownership_percentage: parseFloat(row[`publisher_${i}_ownership`]) || 0
+            ownership_percentage: isNaN(ownership) ? 0 : ownership
           };
           
-          if (row[`publisher_${i}_role`]) publisher.publisher_role = row[`publisher_${i}_role`].trim();
-          if (row[`publisher_${i}_ipi`]) publisher.ipi_number = row[`publisher_${i}_ipi`].trim();
-          if (row[`publisher_${i}_pro`]) publisher.pro_affiliation = row[`publisher_${i}_pro`].trim();
+          const publisherRole = cleanValue(row[`publisher_${i}_role`]);
+          if (publisherRole) publisher.publisher_role = publisherRole;
+          
+          const publisherIpi = cleanValue(row[`publisher_${i}_ipi`]);
+          if (publisherIpi) publisher.ipi_number = publisherIpi;
+          
+          const publisherPro = cleanValue(row[`publisher_${i}_pro`]);
+          if (publisherPro) publisher.pro_affiliation = publisherPro;
           
           processed.publishers.push(publisher);
         }
       }
 
-      // Process recordings
+      // Process recordings - ignore blank entries
       processed.recordings = [];
-      if (row.recording_title?.trim()) {
+      const recordingTitle = cleanValue(row.recording_title);
+      if (recordingTitle) {
         const recording: ParsedRecording = {
-          recording_title: row.recording_title.trim()
+          recording_title: recordingTitle
         };
         
-        if (row.recording_artist) recording.artist_name = row.recording_artist.trim();
-        if (row.recording_isrc) recording.isrc = row.recording_isrc.trim();
-        if (row.recording_release_date) recording.release_date = row.recording_release_date;
-        if (row.recording_duration) {
-          const duration = parseInt(row.recording_duration);
-          if (!isNaN(duration)) recording.duration_seconds = duration;
+        const artistName = cleanValue(row.recording_artist);
+        if (artistName) recording.artist_name = artistName;
+        
+        const isrc = cleanValue(row.recording_isrc);
+        if (isrc) recording.isrc = isrc;
+        
+        const releaseDate = cleanValue(row.recording_release_date);
+        if (releaseDate) recording.release_date = releaseDate;
+        
+        const recordingDurationStr = cleanValue(row.recording_duration);
+        if (recordingDurationStr) {
+          const duration = parseInt(recordingDurationStr);
+          if (!isNaN(duration) && duration > 0) recording.duration_seconds = duration;
         }
         
         processed.recordings.push(recording);
       }
 
-      // Validate ownership percentages
+      // Validate ownership percentages - only check if there are actual values
       if (processed.writers && processed.writers.length > 0) {
         const totalWriterOwnership = processed.writers.reduce((sum, w) => sum + w.ownership_percentage, 0);
-        if (totalWriterOwnership > 100) {
-          processed.errors!.push(`Writer ownership total (${totalWriterOwnership}%) exceeds 100%`);
+        if (totalWriterOwnership > 100.1) { // Allow small rounding errors
+          processed.errors!.push(`Writer ownership total (${totalWriterOwnership.toFixed(2)}%) exceeds 100%`);
         }
       }
 
       if (processed.publishers && processed.publishers.length > 0) {
         const totalPublisherOwnership = processed.publishers.reduce((sum, p) => sum + p.ownership_percentage, 0);
-        if (totalPublisherOwnership > 100) {
-          processed.errors!.push(`Publisher ownership total (${totalPublisherOwnership}%) exceeds 100%`);
+        if (totalPublisherOwnership > 100.1) { // Allow small rounding errors
+          processed.errors!.push(`Publisher ownership total (${totalPublisherOwnership.toFixed(2)}%) exceeds 100%`);
         }
       }
 
@@ -369,125 +441,150 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     let failureCount = 0;
     const uploadErrors: string[] = [];
 
+    console.log(`Starting bulk upload of ${validData.length} copyrights`);
+
     try {
-      for (let i = 0; i < validData.length; i++) {
-        const copyright = validData[i];
+      // Process in batches of 5 for better performance
+      const BATCH_SIZE = 5;
+      
+      for (let batchStart = 0; batchStart < validData.length; batchStart += BATCH_SIZE) {
+        const batch = validData.slice(batchStart, batchStart + BATCH_SIZE);
         
-        try {
-          // Add a small delay to ensure unique work_id generation
-          if (i > 0) {
-            await new Promise(resolve => setTimeout(resolve, 50));
-          }
+        // Process batch items in parallel
+        const batchResults = await Promise.allSettled(
+          batch.map(async (copyright) => {
+            // Add small random delay to prevent work_id collisions
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
 
-          // Create copyright (without related data)
-          const createdCopyright = await createCopyright({
-            work_title: copyright.work_title,
-            iswc: copyright.iswc,
-            album_title: copyright.album_title,
-            creation_date: copyright.creation_date,
-            copyright_date: copyright.copyright_date,
-            language_code: copyright.language_code || 'EN',
-            work_type: copyright.work_type || 'original',
-            contains_sample: copyright.contains_sample || false,
-            duration_seconds: copyright.duration_seconds,
-            notes: copyright.notes
-          } as any);
+            // Create copyright (without related data)
+            const createdCopyright = await createCopyright({
+              work_title: copyright.work_title,
+              iswc: copyright.iswc || undefined,
+              album_title: copyright.album_title || undefined,
+              creation_date: copyright.creation_date || undefined,
+              copyright_date: copyright.copyright_date || undefined,
+              language_code: copyright.language_code || 'EN',
+              work_type: copyright.work_type || 'original',
+              contains_sample: copyright.contains_sample || false,
+              duration_seconds: copyright.duration_seconds || undefined,
+              notes: copyright.notes || undefined
+            } as any);
 
-          // Insert writers
-          if (copyright.writers && copyright.writers.length > 0) {
-            const { error: writersError } = await supabase
-              .from('copyright_writers')
-              .insert(
-                copyright.writers.map(writer => ({
-                  copyright_id: createdCopyright.id,
-                  writer_name: writer.writer_name,
-                  ownership_percentage: writer.ownership_percentage,
-                  writer_role: writer.writer_role,
-                  ipi_number: writer.ipi_number,
-                  controlled_status: writer.controlled_status,
-                  pro_affiliation: writer.pro_affiliation
-                }))
-              );
-            
-            if (writersError) {
-              console.error('Error inserting writers:', writersError);
+            // Insert writers in parallel
+            const writersPromise = copyright.writers && copyright.writers.length > 0
+              ? supabase
+                  .from('copyright_writers')
+                  .insert(
+                    copyright.writers.map(writer => ({
+                      copyright_id: createdCopyright.id,
+                      writer_name: writer.writer_name,
+                      ownership_percentage: writer.ownership_percentage,
+                      writer_role: writer.writer_role || undefined,
+                      ipi_number: writer.ipi_number || undefined,
+                      controlled_status: writer.controlled_status || undefined,
+                      pro_affiliation: writer.pro_affiliation || undefined
+                    }))
+                  )
+              : Promise.resolve({ error: null });
+
+            // Insert publishers in parallel
+            const publishersPromise = copyright.publishers && copyright.publishers.length > 0
+              ? supabase
+                  .from('copyright_publishers')
+                  .insert(
+                    copyright.publishers.map(publisher => ({
+                      copyright_id: createdCopyright.id,
+                      publisher_name: publisher.publisher_name,
+                      ownership_percentage: publisher.ownership_percentage,
+                      publisher_role: publisher.publisher_role || undefined,
+                      ipi_number: publisher.ipi_number || undefined,
+                      pro_affiliation: publisher.pro_affiliation || undefined
+                    }))
+                  )
+              : Promise.resolve({ error: null });
+
+            // Insert recordings in parallel
+            const recordingsPromise = copyright.recordings && copyright.recordings.length > 0
+              ? supabase
+                  .from('copyright_recordings')
+                  .insert(
+                    copyright.recordings.map(recording => ({
+                      copyright_id: createdCopyright.id,
+                      recording_title: recording.recording_title,
+                      artist_name: recording.artist_name || undefined,
+                      isrc: recording.isrc || undefined,
+                      release_date: recording.release_date || undefined,
+                      duration_seconds: recording.duration_seconds || undefined
+                    }))
+                  )
+              : Promise.resolve({ error: null });
+
+            // Wait for all inserts to complete
+            const [writersResult, publishersResult, recordingsResult] = await Promise.all([
+              writersPromise,
+              publishersPromise,
+              recordingsPromise
+            ]);
+
+            if (writersResult.error) {
+              console.error('Error inserting writers:', writersResult.error);
             }
-          }
-
-          // Insert publishers
-          if (copyright.publishers && copyright.publishers.length > 0) {
-            const { error: publishersError } = await supabase
-              .from('copyright_publishers')
-              .insert(
-                copyright.publishers.map(publisher => ({
-                  copyright_id: createdCopyright.id,
-                  publisher_name: publisher.publisher_name,
-                  ownership_percentage: publisher.ownership_percentage,
-                  publisher_role: publisher.publisher_role,
-                  ipi_number: publisher.ipi_number,
-                  pro_affiliation: publisher.pro_affiliation
-                }))
-              );
-            
-            if (publishersError) {
-              console.error('Error inserting publishers:', publishersError);
+            if (publishersResult.error) {
+              console.error('Error inserting publishers:', publishersResult.error);
             }
-          }
-
-          // Insert recordings
-          if (copyright.recordings && copyright.recordings.length > 0) {
-            const { error: recordingsError } = await supabase
-              .from('copyright_recordings')
-              .insert(
-                copyright.recordings.map(recording => ({
-                  copyright_id: createdCopyright.id,
-                  recording_title: recording.recording_title,
-                  artist_name: recording.artist_name,
-                  isrc: recording.isrc,
-                  release_date: recording.release_date,
-                  duration_seconds: recording.duration_seconds
-                }))
-              );
-            
-            if (recordingsError) {
-              console.error('Error inserting recordings:', recordingsError);
+            if (recordingsResult.error) {
+              console.error('Error inserting recordings:', recordingsResult.error);
             }
+
+            // Log bulk upload activity
+            await logActivity({
+              copyright_id: createdCopyright.id,
+              action_type: 'bulk_upload',
+              operation_details: {
+                batch_id: batchId,
+                file_name: file?.name,
+                row_number: copyright.row_number,
+                writers_count: copyright.writers?.length || 0,
+                publishers_count: copyright.publishers?.length || 0,
+                recordings_count: copyright.recordings?.length || 0
+              },
+              new_values: createdCopyright
+            });
+
+            return { success: true, copyright };
+          })
+        );
+
+        // Process batch results
+        batchResults.forEach((result, index) => {
+          const copyright = batch[index];
+          if (result.status === 'fulfilled') {
+            successCount++;
+            console.log(`Successfully uploaded: ${copyright.work_title}`);
+          } else {
+            failureCount++;
+            const errorMsg = result.reason instanceof Error ? result.reason.message : 'Upload failed';
+            console.error(`Failed to upload row ${copyright.row_number}: ${errorMsg}`);
+            uploadErrors.push(`Row ${copyright.row_number} (${copyright.work_title}): ${errorMsg}`);
           }
+        });
 
-          // Log bulk upload activity
-          await logActivity({
-            copyright_id: createdCopyright.id,
-            action_type: 'bulk_upload',
-            operation_details: {
-              batch_id: batchId,
-              file_name: file?.name,
-              row_number: copyright.row_number,
-              writers_count: copyright.writers?.length || 0,
-              publishers_count: copyright.publishers?.length || 0,
-              recordings_count: copyright.recordings?.length || 0
-            },
-            new_values: createdCopyright
-          });
-
-          successCount++;
-        } catch (error) {
-          console.error(`Error uploading copyright ${i + 1}:`, error);
-          uploadErrors.push(`Row ${copyright.row_number}: ${error instanceof Error ? error.message : 'Upload failed'}`);
-          failureCount++;
-        }
-
-        setUploadProgress(((i + 1) / validData.length) * 100);
+        // Update progress
+        setUploadProgress(((batchStart + batch.length) / validData.length) * 100);
       }
 
       setCurrentStep('complete');
       
+      console.log(`Bulk upload complete: ${successCount} successful, ${failureCount} failed`);
+      
       toast({
         title: "Bulk Upload Complete",
-        description: `Successfully uploaded ${successCount} copyrights. ${failureCount > 0 ? `${failureCount} failed.` : ''}`,
+        description: `Successfully uploaded ${successCount} of ${validData.length} copyrights.${failureCount > 0 ? ` ${failureCount} failed.` : ''}`,
         variant: successCount > 0 ? "default" : "destructive"
       });
 
       if (uploadErrors.length > 0) {
+        console.error('Upload errors:', uploadErrors);
         setErrors(uploadErrors);
       }
 
@@ -499,9 +596,10 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       console.error('Bulk upload error:', error);
       toast({
         title: "Upload Failed",
-        description: "An error occurred during the bulk upload process.",
+        description: error instanceof Error ? error.message : "An error occurred during the bulk upload process.",
         variant: "destructive"
       });
+      setCurrentStep('upload');
     }
   };
 
