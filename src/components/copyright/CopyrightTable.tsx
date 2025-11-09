@@ -5,17 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import { Progress } from '@/components/ui/progress';
 import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink, Edit, Download, Trash2, X, FileOutput } from 'lucide-react';
 import { Copyright, CopyrightWriter } from '@/hooks/useCopyright';
 import { AudioPlayer } from './AudioPlayer';
@@ -30,12 +20,13 @@ interface CopyrightTableProps {
   onEdit?: (copyright: Copyright) => void;
   onDelete?: (copyright: Copyright) => void;
   onBulkDelete?: (copyrights: Copyright[]) => void;
+  deletingProgress?: { current: number; total: number };
 }
 
 type SortDirection = 'asc' | 'desc';
 type SortField = 'work_title' | 'work_id' | 'created_at' | 'registration_status' | 'controlled_share';
 
-export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writers, loading, realtimeError, onEdit, onDelete, onBulkDelete }) => {
+export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writers, loading, realtimeError, onEdit, onDelete, onBulkDelete, deletingProgress }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('work_title');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -353,41 +344,45 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                   variant="outline"
                   size="sm"
                   onClick={() => setShowExportDialog(true)}
+                  disabled={!!deletingProgress}
                 >
                   <FileOutput className="h-4 w-4 mr-1" />
                   Export Selected
                 </Button>
                 {onBulkDelete && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete Selected
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Multiple Copyrights</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete {selectedItems.size} copyright{selectedItems.size > 1 ? 's' : ''}? This action cannot be undone and will remove all associated writers, publishers, and recordings for these works.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>No, Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={handleBulkDelete}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Yes, Delete All Selected
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    disabled={!!deletingProgress}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete Selected
+                  </Button>
                 )}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Deletion Progress */}
+      {deletingProgress && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-orange-900">
+                  Deleting copyrights...
+                </span>
+                <span className="text-orange-700">
+                  {deletingProgress.current} of {deletingProgress.total}
+                </span>
+              </div>
+              <Progress 
+                value={(deletingProgress.current / deletingProgress.total) * 100} 
+                className="h-2"
+              />
             </div>
           </CardContent>
         </Card>
@@ -628,39 +623,21 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({ copyrights, writ
                               size="sm"
                               onClick={() => onEdit(copyright)}
                               className="h-8 w-8 p-0"
+                              disabled={!!deletingProgress}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}
                           {onDelete && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Copyright Work</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete "{copyright.work_title}"? This action cannot be undone and will remove all associated writers, publishers, and recordings.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>No, Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => onDelete(copyright)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    Yes, Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onDelete(copyright)}
+                              className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              disabled={!!deletingProgress}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           )}
                         </div>
                       </TableCell>

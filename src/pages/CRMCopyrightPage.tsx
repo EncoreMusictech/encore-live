@@ -37,6 +37,7 @@ export default function CRMCopyrightPage() {
   const { activeTab, setActiveTab } = useCRMTabPersistence('/dashboard/copyright', 'copyrights');
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [selectedCopyrights, setSelectedCopyrights] = useState<any[]>([]);
+  const [deletingProgress, setDeletingProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Debug logging
   useEffect(() => {
@@ -134,17 +135,26 @@ export default function CRMCopyrightPage() {
 
   const handleBulkDelete = async (copyrights: any[]) => {
     try {
-      // Delete all copyrights in parallel
+      setDeletingProgress({ current: 0, total: copyrights.length });
+      
+      // Delete all copyrights in parallel and track progress
+      let completed = 0;
       await Promise.all(
-        copyrights.map(copyright => deleteCopyright(copyright.id))
+        copyrights.map(async (copyright) => {
+          await deleteCopyright(copyright.id);
+          completed++;
+          setDeletingProgress({ current: completed, total: copyrights.length });
+        })
       );
       
+      setDeletingProgress(null);
       toast({
         title: "Copyrights Deleted",
         description: `Successfully deleted ${copyrights.length} copyright${copyrights.length > 1 ? 's' : ''}.`
       });
     } catch (error) {
       console.error('Error deleting copyrights:', error);
+      setDeletingProgress(null);
       toast({
         title: "Deletion Error",
         description: "Some copyrights could not be deleted. Please try again.",
@@ -153,18 +163,20 @@ export default function CRMCopyrightPage() {
     }
   };
 
+  const handleDelete = async (copyright: any) => {
+    try {
+      setDeletingProgress({ current: 0, total: 1 });
+      await deleteCopyright(copyright.id);
+      setDeletingProgress(null);
+    } catch (error) {
+      console.error('Error deleting copyright:', error);
+      setDeletingProgress(null);
+    }
+  };
+
   const handleEditCancel = () => {
     setEditingCopyright(null);
     setIsEditDialogOpen(false);
-  };
-
-  const handleDelete = async (copyright: any) => {
-    try {
-      await deleteCopyright(copyright.id);
-      // No need to refetch as the deleteCopyright function in the hook already updates the state
-    } catch (error) {
-      console.error('Error deleting copyright:', error);
-    }
   };
 
   if (loading) {
@@ -260,6 +272,7 @@ export default function CRMCopyrightPage() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onBulkDelete={handleBulkDelete}
+            deletingProgress={deletingProgress}
           />
         </TabsContent>
 
