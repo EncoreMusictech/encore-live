@@ -123,7 +123,7 @@ function isRetriableError(error: any): boolean {
   return false;
 }
 
-async function getMlcAccessToken(): Promise<string> {
+async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: string; authHeader: string }> {
   const mlcUsername = Deno.env.get('MLC_USERNAME');
   const mlcPassword = Deno.env.get('MLC_PASSWORD');
 
@@ -133,7 +133,7 @@ async function getMlcAccessToken(): Promise<string> {
 
   console.log('Getting MLC access token...');
   
-  return await retryWithBackoff(
+  const { accessToken, tokenType } = await retryWithBackoff(
     async () => {
       const authResponse = await fetch('https://public-api.themlc.com/oauth/token', {
         method: 'POST',
@@ -157,15 +157,17 @@ async function getMlcAccessToken(): Promise<string> {
         throw new Error(`MLC OAuth error: ${authData.error} - ${authData.errorDescription || ''}`);
       }
 
-      return authData.accessToken;
+      return { accessToken: authData.accessToken as string, tokenType: (authData.tokenType as string) || 'Bearer' };
     },
     3, // maxRetries
     1000, // baseDelay
     isRetriableError
   );
+
+  return { accessToken, tokenType, authHeader: `${tokenType || 'Bearer'} ${accessToken}` };
 }
 
-async function fetchWorksByMlcSongCode(accessToken: string, mlcSongCode: string): Promise<any[]> {
+async function fetchWorksByMlcSongCode(authHeader: string, mlcSongCode: string): Promise<any[]> {
   console.log('Fetching comprehensive work data for mlcSongCode:', mlcSongCode);
   
   return await retryWithBackoff(
@@ -173,7 +175,7 @@ async function fetchWorksByMlcSongCode(accessToken: string, mlcSongCode: string)
       const workResponse = await fetch('https://public-api.themlc.com/works', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify([{ mlcsongCode: mlcSongCode }])
@@ -237,7 +239,7 @@ async function fetchRecordingsByISRC(accessToken: string, isrc: string, workTitl
   );
 }
 
-async function searchWorksByTitleAndWriter(accessToken: string, workTitle?: string, writerName?: string, catalogDiscovery = false): Promise<any[]> {
+async function searchWorksByTitleAndWriter(authHeader: string, workTitle?: string, writerName?: string, catalogDiscovery = false): Promise<any[]> {
   if (!workTitle && !writerName) return [];
   
   console.log('Searching MLC by songcode with title:', workTitle, 'writer:', writerName, 'catalog discovery:', catalogDiscovery);
@@ -279,7 +281,7 @@ async function searchWorksByTitleAndWriter(accessToken: string, workTitle?: stri
         const songResponse = await fetch('https://public-api.themlc.com/search/songcode', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': authHeader,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(paginatedSearchBody)
@@ -450,14 +452,14 @@ async function performEnhancedMLCLookup(params: any): Promise<any> {
     throw new Error('Rate limit exceeded. Please try again later.');
   }
 
-  const accessToken = await getMlcAccessToken();
+  const { accessToken, tokenType, authHeader } = await getMlcAccessToken();
   let allWorks: any[] = [];
   let allRecordings: any[] = [];
 
   // Strategy 1: ISRC search with enhanced recording data (prioritize this method)
   if (isrc) {
     console.log('Strategy 1: Searching by ISRC with artist and title context');
-    const recordings = await fetchRecordingsByISRC(accessToken, isrc, workTitle, artistName);
+    const recordings = await fetchRecordingsByISRC(authHeader, isrc, workTitle, artistName);
     
     if (recordings.length > 0) {
       console.log(`Found ${recordings.length} recordings by ISRC`);
@@ -466,7 +468,7 @@ async function performEnhancedMLCLookup(params: any): Promise<any> {
       // For each recording, fetch comprehensive work data
       for (const recording of recordings) {
         if (recording.mlcsongCode) {
-          const works = await fetchWorksByMlcSongCode(accessToken, recording.mlcsongCode);
+          const works = await fetchWorksByMlcSongCode(authHeader, recording.mlcsongCode);
           allWorks.push(...works);
         }
       }
@@ -480,24 +482,24 @@ async function performEnhancedMLCLookup(params: any): Promise<any> {
     console.log('Strategy 2: Searching by title/writer/artist');
     
     // Try with writer name first if available
-    let songs = [];
+    let songs: any[] = [];
     if (writerName) {
       console.log('Trying search with writer name:', writerName);
-      songs = await searchWorksByTitleAndWriter(accessToken, workTitle, writerName, catalogDiscovery);
+      songs = await searchWorksByTitleAndWriter(authHeader, workTitle, writerName, catalogDiscovery);
     }
     
     // If no results and we have artist name, try with artist as fallback
     if (songs.length === 0 && artistName && artistName !== writerName) {
       console.log('No results with writer, trying search with artist name:', artistName);
-      songs = await searchWorksByTitleAndWriter(accessToken, workTitle, artistName, catalogDiscovery);
+      songs = await searchWorksByTitleAndWriter(authHeader, workTitle, artistName, catalogDiscovery);
     }
     
     // If still no results and we only have title, try title-only search
     if (songs.length === 0 && workTitle && !writerName && !artistName) {
       console.log('Trying title-only search');
-      songs = await searchWorksByTitleAndWriter(accessToken, workTitle, undefined, catalogDiscovery);
+      songs = await searchWorksByTitleAndWriter(authHeader, workTitle, undefined, catalogDiscovery);
     }
-    
+
     console.log(`Found ${songs.length} songs from MLC search, ${catalogDiscovery ? 'catalog discovery mode' : 'single lookup mode'}`);
     
     // For catalog discovery, process songs in batches to avoid overwhelming the API
@@ -514,7 +516,7 @@ async function performEnhancedMLCLookup(params: any): Promise<any> {
         
         if (song.mlcSongCode) {
           try {
-            const works = await fetchWorksByMlcSongCode(accessToken, song.mlcSongCode);
+            const works = await fetchWorksByMlcSongCode(authHeader, song.mlcSongCode);
             return works;
           } catch (error) {
             console.error(`Failed to fetch work data for song code ${song.mlcSongCode}:`, error);
