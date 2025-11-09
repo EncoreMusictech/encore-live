@@ -56,7 +56,7 @@ export const useCopyright = () => {
     }
   }, [toast, clearAllPending]);
 
-  const createCopyright = async (copyrightData: CopyrightInsert) => {
+  const createCopyright = async (copyrightData: CopyrightInsert, options?: { silent?: boolean }) => {
     const tempCopyright: Copyright = {
       id: `temp-${Date.now()}`,
       user_id: 'temp',
@@ -102,21 +102,28 @@ export const useCopyright = () => {
         new_values: data
       });
       
-      toast({
-        title: "Success",
-        description: "Copyright work created successfully",
-      });
+      // Only show toast if not silent mode
+      if (!options?.silent) {
+        toast({
+          title: "Success",
+          description: "Copyright work created successfully",
+        });
+      }
       
       return data;
     } catch (error) {
       console.error('Error creating copyright:', error);
       // Revert optimistic update
       revertUpdate(updateId);
-      toast({
-        title: "Error",
-        description: "Failed to create copyright work",
-        variant: "destructive",
-      });
+      
+      // Only show toast if not silent mode
+      if (!options?.silent) {
+        toast({
+          title: "Error",
+          description: "Failed to create copyright work",
+          variant: "destructive",
+        });
+      }
       throw error;
     }
   };
