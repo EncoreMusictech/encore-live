@@ -199,21 +199,23 @@ async function fetchWorksByMlcSongCode(accessToken: string, mlcSongCode: string)
 }
 
 async function fetchRecordingsByISRC(accessToken: string, isrc: string, workTitle?: string, artist?: string): Promise<any[]> {
-  console.log('Searching MLC recordings by ISRC:', isrc);
+  console.log('Searching MLC recordings by ISRC:', isrc, 'title:', workTitle, 'artist:', artist);
   
   return await retryWithBackoff(
     async () => {
+      const searchBody: any = { isrc: isrc };
+      if (workTitle) searchBody.title = workTitle;
+      if (artist) searchBody.artist = artist;
+      
+      console.log('Recording search request body:', JSON.stringify(searchBody, null, 2));
+      
       const recordingResponse = await fetch('https://public-api.themlc.com/search/recordings', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          isrc: isrc,
-          title: workTitle || undefined,
-          artist: artist || undefined
-        })
+        body: JSON.stringify(searchBody)
       });
 
       if (!recordingResponse.ok) {
@@ -225,7 +227,7 @@ async function fetchRecordingsByISRC(accessToken: string, isrc: string, workTitl
       }
 
       const recordings = await recordingResponse.json();
-      console.log('MLC recordings response:', JSON.stringify(recordings, null, 2));
+      console.log('MLC recordings response:', recordings?.length || 0, 'recordings found');
       
       return recordings || [];
     },
@@ -430,8 +432,10 @@ function processEnhancedMLCData(works: any[], recordings: any[] = []) {
 }
 
 async function performEnhancedMLCLookup(params: any): Promise<any> {
-  const { workTitle, writerName, publisherName, iswc, isrc, enhanced, includeRecordings, searchType } = params;
+  const { workTitle, writerName, artistName, publisherName, iswc, isrc, enhanced, includeRecordings, searchType } = params;
   const catalogDiscovery = searchType === 'catalog_discovery';
+  
+  console.log('Enhanced MLC lookup params:', { workTitle, writerName, artistName, iswc, isrc, searchType });
   
   // Check cache first
   const cacheKey = getCacheKey(params);
@@ -450,23 +454,49 @@ async function performEnhancedMLCLookup(params: any): Promise<any> {
   let allWorks: any[] = [];
   let allRecordings: any[] = [];
 
-  // Strategy 1: ISRC search with enhanced recording data
-  if (isrc && includeRecordings) {
-    const recordings = await fetchRecordingsByISRC(accessToken, isrc, workTitle, writerName);
-    allRecordings.push(...recordings);
+  // Strategy 1: ISRC search with enhanced recording data (prioritize this method)
+  if (isrc) {
+    console.log('Strategy 1: Searching by ISRC with artist and title context');
+    const recordings = await fetchRecordingsByISRC(accessToken, isrc, workTitle, artistName);
     
-    // For each recording, fetch comprehensive work data
-    for (const recording of recordings) {
-      if (recording.mlcsongCode) {
-        const works = await fetchWorksByMlcSongCode(accessToken, recording.mlcsongCode);
-        allWorks.push(...works);
+    if (recordings.length > 0) {
+      console.log(`Found ${recordings.length} recordings by ISRC`);
+      allRecordings.push(...recordings);
+      
+      // For each recording, fetch comprehensive work data
+      for (const recording of recordings) {
+        if (recording.mlcsongCode) {
+          const works = await fetchWorksByMlcSongCode(accessToken, recording.mlcsongCode);
+          allWorks.push(...works);
+        }
       }
+    } else {
+      console.log('No recordings found by ISRC, will try other strategies');
     }
   }
 
-  // Strategy 2: Title/writer search with comprehensive work data
-  if (!allWorks.length && (workTitle || writerName)) {
-    const songs = await searchWorksByTitleAndWriter(accessToken, workTitle, writerName, catalogDiscovery);
+  // Strategy 2: Title/writer/artist search with comprehensive work data
+  if (!allWorks.length && (workTitle || writerName || artistName)) {
+    console.log('Strategy 2: Searching by title/writer/artist');
+    
+    // Try with writer name first if available
+    let songs = [];
+    if (writerName) {
+      console.log('Trying search with writer name:', writerName);
+      songs = await searchWorksByTitleAndWriter(accessToken, workTitle, writerName, catalogDiscovery);
+    }
+    
+    // If no results and we have artist name, try with artist as fallback
+    if (songs.length === 0 && artistName && artistName !== writerName) {
+      console.log('No results with writer, trying search with artist name:', artistName);
+      songs = await searchWorksByTitleAndWriter(accessToken, workTitle, artistName, catalogDiscovery);
+    }
+    
+    // If still no results and we only have title, try title-only search
+    if (songs.length === 0 && workTitle && !writerName && !artistName) {
+      console.log('Trying title-only search');
+      songs = await searchWorksByTitleAndWriter(accessToken, workTitle, undefined, catalogDiscovery);
+    }
     
     console.log(`Found ${songs.length} songs from MLC search, ${catalogDiscovery ? 'catalog discovery mode' : 'single lookup mode'}`);
     

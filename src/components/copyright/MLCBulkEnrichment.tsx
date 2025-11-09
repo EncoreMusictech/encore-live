@@ -39,7 +39,7 @@ export const MLCBulkEnrichment: React.FC = () => {
   const [results, setResults] = useState<EnrichmentResult[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   
-  const { copyrights, updateCopyright, getWritersForCopyright } = useCopyright();
+  const { copyrights, updateCopyright, getWritersForCopyright, getRecordingsForCopyright } = useCopyright();
   const { lookupWork } = useMLCLookup();
   const { toast } = useToast();
 
@@ -95,16 +95,22 @@ export const MLCBulkEnrichment: React.FC = () => {
           continue;
         }
 
-        // Get writers for better search accuracy
+        // Get writers and recordings for better search accuracy
         const writers = await getWritersForCopyright(copyright.id);
+        const recordings = await getRecordingsForCopyright(copyright.id);
         const firstWriterName = writers[0]?.writer_name || undefined;
+        
+        // Use recording ISRC and artist if available
+        const recordingIsrc = recordings[0]?.isrc || (copyright as any).recording_isrc;
+        const artistName = recordings[0]?.artist_name || (copyright as any).artist_name;
 
-        // Perform MLC lookup with work title and writer name
+        // Perform MLC lookup with comprehensive search parameters
         const result = await lookupWork({
           workTitle: copyright.work_title,
           writerName: firstWriterName,
+          artistName: artistName,
           iswc: copyright.iswc,
-          isrc: (copyright as any).isrc
+          isrc: recordingIsrc
         });
 
         if (result?.found) {
