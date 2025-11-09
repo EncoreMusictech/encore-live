@@ -489,6 +489,8 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       return;
     }
 
+    // Close preview dialog and switch to processing state
+    setShowPreview(false);
     setCurrentStep('processing');
     setUploadProgress(0);
     
