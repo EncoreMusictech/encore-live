@@ -134,10 +134,10 @@ export default function CRMCopyrightPage() {
 
   const handleBulkDelete = async (copyrights: any[]) => {
     try {
-      // Delete copyrights one by one
-      for (const copyright of copyrights) {
-        await deleteCopyright(copyright.id);
-      }
+      // Delete all copyrights in parallel
+      await Promise.all(
+        copyrights.map(copyright => deleteCopyright(copyright.id))
+      );
       
       toast({
         title: "Copyrights Deleted",
