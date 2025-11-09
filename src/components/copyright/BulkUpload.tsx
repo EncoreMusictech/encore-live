@@ -142,6 +142,36 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
   // Function to check for potential duplicates
   const checkForDuplicates = useCallback(async (parsedCopyrights: ParsedCopyright[]) => {
     try {
+      // Fetch ALL writers and recordings data once upfront to avoid thousands of sequential calls
+      const writersMap = new Map();
+      const recordingsMap = new Map();
+      
+      // Batch fetch all data for existing copyrights
+      const { data: allWriters } = await supabase
+        .from('copyright_writers')
+        .select('*')
+        .in('copyright_id', copyrights.map(c => c.id));
+      
+      const { data: allRecordings } = await supabase
+        .from('copyright_recordings')
+        .select('*')
+        .in('copyright_id', copyrights.map(c => c.id));
+      
+      // Organize by copyright_id for fast lookup
+      (allWriters || []).forEach(writer => {
+        if (!writersMap.has(writer.copyright_id)) {
+          writersMap.set(writer.copyright_id, []);
+        }
+        writersMap.get(writer.copyright_id).push(writer);
+      });
+      
+      (allRecordings || []).forEach(recording => {
+        if (!recordingsMap.has(recording.copyright_id)) {
+          recordingsMap.set(recording.copyright_id, []);
+        }
+        recordingsMap.get(recording.copyright_id).push(recording);
+      });
+
       // For each parsed copyright, check against existing copyrights
       for (const parsedCopyright of parsedCopyrights) {
         parsedCopyright.warnings = [];
@@ -156,8 +186,8 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
           const titleMatch = parsedCopyright.work_title.toLowerCase() === existingCopyright.work_title.toLowerCase();
 
           if (titleMatch) {
-            // Get writers for the existing copyright
-            const existingWriters = await getWritersForCopyright(existingCopyright.id);
+            // Get writers from pre-fetched map
+            const existingWriters = writersMap.get(existingCopyright.id) || [];
 
             // Compare writers and splits
             const parsedWriterNames = (parsedCopyright.writers || []).map(w => w.writer_name.toLowerCase().trim()).sort();
@@ -186,7 +216,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
 
           // ISRC-based matching: compare parsed ISRCs to existing recordings ISRCs
           if (parsedIsrcs.length > 0) {
-            const existingRecordings = await getRecordingsForCopyright(existingCopyright.id);
+            const existingRecordings = recordingsMap.get(existingCopyright.id) || [];
             const existingIsrcs = existingRecordings
               .map(r => (r.isrc || '').trim().toUpperCase())
               .filter((v): v is string => !!v);
@@ -201,7 +231,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     } catch (error) {
       console.error('Error checking for duplicates:', error);
     }
-  }, [copyrights, getWritersForCopyright, getRecordingsForCopyright]);
+  }, [copyrights]);
 
   const parseFile = useCallback(async (uploadedFile: File) => {
     try {
