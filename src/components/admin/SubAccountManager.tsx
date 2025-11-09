@@ -45,8 +45,9 @@ interface CompanyModuleAccess {
   id: string;
   company_id: string;
   module_id: string;
-  access_source: string;
-  expires_at: string | null;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export const SubAccountManager = () => {

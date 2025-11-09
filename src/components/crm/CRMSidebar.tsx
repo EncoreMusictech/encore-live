@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins, Shield } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,13 +55,6 @@ const mainModules: ModuleItem[] = [{
   description: "Processing & payouts"
 }];
 const adminModules: ModuleItem[] = [{
-  id: "platform-admin",
-  title: "Sub-Accounts",
-  url: "/dashboard/admin",
-  icon: Shield,
-  description: "Platform administration",
-  adminOnly: true
-}, {
   id: "client-portal",
   title: "Client Portal",
   url: "/dashboard/client-admin",
