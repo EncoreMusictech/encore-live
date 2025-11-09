@@ -22,9 +22,12 @@ async function getMlcAccessToken() {
     const response = await fetch('https://public-api.themlc.com/oauth/token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: `grant_type=client_credentials&client_id=${mlcUsername}&client_secret=${mlcPassword}`,
+      body: JSON.stringify({
+        username: mlcUsername,
+        password: mlcPassword
+      }),
     });
 
     console.log(`MLC OAuth response status: ${response.status}`);
@@ -37,7 +40,7 @@ async function getMlcAccessToken() {
 
     const data = await response.json();
     console.log('Successfully obtained MLC access token');
-    return { success: true, token: data.access_token };
+    return { success: true, token: data.accessToken };
   } catch (error) {
     console.error('Error getting MLC access token:', error);
     return { success: false, error: (error as Error).message };
@@ -47,53 +50,112 @@ async function getMlcAccessToken() {
 // Helper function to search MLC repertoire
 async function searchMlcRepertoire(accessToken: string, params: any) {
   try {
-    const searchParams = new URLSearchParams();
+    // Step 1: Search for song code using title and writer
+    const searchBody: any = {};
     
-    if (params.workTitle) searchParams.set('workTitle', params.workTitle);
-    if (params.writerName) searchParams.set('writerName', params.writerName);
-    if (params.publisherName) searchParams.set('publisherName', params.publisherName);
-    if (params.iswc) searchParams.set('iswc', params.iswc);
-    if (params.isrc) searchParams.set('isrc', params.isrc);
+    if (params.workTitle) {
+      searchBody.title = params.workTitle;
+    }
+    
+    if (params.writerName) {
+      const names = params.writerName.split(' ');
+      searchBody.writers = [{
+        writerFirstName: names[0],
+        writerLastName: names.slice(1).join(' ') || names[0]
+      }];
+    }
 
-    console.log('Searching MLC repertoire with params:', searchParams.toString());
+    console.log('Searching MLC song codes with:', JSON.stringify(searchBody));
     
-    const response = await fetch(`https://public-api.themlc.com/v1/mlc-repertoire-lookup?${searchParams}`, {
+    const searchResponse = await fetch('https://public-api.themlc.com/search/songcode', {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'application/json',
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify(searchBody),
     });
 
-    console.log(`MLC repertoire search response status: ${response.status}`);
+    console.log(`MLC song code search response status: ${searchResponse.status}`);
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('MLC repertoire search failed:', errorText);
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text();
+      console.error('MLC song code search failed:', errorText);
       return { 
         found: false, 
-        error: `Search failed: ${response.status} - ${errorText}`,
+        error: `Search failed: ${searchResponse.status} - ${errorText}`,
         message: 'No works found in MLC database'
       };
     }
 
-    const data = await response.json();
-    console.log('MLC repertoire search successful');
+    const searchResults = await searchResponse.json();
+    console.log('MLC song code search results:', JSON.stringify(searchResults));
     
-    // Process the response to match expected format
-    const hasResults = data.works && data.works.length > 0;
+    if (!searchResults || searchResults.length === 0) {
+      return {
+        found: false,
+        works: [],
+        writers: [],
+        publishers: [],
+        metadata: {
+          confidence: 'low',
+          source: 'MLC API',
+          searchParams: searchBody,
+          totalMatches: 0
+        },
+        message: 'No works found in MLC database'
+      };
+    }
+
+    // Step 2: Get full work details using song codes
+    const songCodes = searchResults.map((result: any) => ({ mlcsongCode: result.mlcSongCode }));
+    
+    const worksResponse = await fetch('https://public-api.themlc.com/works', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(songCodes),
+    });
+
+    if (!worksResponse.ok) {
+      const errorText = await worksResponse.text();
+      console.error('MLC works fetch failed:', errorText);
+      return {
+        found: true,
+        works: searchResults,
+        writers: [],
+        publishers: [],
+        metadata: {
+          confidence: 'medium',
+          source: 'MLC API',
+          searchParams: searchBody,
+          totalMatches: searchResults.length
+        },
+        message: `Found ${searchResults.length} work(s)`
+      };
+    }
+
+    const works = await worksResponse.json();
+    console.log('MLC works details retrieved');
+    
+    // Extract writers and publishers from works
+    const allWriters = works.flatMap((work: any) => work.writers || []);
+    const allPublishers = works.flatMap((work: any) => work.publishers || []);
     
     return {
-      found: hasResults,
-      works: data.works || [],
-      writers: data.writers || [],
-      publishers: data.publishers || [],
+      found: true,
+      works: works,
+      writers: allWriters,
+      publishers: allPublishers,
       metadata: {
-        confidence: hasResults ? 'high' : 'low',
+        confidence: 'high',
         source: 'MLC API',
-        searchParams: Object.fromEntries(searchParams),
-        totalMatches: data.works ? data.works.length : 0
+        searchParams: searchBody,
+        totalMatches: works.length
       },
-      message: hasResults ? `Found ${data.works.length} work(s)` : 'No works found in MLC database'
+      message: `Found ${works.length} work(s)`
     };
   } catch (error) {
     console.error('Error in MLC repertoire search:', error);

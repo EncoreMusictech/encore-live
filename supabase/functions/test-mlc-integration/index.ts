@@ -22,9 +22,12 @@ async function getMlcAccessToken() {
     const response = await fetch('https://public-api.themlc.com/oauth/token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: `grant_type=client_credentials&client_id=${mlcUsername}&client_secret=${mlcPassword}`,
+      body: JSON.stringify({
+        username: mlcUsername,
+        password: mlcPassword
+      }),
     });
 
     console.log(`MLC OAuth response status: ${response.status}`);
@@ -37,7 +40,7 @@ async function getMlcAccessToken() {
 
     const data = await response.json();
     console.log('Successfully obtained MLC access token');
-    return { success: true, token: data.access_token, data };
+    return { success: true, token: data.accessToken, data };
   } catch (error) {
     console.error('Error getting MLC access token:', error);
     return { success: false, error: (error as Error).message };
@@ -47,19 +50,24 @@ async function getMlcAccessToken() {
 // Helper function to test MLC song lookup
 async function testMlcLookup(accessToken: string) {
   try {
-    console.log('Testing MLC song lookup...');
+    console.log('Testing MLC song code search...');
     
     // Test with a well-known song
-    const searchParams = new URLSearchParams({
-      workTitle: 'Yesterday',
-      writerName: 'Paul McCartney',
-    });
+    const searchBody = {
+      title: 'Yesterday',
+      writers: [{
+        writerFirstName: 'Paul',
+        writerLastName: 'McCartney'
+      }]
+    };
 
-    const response = await fetch(`https://public-api.themlc.com/v1/mlc-repertoire-lookup?${searchParams}`, {
+    const response = await fetch('https://public-api.themlc.com/search/songcode', {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'application/json',
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify(searchBody),
     });
 
     console.log(`MLC search response status: ${response.status}`);
@@ -71,7 +79,7 @@ async function testMlcLookup(accessToken: string) {
     }
 
     const data = await response.json();
-    console.log('MLC search successful:', data);
+    console.log('MLC search successful:', JSON.stringify(data));
     return { success: true, data };
   } catch (error) {
     console.error('Error in MLC lookup:', error);
