@@ -8,6 +8,7 @@ import { Database, Play, Pause, CheckCircle, AlertTriangle, Loader2 } from 'luci
 import { useMLCLookup } from '@/hooks/useMLCLookup';
 import { useCopyright } from '@/hooks/useCopyright';
 import { useToast } from '@/hooks/use-toast';
+import { generateTitleVariants, parseArtistFromTitle, extractCleanTitle } from '@/lib/mlc-title-utils';
 
 interface BulkEnrichmentProgress {
   total: number;
@@ -102,16 +103,58 @@ export const MLCBulkEnrichment: React.FC = () => {
         
         // Use recording ISRC and artist if available
         const recordingIsrc = recordings[0]?.isrc || (copyright as any).recording_isrc;
-        const artistName = recordings[0]?.artist_name || (copyright as any).artist_name;
-
-        // Perform MLC lookup with comprehensive search parameters
-        const result = await lookupWork({
-          workTitle: copyright.work_title,
-          writerName: firstWriterName,
-          artistName: artistName,
-          iswc: copyright.iswc,
-          isrc: recordingIsrc
-        });
+        let artistName = recordings[0]?.artist_name || (copyright as any).artist_name;
+        
+        // If no artist name, try to parse from title
+        if (!artistName && copyright.work_title) {
+          artistName = parseArtistFromTitle(copyright.work_title);
+          console.log(`Parsed artist from title "${copyright.work_title}": ${artistName}`);
+        }
+        
+        // Generate title variants for better matching
+        const titleVariants = generateTitleVariants(copyright.work_title || '');
+        console.log(`Generated ${titleVariants.length} title variants for "${copyright.work_title}"`);
+        
+        let foundResult = null;
+        
+        // Try each title variant until we find a match
+        for (const titleVariant of titleVariants) {
+          console.log(`Trying title variant: "${titleVariant}"`);
+          
+          const result = await lookupWork({
+            workTitle: titleVariant,
+            writerName: firstWriterName,
+            artistName: artistName,
+            iswc: copyright.iswc,
+            isrc: recordingIsrc
+          });
+          
+          if (result?.found) {
+            foundResult = result;
+            console.log(`✓ Found match with title variant: "${titleVariant}"`);
+            break;
+          }
+        }
+        
+        // If still no results, try catalog discovery mode with clean title
+        if (!foundResult && titleVariants.length > 0) {
+          console.log('No match found, trying catalog discovery mode...');
+          const cleanTitle = extractCleanTitle(copyright.work_title || '');
+          
+          const result = await lookupWork({
+            workTitle: cleanTitle,
+            writerName: firstWriterName,
+            artistName: artistName,
+            searchType: 'catalog_discovery'
+          });
+          
+          if (result?.found) {
+            foundResult = result;
+            console.log(`✓ Found match in catalog discovery mode`);
+          }
+        }
+        
+        const result = foundResult;
 
         if (result?.found) {
           // Update copyright with MLC data

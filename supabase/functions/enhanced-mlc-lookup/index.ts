@@ -128,10 +128,11 @@ async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: st
   const mlcPassword = Deno.env.get('MLC_PASSWORD');
 
   if (!mlcUsername || !mlcPassword) {
+    console.error('MLC credentials not configured');
     throw new Error('MLC credentials not configured');
   }
 
-  console.log('Getting MLC access token...');
+  console.log('Getting MLC access token with username:', mlcUsername ? `${mlcUsername.substring(0, 3)}***` : 'undefined');
   
   const { accessToken, tokenType } = await retryWithBackoff(
     async () => {
@@ -147,14 +148,28 @@ async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: st
       });
 
       if (!authResponse.ok) {
-        const error: any = new Error(`MLC OAuth failed: ${authResponse.status}`);
+        const errorText = await authResponse.text();
+        console.error('MLC OAuth failed:', authResponse.status, errorText);
+        const error: any = new Error(`MLC OAuth failed: ${authResponse.status} - ${errorText}`);
         error.status = authResponse.status;
         throw error;
       }
 
       const authData = await authResponse.json();
+      console.log('MLC OAuth response:', { 
+        hasAccessToken: !!authData.accessToken,
+        tokenType: authData.tokenType,
+        hasError: !!authData.error 
+      });
+      
       if (authData.error) {
+        console.error('MLC OAuth error:', authData.error, authData.errorDescription);
         throw new Error(`MLC OAuth error: ${authData.error} - ${authData.errorDescription || ''}`);
+      }
+
+      if (!authData.accessToken) {
+        console.error('No access token in OAuth response:', authData);
+        throw new Error('No access token received from MLC');
       }
 
       return { accessToken: authData.accessToken as string, tokenType: (authData.tokenType as string) || 'Bearer' };
@@ -164,7 +179,9 @@ async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: st
     isRetriableError
   );
 
-  return { accessToken, tokenType, authHeader: `${tokenType || 'Bearer'} ${accessToken}` };
+  const authHeader = `${tokenType} ${accessToken}`;
+  console.log('Successfully obtained MLC access token, auth header format:', `${tokenType} ${accessToken.substring(0, 10)}...`);
+  return { accessToken, tokenType, authHeader };
 }
 
 async function fetchWorksByMlcSongCode(authHeader: string, mlcSongCode: string): Promise<any[]> {
@@ -437,7 +454,16 @@ async function performEnhancedMLCLookup(params: any): Promise<any> {
   const { workTitle, writerName, artistName, publisherName, iswc, isrc, enhanced, includeRecordings, searchType } = params;
   const catalogDiscovery = searchType === 'catalog_discovery';
   
-  console.log('Enhanced MLC lookup params:', { workTitle, writerName, artistName, iswc, isrc, searchType });
+  console.log('=== Enhanced MLC Lookup Started ===');
+  console.log('Search params:', { 
+    workTitle, 
+    writerName, 
+    artistName, 
+    iswc, 
+    isrc, 
+    searchType,
+    catalogDiscovery 
+  });
   
   // Check cache first
   const cacheKey = getCacheKey(params);
@@ -453,6 +479,7 @@ async function performEnhancedMLCLookup(params: any): Promise<any> {
   }
 
   const { accessToken, tokenType, authHeader } = await getMlcAccessToken();
+  console.log('Using auth header for API calls:', authHeader.substring(0, 20) + '...');
   let allWorks: any[] = [];
   let allRecordings: any[] = [];
 
@@ -537,6 +564,16 @@ async function performEnhancedMLCLookup(params: any): Promise<any> {
   }
 
   const result = processEnhancedMLCData(allWorks, allRecordings);
+  
+  console.log('=== Enhanced MLC Lookup Complete ===');
+  console.log('Result summary:', {
+    found: result.found,
+    worksCount: result.works?.length || 0,
+    recordingsCount: result.recordings?.length || 0,
+    writersCount: result.writers?.length || 0,
+    publishersCount: result.publishers?.length || 0,
+    confidence: result.confidence
+  });
   
   // Cache the result
   requestCache.set(cacheKey, {

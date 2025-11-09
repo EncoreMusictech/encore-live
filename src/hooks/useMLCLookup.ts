@@ -9,6 +9,7 @@ export interface MLCLookupParams {
   publisherName?: string;
   iswc?: string;
   isrc?: string;
+  searchType?: 'single' | 'catalog_discovery';
 }
 
 export interface MLCWriter {
@@ -100,6 +101,7 @@ export function useMLCLookup() {
     const startTime = Date.now();
     
     try {
+      console.log('MLCLookup request params:', params);
       const { data, error } = await supabase.functions.invoke('enhanced-mlc-lookup', {
         body: {
           ...params,
