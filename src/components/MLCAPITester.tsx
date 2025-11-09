@@ -39,8 +39,13 @@ export function MLCAPITester() {
     try {
       console.log('🔍 Starting MLC API test...', { firstName, lastName, ipi, title });
       
-      const { data, error } = await supabase.functions.invoke('mlc/fetch-writer-catalog', {
-        body: { firstName, lastName, ipi, title }
+      const { data, error } = await supabase.functions.invoke('enhanced-mlc-lookup', {
+        body: { 
+          workTitle: title,
+          writerName: firstName && lastName ? `${firstName} ${lastName}` : '',
+          enhanced: true,
+          includeRecordings: true
+        }
       });
       
       const executionTime = Date.now() - startTime;

@@ -3,6 +3,9 @@ project_id = "plxsenykjisqutxcvjeg"
 [functions.songwriter-career-summary]
 verify_jwt = false
 
+[functions.enhanced-mlc-lookup]
+verify_jwt = false
+
 [functions.generate-payout-statement]
 verify_jwt = true
 
