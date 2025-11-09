@@ -68,7 +68,7 @@ interface BulkUploadProps {
 
 export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
   const { toast } = useToast();
-  const { createCopyright, copyrights, getWritersForCopyright } = useCopyright();
+  const { createCopyright, copyrights, getWritersForCopyright, getRecordingsForCopyright } = useCopyright();
   const { logActivity } = useActivityLog();
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedCopyright[]>([]);
@@ -144,30 +144,35 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       // For each parsed copyright, check against existing copyrights
       for (const parsedCopyright of parsedCopyrights) {
         parsedCopyright.warnings = [];
+
+        // Normalize ISRCs from parsed row
+        const parsedIsrcs = (parsedCopyright.recordings || [])
+          .map(r => r.isrc?.trim().toUpperCase())
+          .filter((v): v is string => !!v);
         
         for (const existingCopyright of copyrights) {
-          // Check work title similarity (case-insensitive)
+          // Title-based matching (case-insensitive)
           const titleMatch = parsedCopyright.work_title.toLowerCase() === existingCopyright.work_title.toLowerCase();
-          
+
           if (titleMatch) {
             // Get writers for the existing copyright
             const existingWriters = await getWritersForCopyright(existingCopyright.id);
-            
+
             // Compare writers and splits
             const parsedWriterNames = (parsedCopyright.writers || []).map(w => w.writer_name.toLowerCase().trim()).sort();
             const existingWriterNames = existingWriters.map(w => w.writer_name.toLowerCase().trim()).sort();
-            
-            const writersMatch = parsedWriterNames.length === existingWriterNames.length && 
-                               parsedWriterNames.every((name, index) => name === existingWriterNames[index]);
-            
+
+            const writersMatch = parsedWriterNames.length === existingWriterNames.length &&
+              parsedWriterNames.every((name, index) => name === existingWriterNames[index]);
+
             if (writersMatch) {
               // Compare ownership splits
               const parsedSplits = (parsedCopyright.writers || []).map(w => w.ownership_percentage).sort();
               const existingSplits = existingWriters.map(w => w.ownership_percentage).sort();
-              
+
               const splitsMatch = parsedSplits.length === existingSplits.length &&
-                                parsedSplits.every((split, index) => Math.abs(split - existingSplits[index]) < 0.01);
-              
+                parsedSplits.every((split, index) => Math.abs(split - existingSplits[index]) < 0.01);
+
               if (splitsMatch) {
                 parsedCopyright.warnings!.push(`Potential duplicate: Exact match found with existing work "${existingCopyright.work_title}" (Work ID: ${existingCopyright.work_id || 'N/A'})`);
               } else {
@@ -177,12 +182,25 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               parsedCopyright.warnings!.push(`Potential duplicate: Same title with different writers "${existingCopyright.work_title}" (Work ID: ${existingCopyright.work_id || 'N/A'})`);
             }
           }
+
+          // ISRC-based matching: compare parsed ISRCs to existing recordings ISRCs
+          if (parsedIsrcs.length > 0) {
+            const existingRecordings = await getRecordingsForCopyright(existingCopyright.id);
+            const existingIsrcs = existingRecordings
+              .map(r => (r.isrc || '').trim().toUpperCase())
+              .filter((v): v is string => !!v);
+
+            const isrcMatches = parsedIsrcs.filter(isrc => existingIsrcs.includes(isrc));
+            if (isrcMatches.length > 0) {
+              parsedCopyright.warnings!.push(`Potential duplicate: ISRC match (${isrcMatches.join(', ')}) with existing work "${existingCopyright.work_title}" (Work ID: ${existingCopyright.work_id || 'N/A'})`);
+            }
+          }
         }
       }
     } catch (error) {
       console.error('Error checking for duplicates:', error);
     }
-  }, [copyrights, getWritersForCopyright]);
+  }, [copyrights, getWritersForCopyright, getRecordingsForCopyright]);
 
   const parseFile = useCallback(async (uploadedFile: File) => {
     try {
