@@ -364,6 +364,68 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_items: {
+        Row: {
+          artist: string
+          catalog_number: string | null
+          company_id: string
+          created_at: string | null
+          format: string | null
+          id: string
+          isrc: string | null
+          metadata: Json | null
+          release_date: string | null
+          spotify_data: Json | null
+          territory: string | null
+          title: string
+          upc: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          artist: string
+          catalog_number?: string | null
+          company_id: string
+          created_at?: string | null
+          format?: string | null
+          id?: string
+          isrc?: string | null
+          metadata?: Json | null
+          release_date?: string | null
+          spotify_data?: Json | null
+          territory?: string | null
+          title: string
+          upc?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          artist?: string
+          catalog_number?: string | null
+          company_id?: string
+          created_at?: string | null
+          format?: string | null
+          id?: string
+          isrc?: string | null
+          metadata?: Json | null
+          release_date?: string | null
+          spotify_data?: Json | null
+          territory?: string | null
+          title?: string
+          upc?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalog_revenue_sources: {
         Row: {
           annual_revenue: number
@@ -799,34 +861,28 @@ export type Database = {
       }
       company_module_access: {
         Row: {
-          access_source: string
           company_id: string
-          created_at: string
-          expires_at: string | null
-          granted_at: string | null
+          created_at: string | null
+          enabled: boolean
           id: string
           module_id: string
-          settings: Json | null
+          updated_at: string | null
         }
         Insert: {
-          access_source?: string
           company_id: string
-          created_at?: string
-          expires_at?: string | null
-          granted_at?: string | null
+          created_at?: string | null
+          enabled?: boolean
           id?: string
           module_id: string
-          settings?: Json | null
+          updated_at?: string | null
         }
         Update: {
-          access_source?: string
           company_id?: string
-          created_at?: string
-          expires_at?: string | null
-          granted_at?: string | null
+          created_at?: string | null
+          enabled?: boolean
           id?: string
           module_id?: string
-          settings?: Json | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -1858,6 +1914,101 @@ export type Database = {
           work_type?: string | null
         }
         Relationships: []
+      }
+      crm_contacts: {
+        Row: {
+          company_name: string
+          contact_name: string
+          created_at: string | null
+          email: string | null
+          id: string
+          notes: string | null
+          phone: string | null
+          position: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_name: string
+          contact_name: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_name?: string
+          contact_name?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      crm_deals: {
+        Row: {
+          contact_id: string
+          created_at: string | null
+          deal_name: string
+          deal_value: number | null
+          deliverables: string | null
+          expected_close_date: string | null
+          id: string
+          notes: string | null
+          priority: Database["public"]["Enums"]["deal_priority"] | null
+          probability: number | null
+          stage: Database["public"]["Enums"]["deal_stage"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string | null
+          deal_name: string
+          deal_value?: number | null
+          deliverables?: string | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          priority?: Database["public"]["Enums"]["deal_priority"] | null
+          probability?: number | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string | null
+          deal_name?: string
+          deal_value?: number | null
+          deliverables?: string | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          priority?: Database["public"]["Enums"]["deal_priority"] | null
+          probability?: number | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_health_metrics: {
         Row: {
@@ -4284,7 +4435,7 @@ export type Database = {
           event_data: Json | null
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           notes: string | null
           resolved_at: string | null
           severity: string | null
@@ -4296,7 +4447,7 @@ export type Database = {
           event_data?: Json | null
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           notes?: string | null
           resolved_at?: string | null
           severity?: string | null
@@ -4308,7 +4459,7 @@ export type Database = {
           event_data?: Json | null
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           notes?: string | null
           resolved_at?: string | null
           severity?: string | null
@@ -4588,6 +4739,115 @@ export type Database = {
           source_name?: string
           updated_at?: string
           version?: string
+        }
+        Relationships: []
+      }
+      sub_account_modules: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          module_name: string
+          settings: Json | null
+          sub_account_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          module_name: string
+          settings?: Json | null
+          sub_account_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          module_name?: string
+          settings?: Json | null
+          sub_account_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_account_modules_sub_account_id_fkey"
+            columns: ["sub_account_id"]
+            isOneToOne: false
+            referencedRelation: "sub_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_account_users: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string | null
+          sub_account_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          sub_account_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          sub_account_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_account_users_sub_account_id_fkey"
+            columns: ["sub_account_id"]
+            isOneToOne: false
+            referencedRelation: "sub_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_accounts: {
+        Row: {
+          company_name: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          status: string | null
+          subscription_tier: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_name: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -5994,6 +6254,12 @@ export type Database = {
           subscriber_user_id: string
           updated_at: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "client_portal_access"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       add_royalty_source_if_not_exists: {
         Args: { new_source: string }
@@ -6029,18 +6295,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      cleanup_expired_invitations: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      cleanup_expired_notifications: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      cleanup_old_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      cleanup_expired_invitations: { Args: never; Returns: number }
+      cleanup_expired_notifications: { Args: never; Returns: number }
+      cleanup_old_logs: { Args: never; Returns: number }
       create_notification: {
         Args: {
           p_data?: Json
@@ -6053,64 +6310,22 @@ export type Database = {
         }
         Returns: string
       }
-      expire_client_access: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      expire_old_invitations: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      expire_trials: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      generate_batch_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_copyright_internal_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_invitation_token: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_op_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_payee_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_royalty_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_royalty_work_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_statement_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_sync_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_work_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_writer_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      expire_client_access: { Args: never; Returns: number }
+      expire_old_invitations: { Args: never; Returns: number }
+      expire_trials: { Args: never; Returns: number }
+      generate_batch_id: { Args: never; Returns: string }
+      generate_copyright_internal_id: { Args: never; Returns: string }
+      generate_invitation_token: { Args: never; Returns: string }
+      generate_op_id: { Args: never; Returns: string }
+      generate_payee_id: { Args: never; Returns: string }
+      generate_royalty_id: { Args: never; Returns: string }
+      generate_royalty_work_id: { Args: never; Returns: string }
+      generate_statement_id: { Args: never; Returns: string }
+      generate_sync_id: { Args: never; Returns: string }
+      generate_work_id: { Args: never; Returns: string }
+      generate_writer_id: { Args: never; Returns: string }
       get_client_quarterly_balances: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           calculation_date: string
           closing_balance: number
@@ -6130,7 +6345,7 @@ export type Database = {
         Returns: string
       }
       get_invitations_needing_reminders: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           days_until_expiry: number
           email: string
@@ -6160,6 +6375,12 @@ export type Database = {
           updated_at: string
           user_id: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "tenant_configurations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       get_user_company_role: {
         Args: { company_id_param: string; user_id_param?: string }
@@ -6173,14 +6394,19 @@ export type Database = {
         Args: { _module?: string; _user_id: string }
         Returns: boolean
       }
-      has_company_module_access: {
-        Args: {
-          company_id_param: string
-          module_id_param: string
-          user_id_param?: string
-        }
-        Returns: boolean
-      }
+      has_company_module_access:
+        | {
+            Args: {
+              company_id_param: string
+              module_id_param: string
+              user_id_param?: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: { _company_id: string; _module_id: string }
+            Returns: boolean
+          }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -6226,10 +6452,7 @@ export type Database = {
         }
         Returns: string
       }
-      mark_all_notifications_read: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_invitation_reminder_sent: {
         Args: { invitation_id: string }
         Returns: undefined
@@ -6238,10 +6461,7 @@ export type Database = {
         Args: { notification_id: string }
         Returns: undefined
       }
-      setup_demo_user: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      setup_demo_user: { Args: never; Returns: undefined }
       start_free_trial: {
         Args: {
           p_trial_identifier: string
@@ -6250,6 +6470,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      toggle_company_module: {
+        Args: { _company_id: string; _enabled: boolean; _module_id: string }
+        Returns: undefined
       }
       update_payout_workflow_stage: {
         Args: {
@@ -6282,6 +6506,14 @@ export type Database = {
         | "sync"
         | "distribution"
       controlled_status: "Controlled" | "Non-Controlled"
+      deal_priority: "low" | "medium" | "high" | "urgent"
+      deal_stage:
+        | "lead"
+        | "qualified"
+        | "proposal"
+        | "negotiation"
+        | "closed_won"
+        | "closed_lost"
       notification_priority: "low" | "medium" | "high" | "critical"
       notification_type:
         | "contract_signed"
@@ -6463,6 +6695,15 @@ export const Constants = {
         "distribution",
       ],
       controlled_status: ["Controlled", "Non-Controlled"],
+      deal_priority: ["low", "medium", "high", "urgent"],
+      deal_stage: [
+        "lead",
+        "qualified",
+        "proposal",
+        "negotiation",
+        "closed_won",
+        "closed_lost",
+      ],
       notification_priority: ["low", "medium", "high", "critical"],
       notification_type: [
         "contract_signed",
