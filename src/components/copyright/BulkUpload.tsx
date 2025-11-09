@@ -489,8 +489,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       return;
     }
 
-    // Close preview dialog and switch to processing state
-    setShowPreview(false);
+    // Keep preview dialog open and show progress there
     setCurrentStep('processing');
     setUploadProgress(0);
     
@@ -668,7 +667,8 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
         errors: detailedErrors
       });
 
-      // Always show results modal after bulk upload
+      // Close preview and show results modal
+      setShowPreview(false);
       setShowResultsModal(true);
 
       if (onSuccess && successCount > 0) {
@@ -785,13 +785,42 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       </Card>
 
       {/* Preview Dialog */}
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+      <Dialog open={showPreview} onOpenChange={(open) => {
+        // Only allow closing if not processing
+        if (!open && currentStep !== 'processing') {
+          setShowPreview(false);
+        }
+      }}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Preview Upload Data</DialogTitle>
+            <DialogTitle>
+              {currentStep === 'processing' ? 'Uploading Copyrights' : 'Preview Upload Data'}
+            </DialogTitle>
+            {currentStep === 'processing' && (
+              <DialogDescription>
+                Please wait while we process your data. Do not close this window.
+              </DialogDescription>
+            )}
           </DialogHeader>
           
-          <Tabs defaultValue="valid" className="space-y-4">
+          {currentStep === 'processing' ? (
+            <div className="space-y-6 py-8">
+              <div className="text-center space-y-2">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                <p className="text-lg font-semibold">Processing {validData.length} copyrights...</p>
+                <p className="text-sm text-muted-foreground">
+                  Uploading works, writers, publishers, and recordings
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Progress value={uploadProgress} className="w-full h-3" />
+                <div className="text-center text-sm font-medium">
+                  {Math.round(uploadProgress)}% complete
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Tabs defaultValue="valid" className="space-y-4">
             <TabsList>
               <TabsTrigger value="valid">
                 Valid Records ({validData.length})
@@ -950,6 +979,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               )}
             </TabsContent>
           </Tabs>
+          )}
         </DialogContent>
       </Dialog>
 
