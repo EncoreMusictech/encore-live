@@ -465,7 +465,9 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
 
             try {
               // Create copyright (without related data)
+              const uniqueWorkId = `WK-${crypto.randomUUID()}`;
               const createdCopyright = await createCopyright({
+                work_id: uniqueWorkId,
                 work_title: copyright.work_title,
                 iswc: copyright.iswc || undefined,
                 album_title: copyright.album_title || undefined,
