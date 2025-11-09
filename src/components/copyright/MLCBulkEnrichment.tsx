@@ -39,7 +39,7 @@ export const MLCBulkEnrichment: React.FC = () => {
   const [results, setResults] = useState<EnrichmentResult[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   
-  const { copyrights, updateCopyright } = useCopyright();
+  const { copyrights, updateCopyright, getWritersForCopyright } = useCopyright();
   const { lookupWork } = useMLCLookup();
   const { toast } = useToast();
 
@@ -95,9 +95,14 @@ export const MLCBulkEnrichment: React.FC = () => {
           continue;
         }
 
-        // Perform MLC lookup
+        // Get writers for better search accuracy
+        const writers = await getWritersForCopyright(copyright.id);
+        const firstWriterName = writers[0]?.writer_name || undefined;
+
+        // Perform MLC lookup with work title and writer name
         const result = await lookupWork({
           workTitle: copyright.work_title,
+          writerName: firstWriterName,
           iswc: copyright.iswc,
           isrc: (copyright as any).isrc
         });
