@@ -19,7 +19,7 @@ async function getMlcAccessToken() {
   try {
     console.log(`Attempting to get MLC access token with username: ${mlcUsername}`);
     
-    const response = await fetch('https://api.themlc.com/oauth/token', {
+    const response = await fetch('https://public-api.themlc.com/oauth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -57,7 +57,7 @@ async function searchMlcRepertoire(accessToken: string, params: any) {
 
     console.log('Searching MLC repertoire with params:', searchParams.toString());
     
-    const response = await fetch(`https://api.themlc.com/v1/mlc-repertoire-lookup?${searchParams}`, {
+    const response = await fetch(`https://public-api.themlc.com/v1/mlc-repertoire-lookup?${searchParams}`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Accept': 'application/json',
