@@ -48,6 +48,81 @@ function getCacheKey(params: any): string {
   });
 }
 
+// Retry logic with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000,
+  shouldRetry: (error: any) => boolean = () => true
+): Promise<T> {
+  let lastError: any;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry if it's not a retriable error
+      if (!shouldRetry(error)) {
+        console.log(`Non-retriable error on attempt ${attempt + 1}, not retrying:`, error.message);
+        throw error;
+      }
+      
+      // Don't retry on last attempt
+      if (attempt === maxRetries) {
+        console.log(`Max retries (${maxRetries}) reached, throwing error`);
+        throw error;
+      }
+      
+      // Calculate exponential backoff delay
+      const delay = baseDelay * Math.pow(2, attempt);
+      const jitter = Math.random() * 1000; // Add jitter to prevent thundering herd
+      const totalDelay = delay + jitter;
+      
+      console.log(`Attempt ${attempt + 1} failed: ${error.message}. Retrying in ${Math.round(totalDelay)}ms...`);
+      await new Promise(resolve => setTimeout(resolve, totalDelay));
+    }
+  }
+  
+  throw lastError;
+}
+
+// Determine if error should be retried
+function isRetriableError(error: any): boolean {
+  // Don't retry authentication errors (401, 403)
+  if (error.status === 401 || error.status === 403) {
+    console.log('Authentication error detected, not retriable');
+    return false;
+  }
+  
+  // Don't retry bad request errors (400)
+  if (error.status === 400) {
+    console.log('Bad request error detected, not retriable');
+    return false;
+  }
+  
+  // Retry on:
+  // - Network errors
+  // - Timeout errors
+  // - Server errors (500-599)
+  // - Rate limit errors (429)
+  // - Service unavailable (503)
+  if (
+    error.status === 429 ||
+    error.status === 503 ||
+    (error.status >= 500 && error.status < 600) ||
+    error.message?.includes('network') ||
+    error.message?.includes('timeout') ||
+    error.message?.includes('ECONNREFUSED') ||
+    error.message?.includes('ETIMEDOUT')
+  ) {
+    return true;
+  }
+  
+  return false;
+}
+
 async function getMlcAccessToken(): Promise<string> {
   const mlcUsername = Deno.env.get('MLC_USERNAME');
   const mlcPassword = Deno.env.get('MLC_PASSWORD');
@@ -58,79 +133,106 @@ async function getMlcAccessToken(): Promise<string> {
 
   console.log('Getting MLC access token...');
   
-  const authResponse = await fetch('https://public-api.themlc.com/oauth/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  return await retryWithBackoff(
+    async () => {
+      const authResponse = await fetch('https://public-api.themlc.com/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: mlcUsername,
+          password: mlcPassword
+        })
+      });
+
+      if (!authResponse.ok) {
+        const error: any = new Error(`MLC OAuth failed: ${authResponse.status}`);
+        error.status = authResponse.status;
+        throw error;
+      }
+
+      const authData = await authResponse.json();
+      if (authData.error) {
+        throw new Error(`MLC OAuth error: ${authData.error} - ${authData.errorDescription || ''}`);
+      }
+
+      return authData.accessToken;
     },
-    body: JSON.stringify({
-      username: mlcUsername,
-      password: mlcPassword
-    })
-  });
-
-  if (!authResponse.ok) {
-    throw new Error(`MLC OAuth failed: ${authResponse.status}`);
-  }
-
-  const authData = await authResponse.json();
-  if (authData.error) {
-    throw new Error(`MLC OAuth error: ${authData.error} - ${authData.errorDescription || ''}`);
-  }
-
-  return authData.accessToken;
+    3, // maxRetries
+    1000, // baseDelay
+    isRetriableError
+  );
 }
 
 async function fetchWorksByMlcSongCode(accessToken: string, mlcSongCode: string): Promise<any[]> {
   console.log('Fetching comprehensive work data for mlcSongCode:', mlcSongCode);
   
-  const workResponse = await fetch('https://public-api.themlc.com/works', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
+  return await retryWithBackoff(
+    async () => {
+      const workResponse = await fetch('https://public-api.themlc.com/works', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([{ mlcsongCode: mlcSongCode }])
+      });
+
+      if (!workResponse.ok) {
+        const errorText = await workResponse.text();
+        console.log('Work fetch failed:', workResponse.status, errorText);
+        const error: any = new Error(`MLC API error: ${workResponse.status}`);
+        error.status = workResponse.status;
+        throw error;
+      }
+
+      const works = await workResponse.json();
+      console.log('Comprehensive work data response:', JSON.stringify(works, null, 2));
+      
+      return works || [];
     },
-    body: JSON.stringify([{ mlcsongCode: mlcSongCode }])
-  });
-
-  if (!workResponse.ok) {
-    const errorText = await workResponse.text();
-    console.log('Work fetch failed:', workResponse.status, errorText);
-    return [];
-  }
-
-  const works = await workResponse.json();
-  console.log('Comprehensive work data response:', JSON.stringify(works, null, 2));
-  
-  return works || [];
+    3, // maxRetries
+    1000, // baseDelay
+    isRetriableError
+  );
 }
 
 async function fetchRecordingsByISRC(accessToken: string, isrc: string, workTitle?: string, artist?: string): Promise<any[]> {
   console.log('Searching MLC recordings by ISRC:', isrc);
   
-  const recordingResponse = await fetch('https://public-api.themlc.com/search/recordings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
+  return await retryWithBackoff(
+    async () => {
+      const recordingResponse = await fetch('https://public-api.themlc.com/search/recordings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          isrc: isrc,
+          title: workTitle || undefined,
+          artist: artist || undefined
+        })
+      });
+
+      if (!recordingResponse.ok) {
+        const errorText = await recordingResponse.text();
+        console.log('Recording search failed:', recordingResponse.status, errorText);
+        const error: any = new Error(`MLC API error: ${recordingResponse.status}`);
+        error.status = recordingResponse.status;
+        throw error;
+      }
+
+      const recordings = await recordingResponse.json();
+      console.log('MLC recordings response:', JSON.stringify(recordings, null, 2));
+      
+      return recordings || [];
     },
-    body: JSON.stringify({
-      isrc: isrc,
-      title: workTitle || undefined,
-      artist: artist || undefined
-    })
-  });
-
-  if (!recordingResponse.ok) {
-    const errorText = await recordingResponse.text();
-    console.log('Recording search failed:', recordingResponse.status, errorText);
-    return [];
-  }
-
-  const recordings = await recordingResponse.json();
-  console.log('MLC recordings response:', JSON.stringify(recordings, null, 2));
-  
-  return recordings || [];
+    3, // maxRetries
+    1000, // baseDelay
+    isRetriableError
+  );
 }
 
 async function searchWorksByTitleAndWriter(accessToken: string, workTitle?: string, writerName?: string, catalogDiscovery = false): Promise<any[]> {
@@ -170,22 +272,34 @@ async function searchWorksByTitleAndWriter(accessToken: string, workTitle?: stri
 
     console.log(`Songcode search page ${page}, body:`, JSON.stringify(paginatedSearchBody, null, 2));
 
-    const songResponse = await fetch('https://public-api.themlc.com/search/songcode', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+    const songs = await retryWithBackoff(
+      async () => {
+        const songResponse = await fetch('https://public-api.themlc.com/search/songcode', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(paginatedSearchBody)
+        });
+
+        if (!songResponse.ok) {
+          const errorText = await songResponse.text();
+          console.log(`Songcode search failed on page ${page}:`, songResponse.status, errorText);
+          const error: any = new Error(`MLC API error: ${songResponse.status}`);
+          error.status = songResponse.status;
+          throw error;
+        }
+
+        return await songResponse.json();
       },
-      body: JSON.stringify(paginatedSearchBody)
+      3, // maxRetries
+      1000, // baseDelay
+      isRetriableError
+    ).catch(error => {
+      console.log(`All retry attempts failed for page ${page}:`, error.message);
+      return null;
     });
-
-    if (!songResponse.ok) {
-      const errorText = await songResponse.text();
-      console.log(`Songcode search failed on page ${page}:`, songResponse.status, errorText);
-      break;
-    }
-
-    const songs = await songResponse.json();
     console.log(`MLC songcode response page ${page}:`, songs?.length || 0, 'songs');
     
     if (!songs || songs.length === 0) {
