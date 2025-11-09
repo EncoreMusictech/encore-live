@@ -457,25 +457,26 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       for (let batchStart = 0; batchStart < validData.length; batchStart += BATCH_SIZE) {
         const batch = validData.slice(batchStart, batchStart + BATCH_SIZE);
         
-        // Process batch items in parallel
+        // Process batch items sequentially to prevent work_id collisions
         const batchResults = await Promise.allSettled(
-          batch.map(async (copyright) => {
-            // Add small random delay to prevent work_id collisions
-            await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+          batch.map(async (copyright, batchIndex) => {
+            // Add staggered delay to prevent work_id collisions (50ms between each)
+            await new Promise(resolve => setTimeout(resolve, batchIndex * 50));
 
-            // Create copyright (without related data)
-            const createdCopyright = await createCopyright({
-              work_title: copyright.work_title,
-              iswc: copyright.iswc || undefined,
-              album_title: copyright.album_title || undefined,
-              creation_date: copyright.creation_date || undefined,
-              copyright_date: copyright.copyright_date || undefined,
-              language_code: copyright.language_code || 'EN',
-              work_type: copyright.work_type || 'original',
-              contains_sample: copyright.contains_sample || false,
-              duration_seconds: copyright.duration_seconds || undefined,
-              notes: copyright.notes || undefined
-            } as any);
+            try {
+              // Create copyright (without related data)
+              const createdCopyright = await createCopyright({
+                work_title: copyright.work_title,
+                iswc: copyright.iswc || undefined,
+                album_title: copyright.album_title || undefined,
+                creation_date: copyright.creation_date || undefined,
+                copyright_date: copyright.copyright_date || undefined,
+                language_code: copyright.language_code || 'EN',
+                work_type: copyright.work_type || 'original',
+                contains_sample: copyright.contains_sample || false,
+                duration_seconds: copyright.duration_seconds || undefined,
+                notes: copyright.notes || undefined
+              } as any);
 
             // Insert writers in parallel
             const writersPromise = copyright.writers && copyright.writers.length > 0
@@ -526,39 +527,47 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                   )
               : Promise.resolve({ error: null });
 
-            // Wait for all inserts to complete
-            const [writersResult, publishersResult, recordingsResult] = await Promise.all([
-              writersPromise,
-              publishersPromise,
-              recordingsPromise
-            ]);
+              // Wait for all inserts to complete
+              const [writersResult, publishersResult, recordingsResult] = await Promise.all([
+                writersPromise,
+                publishersPromise,
+                recordingsPromise
+              ]);
 
-            if (writersResult.error) {
-              console.error('Error inserting writers:', writersResult.error);
-            }
-            if (publishersResult.error) {
-              console.error('Error inserting publishers:', publishersResult.error);
-            }
-            if (recordingsResult.error) {
-              console.error('Error inserting recordings:', recordingsResult.error);
-            }
+              if (writersResult.error) {
+                console.error('Error inserting writers:', writersResult.error);
+              }
+              if (publishersResult.error) {
+                console.error('Error inserting publishers:', publishersResult.error);
+              }
+              if (recordingsResult.error) {
+                console.error('Error inserting recordings:', recordingsResult.error);
+              }
 
-            // Log bulk upload activity
-            await logActivity({
-              copyright_id: createdCopyright.id,
-              action_type: 'bulk_upload',
-              operation_details: {
-                batch_id: batchId,
-                file_name: file?.name,
-                row_number: copyright.row_number,
-                writers_count: copyright.writers?.length || 0,
-                publishers_count: copyright.publishers?.length || 0,
-                recordings_count: copyright.recordings?.length || 0
-              },
-              new_values: createdCopyright
-            });
+              // Log bulk upload activity
+              await logActivity({
+                copyright_id: createdCopyright.id,
+                action_type: 'bulk_upload',
+                operation_details: {
+                  batch_id: batchId,
+                  file_name: file?.name,
+                  row_number: copyright.row_number,
+                  writers_count: copyright.writers?.length || 0,
+                  publishers_count: copyright.publishers?.length || 0,
+                  recordings_count: copyright.recordings?.length || 0
+                },
+                new_values: createdCopyright
+              });
 
-            return { success: true, copyright };
+              return { success: true, copyright };
+            } catch (error: any) {
+              // Check if it's a duplicate work_id error
+              if (error?.code === '23505' && error?.message?.includes('copyrights_work_id_key')) {
+                console.warn(`Duplicate work_id detected for row ${copyright.row_number}: ${copyright.work_title}`);
+                throw new Error('Duplicate work - this work may already exist in your catalog');
+              }
+              throw error;
+            }
           })
         );
 
