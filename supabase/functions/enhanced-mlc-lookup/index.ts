@@ -134,14 +134,18 @@ async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: st
   // Check if user provided their own OAuth token
   const mlcAccessToken = Deno.env.get('MLC_ACCESS_TOKEN');
   
-  if (mlcAccessToken) {
-    console.log('Using provided MLC access token');
+  console.log('MLC_ACCESS_TOKEN present:', !!mlcAccessToken);
+  console.log('MLC_ACCESS_TOKEN length:', mlcAccessToken?.length || 0);
+  
+  if (mlcAccessToken && mlcAccessToken.trim().length > 0) {
+    console.log('✓ Using provided MLC access token (direct auth)');
     const tokenType = 'Bearer';
     const authHeader = `${tokenType} ${mlcAccessToken}`;
     return { accessToken: mlcAccessToken, tokenType, authHeader };
   }
 
   // Fall back to username/password OAuth flow
+  console.log('No MLC_ACCESS_TOKEN found, falling back to username/password OAuth');
   const mlcUsername = Deno.env.get('MLC_USERNAME');
   const mlcPassword = Deno.env.get('MLC_PASSWORD');
 
