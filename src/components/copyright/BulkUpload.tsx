@@ -17,6 +17,7 @@ import { useActivityLog } from '@/hooks/useActivityLog';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
+import { isMLCFormat, parseMLCFormat, ParsedCopyright as MLCParsedCopyright } from '@/lib/mlc-csv-parser';
 
 interface ParsedCopyright {
   work_title: string;
@@ -137,6 +138,11 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Template Downloaded",
+      description: "Standard template downloaded. Note: You can also upload MLC Work Report exports directly.",
+    });
   };
 
   // Function to check for potential duplicates
@@ -288,8 +294,14 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
 
       console.log(`Parsed ${filteredData.length} rows from file (${rawData.length} total, ${rawData.length - filteredData.length} empty rows removed)`);
 
-      // Process and validate data
-      const processed = processRawData(filteredData);
+      // Detect if this is an MLC export format
+      const headers = filteredData.length > 0 ? Object.keys(filteredData[0]) : [];
+      const isMLCFile = isMLCFormat(headers);
+
+      console.log(`File format detected: ${isMLCFile ? 'MLC Export' : 'Standard Template'}`);
+
+      // Process and validate data based on format
+      const processed = isMLCFile ? parseMLCFormat(filteredData) : processRawData(filteredData);
       
       // Check for duplicates against existing copyrights
       await checkForDuplicates(processed);
