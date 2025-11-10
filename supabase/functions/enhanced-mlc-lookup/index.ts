@@ -196,26 +196,21 @@ async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: st
       }
 
       const authData = await authResponse.json();
-      console.log('MLC OAuth response (FULL):', JSON.stringify(authData, null, 2));
-      console.log('MLC OAuth response keys:', Object.keys(authData));
-      console.log('MLC OAuth response:', {
-        hasAccessToken: !!authData.accessToken,
-        tokenType: authData.tokenType,
-        hasError: !!authData.error,
-        tokenPreview: authData.accessToken ? `${authData.accessToken.substring(0, 20)}...` : 'none'
-      });
+      console.log('MLC OAuth response (keys):', Object.keys(authData));
+      const token = authData.idToken || authData.accessToken;
+      const tokenType = 'Bearer';
 
       if (authData.error) {
         console.error('MLC OAuth error:', authData.error, authData.errorDescription);
         throw new Error(`MLC OAuth error: ${authData.error} - ${authData.errorDescription || ''}`);
       }
 
-      if (!authData.accessToken) {
-        console.error('No access token in OAuth response:', authData);
-        throw new Error('No access token received from MLC');
+      if (!token) {
+        console.error('No usable token (idToken/accessToken) in OAuth response:', authData);
+        throw new Error('No token received from MLC');
       }
 
-      return { accessToken: authData.accessToken as string, tokenType: (authData.tokenType as string) || 'Bearer' };
+      return { accessToken: token as string, tokenType };
     },
     3, // maxRetries
     1000, // baseDelay
@@ -257,11 +252,12 @@ async function getMlcAccessTokenViaPassword(): Promise<{ accessToken: string; to
       }
 
       const authData = await authResponse.json();
-      if (authData.error || !authData.accessToken) {
-        throw new Error(`MLC OAuth error: ${authData.error || 'No access token received'}`);
+      const token = authData.idToken || authData.accessToken;
+      const tokenType = 'Bearer';
+      if (authData.error || !token) {
+        throw new Error(`MLC OAuth error: ${authData.error || 'No token received'}`);
       }
-
-      return { accessToken: authData.accessToken as string, tokenType: (authData.tokenType as string) || 'Bearer' };
+      return { accessToken: token as string, tokenType };
     },
     2,
     800,
