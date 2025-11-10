@@ -131,11 +131,22 @@ function isRetriableError(error: any): boolean {
 }
 
 async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: string; authHeader: string }> {
+  // Check if user provided their own OAuth token
+  const mlcAccessToken = Deno.env.get('MLC_ACCESS_TOKEN');
+  
+  if (mlcAccessToken) {
+    console.log('Using provided MLC access token');
+    const tokenType = 'Bearer';
+    const authHeader = `${tokenType} ${mlcAccessToken}`;
+    return { accessToken: mlcAccessToken, tokenType, authHeader };
+  }
+
+  // Fall back to username/password OAuth flow
   const mlcUsername = Deno.env.get('MLC_USERNAME');
   const mlcPassword = Deno.env.get('MLC_PASSWORD');
 
   if (!mlcUsername || !mlcPassword) {
-    console.error('MLC credentials not configured');
+    console.error('MLC credentials not configured - need either MLC_ACCESS_TOKEN or MLC_USERNAME + MLC_PASSWORD');
     throw new Error('MLC credentials not configured');
   }
 
