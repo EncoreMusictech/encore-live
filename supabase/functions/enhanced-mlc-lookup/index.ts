@@ -133,37 +133,25 @@ function isRetriableError(error: any): boolean {
 async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: string; authHeader: string }> {
   const mlcUsername = Deno.env.get('MLC_USERNAME');
   const mlcPassword = Deno.env.get('MLC_PASSWORD');
-  const mlcClientId = Deno.env.get('MLC_CLIENT_ID');
-  const mlcClientSecret = Deno.env.get('MLC_CLIENT_SECRET');
 
-  if ((!mlcUsername || !mlcPassword) && (!mlcClientId || !mlcClientSecret)) {
+  if (!mlcUsername || !mlcPassword) {
     console.error('MLC credentials not configured');
     throw new Error('MLC credentials not configured');
   }
 
-  // Prefer client credentials if available (more reliable access for public API search endpoints)
-  const usingClientCreds = !!(mlcClientId && mlcClientSecret);
-  console.log('Getting MLC access token using', usingClientCreds ? 'client_credentials' : 'username_password');
+  console.log('Getting MLC access token with username:', mlcUsername ? `${mlcUsername.substring(0, 3)}***` : 'undefined');
 
   const { accessToken, tokenType } = await retryWithBackoff(
     async () => {
-      const oauthBody = usingClientCreds
-        ? {
-            grant_type: 'client_credentials',
-            client_id: mlcClientId,
-            client_secret: mlcClientSecret,
-          }
-        : {
-            username: mlcUsername,
-            password: mlcPassword,
-          };
-
       const authResponse = await fetch('https://public-api.themlc.com/oauth/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(oauthBody),
+        body: JSON.stringify({
+          username: mlcUsername,
+          password: mlcPassword,
+        }),
       });
 
       if (!authResponse.ok) {
@@ -176,25 +164,22 @@ async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: st
 
       const authData = await authResponse.json();
       console.log('MLC OAuth response:', {
-        hasAccessToken: !!authData.access_token || !!authData.accessToken,
-        tokenType: authData.token_type || authData.tokenType,
+        hasAccessToken: !!authData.accessToken,
+        tokenType: authData.tokenType,
         hasError: !!authData.error,
       });
 
       if (authData.error) {
-        console.error('MLC OAuth error:', authData.error, authData.error_description || authData.errorDescription);
-        throw new Error(`MLC OAuth error: ${authData.error} - ${authData.error_description || authData.errorDescription || ''}`);
+        console.error('MLC OAuth error:', authData.error, authData.errorDescription);
+        throw new Error(`MLC OAuth error: ${authData.error} - ${authData.errorDescription || ''}`);
       }
 
-      const token = (authData.access_token || authData.accessToken) as string | undefined;
-      const type = (authData.token_type || authData.tokenType || 'Bearer') as string;
-
-      if (!token) {
+      if (!authData.accessToken) {
         console.error('No access token in OAuth response:', authData);
         throw new Error('No access token received from MLC');
       }
 
-      return { accessToken: token, tokenType: type };
+      return { accessToken: authData.accessToken as string, tokenType: (authData.tokenType as string) || 'Bearer' };
     },
     3, // maxRetries
     1000, // baseDelay
