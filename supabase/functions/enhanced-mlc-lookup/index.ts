@@ -42,6 +42,11 @@ function checkRateLimit(key: string): boolean {
 function getCacheKey(params: any): string {
   return JSON.stringify({
     workTitle: params.workTitle,
+    writers: Array.isArray(params.writers) ? params.writers.map((w: any) => ({
+      f: w.writerFirstName || '',
+      l: w.writerLastName || '',
+      i: w.writerIPI || ''
+    })) : undefined,
     writerName: params.writerName,
     artistName: params.artistName,
     iswc: params.iswc,
@@ -298,26 +303,25 @@ async function fetchRecordingsByTitleArtist(authHeader: string, workTitle?: stri
   );
 }
 
-async function searchWorksByTitleAndWriter(authHeader: string, workTitle?: string, writerName?: string, catalogDiscovery = false): Promise<any[]> {
-  if (!workTitle && !writerName) return [];
+async function searchWorksByTitleAndWriters(
+  authHeader: string,
+  workTitle?: string,
+  writers?: Array<{ writerFirstName?: string; writerLastName?: string; writerIPI?: string }> ,
+  catalogDiscovery = false
+): Promise<any[]> {
+  if (!workTitle && (!writers || writers.length === 0)) return [];
   
-  console.log('Searching MLC by songcode with title:', workTitle, 'writer:', writerName, 'catalog discovery:', catalogDiscovery);
+  console.log('Searching MLC by songcode with title and writers:', { workTitle, writersCount: writers?.length || 0, catalogDiscovery });
   
   const searchBody: any = {};
   if (workTitle) searchBody.title = workTitle;
-  if (writerName) {
-    const nameParts = writerName.trim().split(/\s+/);
-    if (nameParts.length >= 2) {
-      searchBody.writers = [{
-        writerFirstName: nameParts[0],
-        writerLastName: nameParts.slice(1).join(' ')
-      }];
-    } else {
-      searchBody.writers = [{
-        writerFirstName: '',
-        writerLastName: nameParts[0]
-      }];
-    }
+  if (writers && writers.length > 0) {
+    // Map to MLC required fields only
+    searchBody.writers = writers.map(w => ({
+      writerFirstName: w.writerFirstName || '',
+      writerLastName: w.writerLastName || '',
+      writerIPI: w.writerIPI || undefined
+    }));
   }
 
   // For catalog discovery, implement pagination to get all results
@@ -389,6 +393,7 @@ async function searchWorksByTitleAndWriter(authHeader: string, workTitle?: strin
   console.log(`Total MLC songcode results: ${allSongs.length} songs across ${page - 1} pages`);
   return allSongs;
 }
+
 
 function processEnhancedMLCData(works: any[], recordings: any[] = []) {
   if (!works || works.length === 0) {
@@ -493,13 +498,14 @@ function processEnhancedMLCData(works: any[], recordings: any[] = []) {
 }
 
 async function performEnhancedMLCLookup(params: any): Promise<any> {
-  const { workTitle, writerName, artistName, publisherName, iswc, isrc, enhanced, includeRecordings, searchType } = params;
+  const { workTitle, writerName, writers, artistName, publisherName, iswc, isrc, enhanced, includeRecordings, searchType } = params;
   const catalogDiscovery = searchType === 'catalog_discovery';
   
   console.log('=== Enhanced MLC Lookup Started ===');
   console.log('Search params:', { 
     workTitle, 
     writerName, 
+    writersCount: Array.isArray(writers) ? writers.length : 0,
     artistName, 
     iswc, 
     isrc, 
@@ -566,27 +572,33 @@ async function performEnhancedMLCLookup(params: any): Promise<any> {
     }
   }
 
-  // Strategy 2: Title/writer/artist search with comprehensive work data
-  if (!allWorks.length && (workTitle || writerName || artistName)) {
-    console.log('Strategy 2: Searching by title/writer/artist');
+  // Strategy 2: Title + writers search with comprehensive work data
+  if (!allWorks.length && (workTitle || (Array.isArray(writers) && writers.length > 0) || writerName)) {
+    console.log('Strategy 2: Searching by title/writers');
     
-    // Try with writer name first if available
     let songs: any[] = [];
-    if (writerName) {
-      console.log('Trying search with writer name:', writerName);
-      songs = await searchWorksByTitleAndWriter(authHeader, workTitle, writerName, catalogDiscovery);
+
+    // Prefer structured writers array if provided
+    if (Array.isArray(writers) && writers.length > 0) {
+      console.log('Trying search with structured writers array');
+      songs = await searchWorksByTitleAndWriters(authHeader, workTitle, writers, catalogDiscovery);
     }
-    
-    // If no results and we have artist name, try with artist as fallback
-    if (songs.length === 0 && artistName && artistName !== writerName) {
-      console.log('No results with writer, trying search with artist name:', artistName);
-      songs = await searchWorksByTitleAndWriter(authHeader, workTitle, artistName, catalogDiscovery);
+
+    // Fallback: split writerName string if no writers array or no results
+    if (songs.length === 0 && writerName) {
+      const nameParts = writerName.trim().split(/\s+/);
+      const fallbackWriter = [{
+        writerFirstName: nameParts.length >= 2 ? nameParts[0] : '',
+        writerLastName: nameParts.length >= 2 ? nameParts.slice(1).join(' ') : nameParts[0]
+      }];
+      console.log('Trying search with writerName fallback:', fallbackWriter[0]);
+      songs = await searchWorksByTitleAndWriters(authHeader, workTitle, fallbackWriter, catalogDiscovery);
     }
-    
-    // If still no results and we only have title, try title-only search
-    if (songs.length === 0 && workTitle && !writerName && !artistName) {
+
+    // Final fallback: title-only search
+    if (songs.length === 0 && workTitle) {
       console.log('Trying title-only search');
-      songs = await searchWorksByTitleAndWriter(authHeader, workTitle, undefined, catalogDiscovery);
+      songs = await searchWorksByTitleAndWriters(authHeader, workTitle, undefined, catalogDiscovery);
     }
 
     console.log(`Found ${songs.length} songs from MLC search, ${catalogDiscovery ? 'catalog discovery mode' : 'single lookup mode'}`);

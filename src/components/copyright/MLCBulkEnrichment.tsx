@@ -100,6 +100,19 @@ export const MLCBulkEnrichment: React.FC = () => {
         const writers = await getWritersForCopyright(copyright.id);
         const recordings = await getRecordingsForCopyright(copyright.id);
         const firstWriterName = writers[0]?.writer_name || undefined;
+
+        // Build structured writers array for precise MLC search
+        const structuredWriters = writers
+          .filter(w => !!w.writer_name)
+          .map(w => {
+            const parts = String(w.writer_name).trim().split(/\s+/);
+            const writerIPI = (w as any).ipi_number ? String((w as any).ipi_number).replace(/[^0-9]/g, '') : undefined;
+            return {
+              writerFirstName: parts.length >= 2 ? parts[0] : '',
+              writerLastName: parts.length >= 2 ? parts.slice(1).join(' ') : parts[0],
+              writerIPI: writerIPI && writerIPI.length > 0 ? writerIPI : undefined,
+            };
+          });
         
         // Use recording ISRC and artist if available
         const recordingIsrc = recordings[0]?.isrc || (copyright as any).recording_isrc;
@@ -124,6 +137,7 @@ export const MLCBulkEnrichment: React.FC = () => {
           const result = await lookupWork({
             workTitle: titleVariant,
             writerName: firstWriterName,
+            writers: structuredWriters,
             artistName: artistName,
             iswc: copyright.iswc,
             isrc: recordingIsrc

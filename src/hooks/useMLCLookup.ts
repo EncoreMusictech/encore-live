@@ -2,9 +2,16 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+export interface MLCWriterInput {
+  writerFirstName?: string;
+  writerLastName?: string;
+  writerIPI?: string;
+}
+
 export interface MLCLookupParams {
   workTitle?: string;
   writerName?: string;
+  writers?: MLCWriterInput[];
   artistName?: string;
   publisherName?: string;
   iswc?: string;
