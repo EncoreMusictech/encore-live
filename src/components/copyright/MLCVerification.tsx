@@ -24,7 +24,6 @@ export function MLCVerification() {
         .select(`
           id,
           work_title,
-          work_id,
           iswc
         `)
         .limit(1)
@@ -78,7 +77,7 @@ export function MLCVerification() {
         executionTime,
         testedWith: {
           workTitle: copyrights.work_title,
-          workId: copyrights.work_id,
+          iswc: copyrights.iswc,
           writerName
         }
       });
@@ -154,10 +153,6 @@ export function MLCVerification() {
                 <div>
                   <span className="text-muted-foreground">Work Title:</span>
                   <p className="font-medium">{copyrightData.work_title}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Work ID:</span>
-                  <p className="font-mono text-xs">{copyrightData.work_id}</p>
                 </div>
                 {copyrightData.iswc && (
                   <div>
