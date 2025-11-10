@@ -138,10 +138,28 @@ async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: st
   console.log('MLC_ACCESS_TOKEN length:', mlcAccessToken?.length || 0);
   
   if (mlcAccessToken && mlcAccessToken.trim().length > 0) {
+    const trimmedToken = mlcAccessToken.trim();
     console.log('✓ Using provided MLC access token (direct auth)');
+    console.log('Token starts with:', trimmedToken.substring(0, 20) + '...');
+    
+    // Check if token is JSON (sometimes OAuth responses come as JSON objects)
+    try {
+      const parsed = JSON.parse(trimmedToken);
+      if (parsed.accessToken || parsed.access_token) {
+        const actualToken = parsed.accessToken || parsed.access_token;
+        console.log('Extracted token from JSON object');
+        const tokenType = 'Bearer';
+        const authHeader = `${tokenType} ${actualToken}`;
+        return { accessToken: actualToken, tokenType, authHeader };
+      }
+    } catch {
+      // Not JSON, use as-is
+    }
+    
     const tokenType = 'Bearer';
-    const authHeader = `${tokenType} ${mlcAccessToken}`;
-    return { accessToken: mlcAccessToken, tokenType, authHeader };
+    const authHeader = `${tokenType} ${trimmedToken}`;
+    console.log('Auth header format:', authHeader.substring(0, 30) + '...');
+    return { accessToken: trimmedToken, tokenType, authHeader };
   }
 
   // Fall back to username/password OAuth flow
