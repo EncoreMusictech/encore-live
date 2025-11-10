@@ -43,8 +43,10 @@ function getCacheKey(params: any): string {
   return JSON.stringify({
     workTitle: params.workTitle,
     writerName: params.writerName,
+    artistName: params.artistName,
     iswc: params.iswc,
-    isrc: params.isrc
+    isrc: params.isrc,
+    searchType: params.searchType
   });
 }
 
@@ -217,7 +219,7 @@ async function fetchWorksByMlcSongCode(authHeader: string, mlcSongCode: string):
   );
 }
 
-async function fetchRecordingsByISRC(accessToken: string, isrc: string, workTitle?: string, artist?: string): Promise<any[]> {
+async function fetchRecordingsByISRC(authHeader: string, isrc: string, workTitle?: string, artist?: string): Promise<any[]> {
   console.log('Searching MLC recordings by ISRC:', isrc, 'title:', workTitle, 'artist:', artist);
   
   return await retryWithBackoff(
@@ -231,7 +233,7 @@ async function fetchRecordingsByISRC(accessToken: string, isrc: string, workTitl
       const recordingResponse = await fetch('https://public-api.themlc.com/search/recordings', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(searchBody)
@@ -252,6 +254,46 @@ async function fetchRecordingsByISRC(accessToken: string, isrc: string, workTitl
     },
     3, // maxRetries
     1000, // baseDelay
+    isRetriableError
+  );
+}
+
+// New: fallback recording search by title and/or artist (no ISRC required)
+async function fetchRecordingsByTitleArtist(authHeader: string, workTitle?: string, artist?: string): Promise<any[]> {
+  if (!workTitle && !artist) return [];
+  console.log('Searching MLC recordings by title/artist:', { workTitle, artist });
+
+  return await retryWithBackoff(
+    async () => {
+      const searchBody: any = {};
+      if (workTitle) searchBody.title = workTitle;
+      if (artist) searchBody.artist = artist;
+
+      console.log('Recording title/artist request body:', JSON.stringify(searchBody, null, 2));
+
+      const recordingResponse = await fetch('https://public-api.themlc.com/search/recordings', {
+        method: 'POST',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(searchBody)
+      });
+
+      if (!recordingResponse.ok) {
+        const errorText = await recordingResponse.text();
+        console.log('Recording title/artist search failed:', recordingResponse.status, errorText);
+        const error: any = new Error(`MLC API error: ${recordingResponse.status}`);
+        error.status = recordingResponse.status;
+        throw error;
+      }
+
+      const recordings = await recordingResponse.json();
+      console.log('MLC recordings (title/artist) response:', recordings?.length || 0, 'recordings found');
+      return recordings || [];
+    },
+    3,
+    1000,
     isRetriableError
   );
 }
@@ -501,6 +543,26 @@ async function performEnhancedMLCLookup(params: any): Promise<any> {
       }
     } else {
       console.log('No recordings found by ISRC, will try other strategies');
+    }
+  }
+
+  // Strategy 1b: Recording search by title and/or artist to obtain mlcSongCode
+  if (!allWorks.length && (workTitle || artistName)) {
+    console.log('Strategy 1b: Searching recordings by title/artist to derive works');
+    try {
+      const recs = await fetchRecordingsByTitleArtist(authHeader, workTitle, artistName);
+      if (recs.length > 0) {
+        console.log(`Found ${recs.length} recordings by title/artist`);
+        allRecordings.push(...recs);
+        for (const recording of recs) {
+          if (recording.mlcsongCode) {
+            const works = await fetchWorksByMlcSongCode(authHeader, recording.mlcsongCode);
+            allWorks.push(...works);
+          }
+        }
+      }
+    } catch (e) {
+      console.log('Strategy 1b failed:', e?.message || e);
     }
   }
 
