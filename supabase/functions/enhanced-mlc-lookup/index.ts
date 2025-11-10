@@ -196,10 +196,13 @@ async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: st
       }
 
       const authData = await authResponse.json();
+      console.log('MLC OAuth response (FULL):', JSON.stringify(authData, null, 2));
+      console.log('MLC OAuth response keys:', Object.keys(authData));
       console.log('MLC OAuth response:', {
         hasAccessToken: !!authData.accessToken,
         tokenType: authData.tokenType,
         hasError: !!authData.error,
+        tokenPreview: authData.accessToken ? `${authData.accessToken.substring(0, 20)}...` : 'none'
       });
 
       if (authData.error) {
@@ -374,6 +377,8 @@ async function fetchRecordingsByTitleArtist(authHeader: string, workTitle?: stri
 
       console.log('Recording title/artist request body:', JSON.stringify(searchBody, null, 2));
 
+      console.log('Using auth header for recordings search:', authHeader.substring(0, 30) + '...');
+      
       const recordingResponse = await fetch('https://public-api.themlc.com/search/recordings', {
         method: 'POST',
         headers: {
@@ -436,6 +441,7 @@ async function searchWorksByTitleAndWriters(
     };
 
     console.log(`Songcode search page ${page}, body:`, JSON.stringify(paginatedSearchBody, null, 2));
+    console.log('Using auth header for songcode search:', authHeader.substring(0, 30) + '...');
 
     const songs = await retryWithBackoff(
       async () => {
