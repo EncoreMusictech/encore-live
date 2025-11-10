@@ -182,7 +182,6 @@ async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: st
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          grant_type: 'password',
           username: mlcUsername,
           password: mlcPassword,
         }),
@@ -242,7 +241,6 @@ async function getMlcAccessTokenViaPassword(): Promise<{ accessToken: string; to
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          grant_type: 'password',
           username: mlcUsername,
           password: mlcPassword,
         }),
