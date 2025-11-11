@@ -816,16 +816,45 @@ serve(async (req) => {
     const result = await performEnhancedMLCLookup(body);
     return json(result);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Enhanced MLC lookup error:', error);
+    
+    // Provide specific error messages for common issues
+    let errorMessage = 'Unexpected error during MLC lookup';
+    let statusCode = 500;
+    
+    if (error?.status === 401 || error?.status === 403) {
+      errorMessage = 'MLC Authentication Failed: Invalid credentials or expired access token. Please verify your MLC_USERNAME, MLC_PASSWORD, or MLC_ACCESS_TOKEN in your Supabase secrets.';
+      statusCode = 401;
+      console.error('❌ MLC Authentication Error - Check credentials in Supabase secrets');
+    } else if (error?.status === 429) {
+      errorMessage = 'MLC Rate Limit Exceeded: Too many requests. Please wait a moment and try again.';
+      statusCode = 429;
+    } else if (error?.status === 400) {
+      errorMessage = 'Invalid Request: The MLC API rejected the search parameters. Please check your input data.';
+      statusCode = 400;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+      // Check for specific error patterns
+      if (errorMessage.includes('credentials not configured')) {
+        errorMessage = 'MLC credentials are not configured. Please add MLC_USERNAME and MLC_PASSWORD (or MLC_ACCESS_TOKEN) to your Supabase secrets.';
+        statusCode = 503;
+      } else if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
+        errorMessage = 'Network Error: Unable to reach MLC API. Please check your internet connection and try again.';
+        statusCode = 503;
+      }
+    }
+    
     return json({ 
-      error: error instanceof Error ? error.message : 'Unexpected error during enhanced MLC lookup',
+      error: errorMessage,
       found: false,
       writers: [],
       publishers: [],
       metadata: {},
       works: [],
-      recordings: []
-    }, 500);
+      recordings: [],
+      errorCode: error?.status || statusCode,
+      timestamp: new Date().toISOString()
+    }, statusCode);
   }
 });
