@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, FileText, AlertCircle, CheckCircle, Download, X, Eye } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, Download, X, Eye, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCopyright } from '@/hooks/useCopyright';
 import { useActivityLog } from '@/hooks/useActivityLog';
@@ -86,6 +86,8 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     successfulWorks: Array<{ row: number; title: string; work_id: string }>;
     errors: Array<{ row: number; title: string; error: string }>;
   }>({ successCount: 0, failureCount: 0, successfulWorks: [], errors: [] });
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [failedRecordsData, setFailedRecordsData] = useState<ParsedCopyright[]>([]);
 
   // Sample CSV template data
   const csvTemplate = `work_title,iswc,album_title,creation_date,copyright_date,language_code,work_type,contains_sample,duration_seconds,notes,writer_1_name,writer_1_ownership,writer_1_role,writer_1_ipi,writer_1_controlled,writer_1_pro,writer_2_name,writer_2_ownership,writer_2_role,writer_2_ipi,writer_2_controlled,writer_2_pro,publisher_1_name,publisher_1_ownership,publisher_1_role,publisher_1_ipi,publisher_1_pro,recording_title,recording_artist,recording_isrc,recording_release_date,recording_duration
@@ -491,8 +493,8 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     }
   };
 
-  const executeBulkUpload = async () => {
-    if (validData.length === 0) {
+  const executeBulkUpload = async (dataToUpload: ParsedCopyright[], isRetry: boolean = false) => {
+    if (dataToUpload.length === 0) {
       toast({
         title: "No Valid Data",
         description: "There are no valid records to upload.",
@@ -501,8 +503,10 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       return;
     }
 
-    // Keep preview dialog open and show progress there
-    setCurrentStep('processing');
+    if (!isRetry) {
+      // Keep preview dialog open and show progress there
+      setCurrentStep('processing');
+    }
     setUploadProgress(0);
     
     const batchId = crypto.randomUUID();
@@ -510,15 +514,16 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     let failureCount = 0;
     const detailedErrors: Array<{ row: number; title: string; error: string }> = [];
     const successfulWorks: Array<{ row: number; title: string; work_id: string }> = [];
+    const failedRecords: ParsedCopyright[] = [];
 
-    console.log(`Starting bulk upload of ${validData.length} copyrights`);
+    console.log(`Starting bulk upload of ${dataToUpload.length} copyrights`);
 
     try {
       // Process in batches of 5 for better performance
       const BATCH_SIZE = 5;
       
-      for (let batchStart = 0; batchStart < validData.length; batchStart += BATCH_SIZE) {
-        const batch = validData.slice(batchStart, batchStart + BATCH_SIZE);
+      for (let batchStart = 0; batchStart < dataToUpload.length; batchStart += BATCH_SIZE) {
+        const batch = dataToUpload.slice(batchStart, batchStart + BATCH_SIZE);
         
         // Process batch items sequentially to prevent work_id collisions
         const batchResults = await Promise.allSettled(
@@ -660,33 +665,56 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               title: copyright.work_title,
               error: errorMsg
             });
+            failedRecords.push(copyright);
           }
         });
 
         // Update progress
-        setUploadProgress(((batchStart + batch.length) / validData.length) * 100);
+        setUploadProgress(((batchStart + batch.length) / dataToUpload.length) * 100);
       }
 
       console.log(`Bulk upload complete: ${successCount} successful, ${failureCount} failed`);
       console.log('Successful works:', successfulWorks);
       console.log('Failed works:', detailedErrors);
       
-      // Store results for modal - ALWAYS show modal regardless of success/failure
-      setUploadResults({
-        successCount,
-        failureCount,
-        successfulWorks,
-        errors: detailedErrors
-      });
-
-      // Close preview and show results modal - ensure modal is always shown
-      setShowPreview(false);
-      setCurrentStep('complete');
+      // Store failed records for retry functionality
+      setFailedRecordsData(failedRecords);
       
-      // Add small delay to ensure state updates before showing modal
-      setTimeout(() => {
-        setShowResultsModal(true);
-      }, 100);
+      // Store results for modal - ALWAYS show modal regardless of success/failure
+      if (isRetry) {
+        // Merge with previous results for retry
+        setUploadResults(prev => ({
+          successCount: prev.successCount + successCount,
+          failureCount: failureCount,
+          successfulWorks: [...prev.successfulWorks, ...successfulWorks],
+          errors: detailedErrors
+        }));
+      } else {
+        setUploadResults({
+          successCount,
+          failureCount,
+          successfulWorks,
+          errors: detailedErrors
+        });
+      }
+
+      if (!isRetry) {
+        // Close preview and show results modal - ensure modal is always shown
+        setShowPreview(false);
+        setCurrentStep('complete');
+        
+        // Add small delay to ensure state updates before showing modal
+        setTimeout(() => {
+          setShowResultsModal(true);
+        }, 100);
+      } else {
+        setIsRetrying(false);
+        toast({
+          title: "Retry Complete",
+          description: `${successCount} additional records uploaded successfully. ${failureCount} still failed.`,
+          variant: failureCount === 0 ? "default" : "destructive"
+        });
+      }
 
 // Delay onSuccess until user closes the results modal
 
@@ -708,13 +736,49 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       
       setShowPreview(false);
       setShowResultsModal(true);
+      setIsRetrying(false);
       
       toast({
         title: "Upload Error",
         description: error instanceof Error ? error.message : "An error occurred during the bulk upload process.",
         variant: "destructive"
       });
+    } finally {
+      setIsProcessing(false);
     }
+  };
+
+  const handleUpload = async () => {
+    if (!file || validData.length === 0) {
+      toast({
+        title: "No Data to Upload",
+        description: "Please upload and validate a file first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    await executeBulkUpload(validData, false);
+  };
+
+  const handleRetryFailed = async () => {
+    if (failedRecordsData.length === 0) {
+      toast({
+        title: "No Failed Records",
+        description: "There are no failed records to retry.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsRetrying(true);
+    
+    toast({
+      title: "Retrying Failed Records",
+      description: `Attempting to upload ${failedRecordsData.length} failed records...`,
+    });
+
+    await executeBulkUpload(failedRecordsData, true);
   };
 
   const resetUpload = () => {
@@ -914,7 +978,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                       <Button variant="outline" onClick={() => setShowPreview(false)}>
                         Cancel
                       </Button>
-                      <Button onClick={executeBulkUpload}>
+                      <Button onClick={handleUpload}>
                         Upload {validData.length} Copyright{validData.length !== 1 ? 's' : ''}
                       </Button>
                     </div>
@@ -1181,9 +1245,9 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                     <div className="bg-red-50 dark:bg-red-950/50 px-4 py-3 text-sm text-red-800 dark:text-red-200 border-t border-red-200 dark:border-red-800">
                       <p className="font-semibold mb-1">💡 Next Steps:</p>
                       <ul className="list-disc list-inside space-y-0.5 text-xs">
-                        <li>Review error details for each failed row above</li>
-                        <li>Fix the issues in your CSV file</li>
-                        <li>Re-upload the corrected file</li>
+                        <li>Click <strong>"Retry Failed"</strong> button below to automatically retry all failed records</li>
+                        <li>Or review error details and fix issues in your CSV file</li>
+                        <li>Retry will attempt to upload these exact records again</li>
                       </ul>
                     </div>
                   </div>
@@ -1201,31 +1265,49 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
           <DialogFooter className="flex justify-between items-center gap-3">
             <div className="text-sm text-muted-foreground flex-1">
               {uploadResults.failureCount > 0 ? (
-                <span className="text-red-600 dark:text-red-400 font-medium">⚠️ Review failed entries and re-upload corrected data</span>
+                <span className="text-red-600 dark:text-red-400 font-medium">⚠️ Review failed entries or retry</span>
               ) : (
                 <span className="text-green-600 dark:text-green-400 font-medium">✓ All records processed successfully</span>
               )}
             </div>
             <div className="flex gap-2">
-              {uploadResults.failureCount > 0 && (
-                <Button variant="outline" onClick={() => {
-                  setShowResultsModal(false);
-                  // Keep the current state so user can review
-                }}>
-                  Review & Fix
+              {uploadResults.failureCount > 0 && failedRecordsData.length > 0 && (
+                <Button 
+                  variant="default" 
+                  onClick={handleRetryFailed}
+                  disabled={isRetrying || isProcessing}
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  {isRetrying ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Retrying...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Retry {failedRecordsData.length} Failed
+                    </>
+                  )}
                 </Button>
               )}
-              <Button onClick={() => {
-                setShowResultsModal(false);
-                resetUpload();
-                if (uploadResults.successCount > 0) {
-                  toast({
-                    title: "Upload Complete",
-                    description: `Successfully uploaded ${uploadResults.successCount} copyright${uploadResults.successCount !== 1 ? 's' : ''}`,
-                  });
-                }
-              }}>
-                {uploadResults.successCount > 0 && uploadResults.failureCount === 0 ? 'Done - Upload Another' : 'Close & Upload Another'}
+              <Button 
+                onClick={() => {
+                  setShowResultsModal(false);
+                  resetUpload();
+                  if (uploadResults.successCount > 0 && onSuccess) {
+                    onSuccess();
+                  }
+                  if (uploadResults.successCount > 0) {
+                    toast({
+                      title: "Upload Complete",
+                      description: `Successfully uploaded ${uploadResults.successCount} copyright${uploadResults.successCount !== 1 ? 's' : ''}`,
+                    });
+                  }
+                }}
+                variant={uploadResults.successCount > 0 && uploadResults.failureCount === 0 ? 'default' : 'outline'}
+              >
+                {uploadResults.successCount > 0 && uploadResults.failureCount === 0 ? 'Done' : 'Close'}
               </Button>
             </div>
           </DialogFooter>
