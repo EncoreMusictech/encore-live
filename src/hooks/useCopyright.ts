@@ -35,26 +35,52 @@ export const useCopyright = () => {
   const fetchCopyrights = useCallback(async () => {
     try {
       console.log('Fetching copyrights...');
+      
+      // Check if user is authenticated first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('No authenticated user, skipping copyright fetch');
+        setCopyrights([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('copyrights')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      console.log('Copyrights fetched successfully:', data?.length || 0, 'records');
-      setCopyrights(data || []);
+      if (error) {
+        console.error('Error fetching copyrights:', error);
+        // Only show error toast if it's not a "no rows" situation
+        if (error.code !== 'PGRST116') {
+          toast({
+            title: "Error",
+            description: "Failed to load copyrights. Please try refreshing the page.",
+            variant: "destructive",
+          });
+        }
+        setCopyrights([]);
+      } else {
+        console.log('Copyrights fetched successfully:', data?.length || 0, 'records');
+        setCopyrights(data || []);
+      }
       clearAllPending(); // Clear any pending optimistic updates since we have fresh data
     } catch (error) {
       console.error('Error fetching copyrights:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch copyrights",
-        variant: "destructive",
-      });
+      // Only show error for non-network issues after initial load
+      if (loading === false) {
+        toast({
+          title: "Error",
+          description: "Failed to load copyrights. Please check your connection.",
+          variant: "destructive",
+        });
+      }
+      setCopyrights([]);
     } finally {
       setLoading(false);
     }
-  }, [toast, clearAllPending]);
+  }, [toast, clearAllPending, loading]);
 
   const createCopyright = async (copyrightData: CopyrightInsert, options?: { silent?: boolean }) => {
     const tempCopyright: Copyright = {
