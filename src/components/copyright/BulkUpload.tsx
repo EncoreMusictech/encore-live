@@ -688,9 +688,8 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
         setShowResultsModal(true);
       }, 100);
 
-      if (onSuccess && successCount > 0) {
-        onSuccess();
-      }
+// Delay onSuccess until user closes the results modal
+
 
     } catch (error) {
       console.error('Bulk upload error:', error);
@@ -1016,8 +1015,12 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       </Dialog>
 
       {/* Results Modal - CRITICAL: Always shown after upload */}
-      <Dialog open={showResultsModal} onOpenChange={setShowResultsModal}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
+      <Dialog open={showResultsModal}>
+        <DialogContent 
+          className="max-w-5xl max-h-[90vh] overflow-hidden"
+          onEscapeKeyDown={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-xl">
               {uploadResults.failureCount === 0 && uploadResults.successCount > 0 ? (
@@ -1036,6 +1039,15 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                 <span className="font-semibold text-red-600 ml-1">, {uploadResults.failureCount} failed</span>
               )}
             </DialogDescription>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-4 top-4"
+              aria-label="Close"
+              onClick={() => { setShowResultsModal(false); if (onSuccess && uploadResults.successCount > 0) onSuccess(); }}
+            >
+              <X className="h-5 w-5" />
+            </Button>
           </DialogHeader>
           
           <div className="space-y-4">
