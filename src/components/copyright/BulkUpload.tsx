@@ -83,9 +83,11 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
   const [uploadResults, setUploadResults] = useState<{
     successCount: number;
     failureCount: number;
+    skippedCount: number;
     successfulWorks: Array<{ row: number; title: string; work_id: string }>;
+    skippedWorks: Array<{ row: number; title: string; reason: string }>;
     errors: Array<{ row: number; title: string; error: string }>;
-  }>({ successCount: 0, failureCount: 0, successfulWorks: [], errors: [] });
+  }>({ successCount: 0, failureCount: 0, skippedCount: 0, successfulWorks: [], skippedWorks: [], errors: [] });
   const [isRetrying, setIsRetrying] = useState(false);
   const [failedRecordsData, setFailedRecordsData] = useState<ParsedCopyright[]>([]);
 
@@ -512,8 +514,10 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     const batchId = crypto.randomUUID();
     let successCount = 0;
     let failureCount = 0;
+    let skippedCount = 0;
     const detailedErrors: Array<{ row: number; title: string; error: string }> = [];
     const successfulWorks: Array<{ row: number; title: string; work_id: string }> = [];
+    const skippedWorks: Array<{ row: number; title: string; reason: string }> = [];
     const failedRecords: ParsedCopyright[] = [];
 
     console.log(`Starting bulk upload of ${dataToUpload.length} copyrights`);
@@ -532,6 +536,23 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
             await new Promise(resolve => setTimeout(resolve, batchIndex * 50));
 
             try {
+              // Check if work already exists in database (by title - case insensitive)
+              const { data: existingWork } = await supabase
+                .from('copyrights')
+                .select('id, work_title, work_id')
+                .ilike('work_title', copyright.work_title)
+                .limit(1)
+                .maybeSingle();
+
+              if (existingWork) {
+                // Skip this work as it already exists
+                return { 
+                  skipped: true, 
+                  copyright,
+                  reason: `Work already exists (ID: ${existingWork.work_id || existingWork.id})`
+                };
+              }
+
               // Create copyright (without related data) - SILENT MODE for bulk upload
               const uniqueWorkId = `WK-${crypto.randomUUID()}`;
               const createdCopyright = await createCopyright({
@@ -649,13 +670,25 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
         batchResults.forEach((result, index) => {
           const copyright = batch[index];
           if (result.status === 'fulfilled') {
-            successCount++;
-            successfulWorks.push({
-              row: copyright.row_number || 0,
-              title: copyright.work_title,
-              work_id: result.value.work_id
-            });
-            console.log(`Successfully uploaded: ${copyright.work_title}`);
+            if (result.value.skipped) {
+              // Work was skipped because it already exists
+              skippedCount++;
+              skippedWorks.push({
+                row: copyright.row_number || 0,
+                title: copyright.work_title,
+                reason: result.value.reason
+              });
+              console.log(`Skipped existing work: ${copyright.work_title}`);
+            } else {
+              // Work was successfully uploaded
+              successCount++;
+              successfulWorks.push({
+                row: copyright.row_number || 0,
+                title: copyright.work_title,
+                work_id: result.value.work_id
+              });
+              console.log(`Successfully uploaded: ${copyright.work_title}`);
+            }
           } else {
             failureCount++;
             const errorMsg = result.reason instanceof Error ? result.reason.message : 'Upload failed';
@@ -673,8 +706,9 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
         setUploadProgress(((batchStart + batch.length) / dataToUpload.length) * 100);
       }
 
-      console.log(`Bulk upload complete: ${successCount} successful, ${failureCount} failed`);
+      console.log(`Bulk upload complete: ${successCount} successful, ${skippedCount} skipped, ${failureCount} failed`);
       console.log('Successful works:', successfulWorks);
+      console.log('Skipped works:', skippedWorks);
       console.log('Failed works:', detailedErrors);
       
       // Store failed records for retry functionality
@@ -686,14 +720,18 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
         setUploadResults(prev => ({
           successCount: prev.successCount + successCount,
           failureCount: failureCount,
+          skippedCount: prev.skippedCount + skippedCount,
           successfulWorks: [...prev.successfulWorks, ...successfulWorks],
+          skippedWorks: [...prev.skippedWorks, ...skippedWorks],
           errors: detailedErrors
         }));
       } else {
         setUploadResults({
           successCount,
           failureCount,
+          skippedCount,
           successfulWorks,
+          skippedWorks,
           errors: detailedErrors
         });
       }
@@ -711,7 +749,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
         setIsRetrying(false);
         toast({
           title: "Retry Complete",
-          description: `${successCount} additional records uploaded successfully. ${failureCount} still failed.`,
+          description: `${successCount} uploaded, ${skippedCount} skipped, ${failureCount} failed.`,
           variant: failureCount === 0 ? "default" : "destructive"
         });
       }
@@ -726,7 +764,9 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       setUploadResults({
         successCount,
         failureCount,
+        skippedCount,
         successfulWorks,
+        skippedWorks,
         errors: [...detailedErrors, {
           row: 0,
           title: 'System Error',
@@ -1097,8 +1137,11 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               Bulk Upload Complete - Detailed Report
             </DialogTitle>
             <DialogDescription className="text-base">
-              Processed {uploadResults.successCount + uploadResults.failureCount} total records: 
+              Processed {uploadResults.successCount + uploadResults.skippedCount + uploadResults.failureCount} total records: 
               <span className="font-semibold text-green-600 ml-1">{uploadResults.successCount} successful</span>
+              {uploadResults.skippedCount > 0 && (
+                <span className="font-semibold text-blue-600 ml-1">, {uploadResults.skippedCount} skipped</span>
+              )}
               {uploadResults.failureCount > 0 && (
                 <span className="font-semibold text-red-600 ml-1">, {uploadResults.failureCount} failed</span>
               )}
@@ -1116,7 +1159,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
           
           <div className="space-y-4">
             {/* Enhanced Summary Cards */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <Card className="bg-green-50 dark:bg-green-950 border-2 border-green-500 dark:border-green-600">
                 <CardContent className="pt-6 pb-6">
                   <div className="text-center">
@@ -1124,6 +1167,23 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                     <div className="text-4xl font-bold text-green-700 dark:text-green-300">{uploadResults.successCount}</div>
                     <div className="text-sm font-semibold text-green-700 dark:text-green-300 mt-2">Successfully Uploaded</div>
                     <div className="text-xs text-green-600 dark:text-green-400 mt-1">Works added to catalog</div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className={`border-2 ${uploadResults.skippedCount > 0 ? 'bg-blue-50 dark:bg-blue-950 border-blue-500 dark:border-blue-600' : 'bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-600'}`}>
+                <CardContent className="pt-6 pb-6">
+                  <div className="text-center">
+                    <AlertCircle className={`w-10 h-10 mx-auto mb-3 ${uploadResults.skippedCount > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'}`} />
+                    <div className={`text-4xl font-bold ${uploadResults.skippedCount > 0 ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500'}`}>
+                      {uploadResults.skippedCount}
+                    </div>
+                    <div className={`text-sm font-semibold mt-2 ${uploadResults.skippedCount > 0 ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500'}`}>
+                      Skipped
+                    </div>
+                    <div className={`text-xs mt-1 ${uploadResults.skippedCount > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}>
+                      {uploadResults.skippedCount > 0 ? 'Already exist' : 'No duplicates'}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1150,11 +1210,14 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               </Card>
             </div>
 
-            {/* Tabs for Success and Failed Entries */}
-            <Tabs defaultValue={uploadResults.failureCount > 0 ? "failed" : "success"} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+            {/* Tabs for Success, Skipped and Failed Entries */}
+            <Tabs defaultValue={uploadResults.failureCount > 0 ? "failed" : uploadResults.skippedCount > 0 ? "skipped" : "success"} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="success">
                   Successful ({uploadResults.successCount})
+                </TabsTrigger>
+                <TabsTrigger value="skipped">
+                  Skipped ({uploadResults.skippedCount})
                 </TabsTrigger>
                 <TabsTrigger value="failed">
                   Failed ({uploadResults.failureCount})
@@ -1200,6 +1263,58 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                     <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
                     <p className="font-semibold text-lg">No successful uploads</p>
                     <p className="text-sm mt-1">All records failed - check the Failed tab for details</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Skipped Entries - Already Existing Works */}
+              <TabsContent value="skipped">
+                {uploadResults.skippedCount > 0 ? (
+                  <div className="border-2 border-blue-200 dark:border-blue-800 rounded-lg overflow-hidden">
+                    <div className="bg-blue-100 dark:bg-blue-950 px-4 py-3 font-semibold flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-blue-700 dark:text-blue-400" />
+                        <span className="text-blue-900 dark:text-blue-100">Skipped Works - Already Exist</span>
+                      </div>
+                      <Badge variant="secondary" className="bg-blue-200 dark:bg-blue-900 text-blue-900 dark:text-blue-100">
+                        {uploadResults.skippedCount} skipped
+                      </Badge>
+                    </div>
+                    <div className="h-[350px] overflow-y-auto overflow-x-hidden pointer-events-auto">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-background z-10">
+                          <TableRow>
+                            <TableHead className="w-20">Row #</TableHead>
+                            <TableHead className="min-w-[200px]">Work Title</TableHead>
+                            <TableHead className="min-w-[300px]">Reason</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {uploadResults.skippedWorks.map((work, index) => (
+                            <TableRow key={index} className="hover:bg-blue-50 dark:hover:bg-blue-950/30">
+                              <TableCell className="font-mono text-sm font-medium">{work.row}</TableCell>
+                              <TableCell className="font-semibold">{work.title}</TableCell>
+                              <TableCell className="text-blue-700 dark:text-blue-300 text-sm">
+                                <div className="flex items-start gap-2">
+                                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                  <span className="break-words">{work.reason}</span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-950/50 px-4 py-3 text-sm text-blue-800 dark:text-blue-200 border-t border-blue-200 dark:border-blue-800">
+                      <p className="font-semibold mb-1">ℹ️ Info:</p>
+                      <p className="text-xs">These works were automatically skipped because they already exist in your database. No duplicates were created.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
+                    <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
+                    <p className="font-semibold text-lg">No Duplicates Found</p>
+                    <p className="text-sm mt-1">All uploaded works were new to your catalog</p>
                   </div>
                 )}
               </TabsContent>
