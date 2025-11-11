@@ -44,6 +44,7 @@ import FeaturesOverviewPage from "./pages/FeaturesOverviewPage";
 import ModuleWalkthroughsPage from "./pages/ModuleWalkthroughsPage";
 import WhitelabelDashboard from "./pages/WhitelabelDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import SubAccountDetailPage from "./pages/SubAccountDetailPage";
 import RecoveryRedirect from "@/components/RecoveryRedirect";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import { DisableLeavePrompt } from "@/components/DisableLeavePrompt";
@@ -102,6 +103,7 @@ const App = () => {
                                 <Route path="royalties" element={<CRMRoyaltiesPage />} />
                                 <Route path="client-admin" element={<CRMClientsPage />} />
                                 <Route path="operations" element={<CRMOperationsPage />} />
+                                <Route path="operations/sub-accounts/:id" element={<SubAccountDetailPage />} />
                                 <Route path="blockchain" element={<CRMBlockchainPage />} />
                                 <Route path="walkthroughs" element={<ModuleWalkthroughsPage />} />
                                 <Route path="admin" element={<AdminDashboard />} />

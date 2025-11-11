@@ -247,36 +247,15 @@ export function SubAccountDashboard() {
                           {company.module_count || 0}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedCompany(company);
-                              setUsersDialogOpen(true);
-                            }}
+                            variant="ghost"
+                            onClick={() => window.location.href = `/dashboard/operations/sub-accounts/${company.id}`}
                           >
-                            <Users className="h-3 w-3 mr-1" />
-                            Users
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedCompany(company);
-                              setModulesDialogOpen(true);
-                            }}
-                          >
-                            <Shield className="h-3 w-3 mr-1" />
-                            Modules
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={company.subscription_status === 'active' ? 'destructive' : 'default'}
-                            onClick={() => handleToggleStatus(company)}
-                          >
-                            {company.subscription_status === 'active' ? 'Deactivate' : 'Activate'}
+                            <Eye className="h-3 w-3 mr-1" />
+                            Manage
                           </Button>
                         </div>
                       </TableCell>
