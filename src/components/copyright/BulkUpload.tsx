@@ -1174,9 +1174,9 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                         {uploadResults.successCount} works
                       </Badge>
                     </div>
-                    <ScrollArea className="h-[350px]">
+                    <div className="h-[350px] overflow-y-auto overflow-x-hidden pointer-events-auto">
                       <Table>
-                        <TableHeader className="sticky top-0 bg-background">
+                        <TableHeader className="sticky top-0 bg-background z-10">
                           <TableRow>
                             <TableHead className="w-20">Row #</TableHead>
                             <TableHead className="min-w-[300px]">Work Title</TableHead>
@@ -1193,7 +1193,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                           ))}
                         </TableBody>
                       </Table>
-                    </ScrollArea>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
@@ -1217,9 +1217,9 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                         {uploadResults.failureCount} errors
                       </Badge>
                     </div>
-                    <ScrollArea className="h-[350px]">
+                    <div className="h-[350px] overflow-y-auto overflow-x-hidden pointer-events-auto">
                       <Table>
-                        <TableHeader className="sticky top-0 bg-background">
+                        <TableHeader className="sticky top-0 bg-background z-10">
                           <TableRow>
                             <TableHead className="w-20">Row #</TableHead>
                             <TableHead className="min-w-[200px]">Work Title</TableHead>
@@ -1241,7 +1241,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                           ))}
                         </TableBody>
                       </Table>
-                    </ScrollArea>
+                    </div>
                     <div className="bg-red-50 dark:bg-red-950/50 px-4 py-3 text-sm text-red-800 dark:text-red-200 border-t border-red-200 dark:border-red-800">
                       <p className="font-semibold mb-1">💡 Next Steps:</p>
                       <ul className="list-disc list-inside space-y-0.5 text-xs">
