@@ -1079,7 +1079,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       </Dialog>
 
       {/* Results Modal - CRITICAL: Always shown after upload */}
-      <Dialog open={showResultsModal}>
+      <Dialog open={showResultsModal} onOpenChange={setShowResultsModal}>
         <DialogContent 
           className="max-w-5xl max-h-[90vh] overflow-hidden"
           onEscapeKeyDown={(e) => e.preventDefault()}
