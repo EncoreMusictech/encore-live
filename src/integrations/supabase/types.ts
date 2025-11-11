@@ -6461,6 +6461,12 @@ export type Database = {
         Args: { notification_id: string }
         Returns: undefined
       }
+      remove_duplicate_copyrights: {
+        Args: never
+        Returns: {
+          deleted_count: number
+        }[]
+      }
       setup_demo_user: { Args: never; Returns: undefined }
       start_free_trial: {
         Args: {
