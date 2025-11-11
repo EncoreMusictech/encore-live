@@ -667,11 +667,11 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
         setUploadProgress(((batchStart + batch.length) / validData.length) * 100);
       }
 
-      setCurrentStep('complete');
-      
       console.log(`Bulk upload complete: ${successCount} successful, ${failureCount} failed`);
+      console.log('Successful works:', successfulWorks);
+      console.log('Failed works:', detailedErrors);
       
-      // Store results for modal
+      // Store results for modal - ALWAYS show modal regardless of success/failure
       setUploadResults({
         successCount,
         failureCount,
@@ -679,9 +679,14 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
         errors: detailedErrors
       });
 
-      // Close preview and show results modal
+      // Close preview and show results modal - ensure modal is always shown
       setShowPreview(false);
-      setShowResultsModal(true);
+      setCurrentStep('complete');
+      
+      // Add small delay to ensure state updates before showing modal
+      setTimeout(() => {
+        setShowResultsModal(true);
+      }, 100);
 
       if (onSuccess && successCount > 0) {
         onSuccess();
@@ -689,12 +694,27 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
 
     } catch (error) {
       console.error('Bulk upload error:', error);
+      
+      // Even on critical error, try to show what we processed
+      setUploadResults({
+        successCount,
+        failureCount,
+        successfulWorks,
+        errors: [...detailedErrors, {
+          row: 0,
+          title: 'System Error',
+          error: error instanceof Error ? error.message : "An error occurred during the bulk upload process."
+        }]
+      });
+      
+      setShowPreview(false);
+      setShowResultsModal(true);
+      
       toast({
-        title: "Upload Failed",
+        title: "Upload Error",
         description: error instanceof Error ? error.message : "An error occurred during the bulk upload process.",
         variant: "destructive"
       });
-      setCurrentStep('upload');
     }
   };
 
@@ -995,42 +1015,60 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Upload Results Modal */}
+      {/* Results Modal - CRITICAL: Always shown after upload */}
       <Dialog open={showResultsModal} onOpenChange={setShowResultsModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {uploadResults.failureCount === 0 ? (
-                <CheckCircle className="w-6 h-6 text-green-600" />
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              {uploadResults.failureCount === 0 && uploadResults.successCount > 0 ? (
+                <CheckCircle className="w-7 h-7 text-green-600" />
+              ) : uploadResults.successCount > 0 && uploadResults.failureCount > 0 ? (
+                <AlertCircle className="w-7 h-7 text-yellow-600" />
               ) : (
-                <AlertCircle className="w-6 h-6 text-yellow-600" />
+                <AlertCircle className="w-7 h-7 text-red-600" />
               )}
-              Bulk Upload Results
+              Bulk Upload Complete - Detailed Report
             </DialogTitle>
-            <DialogDescription>
-              Upload completed with {uploadResults.successCount} successful and {uploadResults.failureCount} failed entries.
+            <DialogDescription className="text-base">
+              Processed {uploadResults.successCount + uploadResults.failureCount} total records: 
+              <span className="font-semibold text-green-600 ml-1">{uploadResults.successCount} successful</span>
+              {uploadResults.failureCount > 0 && (
+                <span className="font-semibold text-red-600 ml-1">, {uploadResults.failureCount} failed</span>
+              )}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
-            {/* Summary Cards */}
+            {/* Enhanced Summary Cards */}
             <div className="grid grid-cols-2 gap-4">
-              <Card className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-                <CardContent className="pt-6">
+              <Card className="bg-green-50 dark:bg-green-950 border-2 border-green-500 dark:border-green-600">
+                <CardContent className="pt-6 pb-6">
                   <div className="text-center">
-                    <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                    <div className="text-3xl font-bold text-green-600">{uploadResults.successCount}</div>
-                    <div className="text-sm text-green-600 mt-1">Successful Uploads</div>
+                    <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400 mx-auto mb-3" />
+                    <div className="text-4xl font-bold text-green-700 dark:text-green-300">{uploadResults.successCount}</div>
+                    <div className="text-sm font-semibold text-green-700 dark:text-green-300 mt-2">Successfully Uploaded</div>
+                    <div className="text-xs text-green-600 dark:text-green-400 mt-1">Works added to catalog</div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
-                <CardContent className="pt-6">
+              <Card className={`border-2 ${uploadResults.failureCount > 0 ? 'bg-red-50 dark:bg-red-950 border-red-500 dark:border-red-600' : 'bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-600'}`}>
+                <CardContent className="pt-6 pb-6">
                   <div className="text-center">
-                    <AlertCircle className="w-8 h-8 text-red-600 mx-auto mb-2" />
-                    <div className="text-3xl font-bold text-red-600">{uploadResults.failureCount}</div>
-                    <div className="text-sm text-red-600 mt-1">Failed Uploads</div>
+                    {uploadResults.failureCount > 0 ? (
+                      <AlertCircle className="w-10 h-10 text-red-600 dark:text-red-400 mx-auto mb-3" />
+                    ) : (
+                      <CheckCircle className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                    )}
+                    <div className={`text-4xl font-bold ${uploadResults.failureCount > 0 ? 'text-red-700 dark:text-red-300' : 'text-gray-500'}`}>
+                      {uploadResults.failureCount}
+                    </div>
+                    <div className={`text-sm font-semibold mt-2 ${uploadResults.failureCount > 0 ? 'text-red-700 dark:text-red-300' : 'text-gray-500'}`}>
+                      Failed to Upload
+                    </div>
+                    <div className={`text-xs mt-1 ${uploadResults.failureCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>
+                      {uploadResults.failureCount > 0 ? 'Review errors below' : 'No errors!'}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1047,27 +1085,32 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                 </TabsTrigger>
               </TabsList>
 
-              {/* Successful Entries */}
+              {/* Successful Entries - Enhanced Detail */}
               <TabsContent value="success">
                 {uploadResults.successCount > 0 ? (
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="bg-muted px-4 py-2 font-semibold flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      Successfully Uploaded Works
+                  <div className="border-2 border-green-200 dark:border-green-800 rounded-lg overflow-hidden">
+                    <div className="bg-green-100 dark:bg-green-950 px-4 py-3 font-semibold flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-700 dark:text-green-400" />
+                        <span className="text-green-900 dark:text-green-100">Successfully Uploaded Works</span>
+                      </div>
+                      <Badge variant="secondary" className="bg-green-200 dark:bg-green-900 text-green-900 dark:text-green-100">
+                        {uploadResults.successCount} works
+                      </Badge>
                     </div>
-                    <ScrollArea className="h-[400px]">
+                    <ScrollArea className="h-[350px]">
                       <Table>
-                        <TableHeader>
+                        <TableHeader className="sticky top-0 bg-background">
                           <TableRow>
-                            <TableHead className="w-24">Row #</TableHead>
-                            <TableHead>Work Title</TableHead>
-                            <TableHead>Work ID</TableHead>
+                            <TableHead className="w-20">Row #</TableHead>
+                            <TableHead className="min-w-[300px]">Work Title</TableHead>
+                            <TableHead className="min-w-[200px]">Work ID</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {uploadResults.successfulWorks.map((work, index) => (
-                            <TableRow key={index}>
-                              <TableCell className="font-medium">{work.row}</TableCell>
+                            <TableRow key={index} className="hover:bg-green-50 dark:hover:bg-green-950/30">
+                              <TableCell className="font-mono text-sm">{work.row}</TableCell>
                               <TableCell className="font-semibold">{work.title}</TableCell>
                               <TableCell className="font-mono text-sm text-muted-foreground">{work.work_id}</TableCell>
                             </TableRow>
@@ -1077,60 +1120,102 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                     </ScrollArea>
                   </div>
                 ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    No successful uploads
+                  <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
+                    <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                    <p className="font-semibold text-lg">No successful uploads</p>
+                    <p className="text-sm mt-1">All records failed - check the Failed tab for details</p>
                   </div>
                 )}
               </TabsContent>
 
-              {/* Failed Entries */}
+              {/* Failed Entries - Enhanced Error Details */}
               <TabsContent value="failed">
                 {uploadResults.failureCount > 0 ? (
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="bg-muted px-4 py-2 font-semibold flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-red-600" />
-                      Failed Uploads - Review & Fix
+                  <div className="border-2 border-red-200 dark:border-red-800 rounded-lg overflow-hidden">
+                    <div className="bg-red-100 dark:bg-red-950 px-4 py-3 font-semibold flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-red-700 dark:text-red-400" />
+                        <span className="text-red-900 dark:text-red-100">Failed Uploads - Action Required</span>
+                      </div>
+                      <Badge variant="destructive" className="bg-red-200 dark:bg-red-900 text-red-900 dark:text-red-100">
+                        {uploadResults.failureCount} errors
+                      </Badge>
                     </div>
-                    <ScrollArea className="h-[400px]">
+                    <ScrollArea className="h-[350px]">
                       <Table>
-                        <TableHeader>
+                        <TableHeader className="sticky top-0 bg-background">
                           <TableRow>
-                            <TableHead className="w-24">Row #</TableHead>
-                            <TableHead>Work Title</TableHead>
-                            <TableHead>Error Details</TableHead>
+                            <TableHead className="w-20">Row #</TableHead>
+                            <TableHead className="min-w-[200px]">Work Title</TableHead>
+                            <TableHead className="min-w-[300px]">Error Details & Reason</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {uploadResults.errors.map((error, index) => (
-                            <TableRow key={index}>
-                              <TableCell className="font-medium">{error.row}</TableCell>
-                              <TableCell className="font-semibold">{error.title}</TableCell>
-                              <TableCell className="text-destructive text-sm">{error.error}</TableCell>
+                            <TableRow key={index} className="hover:bg-red-50 dark:hover:bg-red-950/30">
+                              <TableCell className="font-mono text-sm font-medium">{error.row}</TableCell>
+                              <TableCell className="font-semibold">{error.title || 'N/A'}</TableCell>
+                              <TableCell className="text-destructive text-sm">
+                                <div className="flex items-start gap-2">
+                                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                  <span className="break-words">{error.error}</span>
+                                </div>
+                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
                     </ScrollArea>
+                    <div className="bg-red-50 dark:bg-red-950/50 px-4 py-3 text-sm text-red-800 dark:text-red-200 border-t border-red-200 dark:border-red-800">
+                      <p className="font-semibold mb-1">💡 Next Steps:</p>
+                      <ul className="list-disc list-inside space-y-0.5 text-xs">
+                        <li>Review error details for each failed row above</li>
+                        <li>Fix the issues in your CSV file</li>
+                        <li>Re-upload the corrected file</li>
+                      </ul>
+                    </div>
                   </div>
                 ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                    <p className="font-semibold">All uploads successful!</p>
+                  <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg bg-green-50 dark:bg-green-950/20">
+                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                    <p className="font-bold text-xl text-green-700 dark:text-green-400">Perfect! No Errors</p>
+                    <p className="text-sm mt-2">All records uploaded successfully</p>
                   </div>
                 )}
               </TabsContent>
             </Tabs>
           </div>
 
-          <DialogFooter>
-            <Button onClick={() => {
-              setShowResultsModal(false);
-              if (uploadResults.successCount > 0) {
+          <DialogFooter className="flex justify-between items-center gap-3">
+            <div className="text-sm text-muted-foreground flex-1">
+              {uploadResults.failureCount > 0 ? (
+                <span className="text-red-600 dark:text-red-400 font-medium">⚠️ Review failed entries and re-upload corrected data</span>
+              ) : (
+                <span className="text-green-600 dark:text-green-400 font-medium">✓ All records processed successfully</span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              {uploadResults.failureCount > 0 && (
+                <Button variant="outline" onClick={() => {
+                  setShowResultsModal(false);
+                  // Keep the current state so user can review
+                }}>
+                  Review & Fix
+                </Button>
+              )}
+              <Button onClick={() => {
+                setShowResultsModal(false);
                 resetUpload();
-              }
-            }}>
-              {uploadResults.successCount > 0 && uploadResults.failureCount === 0 ? 'Done' : 'Close'}
-            </Button>
+                if (uploadResults.successCount > 0) {
+                  toast({
+                    title: "Upload Complete",
+                    description: `Successfully uploaded ${uploadResults.successCount} copyright${uploadResults.successCount !== 1 ? 's' : ''}`,
+                  });
+                }
+              }}>
+                {uploadResults.successCount > 0 && uploadResults.failureCount === 0 ? 'Done - Upload Another' : 'Close & Upload Another'}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
