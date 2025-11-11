@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SubAccountDashboard } from "@/components/admin/SubAccountDashboard";
 import { 
   Shield,
   Users,
@@ -86,13 +87,18 @@ export function ManagementConsole({ metrics }: ManagementConsoleProps) {
       </div>
 
       {/* Enhanced Management Tabs */}
-      <Tabs defaultValue="access-control" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="sub-accounts" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="sub-accounts">Sub-Accounts</TabsTrigger>
           <TabsTrigger value="access-control">Access Control</TabsTrigger>
           <TabsTrigger value="partnerships">Industry Partnerships</TabsTrigger>
           <TabsTrigger value="task-management">Task Management</TabsTrigger>
           <TabsTrigger value="user-analytics">User Analytics</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="sub-accounts" className="space-y-6">
+          <SubAccountDashboard />
+        </TabsContent>
 
         <TabsContent value="access-control" className="space-y-4">
           <Card>
