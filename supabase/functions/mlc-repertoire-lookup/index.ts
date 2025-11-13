@@ -40,7 +40,7 @@ async function getMlcAccessToken() {
 
     const data = await response.json();
     console.log('Successfully obtained MLC access token');
-    return { success: true, token: data.accessToken };
+    return { success: true, token: data.idToken };
   } catch (error) {
     console.error('Error getting MLC access token:', error);
     return { success: false, error: (error as Error).message };
