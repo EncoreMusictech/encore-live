@@ -11,6 +11,8 @@ interface Work {
   id: string;
   title: string;
   artist: string;
+  isrc: string | null;
+  format: string | null;
   created_at: string;
   metadata: any;
 }
@@ -95,7 +97,8 @@ export function AssignedWorksList({ companyId }: AssignedWorksListProps) {
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Artist</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead>ISRC</TableHead>
+                  <TableHead>Format</TableHead>
                   <TableHead>Added</TableHead>
                 </TableRow>
               </TableHeader>
@@ -104,9 +107,10 @@ export function AssignedWorksList({ companyId }: AssignedWorksListProps) {
                   <TableRow key={work.id}>
                     <TableCell className="font-medium">{work.title}</TableCell>
                     <TableCell>{work.artist}</TableCell>
+                    <TableCell className="font-mono text-xs">{work.isrc || '-'}</TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {work.metadata?.bulk_upload ? 'Bulk Upload' : 'Manual'}
+                        {work.format || 'Digital'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">

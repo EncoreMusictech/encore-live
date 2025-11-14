@@ -102,12 +102,14 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
 
       toast.success(`Detected columns: ARTIST (col ${mapping.artist + 1}), TRACK (col ${mapping.track + 1}), ISRC (col ${mapping.isrc + 1})`);
 
-      // Fetch existing ISRCs to avoid duplicates
+      // Fetch existing ISRCs AND titles to avoid duplicates (ISRC + name combo)
       const { data: existingRecordings } = await supabase
         .from('copyright_recordings')
-        .select('isrc');
+        .select('isrc, recording_title');
       
-      const existingISRCs = new Set(existingRecordings?.map(r => r.isrc) || []);
+      const existingCombos = new Set(
+        existingRecordings?.map(r => `${r.isrc}||${r.recording_title?.toLowerCase().trim()}`) || []
+      );
 
       const dataRows = jsonData.slice(1);
       let successCount = 0;
@@ -131,11 +133,17 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
             continue;
           }
 
-          // Skip if ISRC already exists
-          if (existingISRCs.has(isrc)) {
-            console.log(`Skipping duplicate ISRC: ${isrc}`);
+          // Check for duplicates using ISRC + track name combination
+          const comboKey = `${isrc}||${track.toLowerCase().trim()}`;
+          if (existingCombos.has(comboKey)) {
+            console.log(`Skipping duplicate: ${track} (${isrc})`);
             continue;
           }
+
+          // Detect if this is a video based on title
+          const isVideo = track.toLowerCase().includes('video');
+          const mediaType = isVideo ? 'Video' : 'Audio';
+          const format = isVideo ? 'Video' : 'Digital';
 
           // Create copyright entry
           const { data: copyright, error: copyrightError } = await supabase
@@ -143,7 +151,7 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
             .insert({
               work_title: track,
               user_id: user.id,
-              work_type: 'Audio',
+              work_type: mediaType,
               status: 'registered'
             })
             .select()
@@ -172,12 +180,12 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
               isrc: isrc,
               company_id: companyId,
               user_id: user.id,
-              format: 'Digital'
+              format: format
             });
 
           if (catalogError) throw catalogError;
 
-          existingISRCs.add(isrc);
+          existingCombos.add(comboKey);
           successCount++;
 
         } catch (error: any) {
