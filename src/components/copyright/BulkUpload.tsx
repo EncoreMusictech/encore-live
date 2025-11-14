@@ -554,20 +554,158 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
             await new Promise(resolve => setTimeout(resolve, batchIndex * 50));
 
             try {
-              // Check if work already exists in database (by title - case insensitive)
-              const { data: existingWork } = await supabase
-                .from('copyrights')
-                .select('id, work_title, work_id')
-                .ilike('work_title', copyright.work_title)
-                .limit(1)
-                .maybeSingle();
+              // Check if work already exists in database (by title, ISWC, or ISRC)
+              let existingWork = null;
+              
+              // Try to find by ISWC first if available
+              if (copyright.iswc) {
+                const { data } = await supabase
+                  .from('copyrights')
+                  .select('*')
+                  .eq('iswc', copyright.iswc)
+                  .limit(1)
+                  .maybeSingle();
+                existingWork = data;
+              }
+              
+              // If not found by ISWC, try by title
+              if (!existingWork) {
+                const { data } = await supabase
+                  .from('copyrights')
+                  .select('*')
+                  .ilike('work_title', copyright.work_title)
+                  .limit(1)
+                  .maybeSingle();
+                existingWork = data;
+              }
 
               if (existingWork) {
-                // Skip this work as it already exists
+                // Compare data to see if update is needed
+                const needsUpdate = 
+                  (copyright.iswc && existingWork.iswc !== copyright.iswc) ||
+                  (copyright.album_title && existingWork.album_title !== copyright.album_title) ||
+                  (copyright.creation_date && existingWork.creation_date !== copyright.creation_date) ||
+                  (copyright.copyright_date && existingWork.copyright_date !== copyright.copyright_date) ||
+                  (copyright.language_code && existingWork.language_code !== copyright.language_code) ||
+                  (copyright.work_type && existingWork.work_type !== copyright.work_type) ||
+                  (copyright.duration_seconds && existingWork.duration_seconds !== copyright.duration_seconds) ||
+                  (copyright.notes && existingWork.notes !== copyright.notes);
+
+                if (!needsUpdate) {
+                  // Check if writers, publishers, or recordings need updates
+                  const [existingWriters, existingPublishers, existingRecordings] = await Promise.all([
+                    supabase.from('copyright_writers').select('*').eq('copyright_id', existingWork.id),
+                    supabase.from('copyright_publishers').select('*').eq('copyright_id', existingWork.id),
+                    supabase.from('copyright_recordings').select('*').eq('copyright_id', existingWork.id)
+                  ]);
+
+                  const writersNeedUpdate = copyright.writers && copyright.writers.length > 0 && 
+                    JSON.stringify((copyright.writers || []).map(w => ({ name: w.writer_name, pct: w.ownership_percentage }))) !==
+                    JSON.stringify((existingWriters.data || []).map(w => ({ name: w.writer_name, pct: w.ownership_percentage })));
+
+                  const publishersNeedUpdate = copyright.publishers && copyright.publishers.length > 0 &&
+                    JSON.stringify((copyright.publishers || []).map(p => ({ name: p.publisher_name, pct: p.ownership_percentage }))) !==
+                    JSON.stringify((existingPublishers.data || []).map(p => ({ name: p.publisher_name, pct: p.ownership_percentage })));
+
+                  const recordingsNeedUpdate = copyright.recordings && copyright.recordings.length > 0 &&
+                    JSON.stringify((copyright.recordings || []).map(r => ({ title: r.recording_title, artist: r.artist_name, isrc: r.isrc }))) !==
+                    JSON.stringify((existingRecordings.data || []).map(r => ({ title: r.recording_title, artist: r.artist_name, isrc: r.isrc })));
+
+                  if (!writersNeedUpdate && !publishersNeedUpdate && !recordingsNeedUpdate) {
+                    // All data is identical, skip this record
+                    return { 
+                      skipped: true, 
+                      copyright,
+                      reason: `Work already exists with identical data (ID: ${existingWork.work_id || existingWork.id})`
+                    };
+                  }
+                }
+
+                // Update existing work
+                const updateData: any = {
+                  updated_at: new Date().toISOString()
+                };
+                
+                if (copyright.iswc) updateData.iswc = copyright.iswc;
+                if (copyright.album_title) updateData.album_title = copyright.album_title;
+                if (copyright.creation_date) updateData.creation_date = copyright.creation_date;
+                if (copyright.copyright_date) updateData.copyright_date = copyright.copyright_date;
+                if (copyright.language_code) updateData.language_code = copyright.language_code;
+                if (copyright.work_type) updateData.work_type = copyright.work_type;
+                if (copyright.duration_seconds) updateData.duration_seconds = copyright.duration_seconds;
+                if (copyright.notes) updateData.notes = copyright.notes;
+
+                const { error: updateError } = await supabase
+                  .from('copyrights')
+                  .update(updateData)
+                  .eq('id', existingWork.id);
+
+                if (updateError) throw updateError;
+
+                // Update related entities if provided
+                if (copyright.writers && copyright.writers.length > 0) {
+                  // Delete existing writers
+                  await supabase.from('copyright_writers').delete().eq('copyright_id', existingWork.id);
+                  // Insert new writers
+                  await supabase.from('copyright_writers').insert(
+                    copyright.writers.map(writer => ({
+                      copyright_id: existingWork.id,
+                      writer_name: writer.writer_name,
+                      ownership_percentage: writer.ownership_percentage,
+                      writer_role: writer.writer_role || undefined,
+                      ipi_number: writer.ipi_number || undefined,
+                      controlled_status: writer.controlled_status || undefined,
+                      pro_affiliation: writer.pro_affiliation || undefined
+                    }))
+                  );
+                }
+
+                if (copyright.publishers && copyright.publishers.length > 0) {
+                  await supabase.from('copyright_publishers').delete().eq('copyright_id', existingWork.id);
+                  await supabase.from('copyright_publishers').insert(
+                    copyright.publishers.map(publisher => ({
+                      copyright_id: existingWork.id,
+                      publisher_name: publisher.publisher_name,
+                      ownership_percentage: publisher.ownership_percentage,
+                      publisher_role: publisher.publisher_role || undefined,
+                      ipi_number: publisher.ipi_number || undefined,
+                      pro_affiliation: publisher.pro_affiliation || undefined
+                    }))
+                  );
+                }
+
+                if (copyright.recordings && copyright.recordings.length > 0) {
+                  await supabase.from('copyright_recordings').delete().eq('copyright_id', existingWork.id);
+                  await supabase.from('copyright_recordings').insert(
+                    copyright.recordings.map(recording => ({
+                      copyright_id: existingWork.id,
+                      recording_title: recording.recording_title,
+                      artist_name: recording.artist_name || undefined,
+                      isrc: recording.isrc || undefined,
+                      release_date: recording.release_date || undefined,
+                      duration_seconds: recording.duration_seconds || undefined
+                    }))
+                  );
+                }
+
+                // Log update activity
+                await logActivity({
+                  copyright_id: existingWork.id,
+                  action_type: 'update',
+                  operation_details: {
+                    batch_id: batchId,
+                    file_name: file?.name,
+                    row_number: copyright.row_number,
+                    updated_fields: Object.keys(updateData).filter(k => k !== 'updated_at')
+                  },
+                  new_values: updateData
+                });
+
                 return { 
-                  skipped: true, 
+                  success: true, 
                   copyright,
-                  reason: `Work already exists (ID: ${existingWork.work_id || existingWork.id})`
+                  work_id: existingWork.work_id || existingWork.id,
+                  updated: true
                 };
               }
 
@@ -698,14 +836,15 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               });
               console.log(`Skipped existing work: ${copyright.work_title}`);
             } else {
-              // Work was successfully uploaded
+              // Work was successfully uploaded or updated
               successCount++;
+              const action = result.value.updated ? 'updated' : 'created';
               successfulWorks.push({
                 row: copyright.row_number || 0,
-                title: copyright.work_title,
+                title: `${copyright.work_title} (${action})`,
                 work_id: result.value.work_id
               });
-              console.log(`Successfully uploaded: ${copyright.work_title}`);
+              console.log(`Successfully ${action}: ${copyright.work_title}`);
             }
           } else {
             failureCount++;
