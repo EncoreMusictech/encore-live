@@ -42,6 +42,9 @@ export function ViewSwitcher({ companyId, companyName }: ViewSwitcherProps) {
     setIsViewMode(true);
     setShowDialog(false);
 
+    // Dispatch custom event to notify ViewModeContext
+    window.dispatchEvent(new Event('viewContextChanged'));
+
     toast({
       title: 'View Switched',
       description: `Now viewing as ${companyName} user`,
@@ -57,6 +60,9 @@ export function ViewSwitcher({ companyId, companyName }: ViewSwitcherProps) {
       const { returnPath } = JSON.parse(context);
       sessionStorage.removeItem('viewContext');
       setIsViewMode(false);
+      
+      // Dispatch custom event to notify ViewModeContext
+      window.dispatchEvent(new Event('viewContextChanged'));
       
       toast({
         title: 'View Restored',
