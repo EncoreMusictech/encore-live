@@ -17,6 +17,8 @@ import { TourProvider } from "@/components/tour/TourProvider";
 import { TourOverlay } from "@/components/tour/TourOverlay";
 import EmailRestrictedRoute from "@/components/EmailRestrictedRoute";
 import { CRMLayout } from "@/components/crm/CRMLayout";
+import { ViewModeProvider } from "@/contexts/ViewModeContext";
+import { ViewModeBanner } from "@/components/ViewModeBanner";
 import Index from "./pages/Index";
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
@@ -82,10 +84,12 @@ const App = () => {
                        <DisableLeavePrompt />
                        <DemoUpgradeModal />
                        <BrowserRouter>
-                         <TourProvider>
-                           <TourOverlay />
-                           <RecoveryRedirect />
-                           <Routes>
+                         <ViewModeProvider>
+                           <TourProvider>
+                             <ViewModeBanner />
+                             <TourOverlay />
+                             <RecoveryRedirect />
+                             <Routes>
                              <Route path="/auth" element={<Auth />} />
                              <Route index element={<Index />} />
                               
@@ -159,6 +163,7 @@ const App = () => {
                               <Route path="*" element={<NotFound />} />
                            </Routes>
                          </TourProvider>
+                       </ViewModeProvider>
                        </BrowserRouter>
                      </TooltipProvider>
                  </WhitelabelThemeProvider>
