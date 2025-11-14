@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { useDataFiltering } from './useDataFiltering';
 
 export interface PayoutExpense {
   id: string;
@@ -51,13 +52,14 @@ export function useExpenses() {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<PayoutExpense[]>([]);
   const [loading, setLoading] = useState(true);
+  const { applyUserIdFilter } = useDataFiltering();
 
   const fetchExpenses = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('payout_expenses')
         .select(`
           *,
@@ -65,8 +67,11 @@ export function useExpenses() {
           payees:payee_id(payee_name),
           copyrights:work_id(work_title)
         `)
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+      
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       setExpenses((data || []) as PayoutExpense[]);
