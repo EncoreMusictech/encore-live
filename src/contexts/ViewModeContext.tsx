@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ViewContext {
   mode: 'system' | 'subaccount';
   companyId?: string;
   companyName?: string;
   returnPath?: string;
+  sessionId?: string; // For audit logging
 }
 
 interface ViewModeContextType {
@@ -56,8 +58,26 @@ export function ViewModeProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const exitViewMode = () => {
+  const exitViewMode = async () => {
     const returnPath = viewContext?.returnPath || '/dashboard/operations';
+    const sessionId = viewContext?.sessionId;
+    
+    // Log view mode exit for audit trail
+    if (sessionId) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.rpc('close_admin_view_mode_session', {
+            p_session_id: sessionId,
+            p_ip_address: null,
+            p_user_agent: navigator.userAgent
+          });
+        }
+      } catch (error) {
+        console.error('Failed to log view mode exit:', error);
+      }
+    }
+    
     sessionStorage.removeItem('viewContext');
     setViewContext(null);
     
