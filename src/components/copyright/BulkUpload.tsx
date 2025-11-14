@@ -340,23 +340,39 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       return cleaned === '' ? undefined : cleaned;
     };
 
+    // Helper to find value by checking multiple possible column names (case-insensitive)
+    const findValue = (row: any, ...possibleNames: string[]): string | undefined => {
+      for (const name of possibleNames) {
+        // Try exact match first
+        if (row[name] !== undefined) {
+          return cleanValue(row[name]);
+        }
+        // Try case-insensitive match
+        const foundKey = Object.keys(row).find(key => key.toLowerCase() === name.toLowerCase());
+        if (foundKey && row[foundKey] !== undefined) {
+          return cleanValue(row[foundKey]);
+        }
+      }
+      return undefined;
+    };
+
     return rawData.map((row, index) => {
       const processed: ParsedCopyright = {
-        work_title: cleanValue(row.work_title) || '',
+        work_title: findValue(row, 'work_title', 'TRACK', 'track', 'title', 'TITLE') || '',
         row_number: index + 2, // +2 because of header row and 0-based index
         errors: []
       };
 
       // Validate required fields
       if (!processed.work_title) {
-        processed.errors!.push('Work title is required');
+        processed.errors!.push('Work title is required (expected column: work_title, TRACK, or title)');
       }
 
       // Process optional fields with proper blank space handling
-      const iswc = cleanValue(row.iswc);
+      const iswc = findValue(row, 'iswc', 'ISWC');
       if (iswc) processed.iswc = iswc;
       
-      const albumTitle = cleanValue(row.album_title);
+      const albumTitle = findValue(row, 'album_title', 'ALBUM', 'album');
       if (albumTitle) processed.album_title = albumTitle;
       
       const creationDate = cleanValue(row.creation_date);
@@ -443,23 +459,25 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       }
 
       // Process recordings - ignore blank entries
+      // Support multiple column name formats: recording_title/TRACK, recording_artist/ARTIST, recording_isrc/ISRC
       processed.recordings = [];
-      const recordingTitle = cleanValue(row.recording_title);
-      if (recordingTitle) {
+      const recordingTitle = findValue(row, 'recording_title', 'TRACK', 'track', 'title', 'TITLE', 'work_title');
+      const artistName = findValue(row, 'recording_artist', 'ARTIST', 'artist', 'artist_name');
+      const isrc = findValue(row, 'recording_isrc', 'ISRC', 'isrc');
+      
+      // Create recording if we have at least a title, artist, or ISRC
+      if (recordingTitle || artistName || isrc) {
         const recording: ParsedRecording = {
-          recording_title: recordingTitle
+          recording_title: recordingTitle || processed.work_title // Use work title as fallback
         };
         
-        const artistName = cleanValue(row.recording_artist);
         if (artistName) recording.artist_name = artistName;
-        
-        const isrc = cleanValue(row.recording_isrc);
         if (isrc) recording.isrc = isrc;
         
-        const releaseDate = cleanValue(row.recording_release_date);
+        const releaseDate = findValue(row, 'recording_release_date', 'release_date', 'RELEASE_DATE');
         if (releaseDate) recording.release_date = releaseDate;
         
-        const recordingDurationStr = cleanValue(row.recording_duration);
+        const recordingDurationStr = findValue(row, 'recording_duration', 'duration', 'DURATION');
         if (recordingDurationStr) {
           const duration = parseInt(recordingDurationStr);
           if (!isNaN(duration) && duration > 0) recording.duration_seconds = duration;
@@ -840,7 +858,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
             Bulk Upload Copyrights
           </CardTitle>
           <CardDescription>
-            Upload multiple copyrights from a CSV or Excel file. Download the template to ensure proper formatting.
+            Upload multiple copyrights from a CSV or Excel file. Supports standard template format or simple ARTIST, TRACK, ISRC columns for MLC enrichment.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -855,6 +873,13 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                   Use this template to format your data correctly
                 </span>
               </div>
+
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Flexible column names:</strong> You can use simple column names like ARTIST, TRACK, ISRC (or recording_artist, recording_title, recording_isrc) for MLC enrichment. The system will automatically detect and parse your format.
+                </AlertDescription>
+              </Alert>
 
               <div className="grid w-full max-w-sm items-center gap-1.5">
                 <Label htmlFor="bulk-upload">Upload CSV or Excel File</Label>

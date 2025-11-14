@@ -18,7 +18,20 @@ export function MLCVerification() {
     
     try {
       // Fetch a random copyright with writers
-      console.log('🔍 Fetching existing copyright from database...');
+      console.log('🔍 Fetching random copyright from database...');
+      
+      // Get total count first
+      const { count } = await supabase
+        .from('copyrights')
+        .select('*', { count: 'exact', head: true });
+      
+      if (!count || count === 0) {
+        throw new Error('No copyrights found in database');
+      }
+      
+      // Get a random offset
+      const randomOffset = Math.floor(Math.random() * count);
+      
       const { data: copyrights, error: fetchError } = await supabase
         .from('copyrights')
         .select(`
@@ -26,7 +39,7 @@ export function MLCVerification() {
           work_title,
           iswc
         `)
-        .limit(1)
+        .range(randomOffset, randomOffset)
         .single();
 
       if (fetchError) throw fetchError;
