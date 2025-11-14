@@ -40,6 +40,9 @@ interface EnrichmentStats {
 interface CopyrightEnrichmentStatus {
   id: string;
   work_title: string;
+  artist_name?: string;
+  isrc?: string;
+  mediaType?: string;
   isEnriched: boolean;
   hasMLCWorkId: boolean;
   hasISWC: boolean;
@@ -113,9 +116,18 @@ export const MLCEnrichmentDashboard: React.FC = () => {
         
         const isEnriched = hasMLCWorkId || (hasISWC && hasWriters);
 
+        // Get artist, ISRC, and media type from first recording
+        const firstRecording = recordings[0];
+        const artist_name = firstRecording?.artist_name;
+        const isrc = firstRecording?.isrc;
+        const mediaType = firstRecording?.recording_title ? 'Audio' : 'Video';
+
         statuses.push({
           id: copyright.id,
           work_title: copyright.work_title || 'Untitled',
+          artist_name,
+          isrc,
+          mediaType: hasRecordings ? mediaType : undefined,
           isEnriched,
           hasMLCWorkId,
           hasISWC,
@@ -603,6 +615,9 @@ export const MLCEnrichmentDashboard: React.FC = () => {
                         />
                       </TableHead>
                       <TableHead>Work Title</TableHead>
+                      <TableHead>Artist</TableHead>
+                      <TableHead>ISRC</TableHead>
+                      <TableHead>Media Type</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Writers</TableHead>
                       <TableHead>Recordings</TableHead>
@@ -624,6 +639,19 @@ export const MLCEnrichmentDashboard: React.FC = () => {
                         </TableCell>
                         <TableCell className="font-medium">
                           {status.work_title}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {status.artist_name || '-'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-xs">
+                          {status.isrc || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {status.mediaType ? (
+                            <Badge variant="outline">{status.mediaType}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {status.isEnriched ? (
