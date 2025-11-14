@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,28 +31,59 @@ export function ViewSwitcher({ companyId, companyName }: ViewSwitcherProps) {
     setShowDialog(true);
   };
 
-  const confirmSwitch = () => {
-    // Store current view context in sessionStorage
-    sessionStorage.setItem('viewContext', JSON.stringify({
-      mode: 'subaccount',
-      companyId,
-      companyName,
-      returnPath: window.location.pathname
-    }));
+  const confirmSwitch = async () => {
+    try {
+      // Generate session ID for audit logging
+      const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Get current user for audit logging
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Log view mode entry for audit trail
+        await supabase.rpc('log_admin_view_mode_action', {
+          p_admin_user_id: user.id,
+          p_session_id: sessionId,
+          p_action_type: 'view_mode_entered',
+          p_company_id: companyId,
+          p_company_name: companyName,
+          p_ip_address: null,
+          p_user_agent: navigator.userAgent,
+          p_request_path: window.location.pathname,
+          p_risk_level: 'low'
+        });
+      }
+      
+      // Store current view context in sessionStorage with session ID
+      sessionStorage.setItem('viewContext', JSON.stringify({
+        mode: 'subaccount',
+        companyId,
+        companyName,
+        returnPath: window.location.pathname,
+        sessionId
+      }));
 
-    setIsViewMode(true);
-    setShowDialog(false);
+      setIsViewMode(true);
+      setShowDialog(false);
 
-    // Dispatch custom event to notify ViewModeContext
-    window.dispatchEvent(new Event('viewContextChanged'));
+      // Dispatch custom event to notify ViewModeContext
+      window.dispatchEvent(new Event('viewContextChanged'));
 
-    toast({
-      title: 'View Switched',
-      description: `Now viewing as ${companyName} user`,
-    });
+      toast({
+        title: 'View Switched',
+        description: `Now viewing as ${companyName} user`,
+      });
 
-    // Navigate to dashboard with sub-account context
-    navigate('/dashboard');
+      // Navigate to dashboard with sub-account context
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Failed to switch view mode:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to switch view mode',
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleReturnToSystemView = () => {
