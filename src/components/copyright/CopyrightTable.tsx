@@ -377,15 +377,16 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({
                         {firstRecording?.isrc || '-'}
                       </TableCell>
                       <TableCell>
-                        {copyright.work_type && copyright.work_type !== 'original' ? (
-                          <Badge variant="outline">
-                            {copyright.work_type}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">
-                            Audio
-                          </Badge>
-                        )}
+                        {(() => {
+                          const isVideo = copyright.work_title.toLowerCase().includes('video');
+                          const mediaType = isVideo ? 'Video' : 
+                                          (copyright.work_type && copyright.work_type !== 'original' ? copyright.work_type : 'Audio');
+                          return (
+                            <Badge variant="outline">
+                              {mediaType}
+                            </Badge>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="font-mono text-sm">
                         {copyright.iswc || '-'}
