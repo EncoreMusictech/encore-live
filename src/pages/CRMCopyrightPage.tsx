@@ -26,6 +26,7 @@ import { MLCBulkEnrichment } from "@/components/copyright/MLCBulkEnrichment";
 import { MLCVerification } from "@/components/copyright/MLCVerification";
 import { CWRRegistrationStatusTracker } from "@/components/copyright/CWRRegistrationStatusTracker";
 import { CRMTabStatus } from "@/components/ui/crm-tab-status";
+import { DataFilteringIndicator } from "@/components/DataFilteringIndicator";
 
 export default function CRMCopyrightPage() {
   const { toast } = useToast();
@@ -193,7 +194,10 @@ export default function CRMCopyrightPage() {
       <DemoLimitBanner module="copyrightManagement" />
 
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Copyright Management</h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-4xl font-bold">Copyright Management</h1>
+          <DataFilteringIndicator />
+        </div>
         <p className="text-muted-foreground">
           Register and track copyrights with split assignments and metadata management
         </p>

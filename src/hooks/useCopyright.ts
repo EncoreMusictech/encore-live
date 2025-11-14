@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tables, TablesInsert } from '@/integrations/supabase/types';
 import { useActivityLog } from '@/hooks/useActivityLog';
 import { useOptimisticUpdates } from '@/hooks/useOptimisticUpdates';
+import { useDataFiltering } from '@/hooks/useDataFiltering';
 
 export type Copyright = Tables<'copyrights'>;
 export type CopyrightWriter = Tables<'copyright_writers'>;
@@ -18,6 +19,7 @@ export const useCopyright = () => {
   const [writersCache, setWritersCache] = useState<{ [key: string]: CopyrightWriter[] }>({});
   const { toast } = useToast();
   const { logActivity } = useActivityLog();
+  const { applyUserIdFilter, isFilterActive, getFilterSummary } = useDataFiltering();
   const { 
     data: optimisticCopyrights, 
     setData: setOptimisticData,
@@ -45,10 +47,14 @@ export const useCopyright = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('copyrights')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
+      
+      // Apply sub-account filtering if active
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching copyrights:', error);
@@ -80,7 +86,7 @@ export const useCopyright = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast, clearAllPending, loading]);
+  }, [toast, clearAllPending, loading, applyUserIdFilter]);
 
   const createCopyright = async (copyrightData: CopyrightInsert, options?: { silent?: boolean }) => {
     const tempCopyright: Copyright = {

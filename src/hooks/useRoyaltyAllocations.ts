@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
 import { normalizeTerritoryCode } from '@/utils/territoryNormalizer';
+import { useDataFiltering } from '@/hooks/useDataFiltering';
 
 export interface RoyaltyAllocation {
   id: string;
@@ -62,12 +63,13 @@ export function useRoyaltyAllocations() {
   const [allocations, setAllocations] = useState<RoyaltyAllocation[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { applyUserIdFilter } = useDataFiltering();
 
   const fetchAllocations = async () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('royalty_allocations')
         .select(`
           *,
@@ -81,8 +83,12 @@ export function useRoyaltyAllocations() {
               controlled_status
             )
           )
-        `)
-        .order('created_at', { ascending: false });
+        `);
+      
+      // Apply sub-account filtering if active
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setAllocations(data || []);

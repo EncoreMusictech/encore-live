@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tables, TablesInsert } from '@/integrations/supabase/types';
+import { useDataFiltering } from '@/hooks/useDataFiltering';
 
 export type Contract = Tables<'contracts'>;
 export type ContractInsert = TablesInsert<'contracts'>;
@@ -17,17 +18,22 @@ export const useContracts = () => {
   const [contracts, setContracts] = useState<ContractWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { applyUserIdFilter } = useDataFiltering();
 
   const fetchContracts = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('contracts')
         .select(`
           *,
           contract_interested_parties(*),
           contract_schedule_works(*)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+      
+      // Apply sub-account filtering if active
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setContracts(data || []);
