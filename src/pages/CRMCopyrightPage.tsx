@@ -31,9 +31,10 @@ import { DataFilteringIndicator } from "@/components/DataFilteringIndicator";
 
 export default function CRMCopyrightPage() {
   const { toast } = useToast();
-  const { copyrights, loading, realtimeError, getWritersForCopyright, deleteCopyright, refetch } = useCopyright();
+  const { copyrights, loading, realtimeError, getWritersForCopyright, getRecordingsForCopyright, deleteCopyright, refetch } = useCopyright();
   const { canAccess } = useDemoAccess();
   const [writers, setWriters] = useState<{[key: string]: any[]}>({});
+  const [recordings, setRecordings] = useState<{[key: string]: any[]}>({});
   const [editingCopyright, setEditingCopyright] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { activeTab, setActiveTab } = useCRMTabPersistence('/dashboard/copyright', 'copyrights');
@@ -55,25 +56,32 @@ export default function CRMCopyrightPage() {
     updatePageMetadata('copyrightManagement');
   }, []);
 
-  // Load writers for each copyright
+  // Load writers and recordings for each copyright
   useEffect(() => {
-    const loadWriters = async () => {
+    const loadWritersAndRecordings = async () => {
       const writersData: {[key: string]: any[]} = {};
+      const recordingsData: {[key: string]: any[]} = {};
+      
       for (const copyright of copyrights) {
         try {
-          const copyrightWriters = await getWritersForCopyright(copyright.id);
+          const [copyrightWriters, copyrightRecordings] = await Promise.all([
+            getWritersForCopyright(copyright.id),
+            getRecordingsForCopyright(copyright.id)
+          ]);
           writersData[copyright.id] = copyrightWriters;
+          recordingsData[copyright.id] = copyrightRecordings;
         } catch (error) {
-          console.error('Error loading writers:', error);
+          console.error('Error loading copyright data:', error);
         }
       }
       setWriters(writersData);
+      setRecordings(recordingsData);
     };
 
     if (copyrights.length > 0) {
-      loadWriters();
+      loadWritersAndRecordings();
     }
-  }, [copyrights, getWritersForCopyright]);
+  }, [copyrights, getWritersForCopyright, getRecordingsForCopyright]);
 
   const getRegistrationStatusBadge = (status: string) => {
     switch (status) {
@@ -272,6 +280,7 @@ export default function CRMCopyrightPage() {
           <CopyrightTable 
             copyrights={copyrights}
             writers={writers}
+            recordings={recordings}
             loading={loading}
             realtimeError={realtimeError}
             onEdit={handleEdit}
@@ -441,6 +450,7 @@ export default function CRMCopyrightPage() {
                   <CopyrightTable 
                     copyrights={copyrights}
                     writers={writers}
+                    recordings={recordings}
                     loading={loading}
                     realtimeError={realtimeError}
                     onEdit={handleEdit}
