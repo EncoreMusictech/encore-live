@@ -70,9 +70,26 @@ export const MLCEnrichmentDashboard: React.FC = () => {
     try {
       const statuses: CopyrightEnrichmentStatus[] = [];
 
-      for (const copyright of copyrights) {
-        const writers = await getWritersForCopyright(copyright.id);
-        const recordings = await getRecordingsForCopyright(copyright.id);
+      // Batch fetch all writers and recordings upfront to avoid sequential calls
+      const allWritersPromises = copyrights.map(c => getWritersForCopyright(c.id).catch(e => {
+        console.error(`Error fetching writers for ${c.id}:`, e);
+        return [];
+      }));
+      
+      const allRecordingsPromises = copyrights.map(c => getRecordingsForCopyright(c.id).catch(e => {
+        console.error(`Error fetching recordings for ${c.id}:`, e);
+        return [];
+      }));
+
+      const [allWritersResults, allRecordingsResults] = await Promise.all([
+        Promise.all(allWritersPromises),
+        Promise.all(allRecordingsPromises)
+      ]);
+
+      for (let i = 0; i < copyrights.length; i++) {
+        const copyright = copyrights[i];
+        const writers = allWritersResults[i];
+        const recordings = allRecordingsResults[i];
         
         const hasMLCWorkId = !!(copyright as any).mlc_work_id;
         const hasISWC = !!copyright.iswc;
@@ -102,11 +119,20 @@ export const MLCEnrichmentDashboard: React.FC = () => {
         title: "Analysis Complete",
         description: `Analyzed ${statuses.length} copyrights`
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error analyzing enrichment status:', error);
+      
+      let errorMessage = "Failed to analyze enrichment status";
+      let errorDescription = error.message;
+      
+      if (error.message?.includes('Failed to fetch')) {
+        errorMessage = "Network Connection Error";
+        errorDescription = "Cannot connect to database. Check your connection and try disabling browser extensions.";
+      }
+      
       toast({
-        title: "Analysis Failed",
-        description: "Failed to analyze enrichment status",
+        title: errorMessage,
+        description: errorDescription,
         variant: "destructive"
       });
     } finally {

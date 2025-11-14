@@ -21,12 +21,16 @@ export function MLCVerification() {
       console.log('🔍 Fetching random copyright from database...');
       
       // Get total count first
-      const { count } = await supabase
+      const { count, error: countError } = await supabase
         .from('copyrights')
         .select('*', { count: 'exact', head: true });
       
+      if (countError) {
+        throw new Error(`Failed to connect to database: ${countError.message}`);
+      }
+      
       if (!count || count === 0) {
-        throw new Error('No copyrights found in database');
+        throw new Error('No copyrights found in database. Please add some copyrights first.');
       }
       
       // Get a random offset
@@ -42,8 +46,13 @@ export function MLCVerification() {
         .range(randomOffset, randomOffset)
         .single();
 
-      if (fetchError) throw fetchError;
-      if (!copyrights) throw new Error('No copyrights found in database');
+      if (fetchError) {
+        throw new Error(`Failed to fetch copyright: ${fetchError.message}`);
+      }
+      
+      if (!copyrights) {
+        throw new Error('No copyright data returned from database');
+      }
 
       setCopyrightData(copyrights);
       console.log('📄 Testing with copyright:', copyrights);
@@ -103,11 +112,27 @@ export function MLCVerification() {
 
     } catch (error: any) {
       console.error('❌ MLC Test Error:', error);
+      
+      let errorMessage = error.message || 'Unknown error';
+      let errorDescription = '';
+      
+      // Provide specific guidance based on error type
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('network')) {
+        errorMessage = 'Network Connection Error';
+        errorDescription = 'Cannot connect to database. Please check: 1) Your internet connection, 2) Disable browser extensions/ad blockers, 3) Try refreshing the page';
+      } else if (error.message?.includes('No copyrights found')) {
+        errorDescription = 'Add some copyrights to your database first, then try again';
+      }
+      
       setTestResult({
-        error: error.message || 'Unknown error',
-        found: false
+        error: errorMessage,
+        found: false,
+        errorDetails: errorDescription
       });
-      toast.error(`Test Failed: ${error.message || 'Unknown error'}`);
+      
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
     } finally {
       setLoading(false);
     }
