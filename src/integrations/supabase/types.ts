@@ -59,6 +59,63 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_view_mode_audit: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          admin_email: string
+          admin_user_id: string
+          company_id: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          ip_address: unknown
+          request_path: string | null
+          resource_id: string | null
+          resource_type: string | null
+          risk_level: string | null
+          session_duration_seconds: number | null
+          session_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          admin_email: string
+          admin_user_id: string
+          company_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          request_path?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          risk_level?: string | null
+          session_duration_seconds?: number | null
+          session_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          admin_email?: string
+          admin_user_id?: string
+          company_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          request_path?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          risk_level?: string | null
+          session_duration_seconds?: number | null
+          session_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       ai_research_sessions: {
         Row: {
           ai_response: Json | null
@@ -6265,6 +6322,7 @@ export type Database = {
         Args: { new_source: string }
         Returns: undefined
       }
+      archive_old_admin_audit_logs: { Args: never; Returns: number }
       calculate_contract_controlled_percentage: {
         Args: { contract_id_param: string }
         Returns: number
@@ -6298,6 +6356,14 @@ export type Database = {
       cleanup_expired_invitations: { Args: never; Returns: number }
       cleanup_expired_notifications: { Args: never; Returns: number }
       cleanup_old_logs: { Args: never; Returns: number }
+      close_admin_view_mode_session: {
+        Args: {
+          p_ip_address?: string
+          p_session_id: string
+          p_user_agent?: string
+        }
+        Returns: undefined
+      }
       create_notification: {
         Args: {
           p_data?: Json
@@ -6324,6 +6390,23 @@ export type Database = {
       generate_sync_id: { Args: never; Returns: string }
       generate_work_id: { Args: never; Returns: string }
       generate_writer_id: { Args: never; Returns: string }
+      get_admin_audit_summary: {
+        Args: {
+          p_admin_user_id?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          admin_email: string
+          admin_user_id: string
+          avg_session_duration_minutes: number
+          companies_accessed: number
+          high_risk_actions: number
+          last_access: string
+          total_actions: number
+          total_sessions: number
+        }[]
+      }
       get_client_quarterly_balances: {
         Args: never
         Returns: {
@@ -6343,6 +6426,12 @@ export type Database = {
       get_client_subscriber: {
         Args: { _client_user_id: string }
         Returns: string
+      }
+      get_company_user_ids: {
+        Args: { _user_id: string }
+        Returns: {
+          user_id: string
+        }[]
       }
       get_invitations_needing_reminders: {
         Args: never
@@ -6381,6 +6470,12 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      get_user_company_ids: {
+        Args: { _user_id: string }
+        Returns: {
+          company_id: string
+        }[]
       }
       get_user_company_role: {
         Args: { company_id_param: string; user_id_param?: string }
@@ -6422,9 +6517,27 @@ export type Database = {
         Args: { p_user_id?: string }
         Returns: boolean
       }
+      is_system_admin: { Args: { _user_id: string }; Returns: boolean }
       link_expenses_to_payout: {
         Args: { payout_id_param: string }
         Returns: undefined
+      }
+      log_admin_view_mode_action: {
+        Args: {
+          p_action_details?: Json
+          p_action_type: string
+          p_admin_user_id: string
+          p_company_id?: string
+          p_company_name?: string
+          p_ip_address?: string
+          p_request_path?: string
+          p_resource_id?: string
+          p_resource_type?: string
+          p_risk_level?: string
+          p_session_id: string
+          p_user_agent?: string
+        }
+        Returns: string
       }
       log_copyright_activity: {
         Args: {
@@ -6489,6 +6602,10 @@ export type Database = {
           reason_param?: string
         }
         Returns: undefined
+      }
+      user_belongs_to_company: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
       }
       validate_royalty_splits: {
         Args: { contract_id_param: string }

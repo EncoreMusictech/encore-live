@@ -70,21 +70,36 @@ export const MLCEnrichmentDashboard: React.FC = () => {
     try {
       const statuses: CopyrightEnrichmentStatus[] = [];
 
-      // Batch fetch all writers and recordings upfront to avoid sequential calls
-      const allWritersPromises = copyrights.map(c => getWritersForCopyright(c.id).catch(e => {
-        console.error(`Error fetching writers for ${c.id}:`, e);
-        return [];
-      }));
+      // Process in chunks of 5 to avoid overwhelming the connection
+      const CHUNK_SIZE = 5;
+      const allWritersResults: any[] = [];
+      const allRecordingsResults: any[] = [];
       
-      const allRecordingsPromises = copyrights.map(c => getRecordingsForCopyright(c.id).catch(e => {
-        console.error(`Error fetching recordings for ${c.id}:`, e);
-        return [];
-      }));
-
-      const [allWritersResults, allRecordingsResults] = await Promise.all([
-        Promise.all(allWritersPromises),
-        Promise.all(allRecordingsPromises)
-      ]);
+      for (let i = 0; i < copyrights.length; i += CHUNK_SIZE) {
+        const chunk = copyrights.slice(i, i + CHUNK_SIZE);
+        
+        const writersChunk = await Promise.all(
+          chunk.map(c => getWritersForCopyright(c.id).catch(e => {
+            console.error(`Error fetching writers for ${c.id}:`, e);
+            return [];
+          }))
+        );
+        
+        const recordingsChunk = await Promise.all(
+          chunk.map(c => getRecordingsForCopyright(c.id).catch(e => {
+            console.error(`Error fetching recordings for ${c.id}:`, e);
+            return [];
+          }))
+        );
+        
+        allWritersResults.push(...writersChunk);
+        allRecordingsResults.push(...recordingsChunk);
+        
+        // Small delay between chunks
+        if (i + CHUNK_SIZE < copyrights.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
 
       for (let i = 0; i < copyrights.length; i++) {
         const copyright = copyrights[i];
@@ -230,8 +245,24 @@ export const MLCEnrichmentDashboard: React.FC = () => {
       if (!copyright) continue;
 
       try {
-        // Get recordings for this copyright
-        const recordings = await getRecordingsForCopyright(copyrightId);
+        // Get recordings for this copyright with retry logic
+        let recordings = [];
+        let retries = 3;
+        
+        while (retries > 0) {
+          try {
+            recordings = await getRecordingsForCopyright(copyrightId);
+            break;
+          } catch (error: any) {
+            retries--;
+            if (retries === 0) {
+              console.error(`Failed to fetch recordings after 3 attempts for ${copyright.work_title}`);
+              throw error;
+            }
+            console.log(`Retrying... (${3 - retries}/3)`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
         
         if (recordings.length === 0) {
           console.log(`No recordings found for ${copyright.work_title}`);
@@ -275,11 +306,23 @@ export const MLCEnrichmentDashboard: React.FC = () => {
         } else {
           console.log(`✗ No MLC data found for "${copyright.work_title}"`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Error enriching ${copyright.work_title}:`, error);
+        if (error.message?.includes('Failed to fetch')) {
+          toast({
+            title: "Connection Error",
+            description: "Database connection lost. Check your network and try again.",
+            variant: "destructive"
+          });
+          setIsEnriching(false);
+          return;
+        }
       }
 
       setEnrichmentProgress(prev => ({ ...prev, current: i + 1, found: foundCount }));
+      
+      // Add longer delay between requests to avoid overwhelming the connection
+      await new Promise(resolve => setTimeout(resolve, 1500));
     }
 
     setIsEnriching(false);
