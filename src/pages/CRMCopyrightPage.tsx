@@ -24,6 +24,7 @@ import { SenderCodeOnboarding } from "@/components/copyright/SenderCodeOnboardin
 import { TransmissionHistory } from "@/components/copyright/TransmissionHistory";
 import { MLCBulkEnrichment } from "@/components/copyright/MLCBulkEnrichment";
 import { MLCVerification } from "@/components/copyright/MLCVerification";
+import { MLCEnrichmentDashboard } from "@/components/copyright/MLCEnrichmentDashboard";
 import { CWRRegistrationStatusTracker } from "@/components/copyright/CWRRegistrationStatusTracker";
 import { CRMTabStatus } from "@/components/ui/crm-tab-status";
 import { DataFilteringIndicator } from "@/components/DataFilteringIndicator";

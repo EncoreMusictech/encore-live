@@ -1,0 +1,498 @@
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  Database, 
+  CheckCircle, 
+  XCircle, 
+  AlertCircle, 
+  TrendingUp, 
+  Search,
+  Filter,
+  Download,
+  RefreshCw,
+  PlayCircle
+} from 'lucide-react';
+import { useCopyright } from '@/hooks/useCopyright';
+import { useMLCLookup } from '@/hooks/useMLCLookup';
+import { useToast } from '@/hooks/use-toast';
+import { formatDistance } from 'date-fns';
+
+interface EnrichmentStats {
+  total: number;
+  enriched: number;
+  needsEnrichment: number;
+  enrichmentRate: number;
+  withWriters: number;
+  withRecordings: number;
+  withISWC: number;
+  avgConfidence: number;
+}
+
+interface CopyrightEnrichmentStatus {
+  id: string;
+  work_title: string;
+  isEnriched: boolean;
+  hasMLCWorkId: boolean;
+  hasISWC: boolean;
+  hasWriters: boolean;
+  hasRecordings: boolean;
+  writerCount: number;
+  recordingCount: number;
+  confidence?: number;
+  lastEnriched?: string;
+  enrichmentSource?: string;
+}
+
+export const MLCEnrichmentDashboard: React.FC = () => {
+  const { copyrights, getWritersForCopyright, getRecordingsForCopyright, loading } = useCopyright();
+  const { lookupWork } = useMLCLookup();
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'enriched' | 'needs_enrichment'>('all');
+  const [enrichmentStatuses, setEnrichmentStatuses] = useState<CopyrightEnrichmentStatus[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedCopyrights, setSelectedCopyrights] = useState<Set<string>>(new Set());
+
+  // Calculate enrichment statuses
+  const analyzeEnrichmentStatus = async () => {
+    setIsAnalyzing(true);
+    try {
+      const statuses: CopyrightEnrichmentStatus[] = [];
+
+      for (const copyright of copyrights) {
+        const writers = await getWritersForCopyright(copyright.id);
+        const recordings = await getRecordingsForCopyright(copyright.id);
+        
+        const hasMLCWorkId = !!(copyright as any).mlc_work_id;
+        const hasISWC = !!copyright.iswc;
+        const hasWriters = writers.length > 0;
+        const hasRecordings = recordings.length > 0;
+        
+        const isEnriched = hasMLCWorkId || (hasISWC && hasWriters);
+
+        statuses.push({
+          id: copyright.id,
+          work_title: copyright.work_title || 'Untitled',
+          isEnriched,
+          hasMLCWorkId,
+          hasISWC,
+          hasWriters,
+          hasRecordings,
+          writerCount: writers.length,
+          recordingCount: recordings.length,
+          confidence: (copyright as any).mlc_confidence,
+          lastEnriched: (copyright as any).mlc_enriched_at,
+          enrichmentSource: (copyright as any).mlc_source
+        });
+      }
+
+      setEnrichmentStatuses(statuses);
+      toast({
+        title: "Analysis Complete",
+        description: `Analyzed ${statuses.length} copyrights`
+      });
+    } catch (error) {
+      console.error('Error analyzing enrichment status:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "Failed to analyze enrichment status",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Calculate statistics
+  const stats: EnrichmentStats = useMemo(() => {
+    const total = enrichmentStatuses.length;
+    const enriched = enrichmentStatuses.filter(s => s.isEnriched).length;
+    const needsEnrichment = total - enriched;
+    const enrichmentRate = total > 0 ? (enriched / total) * 100 : 0;
+    const withWriters = enrichmentStatuses.filter(s => s.hasWriters).length;
+    const withRecordings = enrichmentStatuses.filter(s => s.hasRecordings).length;
+    const withISWC = enrichmentStatuses.filter(s => s.hasISWC).length;
+    const confidenceScores = enrichmentStatuses
+      .filter(s => s.confidence)
+      .map(s => s.confidence!);
+    const avgConfidence = confidenceScores.length > 0
+      ? confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length
+      : 0;
+
+    return {
+      total,
+      enriched,
+      needsEnrichment,
+      enrichmentRate,
+      withWriters,
+      withRecordings,
+      withISWC,
+      avgConfidence
+    };
+  }, [enrichmentStatuses]);
+
+  // Filter copyrights
+  const filteredStatuses = useMemo(() => {
+    let filtered = enrichmentStatuses;
+
+    if (filterStatus === 'enriched') {
+      filtered = filtered.filter(s => s.isEnriched);
+    } else if (filterStatus === 'needs_enrichment') {
+      filtered = filtered.filter(s => !s.isEnriched);
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(s => 
+        s.work_title.toLowerCase().includes(term)
+      );
+    }
+
+    return filtered;
+  }, [enrichmentStatuses, filterStatus, searchTerm]);
+
+  const toggleSelection = (id: string) => {
+    const newSelection = new Set(selectedCopyrights);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
+    } else {
+      newSelection.add(id);
+    }
+    setSelectedCopyrights(newSelection);
+  };
+
+  const selectAll = () => {
+    if (selectedCopyrights.size === filteredStatuses.length) {
+      setSelectedCopyrights(new Set());
+    } else {
+      setSelectedCopyrights(new Set(filteredStatuses.map(s => s.id)));
+    }
+  };
+
+  const enrichSelected = async () => {
+    toast({
+      title: "Batch Enrichment",
+      description: `Starting enrichment for ${selectedCopyrights.size} copyrights...`,
+    });
+    // This would trigger the bulk enrichment component
+    // For now, just show a message
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="w-5 h-5" />
+                MLC Enrichment Status Dashboard
+              </CardTitle>
+              <CardDescription>
+                Track MLC data enrichment progress across your catalog
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={analyzeEnrichmentStatus} 
+              disabled={isAnalyzing || loading}
+            >
+              {isAnalyzing ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Analyze Status
+                </>
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {enrichmentStatuses.length === 0 && !isAnalyzing && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Click "Analyze Status" to generate the enrichment dashboard
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {enrichmentStatuses.length > 0 && (
+        <>
+          {/* Statistics Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Copyrights
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.total}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Enrichment Rate
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {stats.enrichmentRate.toFixed(1)}%
+                </div>
+                <Progress value={stats.enrichmentRate} className="mt-2" />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.enriched} of {stats.total} enriched
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Needs Enrichment
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  {stats.needsEnrichment}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {((stats.needsEnrichment / stats.total) * 100).toFixed(1)}% remaining
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Avg Confidence
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {stats.avgConfidence.toFixed(0)}%
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Based on enriched works
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Data Quality Metrics */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Data Quality Metrics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    With Writers
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Progress value={(stats.withWriters / stats.total) * 100} className="flex-1" />
+                    <span className="text-sm font-medium">
+                      {stats.withWriters} ({((stats.withWriters / stats.total) * 100).toFixed(0)}%)
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    With Recordings
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Progress value={(stats.withRecordings / stats.total) * 100} className="flex-1" />
+                    <span className="text-sm font-medium">
+                      {stats.withRecordings} ({((stats.withRecordings / stats.total) * 100).toFixed(0)}%)
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    With ISWC
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Progress value={(stats.withISWC / stats.total) * 100} className="flex-1" />
+                    <span className="text-sm font-medium">
+                      {stats.withISWC} ({((stats.withISWC / stats.total) * 100).toFixed(0)}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Copyright List */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <CardTitle>Copyright Enrichment Status</CardTitle>
+                  <CardDescription>
+                    {filteredStatuses.length} of {stats.total} copyrights shown
+                  </CardDescription>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {selectedCopyrights.size > 0 && (
+                    <Button onClick={enrichSelected} size="sm">
+                      <PlayCircle className="w-4 h-4 mr-2" />
+                      Enrich Selected ({selectedCopyrights.size})
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Filters */}
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search copyrights..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <Tabs value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)} className="w-auto">
+                  <TabsList>
+                    <TabsTrigger value="all">
+                      All ({stats.total})
+                    </TabsTrigger>
+                    <TabsTrigger value="enriched">
+                      Enriched ({stats.enriched})
+                    </TabsTrigger>
+                    <TabsTrigger value="needs_enrichment">
+                      Needs Enrichment ({stats.needsEnrichment})
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              {/* Table */}
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <input
+                          type="checkbox"
+                          checked={selectedCopyrights.size === filteredStatuses.length && filteredStatuses.length > 0}
+                          onChange={selectAll}
+                          className="rounded"
+                        />
+                      </TableHead>
+                      <TableHead>Work Title</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Writers</TableHead>
+                      <TableHead>Recordings</TableHead>
+                      <TableHead>ISWC</TableHead>
+                      <TableHead>MLC ID</TableHead>
+                      <TableHead>Confidence</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredStatuses.map((status) => (
+                      <TableRow key={status.id}>
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            checked={selectedCopyrights.has(status.id)}
+                            onChange={() => toggleSelection(status.id)}
+                            className="rounded"
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {status.work_title}
+                        </TableCell>
+                        <TableCell>
+                          {status.isEnriched ? (
+                            <Badge variant="default" className="gap-1">
+                              <CheckCircle className="w-3 h-3" />
+                              Enriched
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="gap-1">
+                              <AlertCircle className="w-3 h-3" />
+                              Needs Enrichment
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {status.hasWriters ? (
+                            <span className="text-green-600">{status.writerCount}</span>
+                          ) : (
+                            <span className="text-muted-foreground">0</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {status.hasRecordings ? (
+                            <span className="text-green-600">{status.recordingCount}</span>
+                          ) : (
+                            <span className="text-muted-foreground">0</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {status.hasISWC ? (
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {status.hasMLCWorkId ? (
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {status.confidence ? (
+                            <span className="text-sm">{status.confidence}%</span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {filteredStatuses.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No copyrights match your filters
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
+  );
+};
