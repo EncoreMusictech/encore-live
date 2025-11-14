@@ -56,6 +56,26 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
       let successCount = 0;
       let failedCount = 0;
 
+      // Fetch all existing ISRCs for this user at once (performance optimization)
+      const { data: existingRecordings } = await supabase
+        .from('copyright_recordings')
+        .select('isrc, copyright_id')
+        .not('isrc', 'is', null);
+
+      // Get user's copyright IDs to filter recordings
+      const { data: userCopyrights } = await supabase
+        .from('copyrights')
+        .select('id')
+        .eq('user_id', user.id);
+
+      const userCopyrightIds = new Set(userCopyrights?.map(c => c.id) || []);
+      const existingIsrcs = new Set(
+        existingRecordings
+          ?.filter(r => userCopyrightIds.has(r.copyright_id))
+          .map(r => r.isrc) || []
+      );
+      setProgress(15);
+
       // Process each work
       for (let i = 0; i < jsonData.length; i++) {
         const work = jsonData[i] as Record<string, string>;
@@ -68,23 +88,12 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           const isVideo = /\(video\)/i.test(workTitle);
           const workType = isVideo ? 'Video' : 'Audio Recording';
           
-          // Check for ISRC duplicates only if ISRC exists
-          if (isrc) {
-            // @ts-ignore - Avoid deep type instantiation
-            const existingQuery = await supabase
-              .from('copyrights')
-              .select('id, work_title, work_type')
-              .eq('user_id', user.id)
-              .eq('isrc', isrc)
-              .limit(1);
-            
-            if (existingQuery.data && existingQuery.data.length > 0) {
-              const existing = existingQuery.data[0];
-              console.warn(`Row ${i + 1} - ${workTitle}: ISRC duplicate (${isrc}), skipping`);
-              failedCount++;
-              setProgress(20 + ((i + 1) / jsonData.length) * 80);
-              continue;
-            }
+          // Check for ISRC duplicates using in-memory set (much faster)
+          if (isrc && existingIsrcs.has(isrc)) {
+            console.warn(`Row ${i + 1} - ${workTitle}: ISRC duplicate (${isrc}), skipping`);
+            failedCount++;
+            setProgress(15 + ((i + 1) / jsonData.length) * 85);
+            continue;
           }
           
           // Generate unique internal_id
@@ -105,13 +114,26 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
               work_type: workType,
               internal_id: internalId,
               iswc: work.iswc || null,
-              isrc: isrc,
               notes: `Bulk uploaded for ${companyName}`,
             })
             .select()
             .single();
 
           if (copyrightError) throw copyrightError;
+
+          // Create recording entry with ISRC if provided
+          if (isrc) {
+            const { error: recordingError } = await supabase
+              .from('copyright_recordings')
+              .insert({
+                copyright_id: copyright.id,
+                isrc: isrc,
+                recording_title: workTitle,
+                artist_name: work.artist || work.writer || null,
+              });
+
+            if (recordingError) throw recordingError;
+          }
 
           // Link to sub-account (using catalog_items for now as we don't have sub_account_works)
           // @ts-ignore - Avoid deep type instantiation
@@ -135,15 +157,10 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           successCount++;
         } catch (error: any) {
           console.error(`Error processing row ${i + 1}:`, error);
-          toast({
-            title: `Row ${i + 1} - ${work.title || work.work_title || 'Unknown'}`,
-            description: error.message || 'Failed to process work',
-            variant: 'destructive',
-          });
           failedCount++;
         }
 
-        setProgress(20 + ((i + 1) / jsonData.length) * 80);
+        setProgress(15 + ((i + 1) / jsonData.length) * 85);
       }
 
       setResults({
