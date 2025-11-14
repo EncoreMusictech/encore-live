@@ -376,9 +376,9 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({
                         {firstRecording?.isrc || '-'}
                       </TableCell>
                       <TableCell>
-                        {firstRecording ? (
+                        {copyright.work_type ? (
                           <Badge variant="outline">
-                            {firstRecording.recording_title ? 'Audio' : 'Video'}
+                            {copyright.work_type}
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground">-</span>
