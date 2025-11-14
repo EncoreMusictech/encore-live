@@ -71,11 +71,16 @@ export function MLCVerification() {
       if (writersError) throw writersError;
 
       const writerName = writers && writers.length > 0 ? writers[0].writer_name : '';
+      const firstRecording = copyrights.copyright_recordings?.[0];
+      const artistName = firstRecording?.artist_name || '';
+      const isrc = firstRecording?.isrc || '';
       
       console.log('🔎 Calling MLC API with:', {
         workTitle: copyrights.work_title,
         writerName,
-        iswc: copyrights.iswc
+        artistName,
+        iswc: copyrights.iswc,
+        isrc
       });
 
       // Call MLC API
@@ -84,7 +89,9 @@ export function MLCVerification() {
         body: {
           workTitle: copyrights.work_title,
           writerName,
+          artistName: artistName || undefined,
           iswc: copyrights.iswc || undefined,
+          isrc: isrc || undefined,
           enhanced: true,
           includeRecordings: true
         }
@@ -104,7 +111,9 @@ export function MLCVerification() {
         testedWith: {
           workTitle: copyrights.work_title,
           iswc: copyrights.iswc,
-          writerName
+          writerName,
+          artistName,
+          isrc
         }
       });
 
