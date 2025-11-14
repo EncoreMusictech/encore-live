@@ -5,6 +5,7 @@ import { useToast } from './use-toast';
 import { useAsyncOperation } from './useAsyncOperation';
 import { useOptimisticUpdates } from './useOptimisticUpdates';
 import { useRetryLogic } from './useRetryLogic';
+import { useDataFiltering } from './useDataFiltering';
 
 export interface Payout {
   id: string;
@@ -92,6 +93,7 @@ export interface PayoutRoyalty {
 export function usePayouts() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { applyUserIdFilter } = useDataFiltering();
 
   // Helper function to dispatch events when payouts change
   const dispatchPayoutEvent = useCallback((eventType: string, payout?: any) => {
@@ -143,7 +145,7 @@ export function usePayouts() {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('payouts')
         .select(`
           *,
@@ -156,6 +158,10 @@ export function usePayouts() {
           )
         `)
         .order('created_at', { ascending: false });
+      
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       

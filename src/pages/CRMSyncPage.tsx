@@ -15,6 +15,7 @@ import { SyncLicenseDashboard } from "@/components/sync-licensing/SyncLicenseDas
 import { useSyncLicenses } from "@/hooks/useSyncLicenses";
 import SyncLicenseFiltersComponent from "@/components/sync-licensing/SyncLicenseFilters";
 import { useSyncLicenseFilters } from "@/hooks/useSyncLicenseFilters";
+import { DataFilteringIndicator } from "@/components/DataFilteringIndicator";
 
 export default function CRMSyncPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -82,14 +83,17 @@ export default function CRMSyncPage() {
             Manage your sync licensing deals from inquiry to payment
           </p>
         </div>
-        <Button 
-          onClick={() => setIsFormOpen(true)} 
-          className="gap-2"
-          disabled={!canAccess('syncLicensing')}
-        >
-          <Plus className="h-4 w-4" />
-          {canAccess('syncLicensing') ? 'New Sync Request' : 'Demo Limit Reached'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <DataFilteringIndicator />
+          <Button 
+            onClick={() => setIsFormOpen(true)} 
+            className="gap-2"
+            disabled={!canAccess('syncLicensing')}
+          >
+            <Plus className="h-4 w-4" />
+            {canAccess('syncLicensing') ? 'New Sync Request' : 'Demo Limit Reached'}
+          </Button>
+        </div>
       </div>
 
       {/* Dashboard Stats */}

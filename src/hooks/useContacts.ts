@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
+import { useDataFiltering } from './useDataFiltering';
 
 export interface Contact {
   id: string;
@@ -21,15 +22,20 @@ export function useContacts() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { applyUserIdFilter } = useDataFiltering();
 
   const fetchContacts = async () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('contacts')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       setContacts(data || []);
