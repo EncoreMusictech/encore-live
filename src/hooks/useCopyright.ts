@@ -248,7 +248,7 @@ export const useCopyright = () => {
     }
   };
 
-  const deleteCopyright = async (id: string) => {
+  const deleteCopyright = async (id: string, options?: { silent?: boolean }) => {
     try {
       const copyrightToDelete = copyrights.find(c => c.id === id);
       
@@ -271,17 +271,22 @@ export const useCopyright = () => {
       });
       
       setCopyrights(prev => prev.filter(c => c.id !== id));
-      toast({
-        title: "Success",
-        description: "Copyright work deleted successfully",
-      });
+      
+      if (!options?.silent) {
+        toast({
+          title: "Success",
+          description: "Copyright work deleted successfully",
+        });
+      }
     } catch (error) {
       console.error('Error deleting copyright:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete copyright work",
-        variant: "destructive",
-      });
+      if (!options?.silent) {
+        toast({
+          title: "Error",
+          description: "Failed to delete copyright work",
+          variant: "destructive",
+        });
+      }
       throw error;
     }
   };

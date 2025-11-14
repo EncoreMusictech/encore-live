@@ -147,11 +147,11 @@ export default function CRMCopyrightPage() {
     try {
       setDeletingProgress({ current: 0, total: copyrights.length });
       
-      // Delete all copyrights in parallel and track progress
+      // Delete all copyrights in parallel and track progress (silent mode)
       let completed = 0;
       await Promise.all(
         copyrights.map(async (copyright) => {
-          await deleteCopyright(copyright.id);
+          await deleteCopyright(copyright.id, { silent: true });
           completed++;
           setDeletingProgress({ current: completed, total: copyrights.length });
         })
@@ -176,11 +176,20 @@ export default function CRMCopyrightPage() {
   const handleDelete = async (copyright: any) => {
     try {
       setDeletingProgress({ current: 0, total: 1 });
-      await deleteCopyright(copyright.id);
+      await deleteCopyright(copyright.id, { silent: true });
       setDeletingProgress(null);
+      toast({
+        title: "Copyright Deleted",
+        description: "Successfully deleted copyright work."
+      });
     } catch (error) {
       console.error('Error deleting copyright:', error);
       setDeletingProgress(null);
+      toast({
+        title: "Error",
+        description: "Failed to delete copyright work",
+        variant: "destructive"
+      });
     }
   };
 
