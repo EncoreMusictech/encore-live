@@ -523,6 +523,26 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       return;
     }
 
+    // Pre-flight authentication check and refresh
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          throw new Error('Your session has expired. Please refresh the page and sign in again.');
+        }
+      }
+    } catch (authError) {
+      toast({
+        title: "Authentication Error",
+        description: authError instanceof Error ? authError.message : "Please refresh the page and sign in again.",
+        variant: "destructive"
+      });
+      setIsProcessing(false);
+      setIsRetrying(false);
+      return;
+    }
+
     if (!isRetry) {
       // Keep preview dialog open and show progress there
       setCurrentStep('processing');
@@ -822,18 +842,18 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               }
               
               // Check for authentication errors
-              if (error?.message?.includes('No authenticated user')) {
-                throw new Error(`Authentication error - Session may have expired. Please refresh the page and try again. (${error?.message || 'Unknown auth error'})`);
+              if (error?.message?.includes('No authenticated user') || error?.message?.includes('JWT')) {
+                throw new Error(`Authentication error - Your session expired during upload. Row ${copyright.row_number}: ${copyright.work_title}. Please refresh the page and try again.`);
               }
               
               // Check for RLS policy errors
               if (error?.code === '42501' || error?.message?.includes('policy')) {
-                throw new Error(`Permission denied - Please check your account permissions. (${error?.message || 'RLS policy error'})`);
+                throw new Error(`Permission denied for row ${copyright.row_number}: ${copyright.work_title}. Check your account permissions. (Error code: ${error?.code || 'RLS'})`);
               }
               
-              // Provide detailed error message
-              const detailedError = error?.message || error?.toString() || 'Unknown error occurred';
-              throw new Error(`Upload failed: ${detailedError}${error?.code ? ` (Error code: ${error.code})` : ''}`);
+              // Provide detailed error message with row number and work title
+              const detailedError = `Row ${copyright.row_number} - ${copyright.work_title}: ${error?.message || error?.toString() || 'Unknown error occurred'}`;
+              throw new Error(detailedError);
             }
           })
         );
