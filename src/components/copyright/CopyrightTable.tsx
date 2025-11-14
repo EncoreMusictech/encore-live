@@ -7,13 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Search, ChevronUp, ChevronDown, Music, Users, FileText, CheckCircle, Clock, AlertTriangle, ExternalLink, Edit, Download, Trash2, X, FileOutput } from 'lucide-react';
-import { Copyright, CopyrightWriter } from '@/hooks/useCopyright';
+import { Copyright, CopyrightWriter, CopyrightRecording } from '@/hooks/useCopyright';
 import { AudioPlayer } from './AudioPlayer';
 import { ExportDialog } from './ExportDialog';
 interface CopyrightTableProps {
   copyrights: Copyright[];
   writers: {
     [key: string]: CopyrightWriter[];
+  };
+  recordings?: {
+    [key: string]: CopyrightRecording[];
   };
   loading: boolean;
   realtimeError?: string | null;
@@ -30,6 +33,7 @@ type SortField = 'work_title' | 'work_id' | 'created_at' | 'registration_status'
 export const CopyrightTable: React.FC<CopyrightTableProps> = ({
   copyrights,
   writers,
+  recordings = {},
   loading,
   realtimeError,
   onEdit,
@@ -313,6 +317,9 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({
                       {getSortIcon('work_title')}
                     </div>
                   </TableHead>
+                  <TableHead>Artist</TableHead>
+                  <TableHead>ISRC</TableHead>
+                  <TableHead>Media Type</TableHead>
                   <TableHead>ISWC</TableHead>
                   <TableHead>Album</TableHead>
                   <TableHead>Writers</TableHead>
@@ -342,6 +349,8 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({
               <TableBody>
                 {filteredAndSortedCopyrights.map(copyright => {
                 const copyrightWriters = writers[copyright.id] || [];
+                const copyrightRecordings = recordings[copyright.id] || [];
+                const firstRecording = copyrightRecordings[0];
                 const controlledShare = calculateControlledShare(copyrightWriters);
                 return <TableRow key={copyright.id} className="hover:bg-muted/30">
                       <TableCell>
@@ -357,6 +366,23 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({
                           {copyright.work_title}
                         </div>
                         {copyright.contains_sample && <Badge variant="secondary" className="text-xs mt-1">Contains Sample</Badge>}
+                      </TableCell>
+                      <TableCell className="max-w-[150px]">
+                        <div className="truncate" title={firstRecording?.artist_name || ''}>
+                          {firstRecording?.artist_name || '-'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {firstRecording?.isrc || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {firstRecording ? (
+                          <Badge variant="outline">
+                            {firstRecording.recording_title ? 'Audio' : 'Video'}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="font-mono text-sm">
                         {copyright.iswc || '-'}
