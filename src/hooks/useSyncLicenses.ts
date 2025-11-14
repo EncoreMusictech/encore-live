@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useDataFiltering } from "./useDataFiltering";
 
 export interface SyncLicense {
   id: string;
@@ -212,13 +213,19 @@ export interface CreateSyncLicenseData {
 }
 
 export const useSyncLicenses = () => {
+  const { applyUserIdFilter } = useDataFiltering();
+  
   return useQuery({
     queryKey: ["sync-licenses"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("sync_licenses")
         .select("*")
         .order("created_at", { ascending: false });
+      
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query;
 
       if (error) {
         throw error;
