@@ -41,7 +41,7 @@ export function ViewSwitcher({ companyId, companyName }: ViewSwitcherProps) {
       
       if (user) {
         // Log view mode entry for audit trail
-        await supabase.rpc('log_admin_view_mode_action', {
+        await supabase.rpc('log_admin_view_mode_action' as any, {
           p_admin_user_id: user.id,
           p_session_id: sessionId,
           p_action_type: 'view_mode_entered',

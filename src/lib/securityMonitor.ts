@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { autoLogAdminAction } from './auditLogger';
 
 interface SecurityMonitor {
   trackFailedAttempt: (type: string, identifier: string) => Promise<void>;
@@ -70,6 +71,18 @@ class SecurityMonitorService implements SecurityMonitor {
       if (error) {
         console.error('Failed to log security event:', error);
       }
+
+      // Auto-log admin action if in view mode
+      const severity = this.getSeverityLevel(event);
+      await autoLogAdminAction({
+        actionType: 'read',
+        resourceType: 'security_event',
+        actionDetails: {
+          event_type: event,
+          event_data: details,
+          severity
+        }
+      });
     } catch (error) {
       console.error('Error logging security event:', error);
     }

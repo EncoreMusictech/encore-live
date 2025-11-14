@@ -67,7 +67,7 @@ export function ViewModeProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await supabase.rpc('close_admin_view_mode_session', {
+          await supabase.rpc('close_admin_view_mode_session' as any, {
             p_session_id: sessionId,
             p_ip_address: null,
             p_user_agent: navigator.userAgent
