@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useDataFiltering } from './useDataFiltering';
 
 export interface ActivityLogEntry {
   id: string;
@@ -30,6 +31,7 @@ export interface LogActivityParams {
 export const useActivityLog = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { applyUserIdFilter } = useDataFiltering();
 
   const logActivity = async (params: LogActivityParams): Promise<string | null> => {
     try {
@@ -86,6 +88,8 @@ export const useActivityLog = () => {
       if (copyrightId) {
         query = query.eq('copyright_id', copyrightId);
       }
+      
+      query = applyUserIdFilter(query);
 
       const { data, error } = await query;
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useDataFiltering } from './useDataFiltering';
 
 export interface HistoricalStatement {
   id?: string;
@@ -42,6 +43,7 @@ export function useHistoricalStatements(artistName?: string) {
   const [statements, setStatements] = useState<HistoricalStatement[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { applyUserIdFilter } = useDataFiltering();
 
   const fetchStatements = useCallback(async (name?: string) => {
     if (!name && !artistName) return;
@@ -51,13 +53,16 @@ export function useHistoricalStatements(artistName?: string) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('deal_historical_statements')
         .select('*')
-        .eq('user_id', user.id)
         .eq('artist_name', name || artistName)
         .order('year', { ascending: true })
         .order('quarter', { ascending: true });
+      
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       // Cast the data to our interface type

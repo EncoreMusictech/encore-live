@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDataFiltering } from './useDataFiltering';
 
 interface CustomerHealthMetrics {
   id: string;
@@ -60,6 +61,7 @@ interface OperationsMetrics {
 
 export const useOperationsData = () => {
   const { user } = useAuth();
+  const { applyUserIdFilter } = useDataFiltering();
   const [customerHealth, setCustomerHealth] = useState<CustomerHealthMetrics[]>([]);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [revenueEvents, setRevenueEvents] = useState<RevenueEvent[]>([]);
@@ -79,10 +81,14 @@ export const useOperationsData = () => {
 
   const fetchCustomerHealth = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('customer_health_metrics')
         .select('*')
         .order('health_score', { ascending: false });
+      
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       setCustomerHealth((data || []) as CustomerHealthMetrics[]);
@@ -94,10 +100,14 @@ export const useOperationsData = () => {
 
   const fetchSupportTickets = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('support_ticket_analytics')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       setSupportTickets((data || []) as SupportTicket[]);
@@ -109,11 +119,15 @@ export const useOperationsData = () => {
 
   const fetchRevenueEvents = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('revenue_events')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
+      
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       setRevenueEvents((data || []) as RevenueEvent[]);

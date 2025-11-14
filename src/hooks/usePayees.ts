@@ -2,17 +2,19 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useDataFiltering } from './useDataFiltering';
 
 export function usePayees() {
   const [payees, setPayees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { applyUserIdFilter } = useDataFiltering();
 
   const fetchPayees = async () => {
     try {
       setLoading(true);
       
       // Fetch payees unconditionally (support agreement-driven setup as well)
-      const { data, error } = await supabase
+      let query = supabase
         .from('payees')
         .select(`
           *,
@@ -33,6 +35,10 @@ export function usePayees() {
           )
         `)
         .order('created_at', { ascending: false });
+      
+      query = applyUserIdFilter(query);
+      
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching payees:', error);
