@@ -686,57 +686,82 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                 if (copyright.duration_seconds) updateData.duration_seconds = copyright.duration_seconds;
                 if (copyright.notes) updateData.notes = copyright.notes;
 
-                const { error: updateError } = await supabase
-                  .from('copyrights')
-                  .update(updateData)
-                  .eq('id', existingWork.id);
-
-                if (updateError) throw updateError;
+                await retryRequest(async () => {
+                  const { error: updateError } = await supabase
+                    .from('copyrights')
+                    .update(updateData)
+                    .eq('id', existingWork.id);
+                  if (updateError) throw updateError;
+                  return true as const;
+                });
 
                 // Update related entities if provided
                 if (copyright.writers && copyright.writers.length > 0) {
-                  // Delete existing writers
-                  await supabase.from('copyright_writers').delete().eq('copyright_id', existingWork.id);
+                  await retryRequest(async () => {
+                    const { error } = await supabase.from('copyright_writers').delete().eq('copyright_id', existingWork.id);
+                    if (error) throw error;
+                    return true as const;
+                  });
                   // Insert new writers
-                  await supabase.from('copyright_writers').insert(
-                    copyright.writers.map(writer => ({
-                      copyright_id: existingWork.id,
-                      writer_name: writer.writer_name,
-                      ownership_percentage: writer.ownership_percentage,
-                      writer_role: writer.writer_role || undefined,
-                      ipi_number: writer.ipi_number || undefined,
-                      controlled_status: writer.controlled_status || undefined,
-                      pro_affiliation: writer.pro_affiliation || undefined
-                    }))
-                  );
+                  await retryRequest(async () => {
+                    const { error } = await supabase.from('copyright_writers').insert(
+                      copyright.writers.map(writer => ({
+                        copyright_id: existingWork.id,
+                        writer_name: writer.writer_name,
+                        ownership_percentage: writer.ownership_percentage,
+                        writer_role: writer.writer_role || undefined,
+                        ipi_number: writer.ipi_number || undefined,
+                        controlled_status: writer.controlled_status || undefined,
+                        pro_affiliation: writer.pro_affiliation || undefined
+                      }))
+                    );
+                    if (error) throw error;
+                    return true as const;
+                  });
                 }
 
                 if (copyright.publishers && copyright.publishers.length > 0) {
-                  await supabase.from('copyright_publishers').delete().eq('copyright_id', existingWork.id);
-                  await supabase.from('copyright_publishers').insert(
-                    copyright.publishers.map(publisher => ({
-                      copyright_id: existingWork.id,
-                      publisher_name: publisher.publisher_name,
-                      ownership_percentage: publisher.ownership_percentage,
-                      publisher_role: publisher.publisher_role || undefined,
-                      ipi_number: publisher.ipi_number || undefined,
-                      pro_affiliation: publisher.pro_affiliation || undefined
-                    }))
-                  );
+                  await retryRequest(async () => {
+                    const { error } = await supabase.from('copyright_publishers').delete().eq('copyright_id', existingWork.id);
+                    if (error) throw error;
+                    return true as const;
+                  });
+                  await retryRequest(async () => {
+                    const { error } = await supabase.from('copyright_publishers').insert(
+                      copyright.publishers.map(publisher => ({
+                        copyright_id: existingWork.id,
+                        publisher_name: publisher.publisher_name,
+                        ownership_percentage: publisher.ownership_percentage,
+                        publisher_role: publisher.publisher_role || undefined,
+                        ipi_number: publisher.ipi_number || undefined,
+                        pro_affiliation: publisher.pro_affiliation || undefined
+                      }))
+                    );
+                    if (error) throw error;
+                    return true as const;
+                  });
                 }
 
                 if (copyright.recordings && copyright.recordings.length > 0) {
-                  await supabase.from('copyright_recordings').delete().eq('copyright_id', existingWork.id);
-                  await supabase.from('copyright_recordings').insert(
-                    copyright.recordings.map(recording => ({
-                      copyright_id: existingWork.id,
-                      recording_title: recording.recording_title,
-                      artist_name: recording.artist_name || undefined,
-                      isrc: recording.isrc || undefined,
-                      release_date: recording.release_date || undefined,
-                      duration_seconds: recording.duration_seconds || undefined
-                    }))
-                  );
+                  await retryRequest(async () => {
+                    const { error } = await supabase.from('copyright_recordings').delete().eq('copyright_id', existingWork.id);
+                    if (error) throw error;
+                    return true as const;
+                  });
+                  await retryRequest(async () => {
+                    const { error } = await supabase.from('copyright_recordings').insert(
+                      copyright.recordings.map(recording => ({
+                        copyright_id: existingWork.id,
+                        recording_title: recording.recording_title,
+                        artist_name: recording.artist_name || undefined,
+                        isrc: recording.isrc || undefined,
+                        release_date: recording.release_date || undefined,
+                        duration_seconds: recording.duration_seconds || undefined
+                      }))
+                    );
+                    if (error) throw error;
+                    return true as const;
+                  });
                 }
 
                 // Log update activity
