@@ -49,7 +49,19 @@ export const useCopyright = () => {
 
       let query = supabase
         .from('copyrights')
-        .select('*');
+        .select(`
+          *,
+          copyright_recordings!left(
+            id,
+            isrc,
+            recording_title,
+            artist_name,
+            label_name,
+            duration_seconds,
+            release_date,
+            recording_version
+          )
+        `);
       
       // Apply sub-account filtering if active
       query = applyUserIdFilter(query);
