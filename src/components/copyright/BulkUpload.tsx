@@ -561,8 +561,33 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     console.log(`Starting bulk upload of ${dataToUpload.length} copyrights`);
 
     try {
-      // Process in batches of 5 for better performance
-      const BATCH_SIZE = 5;
+      // Helper function to retry failed network requests
+      const retryRequest = async <T,>(
+        operation: () => Promise<T>,
+        maxRetries: number = 3,
+        delayMs: number = 1000
+      ): Promise<T> => {
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          try {
+            return await operation();
+          } catch (error: any) {
+            const isNetworkError = error?.message?.includes('Failed to fetch') || 
+                                   error?.message?.includes('Network') ||
+                                   error?.name === 'TypeError';
+            
+            if (attempt === maxRetries - 1 || !isNetworkError) {
+              throw error;
+            }
+            // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, delayMs * Math.pow(2, attempt)));
+            console.log(`Retry attempt ${attempt + 1} for operation`);
+          }
+        }
+        throw new Error('Max retries exceeded');
+      };
+
+      // Process in batches of 3 for better API stability
+      const BATCH_SIZE = 3;
       
       for (let batchStart = 0; batchStart < dataToUpload.length; batchStart += BATCH_SIZE) {
         const batch = dataToUpload.slice(batchStart, batchStart + BATCH_SIZE);
@@ -574,29 +599,35 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
             await new Promise(resolve => setTimeout(resolve, batchIndex * 50));
 
             try {
-              // Check if work already exists in database (by title, ISWC, or ISRC)
+              // Check if work already exists in database (by title, ISWC, or ISRC) - with retry logic
               let existingWork = null;
               
               // Try to find by ISWC first if available
               if (copyright.iswc) {
-                const { data } = await supabase
-                  .from('copyrights')
-                  .select('*')
-                  .eq('iswc', copyright.iswc)
-                  .limit(1)
-                  .maybeSingle();
-                existingWork = data;
+                const result = await retryRequest(async () => {
+                  const { data } = await supabase
+                    .from('copyrights')
+                    .select('*')
+                    .eq('iswc', copyright.iswc)
+                    .limit(1)
+                    .maybeSingle();
+                  return data;
+                });
+                existingWork = result;
               }
               
               // If not found by ISWC, try by title
               if (!existingWork) {
-                const { data } = await supabase
-                  .from('copyrights')
-                  .select('*')
-                  .ilike('work_title', copyright.work_title)
-                  .limit(1)
-                  .maybeSingle();
-                existingWork = data;
+                const result = await retryRequest(async () => {
+                  const { data } = await supabase
+                    .from('copyrights')
+                    .select('*')
+                    .ilike('work_title', copyright.work_title)
+                    .limit(1)
+                    .maybeSingle();
+                  return data;
+                });
+                existingWork = result;
               }
 
               if (existingWork) {
@@ -839,6 +870,11 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               if (error?.code === '23505' && error?.message?.includes('copyrights_work_id_key')) {
                 console.warn(`Duplicate work_id detected for row ${copyright.row_number}: ${copyright.work_title}`);
                 throw new Error('Duplicate work - this work may already exist in your catalog');
+              }
+              
+              // Check for network/fetch errors
+              if (error?.message?.includes('Failed to fetch') || error?.name === 'TypeError') {
+                throw new Error(`Network error for row ${copyright.row_number}: ${copyright.work_title}. Please check your internet connection and try again.`);
               }
               
               // Check for authentication errors
