@@ -74,6 +74,9 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           ?.filter(r => userCopyrightIds.has(r.copyright_id))
           .map(r => r.isrc) || []
       );
+      
+      // Track ISRCs being added in this batch to prevent duplicates within upload
+      const batchIsrcs = new Set<string>();
       setProgress(15);
 
       // Process each work
@@ -88,22 +91,32 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           const isVideo = /\(video\)/i.test(workTitle);
           const workType = isVideo ? 'Video' : 'Audio Recording';
           
-          // Check for ISRC duplicates using in-memory set (much faster)
-          if (isrc && existingIsrcs.has(isrc)) {
-            console.warn(`Row ${i + 1} - ${workTitle}: ISRC duplicate (${isrc}), skipping`);
-            failedCount++;
-            setProgress(15 + ((i + 1) / jsonData.length) * 85);
-            continue;
+          // Check for ISRC duplicates (both existing and within current batch)
+          if (isrc) {
+            if (existingIsrcs.has(isrc)) {
+              console.warn(`Row ${i + 1} - ${workTitle}: ISRC duplicate in database (${isrc}), skipping`);
+              failedCount++;
+              setProgress(15 + ((i + 1) / jsonData.length) * 85);
+              continue;
+            }
+            if (batchIsrcs.has(isrc)) {
+              console.warn(`Row ${i + 1} - ${workTitle}: ISRC duplicate in upload batch (${isrc}), skipping`);
+              failedCount++;
+              setProgress(15 + ((i + 1) / jsonData.length) * 85);
+              continue;
+            }
+            batchIsrcs.add(isrc);
           }
           
-          // Generate unique internal_id
+          // Generate unique internal_id with UUID to prevent any duplicates
           const sanitizedTitle = workTitle
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-|-$/g, '')
-            .substring(0, 50);
+            .substring(0, 40);
           const typeSlug = workType.toLowerCase().replace(/\s+/g, '-');
-          const internalId = `${sanitizedTitle}-${typeSlug}-${Date.now()}-${i}`;
+          const uniqueId = crypto.randomUUID().substring(0, 8);
+          const internalId = `${sanitizedTitle}-${typeSlug}-${uniqueId}`;
           
           // @ts-ignore - Avoid deep type instantiation
           const { data: copyright, error: copyrightError } = await supabase
