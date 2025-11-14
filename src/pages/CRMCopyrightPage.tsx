@@ -462,6 +462,7 @@ export default function CRMCopyrightPage() {
                 </TabsContent>
                 
                 <TabsContent value="mlc-enrichment" className="space-y-6 mt-6">
+                  <MLCEnrichmentDashboard />
                   <MLCVerification />
                   <MLCBulkEnrichment />
                 </TabsContent>

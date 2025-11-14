@@ -17,7 +17,9 @@ import {
   Filter,
   Download,
   RefreshCw,
-  PlayCircle
+  PlayCircle,
+  Loader2,
+  Zap
 } from 'lucide-react';
 import { useCopyright } from '@/hooks/useCopyright';
 import { useMLCLookup } from '@/hooks/useMLCLookup';
@@ -51,7 +53,7 @@ interface CopyrightEnrichmentStatus {
 }
 
 export const MLCEnrichmentDashboard: React.FC = () => {
-  const { copyrights, getWritersForCopyright, getRecordingsForCopyright, loading } = useCopyright();
+  const { copyrights, getWritersForCopyright, getRecordingsForCopyright, updateCopyright, loading } = useCopyright();
   const { lookupWork } = useMLCLookup();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,6 +61,8 @@ export const MLCEnrichmentDashboard: React.FC = () => {
   const [enrichmentStatuses, setEnrichmentStatuses] = useState<CopyrightEnrichmentStatus[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedCopyrights, setSelectedCopyrights] = useState<Set<string>>(new Set());
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [enrichmentProgress, setEnrichmentProgress] = useState({ current: 0, total: 0, found: 0 });
 
   // Calculate enrichment statuses
   const analyzeEnrichmentStatus = async () => {
@@ -176,13 +180,108 @@ export const MLCEnrichmentDashboard: React.FC = () => {
     }
   };
 
-  const enrichSelected = async () => {
+  const startBatchEnrichment = async (copyrightIds?: string[]) => {
+    const idsToEnrich = copyrightIds || Array.from(selectedCopyrights);
+    
+    if (idsToEnrich.length === 0) {
+      toast({
+        title: "No Copyrights Selected",
+        description: "Please select copyrights to enrich",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsEnriching(true);
+    setEnrichmentProgress({ current: 0, total: idsToEnrich.length, found: 0 });
+
+    let foundCount = 0;
+    
+    for (let i = 0; i < idsToEnrich.length; i++) {
+      const copyrightId = idsToEnrich[i];
+      const copyright = copyrights.find(c => c.id === copyrightId);
+      
+      if (!copyright) continue;
+
+      try {
+        // Get recordings for this copyright
+        const recordings = await getRecordingsForCopyright(copyrightId);
+        
+        if (recordings.length === 0) {
+          console.log(`No recordings found for ${copyright.work_title}`);
+          setEnrichmentProgress(prev => ({ ...prev, current: i + 1 }));
+          continue;
+        }
+
+        // Try to lookup using recording data
+        const recording = recordings[0];
+        const searchParams: any = {};
+        
+        if (recording.isrc) searchParams.isrc = recording.isrc;
+        if (recording.artist_name) searchParams.artistName = recording.artist_name;
+        if (copyright.work_title) searchParams.workTitle = copyright.work_title;
+        if (copyright.iswc) searchParams.iswc = copyright.iswc;
+
+        console.log(`Enriching "${copyright.work_title}" with:`, searchParams);
+
+        const result = await lookupWork(searchParams);
+
+        if (result?.found && result.works && result.works.length > 0) {
+          const mlcWork = result.works[0];
+          
+          // Update copyright with MLC data
+          const updateData: any = {};
+          
+          if (mlcWork.iswc && !copyright.iswc) {
+            updateData.iswc = mlcWork.iswc;
+          }
+          
+          // Store MLC metadata
+          updateData.mlc_work_id = result.metadata.mlcWorkId || mlcWork.iswc;
+          updateData.mlc_confidence = result.confidence || 0;
+          updateData.mlc_source = 'MLC API';
+          updateData.mlc_enriched_at = new Date().toISOString();
+
+          await updateCopyright(copyrightId, updateData);
+          foundCount++;
+          
+          console.log(`✓ Enriched "${copyright.work_title}" with MLC data`);
+        } else {
+          console.log(`✗ No MLC data found for "${copyright.work_title}"`);
+        }
+      } catch (error) {
+        console.error(`Error enriching ${copyright.work_title}:`, error);
+      }
+
+      setEnrichmentProgress(prev => ({ ...prev, current: i + 1, found: foundCount }));
+    }
+
+    setIsEnriching(false);
+    
     toast({
-      title: "Batch Enrichment",
-      description: `Starting enrichment for ${selectedCopyrights.size} copyrights...`,
+      title: "Batch Enrichment Complete",
+      description: `Enriched ${foundCount} of ${idsToEnrich.length} copyrights with MLC data`
     });
-    // This would trigger the bulk enrichment component
-    // For now, just show a message
+
+    // Refresh the analysis
+    await analyzeEnrichmentStatus();
+    setSelectedCopyrights(new Set());
+  };
+
+  const enrichAll = async () => {
+    const unenrichedIds = enrichmentStatuses
+      .filter(s => !s.isEnriched && s.hasRecordings)
+      .map(s => s.id);
+    
+    if (unenrichedIds.length === 0) {
+      toast({
+        title: "No Copyrights Need Enrichment",
+        description: "All copyrights with recordings are already enriched",
+      });
+      return;
+    }
+
+    await startBatchEnrichment(unenrichedIds);
   };
 
   return (
@@ -190,7 +289,7 @@ export const MLCEnrichmentDashboard: React.FC = () => {
       {/* Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Database className="w-5 h-5" />
@@ -200,27 +299,73 @@ export const MLCEnrichmentDashboard: React.FC = () => {
                 Track MLC data enrichment progress across your catalog
               </CardDescription>
             </div>
-            <Button 
-              onClick={analyzeEnrichmentStatus} 
-              disabled={isAnalyzing || loading}
-            >
-              {isAnalyzing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Analyze Status
-                </>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={analyzeEnrichmentStatus} 
+                disabled={isAnalyzing || loading || isEnriching}
+                variant="outline"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Analyze Status
+                  </>
+                )}
+              </Button>
+              
+              {enrichmentStatuses.length > 0 && stats.needsEnrichment > 0 && (
+                <Button 
+                  onClick={enrichAll} 
+                  disabled={isEnriching || isAnalyzing}
+                >
+                  {isEnriching ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Enriching... ({enrichmentProgress.current}/{enrichmentProgress.total})
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4 mr-2" />
+                      Auto-Enrich All ({stats.needsEnrichment})
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
 
-      {enrichmentStatuses.length === 0 && !isAnalyzing && (
+      {/* Progress Alert */}
+      {isEnriching && (
+        <Alert>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Batch enrichment in progress...</span>
+                <span className="text-sm text-muted-foreground">
+                  {enrichmentProgress.current} / {enrichmentProgress.total}
+                </span>
+              </div>
+              <Progress 
+                value={(enrichmentProgress.current / enrichmentProgress.total) * 100} 
+                className="h-2"
+              />
+              <div className="text-sm text-muted-foreground">
+                Found MLC data for {enrichmentProgress.found} copyrights so far
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {enrichmentStatuses.length === 0 && !isAnalyzing && !isEnriching && (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -356,7 +501,11 @@ export const MLCEnrichmentDashboard: React.FC = () => {
                 
                 <div className="flex items-center gap-2">
                   {selectedCopyrights.size > 0 && (
-                    <Button onClick={enrichSelected} size="sm">
+                    <Button 
+                      onClick={() => startBatchEnrichment()} 
+                      size="sm"
+                      disabled={isEnriching}
+                    >
                       <PlayCircle className="w-4 h-4 mr-2" />
                       Enrich Selected ({selectedCopyrights.size})
                     </Button>
