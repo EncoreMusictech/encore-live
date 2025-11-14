@@ -38,8 +38,8 @@ export const useActivityLog = () => {
     try {
       setLoading(true);
 
-      const user = await supabase.auth.getUser();
-      if (!user.data.user) {
+      const authResult = await supabase.auth.getUser();
+      if (!authResult.data.user) {
         throw new Error('No authenticated user');
       }
 
@@ -51,7 +51,7 @@ export const useActivityLog = () => {
         .catch(() => null);
 
       const { data, error } = await supabase.rpc('log_copyright_activity', {
-        p_user_id: user.data.user.id,
+        p_user_id: authResult.data.user.id,
         p_copyright_id: params.copyright_id || null,
         p_action_type: params.action_type,
         p_operation_details: params.operation_details || {},
