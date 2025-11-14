@@ -41,7 +41,11 @@ export function MLCVerification() {
         .select(`
           id,
           work_title,
-          iswc
+          iswc,
+          copyright_recordings (
+            artist_name,
+            isrc
+          )
         `)
         .range(randomOffset, randomOffset)
         .single();
@@ -187,11 +191,23 @@ export function MLCVerification() {
             <Separator />
             <div className="bg-muted/50 p-4 rounded-lg space-y-2">
               <h4 className="font-semibold text-sm">Tested Copyright:</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <span className="text-muted-foreground">Work Title:</span>
                   <p className="font-medium">{copyrightData.work_title}</p>
                 </div>
+                {copyrightData.copyright_recordings?.[0]?.artist_name && (
+                  <div>
+                    <span className="text-muted-foreground">Artist:</span>
+                    <p className="font-medium">{copyrightData.copyright_recordings[0].artist_name}</p>
+                  </div>
+                )}
+                {copyrightData.copyright_recordings?.[0]?.isrc && (
+                  <div>
+                    <span className="text-muted-foreground">ISRC:</span>
+                    <p className="font-medium">{copyrightData.copyright_recordings[0].isrc}</p>
+                  </div>
+                )}
                 {copyrightData.iswc && (
                   <div>
                     <span className="text-muted-foreground">ISWC:</span>
