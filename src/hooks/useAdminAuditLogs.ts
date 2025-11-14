@@ -43,7 +43,7 @@ export function useAdminAuditLogs(startDate?: Date, endDate?: Date) {
       setLoading(true);
       
       let query = supabase
-        .from('admin_view_mode_audit')
+        .from('admin_view_mode_audit' as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(500);
@@ -58,7 +58,7 @@ export function useAdminAuditLogs(startDate?: Date, endDate?: Date) {
       const { data, error } = await query;
 
       if (error) throw error;
-      setLogs(data as AdminAuditLog[]);
+      setLogs((data as any) || []);
     } catch (error: any) {
       console.error('Error fetching audit logs:', error);
       toast({
@@ -76,14 +76,14 @@ export function useAdminAuditLogs(startDate?: Date, endDate?: Date) {
       const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // Default: last 30 days
       const end = endDate || new Date();
 
-      const { data, error } = await supabase.rpc('get_admin_audit_summary', {
+      const { data, error } = await supabase.rpc('get_admin_audit_summary' as any, {
         p_start_date: start.toISOString(),
         p_end_date: end.toISOString(),
         p_admin_user_id: null
       });
 
       if (error) throw error;
-      setSummary(data as AuditSummary[]);
+      setSummary((data as any) || []);
     } catch (error: any) {
       console.error('Error fetching audit summary:', error);
     }

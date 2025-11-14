@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataFiltering } from './useDataFiltering';
+import { autoLogAdminAction } from '@/lib/auditLogger';
 
 export interface ActivityLogEntry {
   id: string;
@@ -66,6 +67,20 @@ export const useActivityLog = () => {
         console.error('Error logging activity:', error);
         return null;
       }
+
+      // Auto-log admin action if in view mode
+      await autoLogAdminAction({
+        actionType: params.action_type === 'bulk_upload' ? 'import' : params.action_type,
+        resourceType: 'copyright',
+        resourceId: params.copyright_id,
+        actionDetails: {
+          operation_details: params.operation_details,
+          affected_fields: params.affected_fields,
+          batch_id: params.batch_id
+        },
+        oldValues: params.old_values || undefined,
+        newValues: params.new_values || undefined
+      });
 
       return data;
     } catch (error) {
