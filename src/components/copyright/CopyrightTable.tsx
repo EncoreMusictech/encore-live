@@ -349,7 +349,8 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({
               <TableBody>
                 {filteredAndSortedCopyrights.map(copyright => {
                 const copyrightWriters = writers[copyright.id] || [];
-                const copyrightRecordings = recordings[copyright.id] || [];
+                // Use copyright_recordings from the joined query data first, fallback to recordings prop
+                const copyrightRecordings = (copyright as any).copyright_recordings || recordings[copyright.id] || [];
                 const firstRecording = copyrightRecordings[0];
                 const controlledShare = calculateControlledShare(copyrightWriters);
                 return <TableRow key={copyright.id} className="hover:bg-muted/30">
@@ -376,12 +377,14 @@ export const CopyrightTable: React.FC<CopyrightTableProps> = ({
                         {firstRecording?.isrc || '-'}
                       </TableCell>
                       <TableCell>
-                        {copyright.work_type ? (
+                        {copyright.work_type && copyright.work_type !== 'original' ? (
                           <Badge variant="outline">
                             {copyright.work_type}
                           </Badge>
                         ) : (
-                          <span className="text-muted-foreground">-</span>
+                          <Badge variant="outline">
+                            Audio
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell className="font-mono text-sm">
