@@ -245,24 +245,8 @@ export const MLCEnrichmentDashboard: React.FC = () => {
       if (!copyright) continue;
 
       try {
-        // Get recordings for this copyright with retry logic
-        let recordings = [];
-        let retries = 3;
-        
-        while (retries > 0) {
-          try {
-            recordings = await getRecordingsForCopyright(copyrightId);
-            break;
-          } catch (error: any) {
-            retries--;
-            if (retries === 0) {
-              console.error(`Failed to fetch recordings after 3 attempts for ${copyright.work_title}`);
-              throw error;
-            }
-            console.log(`Retrying... (${3 - retries}/3)`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        }
+        // Get recordings for this copyright
+        const recordings = await getRecordingsForCopyright(copyrightId);
         
         if (recordings.length === 0) {
           console.log(`No recordings found for ${copyright.work_title}`);
@@ -308,21 +292,14 @@ export const MLCEnrichmentDashboard: React.FC = () => {
         }
       } catch (error: any) {
         console.error(`Error enriching ${copyright.work_title}:`, error);
-        if (error.message?.includes('Failed to fetch')) {
-          toast({
-            title: "Connection Error",
-            description: "Database connection lost. Check your network and try again.",
-            variant: "destructive"
-          });
-          setIsEnriching(false);
-          return;
-        }
       }
 
       setEnrichmentProgress(prev => ({ ...prev, current: i + 1, found: foundCount }));
       
-      // Add longer delay between requests to avoid overwhelming the connection
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Small delay between requests
+      if (i < idsToEnrich.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
 
     setIsEnriching(false);
