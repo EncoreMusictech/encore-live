@@ -1157,10 +1157,12 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                         <TableRow>
                           <TableHead>Row</TableHead>
                           <TableHead>Work Title</TableHead>
+                          <TableHead>Recording</TableHead>
+                          <TableHead>Artist</TableHead>
+                          <TableHead>ISRC</TableHead>
                           <TableHead>ISWC</TableHead>
                           <TableHead>Writers</TableHead>
                           <TableHead>Publishers</TableHead>
-                          <TableHead>Recordings</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1168,15 +1170,39 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                           <TableRow key={index}>
                             <TableCell>{item.row_number}</TableCell>
                             <TableCell className="font-medium">{item.work_title}</TableCell>
+                            <TableCell>
+                              {item.recordings?.length > 0 ? (
+                                <div className="space-y-1">
+                                  {item.recordings.map((r, i) => (
+                                    <div key={i} className="text-sm">{r.recording_title || '-'}</div>
+                                  ))}
+                                </div>
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell>
+                              {item.recordings?.length > 0 ? (
+                                <div className="space-y-1">
+                                  {item.recordings.map((r, i) => (
+                                    <div key={i} className="text-sm">{r.artist_name || '-'}</div>
+                                  ))}
+                                </div>
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell>
+                              {item.recordings?.length > 0 ? (
+                                <div className="space-y-1">
+                                  {item.recordings.map((r, i) => (
+                                    <div key={i} className="font-mono text-xs">{r.isrc || '-'}</div>
+                                  ))}
+                                </div>
+                              ) : '-'}
+                            </TableCell>
                             <TableCell className="font-mono text-sm">{item.iswc || '-'}</TableCell>
                             <TableCell>
                               {item.writers?.map(w => `${w.writer_name} (${w.ownership_percentage}%)`).join(', ') || '-'}
                             </TableCell>
                             <TableCell>
                               {item.publishers?.map(p => `${p.publisher_name} (${p.ownership_percentage}%)`).join(', ') || '-'}
-                            </TableCell>
-                            <TableCell>
-                              {item.recordings?.map(r => r.recording_title).join(', ') || '-'}
                             </TableCell>
                           </TableRow>
                         ))}

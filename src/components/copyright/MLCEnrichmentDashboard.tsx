@@ -260,20 +260,26 @@ export const MLCEnrichmentDashboard: React.FC = () => {
         // Get recordings for this copyright
         const recordings = await getRecordingsForCopyright(copyrightId);
         
-        if (recordings.length === 0) {
-          console.log(`No recordings found for ${copyright.work_title}`);
+        // Build search parameters
+        const searchParams: any = {};
+        
+        // Use recording data if available
+        if (recordings.length > 0) {
+          const recording = recordings[0];
+          if (recording.isrc) searchParams.isrc = recording.isrc;
+          if (recording.artist_name) searchParams.artistName = recording.artist_name;
+        }
+        
+        // Always include work title and ISWC if available
+        if (copyright.work_title) searchParams.workTitle = copyright.work_title;
+        if (copyright.iswc) searchParams.iswc = copyright.iswc;
+
+        // Skip if no search parameters at all
+        if (Object.keys(searchParams).length === 0) {
+          console.log(`No search parameters for ${copyright.work_title}`);
           setEnrichmentProgress(prev => ({ ...prev, current: i + 1 }));
           continue;
         }
-
-        // Try to lookup using recording data
-        const recording = recordings[0];
-        const searchParams: any = {};
-        
-        if (recording.isrc) searchParams.isrc = recording.isrc;
-        if (recording.artist_name) searchParams.artistName = recording.artist_name;
-        if (copyright.work_title) searchParams.workTitle = copyright.work_title;
-        if (copyright.iswc) searchParams.iswc = copyright.iswc;
 
         console.log(`Enriching "${copyright.work_title}" with:`, searchParams);
 
