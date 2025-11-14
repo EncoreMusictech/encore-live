@@ -21,7 +21,7 @@ export function ViewModeBanner() {
   };
 
   return (
-    <div className="sticky top-0 z-50 w-full border-b bg-warning/10 backdrop-blur supports-[backdrop-filter]:bg-warning/5">
+    <div className="sticky top-0 z-40 w-full border-b bg-warning/10 backdrop-blur supports-[backdrop-filter]:bg-warning/5">
       <Alert className="rounded-none border-0 bg-transparent py-3">
         <div className="flex items-center justify-between w-full gap-4">
           <div className="flex items-center gap-3 flex-1">
