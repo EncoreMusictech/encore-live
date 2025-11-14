@@ -50,6 +50,7 @@ import SubAccountDetailPage from "./pages/SubAccountDetailPage";
 import RecoveryRedirect from "@/components/RecoveryRedirect";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import { DisableLeavePrompt } from "@/components/DisableLeavePrompt";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 
 
@@ -84,6 +85,7 @@ const App = () => {
                        <DisableLeavePrompt />
                        <DemoUpgradeModal />
                        <BrowserRouter>
+                         <ScrollToTop />
                          <ViewModeProvider>
                            <TourProvider>
                              <ViewModeBanner />
