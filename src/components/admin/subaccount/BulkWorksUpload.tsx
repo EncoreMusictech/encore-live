@@ -58,18 +58,54 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
 
       // Process each work
       for (let i = 0; i < jsonData.length; i++) {
-        const work: any = jsonData[i];
+        const work = jsonData[i] as Record<string, string>;
         
         try {
-          // Create copyright entry
+          const workTitle = work.title || work.work_title || 'Untitled';
+          const isrc = work.isrc || work.ISRC || null;
+          
+          // Determine work type: if title contains (Video), it's a video, otherwise audio
+          const isVideo = /\(video\)/i.test(workTitle);
+          const workType = isVideo ? 'Video' : 'Audio Recording';
+          
+          // Check for ISRC duplicates only if ISRC exists
+          if (isrc) {
+            // @ts-ignore - Avoid deep type instantiation
+            const existingQuery = await supabase
+              .from('copyrights')
+              .select('id, work_title, work_type')
+              .eq('user_id', user.id)
+              .eq('isrc', isrc)
+              .limit(1);
+            
+            if (existingQuery.data && existingQuery.data.length > 0) {
+              const existing = existingQuery.data[0];
+              console.warn(`Row ${i + 1} - ${workTitle}: ISRC duplicate (${isrc}), skipping`);
+              failedCount++;
+              setProgress(20 + ((i + 1) / jsonData.length) * 80);
+              continue;
+            }
+          }
+          
+          // Generate unique internal_id
+          const sanitizedTitle = workTitle
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '')
+            .substring(0, 50);
+          const typeSlug = workType.toLowerCase().replace(/\s+/g, '-');
+          const internalId = `${sanitizedTitle}-${typeSlug}-${Date.now()}-${i}`;
+          
+          // @ts-ignore - Avoid deep type instantiation
           const { data: copyright, error: copyrightError } = await supabase
             .from('copyrights')
             .insert({
               user_id: user.id,
-              work_title: work.title || work.work_title || 'Untitled',
+              work_title: workTitle,
+              work_type: workType,
+              internal_id: internalId,
               iswc: work.iswc || null,
-              writers_publishers: work.writers_publishers || '{}',
-              controlled_status: work.controlled_status || 'NC',
+              isrc: isrc,
               notes: `Bulk uploaded for ${companyName}`,
             })
             .select()
@@ -78,21 +114,32 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           if (copyrightError) throw copyrightError;
 
           // Link to sub-account (using catalog_items for now as we don't have sub_account_works)
+          // @ts-ignore - Avoid deep type instantiation
           const { error: linkError } = await supabase
             .from('catalog_items')
             .insert({
               company_id: companyId,
               user_id: user.id,
-              title: work.title || work.work_title || 'Untitled',
+              title: workTitle,
               artist: work.artist || work.writer || 'Unknown',
-              metadata: { copyright_id: copyright.id, bulk_upload: true },
+              isrc: isrc,
+              metadata: { 
+                copyright_id: copyright.id, 
+                bulk_upload: true,
+                work_type: workType 
+              },
             });
 
           if (linkError) throw linkError;
 
           successCount++;
-        } catch (error) {
-          console.error('Error processing work:', error);
+        } catch (error: any) {
+          console.error(`Error processing row ${i + 1}:`, error);
+          toast({
+            title: `Row ${i + 1} - ${work.title || work.work_title || 'Unknown'}`,
+            description: error.message || 'Failed to process work',
+            variant: 'destructive',
+          });
           failedCount++;
         }
 
