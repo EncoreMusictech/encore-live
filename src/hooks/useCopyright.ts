@@ -129,7 +129,7 @@ export const useCopyright = () => {
       const { data, error } = await supabase
         .from('copyrights')
         .insert({
-          user_id: user.data.user.id,
+          user_id: userId,
           ...copyrightData
         })
         .select()
