@@ -812,12 +812,28 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                 work_id: createdCopyright.work_id || createdCopyright.id 
               };
             } catch (error: any) {
+              // Enhanced error logging and messaging
+              console.error(`Failed to upload row ${copyright.row_number}:`, error);
+              
               // Check if it's a duplicate work_id error
               if (error?.code === '23505' && error?.message?.includes('copyrights_work_id_key')) {
                 console.warn(`Duplicate work_id detected for row ${copyright.row_number}: ${copyright.work_title}`);
                 throw new Error('Duplicate work - this work may already exist in your catalog');
               }
-              throw error;
+              
+              // Check for authentication errors
+              if (error?.message?.includes('No authenticated user')) {
+                throw new Error(`Authentication error - Session may have expired. Please refresh the page and try again. (${error?.message || 'Unknown auth error'})`);
+              }
+              
+              // Check for RLS policy errors
+              if (error?.code === '42501' || error?.message?.includes('policy')) {
+                throw new Error(`Permission denied - Please check your account permissions. (${error?.message || 'RLS policy error'})`);
+              }
+              
+              // Provide detailed error message
+              const detailedError = error?.message || error?.toString() || 'Unknown error occurred';
+              throw new Error(`Upload failed: ${detailedError}${error?.code ? ` (Error code: ${error.code})` : ''}`);
             }
           })
         );
@@ -1285,7 +1301,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
       {/* Results Modal - CRITICAL: Always shown after upload */}
       <Dialog open={showResultsModal} onOpenChange={setShowResultsModal}>
         <DialogContent 
-          className="max-w-5xl max-h-[90vh] overflow-hidden"
+          className="max-w-5xl max-h-[90vh] flex flex-col"
           onEscapeKeyDown={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
         >
@@ -1321,6 +1337,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
             </Button>
           </DialogHeader>
           
+          <ScrollArea className="flex-1 overflow-auto pr-4">
           <div className="space-y-4">
             {/* Enhanced Summary Cards */}
             <div className="grid grid-cols-3 gap-4">
@@ -1401,7 +1418,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                         {uploadResults.successCount} works
                       </Badge>
                     </div>
-                    <div className="h-[350px] overflow-y-auto overflow-x-hidden pointer-events-auto">
+                     <ScrollArea className="h-[350px]">
                       <Table>
                         <TableHeader className="sticky top-0 bg-background z-10">
                           <TableRow>
@@ -1420,7 +1437,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                           ))}
                         </TableBody>
                       </Table>
-                    </div>
+                    </ScrollArea>
                   </div>
                 ) : (
                   <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
@@ -1444,7 +1461,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                         {uploadResults.skippedCount} skipped
                       </Badge>
                     </div>
-                    <div className="h-[350px] overflow-y-auto overflow-x-hidden pointer-events-auto">
+                    <ScrollArea className="h-[350px]">
                       <Table>
                         <TableHeader className="sticky top-0 bg-background z-10">
                           <TableRow>
@@ -1468,7 +1485,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                           ))}
                         </TableBody>
                       </Table>
-                    </div>
+                    </ScrollArea>
                     <div className="bg-blue-50 dark:bg-blue-950/50 px-4 py-3 text-sm text-blue-800 dark:text-blue-200 border-t border-blue-200 dark:border-blue-800">
                       <p className="font-semibold mb-1">ℹ️ Info:</p>
                       <p className="text-xs">These works were automatically skipped because they already exist in your database. No duplicates were created.</p>
@@ -1496,13 +1513,13 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                         {uploadResults.failureCount} errors
                       </Badge>
                     </div>
-                    <div className="h-[350px] overflow-y-auto overflow-x-hidden pointer-events-auto">
+                    <ScrollArea className="h-[350px]">
                       <Table>
                         <TableHeader className="sticky top-0 bg-background z-10">
                           <TableRow>
                             <TableHead className="w-20">Row #</TableHead>
                             <TableHead className="min-w-[200px]">Work Title</TableHead>
-                            <TableHead className="min-w-[300px]">Error Details & Reason</TableHead>
+                            <TableHead className="min-w-[400px]">Error Details & Reason</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1513,14 +1530,14 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
                               <TableCell className="text-destructive text-sm">
                                 <div className="flex items-start gap-2">
                                   <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                  <span className="break-words">{error.error}</span>
+                                  <div className="break-words whitespace-pre-wrap">{error.error}</div>
                                 </div>
                               </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
-                    </div>
+                    </ScrollArea>
                     <div className="bg-red-50 dark:bg-red-950/50 px-4 py-3 text-sm text-red-800 dark:text-red-200 border-t border-red-200 dark:border-red-800">
                       <p className="font-semibold mb-1">💡 Next Steps:</p>
                       <ul className="list-disc list-inside space-y-0.5 text-xs">
@@ -1540,6 +1557,7 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
               </TabsContent>
             </Tabs>
           </div>
+          </ScrollArea>
 
           <DialogFooter className="flex justify-between items-center gap-3">
             <div className="text-sm text-muted-foreground flex-1">
