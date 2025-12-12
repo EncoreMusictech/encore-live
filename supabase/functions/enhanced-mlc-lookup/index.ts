@@ -197,7 +197,10 @@ async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: st
 
       const authData = await authResponse.json();
       console.log('MLC OAuth response (keys):', Object.keys(authData));
-      const token = authData.idToken || authData.accessToken;
+      
+      // CRITICAL: MLC requires idToken as Bearer token, NOT accessToken
+      // Per MLC support: "Un-intuitively, our authentication vendor uses the idToken as the Bearer token, rather than the accessToken"
+      const token = authData.idToken;
       const tokenType = 'Bearer';
 
       if (authData.error) {
@@ -206,10 +209,12 @@ async function getMlcAccessToken(): Promise<{ accessToken: string; tokenType: st
       }
 
       if (!token) {
-        console.error('No usable token (idToken/accessToken) in OAuth response:', authData);
-        throw new Error('No token received from MLC');
+        console.error('No idToken in OAuth response. Available keys:', Object.keys(authData));
+        console.error('accessToken present:', !!authData.accessToken);
+        throw new Error('No idToken received from MLC OAuth response');
       }
 
+      console.log('✓ Using idToken as Bearer token (MLC requirement)');
       return { accessToken: token as string, tokenType };
     },
     3, // maxRetries
@@ -252,11 +257,14 @@ async function getMlcAccessTokenViaPassword(): Promise<{ accessToken: string; to
       }
 
       const authData = await authResponse.json();
-      const token = authData.idToken || authData.accessToken;
+      // CRITICAL: MLC requires idToken as Bearer token, NOT accessToken
+      const token = authData.idToken;
       const tokenType = 'Bearer';
       if (authData.error || !token) {
-        throw new Error(`MLC OAuth error: ${authData.error || 'No token received'}`);
+        console.error('MLC OAuth error or no idToken:', authData.error, 'idToken present:', !!authData.idToken);
+        throw new Error(`MLC OAuth error: ${authData.error || 'No idToken received'}`);
       }
+      console.log('✓ Using idToken as Bearer token (password flow)');
       return { accessToken: token as string, tokenType };
     },
     2,
