@@ -6491,15 +6491,15 @@ export type Database = {
       }
       has_company_module_access:
         | {
+            Args: { _company_id: string; _module_id: string }
+            Returns: boolean
+          }
+        | {
             Args: {
               company_id_param: string
               module_id_param: string
               user_id_param?: string
             }
-            Returns: boolean
-          }
-        | {
-            Args: { _company_id: string; _module_id: string }
             Returns: boolean
           }
       has_role: {
