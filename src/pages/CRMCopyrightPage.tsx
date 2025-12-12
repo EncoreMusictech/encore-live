@@ -23,7 +23,7 @@ import { ExportDialog } from "@/components/copyright/ExportDialog";
 import { SenderCodeOnboarding } from "@/components/copyright/SenderCodeOnboarding";
 import { TransmissionHistory } from "@/components/copyright/TransmissionHistory";
 import { MLCBulkEnrichment } from "@/components/copyright/MLCBulkEnrichment";
-import { MLCVerification } from "@/components/copyright/MLCVerification";
+
 import { MLCEnrichmentDashboard } from "@/components/copyright/MLCEnrichmentDashboard";
 import { CWRRegistrationStatusTracker } from "@/components/copyright/CWRRegistrationStatusTracker";
 import { CRMTabStatus } from "@/components/ui/crm-tab-status";
@@ -482,7 +482,6 @@ export default function CRMCopyrightPage() {
                 
                 <TabsContent value="mlc-enrichment" className="space-y-6 mt-6">
                   <MLCEnrichmentDashboard />
-                  <MLCVerification />
                   <MLCBulkEnrichment />
                 </TabsContent>
               </Tabs>
