@@ -17,7 +17,16 @@ async function getToken() {
   });
   if (!res.ok) throw new Response(`MLC auth failed ${res.status}`, { status: 500 });
   const tok = await res.json();
-  return `${tok.tokenType || "Bearer"} ${tok.accessToken}`;
+  
+  // CRITICAL: MLC requires idToken as Bearer token, NOT accessToken
+  // Per MLC support: "Use the content of idToken in headers as: Bearer <idToken>"
+  if (!tok.idToken) {
+    console.error('No idToken in OAuth response. Available keys:', Object.keys(tok));
+    throw new Response('MLC OAuth: No idToken received', { status: 500 });
+  }
+  
+  console.log('✓ Using idToken as Bearer token (MLC requirement)');
+  return `Bearer ${tok.idToken}`;
 }
 
 // Thin wrappers around MLC endpoints
