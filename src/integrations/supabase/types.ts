@@ -1844,9 +1844,13 @@ export type Database = {
           duration_seconds: number | null
           id: string
           internal_id: string | null
+          isrc: string | null
           iswc: string | null
           language_code: string | null
           masters_ownership: string | null
+          mlc_confidence: number | null
+          mlc_enriched_at: string | null
+          mlc_source: string | null
           mlc_status: string | null
           mlc_work_id: string | null
           mp3_link: string | null
@@ -1892,9 +1896,13 @@ export type Database = {
           duration_seconds?: number | null
           id?: string
           internal_id?: string | null
+          isrc?: string | null
           iswc?: string | null
           language_code?: string | null
           masters_ownership?: string | null
+          mlc_confidence?: number | null
+          mlc_enriched_at?: string | null
+          mlc_source?: string | null
           mlc_status?: string | null
           mlc_work_id?: string | null
           mp3_link?: string | null
@@ -1940,9 +1948,13 @@ export type Database = {
           duration_seconds?: number | null
           id?: string
           internal_id?: string | null
+          isrc?: string | null
           iswc?: string | null
           language_code?: string | null
           masters_ownership?: string | null
+          mlc_confidence?: number | null
+          mlc_enriched_at?: string | null
+          mlc_source?: string | null
           mlc_status?: string | null
           mlc_work_id?: string | null
           mp3_link?: string | null
@@ -6318,6 +6330,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      add_company_user_by_email: {
+        Args: { p_company_id: string; p_email: string; p_role: string }
+        Returns: undefined
+      }
       add_royalty_source_if_not_exists: {
         Args: { new_source: string }
         Returns: undefined
@@ -6331,6 +6347,7 @@ export type Database = {
         Args: { copyright_id_param: string }
         Returns: number
       }
+      calculate_system_uptime: { Args: { p_days?: number }; Returns: number }
       can_manage_operations_team: {
         Args: { p_user_id?: string }
         Returns: boolean
@@ -6430,6 +6447,19 @@ export type Database = {
       get_company_user_ids: {
         Args: { _user_id: string }
         Returns: {
+          user_id: string
+        }[]
+      }
+      get_company_users_details: {
+        Args: { p_company_id: string }
+        Returns: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          role: string
+          status: string
           user_id: string
         }[]
       }
@@ -6675,6 +6705,7 @@ export type Database = {
         | "NBC"
         | "SoundExchange"
         | "NFL Productions"
+        | "Custom Source"
       sender_code_status: "not_submitted" | "submitted" | "verified"
       sync_type: "one_time" | "mfn" | "perpetual" | "term_limited"
       tenant_status: "active" | "inactive" | "suspended"
@@ -6866,6 +6897,7 @@ export const Constants = {
         "NBC",
         "SoundExchange",
         "NFL Productions",
+        "Custom Source",
       ],
       sender_code_status: ["not_submitted", "submitted", "verified"],
       sync_type: ["one_time", "mfn", "perpetual", "term_limited"],
