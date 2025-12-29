@@ -101,10 +101,10 @@ Deno.serve(async (req) => {
       created_at: p.created_at
     })));
 
-    // Get all payees for name mapping
+    // Get all payees for name mapping AND beginning balances
     const { data: payees } = await supabaseClient
       .from('payees')
-      .select('id, payee_name')
+      .select('id, payee_name, beginning_balance')
       .eq('user_id', user.id);
 
     const payeeByName = new Map<string, string>(
@@ -245,7 +245,11 @@ Deno.serve(async (req) => {
     for (const [payeeId, entries] of byPayee) {
       entries.sort((a, b) => (a.year - b.year) || (a.quarter - b.quarter));
       
-      let runningBalance = 0;
+      // Start with the payee's beginning balance (if set)
+      const payeeInfo = payees?.find(p => p.id === payeeId);
+      let runningBalance = Number(payeeInfo?.beginning_balance) || 0;
+      console.log(`Payee ${payeeId} starting with beginning balance: $${runningBalance}`);
+      
       for (const entry of entries) {
         const openingBalance = Number(runningBalance.toFixed(2));
         const closingBalance = Number((openingBalance + entry.royalties_amount - entry.expenses_amount - entry.payments_amount).toFixed(2));

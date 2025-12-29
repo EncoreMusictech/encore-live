@@ -3051,6 +3051,9 @@ export type Database = {
       }
       payees: {
         Row: {
+          beginning_balance: number | null
+          beginning_balance_as_of_date: string | null
+          beginning_balance_notes: string | null
           contact_info: Json | null
           created_at: string
           id: string
@@ -3064,6 +3067,9 @@ export type Database = {
           writer_id: string
         }
         Insert: {
+          beginning_balance?: number | null
+          beginning_balance_as_of_date?: string | null
+          beginning_balance_notes?: string | null
           contact_info?: Json | null
           created_at?: string
           id?: string
@@ -3077,6 +3083,9 @@ export type Database = {
           writer_id: string
         }
         Update: {
+          beginning_balance?: number | null
+          beginning_balance_as_of_date?: string | null
+          beginning_balance_notes?: string | null
           contact_info?: Json | null
           created_at?: string
           id?: string

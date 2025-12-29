@@ -102,15 +102,18 @@ export function useQuarterlyBalanceReports() {
       // Collect unique payee ids
       const payeeIds = Array.from(new Set(payouts.map(p => p.payee_id).filter(Boolean)));
 
-      // Load payees for name/email mapping
-      const payeesMap = new Map<string, { name: string }>();
+      // Load payees for name/email mapping AND beginning balances
+      const payeesMap = new Map<string, { name: string; beginning_balance: number }>();
       if (payeeIds.length > 0) {
         const { data: payees } = await supabase
           .from('payees')
-          .select('id, payee_name')
+          .select('id, payee_name, beginning_balance')
           .in('id', payeeIds as string[])
           .eq('user_id', user.id);
-        payees?.forEach(p => payeesMap.set(p.id, { name: p.payee_name }));
+        payees?.forEach(p => payeesMap.set(p.id, { 
+          name: p.payee_name, 
+          beginning_balance: Number(p.beginning_balance) || 0 
+        }));
       }
       
       console.log(`📊 Found ${payeesMap.size} payees for mapping`);
@@ -189,7 +192,10 @@ export function useQuarterlyBalanceReports() {
         // Sort chronologically
         entries.sort((a, b) => a.sortKey - b.sortKey);
         
-        let runningBalance = 0;
+        // Start with the payee's beginning balance (if set)
+        const payeeInfo = payeesMap.get(payeeId);
+        let runningBalance = payeeInfo?.beginning_balance || 0;
+        
         for (const entry of entries) {
           const openingBalance = runningBalance;
           const closingBalance = Number((openingBalance + entry.royalties_amount - entry.expenses_amount - entry.payments_amount).toFixed(2));
