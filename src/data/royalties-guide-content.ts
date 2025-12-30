@@ -1,3 +1,21 @@
+// Guide Screenshots
+import reconciliationTabOverview from '@/assets/guide/Reconciliation_Tab_Overview.png';
+import newBatchDialog from '@/assets/guide/New_Batch_Dialog.png';
+import sourceDetectionScreen from '@/assets/guide/Source_Detection_Screen.png';
+import validationResultsScreen from '@/assets/guide/Validation_Results_No_Errors.png';
+import fieldMappingInterface from '@/assets/guide/Field_Mapping_Interface.png';
+import songMatchingInterface from '@/assets/guide/Song_Matching_Interface.png';
+import songSearchAutocomplete from '@/assets/guide/Song_SearchAutocomplete.png';
+import addPayeeForm from '@/assets/guide/Add_Payee_Form.png';
+import generateFromAgreement from '@/assets/guide/Generate_from_Agreement_Dialog.png';
+import payeeHierarchyView from '@/assets/guide/Payee_Hierarchy_View.png';
+import addExpenseDialog from '@/assets/guide/Add_Expense_Dialog.png';
+import processBatchConfirmation from '@/assets/guide/Process_Batch_Confirmation.png';
+import unprocessWarningDialog from '@/assets/guide/Unprocess_Warning_Dialog.png';
+import payoutsTabOverview from '@/assets/guide/Payouts_Tab_Overview.png';
+import clientPortalView from '@/assets/guide/Client_Portal_View.png';
+import downloadOptionsDialog from '@/assets/guide/Download_Options_Dialog.png';
+
 export interface GuideStep {
   title: string;
   description: string;
@@ -126,6 +144,16 @@ export const royaltiesGuideContent: GuideSection[] = [
       "Use consistent naming conventions for easy searching",
       "Set up batch notifications to alert team members when new batches are created"
     ],
+    screenshots: [
+      {
+        url: reconciliationTabOverview,
+        caption: "Reconciliation tab showing batch list with status indicators and progress tracking"
+      },
+      {
+        url: newBatchDialog,
+        caption: "New Batch creation dialog with Source, Date Received, Amount, and Statement linking options"
+      }
+    ],
     relatedSections: ["statements", "processing"]
   },
   {
@@ -192,8 +220,20 @@ export const royaltiesGuideContent: GuideSection[] = [
     ],
     screenshots: [
       {
-        url: "/lovable-uploads/dc0df084-a407-4ecb-ba14-98ff89d28851.png",
-        caption: "Statement Import Interface showing field mapping and validation"
+        url: sourceDetectionScreen,
+        caption: "Import wizard showing all 5 processing steps: Parse, Detect Source, Map Fields, Validate, and Save"
+      },
+      {
+        url: fieldMappingInterface,
+        caption: "Field Mapping interface with drag-and-drop from Available Fields to Mapping Targets. Note the 'Mapping Memory' feature for auto-saving mappings"
+      },
+      {
+        url: validationResultsScreen,
+        caption: "Validation results showing mapped/unmapped field status and data quality checks"
+      },
+      {
+        url: songMatchingInterface,
+        caption: "Song matching interface displaying imported songs on left panel and copyright catalog matches on right"
       }
     ],
     relatedSections: ["reconciliation", "manual-royalties", "processing"]
@@ -260,6 +300,12 @@ export const royaltiesGuideContent: GuideSection[] = [
       "Always include reference numbers in notes for audit trail",
       "Consider creating a dedicated 'Adjustments' batch for correction entries"
     ],
+    screenshots: [
+      {
+        url: songSearchAutocomplete,
+        caption: "Royalty creation form with copyright search dropdown showing auto-populated writer and ownership details"
+      }
+    ],
     relatedSections: ["statements", "payees"]
   },
   {
@@ -323,6 +369,20 @@ export const royaltiesGuideContent: GuideSection[] = [
       "Use 'Generate from Agreement' whenever possible to ensure consistency with contract terms",
       "Regularly verify payee payment information is current",
       "Set up the Client Portal to allow payees self-service access to statements and balance info"
+    ],
+    screenshots: [
+      {
+        url: addPayeeForm,
+        caption: "Add New Payee form showing two-tab layout: Payee Setup (hierarchy, info) and Earnings Split Setup"
+      },
+      {
+        url: generateFromAgreement,
+        caption: "Build Payees from Agreement dialog - select an agreement to auto-create writer payees with default splits"
+      },
+      {
+        url: payeeHierarchyView,
+        caption: "Payee hierarchy selection showing the Agreement → Publisher → Writer chain structure"
+      }
     ],
     relatedSections: ["expenses", "payouts"]
   },
@@ -388,6 +448,12 @@ export const royaltiesGuideContent: GuideSection[] = [
       "Regularly review recoupment status and communicate progress to payees",
       "Use expense notes to document any special terms or conditions"
     ],
+    screenshots: [
+      {
+        url: addExpenseDialog,
+        caption: "Add New Expense dialog showing Type, Amount, Behavior, Status, Date Range, and linking options (Agreement, Payee, Work). Note the Recoupable, Commission Fee, and Finder Fee checkboxes"
+      }
+    ],
     relatedSections: ["payees", "payouts"]
   },
   {
@@ -446,6 +512,16 @@ export const royaltiesGuideContent: GuideSection[] = [
       "Establish a batch processing schedule (e.g., weekly or monthly) for consistent workflow",
       "Always verify totals match source statements before processing",
       "Use the 'Sandbox' mode for testing if available, before processing production data"
+    ],
+    screenshots: [
+      {
+        url: processBatchConfirmation,
+        caption: "Process Batch confirmation dialog showing batch details and period selection before finalizing"
+      },
+      {
+        url: unprocessWarningDialog,
+        caption: "Unprocess success confirmation after reversing a processed batch"
+      }
     ],
     relatedSections: ["reconciliation", "statements", "payouts"]
   },
@@ -506,6 +582,16 @@ export const royaltiesGuideContent: GuideSection[] = [
       "Set up minimum payout thresholds to avoid small payment processing fees",
       "Use the 'Approve All' feature carefully - review before bulk approval"
     ],
+    screenshots: [
+      {
+        url: payoutsTabOverview,
+        caption: "Payouts Management view with summary cards and detailed payout records showing all financial columns and status workflow"
+      },
+      {
+        url: clientPortalView,
+        caption: "Client Portal view showing Royalties & Payouts section with earnings summary cards, filters, and statement breakdown table"
+      }
+    ],
     relatedSections: ["payees", "expenses", "downloads"]
   },
   {
@@ -564,6 +650,12 @@ export const royaltiesGuideContent: GuideSection[] = [
       "Set up automated statement generation and delivery for end-of-period processing",
       "Use branded PDF templates for professional client communication",
       "Archive statement exports for compliance and record-keeping"
+    ],
+    screenshots: [
+      {
+        url: downloadOptionsDialog,
+        caption: "Payouts table with Actions dropdown showing Export PDF and Export Excel options for downloading statements"
+      }
     ],
     relatedSections: ["payouts", "payees"]
   }
