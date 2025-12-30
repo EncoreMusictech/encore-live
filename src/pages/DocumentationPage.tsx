@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Header from "@/components/Header";
+import { RoyaltiesUserGuideDialog } from "@/components/royalties/guide/RoyaltiesUserGuideDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ import {
 const DocumentationPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("overview");
+  const [royaltiesGuideOpen, setRoyaltiesGuideOpen] = useState(false);
 
   const categories = [
     { id: "overview", title: "System Overview", icon: Home },
@@ -650,7 +652,15 @@ const DocumentationPage = () => {
                 <PlayCircle className="h-4 w-4 mr-2" />
                 Watch Tutorial
               </Button>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  if (module.id === "royalties") {
+                    setRoyaltiesGuideOpen(true);
+                  }
+                }}
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Download Guide
               </Button>
@@ -658,6 +668,12 @@ const DocumentationPage = () => {
           </CardContent>
         </Card>
       ))}
+      
+      {/* Royalties User Guide Dialog */}
+      <RoyaltiesUserGuideDialog 
+        open={royaltiesGuideOpen} 
+        onOpenChange={setRoyaltiesGuideOpen} 
+      />
     </div>
   );
 
