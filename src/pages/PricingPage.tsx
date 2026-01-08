@@ -531,8 +531,8 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                         }}
                         disabled={loading || (module.id === 'dashboard' && !subscribed)}
                       >
-                        {!user
-                          ? 'Sign In to Subscribe'
+                      {!user
+                          ? 'Sign Up to Subscribe'
                           : (module.id === 'dashboard' && !subscribed)
                             ? 'Requires another module'
                             : (isSelected ? 'Added to Plan' : 'Subscribe')}
