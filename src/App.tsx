@@ -49,6 +49,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import SubAccountDetailPage from "./pages/SubAccountDetailPage";
 import RecoveryRedirect from "@/components/RecoveryRedirect";
 import TermsAndConditions from "./pages/TermsAndConditions";
+import TrialSignup from "./pages/TrialSignup";
 import { DisableLeavePrompt } from "@/components/DisableLeavePrompt";
 import { ScrollToTop } from "@/components/ScrollToTop";
 
@@ -147,6 +148,7 @@ const App = () => {
                              
                              
                              <Route path="/pricing" element={<PricingPage />} />
+                             <Route path="/trial-signup" element={<TrialSignup />} />
                              <Route path="/team" element={<TeamPage />} />
                              <Route path="/contact" element={<ContactPage />} />
                              <Route path="/documentation" element={<DocumentationPage />} />
