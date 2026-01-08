@@ -5,6 +5,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useFreeTrial } from "@/hooks/useFreeTrial";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +37,8 @@ import {
   Shield,
   Code,
   Palette,
-  Plus
+  Plus,
+  CheckCircle2
 } from "lucide-react";
 
 // Module Data
@@ -226,6 +228,7 @@ const PricingPage = () => {
   const { subscribed, subscription_tier, loading, createCheckout, openCustomerPortal } = useSubscription();
   const { createTrialCheckout } = useFreeTrial();
   const { isAdmin } = useUserRoles();
+  const { hasModuleAccess, accessibleModules, loading: moduleAccessLoading } = useModuleAccess();
 
   useEffect(() => {
     updatePageMetadata('pricing');
@@ -456,24 +459,41 @@ const PricingPage = () => {
               {moduleData.map((module) => {
                 const IconComponent = module.icon;
                 const isSelected = selectedModules.has(module.id);
+                const isSubscribed = hasModuleAccess(module.id);
                 
                 return (
                   <Card 
                     key={module.id}
                     className={`transition-all duration-300 cursor-pointer hover:shadow-elegant ${
-                      isSelected ? 'ring-2 ring-primary shadow-glow' : ''
+                      isSubscribed 
+                        ? 'ring-2 ring-green-500 shadow-glow bg-green-500/5' 
+                        : isSelected 
+                          ? 'ring-2 ring-primary shadow-glow' 
+                          : ''
                     }`}
-                    onClick={() => handleModuleToggle(module.id)}
+                    onClick={() => !isSubscribed && handleModuleToggle(module.id)}
                   >
                     <CardHeader>
                       <div className="flex items-center justify-between mb-4">
-                        <div className="bg-gradient-primary rounded-lg p-3">
-                          <IconComponent className="h-6 w-6 text-primary-foreground" />
+                        <div className={`rounded-lg p-3 ${isSubscribed ? 'bg-green-500' : 'bg-gradient-primary'}`}>
+                          {isSubscribed ? (
+                            <CheckCircle2 className="h-6 w-6 text-white" />
+                          ) : (
+                            <IconComponent className="h-6 w-6 text-primary-foreground" />
+                          )}
                         </div>
-<div className="text-right">
-  <div className="text-2xl font-bold">${billingInterval === 'month' ? module.price : module.annualPrice}</div>
-  <div className="text-sm text-muted-foreground">/{billingInterval === 'month' ? 'month' : 'year'}</div>
-</div>
+                        <div className="text-right">
+                          {isSubscribed ? (
+                            <Badge className="bg-green-500/20 text-green-600 border-green-500/30">
+                              Subscribed
+                            </Badge>
+                          ) : (
+                            <>
+                              <div className="text-2xl font-bold">${billingInterval === 'month' ? module.price : module.annualPrice}</div>
+                              <div className="text-sm text-muted-foreground">/{billingInterval === 'month' ? 'month' : 'year'}</div>
+                            </>
+                          )}
+                        </div>
                       </div>
                       <CardTitle className="text-xl">{module.name}</CardTitle>
                       <CardDescription>{module.description}</CardDescription>
@@ -483,7 +503,7 @@ const PricingPage = () => {
                       <ul className="space-y-2">
                         {module.features.map((feature, index) => (
                           <li key={index} className="flex items-start space-x-2 text-sm">
-                            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                            <div className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${isSubscribed ? 'bg-green-500' : 'bg-primary'}`} />
                             <span className="text-muted-foreground">{feature}</span>
                           </li>
                         ))}
@@ -491,12 +511,19 @@ const PricingPage = () => {
 
                       <Button 
                         className={`w-full transition-all ${
-                          isSelected 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-gradient-primary text-primary-foreground hover:opacity-90'
+                          isSubscribed
+                            ? 'bg-green-500 text-white hover:bg-green-600'
+                            : isSelected 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-gradient-primary text-primary-foreground hover:opacity-90'
                         }`}
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (isSubscribed) {
+                            // Already subscribed - open portal to manage
+                            openCustomerPortal();
+                            return;
+                          }
                           if (!user) {
                             // Redirect to trial signup page with module info
                             const params = new URLSearchParams({
@@ -514,15 +541,24 @@ const PricingPage = () => {
                           }
                           createCheckout('module', module.id, billingInterval);
                         }}
-                        disabled={loading || (module.id === 'dashboard' && !subscribed)}
+                        disabled={loading || moduleAccessLoading || (module.id === 'dashboard' && !subscribed && !isSubscribed)}
                       >
-                      {!user
-                          ? 'Sign Up to Subscribe'
-                          : (module.id === 'dashboard' && !subscribed)
-                            ? 'Requires another module'
-                            : (isSelected ? 'Added to Plan' : 'Subscribe')}
+                        {isSubscribed ? (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Subscribed
+                          </>
+                        ) : !user ? (
+                          'Sign Up to Subscribe'
+                        ) : (module.id === 'dashboard' && !subscribed) ? (
+                          'Requires another module'
+                        ) : isSelected ? (
+                          'Added to Plan'
+                        ) : (
+                          'Subscribe'
+                        )}
                       </Button>
-                      {(module.id === 'dashboard' && !subscribed) && (
+                      {(module.id === 'dashboard' && !subscribed && !isSubscribed) && (
                         <p className="text-xs text-muted-foreground mt-2 text-center">
                           New subscribers must purchase another module before adding Client Dashboard. Consider a bundle.
                         </p>
