@@ -10,12 +10,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CheckCircle, FileText, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { useAuditLog } from '@/hooks/useAuditLog';
+
+const TERMS_VERSION = '1.2.0';
+const TERMS_LAST_UPDATED = 'January 8, 2025';
 
 const TermsAndConditions = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { logTermsAcceptance } = useAuditLog();
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToValuationDisclaimer, setAgreedToValuationDisclaimer] = useState(false);
@@ -66,15 +71,23 @@ const TermsAndConditions = () => {
     try {
       setAccepting(true);
 
-      // Update user profile to mark terms as accepted
+      const acceptedAt = new Date().toISOString();
+
+      // Update user profile to mark terms as accepted with version tracking
       const { error } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
           terms_accepted: true,
-          terms_accepted_at: new Date().toISOString(),
+          terms_accepted_at: acceptedAt,
+          terms_version: TERMS_VERSION,
           onboarding_complete: false // Will be set to true after welcome modal
         });
+
+      if (error) throw error;
+
+      // Log terms acceptance for SOC2 compliance
+      await logTermsAcceptance(TERMS_VERSION, acceptedAt);
 
       if (error) throw error;
 
@@ -328,7 +341,10 @@ const TermsAndConditions = () => {
                     responsibility for your investment and business decisions.
                   </p>
                   <p className="text-sm text-muted-foreground mt-4">
-                    Last updated: {new Date().toLocaleDateString()}
+                    Last updated: {TERMS_LAST_UPDATED}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Version {TERMS_VERSION}
                   </p>
                 </section>
               </div>
