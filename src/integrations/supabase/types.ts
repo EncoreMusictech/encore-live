@@ -3767,8 +3767,12 @@ export type Database = {
           last_name: string | null
           onboarding_complete: boolean
           phone: string | null
+          privacy_policy_accepted: boolean | null
+          privacy_policy_accepted_at: string | null
+          privacy_policy_version: string | null
           terms_accepted: boolean | null
           terms_accepted_at: string | null
+          terms_version: string | null
           updated_at: string
         }
         Insert: {
@@ -3780,8 +3784,12 @@ export type Database = {
           last_name?: string | null
           onboarding_complete?: boolean
           phone?: string | null
+          privacy_policy_accepted?: boolean | null
+          privacy_policy_accepted_at?: string | null
+          privacy_policy_version?: string | null
           terms_accepted?: boolean | null
           terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Update: {
@@ -3793,8 +3801,12 @@ export type Database = {
           last_name?: string | null
           onboarding_complete?: boolean
           phone?: string | null
+          privacy_policy_accepted?: boolean | null
+          privacy_policy_accepted_at?: string | null
+          privacy_policy_version?: string | null
           terms_accepted?: boolean | null
           terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -5735,6 +5747,63 @@ export type Database = {
         }
         Relationships: []
       }
+      system_audit_logs: {
+        Row: {
+          action: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          new_values: Json | null
+          old_values: Json | null
+          resource_id: string | null
+          resource_type: string | null
+          session_id: string | null
+          severity: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          session_id?: string | null
+          severity?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          session_id?: string | null
+          severity?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       tenant_configurations: {
         Row: {
           brand_config: Json
@@ -6579,6 +6648,10 @@ export type Database = {
           p_session_id: string
           p_user_agent?: string
         }
+        Returns: string
+      }
+      log_auth_event: {
+        Args: { p_action: string; p_metadata?: Json; p_user_id: string }
         Returns: string
       }
       log_copyright_activity: {
