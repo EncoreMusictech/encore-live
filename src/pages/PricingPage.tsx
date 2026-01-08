@@ -616,7 +616,7 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                         (!subscribed && selectedModules.size === 1 && selectedModules.has('dashboard'))
                       }
                     >
-                      {!user ? 'Sign In to Start Trial' : 'Start 14-Day Free Trial'}
+                      {!user ? 'Start Free Trial' : 'Start 14-Day Free Trial'}
                     </Button>
                   </div>
                   {(!subscribed && selectedModules.size === 1 && selectedModules.has('dashboard')) && (
