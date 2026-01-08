@@ -26,71 +26,17 @@ export function useSystemAlerts() {
   const fetchAlerts = async () => {
     try {
       setLoading(true);
-      
-      // Generate mock system alerts for demo
-      const mockAlerts: SystemAlert[] = [
-        {
-          id: '1',
-          alert_name: 'High Memory Usage',
-          alert_type: 'system_performance',
-          alert_message: 'System memory usage has exceeded 85% threshold',
-          severity: 'high',
-          status: 'active',
-          trigger_data: { memory_usage: 87, threshold: 85 },
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '2',
-          alert_name: 'Multiple Failed Login Attempts',
-          alert_type: 'security',
-          alert_message: 'Detected 5+ failed login attempts from IP: 192.168.1.100',
-          severity: 'critical',
-          status: 'active',
-          trigger_data: { ip_address: '192.168.1.100', attempts: 7 },
-          created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '3',
-          alert_name: 'Database Connection Timeout',
-          alert_type: 'database',
-          alert_message: 'Database connection pool timeout detected',
-          severity: 'medium',
-          status: 'acknowledged',
-          trigger_data: { pool_size: 20, active_connections: 18 },
-          acknowledged_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 30 * 60 * 1000).toISOString()
-        },
-        {
-          id: '4',
-          alert_name: 'API Rate Limit Reached',
-          alert_type: 'api',
-          alert_message: 'Spotify API rate limit reached - requests being throttled',
-          severity: 'medium',
-          status: 'resolved',
-          trigger_data: { api_name: 'spotify', rate_limit: 1000 },
-          acknowledged_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          resolved_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '5',
-          alert_name: 'Disk Space Low',
-          alert_type: 'system_storage',
-          alert_message: 'Available disk space is below 10GB on primary storage',
-          severity: 'low',
-          status: 'active',
-          trigger_data: { available_space_gb: 8.5, threshold_gb: 10 },
-          created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
-        }
-      ];
-      
-      setAlerts(mockAlerts);
       setError(null);
+      
+      const { data, error: fetchError } = await supabase
+        .from('system_alerts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (fetchError) throw fetchError;
+
+      setAlerts(data || []);
     } catch (err) {
       console.error('Error fetching system alerts:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch alerts');
@@ -101,7 +47,18 @@ export function useSystemAlerts() {
 
   const acknowledgeAlert = async (alertId: string) => {
     try {
-      // In a real implementation, this would update the database
+      const { error: updateError } = await supabase
+        .from('system_alerts')
+        .update({ 
+          status: 'acknowledged',
+          acknowledged_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', alertId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
       setAlerts(prev => prev.map(alert => 
         alert.id === alertId 
           ? { 
@@ -129,7 +86,18 @@ export function useSystemAlerts() {
 
   const resolveAlert = async (alertId: string) => {
     try {
-      // In a real implementation, this would update the database
+      const { error: updateError } = await supabase
+        .from('system_alerts')
+        .update({ 
+          status: 'resolved',
+          resolved_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', alertId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
       setAlerts(prev => prev.map(alert => 
         alert.id === alertId 
           ? { 
@@ -155,8 +123,65 @@ export function useSystemAlerts() {
     }
   };
 
+  const createAlert = async (alert: Omit<SystemAlert, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { data, error: insertError } = await supabase
+        .from('system_alerts')
+        .insert({
+          alert_name: alert.alert_name,
+          alert_type: alert.alert_type,
+          alert_message: alert.alert_message,
+          severity: alert.severity,
+          status: alert.status || 'active',
+          trigger_data: alert.trigger_data,
+          assigned_to: alert.assigned_to,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      setAlerts(prev => [data, ...prev]);
+      
+      toast({
+        title: "Alert Created",
+        description: "New system alert has been created",
+      });
+
+      return data;
+    } catch (err) {
+      console.error('Error creating alert:', err);
+      toast({
+        title: "Error",
+        description: "Failed to create alert",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
   useEffect(() => {
     fetchAlerts();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('system_alerts_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'system_alerts'
+        },
+        () => {
+          fetchAlerts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return {
@@ -165,6 +190,7 @@ export function useSystemAlerts() {
     error,
     fetchAlerts,
     acknowledgeAlert,
-    resolveAlert
+    resolveAlert,
+    createAlert
   };
 }

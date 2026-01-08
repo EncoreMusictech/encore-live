@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export interface RealtimeEvent {
   id: string;
@@ -19,58 +20,22 @@ export function useRealtimeMonitoring() {
   const [events, setEvents] = useState<RealtimeEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      
-      // Generate mock realtime monitoring events
-      const mockEvents: RealtimeEvent[] = [
-        {
-          id: '1',
-          event_type: 'system_performance',
-          event_source: 'cpu_monitor',
-          event_data: { cpu_usage: 78, threshold: 80 },
-          severity: 'medium',
-          status: 'active',
-          created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 15 * 60 * 1000).toISOString()
-        },
-        {
-          id: '2',
-          event_type: 'database_connection',
-          event_source: 'postgres_monitor',
-          event_data: { connections: 18, max_connections: 20 },
-          severity: 'low',
-          status: 'active',
-          created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 30 * 60 * 1000).toISOString()
-        },
-        {
-          id: '3',
-          event_type: 'api_response_time',
-          event_source: 'api_monitor',
-          event_data: { avg_response_time: 250, threshold: 500 },
-          severity: 'low',
-          status: 'resolved',
-          resolved_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 10 * 60 * 1000).toISOString()
-        },
-        {
-          id: '4',
-          event_type: 'user_activity',
-          event_source: 'user_monitor',
-          event_data: { active_users: 45, peak_users: 52 },
-          severity: 'info',
-          status: 'active',
-          created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 5 * 60 * 1000).toISOString()
-        }
-      ];
-      
-      setEvents(mockEvents);
       setError(null);
+      
+      const { data, error: fetchError } = await supabase
+        .from('realtime_monitoring_events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (fetchError) throw fetchError;
+
+      setEvents(data || []);
     } catch (err) {
       console.error('Error fetching realtime events:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch events');
@@ -81,7 +46,17 @@ export function useRealtimeMonitoring() {
 
   const acknowledgeEvent = async (eventId: string) => {
     try {
-      // In a real implementation, this would update the database
+      const { error: updateError } = await supabase
+        .from('realtime_monitoring_events')
+        .update({ 
+          status: 'acknowledged',
+          acknowledged_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', eventId);
+
+      if (updateError) throw updateError;
+
       setEvents(prev => prev.map(event => 
         event.id === eventId 
           ? { 
@@ -92,14 +67,34 @@ export function useRealtimeMonitoring() {
             }
           : event
       ));
+
+      toast({
+        title: "Event Acknowledged",
+        description: "The monitoring event has been acknowledged",
+      });
     } catch (err) {
       console.error('Error acknowledging event:', err);
+      toast({
+        title: "Error",
+        description: "Failed to acknowledge event",
+        variant: "destructive"
+      });
     }
   };
 
   const resolveEvent = async (eventId: string) => {
     try {
-      // In a real implementation, this would update the database
+      const { error: updateError } = await supabase
+        .from('realtime_monitoring_events')
+        .update({ 
+          status: 'resolved',
+          resolved_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', eventId);
+
+      if (updateError) throw updateError;
+
       setEvents(prev => prev.map(event => 
         event.id === eventId 
           ? { 
@@ -110,8 +105,43 @@ export function useRealtimeMonitoring() {
             }
           : event
       ));
+
+      toast({
+        title: "Event Resolved",
+        description: "The monitoring event has been resolved",
+      });
     } catch (err) {
       console.error('Error resolving event:', err);
+      toast({
+        title: "Error",
+        description: "Failed to resolve event",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const createEvent = async (event: Omit<RealtimeEvent, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { data, error: insertError } = await supabase
+        .from('realtime_monitoring_events')
+        .insert({
+          event_type: event.event_type,
+          event_source: event.event_source,
+          event_data: event.event_data,
+          severity: event.severity,
+          status: event.status || 'active',
+          assigned_to: event.assigned_to,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      setEvents(prev => [data, ...prev]);
+      return data;
+    } catch (err) {
+      console.error('Error creating event:', err);
+      return null;
     }
   };
 
@@ -128,9 +158,7 @@ export function useRealtimeMonitoring() {
           schema: 'public',
           table: 'realtime_monitoring_events'
         },
-        (payload) => {
-          console.log('Realtime monitoring event:', payload);
-          // Handle real-time updates
+        () => {
           fetchEvents();
         }
       )
@@ -147,6 +175,7 @@ export function useRealtimeMonitoring() {
     error,
     fetchEvents,
     acknowledgeEvent,
-    resolveEvent
+    resolveEvent,
+    createEvent
   };
 }
