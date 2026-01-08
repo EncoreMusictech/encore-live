@@ -6649,6 +6649,10 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      user_has_module_access: {
+        Args: { p_module_id: string; p_user_id: string }
+        Returns: boolean
+      }
       validate_royalty_splits: {
         Args: { contract_id_param: string }
         Returns: {
