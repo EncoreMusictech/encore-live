@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { CRMSidebar } from "./CRMSidebar";
@@ -17,6 +17,14 @@ export function CRMLayout() {
   const { isAdmin, loading: rolesLoading } = useUserRoles();
   const { canAccess: canAccessDemo } = useDemoAccess();
   const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+
+  // Scroll to top when route changes
+  useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTo(0, 0);
+    }
+  }, [location.pathname]);
 
   // Check if user has access to CRM
   const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech'];
@@ -77,7 +85,7 @@ export function CRMLayout() {
         <CRMSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <CRMHeader />
-          <main className="flex-1 p-6 overflow-auto">
+          <main ref={mainRef} className="flex-1 p-6 overflow-auto">
             <Outlet />
           </main>
         </div>
