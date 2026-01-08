@@ -352,6 +352,195 @@ serve(async (req) => {
       }
     }
 
+    // 8. Create system alerts
+    const systemAlerts = [
+      {
+        alert_name: 'High Memory Usage',
+        alert_type: 'system_performance',
+        alert_message: 'System memory usage has exceeded 85% threshold',
+        severity: 'high',
+        status: 'active',
+        trigger_data: { memory_usage: 87, threshold: 85 }
+      },
+      {
+        alert_name: 'Database Connection Pool Warning',
+        alert_type: 'database',
+        alert_message: 'Database connection pool nearing capacity (18/20)',
+        severity: 'medium',
+        status: 'active',
+        trigger_data: { pool_size: 20, active_connections: 18 }
+      },
+      {
+        alert_name: 'API Rate Limit Approaching',
+        alert_type: 'api',
+        alert_message: 'Spotify API rate limit at 80% capacity',
+        severity: 'low',
+        status: 'active',
+        trigger_data: { api_name: 'spotify', current_usage: 800, limit: 1000 }
+      },
+      {
+        alert_name: 'New User Signup Spike',
+        alert_type: 'business',
+        alert_message: 'Unusual spike in new user signups detected (300% above average)',
+        severity: 'info',
+        status: 'active',
+        trigger_data: { signups_today: 45, average_daily: 15 }
+      }
+    ];
+
+    for (const alert of systemAlerts) {
+      const { error } = await supabaseClient
+        .from('system_alerts')
+        .insert(alert);
+      
+      if (error) {
+        console.error('Error creating system alert:', error);
+      }
+    }
+
+    // 9. Create realtime monitoring events
+    const monitoringEvents = [
+      {
+        event_type: 'system_performance',
+        event_source: 'cpu_monitor',
+        event_data: { cpu_usage: 72, threshold: 80, cores_active: 4 },
+        severity: 'info',
+        status: 'active'
+      },
+      {
+        event_type: 'database_connection',
+        event_source: 'postgres_monitor',
+        event_data: { connections: 15, max_connections: 20, avg_query_time_ms: 45 },
+        severity: 'low',
+        status: 'active'
+      },
+      {
+        event_type: 'api_response_time',
+        event_source: 'api_monitor',
+        event_data: { avg_response_time: 180, threshold: 500, requests_per_minute: 120 },
+        severity: 'info',
+        status: 'active'
+      },
+      {
+        event_type: 'user_activity',
+        event_source: 'user_monitor',
+        event_data: { active_users: 38, peak_users: 52, sessions_today: 145 },
+        severity: 'info',
+        status: 'active'
+      },
+      {
+        event_type: 'storage_usage',
+        event_source: 'storage_monitor',
+        event_data: { used_gb: 45, total_gb: 100, growth_rate_gb_per_day: 0.5 },
+        severity: 'low',
+        status: 'active'
+      }
+    ];
+
+    for (const event of monitoringEvents) {
+      const { error } = await supabaseClient
+        .from('realtime_monitoring_events')
+        .insert(event);
+      
+      if (error) {
+        console.error('Error creating monitoring event:', error);
+      }
+    }
+
+    // 10. Create predictive analytics cache entries
+    if (users?.users.length) {
+      const predictionTypes = ['churn_risk', 'expansion_opportunity', 'engagement_score'];
+      
+      const predictions = users.users.slice(0, 8).flatMap(customer => 
+        predictionTypes.map(type => {
+          const value = Math.random();
+          return {
+            customer_user_id: customer.id,
+            prediction_type: type,
+            prediction_value: value,
+            confidence_score: Math.random() * 0.3 + 0.7, // 0.7-1.0
+            contributing_factors: {
+              usage_decline: value > 0.5 && type === 'churn_risk',
+              payment_issues: value > 0.7 && type === 'churn_risk',
+              feature_adoption_high: value > 0.6 && type === 'expansion_opportunity',
+              login_frequency_low: value > 0.4 && type === 'churn_risk',
+              risk_factors: type === 'churn_risk' && value > 0.5 
+                ? ['Declining usage', 'Low feature adoption'] 
+                : []
+            },
+            calculation_date: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+            model_version: 'v1.2.0',
+            metadata: { model_type: 'gradient_boost', training_samples: 5000 }
+          };
+        })
+      );
+
+      for (const prediction of predictions) {
+        const { error } = await supabaseClient
+          .from('predictive_analytics_cache')
+          .upsert(prediction, { 
+            onConflict: 'customer_user_id,prediction_type',
+            ignoreDuplicates: true 
+          });
+        
+        if (error) {
+          console.error('Error creating prediction:', error);
+        }
+      }
+    }
+
+    // 11. Create cohort analysis data
+    const cohortData = Array.from({ length: 6 }, (_, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const cohortSize = Math.floor(Math.random() * 50) + 30;
+      
+      return {
+        cohort_period: date.toISOString().slice(0, 7), // YYYY-MM format
+        cohort_name: `${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()} Cohort`,
+        cohort_type: 'monthly_signup',
+        customer_count: cohortSize,
+        retention_data: {
+          month_1: Math.round(cohortSize * 0.85),
+          month_3: Math.round(cohortSize * 0.65),
+          month_6: Math.round(cohortSize * 0.45),
+          month_12: Math.round(cohortSize * 0.30)
+        },
+        revenue_data: {
+          month_1: cohortSize * 85,
+          month_3: cohortSize * 210,
+          month_6: cohortSize * 320,
+          month_12: cohortSize * 420
+        },
+        churn_data: {
+          month_1: Math.round(cohortSize * 0.15),
+          month_3: Math.round(cohortSize * 0.20),
+          month_6: Math.round(cohortSize * 0.20),
+          month_12: Math.round(cohortSize * 0.15)
+        },
+        calculated_metrics: {
+          avg_ltv: cohortSize * 7.5,
+          retention_rate: 0.30,
+          payback_period_months: 3
+        },
+        is_active: true
+      };
+    });
+
+    for (const cohort of cohortData) {
+      const { error } = await supabaseClient
+        .from('cohort_analysis')
+        .upsert(cohort, {
+          onConflict: 'cohort_period,cohort_type',
+          ignoreDuplicates: true
+        });
+      
+      if (error) {
+        console.error('Error creating cohort:', error);
+      }
+    }
+
     console.log('Successfully seeded enhanced operations data');
 
     return new Response(JSON.stringify({ 
@@ -364,7 +553,11 @@ serve(async (req) => {
         revenueEvents: 30,
         workflowRules: workflowRules.length,
         touchpoints: 25,
-        performanceMetrics: performanceMetrics.length
+        performanceMetrics: performanceMetrics.length,
+        systemAlerts: systemAlerts.length,
+        monitoringEvents: monitoringEvents.length,
+        predictions: (users?.users.length || 0) * 3,
+        cohorts: cohortData.length
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
