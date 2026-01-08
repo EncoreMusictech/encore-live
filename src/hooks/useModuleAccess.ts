@@ -11,6 +11,36 @@ interface ModuleAccessState {
   companyName: string | null;
 }
 
+// Map database module IDs to pricing page module IDs and vice versa
+const MODULE_ID_ALIASES: Record<string, string[]> = {
+  'royalties': ['royalties-processing', 'royalties_processing', 'royalties'],
+  'copyright': ['copyright-management', 'copyright_management', 'copyright'],
+  'contracts': ['contract-management', 'contract_management', 'contracts'],
+  'sync': ['sync-licensing', 'sync_licensing', 'sync'],
+  'valuation': ['catalog-valuation', 'catalog_valuation', 'valuation'],
+  'dashboard': ['client-portal', 'client_portal', 'dashboard', 'client-dashboard'],
+  'catalog': ['catalog-management', 'catalog_management', 'catalog'],
+};
+
+// Create a reverse lookup map
+const createReverseLookup = (): Record<string, string> => {
+  const lookup: Record<string, string> = {};
+  for (const [canonical, aliases] of Object.entries(MODULE_ID_ALIASES)) {
+    for (const alias of aliases) {
+      lookup[alias.toLowerCase()] = canonical;
+    }
+  }
+  return lookup;
+};
+
+const REVERSE_LOOKUP = createReverseLookup();
+
+// Normalize a module ID to its canonical form
+const normalizeModuleId = (moduleId: string): string => {
+  const lowerId = moduleId.toLowerCase();
+  return REVERSE_LOOKUP[lowerId] || lowerId;
+};
+
 export const useModuleAccess = () => {
   const { user } = useAuth();
   const { subscribed, subscription_tier } = useSubscription();
@@ -70,14 +100,16 @@ export const useModuleAccess = () => {
           .eq('enabled', true);
 
         if (!moduleError && moduleData) {
-          companyModules = moduleData.map(m => m.module_id);
+          // Normalize module IDs to canonical form
+          companyModules = moduleData.map(m => normalizeModuleId(m.module_id));
         }
       }
 
       // Get modules from active trial
       let trialModules: string[] = [];
       if (hasActiveTrial && trialInfo?.trial_modules) {
-        trialModules = trialInfo.trial_modules;
+        // Normalize trial module IDs as well
+        trialModules = trialInfo.trial_modules.map(normalizeModuleId);
       }
 
       // Combine all accessible modules (deduplicated)
@@ -109,8 +141,9 @@ export const useModuleAccess = () => {
       }
     }
 
-    // Check company-based access
-    return state.accessibleModules.includes(moduleId);
+    // Normalize the requested module ID and check access
+    const normalizedId = normalizeModuleId(moduleId);
+    return state.accessibleModules.includes(normalizedId);
   }, [subscribed, subscription_tier, state.accessibleModules]);
 
   const hasAnyModuleAccess = useCallback((): boolean => {
