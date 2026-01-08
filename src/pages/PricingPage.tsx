@@ -133,7 +133,7 @@ const moduleData = [
   }
 ];
 
-// Bundled Plans Data
+// Bundled Plans Data - Updated pricing tiers
 const bundledPlans = [
   {
     id: "starter",
@@ -143,29 +143,13 @@ const bundledPlans = [
     annualPrice: 799,
     modules: ["copyright", "contracts"],
     features: [
-      "Metadata management (no CWR/DDEX export)",
+      "Copyright metadata management",
       "Writer/publisher splits",
-      "Basic contract templates (no uploads)",
-      "Auto-tag by deal type",
+      "Basic contract templates",
+      "Contract organization & tagging",
       "Email support"
     ],
     icon: Sparkles
-  },
-  {
-    id: "essentials",
-    name: "Essentials",
-    audience: "Small rights owners", 
-    price: 149,
-    annualPrice: 1499,
-    modules: ["copyright", "contracts", "valuation"],
-    features: [
-      "Full copyright management",
-      "Centralized contract storage",
-      "Catalog valuation & deal simulation",
-      "Revenue history analysis",
-      "Priority email support"
-    ],
-    icon: Package
   },
   {
     id: "publishing-pro",
@@ -177,7 +161,7 @@ const bundledPlans = [
     features: [
       "Complete royalty processing",
       "Bulk import royalty statements",
-      "Writer/publisher split management",
+      "Full copyright management with CWR/DDEX",
       "Smart contract organization",
       "Phone support"
     ],
@@ -195,39 +179,22 @@ const bundledPlans = [
       "Pitch status tracking",
       "Deal memo generation",
       "Royalty distribution",
-      "Tier-based client access",
+      "Client portal access",
       "Dedicated support"
     ],
     icon: Zap
   },
   {
-    id: "growth",
-    name: "Growth Bundle", 
-    audience: "Scaling publishers",
-    price: 399,
-    annualPrice: 4499,
-    modules: ["royalties", "copyright", "contracts", "valuation"],
-    features: [
-      "Full royalty management suite",
-      "Advanced copyright tracking",
-      "Contract automation",
-      "Catalog valuation tools",
-      "Priority support"
-    ],
-    icon: TrendingUp
-  },
-  {
     id: "enterprise",
     name: "Enterprise Suite",
     audience: "Large catalogs/admins", 
-    price: 0,
-    annualPrice: 0,
-    custom: true,
+    price: 849,
+    annualPrice: 8499,
     modules: ["royalties", "copyright", "contracts", "sync", "valuation", "dashboard"],
     features: [
       "All modules included",
+      "API access for custom integrations",
       "White-label branding & custom theming",
-      "Custom integrations & SLAs",
       "Complete workflow automation",
       "Multi-tier client portal access", 
       "Advanced analytics & reporting",
@@ -275,23 +242,35 @@ const PricingPage = () => {
   };
 
   const calculateModulesTotal = () => {
-return Array.from(selectedModules).reduce((total, moduleId) => {
-  const module = moduleData.find(m => m.id === moduleId);
-  return total + (module ? (billingInterval === 'month' ? module.price : module.annualPrice) : 0);
-}, 0);
+    const baseTotal = Array.from(selectedModules).reduce((total, moduleId) => {
+      const module = moduleData.find(m => m.id === moduleId);
+      return total + (module ? (billingInterval === 'month' ? module.price : module.annualPrice) : 0);
+    }, 0);
+    // Apply 25% volume discount for 3+ modules
+    if (selectedModules.size >= 3) {
+      return baseTotal * 0.75;
+    }
+    return baseTotal;
   };
 
-  const calculateSavings = () => 0;
+  const calculateSavings = () => {
+    if (selectedModules.size >= 3) {
+      const baseTotal = Array.from(selectedModules).reduce((total, moduleId) => {
+        const module = moduleData.find(m => m.id === moduleId);
+        return total + (module ? (billingInterval === 'month' ? module.price : module.annualPrice) : 0);
+      }, 0);
+      return baseTotal * 0.25;
+    }
+    return 0;
+  };
 
   // Upsell mapping based on specific a la carte selections (order-insensitive)
   const getUpsellPlanId = (): string | null => {
     const key = Array.from(selectedModules).sort().join('+');
     const mapping: Record<string, string> = {
       'contracts+copyright': 'starter',
-      'contracts+copyright+valuation': 'essentials',
       'contracts+copyright+royalties': 'publishing-pro',
       'dashboard+royalties+sync': 'licensing-pro',
-      'contracts+copyright+royalties+valuation': 'growth',
     };
     return mapping[key] || null;
   };
@@ -559,7 +538,12 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
               <Card className="bg-secondary/30 border-dashed max-w-2xl mx-auto">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Your Custom Plan ({selectedModules.size} modules)</span>
+                    <div>
+                      <span>Your Custom Plan ({selectedModules.size} modules)</span>
+                      {selectedModules.size >= 3 && (
+                        <Badge className="ml-2 bg-green-500/20 text-green-600">25% Volume Discount Applied!</Badge>
+                      )}
+                    </div>
                     <div className="text-right">
                       <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         ${calculateModulesTotal().toFixed(0)}
@@ -662,7 +646,7 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 {bundledPlans.map((plan) => {
                 const IconComponent = plan.icon;
-                const isCustom = (plan as any).custom || plan.id === 'enterprise';
+                const isCustom = (plan as any).custom;
                 const regularMonthly = plan.modules.reduce((sum, moduleId) => {
                   const mod = moduleData.find((m) => m.id === moduleId);
                   return sum + (mod?.price || 0);
@@ -761,7 +745,7 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
 <Button 
                         className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
                         onClick={() => {
-                          if ((plan as any).custom || plan.id === 'enterprise') {
+                          if ((plan as any).custom) {
                             window.location.href = '/contact';
                             return;
                           }
@@ -779,7 +763,7 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                         }}
                         disabled={loading}
                       >
-                        {(plan as any).custom || plan.id === 'enterprise' ? 'Contact Sales' : (!user ? 'Start Free Trial' : 'Subscribe to Plan')}
+                        {(plan as any).custom ? 'Contact Sales' : (!user ? 'Start Free Trial' : 'Subscribe to Plan')}
                       </Button>
                     </CardContent>
                   </Card>
