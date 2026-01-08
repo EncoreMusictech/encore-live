@@ -519,8 +519,14 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!user) {
-                            // Redirect to auth page
-                            window.location.href = '/auth';
+                            // Redirect to trial signup page with module info
+                            const params = new URLSearchParams({
+                              type: 'module',
+                              identifier: module.id,
+                              modules: module.id,
+                              billing: billingInterval,
+                            });
+                            window.location.href = `/trial-signup?${params.toString()}`;
                             return;
                           }
                           // Restrict Client Dashboard purchase for new subscribers
@@ -577,7 +583,16 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  if (!user) { window.location.href = '/auth'; return; }
+                                  if (!user) {
+                                    const params = new URLSearchParams({
+                                      type: 'bundle',
+                                      identifier: plan.id,
+                                      modules: plan.modules.join(','),
+                                      billing: billingInterval,
+                                    });
+                                    window.location.href = `/trial-signup?${params.toString()}`;
+                                    return;
+                                  }
                                   createCheckout('bundle', plan.id, billingInterval);
                                 }}
                                 disabled={loading}
@@ -603,7 +618,15 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                       className="bg-gradient-primary text-primary-foreground"
                       onClick={() => {
                         if (!user) {
-                          window.location.href = '/auth';
+                          // Redirect to trial signup with module info
+                          const modulesArray = Array.from(selectedModules);
+                          const params = new URLSearchParams({
+                            type: 'custom',
+                            identifier: 'custom',
+                            modules: modulesArray.join(','),
+                            billing: billingInterval,
+                          });
+                          window.location.href = `/trial-signup?${params.toString()}`;
                           return;
                         }
                         // Start free trial for custom selected modules
@@ -743,14 +766,20 @@ return Array.from(selectedModules).reduce((total, moduleId) => {
                             return;
                           }
                           if (!user) {
-                            window.location.href = '/auth';
+                            const params = new URLSearchParams({
+                              type: 'bundle',
+                              identifier: plan.id,
+                              modules: plan.modules.join(','),
+                              billing: billingInterval,
+                            });
+                            window.location.href = `/trial-signup?${params.toString()}`;
                             return;
                           }
                           createCheckout('bundle', plan.id, billingInterval);
                         }}
                         disabled={loading}
                       >
-                        {(plan as any).custom || plan.id === 'enterprise' ? 'Contact Sales' : (!user ? 'Sign In to Subscribe' : 'Subscribe to Plan')}
+                        {(plan as any).custom || plan.id === 'enterprise' ? 'Contact Sales' : (!user ? 'Start Free Trial' : 'Subscribe to Plan')}
                       </Button>
                     </CardContent>
                   </Card>
