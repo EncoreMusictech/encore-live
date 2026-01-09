@@ -204,9 +204,9 @@ const ContactPage = () => {
                 <CardDescription>Send us a detailed message</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-primary font-medium mb-4">info@encoremusic.tech</p>
-                <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                  Send Email
+                <p className="text-sm text-primary font-medium mb-4">Support@encoremusic.tech</p>
+                <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground" asChild>
+                  <a href="mailto:Support@encoremusic.tech">Send Email</a>
                 </Button>
               </CardContent>
             </Card>
