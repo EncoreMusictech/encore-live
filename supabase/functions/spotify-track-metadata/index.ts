@@ -85,41 +85,63 @@ serve(async (req) => {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Build search query - prioritize artist search when artist is provided
-    let searchQuery;
-    if (artist && artist.trim()) {
-      // Artist-first search: find tracks by this artist
-      searchQuery = encodeURIComponent(`artist:"${artist.trim()}" track:"${sanitizedWorkTitle}"`);
-    } else {
-      // Track-first search: find tracks with this title
-      searchQuery = encodeURIComponent(`track:"${sanitizedWorkTitle}"`);
-    }
-    const searchResponse = await fetch(
-      `https://api.spotify.com/v1/search?q=${searchQuery}&type=track&limit=10`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
+    // Build search query - try with artist first, then fall back to track-only
+    let tracks: any[] = [];
+    
+    // Clean artist name for search (remove special characters that break Spotify search)
+    const cleanArtist = artist ? artist.trim().replace(/["']/g, '') : '';
+    
+    if (cleanArtist) {
+      // Try artist + track search first
+      const artistQuery = encodeURIComponent(`artist:${cleanArtist} track:${sanitizedWorkTitle}`);
+      console.log(`Trying artist search: artist:${cleanArtist} track:${sanitizedWorkTitle}`);
+      
+      const artistSearchResponse = await fetch(
+        `https://api.spotify.com/v1/search?q=${artistQuery}&type=track&limit=10`,
+        {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
         }
-      }
-    );
+      );
 
-    if (!searchResponse.ok) {
-      throw new Error(`Spotify search failed: ${searchResponse.status}`);
+      if (artistSearchResponse.ok) {
+        const artistSearchData = await artistSearchResponse.json();
+        tracks = artistSearchData.tracks?.items || [];
+        console.log(`Artist search found ${tracks.length} tracks`);
+      }
     }
 
-    const searchData = await searchResponse.json();
-    const tracks = searchData.tracks?.items || [];
-
-    console.log(`Found ${tracks.length} tracks for "${workTitle}"`);
-
+    // Fall back to track-only search if no results with artist
     if (tracks.length === 0) {
+      const trackQuery = encodeURIComponent(`track:${sanitizedWorkTitle}`);
+      console.log(`Falling back to track-only search: track:${sanitizedWorkTitle}`);
+      
+      const trackSearchResponse = await fetch(
+        `https://api.spotify.com/v1/search?q=${trackQuery}&type=track&limit=10`,
+        {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        }
+      );
+
+      if (trackSearchResponse.ok) {
+        const trackSearchData = await trackSearchResponse.json();
+        tracks = trackSearchData.tracks?.items || [];
+        console.log(`Track-only search found ${tracks.length} tracks`);
+      }
+    }
+
+    // If still no results, return success with empty results (not 404 error)
+    if (tracks.length === 0) {
+      console.log(`No tracks found for "${workTitle}"`);
       return new Response(
         JSON.stringify({ 
-          error: 'No tracks found',
-          suggestions: []
+          success: true,
+          bestMatch: null,
+          alternatives: [],
+          totalFound: 0,
+          message: 'No matching tracks found on Spotify'
         }),
         { 
-          status: 404,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
