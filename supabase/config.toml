@@ -26,3 +26,9 @@ verify_jwt = true
 
 [functions.chartmetric-analytics]
 verify_jwt = false
+
+[functions.create-setup-checkout]
+verify_jwt = false
+
+[functions.confirm-payment-setup]
+verify_jwt = false

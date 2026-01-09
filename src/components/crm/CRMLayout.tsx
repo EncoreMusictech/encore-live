@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { supabase } from "@/integrations/supabase/client";
 import { CRMSidebar } from "./CRMSidebar";
 import { CRMHeader } from "./CRMHeader";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,7 +18,9 @@ export function CRMLayout() {
   const { isAdmin, loading: rolesLoading } = useUserRoles();
   const { canAccess: canAccessDemo } = useDemoAccess();
   const location = useLocation();
+  const navigate = useNavigate();
   const mainRef = useRef<HTMLElement>(null);
+  const [paymentVerified, setPaymentVerified] = useState<boolean | null>(null);
 
   // Scroll to top when route changes
   useEffect(() => {
@@ -28,8 +31,38 @@ export function CRMLayout() {
 
   // Check if user has access to CRM
   const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech'];
+  const isDemoAccount = user?.email === 'demo@encoremusic.tech';
   const isAdministrator = adminEmails.includes(user?.email?.toLowerCase() || '') || isAdmin;
   const hasPaidAccess = isAdministrator || subscribed || canAccessDemo;
+
+  // Check payment status for non-admin, non-demo users
+  useEffect(() => {
+    if (!user || isAdministrator || isDemoAccount) {
+      setPaymentVerified(true);
+      return;
+    }
+
+    const checkPaymentStatus = async () => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('payment_method_collected')
+          .eq('id', user.id)
+          .single();
+
+        if (!profile?.payment_method_collected) {
+          navigate('/payment-setup');
+          return;
+        }
+        setPaymentVerified(true);
+      } catch (error) {
+        console.error('Error checking payment status:', error);
+        setPaymentVerified(true); // Allow access on error to not block users
+      }
+    };
+
+    checkPaymentStatus();
+  }, [user, isAdministrator, isDemoAccount, navigate]);
 
   if (!user) {
     return (
@@ -45,7 +78,7 @@ export function CRMLayout() {
     );
   }
 
-  if (subscriptionLoading || rolesLoading) {
+  if (subscriptionLoading || rolesLoading || paymentVerified === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">Loading your CRM...</div>

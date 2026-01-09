@@ -3897,10 +3897,13 @@ export type Database = {
           id: string
           last_name: string | null
           onboarding_complete: boolean
+          payment_method_collected: boolean | null
+          payment_setup_at: string | null
           phone: string | null
           privacy_policy_accepted: boolean | null
           privacy_policy_accepted_at: string | null
           privacy_policy_version: string | null
+          stripe_customer_id: string | null
           terms_accepted: boolean | null
           terms_accepted_at: string | null
           terms_version: string | null
@@ -3914,10 +3917,13 @@ export type Database = {
           id: string
           last_name?: string | null
           onboarding_complete?: boolean
+          payment_method_collected?: boolean | null
+          payment_setup_at?: string | null
           phone?: string | null
           privacy_policy_accepted?: boolean | null
           privacy_policy_accepted_at?: string | null
           privacy_policy_version?: string | null
+          stripe_customer_id?: string | null
           terms_accepted?: boolean | null
           terms_accepted_at?: string | null
           terms_version?: string | null
@@ -3931,10 +3937,13 @@ export type Database = {
           id?: string
           last_name?: string | null
           onboarding_complete?: boolean
+          payment_method_collected?: boolean | null
+          payment_setup_at?: string | null
           phone?: string | null
           privacy_policy_accepted?: boolean | null
           privacy_policy_accepted_at?: string | null
           privacy_policy_version?: string | null
+          stripe_customer_id?: string | null
           terms_accepted?: boolean | null
           terms_accepted_at?: string | null
           terms_version?: string | null

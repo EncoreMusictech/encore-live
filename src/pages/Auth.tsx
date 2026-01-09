@@ -64,11 +64,14 @@ useEffect(() => {
     
     (async () => {
       const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech'];
+      const isDemoAccount = user.email === 'demo@encoremusic.tech';
+      const isAdmin = ADMIN_EMAILS.includes(user.email?.toLowerCase() || '');
+      
       try {
-        // Check if user has accepted terms and completed onboarding
+        // Check if user has accepted terms and completed payment setup
         const { data: profile } = await supabase
           .from('profiles')
-          .select('terms_accepted, onboarding_complete')
+          .select('terms_accepted, onboarding_complete, payment_method_collected')
           .eq('id', user.id)
           .single();
 
@@ -78,8 +81,14 @@ useEffect(() => {
           return;
         }
 
+        // If user hasn't set up payment (skip for demo and admin accounts)
+        if (!profile?.payment_method_collected && !isDemoAccount && !isAdmin) {
+          navigate('/payment-setup', { replace: true });
+          return;
+        }
+
         const hasPortal = await isClient();
-        if (hasPortal && !ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
+        if (hasPortal && !isAdmin) {
           navigate('/client-portal', { replace: true });
           return;
         }
@@ -92,7 +101,6 @@ useEffect(() => {
       } catch (e) {
         // ignore and fallback
       }
-      const isDemoAccount = user.email === 'demo@encoremusic.tech';
       const defaultRedirect = isDemoAccount ? '/dashboard' : '/';
       const from = (location.state as any)?.from?.pathname || defaultRedirect;
       navigate(from, { replace: true });

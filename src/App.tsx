@@ -51,6 +51,8 @@ import RecoveryRedirect from "@/components/RecoveryRedirect";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import TrialSignup from "./pages/TrialSignup";
 import NAMMPitchPage from "./pages/NAMMPitchPage";
+import PaymentSetup from "./pages/PaymentSetup";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import { DisableLeavePrompt } from "@/components/DisableLeavePrompt";
 import { ScrollToTop } from "@/components/ScrollToTop";
 
@@ -131,6 +133,24 @@ const App = () => {
                                 <ProtectedRoute>
                                   <ErrorBoundary>
                                     <TermsAndConditions />
+                                  </ErrorBoundary>
+                                </ProtectedRoute>
+                              } />
+                              
+                              {/* Payment Setup - Required before dashboard access */}
+                              <Route path="/payment-setup" element={
+                                <ProtectedRoute>
+                                  <ErrorBoundary>
+                                    <PaymentSetup />
+                                  </ErrorBoundary>
+                                </ProtectedRoute>
+                              } />
+                              
+                              {/* Payment Success - Confirms payment setup */}
+                              <Route path="/payment-success" element={
+                                <ProtectedRoute>
+                                  <ErrorBoundary>
+                                    <PaymentSuccess />
                                   </ErrorBoundary>
                                 </ProtectedRoute>
                               } />
