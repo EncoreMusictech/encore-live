@@ -500,9 +500,12 @@ serve(async (req) => {
       
       // Check if it's a Spotify ID, MusicBrainz ID, or PRO ID
       if (artistId.startsWith('mb-')) {
-        // MusicBrainz ID
+        // MusicBrainz ID - create profile even if fetch fails
         const mbId = artistId.replace('mb-', '');
-        console.log(`Fetching MusicBrainz artist with ID: ${mbId}`);
+        console.log(`Using MusicBrainz ID: ${mbId}`);
+        
+        let mbArtistName = artistName;
+        let worksCount = 50; // Default estimate
         
         try {
           const mbResponse = await fetch(
@@ -517,37 +520,46 @@ serve(async (req) => {
           
           if (mbResponse.ok) {
             const mbArtist = await mbResponse.json();
+            mbArtistName = mbArtist.name || artistName;
             
-            // Get works count
-            const worksResponse = await fetch(
-              `https://musicbrainz.org/ws/2/work?query=arid:${mbId}&fmt=json&limit=50`,
-              {
-                headers: {
-                  'User-Agent': 'EncoreMusicIP/1.0 (support@encore.local)',
-                  'Accept': 'application/json'
+            // Try to get works count
+            try {
+              const worksResponse = await fetch(
+                `https://musicbrainz.org/ws/2/work?query=arid:${mbId}&fmt=json&limit=50`,
+                {
+                  headers: {
+                    'User-Agent': 'EncoreMusicIP/1.0 (support@encore.local)',
+                    'Accept': 'application/json'
+                  }
                 }
+              );
+              
+              if (worksResponse.ok) {
+                const worksData = await worksResponse.json();
+                worksCount = worksData?.works?.length || 50;
               }
-            );
-            
-            let worksCount = 0;
-            if (worksResponse.ok) {
-              const worksData = await worksResponse.json();
-              worksCount = worksData?.works?.length || 0;
+            } catch {
+              console.log('Could not fetch works count, using estimate');
             }
             
-            artist = {
-              id: artistId,
-              name: mbArtist.name || artistName,
-              followers: { total: 0 },
-              genres: [],
-              popularity: Math.min(50, worksCount * 2)
-            } as SpotifyArtist;
-            
-            console.log(`Created MusicBrainz artist profile: ${artist.name}`);
+            console.log(`Fetched MusicBrainz artist: ${mbArtistName} with ${worksCount} works`);
+          } else {
+            console.log(`MusicBrainz fetch returned ${mbResponse.status}, using provided name`);
           }
         } catch (mbErr) {
-          console.error('MusicBrainz fetch error:', mbErr);
+          console.log('MusicBrainz fetch error, using provided name:', (mbErr as Error).message);
         }
+        
+        // Always create the profile when we have a mb- ID
+        artist = {
+          id: artistId,
+          name: mbArtistName,
+          followers: { total: 0 },
+          genres: [],
+          popularity: Math.min(50, worksCount)
+        } as SpotifyArtist;
+        
+        console.log(`Created MusicBrainz songwriter profile: ${artist.name} (popularity: ${artist.popularity})`);
       } else if (artistId.startsWith('pro-')) {
         // PRO ID - create synthetic profile
         artist = {
