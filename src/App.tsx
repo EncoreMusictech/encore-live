@@ -50,6 +50,7 @@ import SubAccountDetailPage from "./pages/SubAccountDetailPage";
 import RecoveryRedirect from "@/components/RecoveryRedirect";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import TrialSignup from "./pages/TrialSignup";
+import NAMMPitchPage from "./pages/NAMMPitchPage";
 import { DisableLeavePrompt } from "@/components/DisableLeavePrompt";
 import { ScrollToTop } from "@/components/ScrollToTop";
 
@@ -152,6 +153,7 @@ const App = () => {
                              <Route path="/team" element={<TeamPage />} />
                              <Route path="/contact" element={<ContactPage />} />
                              <Route path="/documentation" element={<DocumentationPage />} />
+                             <Route path="/namm-pitch" element={<NAMMPitchPage />} />
                               <Route path="/whitelabel" element={
                                 <ProtectedRoute>
                                   <ErrorBoundary>
