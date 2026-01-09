@@ -601,36 +601,121 @@ serve(async (req) => {
       }
     }
     
+    // If still no artist found, try PRO databases (ASCAP/BMI/SESAC) via Perplexity
     if (!artist) {
-      throw new Error(`No artist or songwriter found matching "${artistName}". Please check the spelling or try a different name.`);
+      console.log(`No MusicBrainz match. Searching PRO databases for "${artistName}"...`);
+      const perplexityKey = Deno.env.get('PERPLEXITY_API_KEY');
+      
+      if (perplexityKey) {
+        try {
+          // Search PRO databases for the writer
+          const proSearchPrompt = `Search ASCAP, BMI, and SESAC repertoire databases for songwriter/composer "${artistName}". 
+Return ONLY a JSON object with this exact structure (no markdown, no explanation):
+{"found": true/false, "name": "full name as registered", "works_count": number, "pro": "ASCAP/BMI/SESAC", "sample_works": ["title1", "title2", "title3"]}
+If not found in any database, return: {"found": false}`;
+
+          const proResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${perplexityKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'sonar',
+              messages: [
+                { role: 'system', content: 'You search music PRO databases (ASCAP, BMI, SESAC) and return structured JSON data only. No explanations.' },
+                { role: 'user', content: proSearchPrompt }
+              ],
+              temperature: 0.0,
+              max_tokens: 500,
+              search_domain_filter: ['ascap.com', 'bmi.com', 'sesac.com']
+            })
+          });
+
+          if (proResponse.ok) {
+            const proData = await proResponse.json();
+            const content = proData?.choices?.[0]?.message?.content || '';
+            console.log(`PRO search response: ${content.substring(0, 200)}`);
+            
+            // Try to parse JSON from response
+            let parsed: any = null;
+            try {
+              const jsonMatch = content.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+              }
+            } catch (parseErr) {
+              console.log(`Could not parse PRO response as JSON`);
+            }
+            
+            if (parsed?.found && parsed?.name) {
+              console.log(`Found writer in ${parsed.pro || 'PRO database'}: ${parsed.name} with ${parsed.works_count || 0} works`);
+              
+              // Create a synthetic artist profile for the PRO-registered writer
+              const worksCount = parsed.works_count || 10;
+              artist = {
+                id: `pro-${parsed.pro?.toLowerCase() || 'unknown'}-${artistName.replace(/\s+/g, '-').toLowerCase()}`,
+                name: parsed.name || artistName,
+                followers: { total: 0 },
+                genres: [],
+                popularity: Math.min(60, worksCount) // Estimate popularity based on catalog size
+              } as SpotifyArtist;
+              
+              console.log(`Created PRO songwriter profile for ${artist.name} with estimated ${worksCount} works`);
+            }
+          }
+        } catch (proError) {
+          console.error(`PRO database search error:`, proError);
+        }
+      } else {
+        console.log(`Skipping PRO search - PERPLEXITY_API_KEY not configured`);
+      }
+    }
+    
+    if (!artist) {
+      throw new Error(`No artist or songwriter found matching "${artistName}" in Spotify, MusicBrainz, or PRO databases (ASCAP/BMI/SESAC). Please check the spelling or try a different name.`);
     }
     
     console.log(`Using profile: ${artist.name} with ${artist.followers.total} followers`);
+    
+    // Check if this is a Spotify artist or a songwriter profile (from MusicBrainz/PRO)
+    const isSpotifyArtist = !artist.id.startsWith('mb-') && !artist.id.startsWith('pro-');
 
-    // Get artist's top tracks
-    const topTracksResponse = await fetch(
-      `https://api.spotify.com/v1/artists/${artist.id}/top-tracks?market=US`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
+    // Get artist's top tracks (only for Spotify artists)
+    let topTracks: SpotifyTrack[] = [];
+    if (isSpotifyArtist) {
+      const topTracksResponse = await fetch(
+        `https://api.spotify.com/v1/artists/${artist.id}/top-tracks?market=US`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (topTracksResponse.ok) {
+        const topTracksData = await topTracksResponse.json();
+        topTracks = topTracksData.tracks?.slice(0, 10) || [];
+      } else {
+        console.log(`Could not fetch top tracks for ${artist.name}`);
       }
-    );
-
-    if (!topTracksResponse.ok) {
-      throw new Error('Failed to get top tracks');
+    } else {
+      console.log(`Skipping Spotify top tracks fetch for songwriter profile: ${artist.name}`);
     }
 
-    const topTracksData = await topTracksResponse.json();
-    const topTracks: SpotifyTrack[] = topTracksData.tracks.slice(0, 10);
-
-// Resolve primary genre (use Spotify genres directly when available; fallback to related artists)
-const primaryGenre = await resolvePrimaryGenre(accessToken, artist);
-const { data: benchmarkData } = await supabase
-  .from('industry_benchmarks')
-  .select('*')
-  .eq('genre', primaryGenre)
-  .single();
+    // Resolve primary genre (use Spotify genres directly when available; fallback to related artists)
+    let primaryGenre = 'pop'; // Default for songwriters without genre data
+    if (isSpotifyArtist) {
+      primaryGenre = await resolvePrimaryGenre(accessToken, artist);
+    } else if (artist.genres && artist.genres.length > 0) {
+      primaryGenre = artist.genres[0];
+    }
+    
+    const { data: benchmarkData } = await supabase
+      .from('industry_benchmarks')
+      .select('*')
+      .eq('genre', primaryGenre)
+      .maybeSingle();
 
     const benchmark: IndustryBenchmark = benchmarkData || {
       genre: 'pop',
@@ -652,13 +737,25 @@ const { data: benchmarkData } = await supabase
     
     // Enhanced stream estimation with genre-specific factors
     const genreMultiplier = benchmark.streams_to_revenue_ratio / 0.003; // Normalize to base rate
-    const estimatedTotalStreams = Math.floor(
-      (artist.followers.total * artist.popularity * 2.5 * genreMultiplier * territoryMultiplier) + 
-      topTracks.reduce((acc, track) => acc + (track.popularity * 50000), 0)
-    );
+    
+    // For songwriters without Spotify data, estimate based on popularity score (which we set based on catalog size)
+    let estimatedTotalStreams: number;
+    if (!isSpotifyArtist && artist.followers.total === 0) {
+      // Songwriter estimation: popularity reflects catalog size, estimate streams based on that
+      // Average song gets ~50,000 streams/year, adjust by popularity
+      const estimatedWorksCount = Math.max(10, artist.popularity * 2); // popularity was set to min(60, worksCount)
+      estimatedTotalStreams = Math.floor(estimatedWorksCount * 50000 * genreMultiplier * territoryMultiplier);
+      console.log(`Songwriter stream estimation: ${estimatedWorksCount} works × 50,000 avg streams = ${estimatedTotalStreams.toLocaleString()} total`);
+    } else {
+      estimatedTotalStreams = Math.floor(
+        (artist.followers.total * artist.popularity * 2.5 * genreMultiplier * territoryMultiplier) + 
+        topTracks.reduce((acc, track) => acc + (track.popularity * 50000), 0)
+      );
+    }
 
     // Calculate LTM Revenue estimate with territory adjustments
     const ltmRevenue = estimatedTotalStreams * benchmark.streams_to_revenue_ratio * territoryBenchmarkAdjustment;
+    console.log(`LTM Revenue estimate: $${ltmRevenue.toLocaleString()} (streams: ${estimatedTotalStreams.toLocaleString()})`);
 
     // Advanced cash flow projections using exponential decay model
     const decayRate = Math.max(0.05, 1 - benchmark.growth_rate_assumption); // Higher decay for lower growth genres
