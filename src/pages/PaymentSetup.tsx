@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Shield, AlertCircle, CheckCircle } from 'lucide-react';
+import { CreditCard, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -13,19 +13,26 @@ const PaymentSetup = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [checkingStatus, setCheckingStatus] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const wasCanceled = searchParams.get('canceled') === 'true';
 
-  // Check if user already has payment method collected
+  // Auto-redirect to Stripe checkout on mount
   useEffect(() => {
     if (!user) {
       navigate('/auth');
       return;
     }
 
-    const checkPaymentStatus = async () => {
+    // If canceled, show retry option instead of auto-redirecting
+    if (wasCanceled) {
+      setLoading(false);
+      return;
+    }
+
+    const redirectToStripe = async () => {
       try {
+        // First check if payment already collected
         const { data: profile } = await supabase
           .from('profiles')
           .select('payment_method_collected, terms_accepted')
@@ -43,50 +50,71 @@ const PaymentSetup = () => {
           navigate('/dashboard');
           return;
         }
-      } catch (error) {
-        console.error('Error checking payment status:', error);
-      } finally {
-        setCheckingStatus(false);
+
+        // Redirect to Stripe checkout
+        const { data, error: checkoutError } = await supabase.functions.invoke('create-setup-checkout', {
+          method: 'POST'
+        });
+
+        if (checkoutError) throw checkoutError;
+        if (!data?.url) throw new Error('No checkout URL returned');
+
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } catch (err: any) {
+        console.error('Error redirecting to Stripe:', err);
+        setError(err.message || 'Failed to start payment setup');
+        setLoading(false);
       }
     };
 
-    checkPaymentStatus();
-  }, [user, navigate]);
+    redirectToStripe();
+  }, [user, navigate, wasCanceled]);
 
-  const handleSetupPayment = async () => {
-    if (!user) return;
+  const handleRetry = async () => {
+    setLoading(true);
+    setError(null);
 
     try {
-      setLoading(true);
-
-      const { data, error } = await supabase.functions.invoke('create-setup-checkout', {
+      const { data, error: checkoutError } = await supabase.functions.invoke('create-setup-checkout', {
         method: 'POST'
       });
 
-      if (error) throw error;
+      if (checkoutError) throw checkoutError;
       if (!data?.url) throw new Error('No checkout URL returned');
 
-      // Redirect to Stripe Checkout
       window.location.href = data.url;
-    } catch (error: any) {
-      console.error('Error creating setup checkout:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to start payment setup. Please try again.",
-        variant: "destructive"
-      });
+    } catch (err: any) {
+      console.error('Error creating checkout:', err);
+      setError(err.message || 'Failed to start payment setup');
       setLoading(false);
     }
   };
 
-  if (!user || checkingStatus) {
+  if (!user) {
+    return null;
+  }
+
+  // Show loading while redirecting to Stripe
+  if (loading && !wasCanceled && !error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">Loading...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md mx-auto">
+          <CardHeader className="text-center pb-6">
+            <div className="flex items-center justify-center mb-4">
+              <Loader2 className="h-12 w-12 text-primary animate-spin" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Setting Up Payment</CardTitle>
+            <CardDescription className="text-base">
+              Redirecting you to secure payment setup...
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
 
+  // Show retry UI if canceled or error
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md mx-auto animate-fade-in">
@@ -96,7 +124,7 @@ const PaymentSetup = () => {
             <CardTitle className="text-2xl font-bold">Payment Setup</CardTitle>
           </div>
           <CardDescription className="text-base">
-            Add a payment method to complete your account setup
+            Complete payment setup to access your dashboard
           </CardDescription>
         </CardHeader>
         
@@ -105,54 +133,39 @@ const PaymentSetup = () => {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Payment setup was canceled. Please complete payment setup to access your dashboard.
+                Payment setup was canceled. Please complete payment setup to continue.
               </AlertDescription>
             </Alert>
           )}
 
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-              <Shield className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">Secure Payment</p>
-                <p className="text-xs text-muted-foreground">
-                  Your payment information is securely processed by Stripe. We never store your card details.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-              <CheckCircle className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">No Charge Today</p>
-                <p className="text-xs text-muted-foreground">
-                  We're just collecting your payment method. You won't be charged until you subscribe to a plan.
-                </p>
-              </div>
-            </div>
-          </div>
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
           <Button 
-            onClick={handleSetupPayment}
+            onClick={handleRetry}
             disabled={loading}
             size="lg"
             className="w-full"
           >
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-b-transparent mr-2" />
-                Redirecting to Stripe...
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Redirecting...
               </>
             ) : (
               <>
                 <CreditCard className="h-4 w-4 mr-2" />
-                Add Payment Method
+                Continue to Payment Setup
               </>
             )}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            By adding a payment method, you agree to our billing terms and conditions.
+            You won't be charged until you subscribe to a plan.
           </p>
         </CardContent>
       </Card>
