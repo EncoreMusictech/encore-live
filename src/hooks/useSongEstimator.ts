@@ -164,7 +164,8 @@ export function useSongEstimator() {
           searchId,
           writerName: songwriterName,
           userId: user.id, // ensure we always pass a valid user id
-          maxSongs: 500
+          // Large values can time out the Edge Function due to MusicBrainz rate limits.
+          maxSongs: 75,
         }
       });
 

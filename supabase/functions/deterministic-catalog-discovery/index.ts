@@ -12,6 +12,13 @@ const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const sharedSecret = Deno.env.get('ASSISTANT_SHARED_SECRET') || '';
 const perplexityKey = Deno.env.get('PERPLEXITY_API_KEY') || '';
 
+// Keep deterministic discovery fast to avoid Edge Function timeouts.
+const DEFAULT_MAX_SONGS = 50;
+const MAX_SONGS_HARD_CAP = 75;
+const WORK_DETAILS_HARD_CAP = 25;
+const PROCESS_TIME_BUDGET_MS = 45_000;
+const FETCH_TIMEOUT_MS = 8_000;
+
 const supabase = createClient(supabaseUrl, serviceKey);
 
 function json(data: unknown, status = 200) {
@@ -21,10 +28,14 @@ function json(data: unknown, status = 200) {
   });
 }
 
-async function fetchJSON(url: string, retries = 3): Promise<any> {
+async function fetchJSON(url: string, retries = 3, timeoutMs = FETCH_TIMEOUT_MS): Promise<any> {
   for (let attempt = 1; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
       const resp = await fetch(url, {
+        signal: controller.signal,
         headers: {
           'User-Agent': 'EncoreMusicIP/1.0 (support@encore.local)',
           'Accept': 'application/json'
@@ -33,9 +44,12 @@ async function fetchJSON(url: string, retries = 3): Promise<any> {
       if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
       return await resp.json();
     } catch (err) {
+      const isLast = attempt === retries;
       console.log(`fetchJSON attempt ${attempt}/${retries} failed for ${url.substring(0, 80)}...`);
-      if (attempt === retries) throw err;
+      if (isLast) throw err;
       await new Promise(r => setTimeout(r, 500 * attempt)); // backoff
+    } finally {
+      clearTimeout(timeout);
     }
   }
 }
@@ -60,7 +74,7 @@ async function findArtistMBID(writerName: string): Promise<string | null> {
       return exact.id;
     }
     // No exact match - don't return wrong artist
-    console.log(`MusicBrainz: No exact match for "${writerName}". Found: ${artists.slice(0,3).map((a:any) => a.name).join(', ')}`);
+    console.log(`MusicBrainz: No exact match for "${writerName}". Found: ${artists.slice(0, 3).map((a: any) => a.name).join(', ')}`);
     return null;
   } catch (_e) {
     console.error(`MusicBrainz artist search error:`, _e);
@@ -191,10 +205,13 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { searchId, writerName, userId, maxSongs = 20 } = await req.json();
+    const { searchId, writerName, userId, maxSongs = DEFAULT_MAX_SONGS } = await req.json();
     if (!searchId || !writerName || !userId) {
       return json({ error: 'searchId, writerName, and userId are required' }, 400);
     }
+
+    const requestedMaxSongs = Number(maxSongs) || DEFAULT_MAX_SONGS;
+    const effectiveMaxSongs = Math.min(MAX_SONGS_HARD_CAP, Math.max(1, requestedMaxSongs));
 
     // Mark search as processing
     await supabase
@@ -217,20 +234,21 @@ serve(async (req) => {
         wikiSummary = await fetchWikipediaSummary(wikiTitle);
       }
     }
+
     let works: any[] = [];
     if (artistId) {
-      works = await fetchAllWorksByArtist(artistId, Math.min(1000, maxSongs));
+      works = await fetchAllWorksByArtist(artistId, Math.min(250, effectiveMaxSongs * 4));
     }
     if (!works.length) {
-      works = await searchWorksByWriterName(writerName, Math.min(1000, maxSongs));
+      works = await searchWorksByWriterName(writerName, Math.min(250, effectiveMaxSongs * 4));
     }
 
     // Supplement with PRO repertoires (ASCAP, BMI, SESAC) via Perplexity to catch missing works
-    let proWorks: Array<{ title: string; iswc?: string; writers?: any[]; publishers?: any[]; source: 'ascap'|'bmi'|'sesac' }> = [];
+    let proWorks: Array<{ title: string; iswc?: string; writers?: any[]; publishers?: any[]; source: 'ascap' | 'bmi' | 'sesac' }> = [];
     console.log('Perplexity key configured:', !!perplexityKey);
     if (perplexityKey) {
       try {
-        const fetchProDomain = async (domain: 'ascap'|'bmi'|'sesac') => {
+        const fetchProDomain = async (domain: 'ascap' | 'bmi' | 'sesac') => {
           const model = 'sonar';
           const site = domain === 'ascap' ? 'ascap.com' : (domain === 'bmi' ? 'bmi.com' : 'sesac.com');
           const system = `You extract structured data ONLY from the official ${domain.toUpperCase()} repertoire database at ${site}. 
@@ -266,13 +284,13 @@ If no works are found for this exact writer name, return {"works":[]}.`;
           try {
             const match = content.match(/```json\s*([\s\S]*?)```/);
             parsed = JSON.parse(match ? match[1] : content);
-          } catch (parseErr) { 
+          } catch (parseErr) {
             console.error(`${domain.toUpperCase()} JSON parse error:`, parseErr);
-            parsed = null; 
+            parsed = null;
           }
           const works = Array.isArray(parsed?.works) ? parsed.works : [];
           console.log(`${domain.toUpperCase()} found ${works.length} works`);
-          return works.map((w: any) => ({ ...w, source: domain })).slice(0, maxSongs * 2);
+          return works.map((w: any) => ({ ...w, source: domain })).slice(0, effectiveMaxSongs * 2);
         };
         const [ascap, bmi, sesac] = await Promise.all([
           fetchProDomain('ascap'),
@@ -281,7 +299,7 @@ If no works are found for this exact writer name, return {"works":[]}.`;
         ]);
         proWorks = [...ascap, ...bmi, ...sesac];
         console.log(`Total PRO works found: ASCAP=${ascap.length}, BMI=${bmi.length}, SESAC=${sesac.length}`);
-      } catch(e) { 
+      } catch (e) {
         console.error('PRO lookup error:', e);
       }
     } else {
@@ -289,7 +307,7 @@ If no works are found for this exact writer name, return {"works":[]}.`;
     }
 
     // Build unified candidate list with PRO-first merging
-    const candidates = new Map<string, { id?: string; title: string; sources: Array<'musicbrainz'|'ascap'|'bmi'|'sesac'>; iswc?: string; proDetails?: Record<string, any> }>();
+    const candidates = new Map<string, { id?: string; title: string; sources: Array<'musicbrainz' | 'ascap' | 'bmi' | 'sesac'>; iswc?: string; proDetails?: Record<string, any> }>();
 
     // Seed with MusicBrainz discoveries
     for (const w of works) {
@@ -342,20 +360,31 @@ If no works are found for this exact writer name, return {"works":[]}.`;
         if (iswcA !== iswcB) return iswcB - iswcA;
         return 0;
       })
-      .slice(0, maxSongs);
+      .slice(0, effectiveMaxSongs);
+
     const rows: any[] = [];
+    const startedAt = Date.now();
+    let workDetailsCalls = 0;
 
     for (const w of selected) {
-      // Respect rate limits
-      await new Promise((res) => setTimeout(res, 300));
-      
+      // Hard stop to avoid request-level timeouts
+      if (Date.now() - startedAt > PROCESS_TIME_BUDGET_MS) {
+        console.log(`Time budget reached (${PROCESS_TIME_BUDGET_MS}ms). Returning partial results.`);
+        break;
+      }
+
+      // Light throttling (we still hit external APIs below)
+      await new Promise((res) => setTimeout(res, 100));
+
       const work = w as any; // Type assertion for work object
 
       let title = (work.title || 'Untitled');
       let finalISWC: string | null = (work.iswc as string) || null;
       let coWritersMB: string[] = [];
 
-      if (work.id) {
+      // Work details are expensive + prone to flake; cap how many we attempt per run.
+      if (work.id && workDetailsCalls < WORK_DETAILS_HARD_CAP) {
+        workDetailsCalls++;
         const details = await getWorkDetails(work.id);
         if (details) {
           title = details?.title || title;
@@ -368,7 +397,7 @@ If no works are found for this exact writer name, return {"works":[]}.`;
       }
 
       const proDetails = (work.proDetails || {}) as Record<string, any>;
-      const proOrder = ['ascap','bmi','sesac'];
+      const proOrder = ['ascap', 'bmi', 'sesac'];
       const chosen = proOrder.find((k) => !!proDetails[k]) || null;
       const chosenDetails = chosen ? proDetails[chosen] : null;
 
@@ -418,7 +447,7 @@ If no works are found for this exact writer name, return {"works":[]}.`;
       // PRO flags
       const proFlags = {
         ASCAP: !!proDetails.ascap || !!(proData?.sources?.ascap?.found ?? proData?.ascap),
-        BMI:   !!proDetails.bmi   || !!(proData?.sources?.bmi?.found   ?? proData?.bmi),
+        BMI: !!proDetails.bmi || !!(proData?.sources?.bmi?.found ?? proData?.bmi),
         SESAC: !!proDetails.sesac || !!(proData?.sources?.sesac?.found ?? proData?.sesac),
       };
 
