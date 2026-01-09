@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -65,6 +65,15 @@ export function useDataFiltering() {
     loadFilterConfig();
   }, [isViewingAsSubAccount, viewContext?.companyId]);
 
+  // Create a stable filter key that changes when filter state changes
+  // This can be used as a dependency in other hooks to trigger refetch
+  const filterKey = useMemo(() => {
+    if (!filterConfig.isFilterActive) {
+      return 'no-filter';
+    }
+    return `filter-${filterConfig.companyId}-${filterConfig.companyUserIds.join(',')}`;
+  }, [filterConfig.isFilterActive, filterConfig.companyId, filterConfig.companyUserIds]);
+
   /**
    * Apply filters to a Supabase query builder for tables with user_id
    */
@@ -107,6 +116,7 @@ export function useDataFiltering() {
     filterConfig,
     loading,
     isFilterActive: filterConfig.isFilterActive,
+    filterKey, // Use this as a dependency to trigger refetch when filter changes
     applyUserIdFilter,
     applyCompanyIdFilter,
     isUserInScope,

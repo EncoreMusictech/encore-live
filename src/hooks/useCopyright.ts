@@ -19,7 +19,7 @@ export const useCopyright = () => {
   const [writersCache, setWritersCache] = useState<{ [key: string]: CopyrightWriter[] }>({});
   const { toast } = useToast();
   const { logActivity } = useActivityLog();
-  const { applyUserIdFilter, isFilterActive, getFilterSummary } = useDataFiltering();
+  const { applyUserIdFilter, filterKey } = useDataFiltering();
   const { 
     data: optimisticCopyrights, 
     setData: setOptimisticData,
@@ -358,7 +358,7 @@ export const useCopyright = () => {
     }
   };
 
-  // Set up real-time subscriptions - run only once on mount
+  // Set up real-time subscriptions - re-fetch when filter changes
   useEffect(() => {
     fetchCopyrights();
 
@@ -434,7 +434,7 @@ export const useCopyright = () => {
       console.log('Cleaning up real-time copyright subscriptions...');
       supabase.removeChannel(copyrightChannel);
     };
-  }, []); // Remove fetchCopyrights dependency to prevent recreation of subscriptions
+  }, [filterKey]); // Re-fetch when filter changes
 
   return {
     copyrights: optimisticCopyrights, // Return optimistic data instead of raw data

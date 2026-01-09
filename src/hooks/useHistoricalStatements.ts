@@ -43,7 +43,7 @@ export function useHistoricalStatements(artistName?: string) {
   const [statements, setStatements] = useState<HistoricalStatement[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { applyUserIdFilter } = useDataFiltering();
+  const { applyUserIdFilter, filterKey } = useDataFiltering();
 
   const fetchStatements = useCallback(async (name?: string) => {
     if (!name && !artistName) return;
@@ -263,7 +263,7 @@ export function useHistoricalStatements(artistName?: string) {
     if (artistName) {
       fetchStatements();
     }
-  }, [artistName, fetchStatements]);
+  }, [artistName, fetchStatements, filterKey]); // Re-fetch when filter changes
 
   return {
     statements,
