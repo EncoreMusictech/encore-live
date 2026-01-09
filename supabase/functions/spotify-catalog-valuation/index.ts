@@ -490,9 +490,9 @@ serve(async (req) => {
     const tokenData: SpotifyTokenResponse = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Search for the artist
+    // Search for the artist - get multiple results to find exact match
     const searchResponse = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`,
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=10`,
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -506,12 +506,106 @@ serve(async (req) => {
 
     const searchData = await searchResponse.json();
     
-    if (!searchData.artists?.items?.length) {
-      throw new Error('Artist not found');
+    // Try to find exact name match first (case-insensitive)
+    const normalizedSearchName = artistName.toLowerCase().trim();
+    let artist: SpotifyArtist | null = null;
+    
+    if (searchData.artists?.items?.length) {
+      // First try exact match
+      const exactMatch = searchData.artists.items.find((a: SpotifyArtist) => 
+        a.name.toLowerCase().trim() === normalizedSearchName
+      );
+      
+      if (exactMatch) {
+        artist = exactMatch;
+        console.log(`Found EXACT match on Spotify: ${artist.name} with ${artist.followers.total} followers`);
+      } else {
+        // Check if first result is a close match (contains the search term)
+        const firstResult = searchData.artists.items[0];
+        const firstNameLower = firstResult.name.toLowerCase();
+        
+        // Only use first result if it's reasonably close to what user searched for
+        if (firstNameLower.includes(normalizedSearchName) || normalizedSearchName.includes(firstNameLower)) {
+          artist = firstResult;
+          console.log(`Found partial match on Spotify: ${artist.name} (searched for: ${artistName})`);
+        } else {
+          console.log(`No close match found on Spotify. First result "${firstResult.name}" doesn't match "${artistName}"`);
+          console.log(`Available artists: ${searchData.artists.items.slice(0, 5).map((a: SpotifyArtist) => a.name).join(', ')}`);
+        }
+      }
     }
-
-    const artist: SpotifyArtist = searchData.artists.items[0];
-    console.log(`Found artist: ${artist.name} with ${artist.followers.total} followers`);
+    
+    // If no Spotify artist found, try to search as a songwriter via MusicBrainz
+    if (!artist) {
+      console.log(`No Spotify artist match for "${artistName}". Searching as songwriter via MusicBrainz...`);
+      
+      try {
+        // Search MusicBrainz for the writer
+        const mbQuery = encodeURIComponent(artistName);
+        const mbResponse = await fetch(
+          `https://musicbrainz.org/ws/2/artist?query=artist:${mbQuery}%20AND%20type:person&fmt=json&limit=5`,
+          {
+            headers: {
+              'User-Agent': 'EncoreMusicIP/1.0 (support@encore.local)',
+              'Accept': 'application/json'
+            }
+          }
+        );
+        
+        if (mbResponse.ok) {
+          const mbData = await mbResponse.json();
+          const mbArtists = mbData?.artists || [];
+          
+          // Find exact match in MusicBrainz
+          const mbExact = mbArtists.find((a: any) => 
+            (a.name || '').toLowerCase().trim() === normalizedSearchName
+          );
+          
+          if (mbExact) {
+            console.log(`Found songwriter in MusicBrainz: ${mbExact.name} (${mbExact.id})`);
+            
+            // Get their works from MusicBrainz
+            const worksResponse = await fetch(
+              `https://musicbrainz.org/ws/2/work?query=arid:${mbExact.id}&fmt=json&limit=50`,
+              {
+                headers: {
+                  'User-Agent': 'EncoreMusicIP/1.0 (support@encore.local)',
+                  'Accept': 'application/json'
+                }
+              }
+            );
+            
+            let writerWorks: any[] = [];
+            if (worksResponse.ok) {
+              const worksData = await worksResponse.json();
+              writerWorks = worksData?.works || [];
+              console.log(`Found ${writerWorks.length} works for songwriter ${mbExact.name}`);
+            }
+            
+            // Create a synthetic artist profile for the songwriter
+            artist = {
+              id: `mb-${mbExact.id}`,
+              name: mbExact.name || artistName,
+              followers: { total: 0 },
+              genres: [],
+              popularity: Math.min(50, writerWorks.length * 2) // Estimate popularity based on catalog size
+            } as SpotifyArtist;
+            
+            console.log(`Created songwriter profile for ${artist.name} with ${writerWorks.length} works`);
+          } else if (mbArtists.length > 0) {
+            console.log(`MusicBrainz found artists but no exact match: ${mbArtists.map((a: any) => a.name).join(', ')}`);
+          }
+        }
+      } catch (mbError) {
+        console.error(`MusicBrainz search error:`, mbError);
+      }
+    }
+    
+    if (!artist) {
+      throw new Error(`No artist or songwriter found matching "${artistName}". Please check the spelling or try a different name.`);
+    }
+    
+    console.log(`Using profile: ${artist.name} with ${artist.followers.total} followers`);
 
     // Get artist's top tracks
     const topTracksResponse = await fetch(
