@@ -86,6 +86,9 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
   const [proRegistrationOpen, setProRegistrationOpen] = useState(false);
   const [legalFilingOpen, setLegalFilingOpen] = useState(false);
   const [contractLinkOpen, setContractLinkOpen] = useState(false);
+  
+  // New Work vs Existing Work mode
+  const [isNewWorkMode, setIsNewWorkMode] = useState(!editingCopyright);
 
   // Form data
   const [formData, setFormData] = useState<Partial<CopyrightInsert & {
@@ -671,6 +674,17 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
       // Reset the form after successful creation/update (only for new creations)
       if (!editingCopyright) {
         resetForm();
+        
+        // Show post-save registration prompt for new works
+        toast({
+          title: "Work Saved Successfully",
+          description: "Would you like to register this work with ASCAP/BMI now? Use the bulk registration feature in the Copyright page.",
+        });
+      } else {
+        toast({
+          title: "Work Updated",
+          description: "Copyright record has been updated successfully.",
+        });
       }
       
       console.log('Copyright saved successfully, waiting for real-time propagation...');
@@ -696,6 +710,47 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+
+      {/* New Work Mode Toggle */}
+      {!editingCopyright && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label className="text-base font-medium flex items-center gap-2">
+                  <Music className="h-4 w-4" />
+                  {isNewWorkMode ? 'Registering a New Work' : 'Looking Up Existing Work'}
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  {isNewWorkMode 
+                    ? "This work hasn't been registered with PROs yet. Complete the form manually, then use bulk registration to submit to ASCAP/BMI."
+                    : "Search PRO databases to find and import existing registrations."}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Existing</span>
+                <Switch
+                  checked={isNewWorkMode}
+                  onCheckedChange={setIsNewWorkMode}
+                />
+                <span className="text-sm text-muted-foreground">New</span>
+              </div>
+            </div>
+            
+            {isNewWorkMode && (
+              <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-sm text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    <strong>Tip:</strong> For new works, PRO database searches will return "not found" - that's expected! 
+                    Enter your metadata manually, then after saving you can submit to ASCAP/BMI via bulk registration.
+                  </span>
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Metadata Section */}
       <Collapsible open={metadataOpen} onOpenChange={setMetadataOpen}>
@@ -943,19 +998,34 @@ export const EnhancedCopyrightForm: React.FC<EnhancedCopyrightFormProps> = ({ on
                 </div>
               </div>
 
-              {/* ASCAP Lookup Button */}
-              <div className="flex justify-start">
-                <SafeExternalLink
-                  href="https://www.ascap.com/repertory#/"
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  showIcon={false}
-                  onBeforeNavigate={() => {}}
-                >
-                  <Search className="h-4 w-4" />
-                  Search ASCAP Database
-                </SafeExternalLink>
-              </div>
+              {/* ASCAP Lookup Button - Hidden in New Work mode */}
+              {!isNewWorkMode && (
+                <div className="flex justify-start">
+                  <SafeExternalLink
+                    href="https://www.ascap.com/repertory#/"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    showIcon={false}
+                    onBeforeNavigate={() => {}}
+                  >
+                    <Search className="h-4 w-4" />
+                    Search ASCAP Database
+                  </SafeExternalLink>
+                </div>
+              )}
+              
+              {/* New Work Mode Guidance */}
+              {isNewWorkMode && (
+                <div className="p-3 bg-muted/50 border border-muted-foreground/20 rounded-lg">
+                  <p className="text-sm text-muted-foreground flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-green-500" />
+                    <span>
+                      <strong>New Work:</strong> PRO searches are hidden since this work isn't registered yet. 
+                      After saving, use the bulk registration feature to submit to ASCAP/BMI.
+                    </span>
+                  </p>
+                </div>
+              )}
             </CardContent>
           </CollapsibleContent>
         </Card>

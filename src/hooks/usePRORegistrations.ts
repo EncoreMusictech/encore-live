@@ -155,7 +155,8 @@ export const usePRORegistrations = () => {
     status: string,
     metadata?: Partial<PRORegistrationSubmission>
   ) => {
-      await supabase
+    try {
+      const { error } = await supabase
         .from('pro_registration_submissions')
         .update({
           status,
