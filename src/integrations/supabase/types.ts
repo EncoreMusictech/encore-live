@@ -3757,6 +3757,137 @@ export type Database = {
         }
         Relationships: []
       }
+      pro_registration_submissions: {
+        Row: {
+          ack_file_name: string | null
+          ack_metadata: Json | null
+          ack_received: boolean | null
+          ack_received_at: string | null
+          created_at: string | null
+          cwr_file_name: string
+          error_message: string | null
+          expected_ack_date: string | null
+          export_id: string | null
+          id: string
+          pro_name: string
+          status: string | null
+          submission_date: string | null
+          submission_metadata: Json | null
+          updated_at: string | null
+          user_id: string
+          works_accepted: number | null
+          works_pending: number | null
+          works_rejected: number | null
+          works_submitted: number | null
+        }
+        Insert: {
+          ack_file_name?: string | null
+          ack_metadata?: Json | null
+          ack_received?: boolean | null
+          ack_received_at?: string | null
+          created_at?: string | null
+          cwr_file_name: string
+          error_message?: string | null
+          expected_ack_date?: string | null
+          export_id?: string | null
+          id?: string
+          pro_name: string
+          status?: string | null
+          submission_date?: string | null
+          submission_metadata?: Json | null
+          updated_at?: string | null
+          user_id: string
+          works_accepted?: number | null
+          works_pending?: number | null
+          works_rejected?: number | null
+          works_submitted?: number | null
+        }
+        Update: {
+          ack_file_name?: string | null
+          ack_metadata?: Json | null
+          ack_received?: boolean | null
+          ack_received_at?: string | null
+          created_at?: string | null
+          cwr_file_name?: string
+          error_message?: string | null
+          expected_ack_date?: string | null
+          export_id?: string | null
+          id?: string
+          pro_name?: string
+          status?: string | null
+          submission_date?: string | null
+          submission_metadata?: Json | null
+          updated_at?: string | null
+          user_id?: string
+          works_accepted?: number | null
+          works_pending?: number | null
+          works_rejected?: number | null
+          works_submitted?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pro_registration_submissions_export_id_fkey"
+            columns: ["export_id"]
+            isOneToOne: false
+            referencedRelation: "copyright_exports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pro_registration_works: {
+        Row: {
+          ack_message: string | null
+          copyright_id: string
+          created_at: string | null
+          id: string
+          pro_work_id: string | null
+          registration_status: string | null
+          submission_id: string
+          updated_at: string | null
+          work_id: string | null
+          work_title: string
+        }
+        Insert: {
+          ack_message?: string | null
+          copyright_id: string
+          created_at?: string | null
+          id?: string
+          pro_work_id?: string | null
+          registration_status?: string | null
+          submission_id: string
+          updated_at?: string | null
+          work_id?: string | null
+          work_title: string
+        }
+        Update: {
+          ack_message?: string | null
+          copyright_id?: string
+          created_at?: string | null
+          id?: string
+          pro_work_id?: string | null
+          registration_status?: string | null
+          submission_id?: string
+          updated_at?: string | null
+          work_id?: string | null
+          work_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pro_registration_works_copyright_id_fkey"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pro_registration_works_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "pro_registration_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
