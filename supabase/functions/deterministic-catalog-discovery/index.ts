@@ -35,13 +35,27 @@ async function fetchJSON(url: string) {
 async function findArtistMBID(writerName: string): Promise<string | null> {
   try {
     const q = encodeURIComponent(`${writerName}`);
-    const data = await fetchJSON(`https://musicbrainz.org/ws/2/artist?query=artist:${q}%20AND%20(type:person%20OR%20type:group)&fmt=json&limit=5`);
+    const data = await fetchJSON(`https://musicbrainz.org/ws/2/artist?query=artist:${q}%20AND%20(type:person%20OR%20type:group)&fmt=json&limit=10`);
     const artists = data?.artists || [];
-    if (!artists.length) return null;
-    // pick closest name match
-    const exact = artists.find((a: any) => (a.name || '').toLowerCase() === writerName.toLowerCase());
-    return (exact || artists[0])?.id || null;
+    if (!artists.length) {
+      console.log(`MusicBrainz: No artists found for "${writerName}"`);
+      return null;
+    }
+    // Only return exact name match (case-insensitive) - don't fall back to partial matches
+    const normalized = writerName.toLowerCase().trim();
+    const exact = artists.find((a: any) => {
+      const artistName = (a.name || '').toLowerCase().trim();
+      return artistName === normalized;
+    });
+    if (exact) {
+      console.log(`MusicBrainz: Found exact match for "${writerName}": ${exact.name} (${exact.id})`);
+      return exact.id;
+    }
+    // No exact match - don't return wrong artist
+    console.log(`MusicBrainz: No exact match for "${writerName}". Found: ${artists.slice(0,3).map((a:any) => a.name).join(', ')}`);
+    return null;
   } catch (_e) {
+    console.error(`MusicBrainz artist search error:`, _e);
     return null;
   }
 }
@@ -209,20 +223,22 @@ serve(async (req) => {
     if (perplexityKey) {
       try {
         const fetchProDomain = async (domain: 'ascap'|'bmi'|'sesac') => {
-          const model = 'sonar'; // Updated to current Perplexity model
+          const model = 'sonar';
           const site = domain === 'ascap' ? 'ascap.com' : (domain === 'bmi' ? 'bmi.com' : 'sesac.com');
-          const system = `You extract structured data from official ${domain.toUpperCase()} repertoire. Return STRICT JSON only. Shape: {"works":[{"title":"string","iswc":"string?","writers":[{"name":"string","ipi":"string?","share":number?}],"publishers":[{"name":"string","share":number?}]}]}. Prefer official capitalization. Return up to 300 unique works for the writer provided.`;
+          const system = `You extract structured data ONLY from the official ${domain.toUpperCase()} repertoire database at ${site}. 
+CRITICAL: Only return works where "${writerName}" is listed EXACTLY as a writer/composer. Do NOT include works by similarly named writers.
+Return STRICT JSON only. Shape: {"works":[{"title":"string","iswc":"string?","writers":[{"name":"string","ipi":"string?","share":number?}],"publishers":[{"name":"string","share":number?}]}]}. 
+If no works are found for this exact writer name, return {"works":[]}.`;
           const body = {
             model,
             messages: [
               { role: 'system', content: system },
-              { role: 'user', content: `List all works for writer "${writerName}" from the official ${domain.toUpperCase()} repertoire. Include ISWC when shown and writers/publishers with percentages if listed. Output JSON only.` }
+              { role: 'user', content: `Search the ${domain.toUpperCase()} repertoire at ${site} for works written by EXACTLY "${writerName}". Only include works where this exact name appears as a credited writer. Return JSON with the works array. If no works found for this exact name, return {"works":[]}` }
             ],
-            temperature: 0.1,
+            temperature: 0.0,
             top_p: 0.9,
             max_tokens: 2000,
             search_domain_filter: [site],
-            search_recency_filter: 'year'
           } as any;
           console.log(`Fetching ${domain.toUpperCase()} repertoire for "${writerName}"...`);
           const resp = await fetch('https://api.perplexity.ai/chat/completions', {
