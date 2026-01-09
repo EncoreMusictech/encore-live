@@ -14,9 +14,9 @@ interface ChartmetricToken {
 let cachedToken: ChartmetricToken | null = null;
 
 async function getAccessToken(): Promise<string> {
-  const apiKey = Deno.env.get('CHARTMETRIC_API_KEY');
-  if (!apiKey) {
-    throw new Error('CHARTMETRIC_API_KEY not configured');
+  const refreshToken = Deno.env.get('CHARTMETRIC_API_KEY');
+  if (!refreshToken) {
+    throw new Error('CHARTMETRIC_API_KEY (refresh token) not configured');
   }
 
   // Return cached token if still valid (with 5 min buffer)
@@ -25,22 +25,32 @@ async function getAccessToken(): Promise<string> {
   }
 
   console.log('Fetching new Chartmetric access token...');
+  console.log('Using refresh token starting with:', refreshToken.substring(0, 10) + '...');
   
   const response = await fetch('https://api.chartmetric.com/api/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ refreshtoken: apiKey }),
+    body: JSON.stringify({ refreshtoken: refreshToken }),
   });
 
+  const responseText = await response.text();
+  console.log('Chartmetric token response status:', response.status);
+  console.log('Chartmetric token response:', responseText.substring(0, 200));
+
   if (!response.ok) {
-    const error = await response.text();
-    console.error('Chartmetric token error:', error);
-    throw new Error(`Failed to get Chartmetric token: ${response.status}`);
+    console.error('Chartmetric token error:', responseText);
+    throw new Error(`Failed to get Chartmetric token: ${response.status} - ${responseText}`);
   }
 
-  const data = await response.json();
+  const data = JSON.parse(responseText);
+  
+  if (!data.token) {
+    console.error('No token in response:', data);
+    throw new Error('Chartmetric response missing token - ensure you are using the REFRESH TOKEN, not API key');
+  }
+  
   cachedToken = {
     token: data.token,
     expiresAt: Date.now() + (data.expires_in || 3600) * 1000,
