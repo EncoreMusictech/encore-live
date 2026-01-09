@@ -21,15 +21,23 @@ function json(data: unknown, status = 200) {
   });
 }
 
-async function fetchJSON(url: string) {
-  const resp = await fetch(url, {
-    headers: {
-      'User-Agent': 'EncoreMusicIP/1.0 (support@encore.local)',
-      'Accept': 'application/json'
+async function fetchJSON(url: string, retries = 3): Promise<any> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const resp = await fetch(url, {
+        headers: {
+          'User-Agent': 'EncoreMusicIP/1.0 (support@encore.local)',
+          'Accept': 'application/json'
+        }
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
+      return await resp.json();
+    } catch (err) {
+      console.log(`fetchJSON attempt ${attempt}/${retries} failed for ${url.substring(0, 80)}...`);
+      if (attempt === retries) throw err;
+      await new Promise(r => setTimeout(r, 500 * attempt)); // backoff
     }
-  });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
-  return await resp.json();
+  }
 }
 
 async function findArtistMBID(writerName: string): Promise<string | null> {
