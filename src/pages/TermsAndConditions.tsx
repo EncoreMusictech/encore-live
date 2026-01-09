@@ -93,22 +93,27 @@ const TermsAndConditions = () => {
 
       toast({
         title: "Terms Accepted",
-        description: "Welcome to Encore Music! Redirecting to dashboard...",
+        description: "Setting up your payment method...",
       });
 
-      // Redirect to dashboard
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
+      // Redirect to payment setup instead of dashboard
+      const { data, error: checkoutError } = await supabase.functions.invoke('create-setup-checkout', {
+        method: 'POST'
+      });
+
+      if (checkoutError) throw checkoutError;
+      if (!data?.url) throw new Error('No checkout URL returned');
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
 
     } catch (error: any) {
       console.error('Error accepting terms:', error);
       toast({
         title: "Error",
-        description: "Failed to save terms acceptance. Please try again.",
+        description: error.message || "Failed to save terms acceptance. Please try again.",
         variant: "destructive"
       });
-    } finally {
       setAccepting(false);
     }
   };
