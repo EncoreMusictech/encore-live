@@ -139,9 +139,21 @@ interface ValuationParams {
   methodology?: string;
   territory?: 'global' | 'us-only' | 'international';
 }
+interface ArtistCandidate {
+  id: string;
+  name: string;
+  type: 'spotify' | 'musicbrainz' | 'pro';
+  followers?: number;
+  popularity?: number;
+  works_count?: number;
+  pro?: string;
+}
+
 const CatalogValuation = memo(() => {
   const [artistName, setArtistName] = useState("");
   const [result, setResult] = useState<ValuationResult | null>(null);
+  const [candidates, setCandidates] = useState<ArtistCandidate[] | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<ArtistCandidate | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<"pessimistic" | "base" | "optimistic">("base");
   const [showAdvancedInputs, setShowAdvancedInputs] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
@@ -324,6 +336,8 @@ const CatalogValuation = memo(() => {
     }
     console.log("Clearing previous result and revenue sources");
     setResult(null);
+    setCandidates(null); // Clear candidates
+    setSelectedCandidate(null);
     setCatalogValuationId(null); // Reset catalog valuation ID
     resetRevenueSources(); // Clear revenue sources and prevent auto-fetching old data
 
@@ -380,6 +394,18 @@ const CatalogValuation = memo(() => {
           console.error("No data returned");
           throw new Error('No data returned from valuation service');
         }
+        
+        // Check if response requires selection
+        if (data.requires_selection && data.candidates) {
+          console.log("API returned candidates for selection");
+          setCandidates(data.candidates);
+          toast({
+            title: "Select Artist",
+            description: data.message || "Please select the correct artist from the list below.",
+          });
+          return null; // Don't return valuation data yet
+        }
+        
         console.log("=== SUCCESS - RETURNING DATA ===");
         return data;
       });
@@ -493,6 +519,67 @@ const CatalogValuation = memo(() => {
       console.error("Catalog valuation error:", error);
     }
   }, [artistName, valuationParams, canAccess, showUpgradeModalForModule, toast, execute, incrementUsage, calculateCatalogAge, calculatedCatalogAge]);
+  
+  // Handle candidate selection - run valuation with selected artist ID
+  const handleCandidateSelect = useCallback(async (candidate: ArtistCandidate) => {
+    console.log("Selected candidate:", candidate);
+    setSelectedCandidate(candidate);
+    setCandidates(null); // Clear candidates list
+    
+    try {
+      const catalogAge = calculatedCatalogAge;
+      const data = await execute(async () => {
+        const requestBody = {
+          artistName: candidate.name,
+          artistId: candidate.id, // Pass the specific ID
+          valuationParams: {
+            ...valuationParams,
+            catalogAge,
+            customCagr
+          },
+          catalogValuationId,
+          userId: user?.id
+        };
+        console.log("Running valuation for selected candidate:", requestBody);
+        
+        const { data, error } = await supabase.functions.invoke('spotify-catalog-valuation', {
+          body: requestBody
+        });
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to get catalog valuation');
+        }
+        if (data && data.error) {
+          throw new Error(data.error);
+        }
+        if (!data) {
+          throw new Error('No data returned from valuation service');
+        }
+        
+        // If still returning candidates, something went wrong
+        if (data.requires_selection) {
+          throw new Error('Could not find the selected artist. Please try a different search.');
+        }
+        
+        return data;
+      });
+      
+      if (data) {
+        setResult(data);
+        incrementUsage('catalogValuation');
+        
+        if (data.valuation_amount === 0 && data.total_streams === 0) {
+          toast({
+            title: "Valuation Complete",
+            description: `Found artist "${data.artist_name}" but they have limited streaming activity. Valuation shows $0 due to minimal data.`,
+            variant: "default"
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Candidate valuation error:", error);
+    }
+  }, [valuationParams, customCagr, catalogValuationId, user?.id, execute, incrementUsage, toast, calculatedCatalogAge]);
   const formatNumber = useCallback((num: number) => {
     return new Intl.NumberFormat().format(num);
   }, []);
@@ -1114,6 +1201,69 @@ Actual market values may vary significantly based on numerous factors not captur
             </div>}
         </CardContent>
       </Card>
+
+      {/* Candidate Selection UI */}
+      {candidates && candidates.length > 0 && !result && (
+        <Card className="border-primary/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Select the Correct Artist
+            </CardTitle>
+            <CardDescription>
+              No exact match found for "{artistName}". Please select the correct artist or songwriter from the list below.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {candidates.map((candidate) => (
+                <div
+                  key={candidate.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors"
+                  onClick={() => handleCandidateSelect(candidate)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                      candidate.type === 'spotify' ? 'bg-green-500/20 text-green-500' :
+                      candidate.type === 'musicbrainz' ? 'bg-blue-500/20 text-blue-500' :
+                      'bg-orange-500/20 text-orange-500'
+                    }`}>
+                      {candidate.type === 'spotify' ? '🎵' : candidate.type === 'musicbrainz' ? '🎼' : '📝'}
+                    </div>
+                    <div>
+                      <p className="font-medium">{candidate.name}</p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Badge variant="outline" className="text-xs">
+                          {candidate.type === 'spotify' ? 'Spotify Artist' : 
+                           candidate.type === 'musicbrainz' ? 'Songwriter (MusicBrainz)' : 
+                           `Songwriter (${candidate.pro || 'PRO'})`}
+                        </Badge>
+                        {candidate.followers !== undefined && candidate.followers > 0 && (
+                          <span>{new Intl.NumberFormat().format(candidate.followers)} followers</span>
+                        )}
+                        {candidate.popularity !== undefined && candidate.popularity > 0 && (
+                          <span>Pop: {candidate.popularity}</span>
+                        )}
+                        {candidate.works_count !== undefined && candidate.works_count > 0 && (
+                          <span>{candidate.works_count} works</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    Select <Search className="ml-1 h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button variant="outline" onClick={() => setCandidates(null)}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {result && <>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
