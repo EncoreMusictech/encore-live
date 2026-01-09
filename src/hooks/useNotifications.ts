@@ -38,7 +38,7 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const { applyUserIdFilter } = useDataFiltering();
+  const { applyUserIdFilter, filterKey } = useDataFiltering();
 
   // Fetch notifications
   const fetchNotifications = async () => {
@@ -217,7 +217,7 @@ export const useNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, filterKey]); // Re-fetch when filter changes
 
   return {
     notifications,

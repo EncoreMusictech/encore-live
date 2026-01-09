@@ -63,7 +63,7 @@ export function useRoyaltyAllocations() {
   const [allocations, setAllocations] = useState<RoyaltyAllocation[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { applyUserIdFilter } = useDataFiltering();
+  const { applyUserIdFilter, filterKey } = useDataFiltering();
 
   const fetchAllocations = async () => {
     if (!user) return;
@@ -266,7 +266,7 @@ export function useRoyaltyAllocations() {
 
   useEffect(() => {
     fetchAllocations();
-  }, [user]);
+  }, [user, filterKey]); // Re-fetch when filter changes
 
   return {
     allocations,

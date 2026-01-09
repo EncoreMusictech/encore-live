@@ -22,7 +22,7 @@ export function useContacts() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { applyUserIdFilter } = useDataFiltering();
+  const { applyUserIdFilter, filterKey } = useDataFiltering();
 
   const fetchContacts = async () => {
     if (!user) return;
@@ -140,7 +140,7 @@ export function useContacts() {
 
   useEffect(() => {
     fetchContacts();
-  }, [user]);
+  }, [user, filterKey]); // Re-fetch when filter changes
 
   return {
     contacts,

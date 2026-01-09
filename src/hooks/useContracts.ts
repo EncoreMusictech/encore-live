@@ -18,7 +18,7 @@ export const useContracts = () => {
   const [contracts, setContracts] = useState<ContractWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { applyUserIdFilter } = useDataFiltering();
+  const { applyUserIdFilter, filterKey } = useDataFiltering();
 
   const fetchContracts = async () => {
     try {
@@ -507,7 +507,7 @@ export const useContracts = () => {
 
   useEffect(() => {
     fetchContracts();
-  }, []);
+  }, [filterKey]); // Re-fetch when filter changes
 
   return {
     contracts,

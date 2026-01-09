@@ -93,7 +93,7 @@ export interface PayoutRoyalty {
 export function usePayouts() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { applyUserIdFilter } = useDataFiltering();
+  const { applyUserIdFilter, filterKey } = useDataFiltering();
 
   // Helper function to dispatch events when payouts change
   const dispatchPayoutEvent = useCallback((eventType: string, payout?: any) => {
@@ -772,7 +772,7 @@ export function usePayouts() {
     if (user) {
       executeWithRetry().catch(console.error);
     }
-  }, [user]); // Removed executeWithRetry from dependencies to prevent infinite loop
+  }, [user, filterKey]); // Re-fetch when filter changes
 
   // Memoized computed values for performance
   // Function to manually recalculate payout expenses (for existing payouts)

@@ -61,7 +61,7 @@ interface OperationsMetrics {
 
 export const useOperationsData = () => {
   const { user } = useAuth();
-  const { applyUserIdFilter } = useDataFiltering();
+  const { applyUserIdFilter, filterKey } = useDataFiltering();
   const [customerHealth, setCustomerHealth] = useState<CustomerHealthMetrics[]>([]);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [revenueEvents, setRevenueEvents] = useState<RevenueEvent[]>([]);
@@ -211,7 +211,7 @@ export const useOperationsData = () => {
     if (user) {
       refreshData();
     }
-  }, [user]);
+  }, [user, filterKey]); // Re-fetch when filter changes
 
   useEffect(() => {
     calculateMetrics();

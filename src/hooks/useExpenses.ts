@@ -52,7 +52,7 @@ export function useExpenses() {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<PayoutExpense[]>([]);
   const [loading, setLoading] = useState(true);
-  const { applyUserIdFilter } = useDataFiltering();
+  const { applyUserIdFilter, filterKey } = useDataFiltering();
 
   const fetchExpenses = async () => {
     if (!user) return;
@@ -238,7 +238,7 @@ export function useExpenses() {
     if (user) {
       fetchExpenses();
     }
-  }, [user]);
+  }, [user, filterKey]); // Re-fetch when filter changes
 
   return {
     expenses,
