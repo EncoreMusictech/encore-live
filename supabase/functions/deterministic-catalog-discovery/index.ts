@@ -205,10 +205,11 @@ serve(async (req) => {
 
     // Supplement with PRO repertoires (ASCAP, BMI, SESAC) via Perplexity to catch missing works
     let proWorks: Array<{ title: string; iswc?: string; writers?: any[]; publishers?: any[]; source: 'ascap'|'bmi'|'sesac' }> = [];
+    console.log('Perplexity key configured:', !!perplexityKey);
     if (perplexityKey) {
       try {
         const fetchProDomain = async (domain: 'ascap'|'bmi'|'sesac') => {
-          const model = 'llama-3.1-sonar-large-128k-online';
+          const model = 'sonar'; // Updated to current Perplexity model
           const site = domain === 'ascap' ? 'ascap.com' : (domain === 'bmi' ? 'bmi.com' : 'sesac.com');
           const system = `You extract structured data from official ${domain.toUpperCase()} repertoire. Return STRICT JSON only. Shape: {"works":[{"title":"string","iswc":"string?","writers":[{"name":"string","ipi":"string?","share":number?}],"publishers":[{"name":"string","share":number?}]}]}. Prefer official capitalization. Return up to 300 unique works for the writer provided.`;
           const body = {
@@ -223,20 +224,30 @@ serve(async (req) => {
             search_domain_filter: [site],
             search_recency_filter: 'year'
           } as any;
+          console.log(`Fetching ${domain.toUpperCase()} repertoire for "${writerName}"...`);
           const resp = await fetch('https://api.perplexity.ai/chat/completions', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${perplexityKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
           });
-          if (!resp.ok) return [] as any[];
+          if (!resp.ok) {
+            const errText = await resp.text();
+            console.error(`${domain.toUpperCase()} Perplexity error (${resp.status}):`, errText.substring(0, 200));
+            return [] as any[];
+          }
           const data = await resp.json();
           const content = data?.choices?.[0]?.message?.content || '';
+          console.log(`${domain.toUpperCase()} raw response length:`, content.length);
           let parsed: any = null;
           try {
             const match = content.match(/```json\s*([\s\S]*?)```/);
             parsed = JSON.parse(match ? match[1] : content);
-          } catch { parsed = null; }
+          } catch (parseErr) { 
+            console.error(`${domain.toUpperCase()} JSON parse error:`, parseErr);
+            parsed = null; 
+          }
           const works = Array.isArray(parsed?.works) ? parsed.works : [];
+          console.log(`${domain.toUpperCase()} found ${works.length} works`);
           return works.map((w: any) => ({ ...w, source: domain })).slice(0, maxSongs * 2);
         };
         const [ascap, bmi, sesac] = await Promise.all([
@@ -245,7 +256,12 @@ serve(async (req) => {
           fetchProDomain('sesac'),
         ]);
         proWorks = [...ascap, ...bmi, ...sesac];
-      } catch(_e) { /* ignore */ }
+        console.log(`Total PRO works found: ASCAP=${ascap.length}, BMI=${bmi.length}, SESAC=${sesac.length}`);
+      } catch(e) { 
+        console.error('PRO lookup error:', e);
+      }
+    } else {
+      console.log('Skipping PRO lookup - no Perplexity API key');
     }
 
     // Build unified candidate list with PRO-first merging
