@@ -429,16 +429,17 @@ serve(async (req) => {
   }
 
   try {
-  const { artistName, valuationParams, catalogValuationId, userId } = await req.json();
+  const { artistName, artistId, valuationParams, catalogValuationId, userId } = await req.json();
   console.log(`DEBUGGING: Received territory parameter: "${valuationParams?.territory}"`);
   console.log(`DEBUGGING: Received discount rate parameter: ${valuationParams?.discountRate || 0.12}`);
+  console.log(`DEBUGGING: Received artistId parameter: "${artistId}"`);
   const territory = valuationParams?.territory || 'global';
 
     if (!artistName) {
       throw new Error('Artist name is required');
     }
 
-    console.log(`Advanced valuation for artist: ${artistName}`);
+    console.log(`Advanced valuation for artist: ${artistName}${artistId ? ` (ID: ${artistId})` : ''}`);
 
     // Initialize Supabase client for industry benchmarks and revenue sources
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -490,47 +491,136 @@ serve(async (req) => {
     const tokenData: SpotifyTokenResponse = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Search for the artist - get multiple results to find exact match
-    const searchResponse = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=10`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      }
-    );
-
-    if (!searchResponse.ok) {
-      throw new Error('Failed to search for artist');
-    }
-
-    const searchData = await searchResponse.json();
-    
-    // Try to find exact name match first (case-insensitive)
-    const normalizedSearchName = artistName.toLowerCase().trim();
+    // If artistId is provided, use it directly (user selected from candidates)
     let artist: SpotifyArtist | null = null;
+    let searchData: any = { artists: { items: [] } };
     
-    if (searchData.artists?.items?.length) {
-      // First try exact match
-      const exactMatch = searchData.artists.items.find((a: SpotifyArtist) => 
-        a.name.toLowerCase().trim() === normalizedSearchName
-      );
+    if (artistId) {
+      console.log(`Using provided artistId: ${artistId}`);
       
-      if (exactMatch) {
-        artist = exactMatch;
-        console.log(`Found EXACT match on Spotify: ${artist.name} with ${artist.followers.total} followers`);
-      } else {
-        // Check if first result is a close match (contains the search term)
-        const firstResult = searchData.artists.items[0];
-        const firstNameLower = firstResult.name.toLowerCase();
+      // Check if it's a Spotify ID, MusicBrainz ID, or PRO ID
+      if (artistId.startsWith('mb-')) {
+        // MusicBrainz ID
+        const mbId = artistId.replace('mb-', '');
+        console.log(`Fetching MusicBrainz artist with ID: ${mbId}`);
         
-        // Only use first result if it's reasonably close to what user searched for
-        if (firstNameLower.includes(normalizedSearchName) || normalizedSearchName.includes(firstNameLower)) {
-          artist = firstResult;
-          console.log(`Found partial match on Spotify: ${artist.name} (searched for: ${artistName})`);
+        try {
+          const mbResponse = await fetch(
+            `https://musicbrainz.org/ws/2/artist/${mbId}?fmt=json`,
+            {
+              headers: {
+                'User-Agent': 'EncoreMusicIP/1.0 (support@encore.local)',
+                'Accept': 'application/json'
+              }
+            }
+          );
+          
+          if (mbResponse.ok) {
+            const mbArtist = await mbResponse.json();
+            
+            // Get works count
+            const worksResponse = await fetch(
+              `https://musicbrainz.org/ws/2/work?query=arid:${mbId}&fmt=json&limit=50`,
+              {
+                headers: {
+                  'User-Agent': 'EncoreMusicIP/1.0 (support@encore.local)',
+                  'Accept': 'application/json'
+                }
+              }
+            );
+            
+            let worksCount = 0;
+            if (worksResponse.ok) {
+              const worksData = await worksResponse.json();
+              worksCount = worksData?.works?.length || 0;
+            }
+            
+            artist = {
+              id: artistId,
+              name: mbArtist.name || artistName,
+              followers: { total: 0 },
+              genres: [],
+              popularity: Math.min(50, worksCount * 2)
+            } as SpotifyArtist;
+            
+            console.log(`Created MusicBrainz artist profile: ${artist.name}`);
+          }
+        } catch (mbErr) {
+          console.error('MusicBrainz fetch error:', mbErr);
+        }
+      } else if (artistId.startsWith('pro-')) {
+        // PRO ID - create synthetic profile
+        artist = {
+          id: artistId,
+          name: artistName,
+          followers: { total: 0 },
+          genres: [],
+          popularity: 30
+        } as SpotifyArtist;
+        console.log(`Created PRO songwriter profile: ${artist.name}`);
+      } else {
+        // Regular Spotify ID - fetch artist directly
+        const artistResponse = await fetch(
+          `https://api.spotify.com/v1/artists/${artistId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          }
+        );
+        
+        if (artistResponse.ok) {
+          artist = await artistResponse.json();
+          console.log(`Fetched Spotify artist by ID: ${artist?.name}`);
         } else {
-          console.log(`No close match found on Spotify. First result "${firstResult.name}" doesn't match "${artistName}"`);
-          console.log(`Available artists: ${searchData.artists.items.slice(0, 5).map((a: SpotifyArtist) => a.name).join(', ')}`);
+          console.log(`Failed to fetch Spotify artist with ID ${artistId}`);
+        }
+      }
+    }
+    
+    // If no artistId provided or fetch failed, search normally
+    if (!artist) {
+      // Search for the artist - get multiple results to find exact match
+      const searchResponse = await fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=10`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (!searchResponse.ok) {
+        throw new Error('Failed to search for artist');
+      }
+
+      searchData = await searchResponse.json();
+      
+      // Try to find exact name match first (case-insensitive)
+      const normalizedSearchName = artistName.toLowerCase().trim();
+      
+      if (searchData.artists?.items?.length) {
+        // First try exact match
+        const exactMatch = searchData.artists.items.find((a: SpotifyArtist) => 
+          a.name.toLowerCase().trim() === normalizedSearchName
+        );
+        
+        if (exactMatch) {
+          artist = exactMatch;
+          console.log(`Found EXACT match on Spotify: ${artist.name} with ${artist.followers.total} followers`);
+        } else {
+          // Check if first result is a close match (contains the search term)
+          const firstResult = searchData.artists.items[0];
+          const firstNameLower = firstResult.name.toLowerCase();
+          
+          // Only use first result if it's reasonably close to what user searched for
+          if (firstNameLower.includes(normalizedSearchName) || normalizedSearchName.includes(firstNameLower)) {
+            artist = firstResult;
+            console.log(`Found partial match on Spotify: ${artist.name} (searched for: ${artistName})`);
+          } else {
+            console.log(`No close match found on Spotify. First result "${firstResult.name}" doesn't match "${artistName}"`);
+            console.log(`Available artists: ${searchData.artists.items.slice(0, 5).map((a: SpotifyArtist) => a.name).join(', ')}`);
+          }
         }
       }
     }
@@ -672,7 +762,79 @@ If not found in any database, return: {"found": false}`;
       }
     }
     
+    // If still no artist found, return candidate list for user selection
     if (!artist) {
+      // Collect all potential candidates from searches
+      const candidates: Array<{
+        id: string;
+        name: string;
+        type: 'spotify' | 'musicbrainz' | 'pro';
+        followers?: number;
+        popularity?: number;
+        works_count?: number;
+        pro?: string;
+      }> = [];
+      
+      // Add Spotify candidates
+      if (searchData.artists?.items?.length) {
+        searchData.artists.items.slice(0, 5).forEach((a: SpotifyArtist) => {
+          candidates.push({
+            id: a.id,
+            name: a.name,
+            type: 'spotify',
+            followers: a.followers.total,
+            popularity: a.popularity
+          });
+        });
+      }
+      
+      // Try MusicBrainz again for candidates
+      try {
+        const mbQuery = encodeURIComponent(artistName);
+        const mbCandidateResponse = await fetch(
+          `https://musicbrainz.org/ws/2/artist?query=${mbQuery}&fmt=json&limit=5`,
+          {
+            headers: {
+              'User-Agent': 'EncoreMusicIP/1.0 (support@encore.local)',
+              'Accept': 'application/json'
+            }
+          }
+        );
+        
+        if (mbCandidateResponse.ok) {
+          const mbData = await mbCandidateResponse.json();
+          const mbArtists = mbData?.artists || [];
+          mbArtists.forEach((a: any) => {
+            // Don't add duplicates
+            if (!candidates.some(c => c.name.toLowerCase() === (a.name || '').toLowerCase())) {
+              candidates.push({
+                id: `mb-${a.id}`,
+                name: a.name || 'Unknown',
+                type: 'musicbrainz',
+                works_count: a.score || 0
+              });
+            }
+          });
+        }
+      } catch (mbErr) {
+        console.log('MusicBrainz candidate fetch error:', mbErr);
+      }
+      
+      if (candidates.length > 0) {
+        console.log(`Returning ${candidates.length} candidates for user selection`);
+        return new Response(
+          JSON.stringify({
+            requires_selection: true,
+            search_query: artistName,
+            candidates: candidates.slice(0, 10),
+            message: `No exact match found for "${artistName}". Please select the correct artist or songwriter from the list below.`
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      
       throw new Error(`No artist or songwriter found matching "${artistName}" in Spotify, MusicBrainz, or PRO databases (ASCAP/BMI/SESAC). Please check the spelling or try a different name.`);
     }
     
