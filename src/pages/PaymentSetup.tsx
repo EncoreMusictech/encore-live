@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const PaymentSetup = () => {
   const { user } = useAuth();
+  const { subscribed } = useSubscription();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -24,6 +26,12 @@ const PaymentSetup = () => {
       return;
     }
 
+    // If user already has a subscription, skip payment setup
+    if (subscribed) {
+      navigate('/dashboard');
+      return;
+    }
+
     // If canceled, show retry option instead of auto-redirecting
     if (wasCanceled) {
       setLoading(false);
@@ -32,7 +40,7 @@ const PaymentSetup = () => {
 
     const redirectToStripe = async () => {
       try {
-        // First check if payment already collected
+        // First check if payment already collected or user has subscription
         const { data: profile } = await supabase
           .from('profiles')
           .select('payment_method_collected, terms_accepted')
@@ -69,7 +77,7 @@ const PaymentSetup = () => {
     };
 
     redirectToStripe();
-  }, [user, navigate, wasCanceled]);
+  }, [user, navigate, wasCanceled, subscribed]);
 
   const handleRetry = async () => {
     setLoading(true);

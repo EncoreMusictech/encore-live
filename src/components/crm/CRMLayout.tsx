@@ -35,9 +35,10 @@ export function CRMLayout() {
   const isAdministrator = adminEmails.includes(user?.email?.toLowerCase() || '') || isAdmin;
   const hasPaidAccess = isAdministrator || subscribed || canAccessDemo;
 
-  // Check payment status for non-admin, non-demo users
+  // Check payment status for non-admin, non-demo, non-subscribed users
   useEffect(() => {
-    if (!user || isAdministrator || isDemoAccount) {
+    // Skip payment check for admins, demo accounts, or users with active subscriptions
+    if (!user || isAdministrator || isDemoAccount || subscribed) {
       setPaymentVerified(true);
       return;
     }
@@ -50,7 +51,8 @@ export function CRMLayout() {
           .eq('id', user.id)
           .single();
 
-        if (!profile?.payment_method_collected) {
+        // Allow access if payment method is collected OR if they have any existing access
+        if (!profile?.payment_method_collected && !hasPaidAccess) {
           navigate('/payment-setup');
           return;
         }
@@ -62,7 +64,7 @@ export function CRMLayout() {
     };
 
     checkPaymentStatus();
-  }, [user, isAdministrator, isDemoAccount, navigate]);
+  }, [user, isAdministrator, isDemoAccount, subscribed, hasPaidAccess, navigate]);
 
   if (!user) {
     return (
