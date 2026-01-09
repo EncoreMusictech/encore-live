@@ -49,23 +49,36 @@ export function SubAccountUsers({ companyId, onUpdate }: SubAccountUsersProps) {
 
       if (companyUsersError) throw companyUsersError;
 
-      const usersWithData = await Promise.all(
-        (companyUsers || []).map(async (cu) => {
-          const { data: { user } } = await supabase.auth.admin.getUserById(cu.user_id);
-          
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('first_name, last_name')
-            .eq('id', cu.user_id)
-            .single();
+      if (!companyUsers || companyUsers.length === 0) {
+        setUsers([]);
+        return;
+      }
 
-          return {
-            ...cu,
-            email: user?.email || 'N/A',
-            full_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'N/A' : 'N/A'
-          };
-        })
-      );
+      // Use edge function to get user details (email requires admin access)
+      const userIds = companyUsers.map(cu => cu.user_id);
+      const { data: userDetailsResponse, error: userDetailsError } = await supabase.functions.invoke('get-user-details', {
+        body: { userIds }
+      });
+
+      if (userDetailsError) {
+        console.error('Error fetching user details:', userDetailsError);
+      }
+
+      const userDetailsMap = new Map<string, { email: string; name: string }>();
+      if (userDetailsResponse?.users) {
+        userDetailsResponse.users.forEach((u: { id: string; email: string; name: string }) => {
+          userDetailsMap.set(u.id, { email: u.email, name: u.name });
+        });
+      }
+
+      const usersWithData = companyUsers.map(cu => {
+        const details = userDetailsMap.get(cu.user_id);
+        return {
+          ...cu,
+          email: details?.email || 'N/A',
+          full_name: details?.name || 'N/A'
+        };
+      });
 
       setUsers(usersWithData);
     } catch (error) {
