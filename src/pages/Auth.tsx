@@ -98,10 +98,17 @@ useEffect(() => {
           navigate('/dashboard', { replace: true });
           return;
         }
+
+        // For regular users without subscription, redirect to payment setup
+        // They need to complete payment before accessing the dashboard
+        if (!isDemoAccount && !isAdmin) {
+          navigate('/payment-setup', { replace: true });
+          return;
+        }
       } catch (e) {
         // ignore and fallback
       }
-      const defaultRedirect = isDemoAccount ? '/dashboard' : '/';
+      const defaultRedirect = isDemoAccount ? '/dashboard' : '/payment-setup';
       const from = (location.state as any)?.from?.pathname || defaultRedirect;
       navigate(from, { replace: true });
     })();
