@@ -15,6 +15,12 @@ export default function WhitelabelDashboard() {
   const { toast } = useToast();
   const [creating, setCreating] = useState(false);
 
+  // Defensive normalization: some older/invalid tenant rows (or domain lookup fallbacks)
+  // may return null for enabled_modules.
+  const enabledModules = Array.isArray(tenantConfig?.enabled_modules)
+    ? tenantConfig.enabled_modules
+    : [];
+
   const handleCreateTenant = async () => {
     if (!user) return;
 
@@ -153,7 +159,7 @@ export default function WhitelabelDashboard() {
               <Zap className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{tenantConfig.enabled_modules.length}</div>
+              <div className="text-2xl font-bold">{enabledModules.length}</div>
               <p className="text-xs text-muted-foreground">
                 of 6 available modules
               </p>
