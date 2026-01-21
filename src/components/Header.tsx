@@ -8,7 +8,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import { Music, Menu, User, LogOut, ChevronDown } from "lucide-react";
+import { Menu, User, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
@@ -16,6 +16,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { SubscriptionBadge } from "@/components/SubscriptionBadge";
 import { modules } from "@/data/modules";
 import { userCases } from "@/data/user-cases";
+import encoreLogo from "@/assets/encore-logo.png";
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -31,12 +32,7 @@ const Header = () => {
     <header className="border-b border-border bg-jet-black/90 backdrop-blur-lg sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-all duration-300">
-          <div className="relative bg-gradient-vinyl rounded-lg p-2 border border-electric-lavender/30 shadow-glow">
-            <div className="absolute inset-0 rounded-lg bg-gradient-primary opacity-20"></div>
-            <div className="relative w-8 h-8 rounded-full bg-jet-black border border-electric-lavender flex items-center justify-center">
-              <div className="w-2 h-2 rounded-full bg-electric-lavender"></div>
-            </div>
-          </div>
+          <img src={encoreLogo} alt="Encore Logo" className="w-12 h-12 object-contain" />
           <div>
             <h1 className="font-headline text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               ENCORE

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Home, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { supabase } from "@/integrations/supabase/client";
+import encoreLogo from "@/assets/encore-logo.png";
 interface ModuleItem {
   id: string;
   title: string;
@@ -149,17 +150,13 @@ export function CRMSidebar() {
   return <Sidebar className={collapsed ? "w-16" : "w-64"}>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         {!collapsed && <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Home className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <img src={encoreLogo} alt="Encore Logo" className="w-8 h-8 object-contain" />
             <div>
               <h2 className="font-headline font-bold text-lg">ENCORE</h2>
               <p className="text-xs text-muted-foreground">Rights Management System</p>
             </div>
           </div>}
-        {collapsed && <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center mx-auto">
-            <Home className="h-4 w-4 text-primary-foreground" />
-          </div>}
+        {collapsed && <img src={encoreLogo} alt="Encore Logo" className="w-8 h-8 object-contain mx-auto" />}
       </SidebarHeader>
 
       <SidebarContent>
