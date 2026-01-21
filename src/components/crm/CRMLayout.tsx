@@ -21,6 +21,7 @@ export function CRMLayout() {
   const navigate = useNavigate();
   const mainRef = useRef<HTMLElement>(null);
   const [paymentVerified, setPaymentVerified] = useState<boolean | null>(null);
+  const [isInternalEnterprise, setIsInternalEnterprise] = useState(false);
 
   // Scroll to top when route changes
   useEffect(() => {
@@ -33,18 +34,41 @@ export function CRMLayout() {
   const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech'];
   const isDemoAccount = user?.email === 'demo@encoremusic.tech';
   const isAdministrator = adminEmails.includes(user?.email?.toLowerCase() || '') || isAdmin;
-  const hasPaidAccess = isAdministrator || subscribed || canAccessDemo;
+  const hasPaidAccess = isAdministrator || subscribed || canAccessDemo || isInternalEnterprise;
 
-  // Check payment status for non-admin, non-demo, non-subscribed users
+  // Check payment status and internal enterprise status
   useEffect(() => {
+    if (!user) {
+      setPaymentVerified(null);
+      return;
+    }
+
     // Skip payment check for admins, demo accounts, or users with active subscriptions
-    if (!user || isAdministrator || isDemoAccount || subscribed) {
+    if (isAdministrator || isDemoAccount || subscribed) {
       setPaymentVerified(true);
       return;
     }
 
-    const checkPaymentStatus = async () => {
+    const checkAccessStatus = async () => {
       try {
+        // Check if user belongs to an internal enterprise company
+        const { data: companyUser } = await supabase
+          .from('company_users')
+          .select('company_id, companies(subscription_tier, subscription_status)')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        const companyTier = (companyUser?.companies as any)?.subscription_tier;
+        const isInternal = companyTier === 'enterprise_internal';
+        setIsInternalEnterprise(isInternal);
+
+        // Internal enterprise accounts bypass payment requirement
+        if (isInternal) {
+          setPaymentVerified(true);
+          return;
+        }
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('payment_method_collected')
@@ -52,18 +76,18 @@ export function CRMLayout() {
           .single();
 
         // Allow access if payment method is collected OR if they have any existing access
-        if (!profile?.payment_method_collected && !hasPaidAccess) {
+        if (!profile?.payment_method_collected && !hasPaidAccess && !isInternal) {
           navigate('/payment-setup');
           return;
         }
         setPaymentVerified(true);
       } catch (error) {
-        console.error('Error checking payment status:', error);
+        console.error('Error checking access status:', error);
         setPaymentVerified(true); // Allow access on error to not block users
       }
     };
 
-    checkPaymentStatus();
+    checkAccessStatus();
   }, [user, isAdministrator, isDemoAccount, subscribed, hasPaidAccess, navigate]);
 
   if (!user) {
