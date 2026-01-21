@@ -10,6 +10,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
+import encoreLogo from "@/assets/encore-logo.png";
 export function CRMHeader() {
   const {
     user,
@@ -24,7 +25,8 @@ export function CRMHeader() {
         <div className="flex items-center space-x-4">
           <SidebarTrigger />
           <div className="flex items-center space-x-2">
-            <Link to="/">
+            <Link to="/" className="flex items-center space-x-2">
+              <img src={encoreLogo} alt="Encore Logo" className="w-8 h-8 object-contain" />
               <h1 className="text-xl font-headline font-bold">ENCORE</h1>
             </Link>
             {subscription_tier && <Badge variant="secondary" className="text-xs">
