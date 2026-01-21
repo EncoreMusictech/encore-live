@@ -1850,6 +1850,7 @@ export type Database = {
           masters_ownership: string | null
           mlc_confidence: number | null
           mlc_enriched_at: string | null
+          mlc_song_code: string | null
           mlc_source: string | null
           mlc_status: string | null
           mlc_work_id: string | null
@@ -1902,6 +1903,7 @@ export type Database = {
           masters_ownership?: string | null
           mlc_confidence?: number | null
           mlc_enriched_at?: string | null
+          mlc_song_code?: string | null
           mlc_source?: string | null
           mlc_status?: string | null
           mlc_work_id?: string | null
@@ -1954,6 +1956,7 @@ export type Database = {
           masters_ownership?: string | null
           mlc_confidence?: number | null
           mlc_enriched_at?: string | null
+          mlc_song_code?: string | null
           mlc_source?: string | null
           mlc_status?: string | null
           mlc_work_id?: string | null
@@ -2561,6 +2564,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      enrichment_history: {
+        Row: {
+          confidence: number | null
+          copyright_id: string | null
+          created_at: string | null
+          data_added: Json | null
+          enriched_at: string | null
+          id: string
+          publishers_found: number | null
+          recordings_found: number | null
+          search_params: Json | null
+          source: string
+          user_id: string
+          writers_found: number | null
+        }
+        Insert: {
+          confidence?: number | null
+          copyright_id?: string | null
+          created_at?: string | null
+          data_added?: Json | null
+          enriched_at?: string | null
+          id?: string
+          publishers_found?: number | null
+          recordings_found?: number | null
+          search_params?: Json | null
+          source: string
+          user_id: string
+          writers_found?: number | null
+        }
+        Update: {
+          confidence?: number | null
+          copyright_id?: string | null
+          created_at?: string | null
+          data_added?: Json | null
+          enriched_at?: string | null
+          id?: string
+          publishers_found?: number | null
+          recordings_found?: number | null
+          search_params?: Json | null
+          source?: string
+          user_id?: string
+          writers_found?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrichment_history_copyright_id_fkey"
+            columns: ["copyright_id"]
+            isOneToOne: false
+            referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       export_delivery_jobs: {
         Row: {

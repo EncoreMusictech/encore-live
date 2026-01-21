@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Database, 
   CheckCircle, 
@@ -19,12 +20,16 @@ import {
   RefreshCw,
   PlayCircle,
   Loader2,
-  Zap
+  Zap,
+  History,
+  Clock
 } from 'lucide-react';
 import { useCopyright } from '@/hooks/useCopyright';
 import { useMLCLookup } from '@/hooks/useMLCLookup';
+import { useEnrichmentHistory } from '@/hooks/useEnrichmentHistory';
 import { useToast } from '@/hooks/use-toast';
-import { formatDistance } from 'date-fns';
+import { formatDistance, format } from 'date-fns';
+import { MLCConfidenceIndicator } from './MLCConfidenceIndicator';
 
 interface EnrichmentStats {
   total: number;
@@ -58,6 +63,7 @@ interface CopyrightEnrichmentStatus {
 export const MLCEnrichmentDashboard: React.FC = () => {
   const { copyrights, getWritersForCopyright, getRecordingsForCopyright, updateCopyright, loading } = useCopyright();
   const { lookupWork } = useMLCLookup();
+  const { logEnrichment, fetchHistory, history: enrichmentHistory, getEnrichmentStats } = useEnrichmentHistory();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'enriched' | 'needs_enrichment'>('all');
@@ -66,6 +72,14 @@ export const MLCEnrichmentDashboard: React.FC = () => {
   const [selectedCopyrights, setSelectedCopyrights] = useState<Set<string>>(new Set());
   const [isEnriching, setIsEnriching] = useState(false);
   const [enrichmentProgress, setEnrichmentProgress] = useState({ current: 0, total: 0, found: 0 });
+  const [dashboardTab, setDashboardTab] = useState<'status' | 'history'>('status');
+  const [historyStats, setHistoryStats] = useState<{ totalEnrichments: number; bySource: Record<string, number>; avgConfidence: number } | null>(null);
+
+  // Load enrichment history on mount
+  useEffect(() => {
+    fetchHistory();
+    getEnrichmentStats().then(setHistoryStats);
+  }, [fetchHistory, getEnrichmentStats]);
 
   // Calculate enrichment statuses
   const analyzeEnrichmentStatus = async () => {
@@ -302,6 +316,22 @@ export const MLCEnrichmentDashboard: React.FC = () => {
           updateData.mlc_enriched_at = new Date().toISOString();
 
           await updateCopyright(copyrightId, updateData);
+          
+          // Log enrichment to history
+          await logEnrichment({
+            copyright_id: copyrightId,
+            source: 'MLC',
+            search_params: searchParams,
+            data_added: {
+              iswc: mlcWork.iswc,
+              mlc_work_id: result.metadata.mlcWorkId
+            },
+            confidence: result.confidence || 0,
+            writers_found: result.writers?.length || 0,
+            publishers_found: result.publishers?.length || 0,
+            recordings_found: result.recordings?.length || 0
+          });
+          
           foundCount++;
           
           console.log(`✓ Enriched "${copyright.work_title}" with MLC data`);
@@ -327,8 +357,10 @@ export const MLCEnrichmentDashboard: React.FC = () => {
       description: `Enriched ${foundCount} of ${idsToEnrich.length} copyrights with MLC data`
     });
 
-    // Refresh the analysis
+    // Refresh the analysis and history
     await analyzeEnrichmentStatus();
+    await fetchHistory();
+    await getEnrichmentStats().then(setHistoryStats);
     setSelectedCopyrights(new Set());
   };
 
@@ -460,7 +492,7 @@ export const MLCEnrichmentDashboard: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-primary">
                   {stats.enrichmentRate.toFixed(1)}%
                 </div>
                 <Progress value={stats.enrichmentRate} className="mt-2" />
@@ -477,7 +509,7 @@ export const MLCEnrichmentDashboard: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">
+                <div className="text-2xl font-bold text-warning">
                   {stats.needsEnrichment}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -674,28 +706,28 @@ export const MLCEnrichmentDashboard: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           {status.hasWriters ? (
-                            <span className="text-green-600">{status.writerCount}</span>
+                            <span className="text-primary">{status.writerCount}</span>
                           ) : (
                             <span className="text-muted-foreground">0</span>
                           )}
                         </TableCell>
                         <TableCell>
                           {status.hasRecordings ? (
-                            <span className="text-green-600">{status.recordingCount}</span>
+                            <span className="text-primary">{status.recordingCount}</span>
                           ) : (
                             <span className="text-muted-foreground">0</span>
                           )}
                         </TableCell>
                         <TableCell>
                           {status.hasISWC ? (
-                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <CheckCircle className="w-4 h-4 text-primary" />
                           ) : (
                             <XCircle className="w-4 h-4 text-muted-foreground" />
                           )}
                         </TableCell>
                         <TableCell>
                           {status.hasMLCWorkId ? (
-                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <CheckCircle className="w-4 h-4 text-primary" />
                           ) : (
                             <XCircle className="w-4 h-4 text-muted-foreground" />
                           )}
