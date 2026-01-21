@@ -75,14 +75,25 @@ useEffect(() => {
           .eq('id', user.id)
           .single();
 
+        // Check if user belongs to an internal enterprise company (no payment required)
+        const { data: companyUser } = await supabase
+          .from('company_users')
+          .select('company_id, companies(subscription_tier, subscription_status)')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        const companyTier = (companyUser?.companies as any)?.subscription_tier;
+        const isInternalEnterprise = companyTier === 'enterprise_internal';
+
         // If user hasn't accepted terms, redirect to terms page
         if (!profile?.terms_accepted) {
           navigate('/terms', { replace: true });
           return;
         }
 
-        // If user hasn't set up payment (skip for demo and admin accounts)
-        if (!profile?.payment_method_collected && !isDemoAccount && !isAdmin) {
+        // If user hasn't set up payment (skip for demo, admin, and internal enterprise accounts)
+        if (!profile?.payment_method_collected && !isDemoAccount && !isAdmin && !isInternalEnterprise) {
           navigate('/payment-setup', { replace: true });
           return;
         }
@@ -93,8 +104,8 @@ useEffect(() => {
           return;
         }
 
-        // If user has an active subscription, redirect to dashboard
-        if (subscribed) {
+        // If user has an active subscription or is internal enterprise, redirect to dashboard
+        if (subscribed || isInternalEnterprise) {
           navigate('/dashboard', { replace: true });
           return;
         }
