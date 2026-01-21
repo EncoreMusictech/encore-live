@@ -37,9 +37,12 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   // Check if we're in whitelabel mode based on domain or subdomain
+  // Exclude localhost, lovable.app domains, and preview domains
   const isWhitelabelMode = window.location.hostname !== 'localhost' && 
                           window.location.hostname !== 'lovable.app' &&
-                          !window.location.hostname.includes('lovable');
+                          !window.location.hostname.includes('lovable.app') &&
+                          !window.location.hostname.includes('lovable.dev') &&
+                          !window.location.hostname.endsWith('.lovable.app');
 
   const fetchTenantConfig = async () => {
     if (!user) {
