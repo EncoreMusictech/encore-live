@@ -36,13 +36,16 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if we're in whitelabel mode based on domain or subdomain
-  // Exclude localhost, lovable.app domains, and preview domains
-  const isWhitelabelMode = window.location.hostname !== 'localhost' && 
-                          window.location.hostname !== 'lovable.app' &&
-                          !window.location.hostname.includes('lovable.app') &&
-                          !window.location.hostname.includes('lovable.dev') &&
-                          !window.location.hostname.endsWith('.lovable.app');
+  // Check if we're in whitelabel mode based on domain.
+  // IMPORTANT: Lovable preview/staging domains should NOT be treated as whitelabel.
+  const hostname = window.location.hostname;
+  const isWhitelabelMode = hostname !== 'localhost' &&
+                          hostname !== 'lovable.app' &&
+                          hostname !== 'lovable.dev' &&
+                          hostname !== 'lovableproject.com' &&
+                          !hostname.endsWith('.lovable.app') &&
+                          !hostname.endsWith('.lovable.dev') &&
+                          !hostname.endsWith('.lovableproject.com');
 
   const fetchTenantConfig = async () => {
     if (!user) {
@@ -58,9 +61,11 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       // If in whitelabel mode, try to get config by domain first
       if (isWhitelabelMode) {
         const { data: domainConfig, error: domainError } = await supabase
-          .rpc('get_tenant_by_domain', { domain_name: window.location.hostname });
+          .rpc('get_tenant_by_domain', { domain_name: hostname });
 
-        if (domainConfig && !domainError) {
+        // Some RPC implementations may return an object with all-null fields when not found.
+        // Only treat it as valid when it has a real id.
+        if (domainConfig?.id && !domainError) {
           setTenantConfig(domainConfig);
           setLoading(false);
           return;
