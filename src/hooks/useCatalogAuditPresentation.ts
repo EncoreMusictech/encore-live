@@ -101,7 +101,7 @@ export function useCatalogAuditPresentation(searchId?: string, artistName?: stri
           if (searchError) throw searchError;
           
           if (!data) {
-            throw new Error(`No catalog search found for "${artistName}". Please run a search in the Song Estimator Tool first.`);
+            throw new Error(`No catalog search found for "${artistName}".`);
           }
           
           search = data as SearchData;
