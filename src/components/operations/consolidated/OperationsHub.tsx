@@ -13,15 +13,13 @@ import {
   Clock,
   MessageSquare,
   Headphones,
-  UserPlus,
-  BookOpen,
-  Settings,
   CheckSquare,
   Calendar,
   Target,
   PlayCircle
 } from "lucide-react";
 import { AIOperationsAssistant } from "../AIOperationsAssistant";
+import { OnboardingPipelineManager } from "../phase6/OnboardingPipelineManager";
 
 interface OperationsHubProps {
   metrics: any;
@@ -308,66 +306,8 @@ export function OperationsHub({ metrics, aiInsights }: OperationsHubProps) {
         </TabsContent>
 
         <TabsContent value="onboarding" className="space-y-6">
-          {/* Client Onboarding Dashboard */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5" />
-                Client Onboarding Pipeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                  { stage: "Initial Setup", count: 5, icon: <Settings className="h-4 w-4" />, color: "bg-blue-500" },
-                  { stage: "API Configuration", count: 3, icon: <Server className="h-4 w-4" />, color: "bg-orange-500" },
-                  { stage: "Training Scheduled", count: 7, icon: <BookOpen className="h-4 w-4" />, color: "bg-purple-500" },
-                  { stage: "Documentation Access", count: 12, icon: <CheckCircle className="h-4 w-4" />, color: "bg-green-500" }
-                ].map((stage, index) => (
-                  <div key={index} className="text-center">
-                    <div className={`w-16 h-16 ${stage.color} rounded-full flex items-center justify-center mx-auto mb-3`}>
-                      <div className="text-white">{stage.icon}</div>
-                    </div>
-                    <h4 className="font-semibold text-sm">{stage.stage}</h4>
-                    <p className="text-2xl font-bold mt-1">{stage.count}</p>
-                    <p className="text-xs text-muted-foreground">Active clients</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Active Onboarding Progress */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Onboarding Sessions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  { client: "Harmony Records", progress: 85, stage: "Training & Documentation", nextStep: "Final Review", dueDate: "Nov 5" },
-                  { client: "Melody Music Group", progress: 60, stage: "API Setup", nextStep: "Integration Testing", dueDate: "Nov 8" },
-                  { client: "Rhythm Publishing", progress: 30, stage: "Initial Configuration", nextStep: "Data Migration", dueDate: "Nov 12" },
-                  { client: "Beat Street Studios", progress: 95, stage: "Final Review", nextStep: "Go Live", dueDate: "Nov 3" }
-                ].map((onboarding, index) => (
-                  <div key={index} className="space-y-3 p-4 border rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold">{onboarding.client}</h4>
-                      <Badge variant={onboarding.progress >= 80 ? "default" : "secondary"}>
-                        {onboarding.progress}% Complete
-                      </Badge>
-                    </div>
-                    <Progress value={onboarding.progress} className="h-2" />
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>Current: {onboarding.stage}</span>
-                      <span>Due: {onboarding.dueDate}</span>
-                    </div>
-                    <p className="text-sm text-primary">Next: {onboarding.nextStep}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Enterprise Client Onboarding - 7-Phase Implementation */}
+          <OnboardingPipelineManager />
         </TabsContent>
 
         <TabsContent value="tasks" className="space-y-6">
