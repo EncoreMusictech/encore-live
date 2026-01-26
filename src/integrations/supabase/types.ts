@@ -4817,7 +4817,7 @@ export type Database = {
           songwriter_name: string
           total_songs_found: number | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           webhook_status: string | null
         }
         Insert: {
@@ -4832,7 +4832,7 @@ export type Database = {
           songwriter_name: string
           total_songs_found?: number | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           webhook_status?: string | null
         }
         Update: {
@@ -4847,7 +4847,7 @@ export type Database = {
           songwriter_name?: string
           total_songs_found?: number | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           webhook_status?: string | null
         }
         Relationships: []

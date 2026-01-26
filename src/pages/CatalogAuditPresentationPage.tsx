@@ -45,6 +45,7 @@ export default function CatalogAuditPresentationPage() {
   useEffect(() => {
     const isNoSearchError = error?.includes('No catalog search found');
     
+    // Auto-discover for any user (authenticated or not)
     if (isNoSearchError && artistName && !hasTriedDiscovery && !isDiscovering) {
       setHasTriedDiscovery(true);
       runCatalogDiscovery(artistName).then((newSearchId) => {
