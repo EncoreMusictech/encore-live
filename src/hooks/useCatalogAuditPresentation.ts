@@ -132,18 +132,15 @@ export function useCatalogAuditPresentation(searchId?: string, artistName?: stri
       } catch (err: any) {
         console.error('Error fetching presentation data:', err);
         setError(err.message);
-        toast({
-          title: 'Error',
-          description: 'Failed to load presentation data',
-          variant: 'destructive',
-        });
+        // Don't show toast here - let the page component decide whether to show it
+        // based on discovery state
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [searchId, artistName, toast]);
+  }, [searchId, artistName]);
 
   // Calculate presentation data from raw data
   const calculatedData = useMemo((): AuditPresentationData | null => {

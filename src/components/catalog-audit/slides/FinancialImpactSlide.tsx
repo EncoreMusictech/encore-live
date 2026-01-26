@@ -80,7 +80,7 @@ export function FinancialImpactSlide({ data, isActive }: FinancialImpactSlidePro
             
             <div className="text-5xl md:text-8xl lg:text-9xl font-headline text-destructive">
               <AnimatedCounter 
-                value={Math.round(data.pipelineEstimate.missingImpact)}
+                value={Math.round(data.pipelineEstimate.total)}
                 format="currency"
                 duration={2500}
                 delay={1200}
