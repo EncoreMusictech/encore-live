@@ -103,6 +103,13 @@ export function useCatalogAuditPresentation(searchId?: string, artistName?: stri
           if (!data) {
             throw new Error(`No catalog search found for "${artistName}".`);
           }
+
+          // If we have a search record but it produced no works, treat it as missing so
+          // the UI can automatically re-run discovery.
+          const totalFound = (data as any)?.total_songs_found ?? 0;
+          if (!totalFound || totalFound <= 0) {
+            throw new Error(`No catalog search found for "${artistName}".`);
+          }
           
           search = data as SearchData;
         }
