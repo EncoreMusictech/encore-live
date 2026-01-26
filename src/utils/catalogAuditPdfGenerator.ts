@@ -41,31 +41,13 @@ export async function generateCatalogAuditPdf(data: CatalogAuditPdfData): Promis
   const contentWidth = pageWidth - margin * 2;
   let yPos = margin;
 
-  // Colors
-  const primaryColor: [number, number, number] = [139, 92, 246]; // Purple/lavender
+  // Colors (RGB values)
+  const primaryColor: [number, number, number] = [139, 92, 246];
   const textDark: [number, number, number] = [31, 41, 55];
   const textMuted: [number, number, number] = [107, 114, 128];
   const warningColor: [number, number, number] = [245, 158, 11];
   const dangerColor: [number, number, number] = [239, 68, 68];
-
-  // Helper functions
-  const addText = (text: string, x: number, y: number, options?: {
-    fontSize?: number;
-    color?: [number, number, number];
-    fontStyle?: 'normal' | 'bold' | 'italic';
-    maxWidth?: number;
-  }) => {
-    const { fontSize = 12, color = textDark, fontStyle = 'normal', maxWidth } = options || {};
-    doc.setFontSize(fontSize);
-    doc.setTextColor(...color);
-    doc.setFont('helvetica', fontStyle);
-    
-    if (maxWidth) {
-      doc.text(text, x, y, { maxWidth });
-    } else {
-      doc.text(text, x, y);
-    }
-  };
+  const successColor: [number, number, number] = [34, 197, 94];
 
   const drawLine = (y: number, color: [number, number, number] = [229, 231, 235]) => {
     doc.setDrawColor(...color);
@@ -73,76 +55,108 @@ export async function generateCatalogAuditPdf(data: CatalogAuditPdfData): Promis
     doc.line(margin, y, pageWidth - margin, y);
   };
 
-  // ===== HEADER =====
-  // Brand bar
+  // ===== HEADER BAR =====
   doc.setFillColor(...primaryColor);
   doc.rect(0, 0, pageWidth, 35, 'F');
 
-  // Logo text
-  addText('ENCORE', margin, 15, { fontSize: 24, color: [255, 255, 255], fontStyle: 'bold' });
-  addText('RIGHTS MANAGEMENT SYSTEM', margin, 23, { fontSize: 8, color: [255, 255, 255] });
-
-  // Report title
-  addText('CATALOG AUDIT REPORT', pageWidth - margin, 15, { fontSize: 14, color: [255, 255, 255], fontStyle: 'bold' });
-  doc.setFontSize(9);
+  // Left side: ENCORE branding
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(24);
   doc.setTextColor(255, 255, 255);
-  doc.text(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pageWidth - margin, 22, { align: 'right' });
+  doc.text('ENCORE', margin, 15);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('RIGHTS MANAGEMENT SYSTEM', margin, 23);
+
+  // Right side: Report title and date
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text('CATALOG AUDIT REPORT', pageWidth - margin, 15, { align: 'right' });
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  doc.text(reportDate, pageWidth - margin, 22, { align: 'right' });
 
   yPos = 50;
 
   // ===== ARTIST NAME =====
-  addText(presentationData.artistName.toUpperCase(), margin, yPos, { fontSize: 28, color: primaryColor, fontStyle: 'bold' });
-  yPos += 12;
-
-  addText('Catalog Health Analysis', margin, yPos, { fontSize: 12, color: textMuted });
-  yPos += 15;
-
-  drawLine(yPos);
-  yPos += 15;
-
-  // ===== CATALOG OVERVIEW =====
-  addText('CATALOG OVERVIEW', margin, yPos, { fontSize: 14, color: textDark, fontStyle: 'bold' });
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(28);
+  doc.setTextColor(...primaryColor);
+  doc.text(presentationData.artistName.toUpperCase(), margin, yPos);
   yPos += 10;
 
-  // Stats boxes
-  const boxWidth = (contentWidth - 10) / 3;
-  const boxHeight = 25;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
+  doc.setTextColor(...textMuted);
+  doc.text('Catalog Health Analysis', margin, yPos);
+  yPos += 12;
+
+  drawLine(yPos);
+  yPos += 12;
+
+  // ===== CATALOG OVERVIEW =====
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(...textDark);
+  doc.text('CATALOG OVERVIEW', margin, yPos);
+  yPos += 10;
+
+  // Stats in a row
+  const boxWidth = (contentWidth - 20) / 3;
+  const boxHeight = 22;
   const stats = [
     { label: 'Total Works', value: presentationData.catalogSize.toString() },
-    { label: 'Albums', value: `~${presentationData.albumCount}` },
-    { label: 'Singles', value: `~${presentationData.singleCount}` },
+    { label: 'Albums (est.)', value: `~${presentationData.albumCount}` },
+    { label: 'Singles (est.)', value: `~${presentationData.singleCount}` },
   ];
 
   stats.forEach((stat, index) => {
-    const x = margin + index * (boxWidth + 5);
+    const x = margin + index * (boxWidth + 10);
+    
+    // Box background
     doc.setFillColor(249, 250, 251);
-    doc.roundedRect(x, yPos, boxWidth, boxHeight, 3, 3, 'F');
+    doc.roundedRect(x, yPos, boxWidth, boxHeight, 2, 2, 'F');
     
-    addText(stat.value, x + boxWidth / 2, yPos + 10, { fontSize: 16, fontStyle: 'bold', color: primaryColor });
-    doc.text(stat.value, x + boxWidth / 2, yPos + 10, { align: 'center' });
+    // Value (centered)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(...primaryColor);
+    doc.text(stat.value, x + boxWidth / 2, yPos + 11, { align: 'center' });
     
-    addText(stat.label, x + boxWidth / 2, yPos + 18, { fontSize: 9, color: textMuted });
+    // Label (centered)
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...textMuted);
     doc.text(stat.label, x + boxWidth / 2, yPos + 18, { align: 'center' });
   });
 
   yPos += boxHeight + 15;
 
   // ===== REGISTRATION GAPS =====
-  addText('REGISTRATION GAPS IDENTIFIED', margin, yPos, { fontSize: 14, color: textDark, fontStyle: 'bold' });
-  yPos += 3;
-  addText('Issues that may be causing royalty leakage', margin, yPos + 5, { fontSize: 10, color: textMuted });
-  yPos += 15;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(...textDark);
+  doc.text('REGISTRATION GAPS IDENTIFIED', margin, yPos);
+  yPos += 6;
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(...textMuted);
+  doc.text('Issues that may be causing royalty leakage', margin, yPos);
+  yPos += 12;
 
-  // Total issues callout
+  // Total issues callout box
   doc.setFillColor(254, 242, 242);
-  doc.roundedRect(margin, yPos, contentWidth, 20, 3, 3, 'F');
-  addText(`${presentationData.registrationGaps.total} TOTAL ISSUES FOUND`, margin + contentWidth / 2, yPos + 13, { 
-    fontSize: 14, 
-    fontStyle: 'bold', 
-    color: dangerColor 
-  });
-  doc.text(`${presentationData.registrationGaps.total} TOTAL ISSUES FOUND`, margin + contentWidth / 2, yPos + 13, { align: 'center' });
-  yPos += 28;
+  doc.roundedRect(margin, yPos, contentWidth, 18, 2, 2, 'F');
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(...dangerColor);
+  doc.text(`${presentationData.registrationGaps.total} TOTAL ISSUES FOUND`, pageWidth / 2, yPos + 11, { align: 'center' });
+  yPos += 25;
 
   // Gap breakdown
   const gaps = [
@@ -169,39 +183,65 @@ export async function generateCatalogAuditPdf(data: CatalogAuditPdfData): Promis
   gaps.forEach((gap) => {
     const percentage = formatPercentage(gap.value, presentationData.catalogSize);
     
-    addText(`${gap.value}`, margin, yPos, { fontSize: 16, fontStyle: 'bold', color: gap.color });
-    addText(gap.label, margin + 20, yPos, { fontSize: 11, fontStyle: 'bold', color: textDark });
-    addText(`(${percentage} of catalog)`, margin + 20 + doc.getTextWidth(gap.label) + 3, yPos, { fontSize: 10, color: textMuted });
+    // Value
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...gap.color);
+    doc.text(gap.value.toString(), margin, yPos);
+    
+    // Label and percentage on same line
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...textDark);
+    doc.text(gap.label, margin + 15, yPos);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...textMuted);
+    doc.text(`(${percentage} of catalog)`, margin + 15 + doc.getTextWidth(gap.label) + 3, yPos);
+    
     yPos += 5;
-    addText(gap.desc, margin + 20, yPos, { fontSize: 9, color: textMuted });
-    yPos += 10;
+    
+    // Description
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...textMuted);
+    doc.text(gap.desc, margin + 15, yPos);
+    yPos += 9;
   });
 
   yPos += 5;
   drawLine(yPos);
-  yPos += 15;
+  yPos += 12;
 
   // ===== FINANCIAL IMPACT =====
-  addText('ESTIMATED FINANCIAL IMPACT', margin, yPos, { fontSize: 14, color: textDark, fontStyle: 'bold' });
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(...textDark);
+  doc.text('ESTIMATED FINANCIAL IMPACT', margin, yPos);
   yPos += 10;
 
-  // Main pipeline value
+  // Main pipeline value box
   doc.setFillColor(...primaryColor);
-  doc.roundedRect(margin, yPos, contentWidth, 30, 3, 3, 'F');
-  addText('Estimated Pipeline Value', margin + 10, yPos + 10, { fontSize: 10, color: [255, 255, 255] });
-  addText(formatCurrency(presentationData.pipelineEstimate.total), margin + 10, yPos + 23, { 
-    fontSize: 18, 
-    fontStyle: 'bold', 
-    color: [255, 255, 255] 
-  });
+  doc.roundedRect(margin, yPos, contentWidth, 28, 3, 3, 'F');
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(255, 255, 255);
+  doc.text('Estimated Pipeline Value', margin + 8, yPos + 10);
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text(formatCurrency(presentationData.pipelineEstimate.total), margin + 8, yPos + 22);
   
   // Confidence badge
   const confidenceText = `${presentationData.pipelineEstimate.confidenceLevel.toUpperCase()} CONFIDENCE`;
-  addText(confidenceText, pageWidth - margin - 10, yPos + 16, { fontSize: 9, color: [255, 255, 255] });
-  doc.text(confidenceText, pageWidth - margin - 10, yPos + 16, { align: 'right' });
-  yPos += 38;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text(confidenceText, pageWidth - margin - 8, yPos + 16, { align: 'right' });
+  yPos += 35;
 
-  // Breakdown
+  // Breakdown rows
   const breakdown = [
     { label: 'Performance Royalties', value: presentationData.pipelineEstimate.performance },
     { label: 'Mechanical Royalties', value: presentationData.pipelineEstimate.mechanical },
@@ -209,30 +249,38 @@ export async function generateCatalogAuditPdf(data: CatalogAuditPdfData): Promis
   ];
 
   breakdown.forEach((item) => {
-    addText(item.label, margin, yPos, { fontSize: 10, color: textMuted });
-    addText(formatCurrency(item.value), pageWidth - margin, yPos, { fontSize: 10, fontStyle: 'bold', color: textDark });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...textMuted);
+    doc.text(item.label, margin, yPos);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...textDark);
     doc.text(formatCurrency(item.value), pageWidth - margin, yPos, { align: 'right' });
-    yPos += 7;
+    yPos += 6;
   });
 
-  // Missing impact
+  // Missing impact callout
   if (presentationData.pipelineEstimate.missingImpact > 0) {
     yPos += 5;
     doc.setFillColor(254, 243, 199);
-    doc.roundedRect(margin, yPos, contentWidth, 18, 3, 3, 'F');
-    addText('Estimated Uncollected Royalties:', margin + 5, yPos + 11, { fontSize: 10, color: textDark });
-    addText(formatCurrency(presentationData.pipelineEstimate.missingImpact), pageWidth - margin - 5, yPos + 11, { 
-      fontSize: 12, 
-      fontStyle: 'bold', 
-      color: dangerColor 
-    });
-    doc.text(formatCurrency(presentationData.pipelineEstimate.missingImpact), pageWidth - margin - 5, yPos + 11, { align: 'right' });
-    yPos += 25;
+    doc.roundedRect(margin, yPos, contentWidth, 16, 2, 2, 'F');
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...textDark);
+    doc.text('Estimated Uncollected Royalties:', margin + 5, yPos + 10);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(...dangerColor);
+    doc.text(formatCurrency(presentationData.pipelineEstimate.missingImpact), pageWidth - margin - 5, yPos + 10, { align: 'right' });
+    yPos += 22;
   }
 
   // ===== TOP 10 SONGS =====
   // Check if we need a new page
-  if (yPos > pageHeight - 100) {
+  if (yPos > pageHeight - 90) {
     doc.addPage();
     yPos = margin;
   }
@@ -240,33 +288,42 @@ export async function generateCatalogAuditPdf(data: CatalogAuditPdfData): Promis
   drawLine(yPos);
   yPos += 10;
 
-  addText('TOP CATALOG WORKS', margin, yPos, { fontSize: 14, color: textDark, fontStyle: 'bold' });
-  yPos += 8;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(...textDark);
+  doc.text('TOP CATALOG WORKS', margin, yPos);
+  yPos += 10;
 
   if (topSongs.length === 0) {
-    addText('No song data available', margin, yPos, { fontSize: 10, color: textMuted, fontStyle: 'italic' });
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(10);
+    doc.setTextColor(...textMuted);
+    doc.text('No song data available', margin, yPos);
     yPos += 10;
   } else {
     // Table header
     doc.setFillColor(249, 250, 251);
-    doc.rect(margin, yPos, contentWidth, 8, 'F');
-    addText('#', margin + 3, yPos + 5.5, { fontSize: 8, fontStyle: 'bold', color: textMuted });
-    addText('SONG TITLE', margin + 12, yPos + 5.5, { fontSize: 8, fontStyle: 'bold', color: textMuted });
-    addText('ISWC', margin + 100, yPos + 5.5, { fontSize: 8, fontStyle: 'bold', color: textMuted });
-    addText('STATUS', pageWidth - margin - 25, yPos + 5.5, { fontSize: 8, fontStyle: 'bold', color: textMuted });
-    yPos += 10;
+    doc.rect(margin, yPos, contentWidth, 7, 'F');
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...textMuted);
+    doc.text('#', margin + 3, yPos + 5);
+    doc.text('SONG TITLE', margin + 12, yPos + 5);
+    doc.text('ISWC', margin + 95, yPos + 5);
+    doc.text('STATUS', pageWidth - margin - 20, yPos + 5);
+    yPos += 9;
 
     // Song rows
     topSongs.slice(0, 10).forEach((song, index) => {
-      if (yPos > pageHeight - 20) {
+      if (yPos > pageHeight - 25) {
         doc.addPage();
         yPos = margin;
       }
 
-      const hasIswc = !!song.iswc;
       const completeness = song.metadata_completeness_score ?? 0;
       const statusColor: [number, number, number] = completeness >= 0.7 
-        ? [34, 197, 94] 
+        ? successColor 
         : completeness >= 0.5 
         ? warningColor 
         : dangerColor;
@@ -275,44 +332,58 @@ export async function generateCatalogAuditPdf(data: CatalogAuditPdfData): Promis
       // Alternate row background
       if (index % 2 === 0) {
         doc.setFillColor(249, 250, 251);
-        doc.rect(margin, yPos - 3, contentWidth, 8, 'F');
+        doc.rect(margin, yPos - 2, contentWidth, 7, 'F');
       }
 
-      addText(`${index + 1}`, margin + 3, yPos + 2, { fontSize: 9, color: textMuted });
+      // Row number
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...textMuted);
+      doc.text(`${index + 1}`, margin + 3, yPos + 3);
       
-      // Truncate long titles
-      const maxTitleWidth = 85;
+      // Song title (truncate if too long)
       let title = song.song_title;
       doc.setFontSize(9);
-      if (doc.getTextWidth(title) > maxTitleWidth) {
-        while (doc.getTextWidth(title + '...') > maxTitleWidth && title.length > 0) {
-          title = title.slice(0, -1);
-        }
+      doc.setTextColor(...textDark);
+      const maxTitleWidth = 78;
+      while (doc.getTextWidth(title) > maxTitleWidth && title.length > 3) {
+        title = title.slice(0, -1);
+      }
+      if (title !== song.song_title) {
         title += '...';
       }
-      addText(title, margin + 12, yPos + 2, { fontSize: 9, color: textDark });
+      doc.text(title, margin + 12, yPos + 3);
       
-      addText(hasIswc ? song.iswc! : '—', margin + 100, yPos + 2, { 
-        fontSize: 8, 
-        color: hasIswc ? textDark : textMuted 
-      });
-      addText(statusText, pageWidth - margin - 25, yPos + 2, { fontSize: 8, color: statusColor });
+      // ISWC
+      const hasIswc = !!song.iswc;
+      doc.setFontSize(8);
+      doc.setTextColor(hasIswc ? textDark[0] : textMuted[0], hasIswc ? textDark[1] : textMuted[1], hasIswc ? textDark[2] : textMuted[2]);
+      doc.text(hasIswc ? song.iswc! : '—', margin + 95, yPos + 3);
       
-      yPos += 8;
+      // Status
+      doc.setFontSize(8);
+      doc.setTextColor(...statusColor);
+      doc.text(statusText, pageWidth - margin - 20, yPos + 3);
+      
+      yPos += 7;
     });
   }
 
   // ===== FOOTER =====
-  yPos = pageHeight - 25;
+  yPos = pageHeight - 22;
   drawLine(yPos);
-  yPos += 8;
+  yPos += 6;
 
-  addText('Generated by ENCORE Rights Management System', margin, yPos, { fontSize: 8, color: textMuted });
-  addText('www.encore.live', margin, yPos + 5, { fontSize: 8, color: primaryColor });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...textMuted);
+  doc.text('Generated by ENCORE Rights Management System', margin, yPos);
   
-  addText(`Report ID: ${presentationData.searchId.slice(0, 8)}`, pageWidth - margin, yPos, { fontSize: 8, color: textMuted });
+  doc.setTextColor(...primaryColor);
+  doc.text('www.encore.live', margin, yPos + 5);
+  
+  doc.setTextColor(...textMuted);
   doc.text(`Report ID: ${presentationData.searchId.slice(0, 8)}`, pageWidth - margin, yPos, { align: 'right' });
-  addText(presentationData.generatedAt, pageWidth - margin, yPos + 5, { fontSize: 8, color: textMuted });
   doc.text(new Date(presentationData.generatedAt).toLocaleString(), pageWidth - margin, yPos + 5, { align: 'right' });
 
   // Save the PDF
