@@ -259,12 +259,20 @@ export function useCatalogAuditPresentation(searchId?: string, artistName?: stri
     }
   };
 
+  // Get top songs sorted by metadata completeness (best first)
+  const topSongs = useMemo(() => {
+    return [...songMetadata]
+      .sort((a, b) => (b.metadata_completeness_score ?? 0) - (a.metadata_completeness_score ?? 0))
+      .slice(0, 10);
+  }, [songMetadata]);
+
   return {
     loading,
     error,
     presentationData,
     searchData,
     songMetadata,
+    topSongs,
     savePresentation,
     markAsPresented,
   };
