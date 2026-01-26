@@ -190,7 +190,7 @@ export function SongEstimatorTool() {
                         variant="outline"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/catalog-audit-presentation?searchId=${search.id}`);
+                          navigate(`/catalog-audit?searchId=${search.id}`);
                         }}
                         disabled={search.search_status !== 'completed'}
                         className="text-primary hover:text-primary gap-1"

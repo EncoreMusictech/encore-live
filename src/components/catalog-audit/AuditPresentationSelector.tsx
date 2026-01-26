@@ -57,15 +57,15 @@ export function AuditPresentationSelector() {
     if (!searchQuery.trim()) return;
     
     setIsSearching(true);
-    navigate(`/catalog-audit-presentation?artist=${encodeURIComponent(searchQuery.trim())}`);
+    navigate(`/catalog-audit?artist=${encodeURIComponent(searchQuery.trim())}`);
   };
 
   const handleSelectSearch = (searchId: string) => {
-    navigate(`/catalog-audit-presentation?searchId=${searchId}`);
+    navigate(`/catalog-audit?searchId=${searchId}`);
   };
 
   const handleMultiCatalogMode = () => {
-    navigate('/catalog-audit-presentation?mode=multi');
+    navigate('/catalog-audit?mode=multi');
   };
 
   return (
