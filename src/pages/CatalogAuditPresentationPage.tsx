@@ -7,9 +7,10 @@ import { MultiCatalogPresentation } from '@/components/catalog-audit/MultiCatalo
 import { CatalogDiscoveryProgress } from '@/components/catalog-audit/CatalogDiscoveryProgress';
 import { useCatalogAuditPresentation } from '@/hooks/useCatalogAuditPresentation';
 import { useCatalogAuditDiscovery } from '@/hooks/useCatalogAuditDiscovery';
-import { useMultiCatalogAudit, type AggregatedAuditData } from '@/hooks/useMultiCatalogAudit';
+import { useMultiCatalogAudit, fetchAggregatedDataDirect, type AggregatedAuditData } from '@/hooks/useMultiCatalogAudit';
 import { generateCatalogAuditPdf } from '@/utils/catalogAuditPdfGenerator';
 import { generateMultiCatalogAuditPdf } from '@/utils/multiCatalogAuditPdfGenerator';
+import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RotateCcw, Search, Loader2 } from 'lucide-react';
@@ -63,19 +64,18 @@ export default function CatalogAuditPresentationPage() {
       setIsLoadingMulti(true);
       try {
         const ids = searchIdsParam.split(',');
-        // Add each search ID to the hook
+        const catalogsToAdd: { searchId: string; artistName: string; songCount: number }[] = [];
+        
+        // First, fetch all catalog info
         for (const id of ids) {
-          // We need to fetch catalog info for each
-          const { data: searchData } = await import('@/integrations/supabase/client').then(m => 
-            m.supabase
-              .from('song_catalog_searches')
-              .select('id, songwriter_name, total_songs_found')
-              .eq('id', id)
-              .single()
-          );
+          const { data: searchData } = await supabase
+            .from('song_catalog_searches')
+            .select('id, songwriter_name, total_songs_found')
+            .eq('id', id)
+            .single();
           
           if (searchData) {
-            multiCatalogHook.addCatalog({
+            catalogsToAdd.push({
               searchId: searchData.id,
               artistName: searchData.songwriter_name,
               songCount: searchData.total_songs_found || 0,
@@ -83,13 +83,24 @@ export default function CatalogAuditPresentationPage() {
           }
         }
         
-        // Now fetch aggregated data
-        const result = await multiCatalogHook.fetchAggregatedData();
+        // Add all catalogs to the hook state
+        for (const cat of catalogsToAdd) {
+          multiCatalogHook.addCatalog(cat);
+        }
+        
+        // Directly fetch aggregated data using the catalogs we collected
+        // (bypassing hook state which hasn't updated yet)
+        const result = await fetchAggregatedDataDirect(catalogsToAdd);
         if (result) {
           setMultiData(result);
         }
       } catch (err) {
         console.error('Error loading multi-catalog data:', err);
+        toast({
+          title: 'Error',
+          description: 'Failed to load multi-catalog presentation',
+          variant: 'destructive',
+        });
       } finally {
         setIsLoadingMulti(false);
       }
