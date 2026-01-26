@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CatalogAuditPresentation } from '@/components/catalog-audit/CatalogAuditPresentation';
 import { AuditPresentationSelector } from '@/components/catalog-audit/AuditPresentationSelector';
+import { CatalogDiscoveryProgress } from '@/components/catalog-audit/CatalogDiscoveryProgress';
 import { useCatalogAuditPresentation } from '@/hooks/useCatalogAuditPresentation';
+import { useCatalogAuditDiscovery } from '@/hooks/useCatalogAuditDiscovery';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, RotateCcw } from 'lucide-react';
+import { AlertCircle, RotateCcw, Search, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function CatalogAuditPresentationPage() {
@@ -29,7 +31,36 @@ export default function CatalogAuditPresentationPage() {
     hasParams ? (artistName || undefined) : undefined
   );
 
+  const {
+    discoveryState,
+    runCatalogDiscovery,
+    resetDiscovery,
+    isDiscovering,
+  } = useCatalogAuditDiscovery();
+
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [hasTriedDiscovery, setHasTriedDiscovery] = useState(false);
+
+  // When we get "no search found" error, automatically trigger discovery
+  useEffect(() => {
+    const isNoSearchError = error?.includes('No catalog search found');
+    
+    if (isNoSearchError && artistName && !hasTriedDiscovery && !isDiscovering) {
+      setHasTriedDiscovery(true);
+      runCatalogDiscovery(artistName).then((newSearchId) => {
+        if (newSearchId) {
+          // Update URL to use the new searchId
+          setSearchParams({ searchId: newSearchId });
+        }
+      });
+    }
+  }, [error, artistName, hasTriedDiscovery, isDiscovering, runCatalogDiscovery, setSearchParams]);
+
+  // Reset discovery state when URL changes
+  useEffect(() => {
+    setHasTriedDiscovery(false);
+    resetDiscovery();
+  }, [searchId, artistName, resetDiscovery]);
 
   const handleClose = () => {
     navigate(-1);
@@ -38,6 +69,17 @@ export default function CatalogAuditPresentationPage() {
   const handleTryAnotherSearch = () => {
     // Clear URL params to show the selector again
     setSearchParams({});
+    resetDiscovery();
+    setHasTriedDiscovery(false);
+  };
+
+  const handleStartDiscovery = async () => {
+    if (!artistName) return;
+    setHasTriedDiscovery(true);
+    const newSearchId = await runCatalogDiscovery(artistName);
+    if (newSearchId) {
+      setSearchParams({ searchId: newSearchId });
+    }
   };
 
   const handleDownloadReport = async () => {
@@ -46,10 +88,7 @@ export default function CatalogAuditPresentationPage() {
     setIsGeneratingPDF(true);
     
     try {
-      // Save presentation to database
       await savePresentation();
-      
-      // For now, show a success message - PDF generation can be enhanced later
       toast({
         title: 'Report Generated',
         description: `Audit report for ${presentationData.artistName} is ready`,
@@ -70,8 +109,21 @@ export default function CatalogAuditPresentationPage() {
     return <AuditPresentationSelector />;
   }
 
-  // Show loading state
-  if (loading) {
+  // Show discovery in progress
+  if (isDiscovering) {
+    return (
+      <CatalogDiscoveryProgress
+        step={discoveryState.step}
+        progress={discoveryState.progress}
+        message={discoveryState.message}
+        artistName={artistName || ''}
+        songsFound={discoveryState.songsFound}
+      />
+    );
+  }
+
+  // Show loading state (for existing search lookup)
+  if (loading && !isDiscovering) {
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-6">
         <div className="text-center space-y-4">
@@ -84,22 +136,61 @@ export default function CatalogAuditPresentationPage() {
     );
   }
 
-  // Show error state
-  if (error || !presentationData) {
+  // Show error state (only if discovery also failed or completed without results)
+  if ((error || !presentationData) && discoveryState.step !== 'completed') {
     const isNoSearchError = error?.includes('No catalog search found');
+    const discoveryFailed = discoveryState.step === 'error';
     
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-6 p-8">
         <AlertCircle className="w-16 h-16 text-destructive" />
         <div className="text-center space-y-2 max-w-md">
           <h1 className="text-2xl font-headline text-foreground">
-            {isNoSearchError ? 'No Catalog Data Found' : 'Unable to Load Presentation'}
+            {discoveryFailed ? 'Discovery Failed' : isNoSearchError ? 'No Catalog Data Found' : 'Unable to Load Presentation'}
           </h1>
           <p className="text-muted-foreground">
-            {isNoSearchError 
-              ? `No existing catalog analysis found for "${artistName}". Try searching for a different artist or select from your recent searches.`
-              : (error || 'No presentation data available.')
+            {discoveryFailed 
+              ? discoveryState.message
+              : isNoSearchError 
+                ? `No existing catalog analysis found for "${artistName}".`
+                : (error || 'No presentation data available.')
             }
+          </p>
+        </div>
+        <div className="flex gap-3">
+          {isNoSearchError && !hasTriedDiscovery && (
+            <Button onClick={handleStartDiscovery} className="gap-2">
+              <Search className="w-4 h-4" />
+              Discover Catalog
+            </Button>
+          )}
+          <Button onClick={handleTryAnotherSearch} variant="outline" className="gap-2">
+            <RotateCcw className="w-4 h-4" />
+            Try Another Search
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // After discovery completes, we may need to reload
+  if (discoveryState.step === 'completed' && !presentationData) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-6">
+        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+        <p className="text-muted-foreground">Loading discovered catalog...</p>
+      </div>
+    );
+  }
+
+  if (!presentationData) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-6 p-8">
+        <AlertCircle className="w-16 h-16 text-muted-foreground" />
+        <div className="text-center space-y-2 max-w-md">
+          <h1 className="text-2xl font-headline text-foreground">No Data Available</h1>
+          <p className="text-muted-foreground">
+            Unable to generate presentation. Please try a different artist.
           </p>
         </div>
         <Button onClick={handleTryAnotherSearch} className="gap-2">
