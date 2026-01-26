@@ -27,6 +27,18 @@ const formatPercentage = (value: number, total: number): string => {
   return `${Math.round((value / total) * 100)}%`;
 };
 
+// Helper to load image as base64
+async function loadImageAsBase64(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 export async function generateCatalogAuditPdf(data: CatalogAuditPdfData): Promise<void> {
   const { presentationData, topSongs } = data;
   const doc = new jsPDF({
@@ -58,97 +70,88 @@ export async function generateCatalogAuditPdf(data: CatalogAuditPdfData): Promis
   const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   // ===== COVER PAGE =====
-  // Background gradient effect - top section
+  // Background - top section with primary color
+  doc.setFillColor(15, 15, 15); // Dark background like the logo
+  doc.rect(0, 0, pageWidth, pageHeight, 'F');
+  
+  // Purple accent bar at top
   doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, pageWidth, pageHeight * 0.45, 'F');
-  
-  // Decorative elements - subtle circles (using lower opacity via lighter color)
-  doc.setFillColor(200, 180, 255); // Light purple for subtle effect
-  doc.circle(pageWidth * 0.85, pageHeight * 0.15, 60, 'F');
-  doc.circle(pageWidth * 0.1, pageHeight * 0.35, 40, 'F');
-  
-  // Cover the circles partially with the main color to create depth
-  doc.setFillColor(...primaryColor);
+  doc.rect(0, 0, pageWidth, 8, 'F');
 
-  // ENCORE Logo area (centered)
-  const logoY = pageHeight * 0.18;
-  
-  // Music note icon (stylized)
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(2);
-  // Draw a simple music note shape
-  doc.circle(pageWidth / 2 - 8, logoY + 8, 5, 'F');
-  doc.rect(pageWidth / 2 - 4, logoY - 12, 2.5, 20, 'F');
-  doc.circle(pageWidth / 2 + 8, logoY + 4, 5, 'F');
-  doc.rect(pageWidth / 2 + 12, logoY - 16, 2.5, 20, 'F');
-  // Connect the notes
-  doc.setLineWidth(2.5);
-  doc.line(pageWidth / 2 - 4, logoY - 12, pageWidth / 2 + 14.5, logoY - 16);
-
-  // ENCORE text
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(48);
-  doc.setTextColor(255, 255, 255);
-  doc.text('ENCORE', pageWidth / 2, logoY + 35, { align: 'center' });
-  
-  // Tagline
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(12);
-  doc.setTextColor(255, 255, 255);
-  doc.text('RIGHTS MANAGEMENT SYSTEM', pageWidth / 2, logoY + 45, { align: 'center' });
+  // Load and add the ENCORE logo
+  try {
+    const logoBase64 = await loadImageAsBase64('/images/encore-logo-full.png');
+    const logoWidth = 120;
+    const logoHeight = 30;
+    const logoX = (pageWidth - logoWidth) / 2;
+    const logoY = pageHeight * 0.28;
+    doc.addImage(logoBase64, 'PNG', logoX, logoY, logoWidth, logoHeight);
+  } catch (error) {
+    // Fallback to text if image fails to load
+    console.warn('Failed to load logo image, using text fallback');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(48);
+    doc.setTextColor(...primaryColor);
+    doc.text('ENCORE', pageWidth / 2, pageHeight * 0.32, { align: 'center' });
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+    doc.setTextColor(200, 180, 140); // Gold color
+    doc.text('RIGHTS MANAGEMENT SYSTEM', pageWidth / 2, pageHeight * 0.36, { align: 'center' });
+  }
 
   // Divider line
-  doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.5);
-  doc.line(pageWidth / 2 - 40, logoY + 55, pageWidth / 2 + 40, logoY + 55);
+  doc.setDrawColor(...primaryColor);
+  doc.setLineWidth(0.8);
+  doc.line(pageWidth / 2 - 50, pageHeight * 0.42, pageWidth / 2 + 50, pageHeight * 0.42);
 
   // Report type label
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text('CATALOG AUDIT REPORT', pageWidth / 2, logoY + 68, { align: 'center' });
+  doc.setFontSize(16);
+  doc.setTextColor(255, 255, 255);
+  doc.text('CATALOG AUDIT REPORT', pageWidth / 2, pageHeight * 0.48, { align: 'center' });
 
-  // Artist name section (in the white area)
-  const artistSectionY = pageHeight * 0.52;
+  // Artist name section
+  const artistSectionY = pageHeight * 0.58;
   
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(14);
+  doc.setFontSize(12);
   doc.setTextColor(...textMuted);
   doc.text('PREPARED FOR', pageWidth / 2, artistSectionY, { align: 'center' });
   
   // Artist name - large and bold
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(36);
-  doc.setTextColor(...primaryColor);
-  doc.text(presentationData.artistName.toUpperCase(), pageWidth / 2, artistSectionY + 18, { align: 'center' });
+  doc.setFontSize(32);
+  doc.setTextColor(255, 255, 255);
+  doc.text(presentationData.artistName.toUpperCase(), pageWidth / 2, artistSectionY + 16, { align: 'center' });
 
   // Decorative line under artist name
-  const artistNameWidth = Math.min(doc.getTextWidth(presentationData.artistName.toUpperCase()), contentWidth);
+  const artistNameWidth = Math.min(doc.getTextWidth(presentationData.artistName.toUpperCase()), contentWidth - 20);
   doc.setDrawColor(...primaryColor);
   doc.setLineWidth(2);
-  doc.line(pageWidth / 2 - artistNameWidth / 2, artistSectionY + 25, pageWidth / 2 + artistNameWidth / 2, artistSectionY + 25);
+  doc.line(pageWidth / 2 - artistNameWidth / 2, artistSectionY + 23, pageWidth / 2 + artistNameWidth / 2, artistSectionY + 23);
 
   // Report date
-  const dateY = pageHeight * 0.72;
+  const dateY = pageHeight * 0.75;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setTextColor(...textMuted);
   doc.text('Report Generated', pageWidth / 2, dateY, { align: 'center' });
   
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(...textDark);
-  doc.text(reportDate, pageWidth / 2, dateY + 10, { align: 'center' });
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.text(reportDate, pageWidth / 2, dateY + 8, { align: 'center' });
 
   // Footer on cover page
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setTextColor(...textMuted);
-  doc.text('Confidential • For Internal Use Only', pageWidth / 2, pageHeight - 30, { align: 'center' });
+  doc.text('Confidential • For Internal Use Only', pageWidth / 2, pageHeight - 25, { align: 'center' });
   
   doc.setFontSize(9);
   doc.setTextColor(...primaryColor);
-  doc.text('www.encoremusic.tech', pageWidth / 2, pageHeight - 22, { align: 'center' });
+  doc.text('www.encoremusic.tech', pageWidth / 2, pageHeight - 18, { align: 'center' });
 
   // ===== PAGE 2: REPORT CONTENT =====
   doc.addPage();
