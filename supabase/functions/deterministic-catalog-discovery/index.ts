@@ -206,19 +206,26 @@ serve(async (req) => {
 
   try {
     const { searchId, writerName, userId, maxSongs = DEFAULT_MAX_SONGS } = await req.json();
-    if (!searchId || !writerName || !userId) {
-      return json({ error: 'searchId, writerName, and userId are required' }, 400);
+    // userId is now optional for anonymous catalog discovery
+    if (!searchId || !writerName) {
+      return json({ error: 'searchId and writerName are required' }, 400);
     }
 
     const requestedMaxSongs = Number(maxSongs) || DEFAULT_MAX_SONGS;
     const effectiveMaxSongs = Math.min(MAX_SONGS_HARD_CAP, Math.max(1, requestedMaxSongs));
 
-    // Mark search as processing
-    await supabase
+    // Mark search as processing - handle both authenticated and anonymous searches
+    const updateQuery = supabase
       .from('song_catalog_searches')
       .update({ search_status: 'processing', last_refreshed_at: new Date().toISOString() })
-      .eq('id', searchId)
-      .eq('user_id', userId);
+      .eq('id', searchId);
+    
+    // Add user filter only if userId is provided
+    if (userId) {
+      await updateQuery.eq('user_id', userId);
+    } else {
+      await updateQuery.is('user_id', null);
+    }
 
     // Discover works
     const artistId = await findArtistMBID(writerName);
