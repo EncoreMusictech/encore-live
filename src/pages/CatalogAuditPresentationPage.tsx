@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CatalogAuditPresentation } from '@/components/catalog-audit/CatalogAuditPresentation';
 import { AuditPresentationSelector } from '@/components/catalog-audit/AuditPresentationSelector';
+import { MultiCatalogSelector } from '@/components/catalog-audit/MultiCatalogSelector';
+import { MultiCatalogPresentation } from '@/components/catalog-audit/MultiCatalogPresentation';
 import { CatalogDiscoveryProgress } from '@/components/catalog-audit/CatalogDiscoveryProgress';
 import { useCatalogAuditPresentation } from '@/hooks/useCatalogAuditPresentation';
 import { useCatalogAuditDiscovery } from '@/hooks/useCatalogAuditDiscovery';
+import { useMultiCatalogAudit, type AggregatedAuditData } from '@/hooks/useMultiCatalogAudit';
 import { generateCatalogAuditPdf } from '@/utils/catalogAuditPdfGenerator';
+import { generateMultiCatalogAuditPdf } from '@/utils/multiCatalogAuditPdfGenerator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RotateCcw, Search, Loader2 } from 'lucide-react';
@@ -18,9 +22,17 @@ export default function CatalogAuditPresentationPage() {
   
   const searchId = searchParams.get('searchId');
   const artistName = searchParams.get('artist');
+  const isMultiMode = searchParams.get('mode') === 'multi';
+  const isMultiPresentation = searchParams.get('multi') === 'true';
+  const searchIdsParam = searchParams.get('searchIds');
   
   // Check if we have params - if not, show the selector
-  const hasParams = Boolean(searchId || artistName);
+  const hasParams = Boolean(searchId || artistName || isMultiMode || isMultiPresentation);
+  
+  // Multi-catalog state
+  const multiCatalogHook = useMultiCatalogAudit();
+  const [multiData, setMultiData] = useState<AggregatedAuditData | null>(null);
+  const [isLoadingMulti, setIsLoadingMulti] = useState(false);
   
   const { 
     loading, 
@@ -29,8 +41,8 @@ export default function CatalogAuditPresentationPage() {
     topSongs,
     savePresentation 
   } = useCatalogAuditPresentation(
-    hasParams ? (searchId || undefined) : undefined, 
-    hasParams ? (artistName || undefined) : undefined
+    hasParams && !isMultiMode && !isMultiPresentation ? (searchId || undefined) : undefined, 
+    hasParams && !isMultiMode && !isMultiPresentation ? (artistName || undefined) : undefined
   );
 
   const {
@@ -42,6 +54,49 @@ export default function CatalogAuditPresentationPage() {
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [hasTriedDiscovery, setHasTriedDiscovery] = useState(false);
+
+  // Load multi-catalog data when in presentation mode
+  useEffect(() => {
+    const loadMultiData = async () => {
+      if (!isMultiPresentation || !searchIdsParam) return;
+      
+      setIsLoadingMulti(true);
+      try {
+        const ids = searchIdsParam.split(',');
+        // Add each search ID to the hook
+        for (const id of ids) {
+          // We need to fetch catalog info for each
+          const { data: searchData } = await import('@/integrations/supabase/client').then(m => 
+            m.supabase
+              .from('song_catalog_searches')
+              .select('id, songwriter_name, total_songs_found')
+              .eq('id', id)
+              .single()
+          );
+          
+          if (searchData) {
+            multiCatalogHook.addCatalog({
+              searchId: searchData.id,
+              artistName: searchData.songwriter_name,
+              songCount: searchData.total_songs_found || 0,
+            });
+          }
+        }
+        
+        // Now fetch aggregated data
+        const result = await multiCatalogHook.fetchAggregatedData();
+        if (result) {
+          setMultiData(result);
+        }
+      } catch (err) {
+        console.error('Error loading multi-catalog data:', err);
+      } finally {
+        setIsLoadingMulti(false);
+      }
+    };
+
+    loadMultiData();
+  }, [isMultiPresentation, searchIdsParam]);
 
   // When we get "no search found" error, automatically trigger discovery
   useEffect(() => {
@@ -74,6 +129,8 @@ export default function CatalogAuditPresentationPage() {
     setSearchParams({});
     resetDiscovery();
     setHasTriedDiscovery(false);
+    setMultiData(null);
+    multiCatalogHook.clearCatalogs();
   };
 
   const handleStartDiscovery = async () => {
@@ -121,9 +178,61 @@ export default function CatalogAuditPresentationPage() {
     }
   };
 
+  const handleDownloadMultiReport = async () => {
+    if (!multiData) return;
+    
+    setIsGeneratingPDF(true);
+    
+    try {
+      await generateMultiCatalogAuditPdf(multiData);
+      
+      toast({
+        title: 'Report Downloaded',
+        description: `Multi-catalog audit report for ${multiData.catalogs.length} catalogs has been saved`,
+      });
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate report',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   // Show selector when no params provided
   if (!hasParams) {
     return <AuditPresentationSelector />;
+  }
+
+  // Show multi-catalog selector
+  if (isMultiMode && !isMultiPresentation) {
+    return <MultiCatalogSelector />;
+  }
+
+  // Show multi-catalog presentation
+  if (isMultiPresentation) {
+    if (isLoadingMulti || multiCatalogHook.loading) {
+      return (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-6">
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+          <p className="text-muted-foreground">Loading multi-catalog data...</p>
+        </div>
+      );
+    }
+
+    if (multiData) {
+      return (
+        <MultiCatalogPresentation
+          data={multiData}
+          onClose={handleClose}
+          onDownloadReport={handleDownloadMultiReport}
+          isGeneratingPDF={isGeneratingPDF}
+        />
+      );
+    }
   }
 
   // Show discovery in progress
