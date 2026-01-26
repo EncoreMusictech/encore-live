@@ -132,7 +132,12 @@ export default function CatalogAuditPresentationPage() {
   }, [searchId, artistName, resetDiscovery]);
 
   const handleClose = () => {
-    navigate(-1);
+    // Return to the catalog audit search selector
+    setSearchParams({});
+    resetDiscovery();
+    setHasTriedDiscovery(false);
+    setMultiData(null);
+    multiCatalogHook.clearCatalogs();
   };
 
   const handleTryAnotherSearch = () => {
