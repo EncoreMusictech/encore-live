@@ -91,9 +91,14 @@ export function useCatalogAuditPresentation(searchId?: string, artistName?: stri
             .ilike('songwriter_name', artistName)
             .order('created_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           if (searchError) throw searchError;
+          
+          if (!data) {
+            throw new Error(`No catalog search found for "${artistName}". Please run a search in the Song Estimator Tool first.`);
+          }
+          
           search = data as SearchData;
         }
 
