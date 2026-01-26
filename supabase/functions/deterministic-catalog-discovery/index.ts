@@ -11,8 +11,6 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const sharedSecret = Deno.env.get('ASSISTANT_SHARED_SECRET') || '';
 const perplexityKey = Deno.env.get('PERPLEXITY_API_KEY') || '';
-const mlcUsername = Deno.env.get('MLC_USERNAME') || '';
-const mlcPassword = Deno.env.get('MLC_PASSWORD') || '';
 
 // INCREASED CAPS for comprehensive catalog discovery
 const DEFAULT_MAX_SONGS = 150;
@@ -254,146 +252,81 @@ async function callProAgent(title: string, writerName: string) {
   }
 }
 
-// MLC API Integration for comprehensive catalog discovery
-async function getMlcAccessToken(): Promise<string | null> {
-  if (!mlcUsername || !mlcPassword) {
-    console.log('MLC credentials not configured');
-    return null;
-  }
-  
-  try {
-    console.log('Authenticating with MLC API...');
-    const response = await fetch('https://public-api.themlc.com/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: mlcUsername, password: mlcPassword }),
-    });
-    
-    if (!response.ok) {
-      console.error('MLC auth failed:', response.status);
-      return null;
-    }
-    
-    const data = await response.json();
-    console.log('MLC authentication successful');
-    return data.idToken || null;
-  } catch (error) {
-    console.error('MLC auth error:', error);
-    return null;
-  }
-}
-
-async function searchMlcByWriterName(token: string, writerVariants: string[], maxPages = 10): Promise<any[]> {
+// MLC Integration via enhanced-mlc-lookup edge function
+async function searchMlcViaEdgeFunction(writerVariants: string[], maxWorks = 500): Promise<any[]> {
   const allWorks: any[] = [];
   const seenSongCodes = new Set<string>();
   
-  // Build search bodies with valid first/last name combinations only
-  // MLC API requires at least lastName to be non-empty
-  const searchBodies: Array<{ variant: string; body: any }> = [];
+  console.log(`Calling enhanced-mlc-lookup for writer variants: ${writerVariants.slice(0, 3).join(', ')}`);
   
+  // Try each name variant until we get results
   for (const writerName of writerVariants.slice(0, 5)) {
-    const parts = writerName.trim().split(/\s+/).filter(p => p.length > 0);
+    if (allWorks.length >= maxWorks) break;
     
-    if (parts.length >= 2) {
-      // Standard first/last split
-      searchBodies.push({
-        variant: writerName,
+    const parts = writerName.trim().split(/\s+/).filter(p => p.length > 0);
+    if (parts.length === 0) continue;
+    
+    // Build writers array for MLC lookup
+    const writers = parts.length >= 2 
+      ? [{ writerFirstName: parts[0], writerLastName: parts.slice(1).join(' ') }]
+      : [{ writerFirstName: '', writerLastName: parts[0] }];
+    
+    try {
+      console.log(`MLC lookup for: "${writerName}"`);
+      
+      const { data, error } = await supabase.functions.invoke('enhanced-mlc-lookup', {
         body: {
-          writers: [{
-            writerFirstName: parts[0],
-            writerLastName: parts.slice(1).join(' ')
-          }]
+          writers,
+          searchType: 'catalog_discovery',
+          enhanced: true,
+          includeRecordings: true
         }
       });
-    } else if (parts.length === 1 && parts[0].length > 0) {
-      // Single name - use as lastName (required field)
-      searchBodies.push({
-        variant: writerName,
-        body: {
-          writers: [{
-            writerFirstName: '',
-            writerLastName: parts[0]
-          }]
-        }
-      });
+      
+      if (error) {
+        console.error(`MLC lookup error for "${writerName}":`, error.message);
+        continue;
+      }
+      
+      if (!data?.found) {
+        console.log(`MLC: No results for "${writerName}"`);
+        continue;
+      }
+      
+      // Process works from the response
+      const works = data.works || [];
+      console.log(`MLC found ${works.length} works for "${writerName}"`);
+      
+      for (const work of works) {
+        const songCode = work.mlcSongCode || work.mlcsongCode;
+        if (songCode && seenSongCodes.has(songCode)) continue;
+        if (songCode) seenSongCodes.add(songCode);
+        
+        allWorks.push({
+          title: work.primaryTitle || work.title || work.workTitle,
+          mlcSongCode: songCode,
+          iswc: work.iswc,
+          writers: work.writers || [],
+          publishers: work.publishers || [],
+          recordings: work.recordings || [],
+          source: 'mlc'
+        });
+        
+        if (allWorks.length >= maxWorks) break;
+      }
+      
+      // If we got a good number of results, stop searching more variants
+      if (allWorks.length >= 50) {
+        console.log(`MLC: Found sufficient works (${allWorks.length}), stopping variant search`);
+        break;
+      }
+      
+    } catch (err) {
+      console.error(`MLC edge function call failed for "${writerName}":`, err);
     }
   }
   
-  // Dedupe search bodies
-  const seen = new Set<string>();
-  const uniqueSearches = searchBodies.filter(s => {
-    const key = JSON.stringify(s.body);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-  
-  for (const { variant, body } of uniqueSearches) {
-    console.log(`MLC search for writer: "${variant}" with body:`, JSON.stringify(body));
-    
-    let page = 1;
-    let hasMore = true;
-    let foundAny = false;
-    
-    while (hasMore && page <= maxPages) {
-      try {
-        const response = await fetch('https://public-api.themlc.com/search/songcode', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ ...body, page, pageSize: 50 }),
-          });
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.log(`MLC search failed (page ${page}):`, response.status, errorText.substring(0, 100));
-            break;
-          }
-          
-          const songs = await response.json();
-          console.log(`MLC page ${page}: ${songs?.length || 0} songs`);
-          
-          if (!songs || songs.length === 0) {
-            hasMore = false;
-            break;
-          }
-          
-          foundAny = true;
-          
-          for (const song of songs) {
-            const songCode = song.mlcSongCode || song.mlcsongCode;
-            if (songCode && !seenSongCodes.has(songCode)) {
-              seenSongCodes.add(songCode);
-              allWorks.push({
-                title: song.primaryTitle || song.title,
-                mlcSongCode: songCode,
-                iswc: song.iswc,
-                writers: song.writers || [],
-                publishers: song.publishers || [],
-                source: 'mlc'
-              });
-            }
-          }
-          
-          if (songs.length < 50) {
-            hasMore = false;
-          } else {
-            page++;
-            await new Promise(r => setTimeout(r, 300)); // Rate limiting
-          }
-        } catch (error) {
-          console.error(`MLC search error (page ${page}):`, error);
-          break;
-        }
-      }
-      
-      // If this search worked, stop trying more
-      if (foundAny && allWorks.length > 50) break;
-    }
-  
-  console.log(`MLC total unique works found: ${allWorks.length}`);
+  console.log(`MLC total unique works found via edge function: ${allWorks.length}`);
   return allWorks;
 }
 
@@ -462,11 +395,12 @@ serve(async (req) => {
     }
     console.log(`MusicBrainz total works: ${mbWorks.length}`);
 
-    // Fetch MLC works (NEW - comprehensive catalog from MLC)
+    // Fetch MLC works via the enhanced-mlc-lookup edge function
     let mlcWorks: any[] = [];
-    const mlcToken = await getMlcAccessToken();
-    if (mlcToken) {
-      mlcWorks = await searchMlcByWriterName(mlcToken, nameVariants, 10);
+    try {
+      mlcWorks = await searchMlcViaEdgeFunction(nameVariants, effectiveMaxSongs);
+    } catch (err) {
+      console.error('MLC lookup failed:', err);
     }
     console.log(`MLC total works: ${mlcWorks.length}`);
 
