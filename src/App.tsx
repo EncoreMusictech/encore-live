@@ -51,6 +51,7 @@ import RecoveryRedirect from "@/components/RecoveryRedirect";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import TrialSignup from "./pages/TrialSignup";
 import NAMMPitchPage from "./pages/NAMMPitchPage";
+import CatalogAuditPresentationPage from "./pages/CatalogAuditPresentationPage";
 import PaymentSetup from "./pages/PaymentSetup";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import { DisableLeavePrompt } from "@/components/DisableLeavePrompt";
@@ -174,6 +175,7 @@ const App = () => {
                              <Route path="/contact" element={<ContactPage />} />
                              <Route path="/documentation" element={<DocumentationPage />} />
                              <Route path="/namm-pitch" element={<NAMMPitchPage />} />
+                             <Route path="/catalog-audit-presentation" element={<CatalogAuditPresentationPage />} />
                               <Route path="/whitelabel" element={
                                 <ProtectedRoute>
                                   <ErrorBoundary>
