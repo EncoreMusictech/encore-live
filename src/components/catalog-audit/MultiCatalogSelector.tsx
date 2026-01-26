@@ -96,7 +96,7 @@ export function MultiCatalogSelector() {
     if (data) {
       // Navigate to multi-catalog presentation with the search IDs
       const searchIds = selectedCatalogs.map(c => c.searchId).join(',');
-      navigate(`/catalog-audit-presentation?multi=true&searchIds=${searchIds}`);
+      navigate(`/catalog-audit?multi=true&searchIds=${searchIds}`);
     }
   };
 
@@ -104,7 +104,7 @@ export function MultiCatalogSelector() {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     setIsSearching(true);
-    navigate(`/catalog-audit-presentation?artist=${encodeURIComponent(searchQuery.trim())}`);
+    navigate(`/catalog-audit?artist=${encodeURIComponent(searchQuery.trim())}`);
   };
 
   const isSelected = (catalogId: string) => selectedCatalogs.some(c => c.searchId === catalogId);
@@ -319,7 +319,7 @@ export function MultiCatalogSelector() {
         <div className="text-center mt-4">
           <Button 
             variant="link" 
-            onClick={() => navigate('/catalog-audit-presentation')}
+            onClick={() => navigate('/catalog-audit')}
           >
             Or search for a single artist instead
           </Button>
