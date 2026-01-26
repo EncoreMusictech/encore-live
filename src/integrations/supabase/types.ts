@@ -421,6 +421,53 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_audit_presentations: {
+        Row: {
+          artist_name: string
+          created_at: string
+          generated_at: string | null
+          id: string
+          last_presented_at: string | null
+          pdf_url: string | null
+          presentation_data: Json
+          search_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          artist_name: string
+          created_at?: string
+          generated_at?: string | null
+          id?: string
+          last_presented_at?: string | null
+          pdf_url?: string | null
+          presentation_data?: Json
+          search_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          artist_name?: string
+          created_at?: string
+          generated_at?: string | null
+          id?: string
+          last_presented_at?: string | null
+          pdf_url?: string | null
+          presentation_data?: Json
+          search_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_audit_presentations_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "song_catalog_searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalog_items: {
         Row: {
           artist: string

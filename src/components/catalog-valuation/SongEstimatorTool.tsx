@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Loader2, Music, AlertTriangle, RefreshCw, Trash2, Shield, CheckCircle, Database } from 'lucide-react';
+import { Search, Loader2, Music, AlertTriangle, RefreshCw, Trash2, Shield, CheckCircle, Database, Presentation } from 'lucide-react';
 import { useSongEstimator } from '@/hooks/useSongEstimator';
 import { SongMetadataView } from './SongMetadataView';
 import { PipelineEstimateView } from './PipelineEstimateView';
 
 export function SongEstimatorTool() {
+  const navigate = useNavigate();
   const [songwriterName, setSongwriterName] = useState('');
   const [selectedSearchId, setSelectedSearchId] = useState<string | null>(null);
   
@@ -183,6 +185,20 @@ export function SongEstimatorTool() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/catalog-audit-presentation?searchId=${search.id}`);
+                        }}
+                        disabled={search.search_status !== 'completed'}
+                        className="text-primary hover:text-primary gap-1"
+                        title="Generate Audit Presentation"
+                      >
+                        <Presentation className="h-3 w-3" />
+                        Present
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
