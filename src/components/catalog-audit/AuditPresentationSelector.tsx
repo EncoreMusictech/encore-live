@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Music, Play, Calendar, Loader2 } from 'lucide-react';
+import { Search, Music, Play, Calendar, Loader2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -64,6 +64,10 @@ export function AuditPresentationSelector() {
     navigate(`/catalog-audit-presentation?searchId=${searchId}`);
   };
 
+  const handleMultiCatalogMode = () => {
+    navigate('/catalog-audit-presentation?mode=multi');
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-8">
       <motion.div 
@@ -94,7 +98,7 @@ export function AuditPresentationSelector() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.4 }}
         >
-          <form onSubmit={handleSearch} className="flex gap-3 mb-8">
+          <form onSubmit={handleSearch} className="flex gap-3 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
@@ -121,6 +125,16 @@ export function AuditPresentationSelector() {
               )}
             </Button>
           </form>
+
+          {/* Multi-Catalog Button */}
+          <Button 
+            variant="outline" 
+            className="w-full h-12 mb-8"
+            onClick={handleMultiCatalogMode}
+          >
+            <Users className="w-5 h-5 mr-2" />
+            Audit Multiple Catalogs
+          </Button>
         </motion.div>
 
         {/* Divider */}
