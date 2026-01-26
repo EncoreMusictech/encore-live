@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CatalogAuditPresentation } from '@/components/catalog-audit/CatalogAuditPresentation';
+import { AuditPresentationSelector } from '@/components/catalog-audit/AuditPresentationSelector';
 import { useCatalogAuditPresentation } from '@/hooks/useCatalogAuditPresentation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -15,12 +16,18 @@ export default function CatalogAuditPresentationPage() {
   const searchId = searchParams.get('searchId');
   const artistName = searchParams.get('artist');
   
+  // Check if we have params - if not, show the selector
+  const hasParams = Boolean(searchId || artistName);
+  
   const { 
     loading, 
     error, 
     presentationData, 
     savePresentation 
-  } = useCatalogAuditPresentation(searchId || undefined, artistName || undefined);
+  } = useCatalogAuditPresentation(
+    hasParams ? (searchId || undefined) : undefined, 
+    hasParams ? (artistName || undefined) : undefined
+  );
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
@@ -52,6 +59,11 @@ export default function CatalogAuditPresentationPage() {
       setIsGeneratingPDF(false);
     }
   };
+
+  // Show selector when no params provided
+  if (!hasParams) {
+    return <AuditPresentationSelector />;
+  }
 
   // Show loading state
   if (loading) {
