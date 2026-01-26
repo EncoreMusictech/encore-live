@@ -11,13 +11,15 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const sharedSecret = Deno.env.get('ASSISTANT_SHARED_SECRET') || '';
 const perplexityKey = Deno.env.get('PERPLEXITY_API_KEY') || '';
+const mlcUsername = Deno.env.get('MLC_USERNAME') || '';
+const mlcPassword = Deno.env.get('MLC_PASSWORD') || '';
 
-// Keep deterministic discovery fast to avoid Edge Function timeouts.
-const DEFAULT_MAX_SONGS = 50;
-const MAX_SONGS_HARD_CAP = 75;
-const WORK_DETAILS_HARD_CAP = 25;
-const PROCESS_TIME_BUDGET_MS = 45_000;
-const FETCH_TIMEOUT_MS = 8_000;
+// INCREASED CAPS for comprehensive catalog discovery
+const DEFAULT_MAX_SONGS = 150;
+const MAX_SONGS_HARD_CAP = 500;
+const WORK_DETAILS_HARD_CAP = 50;
+const PROCESS_TIME_BUDGET_MS = 90_000; // Increased to 90 seconds
+const FETCH_TIMEOUT_MS = 10_000;
 
 const supabase = createClient(supabaseUrl, serviceKey);
 
@@ -26,6 +28,52 @@ function json(data: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
+}
+
+// Generate writer name variants for comprehensive searching
+function generateNameVariants(name: string): string[] {
+  const variants = new Set<string>();
+  const normalized = name.trim();
+  variants.add(normalized);
+  
+  // Common patterns: "Usher" -> "Usher Raymond", "Usher Raymond IV"
+  const parts = normalized.split(/\s+/);
+  
+  // Add as-is
+  variants.add(normalized.toLowerCase());
+  variants.add(normalized.toUpperCase());
+  
+  // If single name (stage name), try common full name patterns
+  if (parts.length === 1) {
+    // For known artists, add full legal names
+    const knownAliases: Record<string, string[]> = {
+      'usher': ['usher raymond', 'usher raymond iv', 'usher terrence raymond', 'usher terrence raymond iv'],
+      'beyonce': ['beyoncé knowles', 'beyonce knowles', 'beyoncé knowles-carter'],
+      'rihanna': ['robyn fenty', 'robyn rihanna fenty'],
+      'drake': ['aubrey graham', 'aubrey drake graham'],
+      'eminem': ['marshall mathers', 'marshall bruce mathers iii'],
+      'madonna': ['madonna ciccone', 'madonna louise ciccone'],
+      'prince': ['prince rogers nelson'],
+      'cher': ['cherilyn sarkisian'],
+    };
+    const lower = normalized.toLowerCase();
+    if (knownAliases[lower]) {
+      knownAliases[lower].forEach(v => variants.add(v));
+    }
+  }
+  
+  // If multi-part name, generate variations
+  if (parts.length >= 2) {
+    // Last, First format
+    variants.add(`${parts[parts.length - 1]}, ${parts.slice(0, -1).join(' ')}`);
+    // First Last
+    variants.add(parts.join(' '));
+    // First initial + Last
+    variants.add(`${parts[0][0]}. ${parts.slice(1).join(' ')}`);
+  }
+  
+  // Remove empty strings and duplicates
+  return Array.from(variants).filter(v => v.length > 0);
 }
 
 async function fetchJSON(url: string, retries = 3, timeoutMs = FETCH_TIMEOUT_MS): Promise<any> {
@@ -82,7 +130,7 @@ async function findArtistMBID(writerName: string): Promise<string | null> {
   }
 }
 
-async function fetchAllWorksByArtist(artistId: string, max = 200): Promise<any[]> {
+async function fetchAllWorksByArtist(artistId: string, max = 500): Promise<any[]> {
   // MusicBrainz "work" browse by artist isn't reliable; prefer search using arid and paginate
   const results: any[] = [];
   const seen = new Set<string>();
@@ -101,16 +149,20 @@ async function fetchAllWorksByArtist(artistId: string, max = 200): Promise<any[]
         }
       }
       const total = data?.['work-count'] ?? works.length;
+      console.log(`MusicBrainz works: fetched ${results.length}/${total} (offset ${offset})`);
       if (!works.length || results.length >= total) break;
       offset += works.length;
+      // Small delay to respect rate limits
+      await new Promise(r => setTimeout(r, 300));
     } catch (_e) {
+      console.error('MusicBrainz pagination error:', _e);
       break;
     }
   }
   return results;
 }
 
-async function searchWorksByWriterName(writerName: string, limit = 50): Promise<any[]> {
+async function searchWorksByWriterName(writerName: string, limit = 200): Promise<any[]> {
   const results: any[] = [];
   const seen = new Set<string>();
   const queries = [
@@ -135,6 +187,7 @@ async function searchWorksByWriterName(writerName: string, limit = 50): Promise<
         const total = data?.['work-count'] ?? works.length;
         if (!works.length || (offset + works.length) >= total) break;
         offset += works.length;
+        await new Promise(r => setTimeout(r, 200));
       } catch (_e) {
         break;
       }
@@ -201,6 +254,149 @@ async function callProAgent(title: string, writerName: string) {
   }
 }
 
+// MLC API Integration for comprehensive catalog discovery
+async function getMlcAccessToken(): Promise<string | null> {
+  if (!mlcUsername || !mlcPassword) {
+    console.log('MLC credentials not configured');
+    return null;
+  }
+  
+  try {
+    console.log('Authenticating with MLC API...');
+    const response = await fetch('https://public-api.themlc.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: mlcUsername, password: mlcPassword }),
+    });
+    
+    if (!response.ok) {
+      console.error('MLC auth failed:', response.status);
+      return null;
+    }
+    
+    const data = await response.json();
+    console.log('MLC authentication successful');
+    return data.idToken || null;
+  } catch (error) {
+    console.error('MLC auth error:', error);
+    return null;
+  }
+}
+
+async function searchMlcByWriterName(token: string, writerVariants: string[], maxPages = 10): Promise<any[]> {
+  const allWorks: any[] = [];
+  const seenSongCodes = new Set<string>();
+  
+  // Build search bodies with valid first/last name combinations only
+  // MLC API requires at least lastName to be non-empty
+  const searchBodies: Array<{ variant: string; body: any }> = [];
+  
+  for (const writerName of writerVariants.slice(0, 5)) {
+    const parts = writerName.trim().split(/\s+/).filter(p => p.length > 0);
+    
+    if (parts.length >= 2) {
+      // Standard first/last split
+      searchBodies.push({
+        variant: writerName,
+        body: {
+          writers: [{
+            writerFirstName: parts[0],
+            writerLastName: parts.slice(1).join(' ')
+          }]
+        }
+      });
+    } else if (parts.length === 1 && parts[0].length > 0) {
+      // Single name - use as lastName (required field)
+      searchBodies.push({
+        variant: writerName,
+        body: {
+          writers: [{
+            writerFirstName: '',
+            writerLastName: parts[0]
+          }]
+        }
+      });
+    }
+  }
+  
+  // Dedupe search bodies
+  const seen = new Set<string>();
+  const uniqueSearches = searchBodies.filter(s => {
+    const key = JSON.stringify(s.body);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  
+  for (const { variant, body } of uniqueSearches) {
+    console.log(`MLC search for writer: "${variant}" with body:`, JSON.stringify(body));
+    
+    let page = 1;
+    let hasMore = true;
+    let foundAny = false;
+    
+    while (hasMore && page <= maxPages) {
+      try {
+        const response = await fetch('https://public-api.themlc.com/search/songcode', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ...body, page, pageSize: 50 }),
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.log(`MLC search failed (page ${page}):`, response.status, errorText.substring(0, 100));
+            break;
+          }
+          
+          const songs = await response.json();
+          console.log(`MLC page ${page}: ${songs?.length || 0} songs`);
+          
+          if (!songs || songs.length === 0) {
+            hasMore = false;
+            break;
+          }
+          
+          foundAny = true;
+          
+          for (const song of songs) {
+            const songCode = song.mlcSongCode || song.mlcsongCode;
+            if (songCode && !seenSongCodes.has(songCode)) {
+              seenSongCodes.add(songCode);
+              allWorks.push({
+                title: song.primaryTitle || song.title,
+                mlcSongCode: songCode,
+                iswc: song.iswc,
+                writers: song.writers || [],
+                publishers: song.publishers || [],
+                source: 'mlc'
+              });
+            }
+          }
+          
+          if (songs.length < 50) {
+            hasMore = false;
+          } else {
+            page++;
+            await new Promise(r => setTimeout(r, 300)); // Rate limiting
+          }
+        } catch (error) {
+          console.error(`MLC search error (page ${page}):`, error);
+          break;
+        }
+      }
+      
+      // If this search worked, stop trying more
+      if (foundAny && allWorks.length > 50) break;
+    }
+  
+  console.log(`MLC total unique works found: ${allWorks.length}`);
+  return allWorks;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
@@ -213,6 +409,10 @@ serve(async (req) => {
 
     const requestedMaxSongs = Number(maxSongs) || DEFAULT_MAX_SONGS;
     const effectiveMaxSongs = Math.min(MAX_SONGS_HARD_CAP, Math.max(1, requestedMaxSongs));
+    
+    // Generate name variants for comprehensive searching
+    const nameVariants = generateNameVariants(writerName);
+    console.log(`Searching with name variants: ${nameVariants.join(', ')}`);
 
     // Mark search as processing - handle both authenticated and anonymous searches
     const updateQuery = supabase
@@ -227,7 +427,7 @@ serve(async (req) => {
       await updateQuery.is('user_id', null);
     }
 
-    // Discover works
+    // Discover works from MusicBrainz
     const artistId = await findArtistMBID(writerName);
     let artistDetails: any = null;
     let primaryTerritory = 'Worldwide';
@@ -242,13 +442,33 @@ serve(async (req) => {
       }
     }
 
-    let works: any[] = [];
+    let mbWorks: any[] = [];
     if (artistId) {
-      works = await fetchAllWorksByArtist(artistId, Math.min(250, effectiveMaxSongs * 4));
+      mbWorks = await fetchAllWorksByArtist(artistId, Math.min(500, effectiveMaxSongs * 2));
     }
-    if (!works.length) {
-      works = await searchWorksByWriterName(writerName, Math.min(250, effectiveMaxSongs * 4));
+    if (mbWorks.length < 50) {
+      // Try alternate name searches
+      for (const variant of nameVariants.slice(0, 3)) {
+        const additionalWorks = await searchWorksByWriterName(variant, 100);
+        const existing = new Set(mbWorks.map(w => w.id));
+        for (const w of additionalWorks) {
+          if (!existing.has(w.id)) {
+            mbWorks.push(w);
+            existing.add(w.id);
+          }
+        }
+        if (mbWorks.length >= 100) break;
+      }
     }
+    console.log(`MusicBrainz total works: ${mbWorks.length}`);
+
+    // Fetch MLC works (NEW - comprehensive catalog from MLC)
+    let mlcWorks: any[] = [];
+    const mlcToken = await getMlcAccessToken();
+    if (mlcToken) {
+      mlcWorks = await searchMlcByWriterName(mlcToken, nameVariants, 10);
+    }
+    console.log(`MLC total works: ${mlcWorks.length}`);
 
     // Supplement with PRO repertoires (ASCAP, BMI, SESAC) via Perplexity to catch missing works
     let proWorks: Array<{ title: string; iswc?: string; writers?: any[]; publishers?: any[]; source: 'ascap' | 'bmi' | 'sesac' }> = [];
@@ -258,19 +478,24 @@ serve(async (req) => {
         const fetchProDomain = async (domain: 'ascap' | 'bmi' | 'sesac') => {
           const model = 'sonar';
           const site = domain === 'ascap' ? 'ascap.com' : (domain === 'bmi' ? 'bmi.com' : 'sesac.com');
+          
+          // Search with all name variants
+          const writerVariantsStr = nameVariants.slice(0, 3).map(v => `"${v}"`).join(' OR ');
+          
           const system = `You extract structured data ONLY from the official ${domain.toUpperCase()} repertoire database at ${site}. 
-CRITICAL: Only return works where "${writerName}" is listed EXACTLY as a writer/composer. Do NOT include works by similarly named writers.
+CRITICAL: Only return works where any of the following names appears EXACTLY as a writer/composer: ${nameVariants.slice(0, 3).join(', ')}. Do NOT include works by similarly named writers.
 Return STRICT JSON only. Shape: {"works":[{"title":"string","iswc":"string?","writers":[{"name":"string","ipi":"string?","share":number?}],"publishers":[{"name":"string","share":number?}]}]}. 
-If no works are found for this exact writer name, return {"works":[]}.`;
+If no works are found for this exact writer name, return {"works":[]}.
+IMPORTANT: Return as many works as possible, up to 50 works.`;
           const body = {
             model,
             messages: [
               { role: 'system', content: system },
-              { role: 'user', content: `Search the ${domain.toUpperCase()} repertoire at ${site} for works written by EXACTLY "${writerName}". Only include works where this exact name appears as a credited writer. Return JSON with the works array. If no works found for this exact name, return {"works":[]}` }
+              { role: 'user', content: `Search the ${domain.toUpperCase()} repertoire at ${site} for ALL works written by ${writerVariantsStr}. Only include works where this exact name appears as a credited writer. Return JSON with up to 50 works. If no works found for this exact name, return {"works":[]}` }
             ],
             temperature: 0.0,
             top_p: 0.9,
-            max_tokens: 2000,
+            max_tokens: 4000,
             search_domain_filter: [site],
           } as any;
           console.log(`Fetching ${domain.toUpperCase()} repertoire for "${writerName}"...`);
@@ -297,7 +522,7 @@ If no works are found for this exact writer name, return {"works":[]}.`;
           }
           const works = Array.isArray(parsed?.works) ? parsed.works : [];
           console.log(`${domain.toUpperCase()} found ${works.length} works`);
-          return works.map((w: any) => ({ ...w, source: domain })).slice(0, effectiveMaxSongs * 2);
+          return works.map((w: any) => ({ ...w, source: domain }));
         };
         const [ascap, bmi, sesac] = await Promise.all([
           fetchProDomain('ascap'),
@@ -313,11 +538,36 @@ If no works are found for this exact writer name, return {"works":[]}.`;
       console.log('Skipping PRO lookup - no Perplexity API key');
     }
 
-    // Build unified candidate list with PRO-first merging
-    const candidates = new Map<string, { id?: string; title: string; sources: Array<'musicbrainz' | 'ascap' | 'bmi' | 'sesac'>; iswc?: string; proDetails?: Record<string, any> }>();
+    // Build unified candidate list with MLC-first, then PRO, then MusicBrainz
+    const candidates = new Map<string, { 
+      id?: string; 
+      title: string; 
+      sources: Array<'musicbrainz' | 'ascap' | 'bmi' | 'sesac' | 'mlc'>; 
+      iswc?: string; 
+      mlcSongCode?: string;
+      proDetails?: Record<string, any>;
+      mlcDetails?: any;
+    }>();
 
-    // Seed with MusicBrainz discoveries
-    for (const w of works) {
+    // Seed with MLC works (most authoritative for mechanical)
+    for (const w of mlcWorks) {
+      const title = (w.title || '').trim();
+      if (!title) continue;
+      const key = w.iswc ? `iswc:${w.iswc}` : `title:${title.toLowerCase()}`;
+      if (!candidates.has(key)) {
+        candidates.set(key, { 
+          title, 
+          sources: ['mlc'], 
+          iswc: w.iswc || undefined,
+          mlcSongCode: w.mlcSongCode,
+          mlcDetails: { writers: w.writers, publishers: w.publishers },
+          proDetails: {}
+        });
+      }
+    }
+
+    // Add MusicBrainz discoveries
+    for (const w of mbWorks) {
       const title = (w.title || '').trim();
       if (!title) continue;
       const mbIswc = (w.iswc || (w.iswcs && w.iswcs[0]));
@@ -328,6 +578,7 @@ If no works are found for this exact writer name, return {"works":[]}.`;
         const existing = candidates.get(key)!;
         if (!existing.sources.includes('musicbrainz')) existing.sources.push('musicbrainz');
         if (!existing.iswc && mbIswc) existing.iswc = mbIswc;
+        if (!existing.id && w.id) existing.id = w.id;
       }
     }
 
@@ -355,14 +606,22 @@ If no works are found for this exact writer name, return {"works":[]}.`;
       }
     }
 
+    console.log(`Total unique candidates after merging: ${candidates.size}`);
+
     // Keep compatibility with later code
     const byTitle = candidates as any;
 
     const selected = Array.from(byTitle.values())
       .sort((a: any, b: any) => {
-        const proCountA = Array.isArray(a.sources) ? a.sources.filter((s: string) => s !== 'musicbrainz').length : 0;
-        const proCountB = Array.isArray(b.sources) ? b.sources.filter((s: string) => s !== 'musicbrainz').length : 0;
+        // Prioritize: MLC > PRO > MusicBrainz only
+        const hasMlcA = a.sources?.includes('mlc') ? 1 : 0;
+        const hasMlcB = b.sources?.includes('mlc') ? 1 : 0;
+        if (hasMlcA !== hasMlcB) return hasMlcB - hasMlcA;
+        
+        const proCountA = Array.isArray(a.sources) ? a.sources.filter((s: string) => ['ascap', 'bmi', 'sesac'].includes(s)).length : 0;
+        const proCountB = Array.isArray(b.sources) ? b.sources.filter((s: string) => ['ascap', 'bmi', 'sesac'].includes(s)).length : 0;
         if (proCountA !== proCountB) return proCountB - proCountA;
+        
         const iswcA = a.iswc ? 1 : 0, iswcB = b.iswc ? 1 : 0;
         if (iswcA !== iswcB) return iswcB - iswcA;
         return 0;
@@ -376,12 +635,12 @@ If no works are found for this exact writer name, return {"works":[]}.`;
     for (const w of selected) {
       // Hard stop to avoid request-level timeouts
       if (Date.now() - startedAt > PROCESS_TIME_BUDGET_MS) {
-        console.log(`Time budget reached (${PROCESS_TIME_BUDGET_MS}ms). Returning partial results.`);
+        console.log(`Time budget reached (${PROCESS_TIME_BUDGET_MS}ms). Returning partial results with ${rows.length} works.`);
         break;
       }
 
       // Light throttling (we still hit external APIs below)
-      await new Promise((res) => setTimeout(res, 100));
+      await new Promise((res) => setTimeout(res, 50));
 
       const work = w as any; // Type assertion for work object
 
@@ -404,16 +663,35 @@ If no works are found for this exact writer name, return {"works":[]}.`;
       }
 
       const proDetails = (work.proDetails || {}) as Record<string, any>;
+      const mlcDetails = work.mlcDetails || null;
       const proOrder = ['ascap', 'bmi', 'sesac'];
       const chosen = proOrder.find((k) => !!proDetails[k]) || null;
       const chosenDetails = chosen ? proDetails[chosen] : null;
 
-      // Co-writers and publishers from PRO first, fallback to MB
-      const coWritersPRO: string[] = chosenDetails?.writers?.map((x: any) => x?.name).filter(Boolean) || [];
-      const coWriters = (coWritersPRO.length ? coWritersPRO : coWritersMB);
+      // Co-writers: MLC > PRO > MusicBrainz
+      let coWriters: string[] = [];
+      if (mlcDetails?.writers?.length) {
+        coWriters = mlcDetails.writers.map((x: any) => {
+          const first = x.writerFirstName || '';
+          const last = x.writerLastName || '';
+          return `${first} ${last}`.trim() || x.name || '';
+        }).filter(Boolean);
+      } else if (chosenDetails?.writers?.length) {
+        coWriters = chosenDetails.writers.map((x: any) => x?.name).filter(Boolean);
+      } else {
+        coWriters = coWritersMB;
+      }
 
+      // Publishers: MLC > PRO
       const publishersObj: Record<string, number> = {};
-      if (chosenDetails?.publishers?.length) {
+      if (mlcDetails?.publishers?.length) {
+        for (const p of mlcDetails.publishers) {
+          const name = p.publisherName || p.name;
+          if (!name) continue;
+          const share = Array.isArray(p.collectionShare) ? p.collectionShare[0] : (typeof p.share === 'number' ? p.share : 0);
+          publishersObj[name] = share;
+        }
+      } else if (chosenDetails?.publishers?.length) {
         for (const p of chosenDetails.publishers) {
           if (!p?.name) continue;
           const share = typeof p.share === 'number' ? p.share : 0;
@@ -431,16 +709,22 @@ If no works are found for this exact writer name, return {"works":[]}.`;
 
       // Try PRO agent for authoritative verification (optional)
       let proData: any = null;
-      if (sharedSecret) {
+      if (sharedSecret && workDetailsCalls < WORK_DETAILS_HARD_CAP) {
         proData = await callProAgent(title, writerName);
         if (proData?.iswc && !finalISWC) finalISWC = proData.iswc;
       }
 
-      // Estimated splits prefer chosen PRO details, fallback to agent
+      // Estimated splits prefer MLC > PRO > agent
       let estimatedSplits: Record<string, number> = {};
-      const fromChosenSplits = Array.isArray(chosenDetails?.writers) ? chosenDetails.writers : null;
-      if (fromChosenSplits) {
-        estimatedSplits = fromChosenSplits.reduce((acc: any, ww: any) => {
+      if (mlcDetails?.writers?.length) {
+        for (const ww of mlcDetails.writers) {
+          const name = `${ww.writerFirstName || ''} ${ww.writerLastName || ''}`.trim() || ww.name;
+          if (name && typeof ww.share === 'number') {
+            estimatedSplits[name] = ww.share;
+          }
+        }
+      } else if (chosenDetails?.writers?.length) {
+        estimatedSplits = chosenDetails.writers.reduce((acc: any, ww: any) => {
           if (ww?.name) acc[ww.name] = typeof ww.share === 'number' ? ww.share : 0;
           return acc;
         }, {});
@@ -456,6 +740,7 @@ If no works are found for this exact writer name, return {"works":[]}.`;
         ASCAP: !!proDetails.ascap || !!(proData?.sources?.ascap?.found ?? proData?.ascap),
         BMI: !!proDetails.bmi || !!(proData?.sources?.bmi?.found ?? proData?.bmi),
         SESAC: !!proDetails.sesac || !!(proData?.sources?.sesac?.found ?? proData?.sesac),
+        MLC: work.sources?.includes('mlc') || !!work.mlcSongCode,
       };
 
       // Gap detection
@@ -465,7 +750,9 @@ If no works are found for this exact writer name, return {"works":[]}.`;
       // MB author present but no PRO registration
       const hasMB = Array.isArray(work.sources) && work.sources.includes('musicbrainz');
       const hasAnyPRO = proFlags.ASCAP || proFlags.BMI || proFlags.SESAC;
+      const hasMLC = proFlags.MLC;
       if (hasMB && !hasAnyPRO) registration_gaps.push('unregistered_in_pros');
+      if (hasMB && !hasMLC && !hasAnyPRO) registration_gaps.push('mlc_unregistered');
 
       // Conflicts across PRO sources
       const presentPROs = proOrder.filter((k) => !!proDetails[k]);
@@ -496,8 +783,13 @@ If no works are found for this exact writer name, return {"works":[]}.`;
         if (!pubsAllEqual) registration_gaps.push('conflicting_publishers');
       }
 
-      const metadataScore = finalISWC ? 0.9 : 0.6;
-      const verification_status = hasAnyPRO ? 'pro_verified' : 'discovered';
+      // Higher metadata score for MLC-verified works
+      let metadataScore = 0.5;
+      if (hasMLC) metadataScore = 0.95;
+      else if (finalISWC) metadataScore = 0.85;
+      else if (hasAnyPRO) metadataScore = 0.7;
+      
+      const verification_status = hasMLC ? 'mlc_verified' : (hasAnyPRO ? 'pro_verified' : 'discovered');
 
       rows.push({
         search_id: searchId,
@@ -506,14 +798,20 @@ If no works are found for this exact writer name, return {"works":[]}.`;
         songwriter_name: writerName,
         co_writers: coWriters || [],
         publishers: Object.keys(publishersObj).length ? publishersObj : (Array.isArray(proData?.publishers) ? proData.publishers.reduce((acc: any, p: any) => { if (p?.name) acc[p.name] = typeof p.share === 'number' ? p.share : 0; return acc; }, {}) : {}),
-        pro_registrations: { ...proFlags, merged: { pro_details: proDetails, agent: proData || null } },
+        pro_registrations: { ...proFlags, merged: { pro_details: proDetails, mlc_details: mlcDetails, agent: proData || null } },
         iswc: finalISWC,
         estimated_splits: estimatedSplits,
         registration_gaps,
         metadata_completeness_score: metadataScore,
         verification_status,
         last_verified_at: new Date().toISOString(),
-        source_data: { source: Array.isArray(work.sources) ? (work.sources[0] || 'merged') : 'merged', work_id: work.id || null, primary_territory: primaryTerritory }
+        source_data: { 
+          source: Array.isArray(work.sources) ? (work.sources[0] || 'merged') : 'merged', 
+          sources: work.sources || [],
+          work_id: work.id || null, 
+          mlc_song_code: work.mlcSongCode || null,
+          primary_territory: primaryTerritory 
+        }
       });
     }
 
@@ -529,7 +827,8 @@ If no works are found for this exact writer name, return {"works":[]}.`;
 
     const metaCompleteCount = rows.filter((r) => (r.metadata_completeness_score ?? 0) >= 0.7).length;
     const iswcCount = rows.filter((r) => !!r.iswc).length;
-    const proVerifiedCount = rows.filter((r) => r.verification_status === 'pro_verified').length;
+    const proVerifiedCount = rows.filter((r) => r.verification_status === 'pro_verified' || r.verification_status === 'mlc_verified').length;
+    const mlcVerifiedCount = rows.filter((r) => r.verification_status === 'mlc_verified').length;
     const verificationRate = insertedCount ? Math.round((proVerifiedCount / insertedCount) * 100) : 0;
     const descriptor = verificationRate >= 50 ? 'strong' : verificationRate >= 20 ? 'moderate' : 'modest';
 
@@ -540,11 +839,24 @@ If no works are found for this exact writer name, return {"works":[]}.`;
     };
 
     const pipelineSummary = {
-      summary: `We discovered ${insertedCount} songs for ${writerName}. ${metaCompleteCount} have strong metadata and ${iswcCount} include ISWC codes. Registration checks matched ${proVerifiedCount} songs across PROs. Based on current data, near-term collections outlook appears ${descriptor}.`,
-      counts: { total: insertedCount, meta_complete: metaCompleteCount, iswc: iswcCount, pro_verified: proVerifiedCount, verification_rate: verificationRate }
+      summary: `We discovered ${insertedCount} songs for ${writerName}. ${mlcVerifiedCount} verified via MLC, ${metaCompleteCount} have strong metadata, and ${iswcCount} include ISWC codes. Registration checks matched ${proVerifiedCount} songs across PROs and MLC. Based on current data, near-term collections outlook appears ${descriptor}.`,
+      counts: { 
+        total: insertedCount, 
+        meta_complete: metaCompleteCount, 
+        iswc: iswcCount, 
+        pro_verified: proVerifiedCount, 
+        mlc_verified: mlcVerifiedCount,
+        verification_rate: verificationRate,
+        sources: {
+          musicbrainz: mbWorks.length,
+          mlc: mlcWorks.length,
+          pro: proWorks.length
+        }
+      }
     };
 
-    await supabase
+    // Update search record - handle null userId for anonymous searches
+    const finalUpdate = supabase
       .from('song_catalog_searches')
       .update({
         total_songs_found: insertedCount,
@@ -554,10 +866,28 @@ If no works are found for this exact writer name, return {"works":[]}.`;
         search_status: 'completed',
         ai_research_summary: { source: 'deterministic', discovered: insertedCount, career_overview: careerOverview, pipeline_summary: pipelineSummary }
       })
-      .eq('id', searchId)
-      .eq('user_id', userId);
+      .eq('id', searchId);
+    
+    if (userId) {
+      await finalUpdate.eq('user_id', userId);
+    } else {
+      await finalUpdate.is('user_id', null);
+    }
 
-    return json({ success: true, discovered: insertedCount, meta_complete: metaCompleteCount, verification_rate: verificationRate });
+    console.log(`Discovery complete: ${insertedCount} works (MLC: ${mlcVerifiedCount}, PRO: ${proVerifiedCount - mlcVerifiedCount})`);
+
+    return json({ 
+      success: true, 
+      discovered: insertedCount, 
+      meta_complete: metaCompleteCount, 
+      verification_rate: verificationRate,
+      sources: {
+        musicbrainz: mbWorks.length,
+        mlc: mlcWorks.length,
+        pro: proWorks.length,
+        total_candidates: candidates.size
+      }
+    });
   } catch (e) {
     console.error('deterministic-catalog-discovery error', e);
     return json({ error: (e as Error).message || 'Unexpected error' }, 500);
