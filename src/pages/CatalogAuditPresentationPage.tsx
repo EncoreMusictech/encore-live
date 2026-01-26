@@ -331,6 +331,7 @@ export default function CatalogAuditPresentationPage() {
     <CatalogAuditPresentation 
       data={presentationData}
       onClose={handleClose}
+      onRestart={handleTryAnotherSearch}
       onDownloadReport={handleDownloadReport}
       isGeneratingPDF={isGeneratingPDF}
     />

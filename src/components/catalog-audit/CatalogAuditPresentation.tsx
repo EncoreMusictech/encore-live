@@ -8,7 +8,8 @@ import {
   Pause, 
   Maximize, 
   Minimize,
-  X
+  X,
+  RotateCcw
 } from 'lucide-react';
 
 import { IntroSlide } from './slides/IntroSlide';
@@ -24,6 +25,7 @@ import type { AuditPresentationData } from '@/hooks/useCatalogAuditPresentation'
 interface CatalogAuditPresentationProps {
   data: AuditPresentationData;
   onClose?: () => void;
+  onRestart?: () => void;
   onDownloadReport?: () => void;
   isGeneratingPDF?: boolean;
 }
@@ -43,6 +45,7 @@ const AUTO_ADVANCE_DELAY = 8000; // 8 seconds per slide
 export function CatalogAuditPresentation({
   data,
   onClose,
+  onRestart,
   onDownloadReport,
   isGeneratingPDF = false,
 }: CatalogAuditPresentationProps) {
@@ -260,6 +263,18 @@ export function CatalogAuditPresentation({
                   <Maximize className="w-5 h-5" />
                 )}
               </Button>
+
+              {onRestart && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onRestart}
+                  className="text-muted-foreground hover:text-foreground gap-1.5"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span className="hidden sm:inline">New Search</span>
+                </Button>
+              )}
 
               {onClose && (
                 <Button
