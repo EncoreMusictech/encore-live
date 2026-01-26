@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CatalogAuditPresentation } from '@/components/catalog-audit/CatalogAuditPresentation';
 import { AuditPresentationSelector } from '@/components/catalog-audit/AuditPresentationSelector';
 import { useCatalogAuditPresentation } from '@/hooks/useCatalogAuditPresentation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, ArrowLeft, Search } from 'lucide-react';
+import { AlertCircle, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function CatalogAuditPresentationPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -33,6 +33,11 @@ export default function CatalogAuditPresentationPage() {
 
   const handleClose = () => {
     navigate(-1);
+  };
+
+  const handleTryAnotherSearch = () => {
+    // Clear URL params to show the selector again
+    setSearchParams({});
   };
 
   const handleDownloadReport = async () => {
@@ -88,26 +93,19 @@ export default function CatalogAuditPresentationPage() {
         <AlertCircle className="w-16 h-16 text-destructive" />
         <div className="text-center space-y-2 max-w-md">
           <h1 className="text-2xl font-headline text-foreground">
-            {isNoSearchError ? 'No Search Found' : 'Unable to Load Presentation'}
+            {isNoSearchError ? 'No Catalog Data Found' : 'Unable to Load Presentation'}
           </h1>
           <p className="text-muted-foreground">
-            {error || 'No presentation data available. Please run a catalog search first.'}
+            {isNoSearchError 
+              ? `No existing catalog analysis found for "${artistName}". Try searching for a different artist or select from your recent searches.`
+              : (error || 'No presentation data available.')
+            }
           </p>
         </div>
-        <div className="flex gap-3">
-          {isNoSearchError && (
-            <Button asChild>
-              <Link to="/song-estimator" className="gap-2">
-                <Search className="w-4 h-4" />
-                Run Search
-              </Link>
-            </Button>
-          )}
-          <Button onClick={handleClose} variant="outline" className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Go Back
-          </Button>
-        </div>
+        <Button onClick={handleTryAnotherSearch} className="gap-2">
+          <RotateCcw className="w-4 h-4" />
+          Try Another Search
+        </Button>
       </div>
     );
   }
