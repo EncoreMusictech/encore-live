@@ -50,7 +50,7 @@ export function CTASlide({
           <Button 
             size="lg"
             className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-lg gap-3"
-            onClick={() => window.open('https://calendly.com/encore-demo', '_blank')}
+            onClick={() => window.open('https://www.calendly.com/encoremts', '_blank')}
           >
             <Calendar className="w-5 h-5" />
             Schedule a Demo
