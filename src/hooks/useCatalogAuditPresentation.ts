@@ -79,9 +79,14 @@ export function useCatalogAuditPresentation(searchId?: string, artistName?: stri
             .from('song_catalog_searches')
             .select('id, songwriter_name, total_songs_found, metadata_complete_count, pipeline_estimate_total, ai_research_summary')
             .eq('id', searchId)
-            .single();
+            .maybeSingle();
 
           if (searchError) throw searchError;
+          
+          if (!data) {
+            throw new Error(`Search not found. The search may have been deleted.`);
+          }
+          
           search = data as SearchData;
         } else if (artistName) {
           // Find most recent search for this artist
