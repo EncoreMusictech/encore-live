@@ -36,6 +36,7 @@ interface SongMetadata {
   publishers?: Record<string, number> | Record<string, unknown> | null;
   estimated_splits?: Record<string, number> | Record<string, unknown> | null;
   pro_registrations?: Record<string, unknown> | null;
+  source_data?: Record<string, unknown> | null;
 }
 
 interface SearchData {
@@ -62,6 +63,13 @@ export function useCatalogAuditPresentation(searchId?: string, artistName?: stri
   
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const isAuthoritativeIswc = (song: Pick<SongMetadata, 'verification_status' | 'source_data'>): boolean => {
+    // Policy: only trust ISWCs from MLC (verified) or MusicBrainz.
+    if (song.verification_status === 'mlc_verified') return true;
+    const sources = (song.source_data as any)?.sources;
+    return Array.isArray(sources) && (sources.includes('musicbrainz') || sources.includes('mlc'));
+  };
 
   // Fetch search data and song metadata
   useEffect(() => {
@@ -123,11 +131,16 @@ export function useCatalogAuditPresentation(searchId?: string, artistName?: stri
         // Fetch song metadata for pipeline calculations
         const { data: songs, error: songsError } = await supabase
           .from('song_metadata_cache')
-          .select('id, song_title, metadata_completeness_score, verification_status, iswc, publishers, estimated_splits, pro_registrations')
+          .select('id, song_title, metadata_completeness_score, verification_status, iswc, publishers, estimated_splits, pro_registrations, source_data')
           .eq('search_id', search.id);
 
         if (songsError) throw songsError;
-        setSongMetadata((songs || []) as SongMetadata[]);
+        // IMPORTANT: prevent PRO/AI-derived ISWCs from showing up in the UI/PDF.
+        const sanitized = ((songs || []) as SongMetadata[]).map((s) => ({
+          ...s,
+          iswc: isAuthoritativeIswc(s) ? s.iswc : null,
+        }));
+        setSongMetadata(sanitized);
 
       } catch (err: any) {
         console.error('Error fetching presentation data:', err);
