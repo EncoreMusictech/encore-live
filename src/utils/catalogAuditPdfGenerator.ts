@@ -55,6 +55,105 @@ export async function generateCatalogAuditPdf(data: CatalogAuditPdfData): Promis
     doc.line(margin, y, pageWidth - margin, y);
   };
 
+  const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  // ===== COVER PAGE =====
+  // Background gradient effect - top section
+  doc.setFillColor(...primaryColor);
+  doc.rect(0, 0, pageWidth, pageHeight * 0.45, 'F');
+  
+  // Decorative elements - subtle circles (using lower opacity via lighter color)
+  doc.setFillColor(200, 180, 255); // Light purple for subtle effect
+  doc.circle(pageWidth * 0.85, pageHeight * 0.15, 60, 'F');
+  doc.circle(pageWidth * 0.1, pageHeight * 0.35, 40, 'F');
+  
+  // Cover the circles partially with the main color to create depth
+  doc.setFillColor(...primaryColor);
+
+  // ENCORE Logo area (centered)
+  const logoY = pageHeight * 0.18;
+  
+  // Music note icon (stylized)
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(2);
+  // Draw a simple music note shape
+  doc.circle(pageWidth / 2 - 8, logoY + 8, 5, 'F');
+  doc.rect(pageWidth / 2 - 4, logoY - 12, 2.5, 20, 'F');
+  doc.circle(pageWidth / 2 + 8, logoY + 4, 5, 'F');
+  doc.rect(pageWidth / 2 + 12, logoY - 16, 2.5, 20, 'F');
+  // Connect the notes
+  doc.setLineWidth(2.5);
+  doc.line(pageWidth / 2 - 4, logoY - 12, pageWidth / 2 + 14.5, logoY - 16);
+
+  // ENCORE text
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(48);
+  doc.setTextColor(255, 255, 255);
+  doc.text('ENCORE', pageWidth / 2, logoY + 35, { align: 'center' });
+  
+  // Tagline
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
+  doc.setTextColor(255, 255, 255);
+  doc.text('RIGHTS MANAGEMENT SYSTEM', pageWidth / 2, logoY + 45, { align: 'center' });
+
+  // Divider line
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.5);
+  doc.line(pageWidth / 2 - 40, logoY + 55, pageWidth / 2 + 40, logoY + 55);
+
+  // Report type label
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('CATALOG AUDIT REPORT', pageWidth / 2, logoY + 68, { align: 'center' });
+
+  // Artist name section (in the white area)
+  const artistSectionY = pageHeight * 0.52;
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(14);
+  doc.setTextColor(...textMuted);
+  doc.text('PREPARED FOR', pageWidth / 2, artistSectionY, { align: 'center' });
+  
+  // Artist name - large and bold
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(36);
+  doc.setTextColor(...primaryColor);
+  doc.text(presentationData.artistName.toUpperCase(), pageWidth / 2, artistSectionY + 18, { align: 'center' });
+
+  // Decorative line under artist name
+  const artistNameWidth = Math.min(doc.getTextWidth(presentationData.artistName.toUpperCase()), contentWidth);
+  doc.setDrawColor(...primaryColor);
+  doc.setLineWidth(2);
+  doc.line(pageWidth / 2 - artistNameWidth / 2, artistSectionY + 25, pageWidth / 2 + artistNameWidth / 2, artistSectionY + 25);
+
+  // Report date
+  const dateY = pageHeight * 0.72;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
+  doc.setTextColor(...textMuted);
+  doc.text('Report Generated', pageWidth / 2, dateY, { align: 'center' });
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(...textDark);
+  doc.text(reportDate, pageWidth / 2, dateY + 10, { align: 'center' });
+
+  // Footer on cover page
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(...textMuted);
+  doc.text('Confidential • For Internal Use Only', pageWidth / 2, pageHeight - 30, { align: 'center' });
+  
+  doc.setFontSize(9);
+  doc.setTextColor(...primaryColor);
+  doc.text('www.encoremusic.tech', pageWidth / 2, pageHeight - 22, { align: 'center' });
+
+  // ===== PAGE 2: REPORT CONTENT =====
+  doc.addPage();
+  yPos = margin;
+
   // ===== HEADER BAR =====
   doc.setFillColor(...primaryColor);
   doc.rect(0, 0, pageWidth, 35, 'F');
@@ -76,7 +175,6 @@ export async function generateCatalogAuditPdf(data: CatalogAuditPdfData): Promis
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   doc.text(reportDate, pageWidth - margin, 22, { align: 'right' });
 
   yPos = 50;
