@@ -51,7 +51,7 @@ export default function CatalogAuditPresentationPage() {
       runCatalogDiscovery(artistName).then((newSearchId) => {
         if (newSearchId) {
           // Update URL to use the new searchId
-          setSearchParams({ searchId: newSearchId });
+          setSearchParams({ searchId: newSearchId, artist: artistName });
         }
       });
     }
@@ -79,7 +79,7 @@ export default function CatalogAuditPresentationPage() {
     setHasTriedDiscovery(true);
     const newSearchId = await runCatalogDiscovery(artistName);
     if (newSearchId) {
-      setSearchParams({ searchId: newSearchId });
+      setSearchParams({ searchId: newSearchId, artist: artistName });
     }
   };
 
