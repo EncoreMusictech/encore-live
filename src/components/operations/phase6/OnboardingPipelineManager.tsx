@@ -234,62 +234,6 @@ export function OnboardingPipelineManager() {
         'verify_sidebar_nav', 'test_view_as_mode', 'send_admin_invites', 'admin_signup_complete',
         'add_admins_to_account', 'verify_admin_bypass', 'verify_role_permissions', 'collect_contract_pdfs'
       ]
-    },
-    {
-      id: '2',
-      companyName: 'Harmony Records International',
-      displayName: 'Harmony',
-      primaryContact: 'Maria Garcia',
-      email: 'maria@harmonyrecords.com',
-      tier: 'enterprise',
-      contractVolume: 85,
-      adminUsers: 5,
-      internalUsers: 12,
-      externalUsers: 25,
-      currentPhase: 'user_onboarding',
-      phaseProgress: 60,
-      weekNumber: 1,
-      startDate: '2026-01-20',
-      targetGoLive: '2026-03-10',
-      risk: 'medium',
-      assignedCSM: 'John Doe',
-      completedChecklist: [
-        'create_sub_account', 'populate_company_name', 'set_display_name', 'set_primary_email',
-        'set_subscription_tier', 'verify_tier_status', 'enable_contract_mgmt', 'enable_copyright_mgmt',
-        'enable_royalty_processing', 'verify_dashboard_display', 'verify_sidebar_nav', 'test_view_as_mode',
-        'send_admin_invites'
-      ]
-    },
-    {
-      id: '3',
-      companyName: 'Global Music Rights LLC',
-      displayName: 'GMR',
-      primaryContact: 'David Chen',
-      email: 'david@globalmusicrights.com',
-      tier: 'enterprise_internal',
-      contractVolume: 120,
-      adminUsers: 4,
-      internalUsers: 8,
-      externalUsers: 50,
-      currentPhase: 'go_live',
-      phaseProgress: 90,
-      weekNumber: 7,
-      startDate: '2025-12-02',
-      targetGoLive: '2026-01-27',
-      risk: 'low',
-      assignedCSM: 'Sarah Wilson',
-      completedChecklist: [
-        'create_sub_account', 'populate_company_name', 'set_display_name', 'set_primary_email',
-        'set_subscription_tier', 'verify_tier_status', 'enable_contract_mgmt', 'enable_copyright_mgmt',
-        'enable_royalty_processing', 'enable_client_portal', 'verify_dashboard_display', 'verify_sidebar_nav',
-        'test_view_as_mode', 'send_admin_invites', 'admin_signup_complete', 'add_admins_to_account',
-        'verify_admin_bypass', 'add_internal_users', 'verify_role_permissions', 'collect_contract_pdfs',
-        'ai_parsing_upload', 'review_parsed_data', 'bulk_works_upload', 'link_works_to_contracts',
-        'contracts_visible', 'financial_terms_verified', 'works_linked_correctly', 'parties_splits_accurate',
-        'confidence_scoring', 'navigate_invite_client', 'assign_view_contracts', 'assign_view_works',
-        'send_branded_invitations', 'sub_account_active', 'modules_enabled', 'users_validated',
-        'contracts_approved', 'works_validated', 'portal_invitations_sent'
-      ]
     }
   ];
 
