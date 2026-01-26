@@ -221,19 +221,14 @@ export function OnboardingPipelineManager() {
       adminUsers: 3,
       internalUsers: 5,
       externalUsers: 10,
-      currentPhase: 'data_ingestion',
-      phaseProgress: 45,
-      weekNumber: 2,
-      startDate: '2026-01-13',
-      targetGoLive: '2026-03-03',
+      currentPhase: 'account_setup',
+      phaseProgress: 0,
+      weekNumber: 1,
+      startDate: '2026-01-26',
+      targetGoLive: '2026-03-16',
       risk: 'low',
       assignedCSM: 'Sarah Wilson',
-      completedChecklist: [
-        'create_sub_account', 'populate_company_name', 'set_display_name', 'set_primary_email',
-        'set_subscription_tier', 'verify_tier_status', 'enable_contract_mgmt', 'verify_dashboard_display',
-        'verify_sidebar_nav', 'test_view_as_mode', 'send_admin_invites', 'admin_signup_complete',
-        'add_admins_to_account', 'verify_admin_bypass', 'verify_role_permissions', 'collect_contract_pdfs'
-      ]
+      completedChecklist: []
     }
   ];
 
