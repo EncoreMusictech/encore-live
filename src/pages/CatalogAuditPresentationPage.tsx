@@ -5,6 +5,7 @@ import { AuditPresentationSelector } from '@/components/catalog-audit/AuditPrese
 import { CatalogDiscoveryProgress } from '@/components/catalog-audit/CatalogDiscoveryProgress';
 import { useCatalogAuditPresentation } from '@/hooks/useCatalogAuditPresentation';
 import { useCatalogAuditDiscovery } from '@/hooks/useCatalogAuditDiscovery';
+import { generateCatalogAuditPdf } from '@/utils/catalogAuditPdfGenerator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RotateCcw, Search, Loader2 } from 'lucide-react';
@@ -24,7 +25,8 @@ export default function CatalogAuditPresentationPage() {
   const { 
     loading, 
     error, 
-    presentationData, 
+    presentationData,
+    topSongs,
     savePresentation 
   } = useCatalogAuditPresentation(
     hasParams ? (searchId || undefined) : undefined, 
@@ -89,12 +91,26 @@ export default function CatalogAuditPresentationPage() {
     setIsGeneratingPDF(true);
     
     try {
+      // Generate and download the PDF
+      await generateCatalogAuditPdf({
+        presentationData,
+        topSongs: topSongs.map(song => ({
+          song_title: song.song_title,
+          iswc: song.iswc,
+          metadata_completeness_score: song.metadata_completeness_score,
+          verification_status: song.verification_status,
+        })),
+      });
+      
+      // Also save to database
       await savePresentation();
+      
       toast({
-        title: 'Report Generated',
-        description: `Audit report for ${presentationData.artistName} is ready`,
+        title: 'Report Downloaded',
+        description: `Catalog audit report for ${presentationData.artistName} has been saved`,
       });
     } catch (err) {
+      console.error('PDF generation error:', err);
       toast({
         title: 'Error',
         description: 'Failed to generate report',
