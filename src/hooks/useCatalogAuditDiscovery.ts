@@ -30,14 +30,6 @@ export function useCatalogAuditDiscovery() {
   };
 
   const runCatalogDiscovery = useCallback(async (artistName: string): Promise<string | null> => {
-    if (!user) {
-      toast({
-        title: 'Authentication Required',
-        description: 'Please log in to run catalog discovery',
-        variant: 'destructive',
-      });
-      return null;
-    }
 
     try {
       // Step 1: Create search record
@@ -46,7 +38,7 @@ export function useCatalogAuditDiscovery() {
       const { data: searchRecord, error: createError } = await supabase
         .from('song_catalog_searches')
         .insert({
-          user_id: user.id,
+          user_id: user?.id || null,
           songwriter_name: artistName,
           search_status: 'processing',
           search_parameters: { source: 'catalog-audit' },
