@@ -2,21 +2,56 @@ import React from 'react';
 import { PresentationSlide } from '../PresentationSlide';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Calendar, Download, Rocket, Mail, Phone } from 'lucide-react';
+import { Calendar, Download, Rocket, Mail, Share2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface CTASlideProps {
   artistName: string;
   isActive: boolean;
   onDownloadReport?: () => void;
   isGeneratingPDF?: boolean;
+  shareUrl?: string;
 }
 
 export function CTASlide({ 
   artistName, 
   isActive, 
   onDownloadReport,
-  isGeneratingPDF = false
+  isGeneratingPDF = false,
+  shareUrl
 }: CTASlideProps) {
+  const currentUrl = shareUrl || window.location.href;
+  const shareText = `Check out this catalog audit for ${artistName} - Discover uncollected royalties with ENCORE`;
+
+  const handleShare = (platform: 'copy' | 'linkedin' | 'facebook' | 'instagram' | 'tiktok') => {
+    const encodedUrl = encodeURIComponent(currentUrl);
+    const encodedText = encodeURIComponent(shareText);
+    
+    switch (platform) {
+      case 'copy':
+        navigator.clipboard.writeText(currentUrl);
+        break;
+      case 'linkedin':
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`, '_blank');
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank');
+        break;
+      case 'instagram':
+        // Instagram doesn't have a direct share URL, copy link instead
+        navigator.clipboard.writeText(currentUrl);
+        break;
+      case 'tiktok':
+        // TikTok doesn't have a direct share URL, copy link instead
+        navigator.clipboard.writeText(currentUrl);
+        break;
+    }
+  };
   return (
     <PresentationSlide
       isActive={isActive}
@@ -78,7 +113,7 @@ export function CTASlide({
           </Button>
         </div>
 
-        {/* Contact info */}
+        {/* Contact & Share */}
         <div 
           className={cn(
             'pt-8 border-t border-border/30 transition-all duration-700',
@@ -86,22 +121,40 @@ export function CTASlide({
           )}
           style={{ transitionDelay: isActive ? '600ms' : '0ms' }}
         >
-          <p className="text-sm text-muted-foreground mb-4">Or reach out directly:</p>
-          <div className="flex flex-col md:flex-row items-center gap-6 text-muted-foreground">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6">
             <a 
-              href="mailto:info@encore.live" 
-              className="flex items-center gap-2 hover:text-primary transition-colors"
+              href="mailto:info@encoremusic.tech" 
+              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
             >
               <Mail className="w-4 h-4" />
-              info@encore.live
+              info@encoremusic.tech
             </a>
-            <a 
-              href="tel:+1-555-ENCORE" 
-              className="flex items-center gap-2 hover:text-primary transition-colors"
-            >
-              <Phone className="w-4 h-4" />
-              (555) ENCORE
-            </a>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuItem onClick={() => handleShare('copy')}>
+                  Copy Link
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('linkedin')}>
+                  LinkedIn
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('facebook')}>
+                  Facebook
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('instagram')}>
+                  Instagram (Copy Link)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('tiktok')}>
+                  TikTok (Copy Link)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
