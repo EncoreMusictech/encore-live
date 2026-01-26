@@ -14,12 +14,14 @@ import {
 
 import { IntroSlide } from './slides/IntroSlide';
 import { DiscoverySlide } from './slides/DiscoverySlide';
+import { ArtistProfileSlide } from './slides/ArtistProfileSlide';
 import { CatalogOverviewSlide } from './slides/CatalogOverviewSlide';
 import { RegistrationGapsSlide } from './slides/RegistrationGapsSlide';
 import { FinancialImpactSlide } from './slides/FinancialImpactSlide';
 import { IntegrationSlide } from './slides/IntegrationSlide';
 import { CTASlide } from './slides/CTASlide';
 
+import { useArtistEnrichment, type ArtistEnrichmentData } from '@/hooks/useArtistEnrichment';
 import type { AuditPresentationData } from '@/hooks/useCatalogAuditPresentation';
 
 interface CatalogAuditPresentationProps {
@@ -33,6 +35,7 @@ interface CatalogAuditPresentationProps {
 const SLIDES = [
   { id: 'intro', label: 'Introduction' },
   { id: 'discovery', label: 'Discovery' },
+  { id: 'profile', label: 'Artist Profile' },
   { id: 'overview', label: 'Catalog Overview' },
   { id: 'gaps', label: 'Registration Gaps' },
   { id: 'impact', label: 'Financial Impact' },
@@ -53,6 +56,16 @@ export function CatalogAuditPresentation({
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [enrichmentData, setEnrichmentData] = useState<ArtistEnrichmentData | null>(null);
+  
+  const { loading: enrichmentLoading, fetchEnrichment } = useArtistEnrichment();
+
+  // Fetch artist enrichment data on mount
+  useEffect(() => {
+    if (data.artistName) {
+      fetchEnrichment(data.artistName).then(setEnrichmentData);
+    }
+  }, [data.artistName, fetchEnrichment]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -159,24 +172,30 @@ export function CatalogAuditPresentation({
           artistName={data.artistName} 
           isActive={currentSlide === 1} 
         />
-        <CatalogOverviewSlide 
-          data={data} 
-          isActive={currentSlide === 2} 
+        <ArtistProfileSlide
+          artistName={data.artistName}
+          enrichment={enrichmentData}
+          isActive={currentSlide === 2}
+          isLoading={enrichmentLoading}
         />
-        <RegistrationGapsSlide 
+        <CatalogOverviewSlide 
           data={data} 
           isActive={currentSlide === 3} 
         />
-        <FinancialImpactSlide 
+        <RegistrationGapsSlide 
           data={data} 
           isActive={currentSlide === 4} 
         />
-        <IntegrationSlide 
+        <FinancialImpactSlide 
+          data={data} 
           isActive={currentSlide === 5} 
+        />
+        <IntegrationSlide 
+          isActive={currentSlide === 6} 
         />
         <CTASlide 
           artistName={data.artistName}
-          isActive={currentSlide === 6}
+          isActive={currentSlide === 7}
           onDownloadReport={onDownloadReport}
           isGeneratingPDF={isGeneratingPDF}
         />

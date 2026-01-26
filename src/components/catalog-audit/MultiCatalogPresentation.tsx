@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Download, ChevronLeft, ChevronRight, 
   BarChart3, AlertTriangle, Music, DollarSign,
-  FileQuestion, Building2, FileWarning
+  FileQuestion, Building2, FileWarning, Users, Headphones, Tv, Radio, MapPin
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,19 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AnimatedCounter } from './AnimatedCounter';
 import { type AggregatedAuditData, type CatalogSummary, type SongWithIssues } from '@/hooks/useMultiCatalogAudit';
+import { supabase } from '@/integrations/supabase/client';
+
+interface ArtistEnrichmentData {
+  artistName: string;
+  imageUrl: string | null;
+  biography: string | null;
+  topTracks: Array<{ name: string; popularity: number; spotifyUrl?: string }>;
+  recentSyncs: Array<{ title: string; placement: string; year?: number }>;
+  recentPerformances: Array<{ event: string; date?: string; location?: string }>;
+  spotifyFollowers?: number;
+  monthlyListeners?: number;
+  genres: string[];
+}
 
 interface MultiCatalogPresentationProps {
   data: AggregatedAuditData;
@@ -401,15 +414,91 @@ function MissingSongsSlide({ data }: { data: AggregatedAuditData }) {
   );
 }
 
-// Catalog Detail Slide
+// Catalog Detail Slide with Artist Enrichment
 function CatalogDetailSlide({ catalog }: { catalog: CatalogSummary }) {
+  const [enrichment, setEnrichment] = useState<ArtistEnrichmentData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEnrichment = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('artist-enrichment', {
+          body: { artistName: catalog.artistName },
+        });
+        if (!error && data?.success) {
+          setEnrichment(data.data);
+        }
+      } catch (err) {
+        console.error('Enrichment fetch error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchEnrichment();
+  }, [catalog.artistName]);
+
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  };
+
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-4xl font-headline font-bold text-primary mb-2">{catalog.artistName}</h2>
-        <p className="text-muted-foreground">{catalog.catalogSize} Works in Catalog</p>
+      {/* Artist Header with Image */}
+      <div className="flex items-start gap-6">
+        {/* Artist Image */}
+        <div className="flex-shrink-0">
+          {enrichment?.imageUrl ? (
+            <img
+              src={enrichment.imageUrl}
+              alt={catalog.artistName}
+              className="w-24 h-24 rounded-xl object-cover shadow-lg border border-primary/30"
+            />
+          ) : (
+            <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20">
+              {isLoading ? (
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Music className="w-10 h-10 text-primary/40" />
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Artist Info */}
+        <div className="flex-1">
+          <h2 className="text-3xl font-headline font-bold text-primary mb-1">{catalog.artistName}</h2>
+          {enrichment?.genres && enrichment.genres.length > 0 && (
+            <p className="text-sm text-muted-foreground mb-2">
+              {enrichment.genres.slice(0, 3).join(' • ')}
+            </p>
+          )}
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>{catalog.catalogSize} Works in Catalog</span>
+            {enrichment?.spotifyFollowers && (
+              <span className="flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-primary" />
+                {formatNumber(enrichment.spotifyFollowers)}
+              </span>
+            )}
+            {enrichment?.monthlyListeners && (
+              <span className="flex items-center gap-1">
+                <Headphones className="w-3.5 h-3.5 text-primary" />
+                {formatNumber(enrichment.monthlyListeners)}/mo
+              </span>
+            )}
+          </div>
+          {enrichment?.biography && (
+            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+              {enrichment.biography}
+            </p>
+          )}
+        </div>
       </div>
 
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Missing ISWC" value={catalog.missingISWC} variant="warning" />
         <StatCard label="Missing PRO" value={catalog.missingPRO} variant="destructive" />
@@ -417,60 +506,147 @@ function CatalogDetailSlide({ catalog }: { catalog: CatalogSummary }) {
         <StatCard label="Pipeline" value={formatCurrency(catalog.pipelineTotal)} variant="success" />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Top 5 Songs Needing Attention</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {catalog.topMissingSongs.length === 0 ? (
-            <p className="text-muted-foreground">All songs have complete registrations!</p>
-          ) : (
-            <div className="space-y-2">
-              {catalog.topMissingSongs.map((song, idx) => (
-                <div 
-                  key={song.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
-                >
-                  <span className="text-lg font-bold text-muted-foreground w-6">{idx + 1}</span>
-                  <span className="flex-1 font-medium truncate">{song.song_title}</span>
-                  <div className="flex gap-1">
-                    {song.issues.map((issue) => (
-                      <Badge 
-                        key={issue} 
-                        variant="outline"
-                        className={
-                          issue.includes('ISWC') ? 'text-amber-600' :
-                          issue.includes('PRO') ? 'text-red-600' :
-                          'text-orange-600'
-                        }
-                      >
-                        {issue}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+      {/* Two Column Layout: Top Tracks/Syncs + Songs Needing Attention */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Top Tracks and Syncs */}
+        <div className="space-y-4">
+          {enrichment?.topTracks && enrichment.topTracks.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Music className="w-4 h-4 text-primary" />
+                  Top Tracks
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ul className="space-y-1">
+                  {enrichment.topTracks.slice(0, 3).map((track, idx) => (
+                    <li key={idx} className="flex items-center justify-between text-sm py-1">
+                      <span className="text-foreground truncate flex-1 mr-2">
+                        <span className="text-muted-foreground mr-1.5">{idx + 1}.</span>
+                        {track.name}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{ width: `${track.popularity}%` }} />
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
 
+          {enrichment?.recentSyncs && enrichment.recentSyncs.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Tv className="w-4 h-4 text-primary" />
+                  Notable Syncs
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ul className="space-y-2">
+                  {enrichment.recentSyncs.slice(0, 2).map((sync, idx) => (
+                    <li key={idx} className="text-sm">
+                      <p className="text-foreground font-medium truncate">{sync.title}</p>
+                      <p className="text-muted-foreground text-xs truncate">{sync.placement}</p>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {enrichment?.recentPerformances && enrichment.recentPerformances.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Radio className="w-4 h-4 text-primary" />
+                  Recent Performances
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ul className="space-y-2">
+                  {enrichment.recentPerformances.slice(0, 2).map((perf, idx) => (
+                    <li key={idx} className="text-sm">
+                      <p className="text-foreground font-medium truncate">{perf.event}</p>
+                      <p className="text-muted-foreground text-xs flex items-center gap-1">
+                        {perf.date}
+                        {perf.location && (
+                          <>
+                            <span>•</span>
+                            <MapPin className="w-2.5 h-2.5" />
+                            {perf.location}
+                          </>
+                        )}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Songs Needing Attention */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Top 5 Songs Needing Attention</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {catalog.topMissingSongs.length === 0 ? (
+              <p className="text-muted-foreground text-sm">All songs have complete registrations!</p>
+            ) : (
+              <div className="space-y-2">
+                {catalog.topMissingSongs.map((song, idx) => (
+                  <div 
+                    key={song.id}
+                    className="flex items-center gap-2 p-2 rounded-lg bg-muted/50"
+                  >
+                    <span className="text-sm font-bold text-muted-foreground w-5">{idx + 1}</span>
+                    <span className="flex-1 text-sm font-medium truncate">{song.song_title}</span>
+                    <div className="flex gap-1 flex-shrink-0">
+                      {song.issues.map((issue) => (
+                        <Badge 
+                          key={issue} 
+                          variant="outline"
+                          className={`text-xs ${
+                            issue.includes('ISWC') ? 'text-amber-600' :
+                            issue.includes('PRO') ? 'text-destructive' :
+                            'text-orange-500'
+                          }`}
+                        >
+                          {issue.replace('Missing ', '').replace('Incomplete ', '')}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Revenue Breakdown */}
       <div className="grid grid-cols-3 gap-4">
         <Card className="text-center">
           <CardContent className="pt-4 pb-3">
-            <p className="text-2xl font-bold">{formatCurrency(catalog.performance)}</p>
+            <p className="text-xl font-bold">{formatCurrency(catalog.performance)}</p>
             <p className="text-xs text-muted-foreground">Performance</p>
           </CardContent>
         </Card>
         <Card className="text-center">
           <CardContent className="pt-4 pb-3">
-            <p className="text-2xl font-bold">{formatCurrency(catalog.mechanical)}</p>
+            <p className="text-xl font-bold">{formatCurrency(catalog.mechanical)}</p>
             <p className="text-xs text-muted-foreground">Mechanical</p>
           </CardContent>
         </Card>
         <Card className="text-center">
           <CardContent className="pt-4 pb-3">
-            <p className="text-2xl font-bold">{formatCurrency(catalog.sync)}</p>
+            <p className="text-xl font-bold">{formatCurrency(catalog.sync)}</p>
             <p className="text-xs text-muted-foreground">Sync</p>
           </CardContent>
         </Card>

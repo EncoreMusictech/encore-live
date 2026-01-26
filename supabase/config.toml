@@ -1,5 +1,8 @@
 project_id = "plxsenykjisqutxcvjeg"
 
+[functions.artist-enrichment]
+verify_jwt = false
+
 [functions.songwriter-career-summary]
 verify_jwt = false
 
