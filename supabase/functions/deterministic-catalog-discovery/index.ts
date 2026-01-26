@@ -416,9 +416,12 @@ serve(async (req) => {
           // Search with all name variants
           const writerVariantsStr = nameVariants.slice(0, 3).map(v => `"${v}"`).join(' OR ');
           
+          // NOTE: We do NOT ask Perplexity for ISWCs - AI will hallucinate them.
+          // ISWCs should ONLY come from verified sources: MLC API and MusicBrainz database.
           const system = `You extract structured data ONLY from the official ${domain.toUpperCase()} repertoire database at ${site}. 
 CRITICAL: Only return works where any of the following names appears EXACTLY as a writer/composer: ${nameVariants.slice(0, 3).join(', ')}. Do NOT include works by similarly named writers.
-Return STRICT JSON only. Shape: {"works":[{"title":"string","iswc":"string?","writers":[{"name":"string","ipi":"string?","share":number?}],"publishers":[{"name":"string","share":number?}]}]}. 
+Return STRICT JSON only. Shape: {"works":[{"title":"string","writers":[{"name":"string","ipi":"string?","share":number?}],"publishers":[{"name":"string","share":number?}]}]}. 
+DO NOT include ISWC values - we will get those from authoritative databases.
 If no works are found for this exact writer name, return {"works":[]}.
 IMPORTANT: Return as many works as possible, up to 50 works.`;
           const body = {
@@ -516,27 +519,26 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
       }
     }
 
-    // Merge in PRO results (ASCAP/BMI/SESAC)
+    // Merge in PRO results (ASCAP/BMI/SESAC) - but IGNORE their ISWCs (AI-generated, unreliable)
     for (const w of proWorks) {
       const title = (w.title || '').trim();
       if (!title) continue;
       const domain = w.source; // 'ascap' | 'bmi' | 'sesac'
-      const keyIswc = w.iswc ? `iswc:${w.iswc}` : null;
+      // Only use title-based key for PRO works - do NOT trust PRO ISWCs
       const keyTitle = `title:${title.toLowerCase()}`;
-      const key = keyIswc && candidates.has(keyIswc) ? keyIswc : (keyIswc || keyTitle);
-      const existing = candidates.get(key);
+      const existing = candidates.get(keyTitle);
       if (!existing) {
-        candidates.set(key, {
+        candidates.set(keyTitle, {
           title,
           sources: [domain],
-          iswc: w.iswc || undefined,
-          proDetails: { [domain]: { writers: w.writers || [], publishers: w.publishers || [], iswc: w.iswc || null } }
+          // Deliberately NOT setting iswc from PRO data - it's AI-generated
+          proDetails: { [domain]: { writers: w.writers || [], publishers: w.publishers || [] } }
         });
       } else {
         if (!existing.sources.includes(domain)) existing.sources.push(domain);
-        if (!existing.iswc && w.iswc) existing.iswc = w.iswc;
+        // Deliberately NOT merging iswc from PRO data
         existing.proDetails = existing.proDetails || {};
-        (existing.proDetails as any)[domain] = { writers: w.writers || [], publishers: w.publishers || [], iswc: w.iswc || null };
+        (existing.proDetails as any)[domain] = { writers: w.writers || [], publishers: w.publishers || [] };
       }
     }
 
@@ -633,19 +635,15 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
         }
       }
 
-      if (!finalISWC) {
-        // try to take ISWC from any PRO source
-        for (const k of proOrder) {
-          const v = proDetails[k]?.iswc;
-          if (v && !finalISWC) { finalISWC = v; break; }
-        }
-      }
+      // NOTE: We do NOT use ISWCs from PRO Perplexity lookups or PRO agent - AI hallucinates them.
+      // ISWCs should ONLY come from verified sources: MLC API and MusicBrainz database.
+      // The finalISWC was already set from MLC or MusicBrainz above - do not override with PRO data.
 
-      // Try PRO agent for authoritative verification (optional)
+      // Try PRO agent for writer/publisher verification only (NOT for ISWCs)
       let proData: any = null;
       if (sharedSecret && workDetailsCalls < WORK_DETAILS_HARD_CAP) {
         proData = await callProAgent(title, writerName);
-        if (proData?.iswc && !finalISWC) finalISWC = proData.iswc;
+        // Deliberately NOT using proData.iswc - AI-generated ISWCs are unreliable
       }
 
       // Estimated splits prefer MLC > PRO > agent
