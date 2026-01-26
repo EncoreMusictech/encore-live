@@ -1,149 +1,112 @@
 
-# Add Search/Selection Interface to Catalog Audit Presentation Page
+# Fix: Handle Missing Search Data Gracefully
 
-## Overview
+## Problem
 
-When users visit `/catalog-audit-presentation` without parameters, instead of showing an error, we'll display a search and selection interface that allows them to:
-1. Search for a new artist to audit
-2. Select from recent/existing catalog searches
+When a user searches for an artist (e.g., "summer walker") that has **no prior catalog search** in the database, the `.single()` method throws an error because it expects exactly one row but gets zero.
 
----
-
-## User Experience
-
-```text
-+------------------------------------------+
-|  ENCORE Catalog Audit Presentation       |
-|                                          |
-|  ┌────────────────────────────────────┐  |
-|  │ Search for an artist...        🔍  │  |
-|  └────────────────────────────────────┘  |
-|                                          |
-|  ─── OR SELECT FROM RECENT SEARCHES ───  |
-|                                          |
-|  ┌────────────────────────────────────┐  |
-|  │ 🎵 Ryan Tedder     100 songs   ▶  │  |
-|  │    Aug 24, 2025                    │  |
-|  └────────────────────────────────────┘  |
-|  ┌────────────────────────────────────┐  |
-|  │ 🎵 Lawrence Berment  78 songs  ▶  │  |
-|  │    Jan 9, 2026                     │  |
-|  └────────────────────────────────────┘  |
-|                                          |
-+------------------------------------------+
-```
+**Current behavior**: Shows error "JSON object requested, multiple (or no) rows returned"
+**Expected behavior**: Show a helpful message that no search data exists and offer to run a new search
 
 ---
 
-## Implementation
+## Root Cause
 
-### New Component: `AuditPresentationSelector.tsx`
-
-Create a new component that displays when no parameters are provided:
-
-**Features:**
-- Artist name input with search button
-- List of recent completed searches from `song_catalog_searches`
-- Each search shows: songwriter name, song count, date, and a "Present" button
-- Clicking a search navigates to the presentation with the `searchId` parameter
-- Animated entry using existing `PresentationSlide` patterns
-- ENCORE branding consistent with the presentation slides
-
-**Data Fetching:**
-- Query `song_catalog_searches` for the current user
-- Filter to only show `completed` status searches
-- Order by `created_at` descending
-- Limit to most recent 10 searches
+In `useCatalogAuditPresentation.ts`, lines 88-97 use `.single()` which throws an error when:
+- Zero rows are returned (no search exists for this artist)
+- Multiple rows are returned (shouldn't happen with `limit(1)`)
 
 ---
 
-### Modify: `CatalogAuditPresentationPage.tsx`
+## Solution
 
-Update the page logic:
+### 1. Replace `.single()` with `.maybeSingle()`
 
-1. **Add new state**: Track whether we're in "selection mode" vs "presentation mode"
-2. **Add recent searches query**: Fetch recent searches when no params provided
-3. **Conditional rendering**:
-   - If `searchId` or `artist` params exist: Show loading then presentation (current behavior)
-   - If no params: Show the `AuditPresentationSelector` component
-4. **Handle selection**: When user selects a search, update URL params and trigger presentation load
+Change the Supabase query to use `.maybeSingle()` which:
+- Returns the data if exactly one row matches
+- Returns `null` if no rows match (instead of throwing)
+- Still throws if multiple rows match (safety check)
+
+### 2. Improve Error Messaging
+
+When no search data is found for an artist, instead of showing a generic error, show a user-friendly message explaining:
+- No previous catalog search exists for this artist
+- They need to run a Song Estimator search first
+- Provide a link/button to the Song Estimator Tool
+
+### 3. Update Error State
+
+Add a more specific error type to distinguish between:
+- "No search found" (user needs to run a search first)
+- "Failed to load" (actual database/network error)
 
 ---
 
-### Modify: `useCatalogAuditPresentation.ts`
-
-Add a function to fetch recent searches for the selector:
-
-```typescript
-// Add to the hook return
-recentSearches: SearchData[];
-fetchRecentSearches: () => Promise<void>;
-```
-
----
-
-## Technical Details
-
-### Component Structure
-
-```
-CatalogAuditPresentationPage.tsx
-├── No params? → AuditPresentationSelector
-│   ├── Search input + button
-│   ├── Divider "OR SELECT FROM RECENT"
-│   └── List of recent searches (clickable cards)
-│
-└── Has params? → Existing flow
-    ├── Loading state
-    ├── Error state
-    └── CatalogAuditPresentation
-```
-
-### Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/components/catalog-audit/AuditPresentationSelector.tsx` | Selection interface component |
-
-### Files to Modify
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/CatalogAuditPresentationPage.tsx` | Add conditional rendering for selector vs presentation |
-| `src/hooks/useCatalogAuditPresentation.ts` | Add `recentSearches` state and fetch function |
+| `src/hooks/useCatalogAuditPresentation.ts` | Replace `.single()` with `.maybeSingle()` for artist name search |
+| `src/pages/CatalogAuditPresentationPage.tsx` | Add better error UI with link to Song Estimator |
 
 ---
 
-## UI Design
+## Code Changes
 
-### Search Section
-- Full-width input with placeholder "Enter artist or songwriter name..."
-- Primary button with search icon
-- Loading state while searching
+### `useCatalogAuditPresentation.ts`
 
-### Recent Searches List
-- Cards with hover effect
-- Each card shows:
-  - Music icon
-  - Songwriter name (bold)
-  - Song count badge
-  - Created date
-  - "Present" button (right side)
-- Only show searches with `search_status = 'completed'`
-- Empty state if no recent searches
+```typescript
+// Line 88-97: Change from .single() to .maybeSingle()
+} else if (artistName) {
+  const { data, error: searchError } = await supabase
+    .from('song_catalog_searches')
+    .select('id, songwriter_name, total_songs_found, metadata_complete_count, pipeline_estimate_total, ai_research_summary')
+    .ilike('songwriter_name', artistName)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();  // Changed from .single()
 
-### Styling
-- Dark gradient background matching presentation
-- ENCORE branding header
-- Animated fade-in on mount
-- Cards with `bg-card/50 backdrop-blur` for glass effect
+  if (searchError) throw searchError;
+  
+  if (!data) {
+    throw new Error(`No catalog search found for "${artistName}". Please run a search in the Song Estimator Tool first.`);
+  }
+  
+  search = data as SearchData;
+}
+```
+
+### `CatalogAuditPresentationPage.tsx`
+
+Improve the error state to show actionable options:
+- Display the specific error message
+- Add a button linking to `/song-estimator` to run a new search
+- Keep the "Go Back" option
 
 ---
 
-## Flow After Selection
+## Expected Result
 
-When user clicks a search or submits a new artist name:
-1. Update URL with `?searchId=xxx` or `?artist=xxx`
-2. `useCatalogAuditPresentation` hook detects the change
-3. Hook fetches data and triggers loading state
-4. Presentation renders with the data
+When a user searches for an artist with no prior catalog search:
+
+```text
++------------------------------------------+
+|            ⚠️ No Search Found            |
+|                                          |
+|  No catalog search found for             |
+|  "summer walker".                        |
+|                                          |
+|  Please run a search in the Song         |
+|  Estimator Tool first.                   |
+|                                          |
+|  [Run Search]        [← Go Back]         |
++------------------------------------------+
+```
+
+---
+
+## Technical Notes
+
+- `.maybeSingle()` is the Supabase-recommended approach for "find one or none" queries
+- This aligns with the guidance in the useful-context about avoiding `.single()` when no data might be returned
+- The searchId path (lines 77-85) should also be updated for consistency, though it's less likely to fail since IDs are typically valid
