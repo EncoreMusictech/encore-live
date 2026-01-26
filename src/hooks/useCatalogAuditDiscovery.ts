@@ -62,6 +62,8 @@ export function useCatalogAuditDiscovery() {
             searchId,
             writerName: artistName,
             maxSongs: 75,
+            // Only include userId if user is authenticated
+            ...(user?.id && { userId: user.id }),
           },
         }
       );
