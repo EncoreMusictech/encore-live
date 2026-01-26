@@ -459,7 +459,13 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
           }
           const works = Array.isArray(parsed?.works) ? parsed.works : [];
           console.log(`${domain.toUpperCase()} found ${works.length} works`);
-          return works.map((w: any) => ({ ...w, source: domain }));
+          // SECURITY/QUALITY: Never trust AI-extracted ISWCs. Strip them even if present.
+          return works.map((w: any) => ({
+            title: w?.title,
+            writers: Array.isArray(w?.writers) ? w.writers : [],
+            publishers: Array.isArray(w?.publishers) ? w.publishers : [],
+            source: domain,
+          }));
         };
         const [ascap, bmi, sesac] = await Promise.all([
           fetchProDomain('ascap'),
@@ -584,6 +590,9 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
       let finalISWC: string | null = (work.iswc as string) || null;
       let coWritersMB: string[] = [];
 
+      const hasMLC = Array.isArray(work.sources) && work.sources.includes('mlc');
+      const hasMB = Array.isArray(work.sources) && work.sources.includes('musicbrainz');
+
       // Work details are expensive + prone to flake; cap how many we attempt per run.
       if (work.id && workDetailsCalls < WORK_DETAILS_HARD_CAP) {
         workDetailsCalls++;
@@ -596,6 +605,14 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
           const extra = writerRels.map((r: any) => r.artist?.name).filter(Boolean);
           if (extra?.length) coWritersMB = extra;
         }
+      }
+
+      // CRITICAL: Only allow ISWCs from authoritative sources.
+      // - MLC (via enhanced-mlc-lookup)
+      // - MusicBrainz (work details)
+      // Never allow PRO/AI-derived ISWCs.
+      if (!hasMLC && !hasMB) {
+        finalISWC = null;
       }
 
       const proDetails = (work.proDetails || {}) as Record<string, any>;
@@ -680,11 +697,10 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
       if (!finalISWC) registration_gaps.push('missing_iswc');
 
       // MB author present but no PRO registration
-      const hasMB = Array.isArray(work.sources) && work.sources.includes('musicbrainz');
       const hasAnyPRO = proFlags.ASCAP || proFlags.BMI || proFlags.SESAC;
-      const hasMLC = proFlags.MLC;
+      const hasMLC2 = proFlags.MLC;
       if (hasMB && !hasAnyPRO) registration_gaps.push('unregistered_in_pros');
-      if (hasMB && !hasMLC && !hasAnyPRO) registration_gaps.push('mlc_unregistered');
+      if (hasMB && !hasMLC2 && !hasAnyPRO) registration_gaps.push('mlc_unregistered');
 
       // Conflicts across PRO sources
       const presentPROs = proOrder.filter((k) => !!proDetails[k]);
@@ -717,11 +733,11 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
 
       // Higher metadata score for MLC-verified works
       let metadataScore = 0.5;
-      if (hasMLC) metadataScore = 0.95;
+      if (hasMLC2) metadataScore = 0.95;
       else if (finalISWC) metadataScore = 0.85;
       else if (hasAnyPRO) metadataScore = 0.7;
       
-      const verification_status = hasMLC ? 'mlc_verified' : (hasAnyPRO ? 'pro_verified' : 'discovered');
+      const verification_status = hasMLC2 ? 'mlc_verified' : (hasAnyPRO ? 'pro_verified' : 'discovered');
 
       rows.push({
         search_id: searchId,
@@ -749,6 +765,15 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
 
     let insertedCount = 0;
     if (rows.length) {
+      // Ensure we don't keep stale/hallucinated ISWCs from previous runs.
+      // We regenerate the full cache for this search on each discovery run.
+      const deleteQ = supabase
+        .from('song_metadata_cache')
+        .delete()
+        .eq('search_id', searchId);
+      if (userId) await deleteQ.eq('user_id', userId);
+      else await deleteQ.is('user_id', null);
+
       const { data, error } = await supabase
         .from('song_metadata_cache')
         .insert(rows)
