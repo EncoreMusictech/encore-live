@@ -63,7 +63,7 @@ useEffect(() => {
     if (location.pathname === '/client-portal') return;
     
     (async () => {
-      const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech'];
+      const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
       const isDemoAccount = user.email === 'demo@encoremusic.tech';
       const isAdmin = ADMIN_EMAILS.includes(user.email?.toLowerCase() || '');
       

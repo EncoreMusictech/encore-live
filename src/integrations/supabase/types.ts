@@ -6867,10 +6867,9 @@ export type Database = {
         Args: { reports_data: Json }
         Returns: number
       }
-      is_operations_team_member: {
-        Args: { p_user_id?: string }
-        Returns: boolean
-      }
+      is_operations_team_member:
+        | { Args: never; Returns: boolean }
+        | { Args: { p_user_id?: string }; Returns: boolean }
       is_system_admin: { Args: { _user_id: string }; Returns: boolean }
       link_expenses_to_payout: {
         Args: { payout_id_param: string }

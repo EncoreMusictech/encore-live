@@ -49,7 +49,7 @@ export default function LuminateCatalogTestPage() {
   const { canAccess, incrementUsage, showUpgradeModalForModule } = useDemoAccess();
   const { user } = useAuth();
   const { toast } = useToast();
-  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech'];
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
   const isAllowedSongEstimator = adminEmails.includes(user?.email?.toLowerCase() || '');
 
   useEffect(() => {
