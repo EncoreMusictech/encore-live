@@ -1,112 +1,88 @@
 
-# Fix: Handle Missing Search Data Gracefully
+# Implementation Plan: Add operations@encoremusic.tech as Admin User
 
-## Problem
+## Overview
+Grant `operations@encoremusic.tech` admin access to the ENCORE CRM with the same privileges as `info@encoremusic.tech`.
 
-When a user searches for an artist (e.g., "summer walker") that has **no prior catalog search** in the database, the `.single()` method throws an error because it expects exactly one row but gets zero.
-
-**Current behavior**: Shows error "JSON object requested, multiple (or no) rows returned"
-**Expected behavior**: Show a helpful message that no search data exists and offer to run a new search
-
----
-
-## Root Cause
-
-In `useCatalogAuditPresentation.ts`, lines 88-97 use `.single()` which throws an error when:
-- Zero rows are returned (no search exists for this artist)
-- Multiple rows are returned (shouldn't happen with `limit(1)`)
+## Current State
+- **User exists**: `operations@encoremusic.tech` (ID: `1e1cebcc-8e99-4d8f-9cdd-e87c24ed7eee`)
+- **Current admins in database**: 2 users have `admin` role in `user_roles` table
+- **Hardcoded admin emails**: Found in 15+ files across the codebase
 
 ---
 
-## Solution
+## Implementation Strategy: Hybrid Approach
 
-### 1. Replace `.single()` with `.maybeSingle()`
+### Phase 1: Database Role Assignment
+Add the `admin` role to the `user_roles` table for immediate access via components using `useUserRoles()`.
 
-Change the Supabase query to use `.maybeSingle()` which:
-- Returns the data if exactly one row matches
-- Returns `null` if no rows match (instead of throwing)
-- Still throws if multiple rows match (safety check)
+**SQL to execute:**
+```sql
+INSERT INTO user_roles (user_id, role) 
+VALUES ('1e1cebcc-8e99-4d8f-9cdd-e87c24ed7eee', 'admin');
+```
 
-### 2. Improve Error Messaging
+### Phase 2: Update Hardcoded Admin Email Arrays
+Update all files that define local `adminEmails` arrays to include `operations@encoremusic.tech`.
 
-When no search data is found for an artist, instead of showing a generic error, show a user-friendly message explaining:
-- No previous catalog search exists for this artist
-- They need to run a Song Estimator search first
-- Provide a link/button to the Song Estimator Tool
+**Files to update (13 total):**
 
-### 3. Update Error State
+| File | Line | Current Code |
+|------|------|--------------|
+| `src/hooks/useAdmin.ts` | 13 | `['info@encoremusic.tech','support@encoremusic.tech']` |
+| `src/hooks/useSuperAdmin.ts` | 13 | `['support@encoremusic.tech','info@encoremusic.tech']` |
+| `src/components/AdminOrProtectedRoute.tsx` | 10 | `ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech']` |
+| `src/components/Header.tsx` | 27 | `adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech']` |
+| `src/components/crm/CRMLayout.tsx` | 34 | `adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech']` |
+| `src/components/crm/CRMDashboard.tsx` | 197 | `adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech']` |
+| `src/pages/CRMOperationsPage.tsx` | 14 | `adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech']` |
+| `src/hooks/useDemoAccess.tsx` | 47 | `ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech']` |
+| `src/pages/Auth.tsx` | 66 | `ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech']` |
+| `src/components/operations/DataSeedButton.tsx` | 17 | `adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech']` |
+| `src/pages/CRMCatalogValuationPage.tsx` | 59 | `adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech']` |
+| `src/pages/LuminateCatalogTestPage.tsx` | 52 | `adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech']` |
+| `supabase/functions/operations-data-seeder/index.ts` | 33 | `user.email !== 'info@encoremusic.tech'` |
 
-Add a more specific error type to distinguish between:
-- "No search found" (user needs to run a search first)
-- "Failed to load" (actual database/network error)
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/hooks/useCatalogAuditPresentation.ts` | Replace `.single()` with `.maybeSingle()` for artist name search |
-| `src/pages/CatalogAuditPresentationPage.tsx` | Add better error UI with link to Song Estimator |
-
----
-
-## Code Changes
-
-### `useCatalogAuditPresentation.ts`
-
+**Updated code pattern:**
 ```typescript
-// Line 88-97: Change from .single() to .maybeSingle()
-} else if (artistName) {
-  const { data, error: searchError } = await supabase
-    .from('song_catalog_searches')
-    .select('id, songwriter_name, total_songs_found, metadata_complete_count, pipeline_estimate_total, ai_research_summary')
-    .ilike('songwriter_name', artistName)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();  // Changed from .single()
-
-  if (searchError) throw searchError;
-  
-  if (!data) {
-    throw new Error(`No catalog search found for "${artistName}". Please run a search in the Song Estimator Tool first.`);
-  }
-  
-  search = data as SearchData;
-}
+const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
 ```
 
-### `CatalogAuditPresentationPage.tsx`
+### Phase 3: Database RLS Policy Updates (Optional)
+The following SQL migrations have hardcoded admin emails in RLS policies. These require new migrations to add `operations@encoremusic.tech`:
 
-Improve the error state to show actionable options:
-- Display the specific error message
-- Add a button linking to `/song-estimator` to run a new search
-- Keep the "Go Back" option
+| Migration File | Policy |
+|----------------|--------|
+| `20250914050720_*.sql` | Storage policies for import-files bucket |
+| `20250824155811_*.sql` | `is_operations_team_member()` function |
+| `20250824155357_*.sql` | operations_team_members table |
+| `20250825203122_*.sql` | blockchain_admin_settings |
+
+**New migration to add:**
+```sql
+-- Update storage policies to include operations@encoremusic.tech
+-- Update is_operations_team_member function
+-- Update RLS policies
+```
 
 ---
 
-## Expected Result
+## Access Granted After Implementation
 
-When a user searches for an artist with no prior catalog search:
-
-```text
-+------------------------------------------+
-|            ⚠️ No Search Found            |
-|                                          |
-|  No catalog search found for             |
-|  "summer walker".                        |
-|                                          |
-|  Please run a search in the Song         |
-|  Estimator Tool first.                   |
-|                                          |
-|  [Run Search]        [← Go Back]         |
-+------------------------------------------+
-```
+| Module | Access Level |
+|--------|-------------|
+| CRM Dashboard | Full access to all modules |
+| Operations Hub | Full access (Client Onboarding, Analytics, etc.) |
+| Catalog Valuation | Song Estimator tool access |
+| Data Seeding | Can seed operations data |
+| Admin Panel | Visible in header navigation |
+| Client Portal | View as client mode |
+| Storage | Import files bucket access |
 
 ---
 
 ## Technical Notes
-
-- `.maybeSingle()` is the Supabase-recommended approach for "find one or none" queries
-- This aligns with the guidance in the useful-context about avoiding `.single()` when no data might be returned
-- The searchId path (lines 77-85) should also be updated for consistency, though it's less likely to fail since IDs are typically valid
+- All email comparisons are case-insensitive (`.toLowerCase()`)
+- The `useUserRoles` hook provides a fallback admin check via the `user_roles` table
+- Database role insertion is the most critical step for immediate access
+- Code updates ensure consistent behavior across all access control points
