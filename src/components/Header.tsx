@@ -24,7 +24,7 @@ const Header = () => {
   const { isSuperAdmin } = useSuperAdmin();
   
   // Check if user has paid access (admin or subscriber)
-  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech'];
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
   const isAdministrator = adminEmails.includes(user?.email?.toLowerCase() || '');
   const hasPaidAccess = isAdministrator || subscribed;
 

@@ -194,7 +194,7 @@ export function CRMDashboard() {
     }
   ];
 
-  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech'];
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
   const isAdministrator = adminEmails.includes(user?.email?.toLowerCase() || '') || isAdmin;
   const accessibleModules = isAdministrator 
     ? modules 

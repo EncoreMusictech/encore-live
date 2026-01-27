@@ -7,7 +7,7 @@ interface AdminOrProtectedRouteProps {
   children: React.ReactNode;
 }
 
-const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech'];
+const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
 
 const AdminOrProtectedRoute = ({ children }: AdminOrProtectedRouteProps) => {
   const { user, session, loading } = useAuth();

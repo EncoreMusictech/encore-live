@@ -14,7 +14,7 @@ export function DataSeedButton() {
   const { isAdmin } = useUserRoles();
 
   // Only show to ENCORE admin
-  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech'];
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
   const isAuthorized = adminEmails.includes(user?.email?.toLowerCase() || '') || isAdmin;
 
   const seedData = async () => {

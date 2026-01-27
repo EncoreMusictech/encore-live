@@ -30,7 +30,8 @@ serve(async (req) => {
     }
 
     // Only allow ENCORE admin to seed data
-    if (user.email !== 'info@encoremusic.tech') {
+    const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
+    if (!adminEmails.includes(user.email?.toLowerCase() || '')) {
       throw new Error('Access denied - ENCORE admin required');
     }
 

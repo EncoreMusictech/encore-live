@@ -31,7 +31,7 @@ export function CRMLayout() {
   }, [location.pathname]);
 
   // Check if user has access to CRM
-  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech'];
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
   const isDemoAccount = user?.email === 'demo@encoremusic.tech';
   const isAdministrator = adminEmails.includes(user?.email?.toLowerCase() || '') || isAdmin;
   const hasPaidAccess = isAdministrator || subscribed || canAccessDemo || isInternalEnterprise;

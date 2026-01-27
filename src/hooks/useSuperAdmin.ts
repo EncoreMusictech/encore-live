@@ -10,7 +10,7 @@ export const useSuperAdmin = () => {
     const checkSuperAdminStatus = () => {
       // Check if user is a super admin (case-insensitive)
       const email = user?.email?.toLowerCase() || '';
-      const superAdminStatus = ['support@encoremusic.tech','info@encoremusic.tech'].includes(email);
+      const superAdminStatus = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'].includes(email);
       setIsSuperAdmin(superAdminStatus);
       setLoading(false);
     };
