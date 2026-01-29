@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tables, TablesInsert } from '@/integrations/supabase/types';
-import { useDataFiltering } from '@/hooks/useDataFiltering';
+import { useHierarchicalFiltering } from '@/hooks/useHierarchicalFiltering';
 
 export type Contract = Tables<'contracts'>;
 export type ContractInsert = TablesInsert<'contracts'>;
@@ -18,7 +18,7 @@ export const useContracts = () => {
   const [contracts, setContracts] = useState<ContractWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { applyUserIdFilter, filterKey } = useDataFiltering();
+  const { applyUserIdFilter, applyClientCompanyIdFilter, filterKey, filterConfig } = useHierarchicalFiltering();
 
   const fetchContracts = async () => {
     try {
@@ -30,8 +30,10 @@ export const useContracts = () => {
           contract_schedule_works(*)
         `);
       
-      // Apply sub-account filtering if active
-      query = applyUserIdFilter(query);
+      // Apply hierarchical filtering - prefer client_company_id if available, fallback to user_id
+      if (filterConfig.isActive) {
+        query = applyClientCompanyIdFilter(query);
+      }
       
       const { data, error } = await query.order('created_at', { ascending: false });
 
@@ -192,7 +194,8 @@ export const useContracts = () => {
       // Duplicate interested parties if they exist
       if (contract_interested_parties && contract_interested_parties.length > 0) {
         const interestedPartiesData = contract_interested_parties.map(party => {
-          const { id, contract_id, created_at, updated_at, ...partyData } = party;
+          // Exclude client_company_id - it will be auto-set by database trigger
+          const { id, contract_id, created_at, updated_at, client_company_id, ...partyData } = party;
           return {
             ...partyData,
             contract_id: newContract.id
@@ -212,7 +215,8 @@ export const useContracts = () => {
       // Duplicate schedule works if they exist
       if (contract_schedule_works && contract_schedule_works.length > 0) {
         const scheduleWorksData = contract_schedule_works.map(work => {
-          const { id, contract_id, created_at, updated_at, ...workData } = work;
+          // Exclude client_company_id - it will be auto-set by database trigger
+          const { id, contract_id, created_at, updated_at, client_company_id, ...workData } = work;
           return {
             ...workData,
             contract_id: newContract.id
@@ -249,7 +253,8 @@ export const useContracts = () => {
   };
 
   // Interested Parties Management
-  const addInterestedParty = async (contractId: string, partyData: Omit<ContractInterestedParty, 'id' | 'contract_id' | 'created_at' | 'updated_at'>) => {
+  // Note: client_company_id is auto-populated by database trigger from parent contract
+  const addInterestedParty = async (contractId: string, partyData: Omit<ContractInterestedParty, 'id' | 'contract_id' | 'created_at' | 'updated_at' | 'client_company_id'>) => {
     try {
       const { data, error } = await supabase
         .from('contract_interested_parties')
@@ -338,7 +343,8 @@ export const useContracts = () => {
   };
 
   // Schedule of Works Management
-  const addScheduleWork = async (contractId: string, workData: Omit<ContractScheduleWork, 'id' | 'contract_id' | 'created_at' | 'updated_at'>) => {
+  // Note: client_company_id is auto-populated by database trigger from parent contract
+  const addScheduleWork = async (contractId: string, workData: Omit<ContractScheduleWork, 'id' | 'contract_id' | 'created_at' | 'updated_at' | 'client_company_id'>) => {
     try {
       const { data, error } = await supabase
         .from('contract_schedule_works')
