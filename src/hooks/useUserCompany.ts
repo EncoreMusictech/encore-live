@@ -8,6 +8,8 @@ interface UserCompany {
   display_name: string;
   company_type: string | null;
   parent_company_id: string | null;
+  subscription_tier: string | null;
+  subscription_status: string | null;
 }
 
 interface UseUserCompanyReturn {
@@ -16,6 +18,8 @@ interface UseUserCompanyReturn {
   error: string | null;
   isPublishingFirm: boolean;
   isClientLabel: boolean;
+  isEnterpriseTier: boolean;
+  canManageClients: boolean;
   hasCompany: boolean;
   refetch: () => void;
 }
@@ -47,7 +51,9 @@ export function useUserCompany(): UseUserCompanyReturn {
             name,
             display_name,
             company_type,
-            parent_company_id
+            parent_company_id,
+            subscription_tier,
+            subscription_status
           )
         `)
         .eq('user_id', user.id)
@@ -63,7 +69,9 @@ export function useUserCompany(): UseUserCompanyReturn {
           name: company.name,
           display_name: company.display_name,
           company_type: company.company_type,
-          parent_company_id: company.parent_company_id
+          parent_company_id: company.parent_company_id,
+          subscription_tier: company.subscription_tier,
+          subscription_status: company.subscription_status
         });
       } else {
         setUserCompany(null);
@@ -83,6 +91,9 @@ export function useUserCompany(): UseUserCompanyReturn {
 
   const isPublishingFirm = userCompany?.company_type === 'publishing_firm';
   const isClientLabel = userCompany?.company_type === 'client_label';
+  const isEnterpriseTier = userCompany?.subscription_tier === 'enterprise' || 
+                           userCompany?.subscription_tier === 'enterprise_internal';
+  const canManageClients = isPublishingFirm && isEnterpriseTier;
   const hasCompany = !!userCompany;
 
   return {
@@ -91,6 +102,8 @@ export function useUserCompany(): UseUserCompanyReturn {
     error,
     isPublishingFirm,
     isClientLabel,
+    isEnterpriseTier,
+    canManageClients,
     hasCompany,
     refetch: fetchUserCompany
   };
