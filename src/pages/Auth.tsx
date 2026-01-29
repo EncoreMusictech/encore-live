@@ -11,7 +11,7 @@ import { PlayCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientPortal } from '@/hooks/useClientPortal';
-import { useSubscription } from '@/hooks/useSubscription';
+
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -25,7 +25,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isClient } = useClientPortal();
-  const { subscribed } = useSubscription();
+  
 
   // Update page metadata
   useEffect(() => {
@@ -93,37 +93,35 @@ useEffect(() => {
         }
 
         // If user hasn't set up payment (skip for demo, admin, and internal enterprise accounts)
+        // This only applies to NEW users who haven't completed onboarding yet
         if (!profile?.payment_method_collected && !isDemoAccount && !isAdmin && !isInternalEnterprise) {
           navigate('/payment-setup', { replace: true });
           return;
         }
 
+        // Check if user has client portal access
         const hasPortal = await isClient();
         if (hasPortal && !isAdmin) {
           navigate('/client-portal', { replace: true });
           return;
         }
 
-        // If user has an active subscription or is internal enterprise, redirect to dashboard
-        if (subscribed || isInternalEnterprise) {
+        // If user has completed payment setup (existing user), go directly to dashboard
+        // No need to check subscription status - payment setup means they're an existing user
+        if (profile?.payment_method_collected || isDemoAccount || isAdmin || isInternalEnterprise) {
           navigate('/dashboard', { replace: true });
           return;
         }
-
-        // For regular users without subscription, redirect to payment setup
-        // They need to complete payment before accessing the dashboard
-        if (!isDemoAccount && !isAdmin) {
-          navigate('/payment-setup', { replace: true });
-          return;
-        }
       } catch (e) {
-        // ignore and fallback
+        console.error('Auth redirect error:', e);
+        // Fallback to dashboard for any errors
       }
-      const defaultRedirect = isDemoAccount ? '/dashboard' : '/payment-setup';
-      const from = (location.state as any)?.from?.pathname || defaultRedirect;
+      
+      // Default to dashboard for authenticated users
+      const from = (location.state as any)?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     })();
-  }, [user, navigate, location, isClient, showSetNewPassword, subscribed]);
+  }, [user, navigate, location, isClient, showSetNewPassword]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
