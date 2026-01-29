@@ -904,6 +904,7 @@ export type Database = {
         Row: {
           address: Json | null
           billing_info: Json | null
+          company_type: string | null
           contact_email: string | null
           created_at: string
           created_by: string | null
@@ -912,6 +913,7 @@ export type Database = {
           logo_url: string | null
           module_access: Json | null
           name: string
+          parent_company_id: string | null
           phone: string | null
           settings: Json | null
           slug: string
@@ -924,6 +926,7 @@ export type Database = {
         Insert: {
           address?: Json | null
           billing_info?: Json | null
+          company_type?: string | null
           contact_email?: string | null
           created_at?: string
           created_by?: string | null
@@ -932,6 +935,7 @@ export type Database = {
           logo_url?: string | null
           module_access?: Json | null
           name: string
+          parent_company_id?: string | null
           phone?: string | null
           settings?: Json | null
           slug: string
@@ -944,6 +948,7 @@ export type Database = {
         Update: {
           address?: Json | null
           billing_info?: Json | null
+          company_type?: string | null
           contact_email?: string | null
           created_at?: string
           created_by?: string | null
@@ -952,6 +957,7 @@ export type Database = {
           logo_url?: string | null
           module_access?: Json | null
           name?: string
+          parent_company_id?: string | null
           phone?: string | null
           settings?: Json | null
           slug?: string
@@ -961,7 +967,15 @@ export type Database = {
           updated_at?: string
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "companies_parent_company_id_fkey"
+            columns: ["parent_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_module_access: {
         Row: {
@@ -969,6 +983,7 @@ export type Database = {
           created_at: string | null
           enabled: boolean
           id: string
+          inherited_from: string | null
           module_id: string
           updated_at: string | null
         }
@@ -977,6 +992,7 @@ export type Database = {
           created_at?: string | null
           enabled?: boolean
           id?: string
+          inherited_from?: string | null
           module_id: string
           updated_at?: string | null
         }
@@ -985,6 +1001,7 @@ export type Database = {
           created_at?: string | null
           enabled?: boolean
           id?: string
+          inherited_from?: string | null
           module_id?: string
           updated_at?: string | null
         }
@@ -992,6 +1009,13 @@ export type Database = {
           {
             foreignKeyName: "company_module_access_company_id_fkey"
             columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_module_access_inherited_from_fkey"
+            columns: ["inherited_from"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
@@ -1039,6 +1063,48 @@ export type Database = {
           {
             foreignKeyName: "company_users_company_id_fkey"
             columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_view_scope: {
+        Row: {
+          created_at: string | null
+          id: string
+          parent_company_id: string
+          scoped_company_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          parent_company_id: string
+          scoped_company_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          parent_company_id?: string
+          scoped_company_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_view_scope_parent_company_id_fkey"
+            columns: ["parent_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_view_scope_scoped_company_id_fkey"
+            columns: ["scoped_company_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
@@ -1428,6 +1494,7 @@ export type Database = {
           advance_amount: number | null
           agreement_id: string | null
           associated_catalog_ids: string[] | null
+          client_company_id: string | null
           commission_percentage: number | null
           contact_address: string | null
           contact_name: string | null
@@ -1470,6 +1537,7 @@ export type Database = {
           advance_amount?: number | null
           agreement_id?: string | null
           associated_catalog_ids?: string[] | null
+          client_company_id?: string | null
           commission_percentage?: number | null
           contact_address?: string | null
           contact_name?: string | null
@@ -1512,6 +1580,7 @@ export type Database = {
           advance_amount?: number | null
           agreement_id?: string | null
           associated_catalog_ids?: string[] | null
+          client_company_id?: string | null
           commission_percentage?: number | null
           contact_address?: string | null
           contact_name?: string | null
@@ -1549,7 +1618,15 @@ export type Database = {
           version?: number | null
           w9_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contracts_client_company_id_fkey"
+            columns: ["client_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       copyright_activity_logs: {
         Row: {
@@ -1881,6 +1958,7 @@ export type Database = {
           bmi_status: string | null
           bmi_work_id: string | null
           catalogue_number: string | null
+          client_company_id: string | null
           collection_territories: string[] | null
           contains_sample: boolean | null
           copyright_date: string | null
@@ -1934,6 +2012,7 @@ export type Database = {
           bmi_status?: string | null
           bmi_work_id?: string | null
           catalogue_number?: string | null
+          client_company_id?: string | null
           collection_territories?: string[] | null
           contains_sample?: boolean | null
           copyright_date?: string | null
@@ -1987,6 +2066,7 @@ export type Database = {
           bmi_status?: string | null
           bmi_work_id?: string | null
           catalogue_number?: string | null
+          client_company_id?: string | null
           collection_territories?: string[] | null
           contains_sample?: boolean | null
           copyright_date?: string | null
@@ -2032,7 +2112,15 @@ export type Database = {
           work_title?: string
           work_type?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "copyrights_client_company_id_fkey"
+            columns: ["client_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_contacts: {
         Row: {
@@ -3157,6 +3245,7 @@ export type Database = {
           beginning_balance: number | null
           beginning_balance_as_of_date: string | null
           beginning_balance_notes: string | null
+          client_company_id: string | null
           contact_info: Json | null
           created_at: string
           id: string
@@ -3173,6 +3262,7 @@ export type Database = {
           beginning_balance?: number | null
           beginning_balance_as_of_date?: string | null
           beginning_balance_notes?: string | null
+          client_company_id?: string | null
           contact_info?: Json | null
           created_at?: string
           id?: string
@@ -3189,6 +3279,7 @@ export type Database = {
           beginning_balance?: number | null
           beginning_balance_as_of_date?: string | null
           beginning_balance_notes?: string | null
+          client_company_id?: string | null
           contact_info?: Json | null
           created_at?: string
           id?: string
@@ -3207,6 +3298,13 @@ export type Database = {
             columns: ["writer_id"]
             isOneToOne: false
             referencedRelation: "writers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payees_client_company_id_fkey"
+            columns: ["client_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -4440,6 +4538,7 @@ export type Database = {
         Row: {
           artist: string | null
           batch_id: string | null
+          client_company_id: string | null
           comments: string | null
           controlled_status:
             | Database["public"]["Enums"]["controlled_status"]
@@ -4476,6 +4575,7 @@ export type Database = {
         Insert: {
           artist?: string | null
           batch_id?: string | null
+          client_company_id?: string | null
           comments?: string | null
           controlled_status?:
             | Database["public"]["Enums"]["controlled_status"]
@@ -4512,6 +4612,7 @@ export type Database = {
         Update: {
           artist?: string | null
           batch_id?: string | null
+          client_company_id?: string | null
           comments?: string | null
           controlled_status?:
             | Database["public"]["Enums"]["controlled_status"]
@@ -4551,6 +4652,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "reconciliation_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "royalty_allocations_client_company_id_fkey"
+            columns: ["client_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
           {
@@ -6748,6 +6856,15 @@ export type Database = {
           total_sessions: number
         }[]
       }
+      get_child_companies: {
+        Args: { _parent_id: string }
+        Returns: {
+          company_id: string
+          company_name: string
+          company_type: string
+          display_name: string
+        }[]
+      }
       get_client_quarterly_balances: {
         Args: never
         Returns: {
@@ -6768,6 +6885,12 @@ export type Database = {
         Args: { _client_user_id: string }
         Returns: string
       }
+      get_company_hierarchy_user_ids: {
+        Args: { _company_id: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
       get_company_user_ids: {
         Args: { _user_id: string }
         Returns: {
@@ -6785,6 +6908,18 @@ export type Database = {
           role: string
           status: string
           user_id: string
+        }[]
+      }
+      get_company_with_hierarchy: {
+        Args: { _company_id: string }
+        Returns: {
+          child_count: number
+          company_type: string
+          display_name: string
+          id: string
+          name: string
+          parent_company_id: string
+          parent_company_name: string
         }[]
       }
       get_invitations_needing_reminders: {
@@ -6835,6 +6970,10 @@ export type Database = {
         Args: { company_id_param: string; user_id_param?: string }
         Returns: string
       }
+      get_user_view_scope: {
+        Args: { _parent_company_id: string; _user_id: string }
+        Returns: string
+      }
       has_active_trial: {
         Args: { p_modules: string[]; p_user_id: string }
         Returns: boolean
@@ -6870,6 +7009,7 @@ export type Database = {
       is_operations_team_member:
         | { Args: never; Returns: boolean }
         | { Args: { p_user_id?: string }; Returns: boolean }
+      is_ops_team: { Args: never; Returns: boolean }
       is_system_admin: { Args: { _user_id: string }; Returns: boolean }
       link_expenses_to_payout: {
         Args: { payout_id_param: string }
@@ -6937,6 +7077,14 @@ export type Database = {
           deleted_count: number
         }[]
       }
+      set_user_view_scope: {
+        Args: {
+          _parent_company_id: string
+          _scoped_company_id?: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       setup_demo_user: { Args: never; Returns: undefined }
       start_free_trial: {
         Args: {
@@ -6962,6 +7110,10 @@ export type Database = {
       }
       user_belongs_to_company: {
         Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_has_hierarchy_access: {
+        Args: { _target_company_id: string; _user_id: string }
         Returns: boolean
       }
       user_has_module_access: {

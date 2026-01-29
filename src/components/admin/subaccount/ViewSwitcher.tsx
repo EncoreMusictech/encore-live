@@ -19,9 +19,10 @@ import {
 interface ViewSwitcherProps {
   companyId: string;
   companyName: string;
+  isPublishingFirm?: boolean;
 }
 
-export function ViewSwitcher({ companyId, companyName }: ViewSwitcherProps) {
+export function ViewSwitcher({ companyId, companyName, isPublishingFirm = false }: ViewSwitcherProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [isViewMode, setIsViewMode] = useState(false);
   const navigate = useNavigate();
@@ -59,6 +60,10 @@ export function ViewSwitcher({ companyId, companyName }: ViewSwitcherProps) {
         mode: 'subaccount',
         companyId,
         companyName,
+        companyType: isPublishingFirm ? 'publishing_firm' : 'standard',
+        parentCompanyId: isPublishingFirm ? companyId : undefined,
+        parentCompanyName: isPublishingFirm ? companyName : undefined,
+        viewScope: isPublishingFirm ? 'all' : 'single',
         returnPath: window.location.pathname,
         sessionId
       }));

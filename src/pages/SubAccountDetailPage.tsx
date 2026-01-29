@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye } from 'lucide-react';
+import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase } from 'lucide-react';
 import { SubAccountOverview } from '@/components/admin/subaccount/SubAccountOverview';
 import { SubAccountUsers } from '@/components/admin/subaccount/SubAccountUsers';
 import { SubAccountModules } from '@/components/admin/subaccount/SubAccountModules';
 import { SubAccountWorks } from '@/components/admin/subaccount/SubAccountWorks';
 import { SubAccountSettings } from '@/components/admin/subaccount/SubAccountSettings';
 import { ViewSwitcher } from '@/components/admin/subaccount/ViewSwitcher';
+import { ClientsManager } from '@/components/hierarchy/ClientsManager';
+import { useClientHierarchy } from '@/hooks/useClientHierarchy';
 
 interface Company {
   id: string;
@@ -24,6 +26,8 @@ interface Company {
   subscription_status: string;
   created_at: string;
   slug: string;
+  company_type?: string;
+  parent_company_id?: string;
 }
 
 export default function SubAccountDetailPage() {
@@ -33,6 +37,9 @@ export default function SubAccountDetailPage() {
   const [loading, setLoading] = useState(true);
   const [userCount, setUserCount] = useState(0);
   const [moduleCount, setModuleCount] = useState(0);
+  
+  // Fetch hierarchy info
+  const { isPublishingFirm, hasChildren, childCompanies } = useClientHierarchy(id);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -127,7 +134,17 @@ export default function SubAccountDetailPage() {
             {company.subscription_status}
           </Badge>
           <Badge variant="outline">{company.subscription_tier}</Badge>
-          <ViewSwitcher companyId={company.id} companyName={company.name} />
+          {(isPublishingFirm || hasChildren) && (
+            <Badge variant="secondary" className="bg-primary/10 text-primary">
+              <Briefcase className="h-3 w-3 mr-1" />
+              Publishing Firm ({childCompanies.length} clients)
+            </Badge>
+          )}
+          <ViewSwitcher 
+            companyId={company.id} 
+            companyName={company.name}
+            isPublishingFirm={isPublishingFirm || hasChildren}
+          />
         </div>
       </div>
 
@@ -176,6 +193,12 @@ export default function SubAccountDetailPage() {
             <Building2 className="h-4 w-4 mr-2" />
             Overview
           </TabsTrigger>
+          {(isPublishingFirm || hasChildren) && (
+            <TabsTrigger value="clients">
+              <Briefcase className="h-4 w-4 mr-2" />
+              Clients
+            </TabsTrigger>
+          )}
           <TabsTrigger value="users">
             <Users className="h-4 w-4 mr-2" />
             Users
@@ -197,6 +220,12 @@ export default function SubAccountDetailPage() {
         <TabsContent value="overview" className="space-y-6">
           <SubAccountOverview company={company} onUpdate={fetchCompanyDetails} />
         </TabsContent>
+
+        {(isPublishingFirm || hasChildren) && (
+          <TabsContent value="clients" className="space-y-6">
+            <ClientsManager parentCompanyId={company.id} parentCompanyName={company.display_name} />
+          </TabsContent>
+        )}
 
         <TabsContent value="users" className="space-y-6">
           <SubAccountUsers companyId={company.id} onUpdate={fetchCompanyDetails} />

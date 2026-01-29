@@ -3,18 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ViewContext {
-  mode: 'system' | 'subaccount';
+  mode: 'system' | 'subaccount' | 'client';
   companyId?: string;
   companyName?: string;
+  companyType?: 'publishing_firm' | 'client_label' | 'standard';
+  parentCompanyId?: string;       // For child companies
+  parentCompanyName?: string;     // For breadcrumb display
+  viewScope: 'all' | 'single';    // Aggregated or single client
   returnPath?: string;
-  sessionId?: string; // For audit logging
+  sessionId?: string;             // For audit logging
 }
 
 interface ViewModeContextType {
   viewContext: ViewContext | null;
   isViewingAsSubAccount: boolean;
+  isViewingAsClient: boolean;
+  isAggregateView: boolean;
   exitViewMode: () => void;
   refreshViewContext: () => void;
+  setViewScope: (scope: 'all' | 'single', companyId?: string) => void;
+  switchToClientView: (clientCompanyId: string, clientCompanyName: string) => void;
 }
 
 const ViewModeContext = createContext<ViewModeContextType | undefined>(undefined);
@@ -28,6 +36,10 @@ export function ViewModeProvider({ children }: { children: ReactNode }) {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
+        // Ensure viewScope has a default value
+        if (!parsed.viewScope) {
+          parsed.viewScope = 'single';
+        }
         setViewContext(parsed);
       } catch (error) {
         console.error('Failed to parse view context:', error);
@@ -58,6 +70,16 @@ export function ViewModeProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const saveViewContext = (context: ViewContext | null) => {
+    if (context) {
+      sessionStorage.setItem('viewContext', JSON.stringify(context));
+    } else {
+      sessionStorage.removeItem('viewContext');
+    }
+    setViewContext(context);
+    window.dispatchEvent(new Event('viewContextChanged'));
+  };
+
   const exitViewMode = async () => {
     const returnPath = viewContext?.returnPath || '/dashboard/operations';
     const sessionId = viewContext?.sessionId;
@@ -78,12 +100,7 @@ export function ViewModeProvider({ children }: { children: ReactNode }) {
       }
     }
     
-    sessionStorage.removeItem('viewContext');
-    setViewContext(null);
-    
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new Event('viewContextChanged'));
-    
+    saveViewContext(null);
     navigate(returnPath);
   };
 
@@ -91,15 +108,61 @@ export function ViewModeProvider({ children }: { children: ReactNode }) {
     loadViewContext();
   };
 
-  const isViewingAsSubAccount = viewContext?.mode === 'subaccount';
+  /**
+   * Toggle between aggregate (all clients) and single client view
+   */
+  const setViewScope = (scope: 'all' | 'single', companyId?: string) => {
+    if (!viewContext) return;
+
+    const updatedContext: ViewContext = {
+      ...viewContext,
+      viewScope: scope,
+    };
+
+    // If switching to single mode and a company ID is provided, update the viewed company
+    if (scope === 'single' && companyId) {
+      updatedContext.companyId = companyId;
+    }
+
+    saveViewContext(updatedContext);
+  };
+
+  /**
+   * Switch to viewing a specific client label under the current publishing firm
+   */
+  const switchToClientView = (clientCompanyId: string, clientCompanyName: string) => {
+    if (!viewContext) return;
+
+    const updatedContext: ViewContext = {
+      ...viewContext,
+      mode: 'client',
+      companyId: clientCompanyId,
+      companyName: clientCompanyName,
+      companyType: 'client_label',
+      viewScope: 'single',
+      // Keep the parent info for navigation
+      parentCompanyId: viewContext.parentCompanyId || viewContext.companyId,
+      parentCompanyName: viewContext.parentCompanyName || viewContext.companyName,
+    };
+
+    saveViewContext(updatedContext);
+  };
+
+  const isViewingAsSubAccount = viewContext?.mode === 'subaccount' || viewContext?.mode === 'client';
+  const isViewingAsClient = viewContext?.mode === 'client';
+  const isAggregateView = viewContext?.viewScope === 'all';
 
   return (
     <ViewModeContext.Provider
       value={{
         viewContext,
         isViewingAsSubAccount,
+        isViewingAsClient,
+        isAggregateView,
         exitViewMode,
         refreshViewContext,
+        setViewScope,
+        switchToClientView,
       }}
     >
       {children}
