@@ -1203,6 +1203,7 @@ export type Database = {
           administrator_role: string | null
           affiliation: string | null
           cae_number: string | null
+          client_company_id: string | null
           co_publisher: string | null
           contract_id: string
           controlled_status: string
@@ -1229,6 +1230,7 @@ export type Database = {
           administrator_role?: string | null
           affiliation?: string | null
           cae_number?: string | null
+          client_company_id?: string | null
           co_publisher?: string | null
           contract_id: string
           controlled_status?: string
@@ -1255,6 +1257,7 @@ export type Database = {
           administrator_role?: string | null
           affiliation?: string | null
           cae_number?: string | null
+          client_company_id?: string | null
           co_publisher?: string | null
           contract_id?: string
           controlled_status?: string
@@ -1277,6 +1280,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contract_interested_parties_client_company_id_fkey"
+            columns: ["client_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contract_interested_parties_contract_id_fkey"
             columns: ["contract_id"]
@@ -1387,6 +1397,7 @@ export type Database = {
         Row: {
           album_title: string | null
           artist_name: string | null
+          client_company_id: string | null
           contract_id: string
           copyright_id: string | null
           created_at: string
@@ -1405,6 +1416,7 @@ export type Database = {
         Insert: {
           album_title?: string | null
           artist_name?: string | null
+          client_company_id?: string | null
           contract_id: string
           copyright_id?: string | null
           created_at?: string
@@ -1423,6 +1435,7 @@ export type Database = {
         Update: {
           album_title?: string | null
           artist_name?: string | null
+          client_company_id?: string | null
           contract_id?: string
           copyright_id?: string | null
           created_at?: string
@@ -1439,6 +1452,13 @@ export type Database = {
           work_specific_rate_reduction?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contract_schedule_works_client_company_id_fkey"
+            columns: ["client_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contract_schedule_works_contract_id_fkey"
             columns: ["contract_id"]
