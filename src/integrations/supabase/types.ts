@@ -6833,6 +6833,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      create_client_label: {
+        Args: {
+          _display_name: string
+          _name: string
+          _parent_company_id: string
+          _slug: string
+        }
+        Returns: {
+          display_name: string
+          id: string
+        }[]
+      }
       create_notification: {
         Args: {
           p_data?: Json
