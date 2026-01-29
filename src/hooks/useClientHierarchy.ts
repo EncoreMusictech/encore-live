@@ -106,17 +106,14 @@ export function useClientHierarchy(companyId?: string): UseClientHierarchyReturn
     try {
       // Generate a slug from the name
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      
-      const { data, error: insertError } = await supabase
-        .from('companies')
-        .insert({
-          name,
-          display_name: displayName,
-          slug: `${slug}-${Date.now()}`,
-          company_type: 'client_label',
-          parent_company_id: parentId
+
+      const { data, error: insertError } = await (supabase as any)
+        .rpc('create_client_label', {
+          _parent_company_id: parentId,
+          _name: name,
+          _display_name: displayName,
+          _slug: `${slug}-${Date.now()}`,
         })
-        .select('id')
         .single();
 
       if (insertError) throw insertError;

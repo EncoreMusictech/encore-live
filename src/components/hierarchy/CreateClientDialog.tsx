@@ -82,17 +82,14 @@ export function CreateClientDialog({
 
     try {
       const slug = clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      
-      const { data, error } = await supabase
-        .from('companies')
-        .insert({
-          name: clientName.trim(),
-          display_name: clientDisplayName.trim(),
-          slug: `${slug}-${Date.now()}`,
-          company_type: 'client_label',
-          parent_company_id: parentCompanyId
+
+      const { data, error } = await (supabase as any)
+        .rpc('create_client_label', {
+          _parent_company_id: parentCompanyId,
+          _name: clientName.trim(),
+          _display_name: clientDisplayName.trim(),
+          _slug: `${slug}-${Date.now()}`,
         })
-        .select('id, display_name')
         .single();
 
       if (error) throw error;
