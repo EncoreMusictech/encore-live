@@ -1,0 +1,455 @@
+import { useState } from 'react';
+import { Building2, Mail, Plus, X, ArrowRight, ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+interface CreateClientDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  parentCompanyId: string;
+  parentCompanyName: string;
+  onClientCreated: () => void;
+}
+
+type Step = 'details' | 'invite' | 'complete';
+
+interface InviteEmail {
+  email: string;
+  name?: string;
+}
+
+export function CreateClientDialog({
+  open,
+  onOpenChange,
+  parentCompanyId,
+  parentCompanyName,
+  onClientCreated,
+}: CreateClientDialogProps) {
+  const [step, setStep] = useState<Step>('details');
+  const [clientName, setClientName] = useState('');
+  const [clientDisplayName, setClientDisplayName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [createdClientId, setCreatedClientId] = useState<string | null>(null);
+  const [createdClientName, setCreatedClientName] = useState('');
+  
+  // Invite step state
+  const [inviteEmails, setInviteEmails] = useState<InviteEmail[]>([]);
+  const [currentEmail, setCurrentEmail] = useState('');
+  const [currentName, setCurrentName] = useState('');
+  const [isSendingInvites, setIsSendingInvites] = useState(false);
+  
+  const { toast } = useToast();
+
+  const resetForm = () => {
+    setStep('details');
+    setClientName('');
+    setClientDisplayName('');
+    setCreatedClientId(null);
+    setCreatedClientName('');
+    setInviteEmails([]);
+    setCurrentEmail('');
+    setCurrentName('');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onOpenChange(false);
+  };
+
+  const handleCreateClient = async () => {
+    if (!clientName.trim() || !clientDisplayName.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Both name and display name are required.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      const slug = clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      
+      const { data, error } = await supabase
+        .from('companies')
+        .insert({
+          name: clientName.trim(),
+          display_name: clientDisplayName.trim(),
+          slug: `${slug}-${Date.now()}`,
+          company_type: 'client_label',
+          parent_company_id: parentCompanyId
+        })
+        .select('id, display_name')
+        .single();
+
+      if (error) throw error;
+
+      setCreatedClientId(data.id);
+      setCreatedClientName(data.display_name);
+      setStep('invite');
+      
+      toast({
+        title: 'Client Label Created',
+        description: `${data.display_name} has been created successfully.`
+      });
+    } catch (err: any) {
+      console.error('Error creating client label:', err);
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to create client label',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const addEmailToList = () => {
+    const emailTrimmed = currentEmail.trim().toLowerCase();
+    if (!emailTrimmed) return;
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailTrimmed)) {
+      toast({
+        title: 'Invalid Email',
+        description: 'Please enter a valid email address.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Check for duplicates
+    if (inviteEmails.some(e => e.email === emailTrimmed)) {
+      toast({
+        title: 'Duplicate Email',
+        description: 'This email has already been added.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setInviteEmails([...inviteEmails, { email: emailTrimmed, name: currentName.trim() || undefined }]);
+    setCurrentEmail('');
+    setCurrentName('');
+  };
+
+  const removeEmail = (email: string) => {
+    setInviteEmails(inviteEmails.filter(e => e.email !== email));
+  };
+
+  const handleSendInvites = async () => {
+    if (inviteEmails.length === 0) {
+      toast({
+        title: 'No Emails',
+        description: 'Add at least one email address to send invitations.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsSendingInvites(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const invite of inviteEmails) {
+        try {
+          // Create invitation record - the invitation_token is auto-generated by a trigger
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+
+          // Generate a token client-side since we need it for the email
+          const tokenArray = new Uint8Array(32);
+          crypto.getRandomValues(tokenArray);
+          const token = Array.from(tokenArray, b => b.toString(16).padStart(2, '0')).join('');
+
+          const { data: invitationData, error: inviteError } = await supabase
+            .from('client_invitations')
+            .insert({
+              subscriber_user_id: user.id,
+              email: invite.email,
+              role: 'client' as const,
+              expires_at: expiresAt.toISOString(),
+              permissions: { company_id: createdClientId },
+              invitation_token: token
+            })
+            .select('invitation_token')
+            .single();
+
+          if (inviteError) throw inviteError;
+
+          // Send email via edge function
+          const { error: emailError } = await supabase.functions.invoke('send-client-invitation', {
+            body: {
+              invitee_email: invite.email,
+              invitee_name: invite.name,
+              token: invitationData.invitation_token,
+              role: 'client',
+              company_name: createdClientName,
+              subscriber_name: parentCompanyName,
+            }
+          });
+
+          if (emailError) {
+            console.error('Failed to send email to:', invite.email, emailError);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          console.error('Failed to invite:', invite.email, err);
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast({
+          title: 'Invitations Sent',
+          description: `Successfully sent ${successCount} invitation${successCount > 1 ? 's' : ''}.${errorCount > 0 ? ` ${errorCount} failed.` : ''}`
+        });
+      } else {
+        toast({
+          title: 'Failed to Send',
+          description: 'Could not send any invitations. Please try again.',
+          variant: 'destructive'
+        });
+      }
+
+      setStep('complete');
+    } catch (err: any) {
+      console.error('Error sending invites:', err);
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to send invitations',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSendingInvites(false);
+    }
+  };
+
+  const handleSkipInvites = () => {
+    setStep('complete');
+  };
+
+  const handleDone = () => {
+    onClientCreated();
+    handleClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            {step === 'details' && 'Create New Client Label'}
+            {step === 'invite' && 'Invite Team Members'}
+            {step === 'complete' && 'Setup Complete'}
+          </DialogTitle>
+          <DialogDescription>
+            {step === 'details' && (
+              <>Add a new client label under {parentCompanyName}. This will create a separate data scope for this client's works, contracts, and royalties.</>
+            )}
+            {step === 'invite' && (
+              <>Invite users to {createdClientName}. They'll receive an email to create their account.</>
+            )}
+            {step === 'complete' && (
+              <>{createdClientName} has been set up successfully!</>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Step Indicator */}
+        <div className="flex items-center justify-center gap-2 py-2">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === 'details' ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary'}`}>
+            {step !== 'details' ? <Check className="h-4 w-4" /> : '1'}
+          </div>
+          <div className="w-8 h-0.5 bg-muted" />
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === 'invite' ? 'bg-primary text-primary-foreground' : step === 'complete' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+            {step === 'complete' ? <Check className="h-4 w-4" /> : '2'}
+          </div>
+          <div className="w-8 h-0.5 bg-muted" />
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === 'complete' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            3
+          </div>
+        </div>
+
+        {/* Step Content */}
+        <div className="py-4">
+          {step === 'details' && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="client-name">Internal Name</Label>
+                <Input
+                  id="client-name"
+                  placeholder="e.g., empire-records"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used for system identification. Lowercase, no spaces.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="client-display-name">Display Name</Label>
+                <Input
+                  id="client-display-name"
+                  placeholder="e.g., Empire Records"
+                  value={clientDisplayName}
+                  onChange={(e) => setClientDisplayName(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Shown in the UI and reports.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {step === 'invite' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="invite-email">Email Address</Label>
+                  <Input
+                    id="invite-email"
+                    type="email"
+                    placeholder="user@example.com"
+                    value={currentEmail}
+                    onChange={(e) => setCurrentEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addEmailToList())}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invite-name">Name (optional)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="invite-name"
+                      placeholder="John Doe"
+                      value={currentName}
+                      onChange={(e) => setCurrentName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addEmailToList())}
+                    />
+                    <Button type="button" size="icon" onClick={addEmailToList}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {inviteEmails.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Pending Invitations ({inviteEmails.length})</Label>
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-muted/50 rounded-md">
+                    {inviteEmails.map((invite) => (
+                      <Badge key={invite.email} variant="secondary" className="flex items-center gap-1">
+                        <Mail className="h-3 w-3" />
+                        {invite.name ? `${invite.name} (${invite.email})` : invite.email}
+                        <button
+                          onClick={() => removeEmail(invite.email)}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {inviteEmails.length === 0 && (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Mail className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Add email addresses to invite users</p>
+                  <p className="text-xs">Or skip this step to add them later</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 'complete' && (
+            <div className="text-center py-6">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Check className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">{createdClientName}</h3>
+              <p className="text-sm text-muted-foreground">
+                {inviteEmails.length > 0 
+                  ? `Client label created and ${inviteEmails.length} invitation${inviteEmails.length > 1 ? 's' : ''} sent.`
+                  : 'Client label created successfully. You can invite users later from the client settings.'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          {step === 'details' && (
+            <>
+              <Button variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateClient} disabled={isCreating}>
+                {isCreating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    Next: Invite Users
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+
+          {step === 'invite' && (
+            <>
+              <Button variant="ghost" onClick={handleSkipInvites} disabled={isSendingInvites}>
+                Skip for Now
+              </Button>
+              <Button onClick={handleSendInvites} disabled={isSendingInvites || inviteEmails.length === 0}>
+                {isSendingInvites ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    Send {inviteEmails.length > 0 ? `${inviteEmails.length} ` : ''}Invitation{inviteEmails.length !== 1 ? 's' : ''}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+
+          {step === 'complete' && (
+            <Button onClick={handleDone} className="w-full">
+              Done
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
