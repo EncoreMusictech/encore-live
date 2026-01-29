@@ -7140,6 +7140,10 @@ export type Database = {
         Args: { p_module_id: string; p_user_id: string }
         Returns: boolean
       }
+      user_is_member_of_publishing_firm: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
       validate_royalty_splits: {
         Args: { contract_id_param: string }
         Returns: {
