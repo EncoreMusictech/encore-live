@@ -100,7 +100,7 @@ export function CRMSidebar() {
     isDemo
   } = useDemoAccess();
   const { isSuperAdmin } = useSuperAdmin();
-  const { isPublishingFirm } = useUserCompany();
+  const { canManageClients } = useUserCompany();
   const location = useLocation();
   const [userModules, setUserModules] = useState<string[]>([]);
   const { state } = useSidebar();
@@ -189,7 +189,7 @@ export function CRMSidebar() {
             <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {isPublishingFirm && <SidebarMenuItem>
+                {canManageClients && <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/dashboard/clients" className="flex items-center">
                       <Building2 className="mr-2 h-4 w-4" />

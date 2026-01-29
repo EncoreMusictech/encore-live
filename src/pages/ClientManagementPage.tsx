@@ -10,7 +10,7 @@ import { useClientHierarchy } from '@/hooks/useClientHierarchy';
 
 const ClientManagementPage = () => {
   const navigate = useNavigate();
-  const { userCompany, loading: companyLoading, isPublishingFirm } = useUserCompany();
+  const { userCompany, loading: companyLoading, isPublishingFirm, isEnterpriseTier, canManageClients } = useUserCompany();
   const { childCompanies, loading: hierarchyLoading } = useClientHierarchy(userCompany?.id);
 
   // Update page metadata
@@ -75,6 +75,33 @@ const ClientManagementPage = () => {
             Client management is available for publishing firms. Your account ({userCompany.display_name}) 
             is currently set as a "{userCompany.company_type || 'standard'}" account. 
             Contact your administrator to upgrade to a publishing firm account.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // If user's company is not enterprise tier
+  if (!isEnterpriseTier) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Client Management</h1>
+            <p className="text-muted-foreground">Manage your client labels</p>
+          </div>
+        </div>
+
+        <Alert>
+          <Building2 className="h-4 w-4" />
+          <AlertTitle>Enterprise Tier Required</AlertTitle>
+          <AlertDescription>
+            Client management is available for enterprise tier accounts. Your account ({userCompany.display_name}) 
+            is currently on the "{userCompany.subscription_tier || 'basic'}" tier. 
+            Contact your administrator to upgrade to an enterprise account.
           </AlertDescription>
         </Alert>
       </div>
