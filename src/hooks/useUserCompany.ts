@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { fetchActiveCompanyMemberships, pickPrimaryCompany } from '@/lib/companyMembership';
 
 interface UserCompany {
   id: string;
@@ -41,41 +41,24 @@ export function useUserCompany(): UseUserCompanyReturn {
     setError(null);
 
     try {
-      // Get the user's active company membership
-      const { data: companyUser, error: companyUserError } = await supabase
-        .from('company_users')
-        .select(`
-          company_id,
-          companies (
-            id,
-            name,
-            display_name,
-            company_type,
-            parent_company_id,
-            subscription_tier,
-            subscription_status
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .maybeSingle();
+      // A user can belong to multiple active companies; pick a sensible primary.
+      const memberships = await fetchActiveCompanyMemberships(user.id);
+      const company = pickPrimaryCompany(memberships) as unknown as UserCompany | null;
 
-      if (companyUserError) throw companyUserError;
-
-      if (companyUser?.companies) {
-        const company = companyUser.companies as unknown as UserCompany;
-        setUserCompany({
-          id: company.id,
-          name: company.name,
-          display_name: company.display_name,
-          company_type: company.company_type,
-          parent_company_id: company.parent_company_id,
-          subscription_tier: company.subscription_tier,
-          subscription_status: company.subscription_status
-        });
-      } else {
+      if (!company) {
         setUserCompany(null);
+        return;
       }
+
+      setUserCompany({
+        id: company.id,
+        name: company.name,
+        display_name: company.display_name,
+        company_type: company.company_type,
+        parent_company_id: company.parent_company_id,
+        subscription_tier: company.subscription_tier,
+        subscription_status: company.subscription_status,
+      });
     } catch (err) {
       console.error('Error fetching user company:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch user company');

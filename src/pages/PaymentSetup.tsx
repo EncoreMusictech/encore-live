@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { CreditCard, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { fetchActiveCompanyMemberships, isInternalEnterpriseMembership } from '@/lib/companyMembership';
 
 const PaymentSetup = () => {
   const { user } = useAuth();
@@ -29,15 +30,8 @@ const PaymentSetup = () => {
     const run = async () => {
       try {
         // Internal enterprise accounts bypass payment setup entirely
-        const { data: companyUser } = await supabase
-          .from('company_users')
-          .select('company_id, companies(subscription_tier, subscription_status)')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        const companyTier = (companyUser?.companies as any)?.subscription_tier;
-        const isInternalEnterprise = companyTier === 'enterprise_internal';
+        const memberships = await fetchActiveCompanyMemberships(user.id);
+        const isInternalEnterprise = isInternalEnterpriseMembership(memberships);
         if (isInternalEnterprise) {
           navigate('/dashboard', { replace: true });
           return;
