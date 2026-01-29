@@ -26,19 +26,38 @@ const PaymentSetup = () => {
       return;
     }
 
-    // If user already has a subscription, skip payment setup
-    if (subscribed) {
-      navigate('/dashboard');
-      return;
-    }
+    const run = async () => {
+      try {
+        // Internal enterprise accounts bypass payment setup entirely
+        const { data: companyUser } = await supabase
+          .from('company_users')
+          .select('company_id, companies(subscription_tier, subscription_status)')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
 
-    // If canceled, show retry option instead of auto-redirecting
-    if (wasCanceled) {
-      setLoading(false);
-      return;
-    }
+        const companyTier = (companyUser?.companies as any)?.subscription_tier;
+        const isInternalEnterprise = companyTier === 'enterprise_internal';
+        if (isInternalEnterprise) {
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+      } catch (e) {
+        // If this check fails, fall back to normal flow
+      }
 
-    const redirectToStripe = async () => {
+      // If user already has a subscription, skip payment setup
+      if (subscribed) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+
+      // If canceled, show retry option instead of auto-redirecting
+      if (wasCanceled) {
+        setLoading(false);
+        return;
+      }
+
       try {
         // First check if payment already collected or user has subscription
         const { data: profile } = await supabase
@@ -49,13 +68,13 @@ const PaymentSetup = () => {
 
         // If terms not accepted, go to terms first
         if (!profile?.terms_accepted) {
-          navigate('/terms');
+          navigate('/terms', { replace: true });
           return;
         }
 
         // If payment already collected, go to dashboard
         if (profile?.payment_method_collected) {
-          navigate('/dashboard');
+          navigate('/dashboard', { replace: true });
           return;
         }
 
@@ -76,7 +95,7 @@ const PaymentSetup = () => {
       }
     };
 
-    redirectToStripe();
+    run();
   }, [user, navigate, wasCanceled, subscribed]);
 
   const handleRetry = async () => {
