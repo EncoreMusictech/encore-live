@@ -4,15 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -27,11 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useClientHierarchy } from '@/hooks/useClientHierarchy';
 import { useToast } from '@/hooks/use-toast';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { CreateClientDialog } from './CreateClientDialog';
 
 interface ClientsManagerProps {
   parentCompanyId: string;
@@ -40,34 +30,10 @@ interface ClientsManagerProps {
 
 export function ClientsManager({ parentCompanyId, parentCompanyName }: ClientsManagerProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newClientName, setNewClientName] = useState('');
-  const [newClientDisplayName, setNewClientDisplayName] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
   
-  const { childCompanies, loading, createClientLabel, refetch } = useClientHierarchy(parentCompanyId);
+  const { childCompanies, loading, refetch } = useClientHierarchy(parentCompanyId);
   const { switchToClientView } = useViewMode();
   const { toast } = useToast();
-
-  const handleCreateClient = async () => {
-    if (!newClientName.trim() || !newClientDisplayName.trim()) {
-      toast({
-        title: 'Validation Error',
-        description: 'Both name and display name are required.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsCreating(true);
-    const result = await createClientLabel(parentCompanyId, newClientName.trim(), newClientDisplayName.trim());
-    setIsCreating(false);
-
-    if (result) {
-      setIsCreateDialogOpen(false);
-      setNewClientName('');
-      setNewClientDisplayName('');
-    }
-  };
 
   const handleViewAsClient = (companyId: string, companyName: string) => {
     switchToClientView(companyId, companyName);
@@ -89,56 +55,17 @@ export function ClientsManager({ parentCompanyId, parentCompanyName }: ClientsMa
             Manage client labels under {parentCompanyName}
           </CardDescription>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Client
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Client Label</DialogTitle>
-              <DialogDescription>
-                Add a new client label under {parentCompanyName}. This will create a separate data scope for this client's works, contracts, and royalties.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="client-name">Internal Name</Label>
-                <Input
-                  id="client-name"
-                  placeholder="e.g., empire-records"
-                  value={newClientName}
-                  onChange={(e) => setNewClientName(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Used for system identification. Lowercase, no spaces.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="client-display-name">Display Name</Label>
-                <Input
-                  id="client-display-name"
-                  placeholder="e.g., Empire Records"
-                  value={newClientDisplayName}
-                  onChange={(e) => setNewClientDisplayName(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Shown in the UI and reports.
-                </p>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateClient} disabled={isCreating}>
-                {isCreating ? 'Creating...' : 'Create Client Label'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Client
+        </Button>
+        <CreateClientDialog
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+          parentCompanyId={parentCompanyId}
+          parentCompanyName={parentCompanyName}
+          onClientCreated={refetch}
+        />
       </CardHeader>
       <CardContent>
         {loading ? (
