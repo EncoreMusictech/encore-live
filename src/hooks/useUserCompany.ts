@@ -1,0 +1,97 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+
+interface UserCompany {
+  id: string;
+  name: string;
+  display_name: string;
+  company_type: string | null;
+  parent_company_id: string | null;
+}
+
+interface UseUserCompanyReturn {
+  userCompany: UserCompany | null;
+  loading: boolean;
+  error: string | null;
+  isPublishingFirm: boolean;
+  isClientLabel: boolean;
+  hasCompany: boolean;
+  refetch: () => void;
+}
+
+export function useUserCompany(): UseUserCompanyReturn {
+  const { user } = useAuth();
+  const [userCompany, setUserCompany] = useState<UserCompany | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchUserCompany = useCallback(async () => {
+    if (!user) {
+      setUserCompany(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Get the user's active company membership
+      const { data: companyUser, error: companyUserError } = await supabase
+        .from('company_users')
+        .select(`
+          company_id,
+          companies (
+            id,
+            name,
+            display_name,
+            company_type,
+            parent_company_id
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (companyUserError) throw companyUserError;
+
+      if (companyUser?.companies) {
+        const company = companyUser.companies as unknown as UserCompany;
+        setUserCompany({
+          id: company.id,
+          name: company.name,
+          display_name: company.display_name,
+          company_type: company.company_type,
+          parent_company_id: company.parent_company_id
+        });
+      } else {
+        setUserCompany(null);
+      }
+    } catch (err) {
+      console.error('Error fetching user company:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch user company');
+      setUserCompany(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchUserCompany();
+  }, [fetchUserCompany]);
+
+  const isPublishingFirm = userCompany?.company_type === 'publishing_firm';
+  const isClientLabel = userCompany?.company_type === 'client_label';
+  const hasCompany = !!userCompany;
+
+  return {
+    userCompany,
+    loading,
+    error,
+    isPublishingFirm,
+    isClientLabel,
+    hasCompany,
+    refetch: fetchUserCompany
+  };
+}

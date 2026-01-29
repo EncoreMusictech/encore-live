@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins, Building2 } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useUserCompany } from "@/hooks/useUserCompany";
 import { supabase } from "@/integrations/supabase/client";
 import encoreLogo from "@/assets/encore-logo.png";
 interface ModuleItem {
@@ -99,6 +100,7 @@ export function CRMSidebar() {
     isDemo
   } = useDemoAccess();
   const { isSuperAdmin } = useSuperAdmin();
+  const { isPublishingFirm } = useUserCompany();
   const location = useLocation();
   const [userModules, setUserModules] = useState<string[]>([]);
   const { state } = useSidebar();
@@ -187,6 +189,14 @@ export function CRMSidebar() {
             <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
+                {isPublishingFirm && <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/dashboard/clients" className="flex items-center">
+                      <Building2 className="mr-2 h-4 w-4" />
+                      Manage Clients
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>}
                 {isDemo && <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/dashboard/walkthroughs" className="flex items-center">
