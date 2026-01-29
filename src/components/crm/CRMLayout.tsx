@@ -11,6 +11,7 @@ import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Lock } from "lucide-react";
+import { fetchActiveCompanyMemberships, isInternalEnterpriseMembership } from "@/lib/companyMembership";
 
 export function CRMLayout() {
   const { user } = useAuth();
@@ -51,16 +52,9 @@ export function CRMLayout() {
 
     const checkAccessStatus = async () => {
       try {
-        // Check if user belongs to an internal enterprise company
-        const { data: companyUser } = await supabase
-          .from('company_users')
-          .select('company_id, companies(subscription_tier, subscription_status)')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        const companyTier = (companyUser?.companies as any)?.subscription_tier;
-        const isInternal = companyTier === 'enterprise_internal';
+        // Check if user belongs to an internal enterprise company (handles multiple memberships)
+        const memberships = await fetchActiveCompanyMemberships(user.id);
+        const isInternal = isInternalEnterpriseMembership(memberships);
         setIsInternalEnterprise(isInternal);
 
         // Internal enterprise accounts bypass payment requirement

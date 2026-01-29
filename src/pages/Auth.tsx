@@ -11,6 +11,7 @@ import { PlayCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientPortal } from '@/hooks/useClientPortal';
+import { fetchActiveCompanyMemberships, isInternalEnterpriseMembership } from '@/lib/companyMembership';
 
 
 const Auth = () => {
@@ -76,15 +77,8 @@ useEffect(() => {
           .single();
 
         // Check if user belongs to an internal enterprise company (no payment required)
-        const { data: companyUser } = await supabase
-          .from('company_users')
-          .select('company_id, companies(subscription_tier, subscription_status)')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        const companyTier = (companyUser?.companies as any)?.subscription_tier;
-        const isInternalEnterprise = companyTier === 'enterprise_internal';
+        const memberships = await fetchActiveCompanyMemberships(user.id);
+        const isInternalEnterprise = isInternalEnterpriseMembership(memberships);
 
         // If user hasn't accepted terms, redirect to terms page
         if (!profile?.terms_accepted) {
