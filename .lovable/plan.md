@@ -1,439 +1,261 @@
 
 
-# Hierarchical Multi-Tenant Architecture for Publishing Firms & Their Clients
+# Catalog Import Center -- Implementation Plan
 
-## Executive Summary
+## Overview
 
-This plan introduces a **3-tier hierarchical multi-tenant system** that enables publishing firms (like PAQ Publishing) to manage multiple client labels/publishers (Empire, COBALT, etc.) with full data isolation, aggregated views, and granular permissions.
+Add a new "Catalog Import" tab to the Management Console inside the Operations Dashboard. This tab hosts a multi-sheet XLSX workbook importer that normalizes research data from MusicBrainz, ASCAP, BMI Songview, MLC, and Sync sources into a validated staging layer, then promotes verified works into new centralized catalog tables that serve as the single source of truth for all ENCORE modules.
 
 ---
 
-## Current State Analysis
-
-### Existing Architecture
+## Feature Location
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│                      ENCORE (System Admin)                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐       │
-│    │ Sub-Account │    │ Sub-Account │    │ Sub-Account │       │
-│    │ (Company)   │    │ (Company)   │    │ (Company)   │       │
-│    └──────┬──────┘    └──────┬──────┘    └──────┬──────┘       │
-│           │                  │                  │               │
-│     ┌─────┴─────┐      ┌─────┴─────┐      ┌─────┴─────┐        │
-│     │   Users   │      │   Users   │      │   Users   │        │
-│     └───────────┘      └───────────┘      └───────────┘        │
-│                                                                  │
-│    Current: Flat 2-tier structure (Companies → Users)           │
-│    Problem: No hierarchy for clients under publishing firms     │
-└─────────────────────────────────────────────────────────────────┘
+Operations Dashboard
+  --> Management Console (admin-only)
+        --> Sub-Accounts
+        --> Access Control
+        --> Partnerships
+        --> Task Management
+        --> User Analytics
+        --> Catalog Import   <-- NEW
 ```
 
-### What Exists Today
-
-| Component | Status | Purpose |
-|-----------|--------|---------|
-| `companies` table | Exists | Sub-account companies |
-| `company_users` table | Exists | Users linked to companies |
-| `company_module_access` table | Exists | Module permissions per company |
-| `client_portal_access` table | Exists | Client user access (subscriber → client) |
-| `client_data_associations` table | Exists | Links clients to specific data (copyrights, contracts, payees) |
-| `ViewModeContext` | Exists | Admin "view as" sub-account |
-| `useDataFiltering` hook | Exists | Filters data by company users |
-
-### The Gap
-
-- **No parent-child company relationships** (PAQ → Empire, PAQ → COBALT)
-- **No client-level data isolation** within sub-accounts
-- **No aggregated views** across multiple clients
-- **No client-specific dashboards** with their own portal
+No new authentication logic needed. The Management Console tab is already restricted to admin role via `OperationsDashboard.tsx` line 59.
 
 ---
 
-## Proposed Architecture
+## Phase 1: Database Migration
 
-```text
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                           ENCORE (System Admin)                               │
-│                          Tier 0: Platform Admin                               │
-├──────────────────────────────────────────────────────────────────────────────┤
-│                                                                               │
-│  TIER 1: PUBLISHING FIRMS (Sub-Accounts)                                     │
-│  ┌─────────────────────────────────────────────────────────────────────────┐ │
-│  │                         PAQ Publishing                                   │ │
-│  │  • Sees ALL clients aggregated OR individually                          │ │
-│  │  • Manages client accounts, permissions, data                           │ │
-│  │  • Toggle view: "All Clients" ↔ "Empire" ↔ "COBALT"                     │ │
-│  │                                                                          │ │
-│  │  TIER 2: CLIENT LABELS (Child Companies)                                │ │
-│  │  ┌───────────────────┐  ┌───────────────────┐  ┌───────────────────┐   │ │
-│  │  │      Empire       │  │      COBALT       │  │    Client X       │   │ │
-│  │  │                   │  │                   │  │                   │   │ │
-│  │  │ • Own dashboard   │  │ • Own dashboard   │  │ • Own dashboard   │   │ │
-│  │  │ • Own works       │  │ • Own works       │  │ • Own works       │   │ │
-│  │  │ • Own balances    │  │ • Own balances    │  │ • Own balances    │   │ │
-│  │  │ • Own permissions │  │ • Own permissions │  │ • Own permissions │   │ │
-│  │  │                   │  │                   │  │                   │   │ │
-│  │  │ ┌─────────────┐  │  │ ┌─────────────┐  │  │ ┌─────────────┐  │   │ │
-│  │  │ │ Client Users│  │  │ │ Client Users│  │  │ │ Client Users│  │   │ │
-│  │  │ └─────────────┘  │  │ └─────────────┘  │  │ └─────────────┘  │   │ │
-│  │  └───────────────────┘  └───────────────────┘  └───────────────────┘   │ │
-│  └─────────────────────────────────────────────────────────────────────────┘ │
-│                                                                               │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
+### New Tables
 
----
+**1. `catalog_import_batches`** -- one row per uploaded workbook
 
-## Technical Implementation
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | gen_random_uuid() |
+| user_id | uuid NOT NULL | FK to auth.users |
+| company_id | uuid | nullable, optional client scope |
+| file_name | text | original XLSX filename |
+| total_rows | int default 0 | across all sheets |
+| valid_rows | int default 0 | |
+| duplicate_rows | int default 0 | |
+| error_rows | int default 0 | |
+| status | text default 'processing' | processing, validated, committed, failed |
+| created_at | timestamptz | default now() |
 
-### Phase 1: Database Schema Changes
+RLS: `auth.uid() = user_id` for SELECT, INSERT, UPDATE.
 
-#### 1.1 Add Parent Company Relationship
+**2. `catalog_import_staging`** -- one row per normalized work from the workbook
 
-```sql
--- Add parent_company_id to companies table
-ALTER TABLE companies 
-ADD COLUMN parent_company_id UUID REFERENCES companies(id) ON DELETE SET NULL;
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| import_batch_id | uuid FK | references catalog_import_batches |
+| user_id | uuid | |
+| company_id | uuid | nullable |
+| source_sheet | text | e.g. "musicbrainz_works", "ascap", "bmi_songview", "mlc", "sync" |
+| work_title | text | |
+| artist_name | text | |
+| isrc | text | nullable |
+| iswc | text | nullable |
+| normalized_title | text | lowercase, stripped punctuation for dedup matching |
+| writers | jsonb | array of {name, ipi, role, pro, share} |
+| publishers | jsonb | array of {name, ipi, role, pro, share} |
+| canonical_row | jsonb | merged/normalized fields across all sources |
+| identifier_conflicts | jsonb default '[]' | e.g. mismatched ISWCs from different sheets for same title |
+| validation_status | text | valid, duplicate, error |
+| validation_errors | jsonb | array of error strings |
+| promoted | boolean default false | |
+| raw_row_data | jsonb | original row from the sheet |
+| created_at | timestamptz | |
 
--- Add company_type to distinguish publishing firms from client labels
-ALTER TABLE companies 
-ADD COLUMN company_type TEXT DEFAULT 'standard' 
-CHECK (company_type IN ('publishing_firm', 'client_label', 'standard'));
+RLS: `auth.uid() = user_id` for SELECT, INSERT, UPDATE, DELETE.
 
--- Index for efficient hierarchy queries
-CREATE INDEX idx_companies_parent ON companies(parent_company_id);
-CREATE INDEX idx_companies_type ON companies(company_type);
-```
+**3. `catalog_works`** -- permanent centralized catalog (the "golden master")
 
-#### 1.2 Create Client Scope Table
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| user_id | uuid NOT NULL | |
+| company_id | uuid | nullable |
+| work_title | text NOT NULL | |
+| normalized_title | text | for dedup |
+| iswc | text | nullable, only from verified sources |
+| isrc | text | nullable |
+| artist_name | text | |
+| album_title | text | nullable |
+| source | text | import, discovery, manual |
+| import_batch_id | uuid | nullable FK, provenance tracking |
+| musicbrainz_id | text | nullable MBID |
+| ascap_work_id | text | nullable |
+| bmi_work_id | text | nullable |
+| mlc_work_id | text | nullable |
+| pro_registrations | jsonb default '[]' | [{pro, work_id, status}] |
+| sync_history | jsonb default '[]' | [{type, title, year}] |
+| metadata | jsonb default '{}' | extensible |
+| created_at | timestamptz | |
+| updated_at | timestamptz | |
 
-```sql
--- Track which companies a user can view (for aggregation toggle)
-CREATE TABLE company_view_scope (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  parent_company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  -- NULL means "all clients", specific ID means single client
-  scoped_company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id, parent_company_id)
-);
-```
+RLS: Authenticated users can SELECT. Only `auth.uid() = user_id` can INSERT/UPDATE/DELETE.
 
-#### 1.3 Extend Company Module Access for Clients
+**4. `catalog_contributors`** -- writers and publishers as standalone entities
 
-```sql
--- Add inheritance flag for module access
-ALTER TABLE company_module_access 
-ADD COLUMN inherited_from UUID REFERENCES companies(id);
-```
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| user_id | uuid NOT NULL | |
+| name | text NOT NULL | |
+| ipi_number | text | nullable |
+| pro_affiliation | text | nullable (ASCAP, BMI, SESAC, etc.) |
+| role | text | writer, publisher |
+| created_at | timestamptz | |
 
-### Phase 2: Database Functions
+RLS: Authenticated reads; `auth.uid() = user_id` for writes.
 
-#### 2.1 Get Child Companies
+**5. `catalog_work_contributors`** -- join table linking works to contributors
 
-```sql
-CREATE OR REPLACE FUNCTION get_child_companies(_parent_id UUID)
-RETURNS TABLE(company_id UUID, company_name TEXT, display_name TEXT, company_type TEXT)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT id, name, display_name, company_type
-  FROM companies
-  WHERE parent_company_id = _parent_id
-  ORDER BY name;
-$$;
-```
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| catalog_work_id | uuid FK | references catalog_works(id) ON DELETE CASCADE |
+| contributor_id | uuid FK | references catalog_contributors(id) |
+| role | text | composer, lyricist, arranger, publisher, admin_publisher |
+| ownership_percentage | numeric | nullable |
+| mechanical_share | numeric | nullable |
+| performance_share | numeric | nullable |
+| sync_share | numeric | nullable |
+| controlled | boolean default false | |
 
-#### 2.2 Get Aggregated User IDs (For Filtering)
+RLS: Inherits from parent table access.
 
-```sql
-CREATE OR REPLACE FUNCTION get_company_hierarchy_user_ids(_company_id UUID)
-RETURNS TABLE(user_id UUID)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  -- Get users from parent company
-  SELECT cu.user_id FROM company_users cu WHERE cu.company_id = _company_id AND cu.status = 'active'
-  UNION
-  -- Get users from all child companies
-  SELECT cu.user_id 
-  FROM company_users cu
-  INNER JOIN companies c ON cu.company_id = c.id
-  WHERE c.parent_company_id = _company_id AND cu.status = 'active';
-$$;
-```
+### Database Function: `promote_staging_batch`
 
-#### 2.3 Check Hierarchy Access
+A `SECURITY DEFINER` function callable via `supabase.rpc('promote_staging_batch', { batch_id })`:
 
-```sql
-CREATE OR REPLACE FUNCTION user_has_hierarchy_access(_user_id UUID, _target_company_id UUID)
-RETURNS BOOLEAN
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (
-    -- Direct membership
-    SELECT 1 FROM company_users 
-    WHERE user_id = _user_id AND company_id = _target_company_id AND status = 'active'
-  ) OR EXISTS (
-    -- Parent company membership (can see all children)
-    SELECT 1 FROM company_users cu
-    INNER JOIN companies c ON c.parent_company_id = cu.company_id
-    WHERE cu.user_id = _user_id 
-    AND c.id = _target_company_id 
-    AND cu.status = 'active'
-  );
-$$;
-```
-
-### Phase 3: Extended ViewModeContext
-
-#### 3.1 Enhanced View Context Interface
-
-```typescript
-interface ViewContext {
-  mode: 'system' | 'subaccount' | 'client';
-  companyId?: string;
-  companyName?: string;
-  parentCompanyId?: string;       // NEW: For child companies
-  parentCompanyName?: string;     // NEW: For breadcrumb display
-  viewScope: 'all' | 'single';    // NEW: Aggregated or single client
-  returnPath?: string;
-  sessionId?: string;
-}
-```
-
-#### 3.2 New Hook: useHierarchicalFiltering
-
-```typescript
-// src/hooks/useHierarchicalFiltering.ts
-export function useHierarchicalFiltering() {
-  const { viewContext } = useViewMode();
-  
-  const getFilterConfig = async () => {
-    if (viewContext?.viewScope === 'all' && viewContext?.parentCompanyId) {
-      // Aggregate mode: get all child company user IDs
-      const { data } = await supabase.rpc('get_company_hierarchy_user_ids', {
-        _company_id: viewContext.parentCompanyId
-      });
-      return { userIds: data?.map(r => r.user_id) || [], mode: 'aggregate' };
-    } else if (viewContext?.companyId) {
-      // Single client mode: get only that company's users
-      const { data } = await supabase
-        .from('company_users')
-        .select('user_id')
-        .eq('company_id', viewContext.companyId)
-        .eq('status', 'active');
-      return { userIds: data?.map(r => r.user_id) || [], mode: 'single' };
-    }
-    return { userIds: [], mode: 'system' };
-  };
-
-  return { getFilterConfig, ... };
-}
-```
-
-### Phase 4: UI Components
-
-#### 4.1 Client Selector Dropdown
-
-New component for switching between aggregated and individual client views:
-
-```typescript
-// src/components/hierarchy/ClientScopeSelector.tsx
-// Dropdown: "All Clients" | "Empire" | "COBALT" | ...
-// Updates viewContext.viewScope and viewContext.companyId
-```
-
-#### 4.2 Enhanced Sub-Account Detail Page
-
-Add a "Clients" tab to the SubAccountDetailPage for publishing firms:
-
-```typescript
-// New tab in SubAccountDetailPage.tsx
-<TabsTrigger value="clients">
-  <Building2 className="h-4 w-4 mr-2" />
-  Clients
-</TabsTrigger>
-
-<TabsContent value="clients">
-  <ClientsManager parentCompanyId={company.id} />
-</TabsContent>
-```
-
-#### 4.3 Client Dashboard
-
-New route and component for client label users:
-
-```typescript
-// src/pages/ClientLabelDashboard.tsx
-// Shows only that client's:
-// - Works & copyrights
-// - Account balances
-// - Contracts
-// - Registration status
-// - Metadata gaps
-```
-
-#### 4.4 Aggregated Analytics Dashboard
-
-For publishing firms viewing all clients together:
-
-```typescript
-// src/components/hierarchy/AggregatedDashboard.tsx
-// Shows:
-// - Combined account balances
-// - Works by client (breakdown)
-// - Unregistered works by client
-// - Metadata gaps by client
-// - Revenue by client
-```
-
-### Phase 5: Data Ownership Model
-
-#### 5.1 Copyrights, Contracts, Payees
-
-Current tables use `user_id` for ownership. This will be extended with optional `client_company_id`:
-
-```sql
--- Add client segmentation to key tables
-ALTER TABLE copyrights 
-ADD COLUMN client_company_id UUID REFERENCES companies(id);
-
-ALTER TABLE contracts 
-ADD COLUMN client_company_id UUID REFERENCES companies(id);
-
-ALTER TABLE payees 
-ADD COLUMN client_company_id UUID REFERENCES companies(id);
-
-ALTER TABLE royalty_allocations 
-ADD COLUMN client_company_id UUID REFERENCES companies(id);
-
--- Indexes for efficient filtering
-CREATE INDEX idx_copyrights_client ON copyrights(client_company_id);
-CREATE INDEX idx_contracts_client ON contracts(client_company_id);
-CREATE INDEX idx_payees_client ON payees(client_company_id);
-```
-
-#### 5.2 RLS Policies for Hierarchy
-
-```sql
--- Example: Copyrights policy with hierarchy support
-CREATE POLICY "Users can view copyrights in their company hierarchy"
-ON copyrights FOR SELECT
-TO authenticated
-USING (
-  -- System admin sees all
-  public.is_operations_team_member()
-  OR
-  -- Direct ownership
-  user_id = auth.uid()
-  OR
-  -- Company hierarchy access
-  (client_company_id IS NOT NULL AND public.user_has_hierarchy_access(auth.uid(), client_company_id))
-);
-```
-
-### Phase 6: Module Permission Inheritance
-
-When a publishing firm has a module enabled, child clients can inherit or have custom permissions:
-
-```typescript
-// Module access logic
-async function getEffectiveModuleAccess(companyId: string) {
-  // 1. Get direct module access
-  const direct = await getCompanyModules(companyId);
-  
-  // 2. Get parent company
-  const company = await getCompany(companyId);
-  if (company.parent_company_id) {
-    const inherited = await getCompanyModules(company.parent_company_id);
-    // Merge with inheritance rules
-  }
-  
-  return mergedModules;
-}
-```
+1. Reads all staging rows where `validation_status = 'valid'` and `promoted = false` for the given batch.
+2. For each row, INSERT INTO `catalog_works` (dedup on `normalized_title + artist_name`).
+3. For each writer/publisher in the row's JSON, upsert into `catalog_contributors`, then link via `catalog_work_contributors`.
+4. Mark staging rows as `promoted = true`.
+5. Update batch status to `committed` and set `valid_rows` count.
+6. Return the count of promoted works.
 
 ---
 
-## File Changes Summary
+## Phase 2: Sheet Parsing Logic
 
-### New Files
+### New file: `src/lib/catalog-validation.ts`
+
+Validation and normalization utilities:
+
+- **`normalizeTitle(title)`** -- lowercase, strip punctuation/parens, trim whitespace
+- **`validateISRC(isrc)`** -- regex: `^[A-Z]{2}-?[A-Z0-9]{3}-?\d{2}-?\d{5}$`
+- **`validateISWC(iswc)`** -- regex: `^T-?\d{9}-?\d$`
+- **`parseSheetByType(sheetName, rows)`** -- returns normalized objects based on known header patterns for each of the 5 sheet types
+
+### Sheet Header Mappings
+
+Each sheet type maps its specific columns to the canonical staging schema:
+
+| Sheet | Key Columns Mapped |
+|-------|--------------------|
+| MusicBrainz Works | title, ISWC, writers (as composers), MBID |
+| MusicBrainz Recordings | recording title, ISRC, artist, duration |
+| ASCAP / BMI Songview | work title, work ID, writers, publishers, PRO shares |
+| MLC Catalog | song title, song code, ISWC, ISRC, writers, publishers |
+| TV/Movie/Game Sync | work title, sync type (TV/Film/Game), title of media, year |
+
+### Conflict Detection
+
+When multiple sheets reference the same `normalized_title + artist_name` but provide different ISWCs or conflicting writer splits, the system:
+1. Groups rows by `normalized_title + artist_name`
+2. Compares ISWC values across groups
+3. Flags mismatches in `identifier_conflicts` JSON array
+4. Sets `validation_status = 'error'` if conflicts exist (admin must resolve before promotion)
+
+---
+
+## Phase 3: React Components
+
+### New file: `src/hooks/useCatalogImport.ts`
+
+State machine hook managing the 4-step import wizard:
+
+- **State**: `step` (upload | map | review | commit), `batch`, `stagingRows`, `sheetData`, `progress`
+- **Actions**: `parseFile()`, `validateAll()`, `insertStaging()`, `promoteBatch()`
+- Uses `xlsx` library (already installed) for multi-sheet parsing
+- Uses `react-dropzone` (already installed) for file upload
+- Batch insert size: 3 rows with exponential backoff (existing proven pattern from SmartCSVImporter)
+- Pre-flight auth token refresh before long-running operations
+
+### New file: `src/components/catalog/CatalogImportCenter.tsx`
+
+The main wizard component with 4 steps:
+
+**Step 1 -- Upload**
+- Drag-and-drop zone for XLSX files (accepts `.xlsx` only)
+- On drop: parse all sheets, detect which of the 5 known sheet types are present
+- Display summary: "Found 5 sheets: MusicBrainz Works (142 rows), ASCAP (89 rows)..."
+
+**Step 2 -- Map and Normalize**
+- For each detected sheet, show header mapping preview (first 3 rows)
+- Auto-mapped columns shown with green checkmarks
+- Unmapped columns flagged with yellow warnings
+- Admin can override mappings via dropdowns
+- "Normalize All" button runs the parsing pipeline
+
+**Step 3 -- Review and Resolve**
+- Table of all normalized staging rows with status badges (Valid, Duplicate, Error, Conflict)
+- Filter tabs: All | Valid | Duplicates | Errors | Conflicts
+- Conflict resolution panel: shows side-by-side data from different sheets for the same work
+- Inline editing for fixable errors (e.g., malformed ISRC)
+- Dedup check runs against existing `catalog_works.normalized_title` and `copyright_recordings.isrc`
+- Summary bar: "142 valid, 12 duplicates, 3 errors, 2 conflicts"
+
+**Step 4 -- Commit**
+- Shows final summary of what will be promoted
+- "Commit to Catalog" button calls `promote_staging_batch` RPC
+- Progress bar during promotion
+- Results: "128 works added to catalog, 14 contributors created, 2 conflicts skipped"
+
+### Modified file: `src/components/operations/consolidated/ManagementConsole.tsx`
+
+Changes:
+- Import `CatalogImportCenter` and `Database` icon from lucide-react
+- Change `TabsList` grid from `grid-cols-5` to `grid-cols-6`
+- Add new `TabsTrigger` with value "catalog-import" and label "Catalog Import"
+- Add new `TabsContent` rendering `<CatalogImportCenter />`
+
+---
+
+## Phase 4: Files Summary
+
+### New files (4)
 
 | File | Purpose |
 |------|---------|
-| `src/hooks/useHierarchicalFiltering.ts` | Extended filtering for 3-tier hierarchy |
-| `src/hooks/useClientHierarchy.ts` | CRUD operations for client companies |
-| `src/components/hierarchy/ClientScopeSelector.tsx` | Toggle between all/single client views |
-| `src/components/hierarchy/ClientsManager.tsx` | Manage child companies |
-| `src/components/hierarchy/AggregatedDashboard.tsx` | Combined analytics view |
-| `src/pages/ClientLabelDashboard.tsx` | Client-specific dashboard |
-| `src/components/hierarchy/ClientBalancesCard.tsx` | Account balances per client |
-| `src/components/hierarchy/ClientWorksGaps.tsx` | Registration/metadata gaps by client |
+| `src/components/catalog/CatalogImportCenter.tsx` | 4-step import wizard UI |
+| `src/hooks/useCatalogImport.ts` | Import state machine, parsing, validation, batch insert |
+| `src/lib/catalog-validation.ts` | ISRC/ISWC validators, title normalization, sheet parsers, conflict detection |
+| `supabase/migrations/[timestamp]_catalog_import_center.sql` | 5 new tables + RLS + promote function |
 
-### Modified Files
+### Modified files (1)
 
-| File | Changes |
-|------|---------|
-| `src/contexts/ViewModeContext.tsx` | Add `viewScope`, `parentCompanyId` to context |
-| `src/hooks/useDataFiltering.ts` | Support hierarchical filtering |
-| `src/components/ViewModeBanner.tsx` | Show client scope in banner |
-| `src/pages/SubAccountDetailPage.tsx` | Add "Clients" tab for publishing firms |
-| `src/components/admin/SubAccountManager.tsx` | Show parent-child relationships |
-| `src/App.tsx` | Add routes for client label dashboard |
+| File | Change |
+|------|--------|
+| `ManagementConsole.tsx` | Add 6th "Catalog Import" tab rendering `<CatalogImportCenter />` |
 
-### Database Migrations
+### No changes to existing modules
 
-| Migration | Purpose |
-|-----------|---------|
-| `add_company_hierarchy.sql` | Add `parent_company_id`, `company_type` columns |
-| `create_view_scope_table.sql` | Track user view preferences |
-| `add_client_segmentation.sql` | Add `client_company_id` to data tables |
-| `create_hierarchy_functions.sql` | RPC functions for hierarchy queries |
-| `update_rls_policies.sql` | Extend RLS for hierarchy access |
+The `copyrights`, `copyright_recordings`, `catalog_items`, and `song_metadata_cache` tables remain untouched. Future work will bridge `catalog_works` into those modules, but this phase focuses solely on establishing the centralized ingestion point.
 
 ---
 
-## User Experience Flow
+## Identifier Integrity Guarantees
 
-### For Publishing Firm Users (PAQ Publishing)
-
-1. **Login** → Lands on Publishing Firm Dashboard
-2. **Default View**: Aggregated across all clients (Empire, COBALT, etc.)
-3. **Toggle**: Click dropdown to switch to single client view
-4. **See**: Combined balances, works by client, registration gaps
-5. **Manage**: Create new client labels, assign data, set permissions
-
-### For Client Label Users (Empire)
-
-1. **Login** → Lands on Client Label Dashboard
-2. **See**: Only Empire's works, balances, contracts
-3. **Actions**: Based on permissions granted by PAQ Publishing
-4. **Cannot See**: Other clients' data (COBALT, etc.)
-
-### For ENCORE Admins
-
-1. **View Mode**: Can view as Publishing Firm OR as specific Client
-2. **Aggregation**: See all levels of the hierarchy
-3. **Management**: Create publishing firms, assign clients
-
----
-
-## Rollout Strategy
-
-| Phase | Duration | Deliverables |
-|-------|----------|--------------|
-| 1 | Week 1 | Database schema changes, RPC functions |
-| 2 | Week 2 | Extended ViewModeContext, useHierarchicalFiltering hook |
-| 3 | Week 3 | UI: ClientScopeSelector, ClientsManager |
-| 4 | Week 4 | UI: AggregatedDashboard, ClientLabelDashboard |
-| 5 | Week 5 | Data migration tools, testing, documentation |
-
----
-
-## Security Considerations
-
-1. **RLS Policies**: All hierarchy access enforced at database level
-2. **Audit Logging**: Track which level user is viewing
-3. **Permission Inheritance**: Child companies cannot exceed parent permissions
-4. **Session Isolation**: View context stored in session, not localStorage
+- ISWCs only stored if they pass regex validation -- no AI-sourced ISWCs accepted
+- ISRCs validated against standard format before staging
+- Conflict detection prevents silent overwrites when different sources disagree
+- Every `catalog_works` row tracks its `import_batch_id` and `source` for full provenance
+- `normalized_title` enables deterministic dedup without relying on identifiers alone
 
