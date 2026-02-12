@@ -20,6 +20,7 @@ import {
 import { useDropzone } from "react-dropzone";
 import { useCatalogImport } from "@/hooks/useCatalogImport";
 import type { StagingRow } from "@/lib/catalog-validation";
+import { CatalogReviewCenter } from "./CatalogReviewCenter";
 
 const SHEET_TYPE_LABELS: Record<string, string> = {
   musicbrainz_works: "MusicBrainz Works",
@@ -31,6 +32,7 @@ const SHEET_TYPE_LABELS: Record<string, string> = {
 };
 
 export function CatalogImportCenter() {
+  const [mode, setMode] = useState<"import" | "review">("import");
   const {
     step,
     sheets,
@@ -85,6 +87,28 @@ export function CatalogImportCenter() {
 
   return (
     <div className="space-y-6">
+      {/* Mode toggle */}
+      <div className="flex gap-2 border-b pb-3">
+        <Button
+          variant={mode === "import" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setMode("import")}
+        >
+          <Upload className="h-4 w-4 mr-1" /> New Import
+        </Button>
+        <Button
+          variant={mode === "review" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setMode("review")}
+        >
+          <Database className="h-4 w-4 mr-1" /> Review History
+        </Button>
+      </div>
+
+      {mode === "review" ? (
+        <CatalogReviewCenter />
+      ) : (
+      <>
       {/* Stepper */}
       <div className="flex items-center gap-2">
         {steps.map((s, i) => (
@@ -308,6 +332,8 @@ export function CatalogImportCenter() {
             )}
           </CardContent>
         </Card>
+      )}
+      </>
       )}
     </div>
   );
