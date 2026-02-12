@@ -7,6 +7,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Stepper } from '@/components/ui/stepper';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import { ONBOARDING_PHASES, getPhaseIndex } from '@/constants/onboardingPhases';
+import { useViewModeOptional } from '@/hooks/useViewModeOptional';
+import { AssigneeBadge } from './AssigneeBadge';
 import {
   Building2, Settings, Users, FileText, Shield, Globe, Rocket,
   ArrowRight, AlertCircle, Calendar, CheckSquare, Clock
@@ -40,6 +42,8 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
     getPhaseRequiredComplete,
     getOverallProgress,
   } = useOnboardingProgress(companyId);
+
+  const { isViewingAsSubAccount } = useViewModeOptional();
 
   // Auto-initialize on first visit
   useEffect(() => {
@@ -90,6 +94,11 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
   const daysToGoLive = Math.floor(
     (new Date(progress!.target_go_live).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   );
+
+  const isCheckboxDisabled = (assignee: string) => {
+    if (!isViewingAsSubAccount) return false;
+    return assignee === 'ENCORE';
+  };
 
   return (
     <div className="space-y-6">
@@ -191,10 +200,12 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
               {currentPhase.checklist.map(item => {
                 const checked = isItemCompleted(currentPhaseId, item.id);
+                const disabled = isCheckboxDisabled(item.assignee);
                 return (
                   <div key={item.id} className="flex items-start gap-2">
                     <Checkbox
                       checked={checked}
+                      disabled={disabled}
                       onCheckedChange={(val) =>
                         toggleChecklistItem({
                           phaseId: currentPhaseId,
@@ -203,10 +214,13 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
                         })
                       }
                     />
-                    <span className={`text-sm ${checked ? 'line-through text-muted-foreground' : ''}`}>
-                      {item.label}
-                      {item.required && <span className="text-red-500 ml-1">*</span>}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`text-sm ${checked ? 'line-through text-muted-foreground' : ''} ${disabled ? 'opacity-60' : ''}`}>
+                        {item.label}
+                        {item.required && <span className="text-red-500 ml-1">*</span>}
+                      </span>
+                      <AssigneeBadge assignee={item.assignee} />
+                    </div>
                   </div>
                 );
               })}
