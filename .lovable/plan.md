@@ -1,103 +1,106 @@
-# Per-Item Assignee Tags + Phase Advancement Rules
 
-## Overview
 
-Add an `assignee` field to every checklist item so the UI shows who owns each task. Update phase advancement logic so both ENCORE and Client must complete their respective items before moving forward. Clients can only check off items assigned to them.
+# Two-Tier Whitelabel Branding System
 
-## 1. Update `src/constants/onboardingPhases.ts`
+## How It Works
 
-Add `assignee: 'ENCORE' | 'Client' | 'ENCORE + Client'` to `ChecklistItem` interface.
+There are two levels of control:
 
-Apply the following assignments and modifications:
+### Tier 1: ENCORE Admin Control (on Sub-Account Detail Page)
+On the **Modules** tab (where you already toggle features on/off), a new module called **"Whitelabel Branding"** will appear. ENCORE admins can enable or disable this feature per sub-account, just like any other module. If it's off, the sub-account never sees the Branding tab and their clients see the default ENCORE purple portal.
 
-**Phase 1 -- Account Setup** (owner: ENCORE)
+### Tier 2: Sub-Account Branding Configuration
+If ENCORE has enabled whitelabeling for a sub-account, a **"Branding"** tab appears on the Sub-Account Detail Page (and eventually in the sub-account's own dashboard when viewing as that account). The sub-account can configure:
+- **Logo URL** (replaces the ENCORE spinning vinyl in the Client Portal header)
+- **Portal Display Name** (e.g., "Myind Sound" replaces "Client Portal")
+- **Color Palette** -- Primary, Accent, and Header Background colors with preset quick-picks
+- A "Powered by ENCORE" badge always remains visible
 
-- Create Sub-Account -- ENCORE
-- Populate Company Name -- ENCORE
-- Set Display Name -- ENCORE
-- Set Primary Contact Email -- ENCORE
-- Set Subscription Tier -- ENCORE
-- Verify tier and status -- ENCORE
-- REMOVE "Verify admins bypass payment setup" from Phase 3 (moved to Phase 7)
+### What Clients See
+When a client logs into the Client Portal:
+- If their sub-account has whitelabeling enabled AND configured: they see the sub-account's logo, name, and colors
+- Otherwise: the default ENCORE purple gradient header with spinning vinyl
 
-**Phase 2 -- Module Configuration** (owner: ENCORE)
+## Changes
 
-- All 7 items -- ENCORE
+### 1. Add "Whitelabel Branding" to the modules list
+**File:** `src/components/admin/subaccount/SubAccountModules.tsx`
 
-**Phase 3 -- User Onboarding** (owner: ENCORE + Client)
+Add a new entry to the `AVAILABLE_MODULES` array:
+```text
+{
+  name: 'whitelabel_branding',
+  label: 'Whitelabel Branding',
+  description: 'Allow this sub-account to customize Client Portal branding with their own logo and colors',
+  icon: Palette,
+  financial: false,
+}
+```
+This means ENCORE admins can toggle it on/off per sub-account via the existing Modules tab -- no new UI needed for Tier 1.
 
-- Send signup instructions to admins -- ENCORE
-- Admins complete platform signup -- Client
-- Add admin users to sub-account -- ENCORE
-- Rename "Add internal users with appropriate roles" to "Add initial users with appropriate roles (Admin/User/Client)" -- ENCORE
-- Verify role-based access levels -- ENCORE
+### 2. New Component: SubAccountBranding.tsx
+**File:** `src/components/admin/subaccount/SubAccountBranding.tsx`
 
-**Phase 4 -- Contract and Data Ingestion** (owner: ENCORE + Client)
+A settings panel with:
+- Enable/disable whitelabel toggle (Switch)
+- Logo URL input
+- Portal display name input
+- Color pickers for Primary, Accent, and Header Background (HSL format with live preview swatches)
+- Quick preset palette row (Blue, Teal, Red, Orange, Green, Gold)
+- Save button -- writes to `companies.settings` JSONB under a `branding` key
 
-- Collect PDF copies of contracts -- Client
-- Collect spreadsheet with metadata -- Client
-- Upload via AI-Assisted Parsing -- ENCORE
-- Complete manual entry -- ENCORE + Client
-- Review parsed contract data -- ENCORE + Client
-- Bulk upload associated works -- ENCORE
-- Link works to correct contracts -- ENCORE + Client
+### 3. Update SubAccountDetailPage.tsx
+**File:** `src/pages/SubAccountDetailPage.tsx`
 
-**Phase 5 -- Data Validation and QA** (owner: ENCORE + Client)
+- Check if the `whitelabel_branding` module is enabled for this sub-account
+- If enabled, show the **"Branding"** tab (Palette icon) in the tabs list
+- If not enabled, the tab is hidden entirely
 
-- All items -- ENCORE + Client
+### 4. New Hook: useClientBranding.ts
+**File:** `src/hooks/useClientBranding.ts`
 
-**Phase 6 -- Client Portal Setup** (owner: ENCORE + Client)
+Resolves branding for the logged-in client:
+1. Query `client_portal_access` to get `subscriber_user_id`
+2. Query `company_users` to get the subscriber's `company_id`
+3. Check `company_module_access` to confirm `whitelabel_branding` is enabled
+4. Query `companies.settings` to read branding config
+5. Return branding data (or null if module is disabled or branding not configured)
 
-- All items -- ENCORE + Client
+### 5. Update ClientPortal.tsx
+**File:** `src/components/ClientPortal.tsx`
 
-**Phase 7 -- Go-Live Readiness** (owner: All Teams)
+- Call `useClientBranding(user.id)`
+- If branding is returned and enabled:
+  - Header gradient uses the sub-account's colors instead of purple
+  - Sub-account's logo replaces the spinning vinyl record
+  - Display name replaces "Client Portal" title
+  - Add "Powered by ENCORE" small text/badge in the header
+- If not enabled: default ENCORE purple header, no changes
+- Wrap portal content in a div with scoped CSS variable overrides so buttons and tabs within the portal also pick up the custom primary/accent colors
 
-- Sub-account active and verified -- ENCORE
-- Modules enabled per scope -- ENCORE
-- Users added and validated -- ENCORE + Client
-- Contracts ingested and approved -- ENCORE + Client
-- Works linked and validated -- ENCORE + Client
-- Client Portal invitations sent -- ENCORE + Client
-- Module visibility validation -- ENCORE
-- Data isolation testing -- ENCORE
-- Audit log review -- ENCORE
-- REMOVE "Login verification without payment redirects"
-- ADD "Setup billing via Stripe for enterprise" -- Client (required, final step)
-
-## 2. Update `src/components/admin/subaccount/SubAccountOnboarding.tsx`
-
-- Render a small colored badge next to each checklist item:
-  - ENCORE = blue badge
-  - Client = orange badge
-  - ENCORE + Client = purple badge
-- When the current user is viewing as a sub-account (client), disable checkboxes on items assigned to ENCORE (client can only check off their own tasks)
-- Phase advance button stays disabled until ALL required items from BOTH parties are completed (existing `getPhaseRequiredComplete` logic already handles this since it checks all required items)
-
-## 3. Update `src/hooks/useOnboardingProgress.ts`
-
-- No changes to `getPhaseRequiredComplete` -- it already requires all required items to be checked before advancing, which naturally enforces the "both parties must complete" rule
-- The toggle mutation will be called with the same logic; the UI layer handles restricting who can check what
-
-## 4. Update `src/components/operations/phase6/OnboardingPipelineManager.tsx`
-
-- In the expanded checklist view, render the same colored assignee badge next to each item so admins can see which tasks are waiting on the client
-
-## Technical Details
-
-### Files to Modify
-
-- `src/constants/onboardingPhases.ts` -- add assignee field, update items, move/remove items per instructions
-- `src/components/admin/subaccount/SubAccountOnboarding.tsx` -- render badges, restrict checkbox interaction for clients
-- `src/components/operations/phase6/OnboardingPipelineManager.tsx` -- render assignee badges in expanded checklist
-
-### Assignee Badge Colors
+## Data Flow
 
 ```text
-ENCORE        -> className="bg-blue-100 text-blue-700 border-blue-200"
-Client        -> className="bg-orange-100 text-orange-700 border-orange-200"
-ENCORE + Client -> className="bg-purple-100 text-purple-700 border-purple-200"
+ENCORE Admin
+  -> Modules tab: toggles "Whitelabel Branding" on/off for sub-account
+    -> Stored in company_module_access table
+
+Sub-Account (if module enabled)
+  -> Branding tab: configures logo, name, colors
+    -> Stored in companies.settings.branding JSONB
+
+Client logs into Client Portal
+  -> useClientBranding hook:
+    -> client_portal_access (subscriber_user_id)
+      -> company_users (company_id)
+        -> company_module_access: is whitelabel_branding enabled?
+          -> YES: read companies.settings.branding -> apply theme
+          -> NO: show default ENCORE purple
 ```
 
-### Client Restriction Logic
+## Technical Notes
 
-Use the existing `useViewModeOptional` hook. When `isViewingAsSubAccount` is true, the user is acting as a client -- disable checkboxes where `item.assignee === 'ENCORE'`. ENCORE items remain visible but non-interactive for the client.
+- **No database migration needed** -- uses existing `company_module_access` table for Tier 1 and existing `companies.settings` JSONB column for Tier 2
+- Colors applied via **inline styles and scoped CSS variables** on the Client Portal wrapper only -- the rest of the ENCORE app is never affected
+- The "Branding" tab visibility is conditional on the `whitelabel_branding` module being enabled, so sub-accounts without the feature never see it
+
