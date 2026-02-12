@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase } from 'lucide-react';
+import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList } from 'lucide-react';
 import { SubAccountOverview } from '@/components/admin/subaccount/SubAccountOverview';
 import { SubAccountUsers } from '@/components/admin/subaccount/SubAccountUsers';
 import { SubAccountModules } from '@/components/admin/subaccount/SubAccountModules';
@@ -15,6 +15,7 @@ import { SubAccountSettings } from '@/components/admin/subaccount/SubAccountSett
 import { ViewSwitcher } from '@/components/admin/subaccount/ViewSwitcher';
 import { ClientsManager } from '@/components/hierarchy/ClientsManager';
 import { useClientHierarchy } from '@/hooks/useClientHierarchy';
+import { SubAccountOnboarding } from '@/components/admin/subaccount/SubAccountOnboarding';
 
 interface Company {
   id: string;
@@ -193,6 +194,10 @@ export default function SubAccountDetailPage() {
             <Building2 className="h-4 w-4 mr-2" />
             Overview
           </TabsTrigger>
+          <TabsTrigger value="onboarding">
+            <ClipboardList className="h-4 w-4 mr-2" />
+            Onboarding
+          </TabsTrigger>
           {(isPublishingFirm || hasChildren) && (
             <TabsTrigger value="clients">
               <Briefcase className="h-4 w-4 mr-2" />
@@ -219,6 +224,10 @@ export default function SubAccountDetailPage() {
 
         <TabsContent value="overview" className="space-y-6">
           <SubAccountOverview company={company} onUpdate={fetchCompanyDetails} />
+        </TabsContent>
+
+        <TabsContent value="onboarding" className="space-y-6">
+          <SubAccountOnboarding companyId={company.id} companyName={company.name} />
         </TabsContent>
 
         {(isPublishingFirm || hasChildren) && (
