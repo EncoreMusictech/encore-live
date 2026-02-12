@@ -127,6 +127,24 @@ function BatchesTab() {
     },
   });
 
+  const commitBatch = useMutation({
+    mutationFn: async (batchId: string) => {
+      const { error } = await supabase.rpc("promote_staging_batch", {
+        p_batch_id: batchId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["catalog-import-batches"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog-works"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog-staging-rows"] });
+      toast.success("Batch committed to catalog");
+    },
+    onError: (err: Error) => {
+      toast.error(`Commit failed: ${err.message}`);
+    },
+  });
+
   if (isLoading) return <LoadingCard label="Loading batches…" />;
 
   return (
@@ -176,12 +194,27 @@ function BatchesTab() {
                         {format(new Date(b.created_at), "MMM d, yyyy h:mm a")}
                       </TableCell>
                       <TableCell>
-                        <DeleteConfirmDialog
-                          title="Delete Import Batch"
-                          description={`This will permanently delete "${b.file_name}" along with all its staging rows and any catalog works promoted from it.`}
-                          onConfirm={() => deleteBatch.mutate(b.id)}
-                          isPending={deleteBatch.isPending}
-                        />
+                        <div className="flex items-center gap-2">
+                          {b.status === "validated" && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => commitBatch.mutate(b.id)}
+                              disabled={commitBatch.isPending}
+                            >
+                              {commitBatch.isPending ? (
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              ) : null}
+                              Commit
+                            </Button>
+                          )}
+                          <DeleteConfirmDialog
+                            title="Delete Import Batch"
+                            description={`This will permanently delete "${b.file_name}" along with all its staging rows and any catalog works promoted from it.`}
+                            onConfirm={() => deleteBatch.mutate(b.id)}
+                            isPending={deleteBatch.isPending}
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
