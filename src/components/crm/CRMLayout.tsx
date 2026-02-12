@@ -29,9 +29,10 @@ export function CRMLayout() {
   // Scroll to top when route changes
   useEffect(() => {
     if (mainRef.current) {
-      mainRef.current.scrollTo(0, 0);
+      mainRef.current.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
-  }, [location.pathname]);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [location.pathname, location.search]);
 
   // Check if user has access to CRM
   const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
