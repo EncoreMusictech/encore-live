@@ -13,8 +13,48 @@ import {
 } from 'lucide-react';
 import { ONBOARDING_PHASES, getPhaseIndex } from '@/constants/onboardingPhases';
 import { AssigneeBadge } from '@/components/admin/subaccount/AssigneeBadge';
-import { useAllOnboardingProgress, useAllOnboardingChecklists } from '@/hooks/useOnboardingProgress';
+import { useAllOnboardingProgress, useAllOnboardingChecklists, useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import { useNavigate } from 'react-router-dom';
+
+/** Interactive checklist for a single client in the pipeline view */
+function PipelineChecklist({ companyId, phaseId }: { companyId: string; phaseId: string }) {
+  const { toggleChecklistItem, isItemCompleted } = useOnboardingProgress(companyId);
+  const phase = ONBOARDING_PHASES.find(p => p.id === phaseId);
+  if (!phase) return null;
+
+  return (
+    <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+      <h5 className="font-medium mb-3 flex items-center gap-2">
+        <CheckSquare className="h-4 w-4" />
+        {phase.name} Checklist
+      </h5>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {phase.checklist.map(item => {
+          const isChecked = isItemCompleted(phaseId, item.id);
+          return (
+            <div key={item.id} className="flex items-center gap-2">
+              <Checkbox
+                checked={isChecked}
+                onCheckedChange={(val) =>
+                  toggleChecklistItem({
+                    phaseId,
+                    itemId: item.id,
+                    completed: !!val,
+                  })
+                }
+              />
+              <span className={`text-sm ${isChecked ? 'line-through text-muted-foreground' : ''}`}>
+                {item.label}
+                {item.required && <span className="text-red-500 ml-1">*</span>}
+              </span>
+              <AssigneeBadge assignee={item.assignee} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function OnboardingPipelineManager() {
   const [selectedPhase, setSelectedPhase] = useState<string>('all');
@@ -292,27 +332,7 @@ export function OnboardingPipelineManager() {
 
                               {/* Expanded checklist */}
                               {isExpanded && currentPhase && (
-                                <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                                  <h5 className="font-medium mb-3 flex items-center gap-2">
-                                    <CheckSquare className="h-4 w-4" />
-                                    {currentPhase.name} Checklist
-                                  </h5>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    {currentPhase.checklist.map(item => {
-                                      const isChecked = clientChecklist.has(`${currentPhase.id}:${item.id}`);
-                                      return (
-                                        <div key={item.id} className="flex items-center gap-2">
-                                          <Checkbox checked={isChecked} disabled />
-                                          <span className={`text-sm ${isChecked ? 'line-through text-muted-foreground' : ''}`}>
-                                            {item.label}
-                                            {item.required && <span className="text-red-500 ml-1">*</span>}
-                                          </span>
-                                          <AssigneeBadge assignee={item.assignee} />
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
+                                <PipelineChecklist companyId={client.id} phaseId={currentPhase.id} />
                               )}
                             </div>
                           </div>
