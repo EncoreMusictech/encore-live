@@ -204,13 +204,14 @@ function parseMusicBrainzRecordings(row: Record<string, unknown>, headers: strin
 }
 
 function parseASCAPBMI(row: Record<string, unknown>, headers: string[]): Partial<StagingRow> {
-  const title = getVal(row, headers, 'work title', 'title', 'song title');
-  const workId = getVal(row, headers, 'work id', 'work #');
-  const writerName = getVal(row, headers, 'writer', 'writer name');
-  const publisherName = getVal(row, headers, 'publisher', 'publisher name');
-  const shareStr = getVal(row, headers, 'share', 'ownership', '%');
-  const pro = getVal(row, headers, 'pro', 'society');
-  const ipi = getVal(row, headers, 'ipi', 'cae');
+   const title = getVal(row, headers, 'work title', 'title', 'song title');
+   const workId = getVal(row, headers, 'work id', 'work #');
+   const writerName = getVal(row, headers, 'writer', 'writer name');
+   const publisherName = getVal(row, headers, 'publisher', 'publisher name');
+   const shareStr = getVal(row, headers, 'share', 'ownership', '%');
+   const pro = getVal(row, headers, 'pro', 'society');
+   const ipi = getVal(row, headers, 'ipi', 'cae');
+   const iswc = getVal(row, headers, 'iswc');
 
   const writers: ContributorEntry[] = writerName
     ? [{ name: writerName, ipi: ipi || undefined, pro: pro || undefined, share: parseFloat(shareStr) || undefined, role: 'writer' }]
@@ -225,17 +226,17 @@ function parseASCAPBMI(row: Record<string, unknown>, headers: string[]): Partial
   else if (pro?.toLowerCase().includes('bmi')) canonicalRow.bmi_work_id = workId;
   if (pro) canonicalRow.pro_registrations = [{ pro, work_id: workId, status: 'registered' }];
 
-  return {
-    source_sheet: 'ascap_bmi_songview',
-    work_title: title,
-    artist_name: getVal(row, headers, 'artist', 'performer'),
-    isrc: null,
-    iswc: null,
-    writers,
-    publishers,
-    canonical_row: canonicalRow,
-    raw_row_data: row,
-  };
+   return {
+     source_sheet: 'ascap_bmi_songview',
+     work_title: title,
+     artist_name: getVal(row, headers, 'artist', 'performer'),
+     isrc: null,
+     iswc: validateISWC(iswc) ? cleanISWC(iswc) : iswc || null,
+     writers,
+     publishers,
+     canonical_row: canonicalRow,
+     raw_row_data: row,
+   };
 }
 
 function parseMLC(row: Record<string, unknown>, headers: string[]): Partial<StagingRow> {
