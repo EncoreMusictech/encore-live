@@ -121,19 +121,19 @@ export function ClientsManager({ parentCompanyId, parentCompanyName }: ClientsMa
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem 
-                          onClick={() => handleViewAsClient(client.company_id, client.display_name)}
+                          onSelect={() => handleViewAsClient(client.company_id, client.display_name)}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           View as Client
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => setManageUsersClient({ id: client.company_id, name: client.display_name })}
+                          onSelect={() => setManageUsersClient({ id: client.company_id, name: client.display_name })}
                         >
                           <Users className="h-4 w-4 mr-2" />
                           Manage Users
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => setSettingsClient({ id: client.company_id, name: client.display_name })}
+                          onSelect={() => setSettingsClient({ id: client.company_id, name: client.display_name })}
                         >
                           <Settings className="h-4 w-4 mr-2" />
                           Settings
