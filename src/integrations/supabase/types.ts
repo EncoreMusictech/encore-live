@@ -205,27 +205,27 @@ export type Database = {
       ascap_catalogue: {
         Row: {
           id: number
-          name: string | null
-          note: string | null
-          roletype: string | null
-          shares: string | null
-          title: string | null
+          Name: string | null
+          Note: string | null
+          RoleType: string | null
+          Shares: string | null
+          Title: string | null
         }
         Insert: {
           id?: number
-          name?: string | null
-          note?: string | null
-          roletype?: string | null
-          shares?: string | null
-          title?: string | null
+          Name?: string | null
+          Note?: string | null
+          RoleType?: string | null
+          Shares?: string | null
+          Title?: string | null
         }
         Update: {
           id?: number
-          name?: string | null
-          note?: string | null
-          roletype?: string | null
-          shares?: string | null
-          title?: string | null
+          Name?: string | null
+          Note?: string | null
+          RoleType?: string | null
+          Shares?: string | null
+          Title?: string | null
         }
         Relationships: []
       }
