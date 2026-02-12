@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useViewModeOptional } from "@/hooks/useViewModeOptional";
+import { SubAccountOnboarding } from "@/components/admin/subaccount/SubAccountOnboarding";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +46,7 @@ export function CRMDashboard() {
   const { subscription_tier } = useSubscription();
   const { isAdmin } = useUserRoles();
   const { isDemo } = useDemoAccess();
+  const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
   
   // Debug logging for isDemo status
   console.log('🔍 CRMDashboard - Debug Info:', {
@@ -244,6 +247,14 @@ export function CRMDashboard() {
           </Badge>
         )}
       </div>
+
+      {/* Onboarding checklist for sub-account view mode */}
+      {isViewingAsSubAccount && viewContext?.companyId && viewContext?.companyName && (
+        <SubAccountOnboarding
+          companyId={viewContext.companyId}
+          companyName={viewContext.companyName}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Demo Users: Show Quick Start Guide */}
