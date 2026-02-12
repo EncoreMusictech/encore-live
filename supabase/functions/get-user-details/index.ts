@@ -45,7 +45,31 @@ Deno.serve(async (req) => {
       }
     )
 
-    const { userIds } = await req.json()
+    const body = await req.json()
+    const { userIds, email } = body
+
+    // If email is provided, look up user by email
+    if (email) {
+      console.log('Looking up user by email:', email)
+      const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers()
+      if (authError) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to look up user' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      const found = authUsers.users.find(u => u.email?.toLowerCase() === email.toLowerCase())
+      if (!found) {
+        return new Response(
+          JSON.stringify({ error: 'User not found', found: false }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      return new Response(
+        JSON.stringify({ found: true, user: { id: found.id, email: found.email } }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     if (!userIds || !Array.isArray(userIds)) {
       return new Response(

@@ -107,12 +107,12 @@ export function ClientUsersDialog({ open, onOpenChange, clientId, clientName }: 
     try {
       setAdding(true);
 
-      // Look up user by email via profiles or auth
-      const { data, error: usersError } = await supabase.auth.admin.listUsers();
-      if (usersError) throw usersError;
+      // Look up user by email via edge function (server-side admin access)
+      const { data: lookupResult, error: lookupError } = await supabase.functions.invoke('get-user-details', {
+        body: { email: newUser.email }
+      });
 
-      const user = data.users?.find((u: any) => u.email === newUser.email);
-      if (!user) {
+      if (lookupError || !lookupResult?.found) {
         toast({ title: 'Error', description: 'User with this email not found. They must sign up first.', variant: 'destructive' });
         return;
       }
@@ -121,7 +121,7 @@ export function ClientUsersDialog({ open, onOpenChange, clientId, clientName }: 
         .from('company_users')
         .insert({
           company_id: clientId,
-          user_id: user.id,
+          user_id: lookupResult.user.id,
           role: newUser.role,
           status: 'active',
         });
