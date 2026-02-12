@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { CreateClientDialog } from './CreateClientDialog';
 import { ClientUsersDialog } from './ClientUsersDialog';
+import { ClientSettingsDialog } from './ClientSettingsDialog';
 
 interface ClientsManagerProps {
   parentCompanyId: string;
@@ -32,6 +33,7 @@ interface ClientsManagerProps {
 export function ClientsManager({ parentCompanyId, parentCompanyName }: ClientsManagerProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [manageUsersClient, setManageUsersClient] = useState<{ id: string; name: string } | null>(null);
+  const [settingsClient, setSettingsClient] = useState<{ id: string; name: string } | null>(null);
   
   const { childCompanies, loading, refetch } = useClientHierarchy(parentCompanyId);
   const { switchToClientView } = useViewMode();
@@ -130,7 +132,9 @@ export function ClientsManager({ parentCompanyId, parentCompanyName }: ClientsMa
                           <Users className="h-4 w-4 mr-2" />
                           Manage Users
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setSettingsClient({ id: client.company_id, name: client.display_name })}
+                        >
                           <Settings className="h-4 w-4 mr-2" />
                           Settings
                         </DropdownMenuItem>
@@ -154,6 +158,15 @@ export function ClientsManager({ parentCompanyId, parentCompanyName }: ClientsMa
           onOpenChange={(open) => { if (!open) setManageUsersClient(null); }}
           clientId={manageUsersClient.id}
           clientName={manageUsersClient.name}
+        />
+      )}
+      {settingsClient && (
+        <ClientSettingsDialog
+          open={!!settingsClient}
+          onOpenChange={(open) => { if (!open) setSettingsClient(null); }}
+          clientId={settingsClient.id}
+          clientName={settingsClient.name}
+          onUpdate={refetch}
         />
       )}
     </Card>
