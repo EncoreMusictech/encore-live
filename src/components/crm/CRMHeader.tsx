@@ -7,6 +7,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useViewModeOptional } from "@/hooks/useViewModeOptional";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
@@ -19,6 +20,12 @@ export function CRMHeader() {
   const {
     subscription_tier
   } = useSubscription();
+  const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
+
+  // In view mode, show the sub-account's company name and tier instead of the admin's
+  const displayTier = isViewingAsSubAccount && viewContext
+    ? viewContext.companyName
+    : subscription_tier;
   const userInitials = user?.email?.slice(0, 2).toUpperCase() || 'U';
   return <header className="border-b border-border bg-card">
       <div className="flex items-center justify-between h-16 px-6">
@@ -29,8 +36,8 @@ export function CRMHeader() {
               <img src={encoreLogo} alt="Encore Logo" className="w-8 h-8 object-contain" />
               <h1 className="text-xl font-headline font-bold">ENCORE</h1>
             </Link>
-            {subscription_tier && <Badge variant="secondary" className="text-xs">
-                {subscription_tier}
+            {displayTier && <Badge variant="secondary" className="text-xs">
+                {displayTier}
               </Badge>}
           </div>
         </div>

@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
+import { useViewModeOptional } from "@/hooks/useViewModeOptional";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Lock } from "lucide-react";
@@ -18,7 +19,7 @@ export function CRMLayout() {
   const { subscribed, subscription_tier, loading: subscriptionLoading } = useSubscription();
   const { isAdmin, loading: rolesLoading } = useUserRoles();
   const { canAccess: canAccessDemo } = useDemoAccess();
-  const location = useLocation();
+  const { isViewingAsSubAccount } = useViewModeOptional();
   const navigate = useNavigate();
   const mainRef = useRef<HTMLElement>(null);
   const [paymentVerified, setPaymentVerified] = useState<boolean | null>(null);
@@ -44,8 +45,8 @@ export function CRMLayout() {
       return;
     }
 
-    // Skip payment check for admins, demo accounts, or users with active subscriptions
-    if (isAdministrator || isDemoAccount || subscribed) {
+    // Skip payment check for admins, demo accounts, users with active subscriptions, or view mode
+    if (isAdministrator || isDemoAccount || subscribed || isViewingAsSubAccount) {
       setPaymentVerified(true);
       return;
     }

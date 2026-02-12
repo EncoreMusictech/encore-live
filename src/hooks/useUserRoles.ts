@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useViewModeOptional } from './useViewModeOptional';
 
 export const useUserRoles = () => {
   const { user } = useAuth();
+  const { isViewingAsSubAccount } = useViewModeOptional();
   const [roles, setRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,11 +41,14 @@ export const useUserRoles = () => {
     fetchUserRoles();
   }, [user]);
 
-  const hasRole = (role: string) => roles.includes(role);
+  // Suppress admin role when viewing as sub-account
+  const effectiveRoles = isViewingAsSubAccount ? roles.filter(r => r !== 'admin') : roles;
+
+  const hasRole = (role: string) => effectiveRoles.includes(role);
   const isAdmin = hasRole('admin');
 
   return {
-    roles,
+    roles: effectiveRoles,
     loading,
     hasRole,
     isAdmin

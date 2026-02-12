@@ -9,6 +9,7 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useUserCompany } from "@/hooks/useUserCompany";
+import { useViewModeOptional } from "@/hooks/useViewModeOptional";
 import { supabase } from "@/integrations/supabase/client";
 import encoreLogo from "@/assets/encore-logo.png";
 interface ModuleItem {
@@ -101,11 +102,14 @@ export function CRMSidebar() {
   } = useDemoAccess();
   const { isSuperAdmin } = useSuperAdmin();
   const { canManageClients } = useUserCompany();
+  const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
   const location = useLocation();
   const [userModules, setUserModules] = useState<string[]>([]);
+  const [companyModules, setCompanyModules] = useState<string[]>([]);
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   
+  // Fetch the user's own module access
   useEffect(() => {
     const fetchUserModules = async () => {
       if (!user) return;
@@ -121,11 +125,133 @@ export function CRMSidebar() {
     };
     fetchUserModules();
   }, [user]);
+
+  // When viewing as sub-account, fetch the target company's enabled modules
+  useEffect(() => {
+    const fetchCompanyModules = async () => {
+      if (!isViewingAsSubAccount || !viewContext?.companyId) {
+        setCompanyModules([]);
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from('company_module_access')
+          .select('module_id')
+          .eq('company_id', viewContext.companyId)
+          .eq('enabled', true);
+        setCompanyModules(data?.map(item => item.module_id) || []);
+      } catch (error) {
+        console.error('Error fetching company modules:', error);
+      }
+    };
+    fetchCompanyModules();
+  }, [isViewingAsSubAccount, viewContext?.companyId]);
+
+  // Module alias normalization (company_module_access may use different IDs)
+  const normalizeModuleId = (id: string) => {
+    const aliases: Record<string, string[]> = {
+      'catalog-valuation': ['catalog_valuation', 'catalog-valuation'],
+      'contract-management': ['contract_management', 'contract-management', 'contracts'],
+      'copyright-management': ['copyright_management', 'copyright-management', 'copyright'],
+      'sync-licensing': ['sync_licensing', 'sync-licensing', 'sync'],
+      'royalties-processing': ['royalties_processing', 'royalties-processing', 'royalties', 'royalty_processing'],
+      'dashboard': ['dashboard'],
+    };
+    for (const [canonical, alts] of Object.entries(aliases)) {
+      if (alts.includes(id) || canonical === id) return canonical;
+    }
+    return id;
+  };
+
+  const normalizedCompanyModules = companyModules.map(normalizeModuleId);
+
   // Regular admin modules (without Super Admin)
   const regularAdminModules = adminModules.filter(module => module.id !== 'platform-admin');
   
   // Super admin modules (only platform-admin)
   const superAdminModules = adminModules.filter(module => module.id === 'platform-admin');
+  const isActive = (path: string) => location.pathname === path;
+
+  // In view mode: only show main modules the company has access to, no admin modules
+  if (isViewingAsSubAccount) {
+    const viewModeModules = mainModules.filter(module => {
+      if (module.id === 'dashboard') return true;
+      return normalizedCompanyModules.includes(normalizeModuleId(module.id));
+    });
+
+    return <Sidebar className={collapsed ? "w-16" : "w-64"}>
+      <SidebarHeader className="border-b border-sidebar-border p-4">
+        {!collapsed && <div className="flex items-center space-x-2">
+            <img src={encoreLogo} alt="Encore Logo" className="w-8 h-8 object-contain" />
+            <div>
+              <h2 className="font-headline font-bold text-lg">ENCORE</h2>
+              <p className="text-xs text-muted-foreground">{viewContext?.companyName || 'Sub-Account View'}</p>
+            </div>
+          </div>}
+        {collapsed && <img src={encoreLogo} alt="Encore Logo" className="w-8 h-8 object-contain mx-auto" />}
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Modules</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {viewModeModules.map(module => {
+                const IconComponent = module.icon;
+                const active = isActive(module.url);
+                return <SidebarMenuItem key={module.id}>
+                  <SidebarMenuButton asChild className={active ? "bg-sidebar-accent" : ""}>
+                    <Link to={module.url} className="flex items-center">
+                      <IconComponent className="mr-2 h-4 w-4" />
+                      {!collapsed && <span className="font-medium">{module.title}</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>;
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {!collapsed && <SidebarGroup>
+          <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {viewContext?.companyType === 'publishing_firm' && <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/dashboard/clients" className="flex items-center">
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Manage Clients
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/pricing" className="flex items-center">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Manage Subscription
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/contact" className="flex items-center">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Support
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>}
+      </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border p-4">
+        {!collapsed && <div className="text-center">
+          <p className="text-xs text-muted-foreground">
+            {viewModeModules.length} of {mainModules.length} modules active
+          </p>
+        </div>}
+      </SidebarFooter>
+    </Sidebar>;
+  }
 
   // Include modules based on user privileges
   let availableModules = [...mainModules];
@@ -143,12 +269,9 @@ export function CRMSidebar() {
   // Filter modules based on user access or demo access
   const accessibleModules = (isAdmin || isSuperAdmin) ? availableModules : availableModules.filter(module => {
     if (module.id === 'dashboard') return true;
-    // Check if user has database access or demo access
-    // Map module IDs to demo access keys
     const demoKey = module.id === 'royalties-processing' ? 'royaltiesProcessing' : module.id === 'catalog-valuation' ? 'catalogValuation' : module.id === 'contract-management' ? 'contractManagement' : module.id === 'copyright-management' ? 'copyrightManagement' : module.id === 'sync-licensing' ? 'syncLicensing' : module.id === 'client-portal' ? 'clientPortal' : module.id;
     return userModules.includes(module.id) || canAccessDemo(demoKey);
   });
-  const isActive = (path: string) => location.pathname === path;
   return <Sidebar className={collapsed ? "w-16" : "w-64"}>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         {!collapsed && <div className="flex items-center space-x-2">
