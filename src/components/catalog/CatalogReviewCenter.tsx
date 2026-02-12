@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Archive,
   FileSpreadsheet,
   Library,
@@ -23,9 +34,11 @@ import {
   AlertTriangle,
   Clock,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const STATUS_CONFIG: Record<string, { icon: React.ReactNode; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   committed: { icon: <CheckCircle2 className="h-3 w-3" />, variant: "default" },
@@ -65,6 +78,8 @@ export function CatalogReviewCenter() {
 // ── Batches Tab ─────────────────────────────────────────────
 
 function BatchesTab() {
+  const queryClient = useQueryClient();
+
   const { data: batches, isLoading } = useQuery({
     queryKey: ["catalog-import-batches"],
     queryFn: async () => {
@@ -74,6 +89,41 @@ function BatchesTab() {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  const deleteBatch = useMutation({
+    mutationFn: async (batchId: string) => {
+      // Delete staging rows first (FK constraint)
+      const { error: stagingErr } = await supabase
+        .from("catalog_import_staging")
+        .delete()
+        .eq("import_batch_id", batchId);
+      if (stagingErr) throw stagingErr;
+
+      // Delete catalog works linked to this batch
+      const { error: worksErr } = await supabase
+        .from("catalog_works")
+        .delete()
+        .eq("import_batch_id", batchId);
+      if (worksErr) throw worksErr;
+
+      // Delete the batch itself
+      const { error } = await supabase
+        .from("catalog_import_batches")
+        .delete()
+        .eq("id", batchId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["catalog-import-batches"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog-import-batches-for-staging"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog-staging-rows"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog-works"] });
+      toast.success("Batch and associated data deleted");
+    },
+    onError: (err: Error) => {
+      toast.error(`Delete failed: ${err.message}`);
     },
   });
 
@@ -102,6 +152,7 @@ function BatchesTab() {
                   <TableHead className="text-right">Duplicates</TableHead>
                   <TableHead className="text-right">Errors</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -123,6 +174,14 @@ function BatchesTab() {
                       <TableCell className="text-right text-red-600">{b.error_rows}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {format(new Date(b.created_at), "MMM d, yyyy h:mm a")}
+                      </TableCell>
+                      <TableCell>
+                        <DeleteConfirmDialog
+                          title="Delete Import Batch"
+                          description={`This will permanently delete "${b.file_name}" along with all its staging rows and any catalog works promoted from it.`}
+                          onConfirm={() => deleteBatch.mutate(b.id)}
+                          isPending={deleteBatch.isPending}
+                        />
                       </TableCell>
                     </TableRow>
                   );
@@ -187,7 +246,6 @@ function StagingTab() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Batch selector */}
         <div className="flex flex-wrap gap-2">
           {batches?.map((b) => (
             <Button
@@ -207,7 +265,6 @@ function StagingTab() {
           )}
         </div>
 
-        {/* Staging rows table */}
         {selectedBatchId && (
           isLoading ? (
             <LoadingCard label="Loading staging rows…" />
@@ -267,6 +324,7 @@ function StagingTab() {
 
 function CatalogWorksTab() {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: works, isLoading } = useQuery({
     queryKey: ["catalog-works"],
@@ -278,6 +336,30 @@ function CatalogWorksTab() {
         .limit(200);
       if (error) throw error;
       return data;
+    },
+  });
+
+  const deleteWork = useMutation({
+    mutationFn: async (workId: string) => {
+      // Delete contributors linked to this work first
+      const { error: contribErr } = await supabase
+        .from("catalog_work_contributors")
+        .delete()
+        .eq("catalog_work_id", workId);
+      if (contribErr) throw contribErr;
+
+      const { error } = await supabase
+        .from("catalog_works")
+        .delete()
+        .eq("id", workId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["catalog-works"] });
+      toast.success("Work removed from catalog");
+    },
+    onError: (err: Error) => {
+      toast.error(`Delete failed: ${err.message}`);
     },
   });
 
@@ -306,6 +388,7 @@ function CatalogWorksTab() {
                   <TableHead>ISRC</TableHead>
                   <TableHead>ISWC</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -335,10 +418,20 @@ function CatalogWorksTab() {
                       <TableCell className="text-sm text-muted-foreground">
                         {format(new Date(w.created_at), "MMM d, yyyy")}
                       </TableCell>
+                      <TableCell>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <DeleteConfirmDialog
+                            title="Delete Catalog Work"
+                            description={`Permanently remove "${w.work_title}" from the Golden Master catalog? This also removes linked contributor splits.`}
+                            onConfirm={() => deleteWork.mutate(w.id)}
+                            isPending={deleteWork.isPending}
+                          />
+                        </div>
+                      </TableCell>
                     </TableRow>
                     {expanded === w.id && (
                       <TableRow key={`${w.id}-detail`}>
-                        <TableCell colSpan={7} className="bg-muted/30 p-4">
+                        <TableCell colSpan={8} className="bg-muted/30 p-4">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div>
                               <p className="text-xs text-muted-foreground">Album</p>
@@ -388,6 +481,45 @@ function CatalogWorksTab() {
 }
 
 // ── Shared ──────────────────────────────────────────────────
+
+function DeleteConfirmDialog({
+  title,
+  description,
+  onConfirm,
+  isPending,
+}: {
+  title: string;
+  description: string;
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            disabled={isPending}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
 function LoadingCard({ label }: { label: string }) {
   return (
