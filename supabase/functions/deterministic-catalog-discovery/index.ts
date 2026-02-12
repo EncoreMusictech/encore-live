@@ -360,6 +360,30 @@ serve(async (req) => {
       await updateQuery.is('user_id', null);
     }
 
+    // Step 1: Query Golden Master (catalog_works) first - highest priority
+    let goldenMasterWorks: any[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('catalog_works')
+        .select('id, work_title, iswc, artist_name, pro_registrations, metadata')
+        .ilike('artist_name', `%${writerName}%`)
+        .limit(500);
+      
+      if (!error && data) {
+        goldenMasterWorks = data.map(w => ({
+          ...w,
+          source: 'golden_master',
+          title: w.work_title,
+          isGoldenMaster: true
+        }));
+        console.log(`Golden Master: Found ${goldenMasterWorks.length} verified works for "${writerName}"`);
+      } else {
+        console.log(`Golden Master query error: ${error?.message}`);
+      }
+    } catch (err) {
+      console.error('Golden Master query failed:', err);
+    }
+
     // Discover works from MusicBrainz
     const artistId = await findArtistMBID(writerName);
     let artistDetails: any = null;
@@ -379,8 +403,28 @@ serve(async (req) => {
     if (artistId) {
       mbWorks = await fetchAllWorksByArtist(artistId, Math.min(500, effectiveMaxSongs * 2));
     }
+    // Filter MusicBrainz results to avoid name collisions (only include works related to the resolved artist)
+    if (mbWorks.length > 0 && artistId) {
+      const filteredMB: any[] = [];
+      for (const work of mbWorks) {
+        // Check if this work has a direct relation to our target artist
+        const workDetails = work.id ? await getWorkDetails(work.id) : null;
+        if (workDetails) {
+          const relations = workDetails.relations || [];
+          const hasArtistRelation = relations.some((r: any) => r.artist?.id === artistId);
+          if (hasArtistRelation) {
+            filteredMB.push(work);
+          }
+        } else {
+          // If we can't verify, include it (assume it's relevant from the arid search)
+          filteredMB.push(work);
+        }
+      }
+      mbWorks = filteredMB;
+      console.log(`MusicBrainz filtered works (artist-verified): ${mbWorks.length}`);
+    }
     if (mbWorks.length < 50) {
-      // Try alternate name searches
+      // Try alternate name searches only as fallback
       for (const variant of nameVariants.slice(0, 3)) {
         const additionalWorks = await searchWorksByWriterName(variant, 100);
         const existing = new Set(mbWorks.map(w => w.id));
@@ -481,16 +525,34 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
       console.log('Skipping PRO lookup - no Perplexity API key');
     }
 
-    // Build unified candidate list with MLC-first, then PRO, then MusicBrainz
+    // Build unified candidate list with Golden Master-first, then MLC, then PRO, then MusicBrainz
     const candidates = new Map<string, { 
       id?: string; 
       title: string; 
-      sources: Array<'musicbrainz' | 'ascap' | 'bmi' | 'sesac' | 'mlc'>; 
+      sources: Array<'golden_master' | 'musicbrainz' | 'ascap' | 'bmi' | 'sesac' | 'mlc'>; 
       iswc?: string; 
       mlcSongCode?: string;
       proDetails?: Record<string, any>;
       mlcDetails?: any;
+      isGoldenMaster?: boolean;
     }>();
+
+    // Seed with Golden Master works (highest priority - already verified)
+    for (const w of goldenMasterWorks) {
+      const title = (w.title || '').trim();
+      if (!title) continue;
+      const key = w.iswc ? `iswc:${w.iswc}` : `title:${title.toLowerCase()}`;
+      if (!candidates.has(key)) {
+        candidates.set(key, { 
+          id: w.id,
+          title, 
+          sources: ['golden_master'], 
+          iswc: w.iswc || undefined,
+          isGoldenMaster: true,
+          proDetails: {},
+        });
+      }
+    }
 
     // Seed with MLC works (most authoritative for mechanical)
     for (const w of mlcWorks) {
@@ -506,10 +568,15 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
           mlcDetails: { writers: w.writers, publishers: w.publishers },
           proDetails: {}
         });
+      } else {
+        // If it already exists (e.g., from Golden Master), add mlc to sources
+        const existing = candidates.get(key)!;
+        if (!existing.sources.includes('mlc')) existing.sources.push('mlc');
+        if (!existing.mlcDetails) existing.mlcDetails = { writers: w.writers, publishers: w.publishers };
       }
     }
 
-    // Add MusicBrainz discoveries
+    // Add MusicBrainz discoveries (only if not already in Golden Master or MLC)
     for (const w of mbWorks) {
       const title = (w.title || '').trim();
       if (!title) continue;
@@ -555,7 +622,11 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
 
     const selected = Array.from(byTitle.values())
       .sort((a: any, b: any) => {
-        // Prioritize: MLC > PRO > MusicBrainz only
+        // Prioritize: Golden Master > MLC > PRO > MusicBrainz
+        const hasGMa = a.sources?.includes('golden_master') ? 1 : 0;
+        const hasGMb = b.sources?.includes('golden_master') ? 1 : 0;
+        if (hasGMa !== hasGMb) return hasGMb - hasGMa;
+        
         const hasMlcA = a.sources?.includes('mlc') ? 1 : 0;
         const hasMlcB = b.sources?.includes('mlc') ? 1 : 0;
         if (hasMlcA !== hasMlcB) return hasMlcB - hasMlcA;
@@ -592,6 +663,7 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
 
       const hasMLC = Array.isArray(work.sources) && work.sources.includes('mlc');
       const hasMB = Array.isArray(work.sources) && work.sources.includes('musicbrainz');
+      const hasGM = Array.isArray(work.sources) && work.sources.includes('golden_master');
 
       // Work details are expensive + prone to flake; cap how many we attempt per run.
       if (work.id && workDetailsCalls < WORK_DETAILS_HARD_CAP) {
@@ -608,10 +680,11 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
       }
 
       // CRITICAL: Only allow ISWCs from authoritative sources.
+      // - Golden Master (catalog_works - pre-verified)
       // - MLC (via enhanced-mlc-lookup)
       // - MusicBrainz (work details)
       // Never allow PRO/AI-derived ISWCs.
-      if (!hasMLC && !hasMB) {
+      if (!hasGM && !hasMLC && !hasMB) {
         finalISWC = null;
       }
 
@@ -731,13 +804,14 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
         if (!pubsAllEqual) registration_gaps.push('conflicting_publishers');
       }
 
-      // Higher metadata score for MLC-verified works
+      // Higher metadata score for Golden Master and MLC-verified works
       let metadataScore = 0.5;
-      if (hasMLC2) metadataScore = 0.95;
+      if (hasGM) metadataScore = 1.0; // Golden Master = highest confidence
+      else if (hasMLC) metadataScore = 0.95;
       else if (finalISWC) metadataScore = 0.85;
       else if (hasAnyPRO) metadataScore = 0.7;
       
-      const verification_status = hasMLC2 ? 'mlc_verified' : (hasAnyPRO ? 'pro_verified' : 'discovered');
+      const verification_status = hasGM ? 'golden_master' : (hasMLC ? 'mlc_verified' : (hasAnyPRO ? 'pro_verified' : 'discovered'));
 
       rows.push({
         search_id: searchId,
@@ -756,6 +830,7 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
         source_data: { 
           source: Array.isArray(work.sources) ? (work.sources[0] || 'merged') : 'merged', 
           sources: work.sources || [],
+          is_golden_master: hasGM || false,
           work_id: work.id || null, 
           mlc_song_code: work.mlcSongCode || null,
           primary_territory: primaryTerritory 
@@ -784,7 +859,8 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
 
     const metaCompleteCount = rows.filter((r) => (r.metadata_completeness_score ?? 0) >= 0.7).length;
     const iswcCount = rows.filter((r) => !!r.iswc).length;
-    const proVerifiedCount = rows.filter((r) => r.verification_status === 'pro_verified' || r.verification_status === 'mlc_verified').length;
+    const gmVerifiedCount = rows.filter((r) => r.verification_status === 'golden_master').length;
+    const proVerifiedCount = rows.filter((r) => r.verification_status === 'pro_verified' || r.verification_status === 'mlc_verified' || r.verification_status === 'golden_master').length;
     const mlcVerifiedCount = rows.filter((r) => r.verification_status === 'mlc_verified').length;
     const verificationRate = insertedCount ? Math.round((proVerifiedCount / insertedCount) * 100) : 0;
     const descriptor = verificationRate >= 50 ? 'strong' : verificationRate >= 20 ? 'moderate' : 'modest';
@@ -796,15 +872,17 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
     };
 
     const pipelineSummary = {
-      summary: `We discovered ${insertedCount} songs for ${writerName}. ${mlcVerifiedCount} verified via MLC, ${metaCompleteCount} have strong metadata, and ${iswcCount} include ISWC codes. Registration checks matched ${proVerifiedCount} songs across PROs and MLC. Based on current data, near-term collections outlook appears ${descriptor}.`,
+      summary: `We discovered ${insertedCount} songs for ${writerName}. ${gmVerifiedCount} are from our verified catalog, ${mlcVerifiedCount} verified via MLC, ${metaCompleteCount} have strong metadata, and ${iswcCount} include ISWC codes. Registration checks matched ${proVerifiedCount} songs across Golden Master, PROs and MLC. Based on current data, near-term collections outlook appears ${descriptor}.`,
       counts: { 
         total: insertedCount, 
+        golden_master: gmVerifiedCount,
         meta_complete: metaCompleteCount, 
         iswc: iswcCount, 
         pro_verified: proVerifiedCount, 
         mlc_verified: mlcVerifiedCount,
         verification_rate: verificationRate,
         sources: {
+          golden_master: goldenMasterWorks.length,
           musicbrainz: mbWorks.length,
           mlc: mlcWorks.length,
           pro: proWorks.length
@@ -821,7 +899,7 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
         pipeline_estimate_total: 0,
         last_refreshed_at: new Date().toISOString(),
         search_status: 'completed',
-        ai_research_summary: { source: 'deterministic', discovered: insertedCount, career_overview: careerOverview, pipeline_summary: pipelineSummary }
+        ai_research_summary: { source: 'deterministic', discovered: insertedCount, golden_master: gmVerifiedCount, career_overview: careerOverview, pipeline_summary: pipelineSummary }
       })
       .eq('id', searchId);
     
@@ -831,14 +909,16 @@ IMPORTANT: Return as many works as possible, up to 50 works.`;
       await finalUpdate.is('user_id', null);
     }
 
-    console.log(`Discovery complete: ${insertedCount} works (MLC: ${mlcVerifiedCount}, PRO: ${proVerifiedCount - mlcVerifiedCount})`);
+    console.log(`Discovery complete: ${insertedCount} works (Golden Master: ${gmVerifiedCount}, MLC: ${mlcVerifiedCount}, PRO: ${proVerifiedCount - mlcVerifiedCount - gmVerifiedCount})`);
 
     return json({ 
       success: true, 
       discovered: insertedCount, 
+      golden_master: gmVerifiedCount,
       meta_complete: metaCompleteCount, 
       verification_rate: verificationRate,
       sources: {
+        golden_master: goldenMasterWorks.length,
         musicbrainz: mbWorks.length,
         mlc: mlcWorks.length,
         pro: proWorks.length,
