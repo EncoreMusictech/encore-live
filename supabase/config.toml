@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.confirm-payment-setup]
 verify_jwt = false
+
+[functions.get-user-details]
+verify_jwt = false

@@ -107,15 +107,17 @@ export function ClientUsersDialog({ open, onOpenChange, clientId, clientName }: 
     try {
       setAdding(true);
 
-      // Look up user by email via edge function (server-side admin access)
+      // Look up user by email — auto-create if not found
       const { data: lookupResult, error: lookupError } = await supabase.functions.invoke('get-user-details', {
-        body: { email: newUser.email }
+        body: { email: newUser.email, autoCreate: true, clientName, role: newUser.role }
       });
 
       if (lookupError || !lookupResult?.found) {
-        toast({ title: 'Error', description: 'User with this email not found. They must sign up first.', variant: 'destructive' });
+        toast({ title: 'Error', description: lookupResult?.error || 'Failed to find or create user', variant: 'destructive' });
         return;
       }
+
+      const wasCreated = lookupResult.created;
 
       const { error } = await supabase
         .from('company_users')
@@ -128,7 +130,12 @@ export function ClientUsersDialog({ open, onOpenChange, clientId, clientName }: 
 
       if (error) throw error;
 
-      toast({ title: 'Success', description: 'User added successfully' });
+      toast({ 
+        title: 'Success', 
+        description: wasCreated 
+          ? `Account created and login credentials sent to ${newUser.email}` 
+          : 'User added successfully' 
+      });
       setNewUser({ email: '', role: 'user' });
       setShowAddForm(false);
       fetchUsers();
