@@ -202,6 +202,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ascap_catalogue: {
+        Row: {
+          id: number
+          name: string | null
+          note: string | null
+          roletype: string | null
+          shares: string | null
+          title: string | null
+        }
+        Insert: {
+          id?: number
+          name?: string | null
+          note?: string | null
+          roletype?: string | null
+          shares?: string | null
+          title?: string | null
+        }
+        Update: {
+          id?: number
+          name?: string | null
+          note?: string | null
+          roletype?: string | null
+          shares?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       automation_workflows: {
         Row: {
           action_sequence: Json
@@ -7222,6 +7249,7 @@ export type Database = {
         }
         Returns: string
       }
+      execute_sql: { Args: { query: string }; Returns: Json[] }
       expire_client_access: { Args: never; Returns: number }
       expire_old_invitations: { Args: never; Returns: number }
       expire_trials: { Args: never; Returns: number }
