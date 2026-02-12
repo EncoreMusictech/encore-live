@@ -22,6 +22,7 @@ import { useClientHierarchy } from '@/hooks/useClientHierarchy';
 import { useToast } from '@/hooks/use-toast';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { CreateClientDialog } from './CreateClientDialog';
+import { ClientUsersDialog } from './ClientUsersDialog';
 
 interface ClientsManagerProps {
   parentCompanyId: string;
@@ -30,6 +31,7 @@ interface ClientsManagerProps {
 
 export function ClientsManager({ parentCompanyId, parentCompanyName }: ClientsManagerProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [manageUsersClient, setManageUsersClient] = useState<{ id: string; name: string } | null>(null);
   
   const { childCompanies, loading, refetch } = useClientHierarchy(parentCompanyId);
   const { switchToClientView } = useViewMode();
@@ -122,7 +124,9 @@ export function ClientsManager({ parentCompanyId, parentCompanyName }: ClientsMa
                           <Eye className="h-4 w-4 mr-2" />
                           View as Client
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setManageUsersClient({ id: client.company_id, name: client.display_name })}
+                        >
                           <Users className="h-4 w-4 mr-2" />
                           Manage Users
                         </DropdownMenuItem>
@@ -144,6 +148,14 @@ export function ClientsManager({ parentCompanyId, parentCompanyName }: ClientsMa
           </Table>
         )}
       </CardContent>
+      {manageUsersClient && (
+        <ClientUsersDialog
+          open={!!manageUsersClient}
+          onOpenChange={(open) => { if (!open) setManageUsersClient(null); }}
+          clientId={manageUsersClient.id}
+          clientName={manageUsersClient.name}
+        />
+      )}
     </Card>
   );
 }
