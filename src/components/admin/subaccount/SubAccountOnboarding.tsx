@@ -8,7 +8,7 @@ import { Stepper } from '@/components/ui/stepper';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import { ONBOARDING_PHASES, getPhaseIndex } from '@/constants/onboardingPhases';
 import { useViewModeOptional } from '@/hooks/useViewModeOptional';
-import { useAdmin } from '@/hooks/useAdmin';
+import { useAuth } from '@/hooks/useAuth';
 import { AssigneeBadge } from './AssigneeBadge';
 import {
   Building2, Settings, Users, FileText, Shield, Globe, Rocket,
@@ -45,7 +45,10 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
   } = useOnboardingProgress(companyId);
 
   const { isViewingAsSubAccount } = useViewModeOptional();
-  const { isAdmin } = useAdmin();
+  const { user } = useAuth();
+  // Use raw admin check — NOT suppressed by view mode — so admins retain "god mode"
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
+  const isAdmin = adminEmails.includes(user?.email?.toLowerCase() || '');
 
   // Auto-initialize on first visit
   useEffect(() => {
