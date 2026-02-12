@@ -106,13 +106,12 @@ export function SubAccountUsers({ companyId, onUpdate }: SubAccountUsersProps) {
     try {
       setAdding(true);
       
-      const { data, error: usersError } = await supabase.auth.admin.listUsers();
-      
-      if (usersError) throw usersError;
+      // Look up user by email via edge function (server-side admin access)
+      const { data: lookupResult, error: lookupError } = await supabase.functions.invoke('get-user-details', {
+        body: { email: newUser.email }
+      });
 
-      const user = data.users?.find((u: any) => u.email === newUser.email);
-
-      if (!user) {
+      if (lookupError || !lookupResult?.found) {
         toast({
           title: 'Error',
           description: 'User with this email not found. They must sign up first.',
@@ -121,11 +120,13 @@ export function SubAccountUsers({ companyId, onUpdate }: SubAccountUsersProps) {
         return;
       }
 
+      const userId = lookupResult.user.id;
+
       const { error } = await supabase
         .from('company_users')
         .insert({
           company_id: companyId,
-          user_id: user.id,
+          user_id: userId,
           role: newUser.role,
           status: 'active',
         });
