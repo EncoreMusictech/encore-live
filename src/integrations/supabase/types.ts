@@ -1084,6 +1084,100 @@ export type Database = {
         }
         Relationships: []
       }
+      client_onboarding_checklist: {
+        Row: {
+          company_id: string
+          completed: boolean
+          completed_at: string | null
+          completed_by: string | null
+          id: string
+          item_id: string
+          notes: string | null
+          phase_id: string
+        }
+        Insert: {
+          company_id: string
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          id?: string
+          item_id: string
+          notes?: string | null
+          phase_id: string
+        }
+        Update: {
+          company_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          id?: string
+          item_id?: string
+          notes?: string | null
+          phase_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_onboarding_checklist_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_onboarding_progress: {
+        Row: {
+          assigned_csm: string | null
+          company_id: string
+          created_at: string
+          current_phase: string
+          id: string
+          phase_progress: number
+          risk_level: string
+          start_date: string
+          status: string
+          target_go_live: string
+          updated_at: string
+          week_number: number
+        }
+        Insert: {
+          assigned_csm?: string | null
+          company_id: string
+          created_at?: string
+          current_phase?: string
+          id?: string
+          phase_progress?: number
+          risk_level?: string
+          start_date?: string
+          status?: string
+          target_go_live?: string
+          updated_at?: string
+          week_number?: number
+        }
+        Update: {
+          assigned_csm?: string | null
+          company_id?: string
+          created_at?: string
+          current_phase?: string
+          id?: string
+          phase_progress?: number
+          risk_level?: string
+          start_date?: string
+          status?: string
+          target_go_live?: string
+          updated_at?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_onboarding_progress_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_portal_access: {
         Row: {
           client_user_id: string
