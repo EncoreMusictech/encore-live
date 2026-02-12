@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList, Palette } from 'lucide-react';
 import { SubAccountOverview } from '@/components/admin/subaccount/SubAccountOverview';
 import { SubAccountUsers } from '@/components/admin/subaccount/SubAccountUsers';
 import { SubAccountModules } from '@/components/admin/subaccount/SubAccountModules';
@@ -16,6 +16,7 @@ import { ViewSwitcher } from '@/components/admin/subaccount/ViewSwitcher';
 import { ClientsManager } from '@/components/hierarchy/ClientsManager';
 import { useClientHierarchy } from '@/hooks/useClientHierarchy';
 import { SubAccountOnboarding } from '@/components/admin/subaccount/SubAccountOnboarding';
+import { SubAccountBranding } from '@/components/admin/subaccount/SubAccountBranding';
 
 interface Company {
   id: string;
@@ -38,6 +39,7 @@ export default function SubAccountDetailPage() {
   const [loading, setLoading] = useState(true);
   const [userCount, setUserCount] = useState(0);
   const [moduleCount, setModuleCount] = useState(0);
+  const [whitelabelEnabled, setWhitelabelEnabled] = useState(false);
   
   // Fetch hierarchy info
   const { isPublishingFirm, hasChildren, childCompanies } = useClientHierarchy(id);
@@ -78,6 +80,16 @@ export default function SubAccountDetailPage() {
 
       setUserCount(users || 0);
       setModuleCount(modules || 0);
+
+      // Check if whitelabel_branding module is enabled
+      const { data: wlModule } = await supabase
+        .from('company_module_access')
+        .select('enabled')
+        .eq('company_id', id)
+        .eq('module_id', 'whitelabel_branding')
+        .maybeSingle();
+      
+      setWhitelabelEnabled(wlModule?.enabled || false);
     } catch (error) {
       console.error('Error fetching company details:', error);
       toast({
@@ -220,6 +232,12 @@ export default function SubAccountDetailPage() {
             <Settings className="h-4 w-4 mr-2" />
             Settings
           </TabsTrigger>
+          {whitelabelEnabled && (
+            <TabsTrigger value="branding">
+              <Palette className="h-4 w-4 mr-2" />
+              Branding
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -251,6 +269,12 @@ export default function SubAccountDetailPage() {
         <TabsContent value="settings" className="space-y-6">
           <SubAccountSettings company={company} onUpdate={fetchCompanyDetails} />
         </TabsContent>
+
+        {whitelabelEnabled && (
+          <TabsContent value="branding" className="space-y-6">
+            <SubAccountBranding companyId={company.id} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { DollarSign, FileText, Scale, Music, Users, CheckCircle2 } from 'lucide-react';
+import { DollarSign, FileText, Scale, Music, Users, CheckCircle2, Palette } from 'lucide-react';
 
 interface ModuleAccess {
   id: string;
@@ -58,6 +58,13 @@ const AVAILABLE_MODULES = [
     label: 'Client Portal',
     description: 'Client communication and data sharing',
     icon: Users,
+    financial: false,
+  },
+  {
+    name: 'whitelabel_branding',
+    label: 'Whitelabel Branding',
+    description: 'Allow this sub-account to customize Client Portal branding with their own logo and colors',
+    icon: Palette,
     financial: false,
   },
 ];
