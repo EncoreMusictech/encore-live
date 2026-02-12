@@ -8,6 +8,7 @@ import { Stepper } from '@/components/ui/stepper';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import { ONBOARDING_PHASES, getPhaseIndex } from '@/constants/onboardingPhases';
 import { useViewModeOptional } from '@/hooks/useViewModeOptional';
+import { useAdmin } from '@/hooks/useAdmin';
 import { AssigneeBadge } from './AssigneeBadge';
 import {
   Building2, Settings, Users, FileText, Shield, Globe, Rocket,
@@ -44,6 +45,7 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
   } = useOnboardingProgress(companyId);
 
   const { isViewingAsSubAccount } = useViewModeOptional();
+  const { isAdmin } = useAdmin();
 
   // Auto-initialize on first visit
   useEffect(() => {
@@ -96,8 +98,12 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
   );
 
   const isCheckboxDisabled = (assignee: string) => {
-    if (!isViewingAsSubAccount) return false;
-    return assignee === 'ENCORE';
+    // If viewing as sub-account (client mode) and user is NOT an admin, restrict ENCORE items
+    if (isViewingAsSubAccount && !isAdmin) {
+      return assignee === 'ENCORE';
+    }
+    // Admins can always check items
+    return false;
   };
 
   return (
