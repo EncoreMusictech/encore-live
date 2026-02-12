@@ -403,26 +403,9 @@ serve(async (req) => {
     if (artistId) {
       mbWorks = await fetchAllWorksByArtist(artistId, Math.min(500, effectiveMaxSongs * 2));
     }
-    // Filter MusicBrainz results to avoid name collisions (only include works related to the resolved artist)
-    if (mbWorks.length > 0 && artistId) {
-      const filteredMB: any[] = [];
-      for (const work of mbWorks) {
-        // Check if this work has a direct relation to our target artist
-        const workDetails = work.id ? await getWorkDetails(work.id) : null;
-        if (workDetails) {
-          const relations = workDetails.relations || [];
-          const hasArtistRelation = relations.some((r: any) => r.artist?.id === artistId);
-          if (hasArtistRelation) {
-            filteredMB.push(work);
-          }
-        } else {
-          // If we can't verify, include it (assume it's relevant from the arid search)
-          filteredMB.push(work);
-        }
-      }
-      mbWorks = filteredMB;
-      console.log(`MusicBrainz filtered works (artist-verified): ${mbWorks.length}`);
-    }
+    // Note: fetchAllWorksByArtist uses `arid:` which already filters by artist ID.
+    // The fallback searchWorksByWriterName below may introduce name collisions,
+    // so we only use it sparingly when the arid search returns very few results.
     if (mbWorks.length < 50) {
       // Try alternate name searches only as fallback
       for (const variant of nameVariants.slice(0, 3)) {
