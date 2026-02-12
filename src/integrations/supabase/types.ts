@@ -468,6 +468,149 @@ export type Database = {
           },
         ]
       }
+      catalog_contributors: {
+        Row: {
+          created_at: string
+          id: string
+          ipi_number: string | null
+          name: string
+          pro_affiliation: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ipi_number?: string | null
+          name: string
+          pro_affiliation?: string | null
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ipi_number?: string | null
+          name?: string
+          pro_affiliation?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      catalog_import_batches: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          duplicate_rows: number
+          error_rows: number
+          file_name: string
+          id: string
+          status: string
+          total_rows: number
+          user_id: string
+          valid_rows: number
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          duplicate_rows?: number
+          error_rows?: number
+          file_name: string
+          id?: string
+          status?: string
+          total_rows?: number
+          user_id: string
+          valid_rows?: number
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          duplicate_rows?: number
+          error_rows?: number
+          file_name?: string
+          id?: string
+          status?: string
+          total_rows?: number
+          user_id?: string
+          valid_rows?: number
+        }
+        Relationships: []
+      }
+      catalog_import_staging: {
+        Row: {
+          artist_name: string | null
+          canonical_row: Json | null
+          company_id: string | null
+          created_at: string
+          id: string
+          identifier_conflicts: Json | null
+          import_batch_id: string
+          isrc: string | null
+          iswc: string | null
+          normalized_title: string | null
+          promoted: boolean
+          publishers: Json | null
+          raw_row_data: Json | null
+          source_sheet: string | null
+          user_id: string
+          validation_errors: Json | null
+          validation_status: string
+          work_title: string | null
+          writers: Json | null
+        }
+        Insert: {
+          artist_name?: string | null
+          canonical_row?: Json | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          identifier_conflicts?: Json | null
+          import_batch_id: string
+          isrc?: string | null
+          iswc?: string | null
+          normalized_title?: string | null
+          promoted?: boolean
+          publishers?: Json | null
+          raw_row_data?: Json | null
+          source_sheet?: string | null
+          user_id: string
+          validation_errors?: Json | null
+          validation_status?: string
+          work_title?: string | null
+          writers?: Json | null
+        }
+        Update: {
+          artist_name?: string | null
+          canonical_row?: Json | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          identifier_conflicts?: Json | null
+          import_batch_id?: string
+          isrc?: string | null
+          iswc?: string | null
+          normalized_title?: string | null
+          promoted?: boolean
+          publishers?: Json | null
+          raw_row_data?: Json | null
+          source_sheet?: string | null
+          user_id?: string
+          validation_errors?: Json | null
+          validation_status?: string
+          work_title?: string | null
+          writers?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_import_staging_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalog_items: {
         Row: {
           artist: string
@@ -687,6 +830,134 @@ export type Database = {
           valuation_methodology_v2?: string | null
         }
         Relationships: []
+      }
+      catalog_work_contributors: {
+        Row: {
+          catalog_work_id: string
+          contributor_id: string
+          controlled: boolean
+          id: string
+          mechanical_share: number | null
+          ownership_percentage: number | null
+          performance_share: number | null
+          role: string
+          sync_share: number | null
+        }
+        Insert: {
+          catalog_work_id: string
+          contributor_id: string
+          controlled?: boolean
+          id?: string
+          mechanical_share?: number | null
+          ownership_percentage?: number | null
+          performance_share?: number | null
+          role?: string
+          sync_share?: number | null
+        }
+        Update: {
+          catalog_work_id?: string
+          contributor_id?: string
+          controlled?: boolean
+          id?: string
+          mechanical_share?: number | null
+          ownership_percentage?: number | null
+          performance_share?: number | null
+          role?: string
+          sync_share?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_work_contributors_catalog_work_id_fkey"
+            columns: ["catalog_work_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_works"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_work_contributors_contributor_id_fkey"
+            columns: ["contributor_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_contributors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalog_works: {
+        Row: {
+          album_title: string | null
+          artist_name: string | null
+          ascap_work_id: string | null
+          bmi_work_id: string | null
+          company_id: string | null
+          created_at: string
+          id: string
+          import_batch_id: string | null
+          isrc: string | null
+          iswc: string | null
+          metadata: Json
+          mlc_work_id: string | null
+          musicbrainz_id: string | null
+          normalized_title: string | null
+          pro_registrations: Json
+          source: string
+          sync_history: Json
+          updated_at: string
+          user_id: string
+          work_title: string
+        }
+        Insert: {
+          album_title?: string | null
+          artist_name?: string | null
+          ascap_work_id?: string | null
+          bmi_work_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          import_batch_id?: string | null
+          isrc?: string | null
+          iswc?: string | null
+          metadata?: Json
+          mlc_work_id?: string | null
+          musicbrainz_id?: string | null
+          normalized_title?: string | null
+          pro_registrations?: Json
+          source?: string
+          sync_history?: Json
+          updated_at?: string
+          user_id: string
+          work_title: string
+        }
+        Update: {
+          album_title?: string | null
+          artist_name?: string | null
+          ascap_work_id?: string | null
+          bmi_work_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          import_batch_id?: string | null
+          isrc?: string | null
+          iswc?: string | null
+          metadata?: Json
+          mlc_work_id?: string | null
+          musicbrainz_id?: string | null
+          normalized_title?: string | null
+          pro_registrations?: Json
+          source?: string
+          sync_history?: Json
+          updated_at?: string
+          user_id?: string
+          work_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_works_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_account_balances: {
         Row: {
@@ -7103,6 +7374,7 @@ export type Database = {
         Args: { notification_id: string }
         Returns: undefined
       }
+      promote_staging_batch: { Args: { p_batch_id: string }; Returns: number }
       remove_duplicate_copyrights: {
         Args: never
         Returns: {

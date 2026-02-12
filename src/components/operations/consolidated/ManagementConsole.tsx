@@ -17,8 +17,10 @@ import {
   Handshake,
   Globe,
   Music,
-  Crown
+  Crown,
+  Database
 } from "lucide-react";
+import { CatalogImportCenter } from "@/components/catalog/CatalogImportCenter";
 
 interface ManagementConsoleProps {
   metrics: any;
@@ -88,12 +90,13 @@ export function ManagementConsole({ metrics }: ManagementConsoleProps) {
 
       {/* Enhanced Management Tabs */}
       <Tabs defaultValue="sub-accounts" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="sub-accounts">Sub-Accounts</TabsTrigger>
           <TabsTrigger value="access-control">Access Control</TabsTrigger>
           <TabsTrigger value="partnerships">Industry Partnerships</TabsTrigger>
           <TabsTrigger value="task-management">Task Management</TabsTrigger>
           <TabsTrigger value="user-analytics">User Analytics</TabsTrigger>
+          <TabsTrigger value="catalog-import">Catalog Import</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sub-accounts" className="space-y-6">
@@ -458,6 +461,10 @@ export function ManagementConsole({ metrics }: ManagementConsoleProps) {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="catalog-import" className="space-y-4">
+          <CatalogImportCenter />
         </TabsContent>
       </Tabs>
     </div>
