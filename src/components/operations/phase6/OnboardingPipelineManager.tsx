@@ -12,6 +12,7 @@ import {
   Globe, Rocket, CheckSquare
 } from 'lucide-react';
 import { ONBOARDING_PHASES, getPhaseIndex } from '@/constants/onboardingPhases';
+import { AssigneeBadge } from '@/components/admin/subaccount/AssigneeBadge';
 import { useAllOnboardingProgress, useAllOnboardingChecklists } from '@/hooks/useOnboardingProgress';
 import { useNavigate } from 'react-router-dom';
 
@@ -306,6 +307,7 @@ export function OnboardingPipelineManager() {
                                             {item.label}
                                             {item.required && <span className="text-red-500 ml-1">*</span>}
                                           </span>
+                                          <AssigneeBadge assignee={item.assignee} />
                                         </div>
                                       );
                                     })}
@@ -416,6 +418,7 @@ export function OnboardingPipelineManager() {
                               {item.label}
                               {item.required && <span className="text-red-500 ml-1">*</span>}
                             </span>
+                            <AssigneeBadge assignee={item.assignee} />
                           </div>
                         ))}
                       </div>
