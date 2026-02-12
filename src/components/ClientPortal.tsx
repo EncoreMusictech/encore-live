@@ -20,6 +20,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientProfileForm } from './client-portal/ClientProfileForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useClientBranding } from '@/hooks/useClientBranding';
 const ClientPortal = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -34,6 +35,7 @@ const ClientPortal = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [isAdminViewing, setIsAdminViewing] = useState(false);
   const [viewingClientId, setViewingClientId] = useState<string | null>(null);
+  const { branding } = useClientBranding(user?.id);
   useEffect(() => {
     const handleInvitationAndAccess = async () => {
       if (!user) return;
@@ -221,7 +223,13 @@ const ClientPortal = () => {
   const defaultTab = enabledTabs[0]?.id || 'overview';
 
   return (
-    <div className="container mx-auto py-6">
+    <div
+      className="container mx-auto py-6"
+      style={branding ? {
+        '--primary': branding.colors.primary,
+        '--accent': branding.colors.accent,
+      } as React.CSSProperties : undefined}
+    >
       {invitationAccepted && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-center gap-2 text-green-800">
@@ -232,10 +240,17 @@ const ClientPortal = () => {
         </div>
       )}
       
-      <header className="mb-6 rounded-xl p-6 overflow-hidden bg-gradient-to-br from-purple-600 via-purple-500 to-purple-400 text-white">
+      <header
+        className={`mb-6 rounded-xl p-6 overflow-hidden text-white relative ${!branding ? 'bg-gradient-to-br from-purple-600 via-purple-500 to-purple-400' : ''}`}
+        style={branding ? {
+          background: `linear-gradient(135deg, hsl(${branding.colors.headerBg}), hsl(${branding.colors.primary}))`,
+        } : undefined}
+      >
         <div className="flex items-center justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-semibold">Client Portal</h1>
+            <h1 className="text-3xl font-semibold">
+              {branding?.display_name || 'Client Portal'}
+            </h1>
             <p className="text-sm opacity-90 mt-1">Manage your works, contracts, and royalties</p>
             {user?.email && (
               <>
@@ -275,17 +290,29 @@ const ClientPortal = () => {
             >
               Sign Out
             </Button>
-            <img
-              src="/lovable-uploads/1f2a630f-1957-40bc-b85b-49b8950660a7.png"
-              alt="Spinning vinyl record illustration for Client Portal"
-              loading="lazy"
-              width={96}
-              height={96}
-              className="hidden sm:block w-24 h-24 object-contain opacity-90 animate-spin"
-              style={{ animationDuration: '12s' }}
-            />
+            {branding?.logo_url ? (
+              <img
+                src={branding.logo_url}
+                alt={`${branding.display_name || 'Company'} logo`}
+                loading="lazy"
+                className="hidden sm:block w-24 h-24 object-contain"
+              />
+            ) : (
+              <img
+                src="/lovable-uploads/1f2a630f-1957-40bc-b85b-49b8950660a7.png"
+                alt="Spinning vinyl record illustration for Client Portal"
+                loading="lazy"
+                width={96}
+                height={96}
+                className="hidden sm:block w-24 h-24 object-contain opacity-90 animate-spin"
+                style={{ animationDuration: '12s' }}
+              />
+            )}
           </div>
         </div>
+        {branding && (
+          <div className="mt-3 text-xs opacity-50">Powered by ENCORE</div>
+        )}
       </header>
 
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
