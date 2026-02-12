@@ -66,11 +66,52 @@ export function SubAccountModules({ companyId, onUpdate }: SubAccountModulesProp
   const [moduleAccess, setModuleAccess] = useState<ModuleAccess[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [companyTier, setCompanyTier] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchModuleAccess();
+    fetchCompanyTier();
   }, [companyId]);
+
+  // Auto-enable all modules for enterprise tier sub-accounts
+  useEffect(() => {
+    if (!loading && companyTier && (companyTier === 'enterprise' || companyTier === 'enterprise_internal')) {
+      autoEnableAllModules();
+    }
+  }, [loading, companyTier]);
+
+  const fetchCompanyTier = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('subscription_tier')
+        .eq('id', companyId)
+        .single();
+      if (!error && data) {
+        setCompanyTier(data.subscription_tier);
+      }
+    } catch (error) {
+      console.error('Error fetching company tier:', error);
+    }
+  };
+
+  const autoEnableAllModules = async () => {
+    const missingModules = AVAILABLE_MODULES.filter(
+      (m) => !moduleAccess.find((a) => a.module_id === m.name && a.enabled)
+    );
+    if (missingModules.length === 0) return;
+
+    for (const mod of missingModules) {
+      const existing = moduleAccess.find((a) => a.module_id === mod.name);
+      if (existing) {
+        await supabase.from('company_module_access').update({ enabled: true }).eq('id', existing.id);
+      } else {
+        await supabase.from('company_module_access').insert({ company_id: companyId, module_id: mod.name, enabled: true });
+      }
+    }
+    fetchModuleAccess();
+  };
 
   const fetchModuleAccess = async () => {
     try {
@@ -124,8 +165,7 @@ export function SubAccountModules({ companyId, onUpdate }: SubAccountModulesProp
         description: `Module access ${enabled ? 'granted' : 'revoked'}`,
       });
 
-      fetchModuleAccess();
-      onUpdate();
+      await fetchModuleAccess();
     } catch (error) {
       console.error('Error toggling module:', error);
       toast({

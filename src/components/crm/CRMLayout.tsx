@@ -21,6 +21,7 @@ export function CRMLayout() {
   const { canAccess: canAccessDemo } = useDemoAccess();
   const { isViewingAsSubAccount } = useViewModeOptional();
   const navigate = useNavigate();
+  const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
   const [paymentVerified, setPaymentVerified] = useState<boolean | null>(null);
   const [isInternalEnterprise, setIsInternalEnterprise] = useState(false);
