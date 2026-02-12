@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useViewModeOptional } from './useViewModeOptional';
 
 interface DemoLimits {
   catalogValuation: {
@@ -76,12 +77,14 @@ const INITIAL_DEMO_LIMITS: DemoLimits = {
 
 export const DemoAccessProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
+  const { isViewingAsSubAccount } = useViewModeOptional();
   const [demoLimits, setDemoLimits] = useState<DemoLimits>(INITIAL_DEMO_LIMITS);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
 
-  // Determine if user is demo or admin
-  const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase() || '');
+  // Determine if user is demo or admin — suppress admin when viewing as sub-account
+  const rawIsAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase() || '');
+  const isAdmin = isViewingAsSubAccount ? false : rawIsAdmin;
   const isDemo = user && (user?.email === DEMO_EMAIL || user?.user_metadata?.role === 'demo') && !isAdmin; // Only authenticated demo account users are demo users
 
   // Load demo limits from localStorage on mount

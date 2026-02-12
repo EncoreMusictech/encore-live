@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
+import { useViewModeOptional } from './useViewModeOptional';
 
 export const useAdmin = () => {
   const { user } = useAuth();
+  const { isViewingAsSubAccount } = useViewModeOptional();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -23,8 +25,11 @@ export const useAdmin = () => {
     }
   }, [user]);
 
+  // Suppress admin when viewing as sub-account
+  const effectiveIsAdmin = isViewingAsSubAccount ? false : isAdmin;
+
   return {
-    isAdmin,
+    isAdmin: effectiveIsAdmin,
     loading
   };
 };
