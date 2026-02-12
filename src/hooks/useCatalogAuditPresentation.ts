@@ -65,10 +65,11 @@ export function useCatalogAuditPresentation(searchId?: string, artistName?: stri
   const { toast } = useToast();
 
   const isAuthoritativeIswc = (song: Pick<SongMetadata, 'verification_status' | 'source_data'>): boolean => {
-    // Policy: only trust ISWCs from MLC (verified) or MusicBrainz.
-    if (song.verification_status === 'mlc_verified') return true;
+    // Policy: only trust ISWCs from Golden Master, MLC (verified), or MusicBrainz.
+    if (song.verification_status === 'golden_master' || song.verification_status === 'mlc_verified') return true;
     const sources = (song.source_data as any)?.sources;
-    return Array.isArray(sources) && (sources.includes('musicbrainz') || sources.includes('mlc'));
+    const isGoldenMaster = (song.source_data as any)?.is_golden_master;
+    return (isGoldenMaster || (Array.isArray(sources) && (sources.includes('golden_master') || sources.includes('musicbrainz') || sources.includes('mlc'))));
   };
 
   // Fetch search data and song metadata
