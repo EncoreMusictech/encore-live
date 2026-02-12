@@ -1,72 +1,103 @@
+# Per-Item Assignee Tags + Phase Advancement Rules
 
-# View as User: True Sub-Account Experience
+## Overview
 
-## Problem
-When an admin clicks "View as User" on a sub-account, they still see all admin-only sidebar items (Operations, Client Portal, NFT Minting), admin badges, and admin-level access gates. The `isViewingAsSubAccount` flag from `ViewModeContext` is never checked by the hooks that control visibility: `useAdmin`, `useSuperAdmin`, `useUserRoles`, `useDemoAccess`, or `CRMSidebar`.
+Add an `assignee` field to every checklist item so the UI shows who owns each task. Update phase advancement logic so both ENCORE and Client must complete their respective items before moving forward. Clients can only check off items assigned to them.
 
-## Solution
-Make all admin/super-admin detection hooks suppress their privileges when `isViewingAsSubAccount` is true. Additionally, make the sidebar load the **target company's enabled modules** instead of granting blanket access.
+## 1. Update `src/constants/onboardingPhases.ts`
 
-## Changes
+Add `assignee: 'ENCORE' | 'Client' | 'ENCORE + Client'` to `ChecklistItem` interface.
 
-### 1. Update `useAdmin.ts` -- suppress admin when viewing as sub-account
-- Import `useViewMode` (with a safe fallback since it may be used outside the provider)
-- When `isViewingAsSubAccount` is true, force `isAdmin = false`
+Apply the following assignments and modifications:
 
-### 2. Update `useSuperAdmin.ts` -- suppress super admin in view mode
-- Same pattern: when `isViewingAsSubAccount` is true, force `isSuperAdmin = false`
+**Phase 1 -- Account Setup** (owner: ENCORE)
 
-### 3. Update `useUserRoles.ts` -- suppress admin role in view mode
-- When `isViewingAsSubAccount` is true, filter out the `admin` role from the returned roles array
-- `isAdmin` and `hasRole('admin')` will return false
+- Create Sub-Account -- ENCORE
+- Populate Company Name -- ENCORE
+- Set Display Name -- ENCORE
+- Set Primary Contact Email -- ENCORE
+- Set Subscription Tier -- ENCORE
+- Verify tier and status -- ENCORE
+- REMOVE "Verify admins bypass payment setup" from Phase 3 (moved to Phase 7)
 
-### 4. Update `useDemoAccess.tsx` -- suppress admin flag in view mode
-- When `isViewingAsSubAccount` is true, force `isAdmin = false` so demo limits and access checks behave as a regular user
+**Phase 2 -- Module Configuration** (owner: ENCORE)
 
-### 5. Update `CRMSidebar.tsx` -- show only the target company's modules
-- Import `useViewMode`
-- When `isViewingAsSubAccount`, fetch the target company's enabled modules from `company_module_access` using `viewContext.companyId` instead of the admin's own access
-- Hide admin-only modules (Operations, Client Portal, NFT Minting) entirely
-- Hide "Manage Clients" quick action unless the target company is a publishing firm with enterprise tier
-- Update the footer module count to reflect the sub-account's actual access
+- All 7 items -- ENCORE
 
-### 6. Update `CRMLayout.tsx` -- skip payment redirect in view mode
-- When `isViewingAsSubAccount`, skip the payment/subscription check (the admin is already authenticated; the view mode should just show the sub-account experience without redirecting)
+**Phase 3 -- User Onboarding** (owner: ENCORE + Client)
 
-### 7. Update `CRMHeader.tsx` -- show sub-account context
-- When `isViewingAsSubAccount`, display the company name and tier badge from `viewContext` instead of the admin's own subscription tier
+- Send signup instructions to admins -- ENCORE
+- Admins complete platform signup -- Client
+- Add admin users to sub-account -- ENCORE
+- Rename "Add internal users with appropriate roles" to "Add initial users with appropriate roles (Admin/User/Client)" -- ENCORE
+- Verify role-based access levels -- ENCORE
+
+**Phase 4 -- Contract and Data Ingestion** (owner: ENCORE + Client)
+
+- Collect PDF copies of contracts -- Client
+- Collect spreadsheet with metadata -- Client
+- Upload via AI-Assisted Parsing -- ENCORE
+- Complete manual entry -- ENCORE + Client
+- Review parsed contract data -- ENCORE + Client
+- Bulk upload associated works -- ENCORE
+- Link works to correct contracts -- ENCORE + Client
+
+**Phase 5 -- Data Validation and QA** (owner: ENCORE + Client)
+
+- All items -- ENCORE + Client
+
+**Phase 6 -- Client Portal Setup** (owner: ENCORE + Client)
+
+- All items -- ENCORE + Client
+
+**Phase 7 -- Go-Live Readiness** (owner: All Teams)
+
+- Sub-account active and verified -- ENCORE
+- Modules enabled per scope -- ENCORE
+- Users added and validated -- ENCORE + Client
+- Contracts ingested and approved -- ENCORE + Client
+- Works linked and validated -- ENCORE + Client
+- Client Portal invitations sent -- ENCORE + Client
+- Module visibility validation -- ENCORE
+- Data isolation testing -- ENCORE
+- Audit log review -- ENCORE
+- REMOVE "Login verification without payment redirects"
+- ADD "Setup billing via Stripe for enterprise" -- Client (required, final step)
+
+## 2. Update `src/components/admin/subaccount/SubAccountOnboarding.tsx`
+
+- Render a small colored badge next to each checklist item:
+  - ENCORE = blue badge
+  - Client = orange badge
+  - ENCORE + Client = purple badge
+- When the current user is viewing as a sub-account (client), disable checkboxes on items assigned to ENCORE (client can only check off their own tasks)
+- Phase advance button stays disabled until ALL required items from BOTH parties are completed (existing `getPhaseRequiredComplete` logic already handles this since it checks all required items)
+
+## 3. Update `src/hooks/useOnboardingProgress.ts`
+
+- No changes to `getPhaseRequiredComplete` -- it already requires all required items to be checked before advancing, which naturally enforces the "both parties must complete" rule
+- The toggle mutation will be called with the same logic; the UI layer handles restricting who can check what
+
+## 4. Update `src/components/operations/phase6/OnboardingPipelineManager.tsx`
+
+- In the expanded checklist view, render the same colored assignee badge next to each item so admins can see which tasks are waiting on the client
 
 ## Technical Details
 
-### Safe ViewMode Access
-Since `useViewMode` throws if used outside `ViewModeProvider`, each hook will use a wrapper pattern:
+### Files to Modify
+
+- `src/constants/onboardingPhases.ts` -- add assignee field, update items, move/remove items per instructions
+- `src/components/admin/subaccount/SubAccountOnboarding.tsx` -- render badges, restrict checkbox interaction for clients
+- `src/components/operations/phase6/OnboardingPipelineManager.tsx` -- render assignee badges in expanded checklist
+
+### Assignee Badge Colors
 
 ```text
-function useViewModeOptional() {
-  try {
-    return useViewMode();
-  } catch {
-    return { isViewingAsSubAccount: false, viewContext: null };
-  }
-}
+ENCORE        -> className="bg-blue-100 text-blue-700 border-blue-200"
+Client        -> className="bg-orange-100 text-orange-700 border-orange-200"
+ENCORE + Client -> className="bg-purple-100 text-purple-700 border-purple-200"
 ```
 
-This will be extracted to a shared utility (`src/hooks/useViewModeOptional.ts`) so all hooks can import it.
+### Client Restriction Logic
 
-### Sidebar Module Resolution in View Mode
-When in view mode, the sidebar will:
-1. Query `company_module_access` for the target `companyId`
-2. Map those module IDs to sidebar entries using the same alias normalization from `useModuleAccess`
-3. Only show matched modules -- no admin modules, no fallback to "show everything"
-
-### Files to Create
-- `src/hooks/useViewModeOptional.ts` -- safe wrapper for useViewMode
-
-### Files to Modify
-- `src/hooks/useAdmin.ts` -- suppress when viewing as sub-account
-- `src/hooks/useSuperAdmin.ts` -- suppress when viewing as sub-account
-- `src/hooks/useUserRoles.ts` -- filter admin role when viewing as sub-account
-- `src/hooks/useDemoAccess.tsx` -- suppress admin when viewing as sub-account
-- `src/components/crm/CRMSidebar.tsx` -- load target company modules, hide admin items
-- `src/components/crm/CRMLayout.tsx` -- skip payment gate in view mode
-- `src/components/crm/CRMHeader.tsx` -- show sub-account context info
+Use the existing `useViewModeOptional` hook. When `isViewingAsSubAccount` is true, the user is acting as a client -- disable checkboxes where `item.assignee === 'ENCORE'`. ENCORE items remain visible but non-interactive for the client.
