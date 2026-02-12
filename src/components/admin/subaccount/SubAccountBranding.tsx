@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Palette, Save, Eye } from 'lucide-react';
+import { Palette, Save, Eye, RotateCcw } from 'lucide-react';
 
 interface BrandingConfig {
   enabled: boolean;
@@ -116,6 +116,38 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
         headerBg: preset.headerBg,
       },
     }));
+  };
+
+  const handleResetToDefault = async () => {
+    try {
+      setSaving(true);
+
+      const { data: current, error: fetchError } = await supabase
+        .from('companies')
+        .select('settings')
+        .eq('id', companyId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentSettings = (current?.settings as Record<string, any>) || {};
+      const { branding: _, ...restSettings } = currentSettings;
+
+      const { error } = await supabase
+        .from('companies')
+        .update({ settings: restSettings as any })
+        .eq('id', companyId);
+
+      if (error) throw error;
+
+      setBranding(DEFAULT_BRANDING);
+      toast({ title: 'Reset', description: 'Branding restored to default ENCORE theme.' });
+    } catch (error) {
+      console.error('Error resetting branding:', error);
+      toast({ title: 'Error', description: 'Failed to reset branding.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -281,12 +313,20 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
         </>
       )}
 
-      {/* Save */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving}>
-          <Save className="h-4 w-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Branding'}
-        </Button>
+      {/* Actions */}
+      <div className="flex justify-between">
+        {branding.enabled && (
+          <Button variant="outline" onClick={handleResetToDefault} disabled={saving}>
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Reset to Default
+          </Button>
+        )}
+        <div className="ml-auto">
+          <Button onClick={handleSave} disabled={saving}>
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? 'Saving...' : 'Save Branding'}
+          </Button>
+        </div>
       </div>
     </div>
   );

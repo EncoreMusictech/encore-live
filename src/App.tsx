@@ -18,6 +18,7 @@ import { TourOverlay } from "@/components/tour/TourOverlay";
 import EmailRestrictedRoute from "@/components/EmailRestrictedRoute";
 import { CRMLayout } from "@/components/crm/CRMLayout";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
+import { CompanyBrandingProvider } from "@/components/CompanyBrandingProvider";
 import { ViewModeBanner } from "@/components/ViewModeBanner";
 import Index from "./pages/Index";
 import LandingPage from "./pages/LandingPage";
@@ -94,7 +95,8 @@ const App = () => {
                        <BrowserRouter>
                          <ScrollToTop />
                          <ViewModeProvider>
-                           <TourProvider>
+                            <CompanyBrandingProvider>
+                            <TourProvider>
                              <ViewModeBanner />
                              <TourOverlay />
                              <RecoveryRedirect />
@@ -194,8 +196,9 @@ const App = () => {
                               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                               <Route path="*" element={<NotFound />} />
                            </Routes>
-                         </TourProvider>
-                       </ViewModeProvider>
+                          </TourProvider>
+                            </CompanyBrandingProvider>
+                        </ViewModeProvider>
                        </BrowserRouter>
                      </TooltipProvider>
                  </WhitelabelThemeProvider>

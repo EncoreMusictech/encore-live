@@ -11,6 +11,7 @@ import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useUserCompany } from "@/hooks/useUserCompany";
 import { useViewModeOptional } from "@/hooks/useViewModeOptional";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompanyBranding } from "@/hooks/useCompanyBranding";
 import encoreLogo from "@/assets/encore-logo.png";
 interface ModuleItem {
   id: string;
@@ -103,6 +104,9 @@ export function CRMSidebar() {
   const { isSuperAdmin } = useSuperAdmin();
   const { canManageClients } = useUserCompany();
   const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
+  const { branding } = useCompanyBranding();
+  const sidebarLogo = branding?.logo_url || encoreLogo;
+  const sidebarName = branding?.display_name || 'ENCORE';
   const location = useLocation();
   const [userModules, setUserModules] = useState<string[]>([]);
   const [companyModules, setCompanyModules] = useState<string[]>([]);
@@ -182,13 +186,13 @@ export function CRMSidebar() {
     return <Sidebar className={collapsed ? "w-16" : "w-64"}>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         {!collapsed && <div className="flex items-center space-x-2">
-            <img src={encoreLogo} alt="Encore Logo" className="w-8 h-8 object-contain" />
+            <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-8 h-8 object-contain" />
             <div>
-              <h2 className="font-headline font-bold text-lg">ENCORE</h2>
+              <h2 className="font-headline font-bold text-lg">{sidebarName}</h2>
               <p className="text-xs text-muted-foreground">{viewContext?.companyName || 'Sub-Account View'}</p>
             </div>
           </div>}
-        {collapsed && <img src={encoreLogo} alt="Encore Logo" className="w-8 h-8 object-contain mx-auto" />}
+        {collapsed && <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-8 h-8 object-contain mx-auto" />}
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -275,13 +279,13 @@ export function CRMSidebar() {
   return <Sidebar className={collapsed ? "w-16" : "w-64"}>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         {!collapsed && <div className="flex items-center space-x-2">
-            <img src={encoreLogo} alt="Encore Logo" className="w-8 h-8 object-contain" />
+            <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-8 h-8 object-contain" />
             <div>
-              <h2 className="font-headline font-bold text-lg">ENCORE</h2>
+              <h2 className="font-headline font-bold text-lg">{sidebarName}</h2>
               <p className="text-xs text-muted-foreground">Rights Management System</p>
             </div>
           </div>}
-        {collapsed && <img src={encoreLogo} alt="Encore Logo" className="w-8 h-8 object-contain mx-auto" />}
+        {collapsed && <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-8 h-8 object-contain mx-auto" />}
       </SidebarHeader>
 
       <SidebarContent>
