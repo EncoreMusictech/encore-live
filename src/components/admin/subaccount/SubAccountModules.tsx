@@ -105,7 +105,7 @@ export function SubAccountModules({ companyId, onUpdate }: SubAccountModulesProp
 
   const autoEnableAllModules = async () => {
     const missingModules = AVAILABLE_MODULES.filter(
-      (m) => !moduleAccess.find((a) => a.module_id === m.name && a.enabled)
+      (m) => m.name !== 'whitelabel_branding' && !moduleAccess.find((a) => a.module_id === m.name && a.enabled)
     );
     if (missingModules.length === 0) return;
 
