@@ -98,7 +98,8 @@ export const useClientPortal = () => {
   const createInvitation = async (
     email: string,
     permissions: Record<string, any>,
-    role: 'admin' | 'client' | 'user' = 'client'
+    role: 'admin' | 'client' | 'user' = 'client',
+    visibilityScope?: any
   ) => {
     console.log('createInvitation called with:', { email, permissions, role });
     console.log('Current user:', user);
@@ -127,15 +128,20 @@ export const useClientPortal = () => {
         expires_at: expiresAt.toISOString()
       });
 
+      const insertData: any = {
+        subscriber_user_id: user.id,
+        email,
+        role: dbRole,
+        permissions: permissions as any,
+        expires_at: expiresAt.toISOString(),
+      };
+      if (visibilityScope) {
+        insertData.visibility_scope = visibilityScope;
+      }
+
       const { data, error } = await supabase
         .from('client_invitations')
-        .insert({
-          subscriber_user_id: user.id,
-          email,
-          role: dbRole, // Use the mapped role for database
-          permissions: permissions as any,
-          expires_at: expiresAt.toISOString()
-        } as any)
+        .insert(insertData)
         .select()
         .single();
 

@@ -8,6 +8,8 @@ import { Calendar, Search, Download, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientPortal } from '@/hooks/useClientPortal';
+import { useClientVisibilityScope } from '@/hooks/useClientVisibilityScope';
+
 interface ClientSyncDealsProps {
   permissions: Record<string, any>;
 }
@@ -15,31 +17,45 @@ interface ClientSyncDealsProps {
 export const ClientSyncDeals = ({ permissions }: ClientSyncDealsProps) => {
   const { user } = useAuth();
   const { isClient } = useClientPortal();
+  const { scope, applySyncScopeFilter } = useClientVisibilityScope();
   const [syncDeals, setSyncDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-useEffect(() => {
+
+  useEffect(() => {
     const fetchSyncDeals = async () => {
       if (!user) return;
 
       try {
         const clientMode = await isClient();
         if (clientMode) {
-          const { data: assoc, error: assocError } = await supabase
-            .from('client_data_associations')
-            .select('data_id')
-            .eq('client_user_id', user.id)
-            .eq('data_type', 'sync_license');
-          if (assocError) throw assocError;
-          const ids = (assoc || []).map((a: any) => a.data_id);
-          if (!ids.length) {
-            setSyncDeals([]);
+          if (scope.scope_type === 'custom' || scope.scope_type === 'all') {
+            const { data: assoc, error: assocError } = await supabase
+              .from('client_data_associations')
+              .select('data_id')
+              .eq('client_user_id', user.id)
+              .eq('data_type', 'sync_license');
+            if (assocError) throw assocError;
+            const ids = (assoc || []).map((a: any) => a.data_id);
+            if (!ids.length) {
+              setSyncDeals([]);
+            } else {
+              const { data, error } = await supabase
+                .from('sync_licenses')
+                .select('*')
+                .in('id', ids)
+                .order('created_at', { ascending: false });
+              if (error) throw error;
+              setSyncDeals(data || []);
+            }
           } else {
-            const { data, error } = await supabase
+            let query = supabase
               .from('sync_licenses')
               .select('*')
-              .in('id', ids)
               .order('created_at', { ascending: false });
+            
+            query = applySyncScopeFilter(query);
+            const { data, error } = await query;
             if (error) throw error;
             setSyncDeals(data || []);
           }
@@ -59,7 +75,7 @@ useEffect(() => {
     };
 
     fetchSyncDeals();
-  }, [user, isClient]);
+  }, [user, isClient, scope]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {

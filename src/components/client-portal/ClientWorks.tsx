@@ -8,6 +8,8 @@ import { Music, Search, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientPortal } from '@/hooks/useClientPortal';
+import { useClientVisibilityScope } from '@/hooks/useClientVisibilityScope';
+
 interface ClientWorksProps {
   permissions: Record<string, any>;
 }
@@ -15,31 +17,47 @@ interface ClientWorksProps {
 export const ClientWorks = ({ permissions }: ClientWorksProps) => {
   const { user } = useAuth();
   const { isClient } = useClientPortal();
+  const { scope, applyCopyrightScopeFilter } = useClientVisibilityScope();
   const [works, setWorks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-useEffect(() => {
+
+  useEffect(() => {
     const fetchWorks = async () => {
       if (!user) return;
 
       try {
         const clientMode = await isClient();
         if (clientMode) {
-          const { data: assoc, error: assocError } = await supabase
-            .from('client_data_associations')
-            .select('data_id')
-            .eq('client_user_id', user.id)
-            .eq('data_type', 'copyright');
-          if (assocError) throw assocError;
-          const ids = (assoc || []).map((a: any) => a.data_id);
-          if (!ids.length) {
-            setWorks([]);
+          // If scope is 'custom' or 'all', fall back to data associations
+          if (scope.scope_type === 'custom' || scope.scope_type === 'all') {
+            const { data: assoc, error: assocError } = await supabase
+              .from('client_data_associations')
+              .select('data_id')
+              .eq('client_user_id', user.id)
+              .eq('data_type', 'copyright');
+            if (assocError) throw assocError;
+            const ids = (assoc || []).map((a: any) => a.data_id);
+            if (!ids.length) {
+              setWorks([]);
+            } else {
+              const { data, error } = await supabase
+                .from('copyrights')
+                .select('*')
+                .in('id', ids)
+                .order('created_at', { ascending: false });
+              if (error) throw error;
+              setWorks(data || []);
+            }
           } else {
-            const { data, error } = await supabase
+            // Use visibility scope filtering (artist or label)
+            let query = supabase
               .from('copyrights')
               .select('*')
-              .in('id', ids)
               .order('created_at', { ascending: false });
+            
+            query = await applyCopyrightScopeFilter(query);
+            const { data, error } = await query;
             if (error) throw error;
             setWorks(data || []);
           }
@@ -59,7 +77,7 @@ useEffect(() => {
     };
 
     fetchWorks();
-  }, [user, isClient]);
+  }, [user, isClient, scope]);
 
   const getApprovalBadge = (status: string) => {
     const variants: Record<string, any> = {

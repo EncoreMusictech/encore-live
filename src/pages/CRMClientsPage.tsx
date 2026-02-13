@@ -13,8 +13,10 @@ import { Link } from "react-router-dom";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useClientPortal } from "@/hooks/useClientPortal";
 import { NameLinker } from "@/components/client-portal/NameLinker";
+import { VisibilityScopeSelector } from "@/components/client-portal/VisibilityScopeSelector";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import type { VisibilityScope } from "@/hooks/useClientVisibilityScope";
 
 export default function CRMClientsPage() {
   const { toast } = useToast();
@@ -46,6 +48,7 @@ export default function CRMClientsPage() {
     royalties: false,
     sync_licenses: false
   });
+  const [visibilityScope, setVisibilityScope] = useState<VisibilityScope>({ scope_type: 'all' });
 
   const [associationForm, setAssociationForm] = useState({
     clientUserId: "",
@@ -288,7 +291,7 @@ export default function CRMClientsPage() {
     console.log('Processed permissions object:', permissionsObj);
     console.log('Calling createInvitation...');
 
-    const invitation = await createInvitation(inviteEmail, permissionsObj, selectedRole);
+    const invitation = await createInvitation(inviteEmail, permissionsObj, selectedRole, visibilityScope);
     
     console.log('createInvitation result:', invitation);
     
@@ -305,6 +308,7 @@ export default function CRMClientsPage() {
         royalties: false,
         sync_licenses: false
       });
+      setVisibilityScope({ scope_type: 'all' });
     } else {
       console.log('Invitation creation failed');
       toast({
@@ -684,6 +688,13 @@ export default function CRMClientsPage() {
                     ))}
                   </div>
                 </div>
+
+                {selectedRole === 'client' && (
+                  <VisibilityScopeSelector
+                    value={visibilityScope}
+                    onChange={setVisibilityScope}
+                  />
+                )}
 
                 <Button 
                   onClick={handleCreateInvitation} 
