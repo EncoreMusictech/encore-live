@@ -8,6 +8,8 @@ import { Download, Search, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientPortal } from '@/hooks/useClientPortal';
+import { useClientVisibilityScope } from '@/hooks/useClientVisibilityScope';
+
 interface ClientContractsProps {
   permissions: Record<string, any>;
 }
@@ -15,31 +17,45 @@ interface ClientContractsProps {
 export const ClientContracts = ({ permissions }: ClientContractsProps) => {
   const { user } = useAuth();
   const { isClient } = useClientPortal();
+  const { scope, applyContractScopeFilter } = useClientVisibilityScope();
   const [contracts, setContracts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-useEffect(() => {
+
+  useEffect(() => {
     const fetchContracts = async () => {
       if (!user) return;
 
       try {
         const clientMode = await isClient();
         if (clientMode) {
-          const { data: assoc, error: assocError } = await supabase
-            .from('client_data_associations')
-            .select('data_id')
-            .eq('client_user_id', user.id)
-            .eq('data_type', 'contract');
-          if (assocError) throw assocError;
-          const ids = (assoc || []).map((a: any) => a.data_id);
-          if (!ids.length) {
-            setContracts([]);
+          if (scope.scope_type === 'custom' || scope.scope_type === 'all') {
+            const { data: assoc, error: assocError } = await supabase
+              .from('client_data_associations')
+              .select('data_id')
+              .eq('client_user_id', user.id)
+              .eq('data_type', 'contract');
+            if (assocError) throw assocError;
+            const ids = (assoc || []).map((a: any) => a.data_id);
+            if (!ids.length) {
+              setContracts([]);
+            } else {
+              const { data, error } = await supabase
+                .from('contracts')
+                .select('*')
+                .in('id', ids)
+                .order('created_at', { ascending: false });
+              if (error) throw error;
+              setContracts(data || []);
+            }
           } else {
-            const { data, error } = await supabase
+            let query = supabase
               .from('contracts')
               .select('*')
-              .in('id', ids)
               .order('created_at', { ascending: false });
+            
+            query = applyContractScopeFilter(query);
+            const { data, error } = await query;
             if (error) throw error;
             setContracts(data || []);
           }
@@ -59,7 +75,7 @@ useEffect(() => {
     };
 
     fetchContracts();
-  }, [user, isClient]);
+  }, [user, isClient, scope]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
