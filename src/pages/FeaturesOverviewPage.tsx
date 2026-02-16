@@ -157,7 +157,8 @@ export default function FeaturesOverviewPage() {
                           'sync-licensing': '/dashboard/sync',
                           'client-portal': '/dashboard/client-portal',
                         };
-                        navigate(moduleRouteMap[module.id] || `/features/${module.id}`);
+                        const path = moduleRouteMap[module.id] || `/features/${module.id}`;
+                        navigate(path, { state: { fromFeatures: true, moduleName: module.title } });
                       }}
                       className="group hover:shadow-glow transition-all duration-300"
                       variant="outline"
