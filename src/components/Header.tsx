@@ -87,9 +87,11 @@ const Header = () => {
           <Link to="/pricing" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-dusty-gold transition-colors duration-300">
             Pricing
           </Link>
-          <Link to="/contact" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300">
-            Contact
-          </Link>
+          {user && (
+            <Link to="/contact" className="font-body text-sm font-medium text-platinum-gray/80 hover:text-electric-lavender transition-colors duration-300">
+              Contact
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center space-x-3">
@@ -172,12 +174,14 @@ const Header = () => {
                 >
                   Pricing
                 </Link>
-                <Link 
-                  to="/contact" 
-                  className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
-                >
-                  Contact
-                </Link>
+                {user && (
+                  <Link 
+                    to="/contact" 
+                    className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors py-2"
+                  >
+                    Contact
+                  </Link>
+                )}
               </nav>
             </SheetContent>
           </Sheet>
