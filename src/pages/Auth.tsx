@@ -26,6 +26,8 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isClient } = useClientPortal();
+  const fromFeatures = (location.state as any)?.fromFeatures;
+  const moduleName = (location.state as any)?.moduleName;
   
 
   // Update page metadata
@@ -213,6 +215,14 @@ useEffect(() => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {fromFeatures && (
+            <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm text-center">
+              <p className="font-medium">Want to explore {moduleName || 'this feature'}?</p>
+              <p className="text-muted-foreground mt-1">
+                Use the <strong>Try Demo Account</strong> button below to get instant access — no signup needed.
+              </p>
+            </div>
+          )}
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>

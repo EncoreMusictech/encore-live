@@ -90,11 +90,14 @@ export function CRMLayout() {
   if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <h1 className="text-3xl font-bold mb-4">Sign In Required</h1>
-          <p className="text-muted-foreground mb-4">Please sign in to access the CRM.</p>
+          <p className="text-muted-foreground mb-2">Please sign in to access the CRM.</p>
+          <p className="text-sm text-muted-foreground mb-6">
+            Don't have an account? Use the <strong>Try Demo Account</strong> button on the sign-in page to explore all features instantly.
+          </p>
           <Button asChild>
-            <Link to="/auth">Sign In</Link>
+            <Link to="/auth" state={{ fromFeatures: true, moduleName: 'CRM' }}>Sign In</Link>
           </Button>
         </div>
       </div>
