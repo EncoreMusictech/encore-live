@@ -148,7 +148,17 @@ export default function FeaturesOverviewPage() {
                     {/* Action Button */}
                     <Button 
                       size="lg"
-                      onClick={() => navigate(`/features/${module.id}`)}
+                      onClick={() => {
+                        const moduleRouteMap: Record<string, string> = {
+                          'royalties-processing': '/dashboard/royalties',
+                          'catalog-valuation': '/dashboard/catalog-valuation',
+                          'contract-management': '/dashboard/contracts',
+                          'copyright-management': '/dashboard/copyright',
+                          'sync-licensing': '/dashboard/sync',
+                          'client-portal': '/dashboard/client-portal',
+                        };
+                        navigate(moduleRouteMap[module.id] || `/features/${module.id}`);
+                      }}
                       className="group hover:shadow-glow transition-all duration-300"
                       variant="outline"
                     >
