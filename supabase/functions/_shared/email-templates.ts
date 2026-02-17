@@ -147,8 +147,11 @@ function emailLayout(opts: {
                     <p style="margin:0 0 4px 0;font-size:12px;color:${COLORS.textLight};">
                       ${opts.footerText || "Encore Music Technology — Professional Music IP Management"}
                     </p>
-                    <p style="margin:0;font-size:11px;color:${COLORS.textLight};">
+                    <p style="margin:0 0 6px 0;font-size:11px;color:${COLORS.textLight};">
                       &copy; ${year} Encore Music. All rights reserved.
+                    </p>
+                    <p style="margin:0;font-size:11px;">
+                      <a href="mailto:support@encoremusic.tech?subject=ENCORE%20Support%20Request" style="color:${COLORS.primary};text-decoration:none;">support@encoremusic.tech</a>
                     </p>
                   </td>
                 </tr>
@@ -271,7 +274,7 @@ export function clientInvitationEmail(opts: {
       <a href="${opts.acceptUrl}" style="color:${COLORS.primary};word-break:break-all;font-size:12px;">${opts.acceptUrl}</a>
     </p>
     <p style="font-size:13px;color:${COLORS.textLight};margin:12px 0 0;">
-      This invitation expires in 7 days. Questions? Contact <a href="mailto:${supportEmail}" style="color:${COLORS.primary};">${supportEmail}</a>.
+      This invitation expires in 7 days. Questions? Contact <a href="mailto:${supportEmail}?subject=Invitation%20Question%20-%20${encodeURIComponent(opts.companyName)}" style="color:${COLORS.primary};">${supportEmail}</a>.
     </p>
   `;
 
@@ -301,8 +304,11 @@ export function supportTicketConfirmationEmail(opts: {
         ${detailRow("Subject", opts.subject)}
       </table>
     `, "🎫")}
-    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 16px;">
       We typically respond within <strong style="color:${COLORS.text};">24 hours</strong>. For urgent matters, please indicate "Critical" priority in your ticket.
+    </p>
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
+      Need to add more details? <a href="mailto:support@encoremusic.tech?subject=Re%3A%20Ticket%20${encodeURIComponent(opts.ticketId)}%20-%20${encodeURIComponent(opts.subject)}" style="color:${COLORS.primary};font-weight:600;">Reply to this ticket →</a>
     </p>
     ${ctaButton("View Your Dashboard", "https://www.encoremusic.tech/dashboard")}
   `;
@@ -341,7 +347,7 @@ export function supportTicketInternalEmail(opts: {
     <h3 style="font-size:15px;color:${COLORS.text};margin:24px 0 12px;">Customer</h3>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
       ${detailRow("Name", `${opts.firstName} ${opts.lastName}`)}
-      ${detailRow("Email", `<a href="mailto:${opts.email}" style="color:${COLORS.primary};">${opts.email}</a>`)}
+      ${detailRow("Email", `<a href="mailto:${opts.email}?subject=Re%3A%20Support%20Ticket%20${encodeURIComponent(opts.ticketId)}" style="color:${COLORS.primary};">${opts.email}</a>`)}
     </table>
     <h3 style="font-size:15px;color:${COLORS.text};margin:0 0 8px;">Subject</h3>
     <p style="font-size:14px;font-weight:600;color:${COLORS.text};margin:0 0 16px;">${opts.subject}</p>
@@ -399,7 +405,7 @@ export function catalogValuationOnboardingEmail(opts: {
     </div>
     ${ctaButton("Start Your First Valuation →", "https://www.encoremusic.tech/dashboard/catalog-valuation")}
     <p style="font-size:14px;color:${COLORS.textMuted};text-align:center;margin:20px 0 0;">
-      Need help? <a href="mailto:support@encoremusic.tech" style="color:${COLORS.primary};font-weight:500;">Contact our support team →</a>
+      Need help? <a href="mailto:support@encoremusic.tech?subject=Catalog%20Valuation%20Support%20Request" style="color:${COLORS.primary};font-weight:500;">Contact our support team →</a>
     </p>
   `;
 
