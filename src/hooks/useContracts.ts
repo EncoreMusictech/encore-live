@@ -22,10 +22,17 @@ export const useContracts = () => {
   const { applyUserIdFilter, applyClientCompanyIdFilter, filterKey, filterConfig } = useHierarchicalFiltering();
   const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
 
-  // When in view-as mode, write operations should use the sub-account's primary user ID
+  // When in view-as mode, write operations use the company's service account.
+  // If no service account has been provisioned yet, fall back to the first company user.
+  // Audit logs still record the real Encore admin as the actor (via ViewModeContext audit logging).
   const getActingUserId = async (): Promise<string> => {
-    if (isViewingAsSubAccount && filterConfig.userIds.length > 0) {
-      return filterConfig.userIds[0];
+    if (isViewingAsSubAccount) {
+      if (filterConfig.serviceAccountUserId) {
+        return filterConfig.serviceAccountUserId;
+      }
+      if (filterConfig.userIds.length > 0) {
+        return filterConfig.userIds[0];
+      }
     }
     const { data: { user } } = await supabase.auth.getUser();
     return user!.id;

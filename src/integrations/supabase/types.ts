@@ -1417,6 +1417,44 @@ export type Database = {
           },
         ]
       }
+      company_service_accounts: {
+        Row: {
+          company_id: string
+          created_at: string
+          display_name: string
+          id: string
+          service_email: string
+          service_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          display_name: string
+          id?: string
+          service_email: string
+          service_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          service_email?: string
+          service_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_service_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_users: {
         Row: {
           company_id: string
@@ -7302,6 +7340,10 @@ export type Database = {
         Returns: {
           user_id: string
         }[]
+      }
+      get_company_service_account_user_id: {
+        Args: { _company_id: string }
+        Returns: string
       }
       get_company_user_ids: {
         Args: { _user_id: string }
