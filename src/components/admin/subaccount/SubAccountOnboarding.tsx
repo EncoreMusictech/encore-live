@@ -48,7 +48,9 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
   const { user } = useAuth();
   // Use raw admin check — NOT suppressed by view mode — so admins retain "god mode"
   const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
-  const isAdmin = adminEmails.includes(user?.email?.toLowerCase() || '');
+  const isRawAdmin = adminEmails.includes(user?.email?.toLowerCase() || '');
+  // For checkbox permissions: when viewing as sub-account, treat as client (not admin)
+  const isEncoreTeam = isRawAdmin && !isViewingAsSubAccount;
 
   // Auto-initialize on first visit
   useEffect(() => {
@@ -101,7 +103,7 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
   );
 
   const isCheckboxDisabled = (assignee: string) => {
-    if (isAdmin) {
+    if (isEncoreTeam) {
       return assignee === 'Client'; // Admin cannot check client-only tasks
     }
     return assignee === 'ENCORE'; // Client cannot check ENCORE-only tasks
