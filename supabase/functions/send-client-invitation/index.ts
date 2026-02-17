@@ -1,58 +1,51 @@
-import { Resend } from 'npm:resend@4.0.0'
-import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
-
-const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
+import { sendGmail } from "../_shared/gmail.ts";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-}
+};
 
 type InvitationPayload = {
-  invitee_email: string
-  invitee_name?: string
-  token: string
-  role?: 'client' | 'user' | 'admin'
-  permissions?: Record<string, any>
-  subscriber_name?: string
-  company_name?: string
-  site_url?: string
-  support_email?: string
-}
+  invitee_email: string;
+  invitee_name?: string;
+  token: string;
+  role?: 'client' | 'user' | 'admin';
+  permissions?: Record<string, any>;
+  subscriber_name?: string;
+  company_name?: string;
+  site_url?: string;
+  support_email?: string;
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const body = (await req.json()) as InvitationPayload
-    const siteUrl = body.site_url || Deno.env.get('SITE_URL') || 'https://encore-live.lovable.app'
+    const body = (await req.json()) as InvitationPayload;
+    const siteUrl = body.site_url || 'https://encore-live.lovable.app';
     
-    // Determine the appropriate route based on role
-    const role = body.role || 'client'
-    let acceptUrl: string
-    let subject: string
+    const role = body.role || 'client';
+    let subject: string;
+    const acceptUrl = `${siteUrl}/accept-invitation?token=${encodeURIComponent(body.token)}`;
 
     if (role === 'client') {
-      acceptUrl = `${siteUrl}/accept-invitation?token=${encodeURIComponent(body.token)}`
-      subject = `You're invited to join ${body.company_name || 'ENCORE'}`
+      subject = `You're invited to join ${body.company_name || 'ENCORE'}`;
     } else if (role === 'user') {
-      acceptUrl = `${siteUrl}/accept-invitation?token=${encodeURIComponent(body.token)}`
-      subject = `You're invited to join ${body.company_name || 'ENCORE'} as a team member`
+      subject = `You're invited to join ${body.company_name || 'ENCORE'} as a team member`;
     } else if (role === 'admin') {
-      acceptUrl = `${siteUrl}/accept-invitation?token=${encodeURIComponent(body.token)}`
-      subject = `You're invited as an administrator for ${body.company_name || 'ENCORE'}`
+      subject = `You're invited as an administrator for ${body.company_name || 'ENCORE'}`;
     } else {
-      throw new Error('Invalid role specified')
+      throw new Error('Invalid role specified');
     }
 
-    const subscriberName = body.subscriber_name || 'ENCORE'
-    const companyName = body.company_name || subscriberName
-    const supportEmail = body.support_email || 'support@encoremusic.tech'
-    const inviteeName = body.invitee_name || 'there'
+    const subscriberName = body.subscriber_name || 'ENCORE';
+    const companyName = body.company_name || subscriberName;
+    const supportEmail = body.support_email || 'support@encoremusic.tech';
+    const inviteeName = body.invitee_name || 'there';
 
-    // Create HTML email
     const html = `
       <!DOCTYPE html>
       <html>
@@ -90,41 +83,28 @@ serve(async (req) => {
           </div>
         </body>
       </html>
-    `
+    `;
 
-    if (!Deno.env.get('RESEND_API_KEY')) {
-      console.error('Missing RESEND_API_KEY')
-      return new Response(
-        JSON.stringify({ error: 'Email service not configured. Please add RESEND_API_KEY.' }),
-        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      )
-    }
+    console.log(`Sending invitation email to ${body.invitee_email}`);
 
-    console.log(`Sending invitation email to ${body.invitee_email}`)
-
-    const { data, error } = await resend.emails.send({
-      from: 'ENCORE <noreply@encoremusic.tech>',
+    const result = await sendGmail({
       to: [body.invitee_email],
       subject,
       html,
-    })
+      from: 'ENCORE',
+    });
 
-    if (error) {
-      console.error('Resend error:', error)
-      throw error
-    }
-
-    console.log('Email sent successfully:', data)
+    console.log('Email sent successfully:', result);
 
     return new Response(
-      JSON.stringify({ ok: true, id: data?.id }), 
+      JSON.stringify({ ok: true, id: result.id }),
       { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-    )
+    );
   } catch (e: any) {
-    console.error('send-client-invitation error', e)
+    console.error('send-client-invitation error', e);
     return new Response(
-      JSON.stringify({ error: e?.message || 'Unknown error' }), 
+      JSON.stringify({ error: e?.message || 'Unknown error' }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-    )
+    );
   }
-})
+});

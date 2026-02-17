@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0'
+import { sendGmail } from "../_shared/gmail.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,12 +15,7 @@ Deno.serve(async (req) => {
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
+      { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
     const body = await req.json()
@@ -46,15 +42,12 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Auto-create user if requested
       if (autoCreate) {
         console.log('Auto-creating user for email:', email)
-        
-        // Generate a temporary password
         const tempPassword = generateTempPassword()
 
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          email: email,
+          email,
           password: tempPassword,
           email_confirm: true,
           user_metadata: {
@@ -73,18 +66,16 @@ Deno.serve(async (req) => {
 
         console.log('User created successfully:', newUser.user.id)
 
-        // Send welcome email with credentials via Resend
         try {
           await sendWelcomeEmail(email, tempPassword, clientName || 'your organization', role || 'user')
           console.log('Welcome email sent successfully to:', email)
         } catch (emailError) {
           console.error('Failed to send welcome email:', emailError)
-          // Don't fail the whole operation if email fails
         }
 
         return new Response(
-          JSON.stringify({ 
-            found: true, 
+          JSON.stringify({
+            found: true,
             user: { id: newUser.user.id, email: newUser.user.email },
             created: true,
             emailSent: true
@@ -130,7 +121,6 @@ Deno.serve(async (req) => {
     const userDetails = userIds.map(userId => {
       const profile = profiles?.find(p => p.id === userId)
       const authUser = authUsers.users.find(u => u.id === userId)
-      
       const firstName = profile?.first_name || ''
       const lastName = profile?.last_name || ''
       const fullName = `${firstName} ${lastName}`.trim()
@@ -173,75 +163,36 @@ function generateTempPassword(): string {
 }
 
 async function sendWelcomeEmail(email: string, tempPassword: string, clientName: string, role: string) {
-  const resendApiKey = Deno.env.get('RESEND_API_KEY')
-  if (!resendApiKey) {
-    throw new Error('RESEND_API_KEY is not configured')
-  }
-
   const appUrl = 'https://encore-live.lovable.app'
 
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${resendApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: 'Encore Music <noreply@encoremusic.tech>',
-      to: [email],
-      subject: `Welcome to ${clientName} — Your Account is Ready`,
-      html: `
-        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #1a1a1a;">
-          <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="font-size: 24px; font-weight: 700; margin: 0; color: #111;">Welcome to Encore</h1>
-            <p style="color: #666; margin-top: 8px; font-size: 15px;">Your account for <strong>${clientName}</strong> is ready</p>
-          </div>
-          
-          <div style="background: #f8f9fa; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 16px 0; font-size: 14px; color: #555;">Here are your login credentials:</p>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px 0; font-size: 14px; color: #888; width: 80px;">Email</td>
-                <td style="padding: 8px 0; font-size: 14px; font-weight: 600;">${email}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; font-size: 14px; color: #888;">Password</td>
-                <td style="padding: 8px 0; font-size: 14px; font-weight: 600; font-family: monospace; letter-spacing: 1px;">${tempPassword}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; font-size: 14px; color: #888;">Role</td>
-                <td style="padding: 8px 0; font-size: 14px; font-weight: 600; text-transform: capitalize;">${role}</td>
-              </tr>
-            </table>
-          </div>
-
-          <div style="text-align: center; margin-bottom: 24px;">
-            <a href="${appUrl}/auth" style="display: inline-block; background: #111; color: #fff; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">
-              Sign In to Your Account
-            </a>
-          </div>
-
-          <div style="background: #fff8e1; border-radius: 8px; padding: 16px; margin-bottom: 24px; border: 1px solid #ffe082;">
-            <p style="margin: 0; font-size: 13px; color: #8d6e00;">
-              ⚠️ <strong>Important:</strong> Please change your password after your first login for security.
-            </p>
-          </div>
-
-          <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center;">
-            <p style="margin: 0; font-size: 12px; color: #999;">
-              This email was sent by Encore Music Technology.<br/>
-              If you did not expect this email, please ignore it.
-            </p>
-          </div>
+  await sendGmail({
+    to: [email],
+    subject: `Welcome to ${clientName} — Your Account is Ready`,
+    from: 'Encore Music',
+    html: `
+      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #1a1a1a;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <h1 style="font-size: 24px; font-weight: 700; margin: 0; color: #111;">Welcome to Encore</h1>
+          <p style="color: #666; margin-top: 8px; font-size: 15px;">Your account for <strong>${clientName}</strong> is ready</p>
         </div>
-      `,
-    }),
+        <div style="background: #f8f9fa; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+          <p style="margin: 0 0 16px 0; font-size: 14px; color: #555;">Here are your login credentials:</p>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; font-size: 14px; color: #888; width: 80px;">Email</td><td style="padding: 8px 0; font-size: 14px; font-weight: 600;">${email}</td></tr>
+            <tr><td style="padding: 8px 0; font-size: 14px; color: #888;">Password</td><td style="padding: 8px 0; font-size: 14px; font-weight: 600; font-family: monospace; letter-spacing: 1px;">${tempPassword}</td></tr>
+            <tr><td style="padding: 8px 0; font-size: 14px; color: #888;">Role</td><td style="padding: 8px 0; font-size: 14px; font-weight: 600; text-transform: capitalize;">${role}</td></tr>
+          </table>
+        </div>
+        <div style="text-align: center; margin-bottom: 24px;">
+          <a href="${appUrl}/auth" style="display: inline-block; background: #111; color: #fff; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">Sign In to Your Account</a>
+        </div>
+        <div style="background: #fff8e1; border-radius: 8px; padding: 16px; margin-bottom: 24px; border: 1px solid #ffe082;">
+          <p style="margin: 0; font-size: 13px; color: #8d6e00;">⚠️ <strong>Important:</strong> Please change your password after your first login for security.</p>
+        </div>
+        <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center;">
+          <p style="margin: 0; font-size: 12px; color: #999;">This email was sent by Encore Music Technology.<br/>If you did not expect this email, please ignore it.</p>
+        </div>
+      </div>
+    `,
   })
-
-  if (!response.ok) {
-    const errorData = await response.text()
-    throw new Error(`Resend API error: ${response.status} - ${errorData}`)
-  }
-
-  return await response.json()
 }
