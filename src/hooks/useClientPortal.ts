@@ -150,35 +150,21 @@ export const useClientPortal = () => {
     role: 'admin' | 'client' | 'user' = 'client',
     visibilityScope?: any
   ) => {
-    console.log('createInvitation called with:', { email, permissions, role });
-    console.log('Current user:', user);
-    
-    if (!user) {
-      console.log('No user found, returning null');
-      return null;
-    }
+    if (!user) return null;
+
+    // In view-as-sub-account mode, act as the sub-account's primary user
+    const actingUserId = effectiveUserId || user.id;
 
     // Map 'user' role to 'client' for database compatibility
-    // The permissions field will differentiate between users and clients
     const dbRole = role === 'user' ? 'client' : role;
 
     try {
-      console.log('Setting loading to true');
       setLoading(true);
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
-      console.log('Expiry date set to:', expiresAt.toISOString());
-
-      console.log('About to insert invitation with data:', {
-        subscriber_user_id: user.id,
-        email,
-        role: dbRole, // Show the mapped role
-        permissions: permissions as any,
-        expires_at: expiresAt.toISOString()
-      });
 
       const insertData: any = {
-        subscriber_user_id: user.id,
+        subscriber_user_id: actingUserId,
         email,
         role: dbRole,
         permissions: permissions as any,
@@ -190,8 +176,6 @@ export const useClientPortal = () => {
         .insert(insertData)
         .select()
         .single();
-
-      console.log('Database insert result:', { data, error });
 
       if (error) throw error;
 
@@ -252,6 +236,7 @@ export const useClientPortal = () => {
     permissions: Record<string, any>
   ) => {
     if (!user) return null;
+    const actingUserId = effectiveUserId || user.id;
 
     try {
       setLoading(true);
@@ -259,7 +244,7 @@ export const useClientPortal = () => {
         .from('client_invitations')
         .update({ permissions: permissions as any })
         .eq('id', invitationId)
-        .eq('subscriber_user_id', user.id)
+        .eq('subscriber_user_id', actingUserId)
         .select()
         .single();
 
@@ -375,13 +360,14 @@ export const useClientPortal = () => {
     dataId: string
   ) => {
     if (!user) return null;
+    const actingUserId = effectiveUserId || user.id;
 
     try {
       // Idempotency: skip if this link already exists
       const { data: existing } = await supabase
         .from('client_data_associations')
         .select('id')
-        .eq('subscriber_user_id', user.id)
+        .eq('subscriber_user_id', actingUserId)
         .eq('client_user_id', clientUserId)
         .eq('data_type', dataType)
         .eq('data_id', dataId)
@@ -394,7 +380,7 @@ export const useClientPortal = () => {
       const { data, error } = await supabase
         .from('client_data_associations')
         .insert({
-          subscriber_user_id: user.id,
+          subscriber_user_id: actingUserId,
           client_user_id: clientUserId,
           data_type: dataType,
           data_id: dataId
@@ -428,13 +414,14 @@ export const useClientPortal = () => {
     updates: Partial<Pick<ClientDataAssociation, 'data_type' | 'data_id'>>
   ) => {
     if (!user) return null;
+    const actingUserId = effectiveUserId || user.id;
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('client_data_associations')
         .update(updates as any)
         .eq('id', id)
-        .eq('subscriber_user_id', user.id)
+        .eq('subscriber_user_id', actingUserId)
         .select()
         .single();
       if (error) throw error;
@@ -453,13 +440,14 @@ export const useClientPortal = () => {
   // Delete data association
   const deleteDataAssociation = async (id: string) => {
     if (!user) return false;
+    const actingUserId = effectiveUserId || user.id;
     try {
       setLoading(true);
       const { error } = await supabase
         .from('client_data_associations')
         .delete()
         .eq('id', id)
-        .eq('subscriber_user_id', user.id);
+        .eq('subscriber_user_id', actingUserId);
       if (error) throw error;
       await fetchDataAssociations();
       toast({ title: 'Removed', description: 'Association removed' });
@@ -538,13 +526,14 @@ export const useClientPortal = () => {
   // Remove specific invitation by ID
   const removeInvitation = async (invitationId: string) => {
     if (!user) return { success: false, error: 'Not authenticated' };
+    const actingUserId = effectiveUserId || user.id;
     try {
       setLoading(true);
       const { error } = await supabase
         .from('client_invitations')
         .delete()
         .eq('id', invitationId)
-        .eq('subscriber_user_id', user.id);
+        .eq('subscriber_user_id', actingUserId);
       
       if (error) throw error;
       
@@ -570,13 +559,14 @@ export const useClientPortal = () => {
   // Remove invitations by status (expired, pending)
   const removeInvitations = async (includePending: boolean = false) => {
     if (!user) return { success: false, error: 'Not authenticated' };
+    const actingUserId = effectiveUserId || user.id;
     try {
       setLoading(true);
       const statuses = includePending ? ['expired', 'pending'] : ['expired'];
       const { error } = await supabase
         .from('client_invitations')
         .delete()
-        .eq('subscriber_user_id', user.id)
+        .eq('subscriber_user_id', actingUserId)
         .in('status', statuses as any);
       if (error) throw error;
       await fetchInvitations();
