@@ -125,12 +125,18 @@ export async function sendGmail(opts: {
 
   const sa = JSON.parse(saJson);
 
+  console.log(`[Gmail] Service account email: ${sa.client_email}`);
+  console.log(`[Gmail] Impersonating: ${senderEmail}`);
+  console.log(`[Gmail] Client ID: ${sa.client_id}`);
+
   // Reuse token if still valid (with 60s buffer)
   const now = Date.now();
   if (!cachedToken || cachedToken.expiresAt < now + 60_000) {
     const privateKey = await importPrivateKey(sa.private_key);
     const jwt = await createJwt(sa.client_email, privateKey, senderEmail);
+    console.log(`[Gmail] JWT created, exchanging for access token...`);
     const accessToken = await getAccessToken(jwt);
+    console.log(`[Gmail] Access token obtained successfully`);
     cachedToken = { token: accessToken, expiresAt: now + 3500_000 };
   }
 
