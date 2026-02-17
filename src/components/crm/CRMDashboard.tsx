@@ -69,6 +69,9 @@ export function CRMDashboard() {
     const fetchDashboardData = async () => {
       if (!user) return;
 
+      // When viewing as a sub-account, scope ALL data queries to that company
+      const companyId = isViewingAsSubAccount ? viewContext?.companyId : null;
+
       try {
         // Fetch user modules
         const { data: moduleData } = await supabase
@@ -78,37 +81,41 @@ export function CRMDashboard() {
 
         setUserModules(moduleData?.map(item => item.module_id) || []);
 
-        // Fetch real stats from user's data
+        // Build scoped queries — filter by client_company_id when in sub-account view
+        const contractsQuery = supabase
+          .from('contracts')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        if (companyId) contractsQuery.eq('client_company_id', companyId);
+
+        const copyrightsQuery = supabase
+          .from('copyrights')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        if (companyId) copyrightsQuery.eq('client_company_id', companyId);
+
+        const syncQuery = supabase
+          .from('sync_licenses')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        const royaltiesQuery = supabase
+          .from('royalty_allocations')
+          .select('gross_royalty_amount')
+          .eq('user_id', user.id);
+        if (companyId) royaltiesQuery.eq('client_company_id', companyId);
+
+        const catalogQuery = supabase
+          .from('catalog_valuations')
+          .select('valuation_amount')
+          .eq('user_id', user.id);
+
         const [contractsResult, copyrightsResult, syncResult, royaltiesResult, catalogResult] = await Promise.all([
-          // Count contracts
-          supabase
-            .from('contracts')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id),
-          
-          // Count copyrights
-          supabase
-            .from('copyrights')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id),
-          
-          // Count sync licenses
-          supabase
-            .from('sync_licenses')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id),
-          
-          // Sum total royalties
-          supabase
-            .from('royalty_allocations')
-            .select('gross_royalty_amount')
-            .eq('user_id', user.id),
-          
-          // Get catalog valuations total
-          supabase
-            .from('catalog_valuations')
-            .select('valuation_amount')
-            .eq('user_id', user.id)
+          contractsQuery,
+          copyrightsQuery,
+          syncQuery,
+          royaltiesQuery,
+          catalogQuery
         ]);
 
         // Calculate total revenue from royalties
@@ -127,13 +134,16 @@ export function CRMDashboard() {
           catalogValue: Math.round(totalCatalogValue)
         });
 
-        // Fetch recent activity from actual data
-        const { data: recentContracts } = await supabase
+        // Fetch recent activity scoped to company
+        const recentContractsQuery = supabase
           .from('contracts')
           .select('id, title, counterparty_name, created_at, contract_status')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(3);
+        if (companyId) recentContractsQuery.eq('client_company_id', companyId);
+
+        const { data: recentContracts } = await recentContractsQuery;
 
         const activities: RecentActivity[] = [];
         
@@ -156,7 +166,7 @@ export function CRMDashboard() {
     };
 
     fetchDashboardData();
-  }, [user]);
+  }, [user, isViewingAsSubAccount, viewContext?.companyId]);
 
   const modules = [
     {
