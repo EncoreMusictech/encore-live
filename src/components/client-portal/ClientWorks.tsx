@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientPortal } from '@/hooks/useClientPortal';
 import { useClientVisibilityScope } from '@/hooks/useClientVisibilityScope';
+import { useClientPortalIdentity } from '@/contexts/ClientPortalContext';
 
 interface ClientWorksProps {
   permissions: Record<string, any>;
@@ -16,6 +17,7 @@ interface ClientWorksProps {
 
 export const ClientWorks = ({ permissions }: ClientWorksProps) => {
   const { user } = useAuth();
+  const { effectiveUserId } = useClientPortalIdentity();
   const { isClient } = useClientPortal();
   const { scope, applyCopyrightScopeFilter } = useClientVisibilityScope();
   const [works, setWorks] = useState<any[]>([]);
@@ -24,17 +26,17 @@ export const ClientWorks = ({ permissions }: ClientWorksProps) => {
 
   useEffect(() => {
     const fetchWorks = async () => {
-      if (!user) return;
+      if (!effectiveUserId) return;
 
       try {
         const clientMode = await isClient();
-        if (clientMode) {
+        if (clientMode || effectiveUserId !== user?.id) {
           // If scope is 'custom' or 'all', fall back to data associations
           if (scope.scope_type === 'custom' || scope.scope_type === 'all') {
             const { data: assoc, error: assocError } = await supabase
               .from('client_data_associations')
               .select('data_id')
-              .eq('client_user_id', user.id)
+              .eq('client_user_id', effectiveUserId)
               .eq('data_type', 'copyright');
             if (assocError) throw assocError;
             const ids = (assoc || []).map((a: any) => a.data_id);
@@ -77,7 +79,7 @@ export const ClientWorks = ({ permissions }: ClientWorksProps) => {
     };
 
     fetchWorks();
-  }, [user, isClient, scope]);
+  }, [effectiveUserId, isClient, scope]);
 
   const getApprovalBadge = (status: string) => {
     const variants: Record<string, any> = {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useClientPortalIdentity } from '@/contexts/ClientPortalContext';
 
 export interface VisibilityScope {
   scope_type: 'all' | 'artist' | 'label' | 'custom';
@@ -14,22 +15,29 @@ export interface VisibilityScope {
 
 /**
  * Hook that retrieves the client's visibility scope from client_portal_access.
- * Used inside client portal components to filter data.
+ * Uses the effective user ID from ClientPortalContext (supports admin preview).
  */
 export function useClientVisibilityScope() {
   const { user } = useAuth();
+  let portalUserId: string | undefined;
+  try {
+    const { effectiveUserId } = useClientPortalIdentity();
+    portalUserId = effectiveUserId;
+  } catch {
+    portalUserId = user?.id;
+  }
   const [scope, setScope] = useState<VisibilityScope>({ scope_type: 'all' });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchScope = async () => {
-      if (!user) { setLoading(false); return; }
+      if (!portalUserId) { setLoading(false); return; }
       
       try {
         const { data, error } = await supabase
           .from('client_portal_access')
           .select('*')
-          .eq('client_user_id', user.id)
+          .eq('client_user_id', portalUserId)
           .eq('status', 'active')
           .maybeSingle();
 
@@ -45,7 +53,7 @@ export function useClientVisibilityScope() {
     };
 
     fetchScope();
-  }, [user]);
+  }, [portalUserId]);
 
   /**
    * Apply scope filtering to a copyrights query.

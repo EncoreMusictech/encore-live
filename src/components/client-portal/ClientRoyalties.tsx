@@ -13,6 +13,7 @@ import { ClientAccountBalance } from './ClientAccountBalance';
 import { ClientPaymentInfo } from './ClientPaymentInfo';
 import { useClientPortal } from '@/hooks/useClientPortal';
 import { useClientVisibilityScope } from '@/hooks/useClientVisibilityScope';
+import { useClientPortalIdentity } from '@/contexts/ClientPortalContext';
 
 interface ClientRoyaltiesProps {
   permissions: Record<string, any>;
@@ -20,6 +21,7 @@ interface ClientRoyaltiesProps {
 
 export const ClientRoyalties = ({ permissions }: ClientRoyaltiesProps) => {
   const { user } = useAuth();
+  const { effectiveUserId } = useClientPortalIdentity();
   const { isClient } = useClientPortal();
   const { scope, applyRoyaltyScopeFilter } = useClientVisibilityScope();
   const [royalties, setRoyalties] = useState<any[]>([]);
@@ -31,16 +33,16 @@ export const ClientRoyalties = ({ permissions }: ClientRoyaltiesProps) => {
 
   useEffect(() => {
     const fetchRoyalties = async () => {
-      if (!user) return;
+      if (!effectiveUserId) return;
 
       try {
         const clientMode = await isClient();
-        if (clientMode) {
+        if (clientMode || effectiveUserId !== user?.id) {
           if (scope.scope_type === 'custom' || scope.scope_type === 'all') {
             const { data: assoc, error: assocError } = await supabase
               .from('client_data_associations')
               .select('data_id')
-              .eq('client_user_id', user.id)
+              .eq('client_user_id', effectiveUserId)
               .eq('data_type', 'royalty_allocation');
             if (assocError) throw assocError;
             const ids = (assoc || []).map((a: any) => a.data_id);
@@ -82,7 +84,7 @@ export const ClientRoyalties = ({ permissions }: ClientRoyaltiesProps) => {
     };
 
     fetchRoyalties();
-  }, [user, isClient, scope]);
+  }, [effectiveUserId, isClient, scope]);
 
   // Calculate totals
   const totalEarnings = royalties.reduce((sum, royalty) => sum + (royalty.gross_royalty_amount || 0), 0);
