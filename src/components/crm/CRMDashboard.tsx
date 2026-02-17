@@ -258,13 +258,6 @@ export function CRMDashboard() {
         )}
       </div>
 
-      {/* Onboarding checklist for sub-account view mode */}
-      {isViewingAsSubAccount && viewContext?.companyId && viewContext?.companyName && (
-        <SubAccountOnboarding
-          companyId={viewContext.companyId}
-          companyName={viewContext.companyName}
-        />
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Demo Users: Show Quick Start Guide */}
