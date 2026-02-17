@@ -11,6 +11,7 @@ import { FileText, Upload, Download, CreditCard, Building, Shield, CheckCircle, 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useClientPortalIdentity } from '@/contexts/ClientPortalContext';
 
 interface ClientPaymentInfoProps {
   permissions: Record<string, any>;
@@ -36,6 +37,7 @@ interface PaymentInfo {
 
 export const ClientPaymentInfo = ({ permissions }: ClientPaymentInfoProps) => {
   const { user } = useAuth();
+  const { effectiveUserId, isAdminPreview } = useClientPortalIdentity();
   const { toast } = useToast();
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>({});
   const [loading, setLoading] = useState(true);
@@ -43,13 +45,13 @@ export const ClientPaymentInfo = ({ permissions }: ClientPaymentInfoProps) => {
 
   useEffect(() => {
     const fetchPaymentInfo = async () => {
-      if (!user) return;
+      if (!effectiveUserId) return;
 
       try {
         const { data, error } = await supabase
           .from('contacts')
           .select('payment_info, name, email, phone, address, tax_id')
-          .eq('user_id', user.id)
+          .eq('user_id', effectiveUserId)
           .single();
 
         if (error && error.code !== 'PGRST116') {
@@ -68,19 +70,19 @@ export const ClientPaymentInfo = ({ permissions }: ClientPaymentInfoProps) => {
     };
 
     fetchPaymentInfo();
-  }, [user]);
+  }, [effectiveUserId]);
 
   const handleSavePaymentInfo = async () => {
-    if (!user) return;
+    if (!effectiveUserId || isAdminPreview) return;
 
     setSaving(true);
     try {
       const { error } = await supabase
         .from('contacts')
         .upsert({
-          user_id: user.id,
-          name: user.email || 'Client',
-          email: user.email,
+          user_id: effectiveUserId,
+          name: user?.email || 'Client',
+          email: user?.email,
           payment_info: paymentInfo as any,
           contact_type: 'client'
         }, {
@@ -108,7 +110,7 @@ export const ClientPaymentInfo = ({ permissions }: ClientPaymentInfoProps) => {
   const handleFileUpload = async (file: File, type: 'w9' | 'direct_deposit') => {
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${type}_${user?.id}_${Date.now()}.${fileExt}`;
+      const fileName = `${type}_${effectiveUserId}_${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('documents')
