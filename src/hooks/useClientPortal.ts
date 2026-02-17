@@ -157,7 +157,7 @@ export const useClientPortal = () => {
             role: role, // Pass the role to determine email template and route
             permissions: permissions, // Pass permissions for user role template
             subscriber_name: 'ENCORE',
-            site_url: window.location.origin,
+            site_url: 'https://www.encoremusic.tech',
             support_email: 'support@encoremusic.tech',
           },
         });
