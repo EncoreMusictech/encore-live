@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Mail, Shield } from 'lucide-react';
+import { Plus, Trash2, Mail, Shield, Pencil } from 'lucide-react';
 
 interface CompanyUser {
   id: string;
@@ -31,6 +32,9 @@ export function SubAccountUsers({ companyId, onUpdate }: SubAccountUsersProps) {
   const [adding, setAdding] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newUser, setNewUser] = useState({ email: '', role: 'user' });
+  const [editingUser, setEditingUser] = useState<CompanyUser | null>(null);
+  const [editForm, setEditForm] = useState({ email: '', full_name: '' });
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -151,6 +155,47 @@ export function SubAccountUsers({ companyId, onUpdate }: SubAccountUsersProps) {
       });
     } finally {
       setAdding(false);
+    }
+  };
+
+  const handleEditUser = (user: CompanyUser) => {
+    setEditingUser(user);
+    setEditForm({ email: user.email || '', full_name: user.full_name || '' });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+    try {
+      setSaving(true);
+
+      // Update profile (name) via profiles table
+      const nameParts = editForm.full_name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ first_name: firstName, last_name: lastName })
+        .eq('id', editingUser.user_id);
+
+      if (profileError) throw profileError;
+
+      // Update email via edge function (requires admin)
+      if (editForm.email && editForm.email !== editingUser.email) {
+        const { error: emailError } = await supabase.functions.invoke('update-user-email', {
+          body: { userId: editingUser.user_id, email: editForm.email }
+        });
+        if (emailError) throw emailError;
+      }
+
+      toast({ title: 'Success', description: 'User updated successfully' });
+      setEditingUser(null);
+      fetchUsers();
+      onUpdate();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to update user', variant: 'destructive' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -325,13 +370,22 @@ export function SubAccountUsers({ companyId, onUpdate }: SubAccountUsersProps) {
                       {new Date(user.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleRemoveUser(user.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditUser(user)}
+                        >
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRemoveUser(user.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -340,6 +394,42 @@ export function SubAccountUsers({ companyId, onUpdate }: SubAccountUsersProps) {
           </div>
         )}
       </CardContent>
+
+      {/* Edit User Dialog */}
+      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Full Name</Label>
+              <Input
+                id="edit-name"
+                value={editForm.full_name}
+                onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                placeholder="John Doe"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                placeholder="user@example.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingUser(null)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
