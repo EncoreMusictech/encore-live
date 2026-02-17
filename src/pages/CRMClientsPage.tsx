@@ -226,7 +226,7 @@ export default function CRMClientsPage() {
     totalClients: clientAccess.length,
     activeClients: clientAccess.filter(c => c.status === 'active').length,
     pendingInvites: invitations.filter(i => i.status === 'pending').length,
-    totalRevenue: 850000 // This would come from actual revenue data
+    dataAssociations: dataAssociations.length
   };
 
   // Combine client access records and invitations for display
@@ -562,7 +562,6 @@ export default function CRMClientsPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <Users className="h-5 w-5 text-primary" />
-              <span className="text-sm text-success font-medium">+5</span>
             </div>
             <CardTitle className="text-2xl font-bold">{clientStats.totalClients}</CardTitle>
           </CardHeader>
@@ -576,7 +575,6 @@ export default function CRMClientsPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <UserCheck className="h-5 w-5 text-primary" />
-              <span className="text-sm text-success font-medium">Active</span>
             </div>
             <CardTitle className="text-2xl font-bold">{clientStats.activeClients}</CardTitle>
           </CardHeader>
@@ -590,7 +588,6 @@ export default function CRMClientsPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <Clock className="h-5 w-5 text-primary" />
-              <span className="text-sm text-orange-600 font-medium">Pending</span>
             </div>
             <CardTitle className="text-2xl font-bold">{clientStats.pendingInvites}</CardTitle>
           </CardHeader>
@@ -603,14 +600,13 @@ export default function CRMClientsPage() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <Settings className="h-5 w-5 text-primary" />
-              <span className="text-sm text-success font-medium">+12%</span>
+              <Database className="h-5 w-5 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold">${clientStats.totalRevenue.toLocaleString()}</CardTitle>
+            <CardTitle className="text-2xl font-bold">{clientStats.dataAssociations}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm font-medium">Client Revenue</p>
-            <p className="text-xs text-muted-foreground">Total managed</p>
+            <p className="text-sm font-medium">Data Associations</p>
+            <p className="text-xs text-muted-foreground">Linked records</p>
           </CardContent>
         </Card>
       </div>
