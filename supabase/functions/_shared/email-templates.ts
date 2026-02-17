@@ -5,6 +5,7 @@
 
 const LOGO_ICON = "https://storage.googleapis.com/msgsndr/8BUYWIq31koZgf2U2ynj/media/6993c555ceaa05a044a66721.png";
 const LOGO_WITH_TITLE = "https://storage.googleapis.com/msgsndr/8BUYWIq31koZgf2U2ynj/media/6993c55509780943706d06a2.png";
+const HERO_BG = "https://www.encoremusic.tech/images/email-hero-bg.jpg";
 
 const COLORS = {
   primary: "#6366f1",
@@ -56,30 +57,51 @@ function emailLayout(opts: {
         <!-- Main card -->
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:${COLORS.bgCard};border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
           
-          <!-- Logo bar -->
+          <!-- Hero Header with background image -->
           <tr>
-            <td style="padding:28px 40px 0 40px;text-align:center;">
-              <img src="${LOGO_WITH_TITLE}" alt="ENCORE" width="160" style="display:inline-block;max-width:160px;height:auto;" />
+            <td style="padding:0;">
+              <!--[if gte mso 9]>
+              <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;height:220px;">
+                <v:fill type="frame" src="${HERO_BG}" color="#0f172a" />
+                <v:textbox inset="0,0,0,0">
+              <![endif]-->
+              <div style="background:url('${HERO_BG}') center/cover no-repeat #0f172a;min-height:200px;">
+                <!-- Dark overlay -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(15,23,42,0.88),rgba(99,102,241,0.45));min-height:200px;">
+                  <tr>
+                    <td style="padding:32px 40px 8px 40px;text-align:center;">
+                      <img src="${LOGO_WITH_TITLE}" alt="ENCORE" width="140" style="display:inline-block;max-width:140px;height:auto;" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 40px;text-align:center;">
+                      <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.7);">RIGHTS MANAGEMENT SYSTEMS</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 40px;text-align:center;">
+                      <div style="height:2px;width:60px;margin:8px auto;border-radius:2px;background:linear-gradient(90deg,${accent},${COLORS.accent});"></div>
+                    </td>
+                  </tr>
+                  ${opts.headerTitle ? `
+                  <tr>
+                    <td style="padding:4px 40px 28px 40px;text-align:center;">
+                      ${opts.headerIcon ? `<span style="font-size:28px;">${opts.headerIcon}</span><br/>` : ""}
+                      <h1 style="margin:4px 0 0 0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">${opts.headerTitle}</h1>
+                      ${opts.headerSubtitle ? `<p style="margin:6px 0 0 0;font-size:14px;color:rgba(255,255,255,0.75);">${opts.headerSubtitle}</p>` : ""}
+                    </td>
+                  </tr>
+                  ` : `
+                  <tr><td style="padding:0 0 28px 0;">&nbsp;</td></tr>
+                  `}
+                </table>
+              </div>
+              <!--[if gte mso 9]>
+                </v:textbox>
+              </v:rect>
+              <![endif]-->
             </td>
           </tr>
-          
-          <!-- Accent divider -->
-          <tr>
-            <td style="padding:20px 40px 0 40px;">
-              <div style="height:3px;border-radius:3px;background:linear-gradient(90deg,${accent},${COLORS.accent});"></div>
-            </td>
-          </tr>
-
-          ${opts.headerTitle ? `
-          <!-- Header section -->
-          <tr>
-            <td style="padding:28px 40px 0 40px;text-align:center;">
-              ${opts.headerIcon ? `<div style="font-size:36px;margin-bottom:12px;">${opts.headerIcon}</div>` : ""}
-              <h1 style="margin:0;font-size:24px;font-weight:700;color:${COLORS.text};letter-spacing:-0.3px;">${opts.headerTitle}</h1>
-              ${opts.headerSubtitle ? `<p style="margin:8px 0 0 0;font-size:15px;color:${COLORS.textMuted};">${opts.headerSubtitle}</p>` : ""}
-            </td>
-          </tr>
-          ` : ""}
 
           <!-- Body -->
           <tr>
