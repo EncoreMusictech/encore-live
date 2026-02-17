@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useViewModeOptional } from '@/hooks/useViewModeOptional';
 import type { Database } from '@/integrations/supabase/types';
 
 type ClientPortalAccess = Database['public']['Tables']['client_portal_access']['Row'];
@@ -13,25 +14,59 @@ export type { ClientPortalAccess, ClientInvitation, ClientDataAssociation };
 export const useClientPortal = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
   const [loading, setLoading] = useState(false);
   const [clientAccess, setClientAccess] = useState<ClientPortalAccess[]>([]);
   const [invitations, setInvitations] = useState<ClientInvitation[]>([]);
   const [dataAssociations, setDataAssociations] = useState<ClientDataAssociation[]>([]);
+  const [viewModeUserIds, setViewModeUserIds] = useState<string[]>([]);
+
+  // Resolve user IDs for the viewed sub-account
+  useEffect(() => {
+    const loadViewModeUsers = async () => {
+      if (!isViewingAsSubAccount || !viewContext?.companyId) {
+        setViewModeUserIds([]);
+        return;
+      }
+      const { data } = await supabase
+        .from('company_users')
+        .select('user_id')
+        .eq('company_id', viewContext.companyId)
+        .eq('status', 'active');
+      setViewModeUserIds(data?.map(cu => cu.user_id) || []);
+    };
+    loadViewModeUsers();
+  }, [isViewingAsSubAccount, viewContext?.companyId]);
+
+  // The effective user ID for queries — in view mode, use the sub-account's primary user
+  const effectiveUserId = useMemo(() => {
+    if (isViewingAsSubAccount && viewModeUserIds.length > 0) {
+      return viewModeUserIds[0]; // Primary user of the viewed company
+    }
+    return user?.id;
+  }, [isViewingAsSubAccount, viewModeUserIds, user?.id]);
 
   // Fetch client access records
   const fetchClientAccess = async () => {
-    if (!user) {
-      console.log('🔍 fetchClientAccess: No user found');
+    if (!effectiveUserId) {
+      console.log('🔍 fetchClientAccess: No effective user found');
       return;
     }
     
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('client_portal_access')
         .select('*')
-        .eq('subscriber_user_id', user.id)
         .order('created_at', { ascending: false });
+      
+      if (isViewingAsSubAccount && viewModeUserIds.length > 0) {
+        query = query.in('subscriber_user_id', viewModeUserIds);
+      } else {
+        query = query.eq('subscriber_user_id', effectiveUserId);
+      }
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       setClientAccess(data || []);
@@ -49,14 +84,21 @@ export const useClientPortal = () => {
 
   // Fetch invitations
   const fetchInvitations = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
     
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('client_invitations')
         .select('*')
-        .eq('subscriber_user_id', user.id)
         .order('created_at', { ascending: false });
+      
+      if (isViewingAsSubAccount && viewModeUserIds.length > 0) {
+        query = query.in('subscriber_user_id', viewModeUserIds);
+      } else {
+        query = query.eq('subscriber_user_id', effectiveUserId);
+      }
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       setInvitations(data || []);
@@ -72,14 +114,21 @@ export const useClientPortal = () => {
 
   // Fetch data associations
   const fetchDataAssociations = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('client_data_associations')
         .select('*')
-        .eq('subscriber_user_id', user.id)
         .order('created_at', { ascending: false });
+      
+      if (isViewingAsSubAccount && viewModeUserIds.length > 0) {
+        query = query.in('subscriber_user_id', viewModeUserIds);
+      } else {
+        query = query.eq('subscriber_user_id', effectiveUserId);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       setDataAssociations(data || []);
     } catch (error: any) {
@@ -572,12 +621,12 @@ export const useClientPortal = () => {
   };
 
   useEffect(() => {
-    if (user) {
+    if (effectiveUserId) {
       fetchClientAccess();
       fetchInvitations();
       fetchDataAssociations();
     }
-  }, [user]);
+  }, [effectiveUserId, isViewingAsSubAccount, viewModeUserIds]);
 
   return {
     loading,
