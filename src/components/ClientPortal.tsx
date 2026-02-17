@@ -294,7 +294,12 @@ const ClientPortal = () => {
               {branding?.display_name || 'Client Portal'}
             </h1>
             <p className="text-sm opacity-90 mt-1">Manage your works, contracts, and royalties</p>
-            {user?.email && !isAdminViewing && (
+            {isAdminViewing && profile && (
+              <div className="flex items-center gap-3 mt-2">
+                <p className="text-xs opacity-80">Viewing portal for <span className="font-medium">{profile.name || profile.email || 'Client'}</span></p>
+              </div>
+            )}
+            {!isAdminViewing && user?.email && (
               <div className="flex items-center gap-3 mt-2">
                 <p className="text-xs opacity-80">Signed in as <span className="font-medium">{user.email}</span></p>
                 <button
@@ -312,7 +317,9 @@ const ClientPortal = () => {
           <div className="hidden md:flex items-center gap-3">
             <Avatar className="h-12 w-12 shadow-md border-2 border-white/20">
               <AvatarImage src={profile?.avatar_url || undefined} alt="Client avatar" loading="lazy" />
-              <AvatarFallback className="bg-white/10 text-white">{((profile?.first_name?.[0] || user?.email?.[0] || 'U') as string).toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="bg-white/10 text-white">
+                {((isAdminViewing ? (profile?.name?.[0] || 'C') : (profile?.first_name?.[0] || user?.email?.[0] || 'U')) as string).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div className="text-sm font-medium leading-tight">
               {greeting}
