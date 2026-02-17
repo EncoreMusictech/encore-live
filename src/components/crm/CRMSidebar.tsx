@@ -102,7 +102,7 @@ export function CRMSidebar() {
     isDemo
   } = useDemoAccess();
   const { isSuperAdmin } = useSuperAdmin();
-  const { canManageClients } = useUserCompany();
+  const { canManageClients, userCompany } = useUserCompany();
   const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
   const { branding } = useCompanyBranding();
   const sidebarLogo = branding?.logo_url || encoreLogo;
@@ -336,18 +336,45 @@ export function CRMSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Management section for sub-account users */}
+        {!isAdmin && userCompany && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Management</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild className={isActive('/dashboard/client-admin') ? "bg-sidebar-accent" : ""}>
+                    <Link to="/dashboard/client-admin" className="flex items-center">
+                      <Users className="mr-2 h-4 w-4" />
+                      {!collapsed && <span className="font-medium">Client Portal</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild className={isActive(`/dashboard/operations/sub-accounts/${userCompany.id}`) ? "bg-sidebar-accent" : ""}>
+                    <Link to={`/dashboard/operations/sub-accounts/${userCompany.id}`} className="flex items-center">
+                      <Monitor className="mr-2 h-4 w-4" />
+                      {!collapsed && <span className="font-medium">Operations</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {canManageClients && <SidebarMenuItem>
+                  <SidebarMenuButton asChild className={isActive('/dashboard/clients') ? "bg-sidebar-accent" : ""}>
+                    <Link to="/dashboard/clients" className="flex items-center">
+                      <Building2 className="mr-2 h-4 w-4" />
+                      {!collapsed && <span className="font-medium">Manage Clients</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         {!collapsed && <SidebarGroup>
             <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {canManageClients && <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link to="/dashboard/clients" className="flex items-center">
-                      <Building2 className="mr-2 h-4 w-4" />
-                      Manage Clients
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>}
                 {isDemo && <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/dashboard/walkthroughs" className="flex items-center">
