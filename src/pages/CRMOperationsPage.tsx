@@ -1,20 +1,23 @@
 import { OperationsDashboard } from "@/components/operations/OperationsDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { useUserCompany } from "@/hooks/useUserCompany";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lock } from "lucide-react";
+import { Lock, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { ClientsManager } from "@/components/hierarchy/ClientsManager";
 
 export default function CRMOperationsPage() {
   const { user } = useAuth();
   const { isAdmin, loading } = useUserRoles();
+  const { userCompany, loading: companyLoading, canManageClients } = useUserCompany();
 
-  // Check if user has operations access
+  // Check if user has ENCORE admin access
   const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
   const isAdministrator = adminEmails.includes(user?.email?.toLowerCase() || '') || isAdmin;
 
-  if (loading) {
+  if (loading || companyLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -25,33 +28,56 @@ export default function CRMOperationsPage() {
     );
   }
 
-  if (!isAdministrator) {
+  // ENCORE admins see the full operations dashboard
+  if (isAdministrator) {
+    return <OperationsDashboard />;
+  }
+
+  // Sub-account users (publishing firms) see their client management view
+  if (canManageClients && userCompany) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <div className="bg-gradient-primary rounded-full p-3 w-12 h-12 mx-auto mb-4 flex items-center justify-center">
-              <Lock className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <CardTitle>Operations Access Required</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-muted-foreground">
-              Access to the Operations Dashboard is restricted to ENCORE administrators and operations team members.
-            </p>
-            <div className="space-y-2">
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/dashboard">Back to Dashboard</Link>
-              </Button>
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/contact">Contact Support</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Building2 className="h-6 w-6" />
+            Account Management
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your client labels, users, and settings for {userCompany.display_name}
+          </p>
+        </div>
+        <ClientsManager
+          parentCompanyId={userCompany.id}
+          parentCompanyName={userCompany.display_name}
+        />
       </div>
     );
   }
 
-  return <OperationsDashboard />;
+  // Non-admin, non-publishing-firm users see access denied
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <Card className="max-w-md w-full">
+        <CardHeader className="text-center">
+          <div className="bg-gradient-primary rounded-full p-3 w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+            <Lock className="h-6 w-6 text-primary-foreground" />
+          </div>
+          <CardTitle>Operations Access Required</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          <p className="text-muted-foreground">
+            Access to the Operations Dashboard is restricted to ENCORE administrators and operations team members.
+          </p>
+          <div className="space-y-2">
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/dashboard">Back to Dashboard</Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/contact">Contact Support</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
