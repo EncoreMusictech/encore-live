@@ -228,6 +228,10 @@ export default function SubAccountDetailPage() {
             <Upload className="h-4 w-4 mr-2" />
             Works
           </TabsTrigger>
+          <TabsTrigger value="operations">
+            <Briefcase className="h-4 w-4 mr-2" />
+            Operations
+          </TabsTrigger>
           <TabsTrigger value="settings">
             <Settings className="h-4 w-4 mr-2" />
             Settings
@@ -264,6 +268,10 @@ export default function SubAccountDetailPage() {
 
         <TabsContent value="works" className="space-y-6">
           <SubAccountWorks companyId={company.id} companyName={company.name} />
+        </TabsContent>
+
+        <TabsContent value="operations" className="space-y-6">
+          <ClientsManager parentCompanyId={company.id} parentCompanyName={company.display_name} />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
