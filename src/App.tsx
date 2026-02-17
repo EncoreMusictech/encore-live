@@ -57,6 +57,7 @@ import NAMMPitchPage from "./pages/NAMMPitchPage";
 import CatalogAuditPresentationPage from "./pages/CatalogAuditPresentationPage";
 import PaymentSetup from "./pages/PaymentSetup";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import AcceptInvitation from "./pages/AcceptInvitation";
 import { DisableLeavePrompt } from "@/components/DisableLeavePrompt";
 import { ScrollToTop } from "@/components/ScrollToTop";
 
@@ -101,8 +102,9 @@ const App = () => {
                              <TourOverlay />
                              <RecoveryRedirect />
                              <Routes>
-                             <Route path="/auth" element={<Auth />} />
-                             <Route index element={<Index />} />
+                              <Route path="/auth" element={<Auth />} />
+                              <Route path="/accept-invitation" element={<AcceptInvitation />} />
+                              <Route index element={<Index />} />
                               
                               {/* Redirect old admin route to new location */}
                               <Route path="/admin" element={<Navigate to="/dashboard/admin" replace />} />
