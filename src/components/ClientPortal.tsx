@@ -292,6 +292,17 @@ const ClientPortal = () => {
               <ShieldCheck className="h-4 w-4" /> 
               {isAdminViewing ? 'Admin Viewing Client Portal' : 'Secured Client Access'}
             </Badge>
+            {isAdminViewing && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.history.back()}
+                aria-label="Return to admin view"
+                className="border-white/20 text-white hover:bg-white/10"
+              >
+                ← Back to Admin
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
