@@ -49,16 +49,18 @@ export interface QuarterlyBalanceInsert {
   payments_amount?: number;
 }
 
-export function useQuarterlyBalanceReports() {
+export function useQuarterlyBalanceReports(overrideUserId?: string) {
   const [reports, setReports] = useState<QuarterlyBalanceReport[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { isDemo } = useDemoAccess();
+  // Use overrideUserId when provided (e.g. admin previewing client portal), fallback to authenticated user
+  const activeUserId = overrideUserId || user?.id;
 
-  console.log('🔍 useQuarterlyBalanceReports hook initialized:', { user: !!user, isDemo });
+  console.log('🔍 useQuarterlyBalanceReports hook initialized:', { user: !!user, isDemo, activeUserId });
 
   const buildEphemeralFromPayouts = async (): Promise<QuarterlyBalanceReport[]> => {
-    if (!user) return [];
+    if (!activeUserId) return [];
 
     try {
       console.log('Building quarterly balance reports from payouts and expenses...');
@@ -67,14 +69,14 @@ export function useQuarterlyBalanceReports() {
       const { data: debugContacts } = await supabase
         .from('contacts')
         .select('id, name')
-        .eq('user_id', user.id)
+        .eq('user_id', activeUserId)
         .ilike('name', '%janishia%');
       console.log('Contacts containing "janishia":', debugContacts);
 
       const { data: debugPayees } = await supabase
         .from('payees')
         .select('id, payee_name')
-        .eq('user_id', user.id)
+        .eq('user_id', activeUserId)
         .ilike('payee_name', '%janishia%');
       console.log('Payees containing "janishia":', debugPayees);
       
@@ -82,7 +84,7 @@ export function useQuarterlyBalanceReports() {
       const { data: payouts, error: payoutsError } = await supabase
         .from('payouts')
         .select('id, payee_id, gross_royalties, total_expenses, amount_due, status, workflow_stage, created_at, period_start, period_end, period')
-        .eq('user_id', user.id)
+        .eq('user_id', activeUserId)
         .order('created_at', { ascending: true });
 
       if (payoutsError) {
@@ -109,7 +111,7 @@ export function useQuarterlyBalanceReports() {
           .from('payees')
           .select('id, payee_name, beginning_balance')
           .in('id', payeeIds as string[])
-          .eq('user_id', user.id);
+          .eq('user_id', activeUserId);
         payees?.forEach(p => payeesMap.set(p.id, { 
           name: p.payee_name, 
           beginning_balance: Number(p.beginning_balance) || 0 
@@ -202,7 +204,7 @@ export function useQuarterlyBalanceReports() {
           
           results.push({
             id: `demo-${entry.payee_id}-${entry.year}-Q${entry.quarter}`,
-            user_id: user.id,
+            user_id: activeUserId!,
             payee_id: entry.payee_id,
             contact_id: undefined,
             agreement_id: undefined,
@@ -238,20 +240,20 @@ export function useQuarterlyBalanceReports() {
   };
 
   const fetchReports = async () => {
-    console.log('🔍 fetchReports called:', { user: !!user, userId: user?.id });
+    console.log('🔍 fetchReports called:', { activeUserId });
     try {
-      if (user) {
+      if (activeUserId) {
         console.log('🔍 User exists, proceeding with report fetch');
         console.log('🔍 Current user details:', { 
-          id: user.id, 
-          email: user.email 
+          id: activeUserId, 
+          email: user?.email 
         });
         
         // Determine role to avoid using client mode for admins/subscribers
         const { data: roleRow } = await supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', user.id)
+          .eq('user_id', activeUserId)
           .maybeSingle();
         const isAdminLike = !!roleRow && ['admin', 'owner', 'manager'].includes(String(roleRow.role || '').toLowerCase());
 
@@ -259,7 +261,7 @@ export function useQuarterlyBalanceReports() {
         const { data: portalAccess, error: portalError } = await supabase
           .from('client_portal_access')
           .select('id, subscriber_user_id, status')
-          .eq('client_user_id', user.id)
+          .eq('client_user_id', activeUserId)
           .eq('status', 'active')
           .maybeSingle();
 
@@ -274,8 +276,8 @@ export function useQuarterlyBalanceReports() {
           // Client mode: use secure RPC that aggregates client-visible balances (incl. paid amounts)
           console.log('[QBR] Client mode detected - calling get_client_quarterly_balances RPC');
           console.log('[QBR] Current user context:', { 
-            userId: user.id, 
-            userEmail: user.email,
+            userId: activeUserId, 
+            userEmail: user?.email,
             hasPortalAccess: !!portalAccess 
           });
           
@@ -305,14 +307,14 @@ export function useQuarterlyBalanceReports() {
             const { data: associations } = await supabase
               .from('client_data_associations')
               .select('*')
-              .eq('client_user_id', user.id);
+              .eq('client_user_id', activeUserId);
             console.log('[QBR] Client data associations:', associations);
             
             // Debug: Check what payouts exist for the subscriber
             const { data: portalInfo } = await supabase
               .from('client_portal_access')
               .select('subscriber_user_id')
-              .eq('client_user_id', user.id)
+              .eq('client_user_id', activeUserId)
               .eq('status', 'active')
               .maybeSingle();
             
@@ -353,8 +355,8 @@ export function useQuarterlyBalanceReports() {
 
           const mapped = (clientRows || []).map((row: any) => ({
             id: `client-${row.year}-Q${row.quarter}`,
-            user_id: user.id,
-            payee_id: `client-${user.id}`,
+            user_id: activeUserId!,
+            payee_id: `client-${activeUserId}`,
             contact_id: undefined,
             agreement_id: row.agreement_id,
             year: row.year,
@@ -387,7 +389,7 @@ export function useQuarterlyBalanceReports() {
             contracts!quarterly_balance_reports_agreement_id_fkey(title, agreement_id),
             payees!fk_quarterly_balance_reports_payee_id(payee_name)
           `)
-          .eq('user_id', user.id)
+          .eq('user_id', activeUserId)
           .order('year', { ascending: false })
           .order('quarter', { ascending: false });
 
@@ -456,7 +458,7 @@ export function useQuarterlyBalanceReports() {
   };
 
   const createReport = async (reportData: QuarterlyBalanceInsert): Promise<QuarterlyBalanceReport | null> => {
-    if (!user) return null;
+    if (!activeUserId) return null;
 
     if (isDemo) {
       toast({
@@ -472,7 +474,7 @@ export function useQuarterlyBalanceReports() {
         .from('quarterly_balance_reports')
         .insert({
           ...reportData,
-          user_id: user.id,
+          user_id: activeUserId,
         })
         .select(`
           *,
@@ -579,7 +581,7 @@ export function useQuarterlyBalanceReports() {
   };
 
   const generateReportsFromData = async (payeeId: string, contactId?: string, agreementId?: string): Promise<void> => {
-    if (!user) return;
+    if (!activeUserId) return;
 
     if (isDemo) {
       toast({
@@ -625,7 +627,7 @@ export function useQuarterlyBalanceReports() {
             batch_id,
             reconciliation_batches!inner(date_received)
           `)
-          .eq('user_id', user.id)
+          .eq('user_id', activeUserId)
           .not('batch_id', 'is', null)
           .gte('reconciliation_batches.date_received', quarterStart.toISOString().split('T')[0])
           .lte('reconciliation_batches.date_received', quarterEnd.toISOString().split('T')[0]);
@@ -634,7 +636,7 @@ export function useQuarterlyBalanceReports() {
         const { data: expenses } = await supabase
           .from('payout_expenses')
           .select('amount')
-          .eq('user_id', user.id)
+          .eq('user_id', activeUserId)
           .eq('payee_id', payeeId)
           .gte('date_incurred', quarterStart.toISOString().split('T')[0])
           .lte('date_incurred', quarterEnd.toISOString().split('T')[0]);
@@ -643,7 +645,7 @@ export function useQuarterlyBalanceReports() {
         const { data: payments } = await supabase
           .from('payouts')
           .select('amount_due')
-          .eq('user_id', user.id)
+          .eq('user_id', activeUserId)
           .eq('client_id', contactId || payeeId)
           .eq('status', 'paid')
           .gte('created_at', quarterStart.toISOString())
@@ -665,7 +667,7 @@ export function useQuarterlyBalanceReports() {
         const { data: previousReport } = await supabase
           .from('quarterly_balance_reports')
           .select('closing_balance')
-          .eq('user_id', user.id)
+          .eq('user_id', activeUserId)
           .eq('payee_id', payeeId)
           .eq('year', previousYear)
           .eq('quarter', previousQuarter)
@@ -677,7 +679,7 @@ export function useQuarterlyBalanceReports() {
         const { error } = await supabase
           .from('quarterly_balance_reports')
           .upsert({
-            user_id: user.id,
+            user_id: activeUserId,
             payee_id: payeeId,
             contact_id: contactId,
             agreement_id: agreementId,
@@ -749,7 +751,7 @@ export function useQuarterlyBalanceReports() {
 
   useEffect(() => {
     fetchReports();
-  }, [user, isDemo]);
+  }, [activeUserId, isDemo]);
 
   // Listen for payout changes that might affect quarterly balance reports
   useEffect(() => {
@@ -828,7 +830,7 @@ export function useQuarterlyBalanceReports() {
       return;
     }
 
-    if (!user) {
+    if (!activeUserId) {
       console.error('User not authenticated');
       return;
     }
@@ -852,7 +854,7 @@ export function useQuarterlyBalanceReports() {
         }
         
         reportsToCreate.push({
-          user_id: user.id,
+          user_id: activeUserId,
           payee_id: payeeId,
           contact_id: contactId || null,
           agreement_id: agreementId || null,

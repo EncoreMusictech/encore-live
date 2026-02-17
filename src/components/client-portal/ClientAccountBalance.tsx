@@ -9,6 +9,7 @@ import { DollarSign, Download, TrendingUp, TrendingDown, Calendar, Search } from
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuarterlyBalanceReports } from '@/hooks/useQuarterlyBalanceReports';
+import { useClientPortalIdentity } from '@/contexts/ClientPortalContext';
 
 interface ClientAccountBalanceProps {
   permissions: Record<string, any>;
@@ -16,7 +17,8 @@ interface ClientAccountBalanceProps {
 
 export const ClientAccountBalance = ({ permissions }: ClientAccountBalanceProps) => {
   const { user } = useAuth();
-  const quarterlyReportsHook = useQuarterlyBalanceReports();
+  const { effectiveUserId } = useClientPortalIdentity();
+  const quarterlyReportsHook = useQuarterlyBalanceReports(effectiveUserId);
   const { reports, loading, exportToCSV } = quarterlyReportsHook;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState('all');
