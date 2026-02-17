@@ -22,6 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ClientProfileForm } from './client-portal/ClientProfileForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useClientBranding } from '@/hooks/useClientBranding';
+import encoreLogo from '@/assets/encore-logo.png';
 const ClientPortal = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -265,39 +266,61 @@ const ClientPortal = () => {
         } : undefined}
       >
         <div className="flex items-center justify-between gap-6">
-          <div>
-            <h1 className="text-3xl font-semibold">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            {branding?.logo_url ? (
+              <img
+                src={branding.logo_url}
+                alt={`${branding.display_name || 'Company'} logo`}
+                loading="lazy"
+                className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
+              />
+            ) : (
+              <img
+                src={encoreLogo}
+                alt="ENCORE logo"
+                loading="lazy"
+                className="w-16 h-16 sm:w-20 sm:h-20 object-contain brightness-0 invert"
+              />
+            )}
+          </div>
+
+          {/* Title & user info */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-semibold truncate">
               {branding?.display_name || 'Client Portal'}
             </h1>
             <p className="text-sm opacity-90 mt-1">Manage your works, contracts, and royalties</p>
-            {user?.email && (
-              <>
-                <p className="text-xs opacity-80 mt-2">Signed in as <span className="font-medium">{user.email}</span></p>
+            {user?.email && !isAdminViewing && (
+              <div className="flex items-center gap-3 mt-2">
+                <p className="text-xs opacity-80">Signed in as <span className="font-medium">{user.email}</span></p>
                 <button
                   onClick={() => setProfileOpen(true)}
-                  className="text-sm font-semibold mt-1 opacity-90 hover:opacity-100 underline-offset-4 hover:underline"
+                  className="text-xs font-semibold opacity-90 hover:opacity-100 underline-offset-4 hover:underline"
                   aria-label="Open My Profile"
                 >
                   My Profile
                 </button>
-              </>
+              </div>
             )}
           </div>
 
-          <div className="flex items-center gap-4">
-            <Avatar className="h-14 w-14 shadow-md border-2 border-white/20">
+          {/* Avatar & greeting */}
+          <div className="hidden md:flex items-center gap-3">
+            <Avatar className="h-12 w-12 shadow-md border-2 border-white/20">
               <AvatarImage src={profile?.avatar_url || undefined} alt="Client avatar" loading="lazy" />
               <AvatarFallback className="bg-white/10 text-white">{((profile?.first_name?.[0] || user?.email?.[0] || 'U') as string).toUpperCase()}</AvatarFallback>
             </Avatar>
-            <div className="text-lg font-medium leading-tight">
+            <div className="text-sm font-medium leading-tight">
               {greeting}
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Badge className="bg-white/10 text-white border-white/20 flex items-center gap-1">
-              <ShieldCheck className="h-4 w-4" /> 
-              {isAdminViewing ? 'Admin Viewing Client Portal' : 'Secured Client Access'}
+          {/* Actions */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Badge className="hidden sm:flex bg-white/10 text-white border-white/20 items-center gap-1 text-xs">
+              <ShieldCheck className="h-3.5 w-3.5" /> 
+              {isAdminViewing ? 'Admin Preview' : 'Secured Access'}
             </Badge>
             {isAdminViewing && (
               <Button
@@ -307,35 +330,19 @@ const ClientPortal = () => {
                 aria-label="Return to admin view"
                 className="border-white/20 text-white hover:bg-white/10"
               >
-                ← Back to Admin
+                ← Back
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSignOut}
-              aria-label="Sign out of Client Portal"
-              className="border-white/20 text-white hover:bg-white/10"
-            >
-              Sign Out
-            </Button>
-            {branding?.logo_url ? (
-              <img
-                src={branding.logo_url}
-                alt={`${branding.display_name || 'Company'} logo`}
-                loading="lazy"
-                className="hidden sm:block w-24 h-24 object-contain"
-              />
-            ) : (
-              <img
-                src="/lovable-uploads/1f2a630f-1957-40bc-b85b-49b8950660a7.png"
-                alt="Spinning vinyl record illustration for Client Portal"
-                loading="lazy"
-                width={96}
-                height={96}
-                className="hidden sm:block w-24 h-24 object-contain opacity-90 animate-spin"
-                style={{ animationDuration: '12s' }}
-              />
+            {!isAdminViewing && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSignOut}
+                aria-label="Sign out of Client Portal"
+                className="border-white/20 text-white hover:bg-white/10"
+              >
+                Sign Out
+              </Button>
             )}
           </div>
         </div>
