@@ -869,9 +869,9 @@ export const SubAccountManager = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="owner">Owner</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="admin">Admin – Full sub-account access</SelectItem>
+                            <SelectItem value="user">User – Limited visibility (custom)</SelectItem>
+                            <SelectItem value="client">Client – Invited user, select data visible</SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>

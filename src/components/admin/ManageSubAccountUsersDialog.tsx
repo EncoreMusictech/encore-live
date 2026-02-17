@@ -247,10 +247,9 @@ export function ManageSubAccountUsersDialog({ open, onOpenChange, company, onSuc
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="viewer">Viewer</SelectItem>
+                    <SelectItem value="admin">Admin – Full sub-account access</SelectItem>
+                    <SelectItem value="user">User – Limited visibility (custom)</SelectItem>
+                    <SelectItem value="client">Client – Invited user, select data visible</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -299,10 +298,9 @@ export function ManageSubAccountUsersDialog({ open, onOpenChange, company, onSuc
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="manager">Manager</SelectItem>
-                              <SelectItem value="user">User</SelectItem>
-                              <SelectItem value="viewer">Viewer</SelectItem>
+                              <SelectItem value="admin">Admin – Full sub-account access</SelectItem>
+                              <SelectItem value="user">User – Limited visibility (custom)</SelectItem>
+                              <SelectItem value="client">Client – Invited user, select data visible</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
