@@ -113,10 +113,17 @@ useEffect(() => {
           return;
         }
 
-        // Invited client users go to client portal
+        // Invited client users go to client portal — but NOT if they are
+        // a team member of a non-client-label company (sub-account users get dashboard)
         if (hasPortal && !isAdmin) {
-          navigate('/client-portal', { replace: true });
-          return;
+          const isSubAccountTeamMember = memberships.some((m) => {
+            const c = m.companies as any;
+            return c && c.company_type !== 'client_label';
+          });
+          if (!isSubAccountTeamMember) {
+            navigate('/client-portal', { replace: true });
+            return;
+          }
         }
 
         // If user has completed payment setup or is invited team member, go to dashboard
