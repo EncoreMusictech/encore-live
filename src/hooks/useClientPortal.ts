@@ -135,9 +135,6 @@ export const useClientPortal = () => {
         permissions: permissions as any,
         expires_at: expiresAt.toISOString(),
       };
-      if (visibilityScope) {
-        insertData.visibility_scope = visibilityScope;
-      }
 
       const { data, error } = await supabase
         .from('client_invitations')
