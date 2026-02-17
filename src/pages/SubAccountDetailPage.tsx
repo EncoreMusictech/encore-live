@@ -122,16 +122,7 @@ export default function SubAccountDetailPage() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/dashboard/operations')}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Operations
-          </Button>
-          <div className="h-8 w-px bg-border" />
+          <div>
           <div>
             <div className="flex items-center gap-3">
               <Building2 className="h-6 w-6 text-primary" />
