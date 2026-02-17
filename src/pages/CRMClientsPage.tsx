@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useViewModeOptional } from "@/hooks/useViewModeOptional";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, UserCheck, Clock, Settings, Mail, Database, RefreshCw, AlertTriangle, CheckCircle, XCircle, Pencil, Trash2, Check, X, Eye } from "lucide-react";
@@ -21,6 +22,7 @@ import type { VisibilityScope } from "@/hooks/useClientVisibilityScope";
 export default function CRMClientsPage() {
   const { toast } = useToast();
   const { isAdmin } = useUserRoles();
+  const { isViewingAsSubAccount } = useViewModeOptional();
   const { 
     loading,
     clientAccess, 
@@ -526,7 +528,7 @@ export default function CRMClientsPage() {
     }
   };
 
-  if (!isAdmin) {
+  if (!isAdmin && !isViewingAsSubAccount) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
