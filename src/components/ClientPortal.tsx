@@ -36,6 +36,18 @@ const ClientPortal = () => {
   const [isAdminViewing, setIsAdminViewing] = useState(false);
   const [viewingClientId, setViewingClientId] = useState<string | null>(null);
   const { branding } = useClientBranding(user?.id);
+
+  // Apply whitelabel branding as CSS custom properties on document root
+  useEffect(() => {
+    if (!branding) return;
+    const root = document.documentElement;
+    root.style.setProperty('--primary', branding.colors.primary);
+    root.style.setProperty('--accent', branding.colors.accent);
+    return () => {
+      root.style.removeProperty('--primary');
+      root.style.removeProperty('--accent');
+    };
+  }, [branding]);
   useEffect(() => {
     const handleInvitationAndAccess = async () => {
       if (!user) return;
@@ -156,18 +168,23 @@ const ClientPortal = () => {
     updatePageMetadata('clientPortal');
   }, []);
 
-  // Load profile and set greeting
+  // Load profile and set greeting using user's first name
   useEffect(() => {
-    if (!user || isAdminViewing) return; // Skip profile loading in admin viewing mode
+    if (!user || isAdminViewing) return;
     const fetchProfile = async () => {
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
       if (data) setProfile(data as any);
-      const firstName = (data?.first_name as string) || (user.user_metadata?.first_name as string) || (user.email?.split('@')[0] ?? 'there');
+      // Use first_name from profile, then from auth metadata, then parse from email
+      const firstName = (data?.first_name as string) 
+        || (user.user_metadata?.first_name as string)
+        || (user.user_metadata?.full_name as string)?.split(' ')[0]
+        || (user.email?.split('@')[0] ?? 'there');
+      const portalName = branding?.display_name || 'Client Portal';
       const msg = data?.onboarding_complete ? `Welcome Back, ${firstName}!` : `Hello, ${firstName}!`;
       setGreeting(msg);
     };
     fetchProfile();
-  }, [user, isAdminViewing]);
+  }, [user, isAdminViewing, branding]);
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -223,13 +240,7 @@ const ClientPortal = () => {
   const defaultTab = enabledTabs[0]?.id || 'overview';
 
   return (
-    <div
-      className="container mx-auto py-6"
-      style={branding ? {
-        '--primary': branding.colors.primary,
-        '--accent': branding.colors.accent,
-      } as React.CSSProperties : undefined}
-    >
+    <div className="container mx-auto py-6">
       {invitationAccepted && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-center gap-2 text-green-800">
