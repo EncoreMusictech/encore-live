@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins, Building2 } from "lucide-react";
+import { BarChart3, Calculator, TrendingUp, FileText, Copyright, Film, DollarSign, Users, Settings, CreditCard, LayoutDashboard, HelpCircle, Monitor, Coins, Building2, ClipboardList, UserCog } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -215,18 +215,42 @@ export function CRMSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        <SidebarGroup>
+          <SidebarGroupLabel>Management</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild className={isActive('/dashboard/operations') ? "bg-sidebar-accent" : ""}>
+                  <Link to="/dashboard/operations" className="flex items-center">
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    {!collapsed && <span className="font-medium">Operations</span>}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {viewContext?.companyId && <SidebarMenuItem>
+                <SidebarMenuButton asChild className={isActive(`/dashboard/operations/sub-accounts/${viewContext.companyId}`) ? "bg-sidebar-accent" : ""}>
+                  <Link to={`/dashboard/operations/sub-accounts/${viewContext.companyId}`} className="flex items-center">
+                    <UserCog className="mr-2 h-4 w-4" />
+                    {!collapsed && <span className="font-medium">Account Details</span>}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>}
+              {viewContext?.companyType === 'publishing_firm' && <SidebarMenuItem>
+                <SidebarMenuButton asChild className={isActive('/dashboard/clients') ? "bg-sidebar-accent" : ""}>
+                  <Link to="/dashboard/clients" className="flex items-center">
+                    <Building2 className="mr-2 h-4 w-4" />
+                    {!collapsed && <span className="font-medium">Manage Clients</span>}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {!collapsed && <SidebarGroup>
           <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {viewContext?.companyType === 'publishing_firm' && <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link to="/dashboard/clients" className="flex items-center">
-                    <Building2 className="mr-2 h-4 w-4" />
-                    Manage Clients
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link to="/pricing" className="flex items-center">
