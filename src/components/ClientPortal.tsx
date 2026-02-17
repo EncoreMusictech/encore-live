@@ -90,10 +90,18 @@ const ClientPortal = () => {
                 body: { userIds: [clientId] }
               });
               
-              if (clientProfile && Array.isArray(clientProfile) && clientProfile[0]) {
-                setProfile(clientProfile[0]);
-                const clientFirstName = clientProfile[0].name?.split(' ')[0] || clientProfile[0].email?.split('@')[0] || 'Client';
-                setGreeting(`Welcome Back, ${clientFirstName}!`);
+              // Response shape: { users: [{ id, email, name, first_name, last_name }] }
+              const clientUsers = clientProfile?.users || (Array.isArray(clientProfile) ? clientProfile : []);
+              const clientData = clientUsers[0];
+              if (clientData) {
+                setProfile(clientData);
+                const clientFirstName = clientData.first_name
+                  || clientData.name?.split(' ')[0]
+                  || clientData.email?.split('@')[0]
+                  || 'Client';
+                // Skip generic "User xxxxx" names from edge function
+                const displayName = clientFirstName.startsWith('User ') ? (clientData.email?.split('@')[0] || 'Client') : clientFirstName;
+                setGreeting(`Welcome Back, ${displayName}!`);
               }
             } else {
               toast({
@@ -176,7 +184,8 @@ const ClientPortal = () => {
 
   // Load profile and set greeting using user's first name
   useEffect(() => {
-    if (!user || isAdminViewing) return;
+    // Wait until loading is done so isAdminViewing is resolved
+    if (!user || loading || isAdminViewing) return;
     const fetchProfile = async () => {
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
       if (data) setProfile(data as any);
@@ -185,12 +194,11 @@ const ClientPortal = () => {
         || (user.user_metadata?.first_name as string)
         || (user.user_metadata?.full_name as string)?.split(' ')[0]
         || (user.email?.split('@')[0] ?? 'there');
-      const portalName = branding?.display_name || 'Client Portal';
       const msg = data?.onboarding_complete ? `Welcome Back, ${firstName}!` : `Hello, ${firstName}!`;
       setGreeting(msg);
     };
     fetchProfile();
-  }, [user, isAdminViewing, branding]);
+  }, [user, loading, isAdminViewing, branding]);
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
