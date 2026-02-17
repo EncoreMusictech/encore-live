@@ -319,6 +319,33 @@ export function usePayouts() {
         
         // Create quarterly balance report for the paid period
         await createQuarterlyReportForPaidPayout(data);
+
+        // Send payment confirmation email (best-effort)
+        try {
+          const payeeName = (data as any).payee_name || 'Valued Client';
+          // Look up payee email from contacts
+          const { data: contact } = await supabase
+            .from('contacts')
+            .select('email')
+            .eq('id', data.client_id)
+            .maybeSingle();
+          
+          if (contact?.email) {
+            await supabase.functions.invoke('send-payment-confirmation', {
+              body: {
+                to: contact.email,
+                recipient_name: payeeName,
+                payment_amount: `$${(data.amount_due || 0).toFixed(2)}`,
+                payment_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+                payment_method: 'Direct Deposit (ACH)',
+                reference_id: `PAY-${data.id?.substring(0, 8).toUpperCase()}`,
+                period: data.period || undefined,
+              },
+            });
+          }
+        } catch (emailErr) {
+          console.error('Payment confirmation email failed (non-blocking):', emailErr);
+        }
       }
 
       toast({

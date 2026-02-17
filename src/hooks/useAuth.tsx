@@ -351,6 +351,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
     } else {
       logSecurityEvent('reset_password_success', { email: sanitizedEmail });
+      
+      // Also send our branded password reset email (best-effort, Supabase still sends the functional one)
+      try {
+        await supabase.functions.invoke('send-password-reset', {
+          body: {
+            email: sanitizedEmail,
+            reset_url: redirectUrl,
+            user_name: user?.user_metadata?.full_name || sanitizedEmail.split('@')[0],
+          },
+        });
+      } catch (emailErr) {
+        console.error('Branded reset email failed (non-blocking):', emailErr);
+      }
+
       toast({
         title: "Check your email",
         description: "We've sent you a password reset link",

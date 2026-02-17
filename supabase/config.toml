@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.get-user-details]
 verify_jwt = false
+
+[functions.check-expiring-contracts]
+verify_jwt = false
+
+[functions.check-invitation-reminders]
+verify_jwt = false
