@@ -252,9 +252,10 @@ export function supportTicketConfirmationEmail(opts: {
         ${detailRow("Subject", opts.subject)}
       </table>
     `, "🎫")}
-    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0;">
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
       We typically respond within <strong style="color:${COLORS.text};">24 hours</strong>. For urgent matters, please indicate "Critical" priority in your ticket.
     </p>
+    ${ctaButton("View Your Dashboard", "https://encore-live.lovable.app/dashboard")}
   `;
 
   return emailLayout({
@@ -347,7 +348,7 @@ export function catalogValuationOnboardingEmail(opts: {
         ${featureRows}
       </table>
     </div>
-    ${ctaButton("Start Your First Valuation →", "https://encore-live.lovable.app/catalog-valuation")}
+    ${ctaButton("Start Your First Valuation →", "https://encore-live.lovable.app/dashboard/catalog-valuation")}
     <p style="font-size:14px;color:${COLORS.textMuted};text-align:center;margin:20px 0 0;">
       Need help? <a href="mailto:support@encoremusic.tech" style="color:${COLORS.primary};font-weight:500;">Contact our support team →</a>
     </p>
@@ -387,9 +388,10 @@ export function contractEmail(opts: {
     <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 20px;">
       Please find the contract <strong style="color:${COLORS.text};">"${opts.contractTitle}"</strong> below:
     </p>
-    <div style="background:${COLORS.bgLight};border:1px solid ${COLORS.border};border-radius:10px;padding:24px;margin:0 0 20px;">
+    <div style="background:${COLORS.bgLight};border:1px solid ${COLORS.border};border-radius:10px;padding:24px;margin:0 0 24px;">
       ${contractHtml}
     </div>
+    ${ctaButton("View Contracts", "https://encore-live.lovable.app/dashboard/contracts")}
   `;
 
   return emailLayout({
