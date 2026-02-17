@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useClientPortal } from "@/hooks/useClientPortal";
 import { NameLinker } from "@/components/client-portal/NameLinker";
@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { VisibilityScope } from "@/hooks/useClientVisibilityScope";
 
 export default function CRMClientsPage() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin } = useUserRoles();
   const { isViewingAsSubAccount } = useViewModeOptional();
@@ -854,13 +855,7 @@ export default function CRMClientsPage() {
                               onClick={() => {
                                 const clientEmail = getClientEmail(access.client_user_id);
                                 const correctClientId = clientEmail ? getUserIdByEmail(clientEmail) : access.client_user_id;
-                                console.log('🔍 Navigating to client portal for:', {
-                                  displayed_email: clientEmail,
-                                  stored_client_id: access.client_user_id,
-                                  correct_client_id: correctClientId,
-                                  access_record: access
-                                });
-                                window.open(`/client-portal?client_id=${correctClientId}`, '_blank');
+                                navigate(`/client-portal?client_id=${correctClientId}`);
                               }}
                             >
                              <Eye className="h-4 w-4 mr-1" />
