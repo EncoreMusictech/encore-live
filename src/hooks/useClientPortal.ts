@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useViewModeOptional } from '@/hooks/useViewModeOptional';
+import { useHierarchicalFiltering } from '@/hooks/useHierarchicalFiltering';
 import type { Database } from '@/integrations/supabase/types';
 
 type ClientPortalAccess = Database['public']['Tables']['client_portal_access']['Row'];
@@ -15,6 +16,7 @@ export const useClientPortal = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
+  const { filterConfig } = useHierarchicalFiltering();
   const [loading, setLoading] = useState(false);
   const [clientAccess, setClientAccess] = useState<ClientPortalAccess[]>([]);
   const [invitations, setInvitations] = useState<ClientInvitation[]>([]);
@@ -38,13 +40,24 @@ export const useClientPortal = () => {
     loadViewModeUsers();
   }, [isViewingAsSubAccount, viewContext?.companyId]);
 
-  // The effective user ID for queries — in view mode, use the sub-account's primary user
+  // The effective user ID for READ queries — in view mode, use the sub-account's primary user
   const effectiveUserId = useMemo(() => {
     if (isViewingAsSubAccount && viewModeUserIds.length > 0) {
       return viewModeUserIds[0]; // Primary user of the viewed company
     }
     return user?.id;
   }, [isViewingAsSubAccount, viewModeUserIds, user?.id]);
+
+  // The acting user ID for WRITE operations — prefer the service account if provisioned,
+  // otherwise fall back to the first real company user.
+  // Audit logs always record the real Encore admin as the actor (via ViewModeContext).
+  const actingWriteUserId = useMemo(() => {
+    if (isViewingAsSubAccount) {
+      if (filterConfig.serviceAccountUserId) return filterConfig.serviceAccountUserId;
+      if (viewModeUserIds.length > 0) return viewModeUserIds[0];
+    }
+    return user?.id;
+  }, [isViewingAsSubAccount, filterConfig.serviceAccountUserId, viewModeUserIds, user?.id]);
 
   // Fetch client access records
   const fetchClientAccess = async () => {
@@ -152,8 +165,9 @@ export const useClientPortal = () => {
   ) => {
     if (!user) return null;
 
-    // In view-as-sub-account mode, act as the sub-account's primary user
-    const actingUserId = effectiveUserId || user.id;
+    // In view-as mode, write under the service account (or first company user as fallback)
+    // so data is scoped to the sub-account. Audit logs record the real Encore admin.
+    const actingUserId = actingWriteUserId || user.id;
 
     // Map 'user' role to 'client' for database compatibility
     const dbRole = role === 'user' ? 'client' : role;
@@ -236,7 +250,7 @@ export const useClientPortal = () => {
     permissions: Record<string, any>
   ) => {
     if (!user) return null;
-    const actingUserId = effectiveUserId || user.id;
+    const actingUserId = actingWriteUserId || user.id;
 
     try {
       setLoading(true);
@@ -360,7 +374,7 @@ export const useClientPortal = () => {
     dataId: string
   ) => {
     if (!user) return null;
-    const actingUserId = effectiveUserId || user.id;
+    const actingUserId = actingWriteUserId || user.id;
 
     try {
       // Idempotency: skip if this link already exists
@@ -414,7 +428,7 @@ export const useClientPortal = () => {
     updates: Partial<Pick<ClientDataAssociation, 'data_type' | 'data_id'>>
   ) => {
     if (!user) return null;
-    const actingUserId = effectiveUserId || user.id;
+    const actingUserId = actingWriteUserId || user.id;
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -440,7 +454,7 @@ export const useClientPortal = () => {
   // Delete data association
   const deleteDataAssociation = async (id: string) => {
     if (!user) return false;
-    const actingUserId = effectiveUserId || user.id;
+    const actingUserId = actingWriteUserId || user.id;
     try {
       setLoading(true);
       const { error } = await supabase
@@ -526,7 +540,7 @@ export const useClientPortal = () => {
   // Remove specific invitation by ID
   const removeInvitation = async (invitationId: string) => {
     if (!user) return { success: false, error: 'Not authenticated' };
-    const actingUserId = effectiveUserId || user.id;
+    const actingUserId = actingWriteUserId || user.id;
     try {
       setLoading(true);
       const { error } = await supabase
@@ -559,7 +573,7 @@ export const useClientPortal = () => {
   // Remove invitations by status (expired, pending)
   const removeInvitations = async (includePending: boolean = false) => {
     if (!user) return { success: false, error: 'Not authenticated' };
-    const actingUserId = effectiveUserId || user.id;
+    const actingUserId = actingWriteUserId || user.id;
     try {
       setLoading(true);
       const statuses = includePending ? ['expired', 'pending'] : ['expired'];

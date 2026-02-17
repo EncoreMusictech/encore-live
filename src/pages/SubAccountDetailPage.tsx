@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList, Palette } from 'lucide-react';
+import { ServiceAccountProvisioner } from '@/components/admin/subaccount/ServiceAccountProvisioner';
 import { SubAccountOverview } from '@/components/admin/subaccount/SubAccountOverview';
 import { SubAccountUsers } from '@/components/admin/subaccount/SubAccountUsers';
 import { SubAccountModules } from '@/components/admin/subaccount/SubAccountModules';
@@ -149,6 +150,13 @@ export default function SubAccountDetailPage() {
               <Briefcase className="h-3 w-3 mr-1" />
               Publishing Firm ({childCompanies.length} clients)
             </Badge>
+          )}
+          {isEncoreAdmin && (
+            <ServiceAccountProvisioner
+              companyId={company.id}
+              companyName={company.name}
+              companySlug={company.slug}
+            />
           )}
           <ViewSwitcher 
             companyId={company.id} 

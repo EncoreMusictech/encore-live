@@ -7,6 +7,8 @@ interface HierarchicalFilterConfig {
   companyIds: string[];
   mode: 'system' | 'aggregate' | 'single';
   isActive: boolean;
+  /** Service account user ID for the viewed company — used for write operations in view-as mode */
+  serviceAccountUserId: string | null;
 }
 
 interface UseHierarchicalFilteringReturn {
@@ -34,6 +36,7 @@ export function useHierarchicalFiltering(): UseHierarchicalFilteringReturn {
     companyIds: [],
     mode: 'system',
     isActive: false,
+    serviceAccountUserId: null,
   });
   const [loading, setLoading] = useState(false);
 
@@ -45,6 +48,7 @@ export function useHierarchicalFiltering(): UseHierarchicalFilteringReturn {
         companyIds: [],
         mode: 'system',
         isActive: false,
+        serviceAccountUserId: null,
       });
       return;
     }
@@ -54,6 +58,13 @@ export function useHierarchicalFiltering(): UseHierarchicalFilteringReturn {
     try {
       // Check if we're in aggregate mode (viewing all clients under a publishing firm)
       const isAggregateMode = viewContext.viewScope === 'all' && viewContext.parentCompanyId;
+
+      // Fetch the service account for the primary viewed company
+      const { data: serviceAccountData } = await supabase.rpc(
+        'get_company_service_account_user_id',
+        { _company_id: viewContext.companyId }
+      );
+      const serviceAccountUserId: string | null = serviceAccountData || null;
 
       if (isAggregateMode && viewContext.parentCompanyId) {
         // Aggregate mode: get all user IDs from parent + child companies
@@ -82,6 +93,7 @@ export function useHierarchicalFiltering(): UseHierarchicalFilteringReturn {
           companyIds,
           mode: 'aggregate',
           isActive: true,
+          serviceAccountUserId,
         });
       } else {
         // Single company mode
@@ -98,6 +110,7 @@ export function useHierarchicalFiltering(): UseHierarchicalFilteringReturn {
           companyIds: [viewContext.companyId],
           mode: 'single',
           isActive: true,
+          serviceAccountUserId,
         });
       }
     } catch (error) {
@@ -107,6 +120,7 @@ export function useHierarchicalFiltering(): UseHierarchicalFilteringReturn {
         companyIds: [],
         mode: 'system',
         isActive: false,
+        serviceAccountUserId: null,
       });
     } finally {
       setLoading(false);
