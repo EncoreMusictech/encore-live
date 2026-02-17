@@ -279,10 +279,14 @@ export function clientInvitationEmail(opts: {
   `;
 
   return emailLayout({
-    preheader: `You've been invited to join ${opts.companyName} on ENCORE`,
+    preheader: opts.companyName && opts.companyName !== opts.subscriberName && opts.companyName !== 'ENCORE'
+      ? `You've been invited to join ${opts.companyName} on ENCORE`
+      : `You've been invited to join ENCORE`,
     headerIcon: "✉️",
     headerTitle: "You're Invited!",
-    headerSubtitle: `Join ${opts.companyName} on ENCORE`,
+    headerSubtitle: opts.companyName && opts.companyName !== opts.subscriberName && opts.companyName !== 'ENCORE'
+      ? `Join ${opts.companyName} on ENCORE`
+      : `You're invited to ENCORE`,
     body,
   });
 }
