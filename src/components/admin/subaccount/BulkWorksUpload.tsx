@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface BulkWorksUploadProps {
@@ -20,6 +20,40 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<{ success: number; failed: number; total: number } | null>(null);
   const { toast } = useToast();
+
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        work_title: 'Example Song Title',
+        artist: 'Artist Name',
+        writer: 'Writer Name',
+        iswc: 'T-123456789-0',
+        isrc: 'USRC12345678',
+        writers_publishers: '{"writer":"Name","publisher":"Publisher Name","split":50}',
+      },
+      {
+        work_title: 'Another Song',
+        artist: 'Another Artist',
+        writer: '',
+        iswc: '',
+        isrc: '',
+        writers_publishers: '',
+      },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Works Template');
+
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 45 }
+    ];
+
+    XLSX.writeFile(wb, 'bulk-works-upload-template.xlsx');
+
+    toast({ title: 'Template Downloaded', description: 'Open the file and fill in your works data.' });
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -203,10 +237,18 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bulk Works Upload</CardTitle>
-        <CardDescription>
-          Upload multiple works at once for {companyName} using Excel or CSV files
-        </CardDescription>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <CardTitle>Bulk Works Upload</CardTitle>
+            <CardDescription>
+              Upload multiple works at once for {companyName} using Excel or CSV files
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleDownloadTemplate} className="shrink-0">
+            <Download className="h-4 w-4 mr-2" />
+            CSV Template
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* File Upload */}
@@ -231,7 +273,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
               </div>
               {file && (
                 <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <CheckCircle2 className="h-4 w-4 text-success" />
                   <span>{file.name}</span>
                 </div>
               )}
@@ -274,7 +316,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
                   <CardTitle className="text-sm font-medium text-muted-foreground">Success</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{results.success}</div>
+                  <div className="text-2xl font-bold text-success">{results.success}</div>
                 </CardContent>
               </Card>
               <Card>
