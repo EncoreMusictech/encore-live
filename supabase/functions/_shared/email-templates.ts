@@ -57,42 +57,69 @@ function emailLayout(opts: {
         <!-- Main card -->
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:${COLORS.bgCard};border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
           
-          <!-- Hero Header with background image -->
+          <!-- Hero Header with studio background -->
           <tr>
             <td style="padding:0;">
               <!--[if gte mso 9]>
-              <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;height:220px;">
+              <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;height:320px;">
                 <v:fill type="frame" src="${HERO_BG}" color="#0f172a" />
                 <v:textbox inset="0,0,0,0">
               <![endif]-->
-              <div style="background:url('${HERO_BG}') center/cover no-repeat #0f172a;min-height:200px;">
-                <!-- Dark overlay -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(15,23,42,0.88),rgba(99,102,241,0.45));min-height:200px;">
+              <div style="background:url('${HERO_BG}') center/cover no-repeat #0f172a;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(15,23,42,0.85),rgba(99,102,241,0.35));">
+                  
+                  <!-- Badge: ANALOG SOUL. DIGITAL SPINE. -->
                   <tr>
-                    <td style="padding:32px 40px 8px 40px;text-align:center;">
-                      <img src="${LOGO_WITH_TITLE}" alt="ENCORE" width="140" style="display:inline-block;max-width:140px;height:auto;" />
+                    <td style="padding:28px 40px 0 40px;text-align:center;">
+                      <div style="display:inline-block;background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.35);border-radius:50px;padding:7px 18px;">
+                        <span style="display:inline-block;width:6px;height:6px;background:#8b5cf6;border-radius:50%;margin-right:2px;vertical-align:middle;"></span>
+                        <span style="display:inline-block;width:6px;height:6px;background:#d4a843;border-radius:50%;margin-right:2px;vertical-align:middle;"></span>
+                        <span style="display:inline-block;width:6px;height:6px;background:rgba(139,92,246,0.6);border-radius:50%;margin-right:5px;vertical-align:middle;"></span>
+                        <span style="font-size:10px;font-weight:700;letter-spacing:2px;color:#8b5cf6;vertical-align:middle;">ANALOG SOUL. DIGITAL SPINE.</span>
+                      </div>
                     </td>
                   </tr>
+
+                  <!-- ENCORE! headline -->
                   <tr>
-                    <td style="padding:0 40px;text-align:center;">
-                      <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.7);">RIGHTS MANAGEMENT SYSTEMS</p>
+                    <td style="padding:14px 40px 0 40px;text-align:center;">
+                      <img src="${LOGO_WITH_TITLE}" alt="ENCORE" width="180" style="display:inline-block;max-width:180px;height:auto;" />
                     </td>
                   </tr>
+
+                  <!-- RIGHTS MANAGEMENT SYSTEMS pill -->
                   <tr>
-                    <td style="padding:4px 40px;text-align:center;">
-                      <div style="height:2px;width:60px;margin:8px auto;border-radius:2px;background:linear-gradient(90deg,${accent},${COLORS.accent});"></div>
+                    <td style="padding:12px 40px 0 40px;text-align:center;">
+                      <div style="display:inline-block;background:rgba(139,92,246,0.85);border-radius:14px;padding:8px 22px;">
+                        <span style="font-size:12px;font-weight:800;color:#0f172a;letter-spacing:0.5px;">RIGHTS MANAGEMENT SYSTEMS</span>
+                      </div>
                     </td>
                   </tr>
+
+                  <!-- Tagline -->
+                  <tr>
+                    <td style="padding:12px 40px 0 40px;text-align:center;">
+                      <p style="margin:0;font-size:14px;font-weight:700;color:#8b5cf6;">Track your rights like you track your hits.</p>
+                    </td>
+                  </tr>
+
+                  <!-- Accent divider -->
+                  <tr>
+                    <td style="padding:14px 40px 0 40px;text-align:center;">
+                      <div style="height:2px;width:60px;margin:0 auto;border-radius:2px;background:linear-gradient(90deg,${accent},${COLORS.accent});"></div>
+                    </td>
+                  </tr>
+
                   ${opts.headerTitle ? `
                   <tr>
-                    <td style="padding:4px 40px 28px 40px;text-align:center;">
-                      ${opts.headerIcon ? `<span style="font-size:28px;">${opts.headerIcon}</span><br/>` : ""}
-                      <h1 style="margin:4px 0 0 0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">${opts.headerTitle}</h1>
-                      ${opts.headerSubtitle ? `<p style="margin:6px 0 0 0;font-size:14px;color:rgba(255,255,255,0.75);">${opts.headerSubtitle}</p>` : ""}
+                    <td style="padding:12px 40px 24px 40px;text-align:center;">
+                      ${opts.headerIcon ? `<span style="font-size:24px;">${opts.headerIcon}</span><br/>` : ""}
+                      <h2 style="margin:4px 0 0 0;font-size:19px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">${opts.headerTitle}</h2>
+                      ${opts.headerSubtitle ? `<p style="margin:5px 0 0 0;font-size:13px;color:rgba(255,255,255,0.7);">${opts.headerSubtitle}</p>` : ""}
                     </td>
                   </tr>
                   ` : `
-                  <tr><td style="padding:0 0 28px 0;">&nbsp;</td></tr>
+                  <tr><td style="padding:0 0 24px 0;">&nbsp;</td></tr>
                   `}
                 </table>
               </div>
