@@ -35,7 +35,9 @@ const ClientPortal = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [isAdminViewing, setIsAdminViewing] = useState(false);
   const [viewingClientId, setViewingClientId] = useState<string | null>(null);
-  const { branding } = useClientBranding(user?.id);
+  // Resolve branding for the viewed client (admin preview) or logged-in client
+  const brandingTargetId = searchParams.get('client_id') || user?.id;
+  const { branding } = useClientBranding(brandingTargetId);
 
   // Apply whitelabel branding as CSS custom properties on document root
   useEffect(() => {
@@ -87,7 +89,8 @@ const ClientPortal = () => {
               
               if (clientProfile && Array.isArray(clientProfile) && clientProfile[0]) {
                 setProfile(clientProfile[0]);
-                setGreeting(`Admin View: ${clientProfile[0].name || clientProfile[0].email || 'Client'}'s Portal`);
+                const clientFirstName = clientProfile[0].name?.split(' ')[0] || clientProfile[0].email?.split('@')[0] || 'Client';
+                setGreeting(`Welcome Back, ${clientFirstName}!`);
               }
             } else {
               toast({
