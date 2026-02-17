@@ -130,10 +130,15 @@ export function CRMSidebar() {
     fetchUserModules();
   }, [user]);
 
-  // When viewing as sub-account, fetch the target company's enabled modules
+  // Fetch the company's enabled modules (for view mode OR direct sub-account login)
   useEffect(() => {
     const fetchCompanyModules = async () => {
-      if (!isViewingAsSubAccount || !viewContext?.companyId) {
+      // In view mode, use the viewed company; otherwise use the user's own company
+      const targetCompanyId = isViewingAsSubAccount
+        ? viewContext?.companyId
+        : userCompany?.id;
+
+      if (!targetCompanyId) {
         setCompanyModules([]);
         return;
       }
@@ -141,7 +146,7 @@ export function CRMSidebar() {
         const { data } = await supabase
           .from('company_module_access')
           .select('module_id')
-          .eq('company_id', viewContext.companyId)
+          .eq('company_id', targetCompanyId)
           .eq('enabled', true);
         setCompanyModules(data?.map(item => item.module_id) || []);
       } catch (error) {
@@ -149,7 +154,7 @@ export function CRMSidebar() {
       }
     };
     fetchCompanyModules();
-  }, [isViewingAsSubAccount, viewContext?.companyId]);
+  }, [isViewingAsSubAccount, viewContext?.companyId, userCompany?.id]);
 
   // Module alias normalization (company_module_access may use different IDs)
   const normalizeModuleId = (id: string) => {
@@ -294,9 +299,11 @@ export function CRMSidebar() {
     availableModules = [...availableModules, ...superAdminModules];
   }
 
-  // Filter modules based on user access or demo access
+  // Filter modules based on user access, company access, or demo access
   const accessibleModules = (isAdmin || isSuperAdmin) ? availableModules : availableModules.filter(module => {
     if (module.id === 'dashboard') return true;
+    // Check company module access (for sub-account users)
+    if (normalizedCompanyModules.includes(normalizeModuleId(module.id))) return true;
     const demoKey = module.id === 'royalties-processing' ? 'royaltiesProcessing' : module.id === 'catalog-valuation' ? 'catalogValuation' : module.id === 'contract-management' ? 'contractManagement' : module.id === 'copyright-management' ? 'copyrightManagement' : module.id === 'sync-licensing' ? 'syncLicensing' : module.id === 'client-portal' ? 'clientPortal' : module.id;
     return userModules.includes(module.id) || canAccessDemo(demoKey);
   });
