@@ -95,7 +95,11 @@ function buildMimeMessage(opts: {
   const boundary = `boundary_${crypto.randomUUID().replace(/-/g, "")}`;
   const toHeader = opts.to.join(", ");
 
-  let headers = `From: ${opts.from}\r\nTo: ${toHeader}\r\nSubject: ${opts.subject}\r\n`;
+  // RFC 2047 encode subject for non-ASCII characters (emoji, accented chars)
+  const encodedSubject = /[^\x20-\x7E]/.test(opts.subject)
+    ? `=?UTF-8?B?${btoa(unescape(encodeURIComponent(opts.subject)))}?=`
+    : opts.subject;
+  let headers = `From: ${opts.from}\r\nTo: ${toHeader}\r\nSubject: ${encodedSubject}\r\n`;
   if (opts.replyTo) {
     headers += `Reply-To: ${opts.replyTo}\r\n`;
   }
