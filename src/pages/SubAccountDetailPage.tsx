@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,11 +36,16 @@ interface Company {
 export default function SubAccountDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [userCount, setUserCount] = useState(0);
   const [moduleCount, setModuleCount] = useState(0);
   const [whitelabelEnabled, setWhitelabelEnabled] = useState(false);
+
+  // Determine if this is an ENCORE admin (not a sub-account team member)
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
+  const isEncoreAdmin = adminEmails.includes(user?.email?.toLowerCase() || '');
   
   // Fetch hierarchy info
   const { isPublishingFirm, hasChildren, childCompanies } = useClientHierarchy(id);
@@ -190,44 +196,56 @@ export default function SubAccountDetailPage() {
         </Card>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
+      {/* Tabs — non-ENCORE users only see the Onboarding tab */}
+      <Tabs defaultValue={isEncoreAdmin ? "overview" : "onboarding"} className="space-y-6">
         <TabsList>
-          <TabsTrigger value="overview">
-            <Building2 className="h-4 w-4 mr-2" />
-            Overview
-          </TabsTrigger>
+          {isEncoreAdmin && (
+            <TabsTrigger value="overview">
+              <Building2 className="h-4 w-4 mr-2" />
+              Overview
+            </TabsTrigger>
+          )}
           <TabsTrigger value="onboarding">
             <ClipboardList className="h-4 w-4 mr-2" />
             Onboarding
           </TabsTrigger>
-          {(isPublishingFirm || hasChildren) && (
+          {isEncoreAdmin && (isPublishingFirm || hasChildren) && (
             <TabsTrigger value="clients">
               <Briefcase className="h-4 w-4 mr-2" />
               Clients
             </TabsTrigger>
           )}
-          <TabsTrigger value="users">
-            <Users className="h-4 w-4 mr-2" />
-            Users
-          </TabsTrigger>
-          <TabsTrigger value="modules">
-            <Shield className="h-4 w-4 mr-2" />
-            Modules
-          </TabsTrigger>
-          <TabsTrigger value="works">
-            <Upload className="h-4 w-4 mr-2" />
-            Works
-          </TabsTrigger>
-          <TabsTrigger value="operations">
-            <Briefcase className="h-4 w-4 mr-2" />
-            Operations
-          </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </TabsTrigger>
-          {whitelabelEnabled && (
+          {isEncoreAdmin && (
+            <TabsTrigger value="users">
+              <Users className="h-4 w-4 mr-2" />
+              Users
+            </TabsTrigger>
+          )}
+          {isEncoreAdmin && (
+            <TabsTrigger value="modules">
+              <Shield className="h-4 w-4 mr-2" />
+              Modules
+            </TabsTrigger>
+          )}
+          {isEncoreAdmin && (
+            <TabsTrigger value="works">
+              <Upload className="h-4 w-4 mr-2" />
+              Works
+            </TabsTrigger>
+          )}
+          {isEncoreAdmin && (
+            <TabsTrigger value="operations">
+              <Briefcase className="h-4 w-4 mr-2" />
+              Operations
+            </TabsTrigger>
+          )}
+          {isEncoreAdmin && (
+            <TabsTrigger value="settings">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </TabsTrigger>
+          )}
+          {isEncoreAdmin && whitelabelEnabled && (
             <TabsTrigger value="branding">
               <Palette className="h-4 w-4 mr-2" />
               Branding
@@ -235,41 +253,53 @@ export default function SubAccountDetailPage() {
           )}
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
-          <SubAccountOverview company={company} onUpdate={fetchCompanyDetails} />
-        </TabsContent>
+        {isEncoreAdmin && (
+          <TabsContent value="overview" className="space-y-6">
+            <SubAccountOverview company={company} onUpdate={fetchCompanyDetails} />
+          </TabsContent>
+        )}
 
         <TabsContent value="onboarding" className="space-y-6">
           <SubAccountOnboarding companyId={company.id} companyName={company.name} />
         </TabsContent>
 
-        {(isPublishingFirm || hasChildren) && (
+        {isEncoreAdmin && (isPublishingFirm || hasChildren) && (
           <TabsContent value="clients" className="space-y-6">
             <ClientsManager parentCompanyId={company.id} parentCompanyName={company.display_name} />
           </TabsContent>
         )}
 
-        <TabsContent value="users" className="space-y-6">
-          <SubAccountUsers companyId={company.id} onUpdate={fetchCompanyDetails} />
-        </TabsContent>
+        {isEncoreAdmin && (
+          <TabsContent value="users" className="space-y-6">
+            <SubAccountUsers companyId={company.id} onUpdate={fetchCompanyDetails} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="modules" className="space-y-6">
-          <SubAccountModules companyId={company.id} onUpdate={fetchCompanyDetails} />
-        </TabsContent>
+        {isEncoreAdmin && (
+          <TabsContent value="modules" className="space-y-6">
+            <SubAccountModules companyId={company.id} onUpdate={fetchCompanyDetails} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="works" className="space-y-6">
-          <SubAccountWorks companyId={company.id} companyName={company.name} />
-        </TabsContent>
+        {isEncoreAdmin && (
+          <TabsContent value="works" className="space-y-6">
+            <SubAccountWorks companyId={company.id} companyName={company.name} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="operations" className="space-y-6">
-          <ClientsManager parentCompanyId={company.id} parentCompanyName={company.display_name} />
-        </TabsContent>
+        {isEncoreAdmin && (
+          <TabsContent value="operations" className="space-y-6">
+            <ClientsManager parentCompanyId={company.id} parentCompanyName={company.display_name} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="settings" className="space-y-6">
-          <SubAccountSettings company={company} onUpdate={fetchCompanyDetails} />
-        </TabsContent>
+        {isEncoreAdmin && (
+          <TabsContent value="settings" className="space-y-6">
+            <SubAccountSettings company={company} onUpdate={fetchCompanyDetails} />
+          </TabsContent>
+        )}
 
-        {whitelabelEnabled && (
+        {isEncoreAdmin && whitelabelEnabled && (
           <TabsContent value="branding" className="space-y-6">
             <SubAccountBranding companyId={company.id} />
           </TabsContent>
