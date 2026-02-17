@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientPortal } from '@/hooks/useClientPortal';
 import { useClientVisibilityScope } from '@/hooks/useClientVisibilityScope';
+import { useClientPortalIdentity } from '@/contexts/ClientPortalContext';
 
 interface ClientSyncDealsProps {
   permissions: Record<string, any>;
@@ -16,6 +17,7 @@ interface ClientSyncDealsProps {
 
 export const ClientSyncDeals = ({ permissions }: ClientSyncDealsProps) => {
   const { user } = useAuth();
+  const { effectiveUserId } = useClientPortalIdentity();
   const { isClient } = useClientPortal();
   const { scope, applySyncScopeFilter } = useClientVisibilityScope();
   const [syncDeals, setSyncDeals] = useState<any[]>([]);
@@ -24,16 +26,16 @@ export const ClientSyncDeals = ({ permissions }: ClientSyncDealsProps) => {
 
   useEffect(() => {
     const fetchSyncDeals = async () => {
-      if (!user) return;
+      if (!effectiveUserId) return;
 
       try {
         const clientMode = await isClient();
-        if (clientMode) {
+        if (clientMode || effectiveUserId !== user?.id) {
           if (scope.scope_type === 'custom' || scope.scope_type === 'all') {
             const { data: assoc, error: assocError } = await supabase
               .from('client_data_associations')
               .select('data_id')
-              .eq('client_user_id', user.id)
+              .eq('client_user_id', effectiveUserId)
               .eq('data_type', 'sync_license');
             if (assocError) throw assocError;
             const ids = (assoc || []).map((a: any) => a.data_id);
@@ -75,7 +77,7 @@ export const ClientSyncDeals = ({ permissions }: ClientSyncDealsProps) => {
     };
 
     fetchSyncDeals();
-  }, [user, isClient, scope]);
+  }, [effectiveUserId, isClient, scope]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ClientPortalProvider } from '@/contexts/ClientPortalContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientPortal } from '@/hooks/useClientPortal';
 import { useSearchParams } from 'react-router-dom';
@@ -242,7 +243,10 @@ const ClientPortal = () => {
 
   const defaultTab = enabledTabs[0]?.id || 'overview';
 
+  const effectiveUserId = isAdminViewing && viewingClientId ? viewingClientId : (user?.id || '');
+
   return (
+    <ClientPortalProvider effectiveUserId={effectiveUserId} isAdminPreview={isAdminViewing}>
     <div className="container mx-auto py-6">
       {invitationAccepted && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -406,6 +410,7 @@ const ClientPortal = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </ClientPortalProvider>
   );
 };
 
