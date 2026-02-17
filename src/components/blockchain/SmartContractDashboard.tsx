@@ -5,28 +5,16 @@ import { Progress } from "@/components/ui/progress";
 import { Shield, Clock, DollarSign, Users, Settings, Play } from "lucide-react";
 
 export const SmartContractDashboard = () => {
-  const contracts = [
-    {
-      id: "1",
-      name: "Automated Royalty Split",
-      type: "Royalty Distribution",
-      status: "Active",
-      participants: 3,
-      totalValue: "$2,450.00",
-      nextExecution: "2025-02-01",
-      progress: 75
-    },
-    {
-      id: "2", 
-      name: "Rights Escrow Agreement",
-      type: "Escrow",
-      status: "Pending",
-      participants: 2,
-      totalValue: "$10,000.00",
-      nextExecution: "2025-01-15",
-      progress: 30
-    }
-  ];
+  const contracts: Array<{
+    id: string;
+    name: string;
+    type: string;
+    status: string;
+    participants: number;
+    totalValue: string;
+    nextExecution: string;
+    progress: number;
+  }> = [];
 
   const contractTypes = [
     {
