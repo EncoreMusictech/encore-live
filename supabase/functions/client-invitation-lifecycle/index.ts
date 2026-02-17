@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
-// import { Resend } from "npm:resend@2.0.0"; // Temporarily disabled to fix build
+import { sendGmail } from "../_shared/gmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,17 +27,12 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Initialize Supabase client with service role key for admin operations
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // const resend = new Resend(Deno.env.get("RESEND_API_KEY")); // Temporarily disabled
-
     let action: string = 'full_maintenance';
-    
-    // Handle both GET (cron) and POST (manual) requests
     let forceAll = false;
     if (req.method === 'POST') {
       const body: LifecycleRequest = await req.json();
@@ -95,15 +90,17 @@ const handler = async (req: Request): Promise<Response> => {
                 <p><strong>Expiration Date:</strong> ${new Date(reminder.expires_at).toLocaleDateString()}</p>
                 <p>To accept your invitation and gain access to the client portal, please click the link in your original invitation email or contact your administrator.</p>
                 ${isUrgent ? '<p style="color: #dc2626; font-weight: bold;">⚠️ After expiration, you will need to request a new invitation.</p>' : ''}
-                <p>Best regards,<br>The Team</p>
+                <p>Best regards,<br>The Encore Music Team</p>
               </div>
             `;
 
-            // Temporarily skip email sending due to Resend import issue
-            // TODO: Fix email sending implementation
-            console.log(`Would send reminder to ${reminder.email} (${reminder.days_until_expiry} days until expiry)`);
-            
-            // Mark reminder as sent anyway for testing
+            await sendGmail({
+              to: [reminder.email],
+              subject,
+              html: emailHtml,
+              from: "Encore Music",
+            });
+
             await supabase.rpc('mark_invitation_reminder_sent', { invitation_id: reminder.id });
             sentCount++;
           } catch (error) {
@@ -134,14 +131,12 @@ const handler = async (req: Request): Promise<Response> => {
     // Cleanup expired invitations
     if (action === 'cleanup_expired' || action === 'full_maintenance') {
       if (action === 'cleanup_expired' && forceAll) {
-        // First mark any past-due invites as expired
         await supabase
           .from('client_invitations')
           .update({ status: 'expired', auto_cleanup_scheduled_at: new Date().toISOString() })
           .lt('expires_at', new Date().toISOString())
           .neq('status', 'accepted');
 
-        // Then hard-delete all that are expired or past expiration
         const { error: forceCleanupError, count } = await supabase
           .from('client_invitations')
           .delete({ count: 'exact' })
@@ -169,24 +164,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(JSON.stringify(results), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
 
   } catch (error: any) {
     console.error("Error in client-invitation-lifecycle function:", error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        action: 'unknown',
-        timestamp: new Date().toISOString()
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      JSON.stringify({ error: error.message, action: 'unknown', timestamp: new Date().toISOString() }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };
