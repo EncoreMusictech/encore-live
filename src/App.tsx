@@ -58,6 +58,7 @@ import CatalogAuditPresentationPage from "./pages/CatalogAuditPresentationPage";
 import PaymentSetup from "./pages/PaymentSetup";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import AcceptInvitation from "./pages/AcceptInvitation";
+import InvitedUserTerms from "./pages/InvitedUserTerms";
 import { DisableLeavePrompt } from "@/components/DisableLeavePrompt";
 import { ScrollToTop } from "@/components/ScrollToTop";
 
@@ -142,6 +143,15 @@ const App = () => {
                                 <ProtectedRoute>
                                   <ErrorBoundary>
                                     <TermsAndConditions />
+                                  </ErrorBoundary>
+                                </ProtectedRoute>
+                              } />
+                              
+                              {/* Invited User Terms - Simplified terms for sub-account users */}
+                              <Route path="/invited-terms" element={
+                                <ProtectedRoute>
+                                  <ErrorBoundary>
+                                    <InvitedUserTerms />
                                   </ErrorBoundary>
                                 </ProtectedRoute>
                               } />

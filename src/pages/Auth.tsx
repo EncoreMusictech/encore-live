@@ -82,29 +82,45 @@ useEffect(() => {
         const memberships = await fetchActiveCompanyMemberships(user.id);
         const isInternalEnterprise = isInternalEnterpriseMembership(memberships);
 
-        // If user hasn't accepted terms, redirect to terms page
-        if (!profile?.terms_accepted) {
+        // Check if user has client portal access (invited user under sub-account)
+        const hasPortal = await isClient();
+        
+        // Check if user is a sub-account team member (company_users)
+        const { data: companyMembership } = await supabase
+          .from('company_users')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+        
+        const isInvitedUser = hasPortal || !!companyMembership;
+
+        // Invited users (clients/team members) bypass payment but must accept terms
+        if (isInvitedUser && !profile?.terms_accepted) {
+          navigate('/invited-terms', { replace: true });
+          return;
+        }
+
+        // Non-invited users: standard terms flow
+        if (!isInvitedUser && !profile?.terms_accepted) {
           navigate('/terms', { replace: true });
           return;
         }
 
-        // If user hasn't set up payment (skip for demo, admin, and internal enterprise accounts)
-        // This only applies to NEW users who haven't completed onboarding yet
-        if (!profile?.payment_method_collected && !isDemoAccount && !isAdmin && !isInternalEnterprise) {
+        // Non-invited users: payment setup required
+        if (!isInvitedUser && !profile?.payment_method_collected && !isDemoAccount && !isAdmin && !isInternalEnterprise) {
           navigate('/payment-setup', { replace: true });
           return;
         }
 
-        // Check if user has client portal access
-        const hasPortal = await isClient();
+        // Invited client users go to client portal
         if (hasPortal && !isAdmin) {
           navigate('/client-portal', { replace: true });
           return;
         }
 
-        // If user has completed payment setup (existing user), go directly to dashboard
-        // No need to check subscription status - payment setup means they're an existing user
-        if (profile?.payment_method_collected || isDemoAccount || isAdmin || isInternalEnterprise) {
+        // If user has completed payment setup or is invited team member, go to dashboard
+        if (profile?.payment_method_collected || isDemoAccount || isAdmin || isInternalEnterprise || isInvitedUser) {
           navigate('/dashboard', { replace: true });
           return;
         }

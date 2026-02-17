@@ -175,7 +175,20 @@ export default function AcceptInvitation() {
     }
   };
 
-  const handleGoToPortal = () => {
+  const handleGoToPortal = async () => {
+    // Check if terms are accepted; if not, route to invited terms first
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('terms_accepted')
+        .eq('id', user.id)
+        .single();
+      
+      if (!profile?.terms_accepted) {
+        navigate('/invited-terms');
+        return;
+      }
+    }
     navigate('/client-portal');
   };
 

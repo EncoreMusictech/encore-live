@@ -66,6 +66,19 @@ export function CRMLayout() {
           return;
         }
 
+        // Check if user is an invited team member (sub-account user) - they bypass payment
+        const { data: companyMembership } = await supabase
+          .from('company_users')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (companyMembership) {
+          setPaymentVerified(true);
+          return;
+        }
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('payment_method_collected')
