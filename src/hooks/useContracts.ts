@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tables, TablesInsert } from '@/integrations/supabase/types';
 import { useHierarchicalFiltering } from '@/hooks/useHierarchicalFiltering';
+import { useViewModeOptional } from '@/hooks/useViewModeOptional';
 
 export type Contract = Tables<'contracts'>;
 export type ContractInsert = TablesInsert<'contracts'>;
@@ -19,6 +20,16 @@ export const useContracts = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { applyUserIdFilter, applyClientCompanyIdFilter, filterKey, filterConfig } = useHierarchicalFiltering();
+  const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
+
+  // When in view-as mode, write operations should use the sub-account's primary user ID
+  const getActingUserId = async (): Promise<string> => {
+    if (isViewingAsSubAccount && filterConfig.userIds.length > 0) {
+      return filterConfig.userIds[0];
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    return user!.id;
+  };
 
   const fetchContracts = async () => {
     try {
@@ -53,13 +64,12 @@ export const useContracts = () => {
 
   const createContract = async (contractData: Omit<ContractInsert, 'user_id'>) => {
     try {
-      const user = await supabase.auth.getUser();
-      if (!user.data.user) throw new Error('No authenticated user');
+      const actingUserId = await getActingUserId();
 
       const { data, error } = await supabase
         .from('contracts')
         .insert({
-          user_id: user.data.user.id,
+          user_id: actingUserId,
           ...contractData
         })
         .select()
@@ -144,8 +154,7 @@ export const useContracts = () => {
 
   const duplicateContract = async (originalId: string) => {
     try {
-      const user = await supabase.auth.getUser();
-      if (!user.data.user) throw new Error('No authenticated user');
+      const actingUserId = await getActingUserId();
 
       // Fetch the original contract with all related data
       const { data: originalContract, error: fetchError } = await supabase
@@ -179,7 +188,7 @@ export const useContracts = () => {
         title: `${contractData.title} (Copy)`,
         version: 1, // Reset version for the duplicate
         contract_status: 'draft' as const, // Set as draft for the duplicate
-        user_id: user.data.user.id
+        user_id: actingUserId
       };
 
       // Create the new contract
