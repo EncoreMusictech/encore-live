@@ -496,3 +496,245 @@ export function invitationReminderEmail(opts: {
     accentColor: opts.isUrgent ? COLORS.danger : undefined,
   });
 }
+
+/** 8. Password reset email */
+export function passwordResetEmail(opts: {
+  resetUrl: string;
+  userName?: string;
+}): string {
+  const body = `
+    <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hi ${opts.userName || "there"},</p>
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
+      We received a request to reset your password. Click the button below to create a new password.
+    </p>
+    ${ctaButton("Reset Your Password", opts.resetUrl)}
+    <p style="font-size:14px;color:${COLORS.textMuted};line-height:1.6;margin:24px 0 0;border-top:1px solid ${COLORS.border};padding-top:16px;">
+      If the button doesn't work, copy and paste this link:<br/>
+      <a href="${opts.resetUrl}" style="color:${COLORS.primary};word-break:break-all;font-size:12px;">${opts.resetUrl}</a>
+    </p>
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-top:20px;">
+      <p style="margin:0;font-size:13px;color:#92400e;">⚠️ <strong>Didn't request this?</strong> You can safely ignore this email. Your password will not be changed.</p>
+    </div>
+    <p style="font-size:12px;color:${COLORS.textLight};margin:16px 0 0;">This link expires in 1 hour for your security.</p>
+  `;
+
+  return emailLayout({
+    preheader: "Reset your ENCORE password",
+    headerIcon: "🔒",
+    headerTitle: "Password Reset",
+    headerSubtitle: "Secure your account",
+    body,
+  });
+}
+
+/** 9. Royalty statement email */
+export function royaltyStatementEmail(opts: {
+  recipientName: string;
+  statementPeriod: string;
+  totalEarnings: string;
+  totalPaid: string;
+  balance: string;
+  lineItems?: Array<{ title: string; amount: string; source: string }>;
+}): string {
+  const itemRows = (opts.lineItems || [])
+    .map(item => `<tr>
+      <td style="padding:8px 12px;font-size:13px;color:${COLORS.text};border-bottom:1px solid ${COLORS.border};">${item.title}</td>
+      <td style="padding:8px 12px;font-size:13px;color:${COLORS.textMuted};border-bottom:1px solid ${COLORS.border};">${item.source}</td>
+      <td style="padding:8px 12px;font-size:13px;font-weight:600;color:${COLORS.text};text-align:right;border-bottom:1px solid ${COLORS.border};">${item.amount}</td>
+    </tr>`)
+    .join("");
+
+  const body = `
+    <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Dear ${opts.recipientName},</p>
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
+      Your royalty statement for <strong style="color:${COLORS.text};">${opts.statementPeriod}</strong> is ready.
+    </p>
+    ${infoBox(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${detailRow("Total Earnings", opts.totalEarnings, COLORS.success)}
+        ${detailRow("Total Paid", opts.totalPaid)}
+        ${detailRow("Balance", opts.balance, COLORS.primary)}
+      </table>
+    `, "💰")}
+    ${itemRows ? `
+    <h3 style="font-size:15px;color:${COLORS.text};margin:24px 0 12px;">Earnings Breakdown</h3>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${COLORS.border};border-radius:8px;overflow:hidden;">
+      <tr style="background:${COLORS.bgLight};">
+        <td style="padding:10px 12px;font-size:12px;font-weight:700;color:${COLORS.textMuted};text-transform:uppercase;letter-spacing:0.5px;">Work</td>
+        <td style="padding:10px 12px;font-size:12px;font-weight:700;color:${COLORS.textMuted};text-transform:uppercase;letter-spacing:0.5px;">Source</td>
+        <td style="padding:10px 12px;font-size:12px;font-weight:700;color:${COLORS.textMuted};text-transform:uppercase;letter-spacing:0.5px;text-align:right;">Amount</td>
+      </tr>
+      ${itemRows}
+    </table>
+    ` : ""}
+    ${ctaButton("View Full Statement", "https://www.encoremusic.tech/dashboard/royalties")}
+    <p style="font-size:13px;color:${COLORS.textLight};margin:16px 0 0;text-align:center;">
+      Questions about your statement? <a href="mailto:support@encoremusic.tech?subject=Royalty%20Statement%20Inquiry%20-%20${encodeURIComponent(opts.statementPeriod)}" style="color:${COLORS.primary};">Contact support →</a>
+    </p>
+  `;
+
+  return emailLayout({
+    preheader: `Your royalty statement for ${opts.statementPeriod} is ready`,
+    headerIcon: "📊",
+    headerTitle: "Royalty Statement",
+    headerSubtitle: opts.statementPeriod,
+    body,
+  });
+}
+
+/** 10. Contract expiration warning */
+export function contractExpirationEmail(opts: {
+  recipientName: string;
+  contractTitle: string;
+  expirationDate: string;
+  daysRemaining: number;
+  contractType: string;
+  counterpartyName: string;
+}): string {
+  const isUrgent = opts.daysRemaining <= 7;
+  const accentColor = isUrgent ? COLORS.danger : COLORS.warning;
+
+  const body = `
+    <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hi ${opts.recipientName},</p>
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
+      ${isUrgent ? `<strong style="color:${COLORS.danger};">Urgent:</strong> ` : ""}Your contract is ${isUrgent ? "expiring very soon" : "approaching its expiration date"}.
+    </p>
+    ${infoBox(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${detailRow("Contract", opts.contractTitle)}
+        ${detailRow("Type", `<span style="text-transform:capitalize;">${opts.contractType}</span>`)}
+        ${detailRow("Counterparty", opts.counterpartyName)}
+        ${detailRow("Expires", opts.expirationDate)}
+        ${detailRow("Days Remaining", `<span style="color:${accentColor};font-weight:700;">${opts.daysRemaining} day${opts.daysRemaining !== 1 ? "s" : ""}</span>`)}
+      </table>
+    `, isUrgent ? "🚨" : "⏰")}
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
+      Please review this contract and take any necessary action before the expiration date.
+    </p>
+    ${ctaButton("Review Contract", "https://www.encoremusic.tech/dashboard/contracts")}
+    <p style="font-size:13px;color:${COLORS.textLight};margin:16px 0 0;text-align:center;">
+      Need to renew? <a href="mailto:support@encoremusic.tech?subject=Contract%20Renewal%20-%20${encodeURIComponent(opts.contractTitle)}" style="color:${COLORS.primary};">Contact us →</a>
+    </p>
+  `;
+
+  return emailLayout({
+    preheader: `${isUrgent ? "URGENT: " : ""}Contract "${opts.contractTitle}" expires in ${opts.daysRemaining} days`,
+    headerIcon: isUrgent ? "🚨" : "⏰",
+    headerTitle: isUrgent ? "Contract Expiring Soon!" : "Contract Expiration Notice",
+    headerSubtitle: `${opts.daysRemaining} days remaining`,
+    body,
+    accentColor: isUrgent ? COLORS.danger : undefined,
+  });
+}
+
+/** 11. Payment confirmation email */
+export function paymentConfirmationEmail(opts: {
+  recipientName: string;
+  paymentAmount: string;
+  paymentDate: string;
+  paymentMethod: string;
+  referenceId: string;
+  period?: string;
+}): string {
+  const body = `
+    <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Dear ${opts.recipientName},</p>
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
+      Your royalty payment has been processed successfully.
+    </p>
+    <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #a7f3d0;border-radius:12px;padding:24px;text-align:center;margin:0 0 24px;">
+      <p style="margin:0 0 4px;font-size:13px;color:#065f46;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Payment Amount</p>
+      <p style="margin:0;font-size:36px;font-weight:800;color:#047857;">${opts.paymentAmount}</p>
+    </div>
+    ${infoBox(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${detailRow("Reference", opts.referenceId)}
+        ${detailRow("Date", opts.paymentDate)}
+        ${detailRow("Method", opts.paymentMethod)}
+        ${opts.period ? detailRow("Period", opts.period) : ""}
+        ${detailRow("Status", `<span style="color:${COLORS.success};font-weight:700;">✓ Completed</span>`)}
+      </table>
+    `, "🧾")}
+    ${ctaButton("View Payment History", "https://www.encoremusic.tech/dashboard/royalties")}
+    <p style="font-size:13px;color:${COLORS.textLight};margin:16px 0 0;text-align:center;">
+      Questions? <a href="mailto:support@encoremusic.tech?subject=Payment%20Inquiry%20-%20${encodeURIComponent(opts.referenceId)}" style="color:${COLORS.primary};">Contact support →</a>
+    </p>
+  `;
+
+  return emailLayout({
+    preheader: `Payment of ${opts.paymentAmount} processed successfully`,
+    headerIcon: "✅",
+    headerTitle: "Payment Confirmed",
+    headerSubtitle: `Reference: ${opts.referenceId}`,
+    body,
+    accentColor: COLORS.success,
+  });
+}
+
+/** 12. Monthly billing invoice */
+export function monthlyInvoiceEmail(opts: {
+  recipientName: string;
+  companyName: string;
+  invoiceId: string;
+  invoiceDate: string;
+  dueDate: string;
+  modules: Array<{ name: string; price: string }>;
+  subtotal: string;
+  tax?: string;
+  total: string;
+  paymentUrl?: string;
+}): string {
+  const moduleRows = opts.modules
+    .map(m => `<tr>
+      <td style="padding:10px 12px;font-size:14px;color:${COLORS.text};border-bottom:1px solid ${COLORS.border};">${m.name}</td>
+      <td style="padding:10px 12px;font-size:14px;font-weight:600;color:${COLORS.text};text-align:right;border-bottom:1px solid ${COLORS.border};">${m.price}</td>
+    </tr>`)
+    .join("");
+
+  const body = `
+    <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Dear ${opts.recipientName},</p>
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
+      Here is your monthly invoice for <strong style="color:${COLORS.text};">${opts.companyName}</strong>.
+    </p>
+    ${infoBox(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${detailRow("Invoice #", opts.invoiceId)}
+        ${detailRow("Date", opts.invoiceDate)}
+        ${detailRow("Due Date", opts.dueDate)}
+      </table>
+    `, "📋")}
+    <h3 style="font-size:15px;color:${COLORS.text};margin:24px 0 12px;">Module Breakdown</h3>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${COLORS.border};border-radius:8px;overflow:hidden;">
+      <tr style="background:${COLORS.bgLight};">
+        <td style="padding:10px 12px;font-size:12px;font-weight:700;color:${COLORS.textMuted};text-transform:uppercase;letter-spacing:0.5px;">Module</td>
+        <td style="padding:10px 12px;font-size:12px;font-weight:700;color:${COLORS.textMuted};text-transform:uppercase;letter-spacing:0.5px;text-align:right;">Price</td>
+      </tr>
+      ${moduleRows}
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+      <tr>
+        <td style="padding:6px 12px;font-size:14px;color:${COLORS.textMuted};">Subtotal</td>
+        <td style="padding:6px 12px;font-size:14px;color:${COLORS.text};text-align:right;">${opts.subtotal}</td>
+      </tr>
+      ${opts.tax ? `<tr>
+        <td style="padding:6px 12px;font-size:14px;color:${COLORS.textMuted};">Tax</td>
+        <td style="padding:6px 12px;font-size:14px;color:${COLORS.text};text-align:right;">${opts.tax}</td>
+      </tr>` : ""}
+      <tr>
+        <td style="padding:12px 12px 6px;font-size:18px;font-weight:800;color:${COLORS.text};border-top:2px solid ${COLORS.border};">Total</td>
+        <td style="padding:12px 12px 6px;font-size:18px;font-weight:800;color:${COLORS.primary};text-align:right;border-top:2px solid ${COLORS.border};">${opts.total}</td>
+      </tr>
+    </table>
+    ${ctaButton("View Invoice & Pay", opts.paymentUrl || "https://www.encoremusic.tech/dashboard/settings")}
+    <p style="font-size:13px;color:${COLORS.textLight};margin:16px 0 0;text-align:center;">
+      Billing questions? <a href="mailto:support@encoremusic.tech?subject=Invoice%20Inquiry%20-%20${encodeURIComponent(opts.invoiceId)}" style="color:${COLORS.primary};">Contact billing support →</a>
+    </p>
+  `;
+
+  return emailLayout({
+    preheader: `Invoice ${opts.invoiceId} — ${opts.total} due ${opts.dueDate}`,
+    headerIcon: "🧾",
+    headerTitle: "Monthly Invoice",
+    headerSubtitle: `Invoice ${opts.invoiceId}`,
+    body,
+  });
+}
