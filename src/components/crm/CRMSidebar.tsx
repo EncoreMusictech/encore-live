@@ -219,19 +219,11 @@ export function CRMSidebar() {
           <SidebarGroupLabel>Management</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild className={isActive('/dashboard/client-admin') ? "bg-sidebar-accent" : ""}>
-                  <Link to="/dashboard/client-admin" className="flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    {!collapsed && <span className="font-medium">Client Portal</span>}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
               {viewContext?.companyId && <SidebarMenuItem>
                 <SidebarMenuButton asChild className={isActive(`/dashboard/operations/sub-accounts/${viewContext.companyId}`) ? "bg-sidebar-accent" : ""}>
                   <Link to={`/dashboard/operations/sub-accounts/${viewContext.companyId}`} className="flex items-center">
-                    <UserCog className="mr-2 h-4 w-4" />
-                    {!collapsed && <span className="font-medium">Account Details</span>}
+                    <Monitor className="mr-2 h-4 w-4" />
+                    {!collapsed && <span className="font-medium">Operations</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>}
