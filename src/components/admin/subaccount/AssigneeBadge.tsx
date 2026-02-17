@@ -8,13 +8,18 @@ const ASSIGNEE_STYLES: Record<string, string> = {
 
 interface AssigneeBadgeProps {
   assignee: 'ENCORE' | 'Client' | 'ENCORE + Client';
+  clientName?: string;
   className?: string;
 }
 
-export function AssigneeBadge({ assignee, className = '' }: AssigneeBadgeProps) {
+export function AssigneeBadge({ assignee, clientName, className = '' }: AssigneeBadgeProps) {
+  const displayLabel = clientName
+    ? assignee.replace('Client', clientName)
+    : assignee;
+
   return (
     <Badge variant="outline" className={`text-[10px] px-1.5 py-0 leading-4 ${ASSIGNEE_STYLES[assignee]} ${className}`}>
-      {assignee}
+      {displayLabel}
     </Badge>
   );
 }

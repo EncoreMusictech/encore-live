@@ -226,7 +226,7 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
                         {item.label}
                         {item.required && <span className="text-red-500 ml-1">*</span>}
                       </span>
-                      <AssigneeBadge assignee={item.assignee} />
+                      <AssigneeBadge assignee={item.assignee} clientName={companyName} />
                     </div>
                   </div>
                 );
