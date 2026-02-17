@@ -14,13 +14,27 @@ import {
 import { ONBOARDING_PHASES, getPhaseIndex } from '@/constants/onboardingPhases';
 import { AssigneeBadge } from '@/components/admin/subaccount/AssigneeBadge';
 import { useAllOnboardingProgress, useAllOnboardingChecklists, useOnboardingProgress } from '@/hooks/useOnboardingProgress';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 /** Interactive checklist for a single client in the pipeline view */
 function PipelineChecklist({ companyId, phaseId }: { companyId: string; phaseId: string }) {
   const { toggleChecklistItem, isItemCompleted } = useOnboardingProgress(companyId);
+  const { user } = useAuth();
   const phase = ONBOARDING_PHASES.find(p => p.id === phaseId);
+
+  // Admin check for permission enforcement
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
+  const isAdmin = adminEmails.includes(user?.email?.toLowerCase() || '');
+
   if (!phase) return null;
+
+  const isCheckboxDisabled = (assignee: string) => {
+    if (isAdmin) {
+      return assignee === 'Client';
+    }
+    return assignee === 'ENCORE';
+  };
 
   return (
     <div className="mt-4 p-4 bg-muted/50 rounded-lg">
@@ -31,10 +45,12 @@ function PipelineChecklist({ companyId, phaseId }: { companyId: string; phaseId:
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {phase.checklist.map(item => {
           const isChecked = isItemCompleted(phaseId, item.id);
+          const disabled = isCheckboxDisabled(item.assignee);
           return (
             <div key={item.id} className="flex items-center gap-2">
               <Checkbox
                 checked={isChecked}
+                disabled={disabled}
                 onCheckedChange={(val) =>
                   toggleChecklistItem({
                     phaseId,
@@ -43,7 +59,7 @@ function PipelineChecklist({ companyId, phaseId }: { companyId: string; phaseId:
                   })
                 }
               />
-              <span className={`text-sm ${isChecked ? 'line-through text-muted-foreground' : ''}`}>
+              <span className={`text-sm ${isChecked ? 'line-through text-muted-foreground' : ''} ${disabled ? 'opacity-60' : ''}`}>
                 {item.label}
                 {item.required && <span className="text-red-500 ml-1">*</span>}
               </span>

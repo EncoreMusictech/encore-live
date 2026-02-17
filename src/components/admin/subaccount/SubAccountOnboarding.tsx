@@ -101,12 +101,10 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
   );
 
   const isCheckboxDisabled = (assignee: string) => {
-    // If viewing as sub-account (client mode) and user is NOT an admin, restrict ENCORE items
-    if (isViewingAsSubAccount && !isAdmin) {
-      return assignee === 'ENCORE';
+    if (isAdmin) {
+      return assignee === 'Client'; // Admin cannot check client-only tasks
     }
-    // Admins can always check items
-    return false;
+    return assignee === 'ENCORE'; // Client cannot check ENCORE-only tasks
   };
 
   return (
