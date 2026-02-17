@@ -38,8 +38,9 @@ const ClientPortal = () => {
   const [isAdminViewing, setIsAdminViewing] = useState(false);
   const [viewingClientId, setViewingClientId] = useState<string | null>(null);
   // Resolve branding for the viewed client (admin preview) or logged-in client
+  // Resolve branding: try client's chain first, fallback to admin's company
   const brandingTargetId = searchParams.get('client_id') || user?.id;
-  const { branding } = useClientBranding(brandingTargetId);
+  const { branding } = useClientBranding(brandingTargetId, user?.id);
 
   // Apply whitelabel branding as CSS custom properties on document root
   useEffect(() => {
@@ -260,10 +261,12 @@ const ClientPortal = () => {
       )}
       
       <header
-        className={`mb-6 rounded-xl p-6 overflow-hidden text-white relative ${!branding ? 'bg-gradient-to-br from-purple-600 via-purple-500 to-purple-400' : ''}`}
-        style={branding ? {
-          background: `linear-gradient(135deg, hsl(${branding.colors.headerBg}), hsl(${branding.colors.primary}))`,
-        } : undefined}
+        className="mb-6 rounded-xl p-6 overflow-hidden text-white relative"
+        style={{
+          background: branding
+            ? `linear-gradient(135deg, hsl(${branding.colors.headerBg}), hsl(${branding.colors.primary}))`
+            : 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))',
+        }}
       >
         <div className="flex items-center justify-between gap-6">
           {/* Logo */}
