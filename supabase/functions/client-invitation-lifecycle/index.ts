@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { sendGmail } from "../_shared/gmail.ts";
+import { invitationReminderEmail } from "../_shared/email-templates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,19 +81,11 @@ const handler = async (req: Request): Promise<Response> => {
               ? "⚠️ Your client portal invitation expires tomorrow!"
               : "📋 Reminder: Your client portal invitation expires soon";
 
-            const emailHtml = `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: ${isUrgent ? '#dc2626' : '#2563eb'};">
-                  ${isUrgent ? 'Urgent: ' : ''}Client Portal Invitation Reminder
-                </h2>
-                <p>Hello,</p>
-                <p>This is a ${isUrgent ? 'final' : 'friendly'} reminder that your client portal invitation will expire in <strong>${reminder.days_until_expiry} day${reminder.days_until_expiry !== 1 ? 's' : ''}</strong>.</p>
-                <p><strong>Expiration Date:</strong> ${new Date(reminder.expires_at).toLocaleDateString()}</p>
-                <p>To accept your invitation and gain access to the client portal, please click the link in your original invitation email or contact your administrator.</p>
-                ${isUrgent ? '<p style="color: #dc2626; font-weight: bold;">⚠️ After expiration, you will need to request a new invitation.</p>' : ''}
-                <p>Best regards,<br>The Encore Music Team</p>
-              </div>
-            `;
+            const emailHtml = invitationReminderEmail({
+              daysUntilExpiry: reminder.days_until_expiry,
+              expiresAt: reminder.expires_at,
+              isUrgent,
+            });
 
             await sendGmail({
               to: [reminder.email],
