@@ -70,7 +70,7 @@ export default function AcceptInvitation() {
 
   // If user logs in while on this page
   useEffect(() => {
-    if (user && invitation && step === 'create-account') {
+    if (user && invitation && (step === 'create-account' || step === 'set-password')) {
       if (user.email?.toLowerCase() === invitation.email.toLowerCase()) {
         acceptInvitation(invitation, user.id, user.email!);
       }
