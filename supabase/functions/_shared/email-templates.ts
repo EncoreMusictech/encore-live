@@ -168,7 +168,7 @@ export function welcomeEmail(opts: {
   role: string;
   appUrl?: string;
 }): string {
-  const appUrl = opts.appUrl || "https://encore-live.lovable.app";
+  const appUrl = opts.appUrl || "https://www.encoremusic.tech";
   const body = `
     <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hello,</p>
     <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
@@ -255,7 +255,7 @@ export function supportTicketConfirmationEmail(opts: {
     <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
       We typically respond within <strong style="color:${COLORS.text};">24 hours</strong>. For urgent matters, please indicate "Critical" priority in your ticket.
     </p>
-    ${ctaButton("View Your Dashboard", "https://encore-live.lovable.app/dashboard")}
+    ${ctaButton("View Your Dashboard", "https://www.encoremusic.tech/dashboard")}
   `;
 
   return emailLayout({
@@ -348,7 +348,7 @@ export function catalogValuationOnboardingEmail(opts: {
         ${featureRows}
       </table>
     </div>
-    ${ctaButton("Start Your First Valuation →", "https://encore-live.lovable.app/dashboard/catalog-valuation")}
+    ${ctaButton("Start Your First Valuation →", "https://www.encoremusic.tech/dashboard/catalog-valuation")}
     <p style="font-size:14px;color:${COLORS.textMuted};text-align:center;margin:20px 0 0;">
       Need help? <a href="mailto:support@encoremusic.tech" style="color:${COLORS.primary};font-weight:500;">Contact our support team →</a>
     </p>
@@ -391,7 +391,7 @@ export function contractEmail(opts: {
     <div style="background:${COLORS.bgLight};border:1px solid ${COLORS.border};border-radius:10px;padding:24px;margin:0 0 24px;">
       ${contractHtml}
     </div>
-    ${ctaButton("View Contracts", "https://encore-live.lovable.app/dashboard/contracts")}
+    ${ctaButton("View Contracts", "https://www.encoremusic.tech/dashboard/contracts")}
   `;
 
   return emailLayout({

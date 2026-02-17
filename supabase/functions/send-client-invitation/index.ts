@@ -26,7 +26,7 @@ serve(async (req) => {
 
   try {
     const body = (await req.json()) as InvitationPayload;
-    const siteUrl = body.site_url || 'https://encore-live.lovable.app';
+    const siteUrl = body.site_url || 'https://www.encoremusic.tech';
     const role = body.role || 'client';
     const acceptUrl = `${siteUrl}/accept-invitation?token=${encodeURIComponent(body.token)}`;
     const subscriberName = body.subscriber_name || 'ENCORE';
