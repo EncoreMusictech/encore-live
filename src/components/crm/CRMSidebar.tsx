@@ -223,7 +223,7 @@ export function CRMSidebar() {
                 <SidebarMenuButton asChild className={isActive('/dashboard/operations') ? "bg-sidebar-accent" : ""}>
                   <Link to="/dashboard/operations" className="flex items-center">
                     <ClipboardList className="mr-2 h-4 w-4" />
-                    {!collapsed && <span className="font-medium">Operations</span>}
+                    {!collapsed && <span className="font-medium">Client Portal</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
