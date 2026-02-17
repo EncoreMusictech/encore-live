@@ -1216,6 +1216,7 @@ export type Database = {
           status: string
           subscriber_user_id: string
           updated_at: string
+          visibility_scope: Json | null
         }
         Insert: {
           client_user_id: string
@@ -1227,6 +1228,7 @@ export type Database = {
           status?: string
           subscriber_user_id: string
           updated_at?: string
+          visibility_scope?: Json | null
         }
         Update: {
           client_user_id?: string
@@ -1238,6 +1240,7 @@ export type Database = {
           status?: string
           subscriber_user_id?: string
           updated_at?: string
+          visibility_scope?: Json | null
         }
         Relationships: []
       }
