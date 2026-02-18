@@ -1,113 +1,48 @@
 
 
-# Fix: Populate Interested Parties, Schedule of Works, and Controlled Share After Contract Upload
+# Add PDF View & Download to Active Contracts
 
 ## Problem
 
-The AI `parse-contract` edge function successfully extracts `works`, `parties`, and `controlled_share_percentage` from the uploaded PDF. This data is saved inside the `contract_data` JSON blob on the `contracts` row. However, the `SubAccountContractUpload.tsx` component only creates the parent contract record -- it **never inserts child rows** into:
+The `SubAccountContractUpload` component uploads the PDF to the `contract-documents` storage bucket and obtains a `publicUrl`, but never saves it to the `original_pdf_url` column on the `contracts` table. The Active Contracts list also does not query or display any PDF-related actions.
 
-- `contract_interested_parties` (parties with their splits)
-- `contract_schedule_works` (works with ISWCs, writer names, controlled status)
+## Changes
 
-It also does not write the `controlled_share_percentage` parsed from the contract.
+### 1. Save PDF URL on contract creation (`SubAccountContractUpload.tsx`)
 
-The data is there (you can see it in the database's `contract_data` column), but it is not being used to seed the downstream tables that the royalty engine depends on.
+In `handleSaveContract`, pass `original_pdf_url` into the `createContract` call. The `publicUrl` is already available in the component scope during the upload flow -- it just needs to be persisted in state after upload and included in the insert payload.
 
-## Root Cause
+- Add a new state variable `pdfUrl` to hold the public URL after upload.
+- Set `pdfUrl` from `publicUrl` inside `handleUpload`.
+- Include `original_pdf_url: pdfUrl` in the `createContract` call inside `handleSaveContract`.
+- Reset `pdfUrl` in `resetForm`.
 
-In `SubAccountContractUpload.tsx`, the `handleSaveContract` function calls `createContract(...)` which inserts a single row into `contracts`, then stops. There is no follow-up logic to iterate over `parsedData.parties` and `parsedData.works` and insert them into their respective tables.
+### 2. Add PDF column and actions to the contracts table (`SubAccountContractsList.tsx`)
 
-## Solution
+- Add `original_pdf_url` to the `ContractRow` interface and to the `.select()` query.
+- Add a new "PDF" column to the table header.
+- For each contract row, if `original_pdf_url` exists, render two icon buttons:
+  - **Eye icon** -- opens a dialog/modal displaying the PDF using an iframe (reusing the pattern from the existing `PDFViewer` component).
+  - **Download icon** -- triggers a direct download of the PDF file.
+- If no PDF URL exists, show a dash ("--").
 
-After `createContract()` returns the new contract record (with its `id`), add two post-insert steps:
+### 3. PDF Viewer Dialog
 
-### Step 1: Insert Interested Parties
+Add a simple Dialog (Radix `Dialog`) inside `SubAccountContractsList.tsx` that:
+- Opens when the user clicks the eye icon on any row.
+- Displays the PDF in an iframe at full dialog width/height.
+- Includes a download button in the dialog header.
+- This is accessible to both sub-account admins and ENCORE admins since the component is rendered within the admin-scoped page and the `contract-documents` bucket has public read access.
 
-Loop over `parsedData.parties` (the array extracted by OpenAI) and insert each into `contract_interested_parties`:
-
-- `contract_id` = new contract's ID
-- `name` = `party.party_name`
-- `party_type` = `party.party_type` (e.g., "Administrator", "Original Publisher")
-- `pro_affiliation` = `party.pro_affiliation`
-- `performance_percentage` = `party.mechanical_royalty_rate_percentage` (mapped)
-- `mechanical_percentage` = `party.mechanical_royalty_rate_percentage`
-- `synch_percentage` = `party.sync_royalty_rate_percentage`
-- `controlled_status` = derived from `parsedData.controlled_share_percentage` or party-level data
-- `client_company_id` = `companyId` (will also be set by the DB trigger)
-
-### Step 2: Insert Schedule of Works
-
-Loop over `parsedData.works` and insert each into `contract_schedule_works`:
-
-- `contract_id` = new contract's ID
-- `song_title` = `work.work_title`
-- `iswc` = `work.iswc_number`
-- `writer_names` = `work.writer_names` (stored as JSON or text)
-- `publisher_names` = `work.publisher_names`
-- `album_title` = `work.album_title`
-- `controlled_share` = `work.controlled_share_percentage`
-- `controlled_status` = `work.controlled_status`
-- `performance_percentage` = `work.performance_percentage`
-- `mechanical_percentage` = `work.mechanical_percentage`
-- `sync_percentage` = `work.sync_percentage`
-- `client_company_id` = `companyId`
-
-Optionally attempt to match each work to an existing `copyrights` record by title or ISWC to populate `copyright_id`.
-
-### Step 3: Write Controlled Share to Contract
-
-Set `controlled_share_percentage` (from `parsedData.controlled_share_percentage`) on the contract's `financial_terms` JSON or the appropriate column if available.
-
-## File Changes
+## Files to Modify
 
 | File | Change |
 |---|---|
-| `src/components/admin/subaccount/SubAccountContractUpload.tsx` | Add post-insert logic in `handleSaveContract` to insert `contract_interested_parties` and `contract_schedule_works` rows from `parsedData.parties` and `parsedData.works`. Also display a summary of how many parties and works were imported. |
+| `src/components/admin/subaccount/SubAccountContractUpload.tsx` | Add `pdfUrl` state; save `original_pdf_url` on contract creation |
+| `src/components/admin/subaccount/SubAccountContractsList.tsx` | Query `original_pdf_url`; add PDF column with view/download actions; add PDF viewer dialog |
 
-No database migrations are needed -- the `contract_interested_parties` and `contract_schedule_works` tables already exist with all required columns. The `set_contract_child_client_company_id` trigger will automatically propagate `client_company_id` to child rows.
+## No database or storage changes needed
 
-## Technical Detail
+- The `original_pdf_url` column already exists on the `contracts` table.
+- The `contract-documents` bucket is already public with read access for all users.
 
-The key code addition in `handleSaveContract` after the `createContract` call:
-
-```text
-const contract = await createContract({...});
-
-// Insert interested parties from parsed data
-if (parsedData?.parties?.length > 0) {
-  for (const party of parsedData.parties) {
-    await supabase.from('contract_interested_parties').insert({
-      contract_id: contract.id,
-      name: party.party_name,
-      party_type: party.party_type,
-      pro_affiliation: party.pro_affiliation,
-      mechanical_percentage: party.mechanical_royalty_rate_percentage,
-      synch_percentage: party.sync_royalty_rate_percentage,
-      client_company_id: companyId,
-    });
-  }
-}
-
-// Insert schedule of works from parsed data
-if (parsedData?.works?.length > 0) {
-  for (const work of parsedData.works) {
-    await supabase.from('contract_schedule_works').insert({
-      contract_id: contract.id,
-      song_title: work.work_title,
-      iswc: work.iswc_number,
-      controlled_share: work.controlled_share_percentage,
-      controlled_status: work.controlled_status,
-      client_company_id: companyId,
-    });
-  }
-}
-```
-
-## Expected Outcome
-
-After this fix, uploading a PDF contract for a sub-account will:
-1. Create the contract record (already works)
-2. Populate `contract_interested_parties` with all parties extracted from the PDF
-3. Populate `contract_schedule_works` with all works/songs listed in the agreement
-4. Store controlled share percentages at both the contract and work level
-5. All child records will be correctly scoped to the sub-account via `client_company_id`
