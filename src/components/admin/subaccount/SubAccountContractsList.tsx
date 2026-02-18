@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, AlertTriangle, RefreshCw } from 'lucide-react';
+import { FileText, AlertTriangle, RefreshCw, Eye, Download } from 'lucide-react';
+import { buildPdfFileName } from '@/lib/utils';
 
 interface SubAccountContractsListProps {
   companyId: string;
@@ -22,6 +24,7 @@ interface ContractRow {
   end_date: string | null;
   advance_amount: number | null;
   financial_terms: any;
+  original_pdf_url: string | null;
   created_at: string;
 }
 
@@ -71,6 +74,7 @@ function PostTermBadge({ status }: { status: PostTermStatus }) {
 export function SubAccountContractsList({ companyId, companyName }: SubAccountContractsListProps) {
   const [contracts, setContracts] = useState<ContractRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewingPdf, setViewingPdf] = useState<{ url: string; title: string } | null>(null);
   const { toast } = useToast();
 
   const fetchContracts = async () => {
@@ -78,7 +82,7 @@ export function SubAccountContractsList({ companyId, companyName }: SubAccountCo
       setLoading(true);
       const { data, error } = await supabase
         .from('contracts')
-        .select('id, title, counterparty_name, contract_type, contract_status, start_date, end_date, advance_amount, financial_terms, created_at')
+        .select('id, title, counterparty_name, contract_type, contract_status, start_date, end_date, advance_amount, financial_terms, original_pdf_url, created_at')
         .eq('client_company_id', companyId)
         .order('created_at', { ascending: false });
 
@@ -145,13 +149,14 @@ export function SubAccountContractsList({ companyId, companyName }: SubAccountCo
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="p-3 text-left font-medium">Title</th>
+                     <th className="p-3 text-left font-medium">Title</th>
                     <th className="p-3 text-left font-medium">Counterparty</th>
                     <th className="p-3 text-left font-medium">Type</th>
                     <th className="p-3 text-left font-medium">Status</th>
                     <th className="p-3 text-left font-medium">End Date</th>
                     <th className="p-3 text-left font-medium">Post-Term Status</th>
                     <th className="p-3 text-left font-medium">Post-Term End</th>
+                    <th className="p-3 text-left font-medium">PDF</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -177,6 +182,40 @@ export function SubAccountContractsList({ companyId, companyName }: SubAccountCo
                         <td className="p-3 text-muted-foreground">
                           {ptEnd ? new Date(ptEnd).toLocaleDateString() : '—'}
                         </td>
+                        <td className="p-3">
+                          {contract.original_pdf_url ? (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                title="View PDF"
+                                onClick={() => setViewingPdf({ url: contract.original_pdf_url!, title: contract.title })}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                title="Download PDF"
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = contract.original_pdf_url!;
+                                  const base = buildPdfFileName({ kind: 'document', title: contract.title, date: new Date() });
+                                  link.download = `${base}.pdf`;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -186,6 +225,45 @@ export function SubAccountContractsList({ companyId, companyName }: SubAccountCo
           )}
         </CardContent>
       </Card>
+
+      {/* PDF Viewer Dialog */}
+      <Dialog open={!!viewingPdf} onOpenChange={(open) => !open && setViewingPdf(null)}>
+        <DialogContent className="max-w-4xl h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between pr-8">
+              <span className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                {viewingPdf?.title}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!viewingPdf) return;
+                  const link = document.createElement('a');
+                  link.href = viewingPdf.url;
+                  const base = buildPdfFileName({ kind: 'document', title: viewingPdf.title, date: new Date() });
+                  link.download = `${base}.pdf`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          {viewingPdf && (
+            <iframe
+              src={viewingPdf.url}
+              className="w-full flex-1 border-0 rounded-md"
+              style={{ minHeight: 'calc(80vh - 100px)' }}
+              title="Contract PDF"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
