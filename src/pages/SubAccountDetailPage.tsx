@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList, Palette } from 'lucide-react';
+import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList, Palette, FileText } from 'lucide-react';
 import { ServiceAccountProvisioner } from '@/components/admin/subaccount/ServiceAccountProvisioner';
 import { SubAccountOverview } from '@/components/admin/subaccount/SubAccountOverview';
 import { SubAccountUsers } from '@/components/admin/subaccount/SubAccountUsers';
@@ -19,6 +19,7 @@ import { ClientsManager } from '@/components/hierarchy/ClientsManager';
 import { useClientHierarchy } from '@/hooks/useClientHierarchy';
 import { SubAccountOnboarding } from '@/components/admin/subaccount/SubAccountOnboarding';
 import { SubAccountBranding } from '@/components/admin/subaccount/SubAccountBranding';
+import { SubAccountContracts } from '@/components/admin/subaccount/SubAccountContracts';
 
 interface Company {
   id: string;
@@ -248,6 +249,12 @@ export default function SubAccountDetailPage() {
             </TabsTrigger>
           )}
           {isEncoreAdmin && (
+            <TabsTrigger value="contracts">
+              <FileText className="h-4 w-4 mr-2" />
+              Contracts
+            </TabsTrigger>
+          )}
+          {isEncoreAdmin && (
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
               Settings
@@ -304,6 +311,12 @@ export default function SubAccountDetailPage() {
         {isEncoreAdmin && (
           <TabsContent value="settings" className="space-y-6">
             <SubAccountSettings company={company} onUpdate={fetchCompanyDetails} />
+          </TabsContent>
+        )}
+
+        {isEncoreAdmin && (
+          <TabsContent value="contracts" className="space-y-6">
+            <SubAccountContracts companyId={company.id} companyName={company.name} />
           </TabsContent>
         )}
 
