@@ -1,114 +1,113 @@
-# Add "Contracts" Tab to Sub-Account Detail Page
-
-## Overview
-
-Add a new **Contracts** tab to the sub-account detail page (`SubAccountDetailPage.tsx`) that provides three capabilities: single PDF contract upload with AI parsing, bulk contract import via spreadsheet, and post-term collection period tracking with admin notifications.
-
-## Database Migration
-
-A new migration adds two columns to the `contracts` table to support post-term collection periods:
 
 
-| Column                          | Type      | Default | Purpose                                              |
-| ------------------------------- | --------- | ------- | ---------------------------------------------------- |
-| `post_term_collection_end_date` | `date`    | `null`  | Date when post-term royalty collection rights expire |
-| `post_term_collection_months`   | `integer` | `null`  | Duration of post-term collection period in months    |
+# Fix: Populate Interested Parties, Schedule of Works, and Controlled Share After Contract Upload
 
+## Problem
 
-No new tables are needed -- the existing `contracts`, `contract_interested_parties`, and `contract_schedule_works` tables already support all required data.
+The AI `parse-contract` edge function successfully extracts `works`, `parties`, and `controlled_share_percentage` from the uploaded PDF. This data is saved inside the `contract_data` JSON blob on the `contracts` row. However, the `SubAccountContractUpload.tsx` component only creates the parent contract record -- it **never inserts child rows** into:
 
-## New Components
+- `contract_interested_parties` (parties with their splits)
+- `contract_schedule_works` (works with ISWCs, writer names, controlled status)
 
-### 1. `SubAccountContracts.tsx`
+It also does not write the `controlled_share_percentage` parsed from the contract.
 
-Top-level wrapper rendered inside the new "Contracts" tab. Contains inner tabs:
+The data is there (you can see it in the database's `contract_data` column), but it is not being used to seed the downstream tables that the royalty engine depends on.
 
-- **Upload Contract** -- single PDF upload
-- **Bulk Import** -- spreadsheet-based bulk import
-- **Active Contracts** -- list of contracts for this sub-account with post-term status
+## Root Cause
 
-### 2. `SubAccountContractUpload.tsx`
+In `SubAccountContractUpload.tsx`, the `handleSaveContract` function calls `createContract(...)` which inserts a single row into `contracts`, then stops. There is no follow-up logic to iterate over `parsedData.parties` and `parsedData.works` and insert them into their respective tables.
 
-Adapts the existing `ContractUpload.tsx` pattern for sub-account context:
+## Solution
 
-- Accepts `companyId` and `companyName` props
-- Uses `getActingUserId()` from `useContracts` to attribute uploads to the service account
-- Sets `client_company_id` to the sub-account's company ID on insert
-- After parsing, displays a review form that includes new **Post-Term Collection Period** fields (end date and duration in months)
-- Creates the contract record with `post_term_collection_end_date` and `post_term_collection_months`
+After `createContract()` returns the new contract record (with its `id`), add two post-insert steps:
 
-### 3. `BulkContractImport.tsx`
+### Step 1: Insert Interested Parties
 
-Spreadsheet-based bulk import modeled after `BulkWorksUpload.tsx`:
+Loop over `parsedData.parties` (the array extracted by OpenAI) and insert each into `contract_interested_parties`:
 
-- **Template download** button generating an Excel file with columns: `title`, `counterparty_name`, `contract_type`, `start_date`, `end_date`, `post_term_collection_end_date`, `post_term_collection_months`, `advance_amount`, `commission_percentage`, `territories`, `party_name`, `party_type`, `performance_pct`, `mechanical_pct`, `synch_pct`, `work_title`, `work_isrc`
-- **Validation step** before import: displays parsed rows in a table for user review, highlighting any validation issues (missing required fields, invalid contract types, splits not totaling 100%)
-- **Import execution** using batch processing (batch size 10) with retry and exponential backoff, matching existing bulk upload reliability patterns
-- Uses service account identity via `getActingUserId()` for all writes
-- Sets `client_company_id` on every contract
-- After import, runs `validate_royalty_splits` RPC and shows a summary of royalty-ready vs. needs-review contracts
+- `contract_id` = new contract's ID
+- `name` = `party.party_name`
+- `party_type` = `party.party_type` (e.g., "Administrator", "Original Publisher")
+- `pro_affiliation` = `party.pro_affiliation`
+- `performance_percentage` = `party.mechanical_royalty_rate_percentage` (mapped)
+- `mechanical_percentage` = `party.mechanical_royalty_rate_percentage`
+- `synch_percentage` = `party.sync_royalty_rate_percentage`
+- `controlled_status` = derived from `parsedData.controlled_share_percentage` or party-level data
+- `client_company_id` = `companyId` (will also be set by the DB trigger)
 
-### 4. `SubAccountContractsList.tsx`
+### Step 2: Insert Schedule of Works
 
-Displays contracts belonging to this sub-account:
+Loop over `parsedData.works` and insert each into `contract_schedule_works`:
 
-- Queries `contracts` where `client_company_id = companyId`
-- Shows title, type, status, dates, and a **Post-Term Status** badge:
-  - "Active" (green) -- within initial term
-  - "Post-Term Collection" (amber) -- past `end_date` but before `post_term_collection_end_date`
-  - "Collection Expired" (red) -- past `post_term_collection_end_date`
-  - "Expiring Soon" (amber, pulsing) -- within 90 days of `post_term_collection_end_date`
-- "Expiring Soon" contracts show an alert banner at the top of the list to notify admin users
+- `contract_id` = new contract's ID
+- `song_title` = `work.work_title`
+- `iswc` = `work.iswc_number`
+- `writer_names` = `work.writer_names` (stored as JSON or text)
+- `publisher_names` = `work.publisher_names`
+- `album_title` = `work.album_title`
+- `controlled_share` = `work.controlled_share_percentage`
+- `controlled_status` = `work.controlled_status`
+- `performance_percentage` = `work.performance_percentage`
+- `mechanical_percentage` = `work.mechanical_percentage`
+- `sync_percentage` = `work.sync_percentage`
+- `client_company_id` = `companyId`
 
-## Page Integration
+Optionally attempt to match each work to an existing `copyrights` record by title or ISWC to populate `copyright_id`.
 
-In `SubAccountDetailPage.tsx`:
+### Step 3: Write Controlled Share to Contract
 
-- Add a new `TabsTrigger` for "Contracts" with a `FileText` icon, visible to ENCORE admins
-- Add corresponding `TabsContent` rendering `<SubAccountContracts companyId={company.id} companyName={company.name} />`
+Set `controlled_share_percentage` (from `parsedData.controlled_share_percentage`) on the contract's `financial_terms` JSON or the appropriate column if available.
 
-## Files to Create/Modify
+## File Changes
 
+| File | Change |
+|---|---|
+| `src/components/admin/subaccount/SubAccountContractUpload.tsx` | Add post-insert logic in `handleSaveContract` to insert `contract_interested_parties` and `contract_schedule_works` rows from `parsedData.parties` and `parsedData.works`. Also display a summary of how many parties and works were imported. |
 
-| File                                                           | Action                                                                                      |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `src/components/admin/subaccount/SubAccountContracts.tsx`      | **Create** -- tab wrapper                                                                   |
-| `src/components/admin/subaccount/SubAccountContractUpload.tsx` | **Create** -- single PDF upload adapted for sub-account                                     |
-| `src/components/admin/subaccount/BulkContractImport.tsx`       | **Create** -- spreadsheet bulk import                                                       |
-| `src/components/admin/subaccount/SubAccountContractsList.tsx`  | **Create** -- contract list with post-term badges                                           |
-| `src/pages/SubAccountDetailPage.tsx`                           | **Edit** -- add Contracts tab                                                               |
-| Migration SQL                                                  | **Create** -- add `post_term_collection_end_date` and `post_term_collection_months` columns |
+No database migrations are needed -- the `contract_interested_parties` and `contract_schedule_works` tables already exist with all required columns. The `set_contract_child_client_company_id` trigger will automatically propagate `client_company_id` to child rows.
 
+## Technical Detail
 
-## Technical Details
-
-### Service Account Attribution
-
-All write operations use the service account pattern already established:
+The key code addition in `handleSaveContract` after the `createContract` call:
 
 ```text
-const actingUserId = await getActingUserId();
-// Insert with: user_id: actingUserId, client_company_id: companyId
+const contract = await createContract({...});
+
+// Insert interested parties from parsed data
+if (parsedData?.parties?.length > 0) {
+  for (const party of parsedData.parties) {
+    await supabase.from('contract_interested_parties').insert({
+      contract_id: contract.id,
+      name: party.party_name,
+      party_type: party.party_type,
+      pro_affiliation: party.pro_affiliation,
+      mechanical_percentage: party.mechanical_royalty_rate_percentage,
+      synch_percentage: party.sync_royalty_rate_percentage,
+      client_company_id: companyId,
+    });
+  }
+}
+
+// Insert schedule of works from parsed data
+if (parsedData?.works?.length > 0) {
+  for (const work of parsedData.works) {
+    await supabase.from('contract_schedule_works').insert({
+      contract_id: contract.id,
+      song_title: work.work_title,
+      iswc: work.iswc_number,
+      controlled_share: work.controlled_share_percentage,
+      controlled_status: work.controlled_status,
+      client_company_id: companyId,
+    });
+  }
+}
 ```
 
-### Post-Term Collection Logic
+## Expected Outcome
 
-```text
-if now < end_date                          -> "Active"
-if now >= end_date AND now < post_term_end -> "Post-Term Collection"  
-if now >= post_term_end                    -> "Collection Expired"
-if post_term_end - now <= 90 days          -> "Expiring Soon" alert
-```
-
-### Bulk Import Validation Rules
-
-- `title` and `counterparty_name` are required
-- `contract_type` must be one of: publishing, artist, producer, sync, distribution
-- `start_date` and `end_date` must be valid date strings
-- `post_term_collection_months` must be a positive integer if provided
-- Duplicate detection: skip rows where `title + counterparty_name + contract_type` already exists for the same `client_company_id`
-- If `party_name` is present, `performance_pct + mechanical_pct + synch_pct` are validated but not required to total 100% (flagged as warning)
-
-### Parse-Contract Edge Function
-
-The existing `parse-contract` edge function is reused as-is. The `SubAccountContractUpload` component wraps it with sub-account-scoped identity and adds post-term fields to the review form before final contract creation.
+After this fix, uploading a PDF contract for a sub-account will:
+1. Create the contract record (already works)
+2. Populate `contract_interested_parties` with all parties extracted from the PDF
+3. Populate `contract_schedule_works` with all works/songs listed in the agreement
+4. Store controlled share percentages at both the contract and work level
+5. All child records will be correctly scoped to the sub-account via `client_company_id`
