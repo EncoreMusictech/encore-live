@@ -37,6 +37,7 @@ export function SubAccountContractUpload({ companyId, companyName }: SubAccountC
   const [commissionPercentage, setCommissionPercentage] = useState('');
   const [postTermMonths, setPostTermMonths] = useState('');
   const [postTermEndDate, setPostTermEndDate] = useState('');
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const { user } = useAuth();
   const { createContract } = useContracts();
@@ -107,6 +108,7 @@ export function SubAccountContractUpload({ companyId, companyName }: SubAccountC
         .from('contract-documents')
         .getPublicUrl(fileName);
 
+      setPdfUrl(publicUrl);
       setUploadStatus('parsing');
       setUploadProgress(40);
 
@@ -171,6 +173,7 @@ export function SubAccountContractUpload({ companyId, companyName }: SubAccountC
         client_company_id: companyId,
         contract_data: parsedData || {},
         contract_status: 'draft' as any,
+        original_pdf_url: pdfUrl,
         // Post-term fields stored via contract_data since typed columns may not be in generated types yet
         financial_terms: {
           ...(parsedData?.financial_terms || {}),
@@ -212,6 +215,7 @@ export function SubAccountContractUpload({ companyId, companyName }: SubAccountC
     setCommissionPercentage('');
     setPostTermMonths('');
     setPostTermEndDate('');
+    setPdfUrl(null);
   };
 
   return (
