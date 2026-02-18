@@ -3,10 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, AlertTriangle, RefreshCw, Eye, Download } from 'lucide-react';
+import { FileText, AlertTriangle, RefreshCw, ExternalLink, Download } from 'lucide-react';
 import { buildPdfFileName } from '@/lib/utils';
 
 interface SubAccountContractsListProps {
@@ -74,7 +73,6 @@ function PostTermBadge({ status }: { status: PostTermStatus }) {
 export function SubAccountContractsList({ companyId, companyName }: SubAccountContractsListProps) {
   const [contracts, setContracts] = useState<ContractRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewingPdf, setViewingPdf] = useState<{ url: string; title: string } | null>(null);
   const { toast } = useToast();
 
   const fetchContracts = async () => {
@@ -190,9 +188,9 @@ export function SubAccountContractsList({ companyId, companyName }: SubAccountCo
                                 size="icon"
                                 className="h-7 w-7"
                                 title="View PDF"
-                                onClick={() => setViewingPdf({ url: contract.original_pdf_url!, title: contract.title })}
+                                onClick={() => window.open(contract.original_pdf_url!, '_blank')}
                               >
-                                <Eye className="h-4 w-4" />
+                                <ExternalLink className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -225,45 +223,6 @@ export function SubAccountContractsList({ companyId, companyName }: SubAccountCo
           )}
         </CardContent>
       </Card>
-
-      {/* PDF Viewer Dialog */}
-      <Dialog open={!!viewingPdf} onOpenChange={(open) => !open && setViewingPdf(null)}>
-        <DialogContent className="max-w-4xl h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between pr-8">
-              <span className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                {viewingPdf?.title}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (!viewingPdf) return;
-                  const link = document.createElement('a');
-                  link.href = viewingPdf.url;
-                  const base = buildPdfFileName({ kind: 'document', title: viewingPdf.title, date: new Date() });
-                  link.download = `${base}.pdf`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </Button>
-            </DialogTitle>
-          </DialogHeader>
-          {viewingPdf && (
-            <iframe
-              src={viewingPdf.url}
-              className="w-full flex-1 border-0 rounded-md"
-              style={{ minHeight: 'calc(80vh - 100px)' }}
-              title="Contract PDF"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
