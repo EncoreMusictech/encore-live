@@ -1969,6 +1969,8 @@ export type Database = {
           notes: string | null
           original_pdf_url: string | null
           original_publisher: string | null
+          post_term_collection_end_date: string | null
+          post_term_collection_months: number | null
           rate_reduction_amount: number | null
           rate_reduction_percentage: number | null
           recipient_email: string | null
@@ -2012,6 +2014,8 @@ export type Database = {
           notes?: string | null
           original_pdf_url?: string | null
           original_publisher?: string | null
+          post_term_collection_end_date?: string | null
+          post_term_collection_months?: number | null
           rate_reduction_amount?: number | null
           rate_reduction_percentage?: number | null
           recipient_email?: string | null
@@ -2055,6 +2059,8 @@ export type Database = {
           notes?: string | null
           original_pdf_url?: string | null
           original_publisher?: string | null
+          post_term_collection_end_date?: string | null
+          post_term_collection_months?: number | null
           rate_reduction_amount?: number | null
           rate_reduction_percentage?: number | null
           recipient_email?: string | null
