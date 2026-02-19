@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.check-invitation-reminders]
 verify_jwt = false
+
+[functions.send-getting-started-operations]
+verify_jwt = false
