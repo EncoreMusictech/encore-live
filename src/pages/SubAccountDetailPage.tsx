@@ -48,6 +48,9 @@ export default function SubAccountDetailPage() {
   // Determine if this is an ENCORE admin (not a sub-account team member)
   const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
   const isEncoreAdmin = adminEmails.includes(user?.email?.toLowerCase() || '');
+
+  // Check if the logged-in user is an admin of THIS sub-account company
+  const [isSubAccountAdmin, setIsSubAccountAdmin] = useState(false);
   
   // Fetch hierarchy info
   const { isPublishingFirm, hasChildren, childCompanies } = useClientHierarchy(id);
@@ -58,6 +61,22 @@ export default function SubAccountDetailPage() {
       fetchCompanyDetails();
     }
   }, [id]);
+
+  // Check sub-account admin membership
+  useEffect(() => {
+    const checkMembership = async () => {
+      if (!user || !id || isEncoreAdmin) return;
+      const { data } = await supabase
+        .from('company_users')
+        .select('role')
+        .eq('company_id', id)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      setIsSubAccountAdmin(data?.role === 'admin');
+    };
+    checkMembership();
+  }, [user, id, isEncoreAdmin]);
 
   const fetchCompanyDetails = async () => {
     try {
@@ -218,7 +237,7 @@ export default function SubAccountDetailPage() {
             <ClipboardList className="h-4 w-4 mr-2" />
             Onboarding
           </TabsTrigger>
-          {isEncoreAdmin && (isPublishingFirm || hasChildren) && (
+          {(isEncoreAdmin || isSubAccountAdmin) && (isPublishingFirm || hasChildren) && (
             <TabsTrigger value="clients">
               <Briefcase className="h-4 w-4 mr-2" />
               Clients
@@ -242,7 +261,7 @@ export default function SubAccountDetailPage() {
               Works
             </TabsTrigger>
           )}
-          {isEncoreAdmin && (
+          {(isEncoreAdmin || isSubAccountAdmin) && (
             <TabsTrigger value="contracts">
               <FileText className="h-4 w-4 mr-2" />
               Contracts
@@ -272,7 +291,7 @@ export default function SubAccountDetailPage() {
           <SubAccountOnboarding companyId={company.id} companyName={company.name} />
         </TabsContent>
 
-        {isEncoreAdmin && (isPublishingFirm || hasChildren) && (
+        {(isEncoreAdmin || isSubAccountAdmin) && (isPublishingFirm || hasChildren) && (
           <TabsContent value="clients" className="space-y-6">
             <ClientsManager parentCompanyId={company.id} parentCompanyName={company.display_name} />
           </TabsContent>
@@ -303,7 +322,7 @@ export default function SubAccountDetailPage() {
           </TabsContent>
         )}
 
-        {isEncoreAdmin && (
+        {(isEncoreAdmin || isSubAccountAdmin) && (
           <TabsContent value="contracts" className="space-y-6">
             <SubAccountContracts companyId={company.id} companyName={company.name} />
           </TabsContent>
