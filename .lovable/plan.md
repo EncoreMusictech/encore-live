@@ -1,68 +1,67 @@
-
-
-# Upgrade Sub-Account Contract Upload to Match Main Contract Upload
+# Create "Getting Started" Email with Screenshots
 
 ## Overview
-The sub-account contract upload (`SubAccountContractUpload`) currently has a simplified parsing flow with a basic form. The main contract management upload (`ContractUpload`) has a much richer post-parse experience including OCR fallback, confidence-based auto-population, and a tabbed review interface with PDF preview and full analysis. This plan aligns the sub-account version with the main tool.
 
-## What Changes
+Create a new email template and edge function for sending a "Getting Started" guide to sub-account teams (like PAQ Publishing). The email walks recipients through uploading contracts and works via the Operations tab, with embedded screenshots from the live platform. This email is automatically triggered once when a subaccount reaches Phase 4 of the onboarding process and distributed to all Admin users of the subaccount.
 
-### 1. Add OCR Fallback for Scanned PDFs
-The main tool falls back to Tesseract.js OCR when extracted text is too short (< 200 chars). The sub-account version currently skips this entirely. We will port the OCR fallback logic from `ContractUpload.extractTextClientside`.
+## Image Hosting Strategy
 
-### 2. Add Rich Data Transformation
-Port the `transformParsedData` function that normalizes raw edge function output into a structured `ParsedContractData` shape (parties with contact info, financial terms with royalty rates, key dates, works covered, payment terms, recoupment status, termination clauses, additional terms).
+The uploaded screenshots have been copied to `public/lovable-uploads/`. Once published, they will be accessible at the production domain. The email will reference them via the published URL (`https://www.encoremusic.tech/lovable-uploads/...`), matching the pattern used for `HERO_BG`.
 
-### 3. Replace Simple Form with Tabbed Review Interface
-After parsing, instead of a flat form, show:
-- **Status header card** with confidence badge (matching the main tool's green/yellow/red styling)
-- **Contract Details tab** -- editable fields (title, counterparty, type, dates, advance, commission, post-term) plus auto-populated notes
-- **PDF Preview tab** -- reuse the existing `PDFViewer` component
-- **Full Analysis tab** -- reuse the existing `ContractDetailsView` component
+The 4 screenshots map to:
 
-### 4. Add Auto-Populator Flow
-Reuse `ContractAutoPopulator` component:
-- Confidence >= 0.6: auto-populate fields directly
-- Confidence 0.4-0.6: show the auto-populator card for user confirmation
-- Below 0.4: show form for manual entry
+1. **Active Contracts list** (`subaccount-contracts-list.png`) - image-190
+2. **Upload Contract** (`subaccount-contract-upload.png`) - image-191
+3. **AI Analysis** (`subaccount-contract-analysis.png`) - image-192
+4. **Works Upload** (`subaccount-works-upload.png`) - image-193
 
-### 5. Preserve Sub-Account-Specific Logic
-Keep the `client_company_id` attribution, post-term collection fields, and `useContracts` hook for saving -- these are unique to the sub-account flow and must remain.
+## Changes
+
+### 1. New email template in `supabase/functions/_shared/email-templates.ts`
+
+Add template #13: `gettingStartedOperationsEmail`
+
+Parameters:
+
+- `recipientName` (string) -- e.g. "PAQ Publishing Team"
+- `companyName` (string) -- e.g. "PAQ Publishing"
+
+The email body follows the user's revised copy exactly, structured as:
+
+- Greeting and intro paragraph
+- **Step 1: Upload Your Contracts** -- numbered instructions with two embedded screenshots (Upload Contract view + AI Analysis view)
+- Paragraph about team review and PDF storage
+- **Step 2: Upload Your Works** -- numbered instructions with one embedded screenshot (Works Upload view)
+- **Why This Matters** section with bullet points
+- CTA button linking to `https://www.encoremusic.tech/dashboard/operations`
+- Reply-to support link
+
+Screenshots will be rendered as full-width images (max 520px) with rounded corners and subtle borders, placed inline after the relevant step descriptions.
+
+### 2. New edge function: `supabase/functions/send-getting-started-operations/index.ts`
+
+A simple edge function that:
+
+- Accepts `{ user_email, recipient_name, company_name }` in the POST body
+- Calls `gettingStartedOperationsEmail()` from shared templates
+- Sends via `sendGmail()` with subject: "Getting Started -- Submitting Your Contracts & Works on ENCORE"
+- From: "Encore Music"
+
+Follows the same pattern as `send-catalog-valuation-onboarding`.
 
 ## Technical Details
 
-### File: `src/components/admin/subaccount/SubAccountContractUpload.tsx`
+### Email Template Structure
 
-**Imports to add:**
-- `ContractAutoPopulator` from `@/components/contracts/ContractAutoPopulator`
-- `ContractDetailsView` from `@/components/contracts/ContractDetailsView`
-- `PDFViewer` from `@/components/contracts/PDFViewer`
-- `Tabs, TabsContent, TabsList, TabsTrigger` from `@/components/ui/tabs`
-- `Textarea` from `@/components/ui/textarea`
-- `Separator` from `@/components/ui/separator`
+- Uses the existing `emailLayout()` wrapper for consistent ENCORE branding (hero image, logo, footer)
+- Header title: "Getting Started with Operations"
+- Header subtitle: "Submit your contracts and works"
+- Screenshots embedded as `<img>` tags with URLs pointing to `https://www.encoremusic.tech/lovable-uploads/subaccount-*.png`
+- Each screenshot wrapped in a styled container with border-radius, border, and margin for visual polish
+- Step numbers styled as colored circles matching the primary accent color
 
-**State additions:**
-- `rawParsedData` -- store raw edge function response for ContractDetailsView
-- `showAutoPopulator` -- toggle auto-populator card
-- `autoPopulatedData` -- store auto-populated form values
-- `notes` -- free-text notes field
-- `transformedData` -- the structured ParsedContractData
+### Edge Function
 
-**extractTextClientside enhancement:**
-- Add the text-length check (>= 200 chars threshold)
-- Add Tesseract.js OCR fallback for scanned PDFs (first 2 pages rendered to canvas)
-
-**Post-parse flow update:**
-- Call `transformParsedData` on raw results (same logic as main tool)
-- Build form data object with derived title, notes (payment terms, recoupment, termination, delivery info)
-- Route to auto-populator or direct auto-populate based on confidence threshold
-
-**Review UI replacement:**
-- Replace the current flat grid form with the tabbed interface:
-  - Tab 1 "Contract Details": editable fields (title, counterparty, type, dates, advance, commission, post-term card, notes textarea) + save/cancel buttons
-  - Tab 2 "PDF Preview": `<PDFViewer>` component
-  - Tab 3 "Full Analysis": `<ContractDetailsView>` component showing raw parsed data
-
-**Save logic:**
-- Remains the same (using `createContract` with `client_company_id`), but additionally stores `notes` and richer `financial_terms` from the transformed data
-
+- Standard CORS headers
+- Supabase client for optional logging
+- Error handling matching existing patterns
