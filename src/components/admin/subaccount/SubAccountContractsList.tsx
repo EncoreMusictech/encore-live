@@ -199,14 +199,22 @@ export function SubAccountContractsList({ companyId, companyName }: SubAccountCo
                                 size="icon"
                                 className="h-7 w-7"
                                 title="Download PDF"
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = contract.original_pdf_url!;
-                                  const base = buildPdfFileName({ kind: 'document', title: contract.title, date: new Date() });
-                                  link.download = `${base}.pdf`;
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch(contract.original_pdf_url!);
+                                    const blob = await response.blob();
+                                    const url = URL.createObjectURL(blob);
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    const base = buildPdfFileName({ kind: 'document', title: contract.title, date: new Date() });
+                                    link.download = `${base}.pdf`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    URL.revokeObjectURL(url);
+                                  } catch {
+                                    window.open(contract.original_pdf_url!, '_blank');
+                                  }
                                 }}
                               >
                                 <Download className="h-4 w-4" />
@@ -238,15 +246,23 @@ export function SubAccountContractsList({ companyId, companyName }: SubAccountCo
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   if (!viewingPdf) return;
-                  const link = document.createElement('a');
-                  link.href = viewingPdf.url;
-                  const base = buildPdfFileName({ kind: 'document', title: viewingPdf.title, date: new Date() });
-                  link.download = `${base}.pdf`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
+                  try {
+                    const response = await fetch(viewingPdf.url);
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    const base = buildPdfFileName({ kind: 'document', title: viewingPdf.title, date: new Date() });
+                    link.download = `${base}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                  } catch {
+                    window.open(viewingPdf.url, '_blank');
+                  }
                 }}
               >
                 <Download className="h-4 w-4 mr-2" />
