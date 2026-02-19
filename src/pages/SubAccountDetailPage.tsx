@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList, Palette, FileText } from 'lucide-react';
+import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList, Palette, FileText, MessageCircle } from 'lucide-react';
 import { ServiceAccountProvisioner } from '@/components/admin/subaccount/ServiceAccountProvisioner';
 import { SubAccountOverview } from '@/components/admin/subaccount/SubAccountOverview';
 import { SubAccountUsers } from '@/components/admin/subaccount/SubAccountUsers';
@@ -20,6 +20,7 @@ import { useClientHierarchy } from '@/hooks/useClientHierarchy';
 import { SubAccountOnboarding } from '@/components/admin/subaccount/SubAccountOnboarding';
 import { SubAccountBranding } from '@/components/admin/subaccount/SubAccountBranding';
 import { SubAccountContracts } from '@/components/admin/subaccount/SubAccountContracts';
+import { SubAccountChat } from '@/components/admin/subaccount/SubAccountChat';
 
 interface Company {
   id: string;
@@ -237,6 +238,12 @@ export default function SubAccountDetailPage() {
             <ClipboardList className="h-4 w-4 mr-2" />
             Onboarding
           </TabsTrigger>
+          {(isEncoreAdmin || isSubAccountAdmin) && (
+            <TabsTrigger value="messages">
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Messages
+            </TabsTrigger>
+          )}
           {(isEncoreAdmin || isSubAccountAdmin) && (isPublishingFirm || hasChildren) && (
             <TabsTrigger value="clients">
               <Briefcase className="h-4 w-4 mr-2" />
@@ -290,6 +297,12 @@ export default function SubAccountDetailPage() {
         <TabsContent value="onboarding" className="space-y-6">
           <SubAccountOnboarding companyId={company.id} companyName={company.name} />
         </TabsContent>
+
+        {(isEncoreAdmin || isSubAccountAdmin) && (
+          <TabsContent value="messages" className="space-y-6">
+            <SubAccountChat companyId={company.id} companyName={company.name} />
+          </TabsContent>
+        )}
 
         {(isEncoreAdmin || isSubAccountAdmin) && (isPublishingFirm || hasChildren) && (
           <TabsContent value="clients" className="space-y-6">
