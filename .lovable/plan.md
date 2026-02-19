@@ -1,48 +1,68 @@
 
 
-# Add PDF View & Download to Active Contracts
+# Upgrade Sub-Account Contract Upload to Match Main Contract Upload
 
-## Problem
+## Overview
+The sub-account contract upload (`SubAccountContractUpload`) currently has a simplified parsing flow with a basic form. The main contract management upload (`ContractUpload`) has a much richer post-parse experience including OCR fallback, confidence-based auto-population, and a tabbed review interface with PDF preview and full analysis. This plan aligns the sub-account version with the main tool.
 
-The `SubAccountContractUpload` component uploads the PDF to the `contract-documents` storage bucket and obtains a `publicUrl`, but never saves it to the `original_pdf_url` column on the `contracts` table. The Active Contracts list also does not query or display any PDF-related actions.
+## What Changes
 
-## Changes
+### 1. Add OCR Fallback for Scanned PDFs
+The main tool falls back to Tesseract.js OCR when extracted text is too short (< 200 chars). The sub-account version currently skips this entirely. We will port the OCR fallback logic from `ContractUpload.extractTextClientside`.
 
-### 1. Save PDF URL on contract creation (`SubAccountContractUpload.tsx`)
+### 2. Add Rich Data Transformation
+Port the `transformParsedData` function that normalizes raw edge function output into a structured `ParsedContractData` shape (parties with contact info, financial terms with royalty rates, key dates, works covered, payment terms, recoupment status, termination clauses, additional terms).
 
-In `handleSaveContract`, pass `original_pdf_url` into the `createContract` call. The `publicUrl` is already available in the component scope during the upload flow -- it just needs to be persisted in state after upload and included in the insert payload.
+### 3. Replace Simple Form with Tabbed Review Interface
+After parsing, instead of a flat form, show:
+- **Status header card** with confidence badge (matching the main tool's green/yellow/red styling)
+- **Contract Details tab** -- editable fields (title, counterparty, type, dates, advance, commission, post-term) plus auto-populated notes
+- **PDF Preview tab** -- reuse the existing `PDFViewer` component
+- **Full Analysis tab** -- reuse the existing `ContractDetailsView` component
 
-- Add a new state variable `pdfUrl` to hold the public URL after upload.
-- Set `pdfUrl` from `publicUrl` inside `handleUpload`.
-- Include `original_pdf_url: pdfUrl` in the `createContract` call inside `handleSaveContract`.
-- Reset `pdfUrl` in `resetForm`.
+### 4. Add Auto-Populator Flow
+Reuse `ContractAutoPopulator` component:
+- Confidence >= 0.6: auto-populate fields directly
+- Confidence 0.4-0.6: show the auto-populator card for user confirmation
+- Below 0.4: show form for manual entry
 
-### 2. Add PDF column and actions to the contracts table (`SubAccountContractsList.tsx`)
+### 5. Preserve Sub-Account-Specific Logic
+Keep the `client_company_id` attribution, post-term collection fields, and `useContracts` hook for saving -- these are unique to the sub-account flow and must remain.
 
-- Add `original_pdf_url` to the `ContractRow` interface and to the `.select()` query.
-- Add a new "PDF" column to the table header.
-- For each contract row, if `original_pdf_url` exists, render two icon buttons:
-  - **Eye icon** -- opens a dialog/modal displaying the PDF using an iframe (reusing the pattern from the existing `PDFViewer` component).
-  - **Download icon** -- triggers a direct download of the PDF file.
-- If no PDF URL exists, show a dash ("--").
+## Technical Details
 
-### 3. PDF Viewer Dialog
+### File: `src/components/admin/subaccount/SubAccountContractUpload.tsx`
 
-Add a simple Dialog (Radix `Dialog`) inside `SubAccountContractsList.tsx` that:
-- Opens when the user clicks the eye icon on any row.
-- Displays the PDF in an iframe at full dialog width/height.
-- Includes a download button in the dialog header.
-- This is accessible to both sub-account admins and ENCORE admins since the component is rendered within the admin-scoped page and the `contract-documents` bucket has public read access.
+**Imports to add:**
+- `ContractAutoPopulator` from `@/components/contracts/ContractAutoPopulator`
+- `ContractDetailsView` from `@/components/contracts/ContractDetailsView`
+- `PDFViewer` from `@/components/contracts/PDFViewer`
+- `Tabs, TabsContent, TabsList, TabsTrigger` from `@/components/ui/tabs`
+- `Textarea` from `@/components/ui/textarea`
+- `Separator` from `@/components/ui/separator`
 
-## Files to Modify
+**State additions:**
+- `rawParsedData` -- store raw edge function response for ContractDetailsView
+- `showAutoPopulator` -- toggle auto-populator card
+- `autoPopulatedData` -- store auto-populated form values
+- `notes` -- free-text notes field
+- `transformedData` -- the structured ParsedContractData
 
-| File | Change |
-|---|---|
-| `src/components/admin/subaccount/SubAccountContractUpload.tsx` | Add `pdfUrl` state; save `original_pdf_url` on contract creation |
-| `src/components/admin/subaccount/SubAccountContractsList.tsx` | Query `original_pdf_url`; add PDF column with view/download actions; add PDF viewer dialog |
+**extractTextClientside enhancement:**
+- Add the text-length check (>= 200 chars threshold)
+- Add Tesseract.js OCR fallback for scanned PDFs (first 2 pages rendered to canvas)
 
-## No database or storage changes needed
+**Post-parse flow update:**
+- Call `transformParsedData` on raw results (same logic as main tool)
+- Build form data object with derived title, notes (payment terms, recoupment, termination, delivery info)
+- Route to auto-populator or direct auto-populate based on confidence threshold
 
-- The `original_pdf_url` column already exists on the `contracts` table.
-- The `contract-documents` bucket is already public with read access for all users.
+**Review UI replacement:**
+- Replace the current flat grid form with the tabbed interface:
+  - Tab 1 "Contract Details": editable fields (title, counterparty, type, dates, advance, commission, post-term card, notes textarea) + save/cancel buttons
+  - Tab 2 "PDF Preview": `<PDFViewer>` component
+  - Tab 3 "Full Analysis": `<ContractDetailsView>` component showing raw parsed data
+
+**Save logic:**
+- Remains the same (using `createContract` with `client_company_id`), but additionally stores `notes` and richer `financial_terms` from the transformed data
 
