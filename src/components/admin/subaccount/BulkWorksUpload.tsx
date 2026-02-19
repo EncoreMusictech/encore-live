@@ -24,33 +24,50 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
   const handleDownloadTemplate = () => {
     const templateData = [
       {
-        work_title: 'Example Song Title',
-        artist: 'Artist Name',
-        writer: 'Writer Name',
-        iswc: 'T-123456789-0',
-        isrc: 'USRC12345678',
-        writers_publishers: '{"writer":"Name","publisher":"Publisher Name","split":50}',
-      },
-      {
-        work_title: 'Another Song',
-        artist: 'Another Artist',
-        writer: '',
-        iswc: '',
-        isrc: '',
-        writers_publishers: '',
+        work_title: 'Sample Song Title',
+        iswc: 'T-123456789-C',
+        album_title: 'Sample Album',
+        creation_date: '2024-01-15',
+        copyright_date: '2024-01-15',
+        language_code: 'EN',
+        work_type: 'original',
+        contains_sample: 'FALSE',
+        duration_seconds: 180,
+        notes: 'Sample copyright work',
+        writer_1_name: 'John Doe',
+        writer_1_ownership: 50,
+        writer_1_role: 'composer',
+        writer_1_ipi: '12345678',
+        writer_1_controlled: 'C',
+        writer_1_pro: 'ASCAP',
+        writer_2_name: 'Jane Smith',
+        writer_2_ownership: 50,
+        writer_2_role: 'lyricist',
+        writer_2_ipi: '87654321',
+        writer_2_controlled: 'C',
+        writer_2_pro: 'BMI',
+        publisher_1_name: 'Sample Music Publishing',
+        publisher_1_ownership: 100,
+        publisher_1_role: 'original_publisher',
+        publisher_1_ipi: '11111111',
+        publisher_1_pro: 'ASCAP',
+        recording_title: 'Sample Song Title',
+        recording_artist: 'John Doe & Jane Smith',
+        recording_isrc: 'USRC12345678',
+        recording_release_date: '2024-02-01',
+        recording_duration: 180,
       },
     ];
 
     const ws = XLSX.utils.json_to_sheet(templateData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Works Template');
+    XLSX.utils.book_append_sheet(wb, ws, 'Copyright Bulk Upload Template');
 
     // Set column widths
-    ws['!cols'] = [
-      { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 45 }
-    ];
+    const cols = Object.keys(templateData[0]).map(key => ({ wch: Math.max(key.length + 4, 18) }));
+    ws['!cols'] = cols;
 
-    XLSX.writeFile(wb, 'bulk-works-upload-template.xlsx');
+    XLSX.writeFile(wb, 'copyright_bulk_upload_template.xlsx');
 
     toast({ title: 'Template Downloaded', description: 'Open the file and fill in your works data.' });
   };
@@ -345,10 +362,11 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           <CardContent className="text-sm space-y-2">
             <p>Your file should include the following columns:</p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li><strong>title</strong> or <strong>work_title</strong> (required)</li>
-              <li><strong>artist</strong> or <strong>writer</strong> (optional)</li>
-              <li><strong>iswc</strong> (optional)</li>
-              <li><strong>writers_publishers</strong> (optional, JSON format)</li>
+              <li><strong>work_title</strong> (required)</li>
+              <li><strong>iswc</strong>, <strong>album_title</strong>, <strong>work_type</strong>, <strong>language_code</strong> (optional)</li>
+              <li><strong>writer_1_name</strong>, <strong>writer_1_ownership</strong>, <strong>writer_1_role</strong>, <strong>writer_1_ipi</strong>, <strong>writer_1_controlled</strong>, <strong>writer_1_pro</strong> (up to 2 writers)</li>
+              <li><strong>publisher_1_name</strong>, <strong>publisher_1_ownership</strong>, <strong>publisher_1_role</strong>, <strong>publisher_1_ipi</strong>, <strong>publisher_1_pro</strong></li>
+              <li><strong>recording_title</strong>, <strong>recording_artist</strong>, <strong>recording_isrc</strong>, <strong>recording_release_date</strong>, <strong>recording_duration</strong></li>
             </ul>
           </CardContent>
         </Card>
