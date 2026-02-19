@@ -224,10 +224,10 @@ export default function SubAccountDetailPage() {
         </Card>
       </div>
 
-      {/* Tabs — non-ENCORE users only see the Onboarding tab */}
-      <Tabs defaultValue={isEncoreAdmin ? "overview" : "onboarding"} className="space-y-6">
+      {/* Tabs — sub-account admins see all tabs for their own account */}
+      <Tabs defaultValue={(isEncoreAdmin || isSubAccountAdmin) ? "overview" : "onboarding"} className="space-y-6">
         <TabsList>
-          {isEncoreAdmin && (
+          {(isEncoreAdmin || isSubAccountAdmin) && (
             <TabsTrigger value="overview">
               <Building2 className="h-4 w-4 mr-2" />
               Overview
@@ -243,19 +243,19 @@ export default function SubAccountDetailPage() {
               Clients
             </TabsTrigger>
           )}
-          {isEncoreAdmin && (
+          {(isEncoreAdmin || isSubAccountAdmin) && (
             <TabsTrigger value="users">
               <Users className="h-4 w-4 mr-2" />
               Users
             </TabsTrigger>
           )}
-          {isEncoreAdmin && (
+          {(isEncoreAdmin || isSubAccountAdmin) && (
             <TabsTrigger value="modules">
               <Shield className="h-4 w-4 mr-2" />
               Modules
             </TabsTrigger>
           )}
-          {isEncoreAdmin && (
+          {(isEncoreAdmin || isSubAccountAdmin) && (
             <TabsTrigger value="works">
               <Upload className="h-4 w-4 mr-2" />
               Works
@@ -267,13 +267,13 @@ export default function SubAccountDetailPage() {
               Contracts
             </TabsTrigger>
           )}
-          {isEncoreAdmin && (
+          {(isEncoreAdmin || isSubAccountAdmin) && (
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
               Settings
             </TabsTrigger>
           )}
-          {isEncoreAdmin && whitelabelEnabled && (
+          {(isEncoreAdmin || isSubAccountAdmin) && whitelabelEnabled && (
             <TabsTrigger value="branding">
               <Palette className="h-4 w-4 mr-2" />
               Branding
@@ -281,7 +281,7 @@ export default function SubAccountDetailPage() {
           )}
         </TabsList>
 
-        {isEncoreAdmin && (
+        {(isEncoreAdmin || isSubAccountAdmin) && (
           <TabsContent value="overview" className="space-y-6">
             <SubAccountOverview company={company} onUpdate={fetchCompanyDetails} />
           </TabsContent>
@@ -297,26 +297,25 @@ export default function SubAccountDetailPage() {
           </TabsContent>
         )}
 
-        {isEncoreAdmin && (
+        {(isEncoreAdmin || isSubAccountAdmin) && (
           <TabsContent value="users" className="space-y-6">
             <SubAccountUsers companyId={company.id} onUpdate={fetchCompanyDetails} />
           </TabsContent>
         )}
 
-        {isEncoreAdmin && (
+        {(isEncoreAdmin || isSubAccountAdmin) && (
           <TabsContent value="modules" className="space-y-6">
             <SubAccountModules companyId={company.id} onUpdate={fetchCompanyDetails} />
           </TabsContent>
         )}
 
-        {isEncoreAdmin && (
+        {(isEncoreAdmin || isSubAccountAdmin) && (
           <TabsContent value="works" className="space-y-6">
             <SubAccountWorks companyId={company.id} companyName={company.name} />
           </TabsContent>
         )}
 
-
-        {isEncoreAdmin && (
+        {(isEncoreAdmin || isSubAccountAdmin) && (
           <TabsContent value="settings" className="space-y-6">
             <SubAccountSettings company={company} onUpdate={fetchCompanyDetails} />
           </TabsContent>
@@ -328,7 +327,7 @@ export default function SubAccountDetailPage() {
           </TabsContent>
         )}
 
-        {isEncoreAdmin && whitelabelEnabled && (
+        {(isEncoreAdmin || isSubAccountAdmin) && whitelabelEnabled && (
           <TabsContent value="branding" className="space-y-6">
             <SubAccountBranding companyId={company.id} />
           </TabsContent>
