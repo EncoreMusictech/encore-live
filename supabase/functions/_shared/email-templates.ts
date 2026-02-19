@@ -742,3 +742,105 @@ export function monthlyInvoiceEmail(opts: {
     body,
   });
 }
+
+/** 13. Getting Started – Operations (Contracts & Works) */
+export function gettingStartedOperationsEmail(opts: {
+  recipientName: string;
+  companyName: string;
+}): string {
+  const BASE_URL = "https://www.encoremusic.tech";
+  const IMG = {
+    contractsList: `${BASE_URL}/lovable-uploads/subaccount-contracts-list.png`,
+    contractUpload: `${BASE_URL}/lovable-uploads/subaccount-contract-upload.png`,
+    contractAnalysis: `${BASE_URL}/lovable-uploads/subaccount-contract-analysis.png`,
+    worksUpload: `${BASE_URL}/lovable-uploads/subaccount-works-upload.png`,
+  };
+
+  const screenshot = (src: string, alt: string) => `
+    <div style="margin:20px 0;text-align:center;">
+      <img src="${src}" alt="${alt}" width="520" style="display:block;max-width:100%;width:520px;height:auto;border-radius:10px;border:1px solid ${COLORS.border};margin:0 auto;" />
+    </div>`;
+
+  const stepNumber = (num: number) => `
+    <div style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:linear-gradient(135deg,${COLORS.primary},${COLORS.accent});color:#ffffff;border-radius:50%;font-size:14px;font-weight:700;margin-right:8px;vertical-align:middle;">${num}</div>`;
+
+  const body = `
+    <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hi ${opts.recipientName},</p>
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
+      We're excited to have you onboard with ENCORE! To streamline your catalog administration, we've built tools that make it easy to digitize your agreements and register your works — all in one place.
+    </p>
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 28px;">
+      Here's how the process works and what we need from you:
+    </p>
+
+    <!-- Step 1 -->
+    <div style="margin-bottom:32px;">
+      <h2 style="font-size:18px;color:${COLORS.text};margin:0 0 16px;">
+        ${stepNumber(1)}<span style="vertical-align:middle;">Upload Your Contracts</span>
+      </h2>
+      <ol style="margin:0 0 16px 0;padding-left:20px;font-size:14px;color:${COLORS.textMuted};line-height:2;">
+        <li>Log into your ENCORE account and go to the <strong style="color:${COLORS.text};">Operations</strong> tab.</li>
+        <li>Click on the <strong style="color:${COLORS.text};">Contracts</strong> section.</li>
+        <li>Select <strong style="color:${COLORS.text};">"Upload Contract"</strong> and drag in (or browse for) a PDF of your agreement (up to 20MB).</li>
+        <li>Click <strong style="color:${COLORS.text};">"Upload &amp; Parse Contract"</strong> — ENCORE's AI will read through your PDF and automatically pull out the key details: agreement title, parties involved, effective dates, advance amounts, commission rates, and more.</li>
+        <li>You'll see a review screen with everything pre-filled. Double-check the details, make any corrections, and hit <strong style="color:${COLORS.text};">"Save Contract."</strong></li>
+        <li>If you have a large number of contracts, you can also use the <strong style="color:${COLORS.text};">"Bulk Import"</strong> tab to upload them via spreadsheet.</li>
+      </ol>
+
+      ${screenshot(IMG.contractUpload, "Upload Contract view in ENCORE")}
+      ${screenshot(IMG.contractAnalysis, "AI-powered contract analysis in ENCORE")}
+
+      <p style="font-size:14px;color:${COLORS.textMuted};line-height:1.7;margin:16px 0 0;">
+        Once all your contracts are in the system, our team will review the original PDFs alongside the extracted terms to spot-check that everything has been captured accurately. Having the originals stored in ENCORE means we can always reference them side-by-side — no back-and-forth over email attachments.
+      </p>
+    </div>
+
+    <!-- Step 2 -->
+    <div style="margin-bottom:32px;">
+      <h2 style="font-size:18px;color:${COLORS.text};margin:0 0 16px;">
+        ${stepNumber(2)}<span style="vertical-align:middle;">Upload Your Works</span>
+      </h2>
+      <ol style="margin:0 0 16px 0;padding-left:20px;font-size:14px;color:${COLORS.textMuted};line-height:2;">
+        <li>Still under the <strong style="color:${COLORS.text};">Operations</strong> tab, click on the <strong style="color:${COLORS.text};">Works</strong> section.</li>
+        <li>You have two options:
+          <ul style="margin:4px 0 4px 16px;padding:0;list-style:disc;">
+            <li><strong style="color:${COLORS.text};">Smart Import</strong> — Upload any CSV or spreadsheet you already have, and ENCORE will intelligently map your columns to the right fields.</li>
+            <li><strong style="color:${COLORS.text};">Template Upload</strong> — Download our standard template (click <strong style="color:${COLORS.text};">"Download Template"</strong>), fill in your catalog details (song titles, writers, ownership splits, ISWCs, publisher info, recording details, etc.), and upload the completed file.</li>
+          </ul>
+        </li>
+        <li>ENCORE will validate the data and flag any issues before importing, so you can fix errors upfront.</li>
+      </ol>
+
+      ${screenshot(IMG.worksUpload, "Works upload view in ENCORE")}
+    </div>
+
+    <!-- Why This Matters -->
+    <div style="background:${COLORS.bgLight};border-radius:10px;padding:20px 24px;margin:0 0 28px;border:1px solid ${COLORS.border};">
+      <h3 style="font-size:16px;color:${COLORS.text};margin:0 0 12px;">💡 Why This Matters</h3>
+      <p style="font-size:14px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 8px;">
+        By getting your contracts and works into ENCORE, we'll have a single, organized system to manage your catalog. This lets us:
+      </p>
+      <ul style="margin:0;padding-left:20px;font-size:14px;color:${COLORS.textMuted};line-height:2;">
+        <li>Quickly verify that agreement terms match what's on paper</li>
+        <li>Track ownership splits, writer/publisher info, and recording metadata in one place</li>
+        <li>Ensure nothing falls through the cracks during royalty processing</li>
+      </ul>
+    </div>
+
+    ${ctaButton("Go to Operations →", `${BASE_URL}/dashboard/operations`)}
+
+    <p style="font-size:14px;color:${COLORS.textMuted};line-height:1.7;margin:24px 0 0;text-align:center;">
+      If you have any questions or run into issues, just
+      <a href="mailto:support@encoremusic.tech?subject=Getting%20Started%20Help%20-%20${encodeURIComponent(opts.companyName)}" style="color:${COLORS.primary};font-weight:600;">reply to this email</a>
+      and we'll walk you through it.
+    </p>
+  `;
+
+  return emailLayout({
+    preheader: `Getting started with ENCORE — Upload your contracts and works`,
+    headerIcon: "🚀",
+    headerTitle: "Getting Started with Operations",
+    headerSubtitle: "Submit your contracts and works",
+    body,
+  });
+}
