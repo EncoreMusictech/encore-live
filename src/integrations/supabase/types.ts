@@ -1372,6 +1372,50 @@ export type Database = {
           },
         ]
       }
+      company_messages: {
+        Row: {
+          company_id: string
+          content: string
+          created_at: string
+          id: string
+          is_encore_admin: boolean
+          read_by: Json
+          sender_email: string
+          sender_id: string
+          sender_name: string
+        }
+        Insert: {
+          company_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_encore_admin?: boolean
+          read_by?: Json
+          sender_email: string
+          sender_id: string
+          sender_name?: string
+        }
+        Update: {
+          company_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_encore_admin?: boolean
+          read_by?: Json
+          sender_email?: string
+          sender_id?: string
+          sender_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_messages_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_module_access: {
         Row: {
           company_id: string
@@ -7466,6 +7510,7 @@ export type Database = {
         Args: { reports_data: Json }
         Returns: number
       }
+      is_encore_team: { Args: never; Returns: boolean }
       is_operations_team_member:
         | { Args: never; Returns: boolean }
         | { Args: { p_user_id?: string }; Returns: boolean }
