@@ -1,67 +1,105 @@
-# Create "Getting Started" Email with Screenshots
+
+
+# Real-Time Admin Chat Between ENCORE and Sub-Accounts
 
 ## Overview
 
-Create a new email template and edge function for sending a "Getting Started" guide to sub-account teams (like PAQ Publishing). The email walks recipients through uploading contracts and works via the Operations tab, with embedded screenshots from the live platform. This email is automatically triggered once when a subaccount reaches Phase 4 of the onboarding process and distributed to all Admin users of the subaccount.
+Build a persistent, real-time messaging system that allows ENCORE admins and sub-account admins (e.g., PAQ Publishing) to communicate directly within the platform. Messages are scoped per company (sub-account) and visible to all admin-level users on both sides. This is a human-to-human chat, distinct from the existing AI chatbot.
 
-## Image Hosting Strategy
+## How It Works
 
-The uploaded screenshots have been copied to `public/lovable-uploads/`. Once published, they will be accessible at the production domain. The email will reference them via the published URL (`https://www.encoremusic.tech/lovable-uploads/...`), matching the pattern used for `HERO_BG`.
+- A new **"Messages"** tab appears on the Sub-Account Detail page (alongside Overview, Onboarding, etc.)
+- Both ENCORE admins and sub-account admins see this tab and share the same conversation thread for that company
+- Messages are stored in a new `company_messages` database table
+- Real-time delivery is powered by Supabase Realtime (Postgres Changes), following the same pattern used by `useSystemAlerts`
+- Each message shows the sender's name/email, timestamp, and a visual distinction between "your" messages and "theirs"
 
-The 4 screenshots map to:
+## Database Changes
 
-1. **Active Contracts list** (`subaccount-contracts-list.png`) - image-190
-2. **Upload Contract** (`subaccount-contract-upload.png`) - image-191
-3. **AI Analysis** (`subaccount-contract-analysis.png`) - image-192
-4. **Works Upload** (`subaccount-works-upload.png`) - image-193
+### New table: `company_messages`
 
-## Changes
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK) | Default `gen_random_uuid()` |
+| company_id | uuid (FK -> companies) | The sub-account this thread belongs to |
+| sender_id | uuid (FK -> auth.users) | The user who sent the message |
+| sender_email | text | Denormalized for display |
+| sender_name | text | Denormalized for display |
+| content | text | Message body |
+| is_encore_admin | boolean | true if sent by an ENCORE admin |
+| read_by | jsonb | Array of user IDs who have read this message (default `[]`) |
+| created_at | timestamptz | Default `now()` |
 
-### 1. New email template in `supabase/functions/_shared/email-templates.ts`
+### RLS Policies
 
-Add template #13: `gettingStartedOperationsEmail`
+- **SELECT**: Users can read messages if they are an ENCORE admin (via `is_operations_team_member()`) OR an active member of the company (`user_belongs_to_company()`)
+- **INSERT**: Same as SELECT -- only ENCORE admins or active company members can send messages
+- No UPDATE/DELETE for regular users (messages are immutable once sent)
 
-Parameters:
+### Realtime
 
-- `recipientName` (string) -- e.g. "PAQ Publishing Team"
-- `companyName` (string) -- e.g. "PAQ Publishing"
+- Enable Realtime on the `company_messages` table so Supabase broadcasts inserts instantly
 
-The email body follows the user's revised copy exactly, structured as:
+## UI Changes
 
-- Greeting and intro paragraph
-- **Step 1: Upload Your Contracts** -- numbered instructions with two embedded screenshots (Upload Contract view + AI Analysis view)
-- Paragraph about team review and PDF storage
-- **Step 2: Upload Your Works** -- numbered instructions with one embedded screenshot (Works Upload view)
-- **Why This Matters** section with bullet points
-- CTA button linking to `https://www.encoremusic.tech/dashboard/operations`
-- Reply-to support link
+### 1. New component: `src/components/admin/subaccount/SubAccountChat.tsx`
 
-Screenshots will be rendered as full-width images (max 520px) with rounded corners and subtle borders, placed inline after the relevant step descriptions.
+A chat panel that:
+- Accepts `companyId`, `companyName` props
+- Fetches existing messages for this company on mount
+- Subscribes to Supabase Realtime for new inserts filtered by `company_id`
+- Displays messages in a scrollable area with sender info, timestamps, and left/right alignment based on current user
+- ENCORE admin messages get a distinct accent color vs. sub-account messages
+- Input bar at the bottom with send button (Enter to send)
+- Shows an unread indicator count
 
-### 2. New edge function: `supabase/functions/send-getting-started-operations/index.ts`
+### 2. New tab on `SubAccountDetailPage.tsx`
 
-A simple edge function that:
+- Add a "Messages" tab (with `MessageCircle` icon) visible to both ENCORE admins and sub-account admins
+- Placed after the "Onboarding" tab for easy access
+- Renders `<SubAccountChat companyId={company.id} companyName={company.name} />`
 
-- Accepts `{ user_email, recipient_name, company_name }` in the POST body
-- Calls `gettingStartedOperationsEmail()` from shared templates
-- Sends via `sendGmail()` with subject: "Getting Started -- Submitting Your Contracts & Works on ENCORE"
-- From: "Encore Music"
+### 3. Hook: `src/hooks/useCompanyChat.ts`
 
-Follows the same pattern as `send-catalog-valuation-onboarding`.
+Encapsulates:
+- Fetching messages (`SELECT * FROM company_messages WHERE company_id = ? ORDER BY created_at ASC`)
+- Sending messages (INSERT with current user info)
+- Realtime subscription (Supabase channel on `company_messages` filtered by `company_id`)
+- Auto-scroll on new messages
+- Unread count tracking
 
 ## Technical Details
 
-### Email Template Structure
+### Realtime Pattern
 
-- Uses the existing `emailLayout()` wrapper for consistent ENCORE branding (hero image, logo, footer)
-- Header title: "Getting Started with Operations"
-- Header subtitle: "Submit your contracts and works"
-- Screenshots embedded as `<img>` tags with URLs pointing to `https://www.encoremusic.tech/lovable-uploads/subaccount-*.png`
-- Each screenshot wrapped in a styled container with border-radius, border, and margin for visual polish
-- Step numbers styled as colored circles matching the primary accent color
+Follows the existing `useSystemAlerts` pattern:
 
-### Edge Function
+```text
+const channel = supabase
+  .channel(`company_chat_${companyId}`)
+  .on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'company_messages',
+    filter: `company_id=eq.${companyId}`
+  }, (payload) => {
+    // Append new message to state
+  })
+  .subscribe();
+```
 
-- Standard CORS headers
-- Supabase client for optional logging
-- Error handling matching existing patterns
+### Message Display
+
+- Current user's messages: right-aligned, primary color background
+- Other users' messages: left-aligned, muted background
+- ENCORE admin messages show a small "ENCORE" badge next to sender name
+- Sub-account messages show company name badge
+- Timestamps in "2:30 PM" format
+- Auto-scroll to bottom on new messages
+
+### Security
+
+- RLS ensures only authorized users (ENCORE admins + company members) can read/write
+- `sender_id` is set to `auth.uid()` in the INSERT, enforced by RLS
+- No message editing or deletion to maintain audit integrity
+
