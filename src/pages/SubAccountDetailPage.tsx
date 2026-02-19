@@ -243,12 +243,6 @@ export default function SubAccountDetailPage() {
             </TabsTrigger>
           )}
           {isEncoreAdmin && (
-            <TabsTrigger value="operations">
-              <Briefcase className="h-4 w-4 mr-2" />
-              Operations
-            </TabsTrigger>
-          )}
-          {isEncoreAdmin && (
             <TabsTrigger value="contracts">
               <FileText className="h-4 w-4 mr-2" />
               Contracts
@@ -302,11 +296,6 @@ export default function SubAccountDetailPage() {
           </TabsContent>
         )}
 
-        {isEncoreAdmin && (
-          <TabsContent value="operations" className="space-y-6">
-            <ClientsManager parentCompanyId={company.id} parentCompanyName={company.display_name} />
-          </TabsContent>
-        )}
 
         {isEncoreAdmin && (
           <TabsContent value="settings" className="space-y-6">
