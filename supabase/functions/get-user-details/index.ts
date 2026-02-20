@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
       return {
         id: userId,
         email: authUser?.email || `${userId.slice(0, 8)}@system.local`,
-        name: fullName || `User ${userId.slice(0, 8)}...`,
+        name: fullName || (authUser?.email?.split('@')[0] || 'Unknown User'),
         first_name: firstName,
         last_name: lastName
       }
