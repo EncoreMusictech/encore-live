@@ -10,6 +10,8 @@ interface ViewContext {
   parentCompanyId?: string;       // For child companies
   parentCompanyName?: string;     // For breadcrumb display
   viewScope: 'all' | 'single';    // Aggregated or single client
+  publishingEntityId?: string;    // Selected publishing entity filter
+  publishingEntityName?: string;  // Display name for entity filter
   returnPath?: string;
   sessionId?: string;             // For audit logging
 }
@@ -19,10 +21,12 @@ interface ViewModeContextType {
   isViewingAsSubAccount: boolean;
   isViewingAsClient: boolean;
   isAggregateView: boolean;
+  isEntityFiltered: boolean;
   exitViewMode: () => void;
   refreshViewContext: () => void;
   setViewScope: (scope: 'all' | 'single', companyId?: string) => void;
   switchToClientView: (clientCompanyId: string, clientCompanyName: string) => void;
+  setPublishingEntity: (entityId: string | null, entityName?: string) => void;
 }
 
 const ViewModeContext = createContext<ViewModeContextType | undefined>(undefined);
@@ -148,9 +152,25 @@ export function ViewModeProvider({ children }: { children: ReactNode }) {
     saveViewContext(updatedContext);
   };
 
+  /**
+   * Set or clear the publishing entity filter
+   */
+  const setPublishingEntity = (entityId: string | null, entityName?: string) => {
+    if (!viewContext) return;
+
+    const updatedContext: ViewContext = {
+      ...viewContext,
+      publishingEntityId: entityId || undefined,
+      publishingEntityName: entityName || undefined,
+    };
+
+    saveViewContext(updatedContext);
+  };
+
   const isViewingAsSubAccount = viewContext?.mode === 'subaccount' || viewContext?.mode === 'client';
   const isViewingAsClient = viewContext?.mode === 'client';
   const isAggregateView = viewContext?.viewScope === 'all';
+  const isEntityFiltered = !!viewContext?.publishingEntityId;
 
   return (
     <ViewModeContext.Provider
@@ -159,10 +179,12 @@ export function ViewModeProvider({ children }: { children: ReactNode }) {
         isViewingAsSubAccount,
         isViewingAsClient,
         isAggregateView,
+        isEntityFiltered,
         exitViewMode,
         refreshViewContext,
         setViewScope,
         switchToClientView,
+        setPublishingEntity,
       }}
     >
       {children}

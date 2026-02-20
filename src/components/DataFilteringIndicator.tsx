@@ -6,9 +6,9 @@ import { useDataFiltering } from '@/hooks/useDataFiltering';
  * Small indicator showing when data is being filtered by sub-account view
  */
 export function DataFilteringIndicator() {
-  const { isFilterActive, getFilterSummary } = useDataFiltering();
+  const { isFilterActive, isEntityFiltered, getFilterSummary } = useDataFiltering();
 
-  if (!isFilterActive) {
+  if (!isFilterActive && !isEntityFiltered) {
     return null;
   }
 

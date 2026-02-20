@@ -7,7 +7,7 @@ import { useDataFiltering } from './useDataFiltering';
 export function usePayees() {
   const [payees, setPayees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { applyUserIdFilter } = useDataFiltering();
+  const { applyUserIdFilter, applyEntityFilter, filterKey } = useDataFiltering();
 
   const fetchPayees = async () => {
     try {
@@ -37,6 +37,7 @@ export function usePayees() {
         .order('created_at', { ascending: false });
       
       query = applyUserIdFilter(query);
+      query = applyEntityFilter(query);
       
       const { data, error } = await query;
 
@@ -90,7 +91,7 @@ export function usePayees() {
 
   useEffect(() => {
     fetchPayees();
-  }, []);
+  }, [filterKey]);
 
   return {
     payees,

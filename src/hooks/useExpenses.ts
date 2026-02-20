@@ -52,7 +52,7 @@ export function useExpenses() {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<PayoutExpense[]>([]);
   const [loading, setLoading] = useState(true);
-  const { applyUserIdFilter, filterKey } = useDataFiltering();
+  const { applyUserIdFilter, applyEntityFilter, filterKey } = useDataFiltering();
 
   const fetchExpenses = async () => {
     if (!user) return;
@@ -70,6 +70,7 @@ export function useExpenses() {
         .order('created_at', { ascending: false });
       
       query = applyUserIdFilter(query);
+      query = applyEntityFilter(query);
       
       const { data, error } = await query;
 

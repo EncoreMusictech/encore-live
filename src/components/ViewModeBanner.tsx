@@ -4,6 +4,7 @@ import { Eye, X, Building2, Users, ChevronRight } from 'lucide-react';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useToast } from '@/hooks/use-toast';
 import { ClientScopeSelector } from './hierarchy/ClientScopeSelector';
+import { EntityScopeSelector } from './hierarchy/EntityScopeSelector';
 import { cn } from '@/lib/utils';
 
 export function ViewModeBanner() {
@@ -103,6 +104,8 @@ export function ViewModeBanner() {
           </div>
           
           <div className="flex items-center gap-2 shrink-0">
+            {/* Entity scope selector for companies with publishing entities */}
+            <EntityScopeSelector />
             {/* Client scope selector for publishing firms */}
             <ClientScopeSelector />
             

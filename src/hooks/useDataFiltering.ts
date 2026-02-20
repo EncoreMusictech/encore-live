@@ -13,7 +13,7 @@ interface DataFilteringConfig {
  * Returns filtering configuration for use in Supabase queries
  */
 export function useDataFiltering() {
-  const { isViewingAsSubAccount, viewContext } = useViewMode();
+  const { isViewingAsSubAccount, viewContext, isEntityFiltered } = useViewMode();
   const [filterConfig, setFilterConfig] = useState<DataFilteringConfig>({
     companyId: null,
     companyUserIds: [],
@@ -65,14 +65,23 @@ export function useDataFiltering() {
     loadFilterConfig();
   }, [isViewingAsSubAccount, viewContext?.companyId]);
 
+  const publishingEntityId = viewContext?.publishingEntityId || null;
+  const publishingEntityName = viewContext?.publishingEntityName || null;
+
   // Create a stable filter key that changes when filter state changes
   // This can be used as a dependency in other hooks to trigger refetch
   const filterKey = useMemo(() => {
-    if (!filterConfig.isFilterActive) {
-      return 'no-filter';
+    const parts: string[] = [];
+    if (filterConfig.isFilterActive) {
+      parts.push(`filter-${filterConfig.companyId}-${filterConfig.companyUserIds.join(',')}`);
+    } else {
+      parts.push('no-filter');
     }
-    return `filter-${filterConfig.companyId}-${filterConfig.companyUserIds.join(',')}`;
-  }, [filterConfig.isFilterActive, filterConfig.companyId, filterConfig.companyUserIds]);
+    if (publishingEntityId) {
+      parts.push(`entity-${publishingEntityId}`);
+    }
+    return parts.join('|');
+  }, [filterConfig.isFilterActive, filterConfig.companyId, filterConfig.companyUserIds, publishingEntityId]);
 
   /**
    * Apply filters to a Supabase query builder for tables with user_id
@@ -95,6 +104,16 @@ export function useDataFiltering() {
   };
 
   /**
+   * Apply publishing entity filter to a Supabase query builder for tables with publishing_entity_id
+   */
+  const applyEntityFilter = <T>(query: any): any => {
+    if (!publishingEntityId) {
+      return query;
+    }
+    return query.eq('publishing_entity_id', publishingEntityId);
+  };
+
+  /**
    * Check if a user ID belongs to the filtered company
    */
   const isUserInScope = (userId: string): boolean => {
@@ -106,22 +125,31 @@ export function useDataFiltering() {
    * Get filter summary for display
    */
   const getFilterSummary = () => {
-    if (!filterConfig.isFilterActive) {
-      return 'Showing all data';
+    const parts: string[] = [];
+    if (filterConfig.isFilterActive) {
+      parts.push(`${viewContext?.companyName} (${filterConfig.companyUserIds.length} user${filterConfig.companyUserIds.length !== 1 ? 's' : ''})`);
     }
-    return `Filtered to ${viewContext?.companyName} (${filterConfig.companyUserIds.length} user${filterConfig.companyUserIds.length !== 1 ? 's' : ''})`;
+    if (publishingEntityName) {
+      parts.push(`Entity: ${publishingEntityName}`);
+    }
+    if (parts.length === 0) return 'Showing all data';
+    return `Filtered to ${parts.join(' · ')}`;
   };
 
   return {
     filterConfig,
     loading,
     isFilterActive: filterConfig.isFilterActive,
+    isEntityFiltered: !!publishingEntityId,
     filterKey, // Use this as a dependency to trigger refetch when filter changes
     applyUserIdFilter,
     applyCompanyIdFilter,
+    applyEntityFilter,
     isUserInScope,
     getFilterSummary,
     companyId: filterConfig.companyId,
     companyUserIds: filterConfig.companyUserIds,
+    publishingEntityId,
+    publishingEntityName,
   };
 }
