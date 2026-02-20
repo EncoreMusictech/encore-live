@@ -1,47 +1,47 @@
 
 
-# Add Type Column and Parent Association to Sub-Account Table
+# Fix: Show Proper Names Instead of UIDs in Sub-Account Users
 
-## What Changes
+## Root Cause
 
-Update `src/components/admin/SubAccountDashboard.tsx` to show two new pieces of information in the table:
+The three PAQ users have NULL `first_name` and `last_name` in the `profiles` table. The `get-user-details` edge function falls back to `"User 9c74ff74..."` (a truncated UUID) when no name is found, which is what appears in the UI.
 
-### 1. "Type" column
-A new column between "Company" and "Contact" that displays a color-coded badge for `company_type`:
-- **Publishing Firm** -- blue badge
-- **Client Label** -- purple badge
-- **Standard** -- gray/outline badge
+The emails ARE resolving correctly -- only the name column shows UIDs.
 
-### 2. "Parent" identifier in the Company column
-For any company that has a `parent_company_id`, show a small line beneath the display name indicating which parent it belongs to, e.g.:
-> **Tzurel Halfon pka Zuri / PAQ**
-> Tzurel Halfon pka Zuri
-> *Client of PAQ Publishing*
+## Fix
 
-This uses a left-arrow or link icon to make the relationship visually clear.
+### 1. Update `get-user-details` edge function fallback (line 142)
 
----
+Change the name fallback from a truncated UID to the email username (the part before @):
 
-## Technical Details
-
-### Interface update
-Add `company_type`, `parent_company_id`, and `parent_company_name` to the `Company` interface.
-
-### Query update
-Change the Supabase query to join the parent company name:
 ```
-.select('*, parent:companies!parent_company_id(name)')
+// Before:
+name: fullName || `User ${userId.slice(0, 8)}...`
+
+// After:
+name: fullName || (authUser?.email?.split('@')[0] || 'Unknown User')
 ```
-This fetches the parent company's name in a single query without extra round-trips.
 
-### Table rendering
-- Add a `<TableHead>Type</TableHead>` column after "Company"
-- Render a badge with the formatted company type
-- In the "Company" cell, if `parent_company_id` is set, render a muted line: "Client of {parent_company_name}" with a small link icon
+This way, if a user has no profile name, the table will show "kennethbrandy" instead of "User 9c74ff74...".
 
-### Stats update
-Optionally split the stats to show count by type (publishing firms vs client labels vs standard).
+### 2. Populate the missing profile data (one-time SQL)
 
-### Search update
-Include `company_type` and `parent_company_name` in the search filter so admins can search "client label" or "PAQ" to find associated accounts.
+Run a SQL migration to set names for these three users based on their emails:
+
+- `kennethbrandy@paqpublishing.com` -> Kenneth Brandy
+- `dilip@paqpublishing.com` -> Dilip (first name only)
+- `tpatt@manticoremusic.com` -> T Patt
+
+This is optional -- admins can also edit names via the pencil icon on the Users tab. But doing it now prevents them from needing to.
+
+### 3. No UI code changes needed
+
+The `SubAccountUsers.tsx` component already correctly displays `user.full_name` and `user.email` from the edge function response. The fix is entirely in the edge function fallback logic and the missing database data.
+
+## Files Changed
+
+| File | Change |
+|---|---|
+| `supabase/functions/get-user-details/index.ts` | Update fallback name from truncated UID to email username |
+| SQL migration | Populate `first_name` / `last_name` for the three PAQ users |
 
