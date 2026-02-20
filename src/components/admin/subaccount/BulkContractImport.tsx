@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,8 @@ interface ParsedRow {
   synch_pct?: number;
   work_title?: string;
   work_isrc?: string;
+  publishing_entity?: string;
+  publishing_entity_id?: string;
   errors: string[];
   warnings: string[];
 }
@@ -50,6 +52,41 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
   const [results, setResults] = useState<{ success: number; failed: number; skipped: number; total: number; royaltyReady: number } | null>(null);
   const { toast } = useToast();
   const { createContract } = useContracts();
+
+  // Fetch publishing entities for this company
+  const [entityMap, setEntityMap] = useState<Map<string, string>>(new Map());
+  const [entityNames, setEntityNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchEntities = async () => {
+      const { data } = await supabase
+        .from('publishing_entities')
+        .select('id, name, display_name')
+        .eq('company_id', companyId)
+        .eq('status', 'active');
+
+      if (data && data.length > 0) {
+        const map = new Map<string, string>();
+        const names: string[] = [];
+        for (const e of data) {
+          const name = e.name?.trim();
+          const displayName = e.display_name?.trim();
+          if (name) {
+            map.set(name.toLowerCase(), e.id);
+            names.push(name);
+          }
+          if (displayName && displayName.toLowerCase() !== name?.toLowerCase()) {
+            map.set(displayName.toLowerCase(), e.id);
+          }
+        }
+        setEntityMap(map);
+        setEntityNames(names);
+      }
+    };
+    fetchEntities();
+  }, [companyId]);
+
+  const hasEntities = entityNames.length > 0;
 
   const handleDownloadTemplate = () => {
     const templateData = [
@@ -71,6 +108,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
         synch_pct: 50,
         work_title: 'Example Song',
         work_isrc: 'USRC12345678',
+        publishing_entity: hasEntities ? entityNames[0] : '',
       },
     ];
 
@@ -81,7 +119,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
       { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 12 },
       { wch: 25 }, { wch: 22 }, { wch: 15 }, { wch: 18 }, { wch: 15 },
       { wch: 18 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 12 },
-      { wch: 20 }, { wch: 16 },
+      { wch: 20 }, { wch: 16 }, { wch: 22 },
     ];
     XLSX.writeFile(wb, 'bulk-contract-import-template.xlsx');
     toast({ title: 'Template Downloaded', description: 'Fill in your contract data and upload.' });
@@ -104,7 +142,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, any>[];
 
-    const rows: ParsedRow[] = jsonData.map((row, idx) => {
+    const rows: ParsedRow[] = jsonData.map((row) => {
       const errors: string[] = [];
       const warnings: string[] = [];
 
@@ -129,6 +167,20 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
         warnings.push(`Splits may not total 100% per right type (P:${perf}%, M:${mech}%, S:${sync}%)`);
       }
 
+      // Publishing entity resolution
+      const entityValue = row.publishing_entity?.toString()?.trim() || '';
+      let resolvedEntityId: string | undefined;
+      if (entityValue) {
+        const id = entityMap.get(entityValue.toLowerCase());
+        if (id) {
+          resolvedEntityId = id;
+        } else {
+          errors.push(`Unknown publishing entity: "${entityValue}". Valid options: ${entityNames.join(', ')}`);
+        }
+      } else if (hasEntities) {
+        warnings.push('No publishing entity specified — contract will be unscoped');
+      }
+
       return {
         title,
         counterparty_name: counterparty,
@@ -147,6 +199,8 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
         synch_pct: sync || undefined,
         work_title: row.work_title?.toString()?.trim(),
         work_isrc: row.work_isrc?.toString()?.trim(),
+        publishing_entity: entityValue || undefined,
+        publishing_entity_id: resolvedEntityId,
         errors,
         warnings,
       };
@@ -225,6 +279,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
               territories: row.territories ? row.territories.split(',').map(t => t.trim()) : null,
               client_company_id: companyId,
               contract_status: 'draft' as any,
+              publishing_entity_id: row.publishing_entity_id || null,
               financial_terms: {
                 post_term_collection_months: row.post_term_collection_months || null,
                 post_term_collection_end_date: postTermEnd,
@@ -351,6 +406,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
                     <th className="p-2 text-left">Title</th>
                     <th className="p-2 text-left">Counterparty</th>
                     <th className="p-2 text-left">Type</th>
+                    {hasEntities && <th className="p-2 text-left">Publishing Entity</th>}
                     <th className="p-2 text-left">Post-Term</th>
                     <th className="p-2 text-left">Status</th>
                   </tr>
@@ -362,6 +418,17 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
                       <td className="p-2">{row.title || <span className="text-destructive italic">Missing</span>}</td>
                       <td className="p-2">{row.counterparty_name || <span className="text-destructive italic">Missing</span>}</td>
                       <td className="p-2"><Badge variant="outline" className="text-xs">{row.contract_type}</Badge></td>
+                      {hasEntities && (
+                        <td className="p-2">
+                          {row.publishing_entity ? (
+                            <Badge variant={row.publishing_entity_id ? 'default' : 'destructive'} className="text-xs">
+                              {row.publishing_entity}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs italic">Unscoped</span>
+                          )}
+                        </td>
+                      )}
                       <td className="p-2">{row.post_term_collection_months ? `${row.post_term_collection_months}mo` : '—'}</td>
                       <td className="p-2">
                         {row.errors.length > 0 ? (
@@ -452,6 +519,9 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
                 <li><strong>post_term_collection_months</strong>, <strong>post_term_collection_end_date</strong></li>
                 <li><strong>party_name</strong>, <strong>party_type</strong>, splits: <strong>performance_pct</strong>, <strong>mechanical_pct</strong>, <strong>synch_pct</strong></li>
                 <li><strong>work_title</strong>, <strong>work_isrc</strong></li>
+                {hasEntities && (
+                  <li><strong>publishing_entity</strong>: {entityNames.join(', ')}</li>
+                )}
               </ul>
             </CardContent>
           </Card>
