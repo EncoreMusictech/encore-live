@@ -49,7 +49,7 @@ import WhitelabelDashboard from "./pages/WhitelabelDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import SubAccountDetailPage from "./pages/SubAccountDetailPage";
 import ClientLabelDashboard from "./pages/ClientLabelDashboard";
-import ClientManagementPage from "./pages/ClientManagementPage";
+
 import RecoveryRedirect from "@/components/RecoveryRedirect";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import TrialSignup from "./pages/TrialSignup";
@@ -125,7 +125,7 @@ const App = () => {
                                 <Route path="blockchain" element={<CRMBlockchainPage />} />
                                 <Route path="walkthroughs" element={<ModuleWalkthroughsPage />} />
                                 <Route path="admin" element={<AdminDashboard />} />
-                                <Route path="clients" element={<ClientManagementPage />} />
+                                
                                 <Route path="client-view" element={<ClientLabelDashboard />} />
                               </Route>
                              
