@@ -1,44 +1,102 @@
 
 
-## Update Bulk Contract Import for Publishing Entity Support
+# Publishing Entity Toggle -- Myind Sound Test
 
-### Problem
-The bulk import template and processing logic have no awareness of publishing entities. All imported contracts get `publishing_entity_id = NULL`, bypassing entity-level recoupment isolation and reporting.
+Implement a platform-wide publishing entity toggle for Myind Sound as a test. When viewing Myind Sound in View Mode, admins (and Myind Sound users) will see an "Entity" dropdown in the ViewModeBanner that filters contracts, copyrights, payees, royalties, and expenses by the selected publishing entity.
 
-### Changes
+---
 
-**File: `src/components/admin/subaccount/BulkContractImport.tsx`**
+## Architecture
 
-1. **Add a `publishing_entity` column to the template**
-   - New column in the downloadable Excel template: `publishing_entity`
-   - Example value: `"PAQ / Kobalt"` (matches the entity's `name` or `display_name`)
-   - This is a human-readable name, not a UUID -- friendlier for spreadsheet users
+The implementation follows the exact same pattern as the existing Client Scope Selector:
 
-2. **Fetch available entities on mount**
-   - Query `publishing_entities` WHERE `company_id = companyId` AND `status = 'active'`
-   - Build a lookup map: `entity name (lowercase) -> entity id`
-   - If the company has zero entities, the column is simply ignored (backward compatible)
+```text
+ViewModeContext (stores publishingEntityId in sessionStorage)
+       |
+       v
+useDataFiltering (exposes applyEntityFilter)
+       |
+       v
+Data hooks (usePayees, useCopyright, useRoyaltyAllocations, useExpenses, contracts)
+       |
+       v
+EntityScopeSelector (dropdown in ViewModeBanner)
+```
 
-3. **Update `ParsedRow` interface**
-   - Add `publishing_entity?: string` and `publishing_entity_id?: string` fields
+---
 
-4. **Update validation logic (`validateAndPreview`)**
-   - Read `publishing_entity` from each row
-   - If provided but not found in the lookup map, add a validation error: `"Unknown publishing entity: {value}. Valid options: ..."`
-   - If not provided and the company has entities, add a warning: `"No publishing entity specified -- contract will be unscoped"`
+## Changes by File
 
-5. **Update the validation table UI**
-   - Add a "Publishing Entity" column to the preview table between "Type" and "Post-Term"
+### 1. `src/contexts/ViewModeContext.tsx`
 
-6. **Update import logic (`handleImport`)**
-   - When calling `createContract`, include `publishing_entity_id` from the resolved lookup
-   - The existing `createContract` function already passes through all fields to the Supabase insert, so this flows directly to the `contracts` table
+- Add `publishingEntityId?: string` and `publishingEntityName?: string` to the `ViewContext` interface
+- Add `setPublishingEntity: (entityId: string | null, entityName?: string) => void` to `ViewModeContextType`
+- Add `isEntityFiltered: boolean` computed property (true when `publishingEntityId` is set)
+- Implement `setPublishingEntity` -- updates the stored context and dispatches `viewContextChanged`
+- Update `useViewModeOptional.ts` to include the new defaults
 
-### What stays the same
-- Companies without publishing entities are unaffected (column is optional)
-- All existing validation rules remain intact
-- Duplicate detection logic unchanged
-- Interested parties and schedule works insertion unchanged
+### 2. `src/hooks/useDataFiltering.ts`
 
-### Technical Detail: Entity Resolution
-Rather than requiring users to paste UUIDs into a spreadsheet, the system resolves by name. The lookup is case-insensitive and trims whitespace. If a company has entities named "PAQ / Kobalt" and "PAQ / EMPIRE", the user types exactly that string in the spreadsheet cell.
+- Read `viewContext.publishingEntityId` from the view mode context
+- Add `applyEntityFilter(query)` function: if `publishingEntityId` is set, appends `.eq('publishing_entity_id', publishingEntityId)` to the query; otherwise returns query unchanged
+- Include `publishingEntityId` in the `filterKey` string so dependent hooks refetch on toggle
+- Update `getFilterSummary()` to append entity name when entity filter is active
+
+### 3. New file: `src/components/hierarchy/EntityScopeSelector.tsx`
+
+A dropdown component modeled on `ClientScopeSelector`:
+
+- Fetches `publishing_entities` for the current company (`viewContext.companyId` or `parentCompanyId`) where `status = 'active'`
+- Renders nothing if the company has zero entities (backward compatible)
+- Shows "All Entities" option (clears filter) and individual entity names
+- Calls `setPublishingEntity(entityId, entityName)` on selection
+- Highlights the currently selected entity with a check icon
+
+### 4. `src/components/ViewModeBanner.tsx`
+
+- Import and render `EntityScopeSelector` next to the existing `ClientScopeSelector`
+- When an entity is selected, append the entity name to the breadcrumb trail
+
+### 5. `src/components/DataFilteringIndicator.tsx`
+
+- Read entity filter state from `useDataFiltering`
+- When entity filter is active, include entity name in the badge text
+
+### 6. Data hooks -- apply `applyEntityFilter`
+
+Only hooks whose underlying tables have `publishing_entity_id`:
+
+| Hook | Table | Action |
+|---|---|---|
+| `src/hooks/useCopyright.ts` | copyrights | Add `applyEntityFilter(query)` |
+| `src/hooks/usePayees.ts` | payees | Add `applyEntityFilter(query)` |
+| `src/hooks/useRoyaltyAllocations.ts` | royalty_allocations | Add `applyEntityFilter(query)` |
+| `src/hooks/useExpenses.ts` | payout_expenses | Add `applyEntityFilter(query)` |
+
+Hooks for tables without `publishing_entity_id` (contacts, payouts, sync_licenses, notifications, operations) are left untouched.
+
+Contract-fetching queries (wherever they appear in sub-account contract views) will also get the entity filter applied.
+
+### 7. `src/hooks/useViewModeOptional.ts`
+
+- Add `setPublishingEntity` and `isEntityFiltered` to the default return object
+
+---
+
+## What stays the same
+
+- Companies without publishing entities see no change (selector hidden)
+- Client scope selector continues to work independently
+- Both selectors can be active simultaneously (entity within a client scope)
+- All existing RLS policies remain intact
+- No database migrations needed
+
+## Testing with Myind Sound
+
+Myind Sound already has one publishing entity ("Myind Sound" / ASCAP). To test the toggle:
+
+1. Enter View Mode for Myind Sound
+2. The Entity dropdown should appear showing "All Entities" and "Myind Sound"
+3. Selecting "Myind Sound" filters all scoped data; selecting "All Entities" clears the filter
+4. Add a second entity via the Entities tab to verify multi-entity toggling
+
