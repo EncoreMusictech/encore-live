@@ -228,7 +228,7 @@ export function CRMSidebar() {
                 <SidebarMenuButton asChild className={isActive('/dashboard/client-admin') ? "bg-sidebar-accent" : ""}>
                   <Link to="/dashboard/client-admin" className="flex items-center">
                     <Users className="mr-2 h-4 w-4" />
-                    {!collapsed && <span className="font-medium">Client Portal</span>}
+                    {!collapsed && <span className="font-medium">Portal Access</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -237,14 +237,6 @@ export function CRMSidebar() {
                   <Link to={`/dashboard/operations/sub-accounts/${viewContext.companyId}`} className="flex items-center">
                     <Monitor className="mr-2 h-4 w-4" />
                     {!collapsed && <span className="font-medium">Operations</span>}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>}
-              {viewContext?.companyType === 'publishing_firm' && <SidebarMenuItem>
-                <SidebarMenuButton asChild className={isActive('/dashboard/clients') ? "bg-sidebar-accent" : ""}>
-                  <Link to="/dashboard/clients" className="flex items-center">
-                    <Building2 className="mr-2 h-4 w-4" />
-                    {!collapsed && <span className="font-medium">Manage Clients</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>}
@@ -353,7 +345,7 @@ export function CRMSidebar() {
                   <SidebarMenuButton asChild className={isActive('/dashboard/client-admin') ? "bg-sidebar-accent" : ""}>
                     <Link to="/dashboard/client-admin" className="flex items-center">
                       <Users className="mr-2 h-4 w-4" />
-                      {!collapsed && <span className="font-medium">Client Portal</span>}
+                      {!collapsed && <span className="font-medium">Portal Access</span>}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -365,14 +357,6 @@ export function CRMSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                {canManageClients && <SidebarMenuItem>
-                  <SidebarMenuButton asChild className={isActive('/dashboard/clients') ? "bg-sidebar-accent" : ""}>
-                    <Link to="/dashboard/clients" className="flex items-center">
-                      <Building2 className="mr-2 h-4 w-4" />
-                      {!collapsed && <span className="font-medium">Manage Clients</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
