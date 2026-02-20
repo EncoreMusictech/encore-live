@@ -19,7 +19,7 @@ export const useCopyright = () => {
   const [writersCache, setWritersCache] = useState<{ [key: string]: CopyrightWriter[] }>({});
   const { toast } = useToast();
   const { logActivity } = useActivityLog();
-  const { applyUserIdFilter, filterKey } = useDataFiltering();
+  const { applyUserIdFilter, applyEntityFilter, filterKey } = useDataFiltering();
   const { 
     data: optimisticCopyrights, 
     setData: setOptimisticData,
@@ -65,7 +65,8 @@ export const useCopyright = () => {
       
       // Apply sub-account filtering if active
       query = applyUserIdFilter(query);
-      
+      // Apply publishing entity filter if active
+      query = applyEntityFilter(query);
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
@@ -98,7 +99,7 @@ export const useCopyright = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast, clearAllPending, loading, applyUserIdFilter]);
+  }, [toast, clearAllPending, loading, applyUserIdFilter, applyEntityFilter]);
 
   const createCopyright = async (copyrightData: CopyrightInsert, options?: { silent?: boolean }) => {
     const tempCopyright: Copyright = {
