@@ -2015,6 +2015,7 @@ export type Database = {
           original_publisher: string | null
           post_term_collection_end_date: string | null
           post_term_collection_months: number | null
+          publishing_entity_id: string | null
           rate_reduction_amount: number | null
           rate_reduction_percentage: number | null
           recipient_email: string | null
@@ -2060,6 +2061,7 @@ export type Database = {
           original_publisher?: string | null
           post_term_collection_end_date?: string | null
           post_term_collection_months?: number | null
+          publishing_entity_id?: string | null
           rate_reduction_amount?: number | null
           rate_reduction_percentage?: number | null
           recipient_email?: string | null
@@ -2105,6 +2107,7 @@ export type Database = {
           original_publisher?: string | null
           post_term_collection_end_date?: string | null
           post_term_collection_months?: number | null
+          publishing_entity_id?: string | null
           rate_reduction_amount?: number | null
           rate_reduction_percentage?: number | null
           recipient_email?: string | null
@@ -2127,6 +2130,13 @@ export type Database = {
             columns: ["client_company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_publishing_entity_id_fkey"
+            columns: ["publishing_entity_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_entities"
             referencedColumns: ["id"]
           },
         ]
@@ -2486,6 +2496,7 @@ export type Database = {
           notes: string | null
           notice_date: string | null
           opus_number: string | null
+          publishing_entity_id: string | null
           registration_status: string | null
           registration_type: string | null
           rights_types: string[] | null
@@ -2540,6 +2551,7 @@ export type Database = {
           notes?: string | null
           notice_date?: string | null
           opus_number?: string | null
+          publishing_entity_id?: string | null
           registration_status?: string | null
           registration_type?: string | null
           rights_types?: string[] | null
@@ -2594,6 +2606,7 @@ export type Database = {
           notes?: string | null
           notice_date?: string | null
           opus_number?: string | null
+          publishing_entity_id?: string | null
           registration_status?: string | null
           registration_type?: string | null
           rights_types?: string[] | null
@@ -2621,6 +2634,13 @@ export type Database = {
             columns: ["client_company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copyrights_publishing_entity_id_fkey"
+            columns: ["publishing_entity_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_entities"
             referencedColumns: ["id"]
           },
         ]
@@ -3256,6 +3276,108 @@ export type Database = {
           },
         ]
       }
+      entity_advance_ledger: {
+        Row: {
+          advance_amount: number
+          advance_type: string
+          balance_remaining: number | null
+          company_id: string
+          contract_id: string | null
+          created_at: string
+          effective_date: string | null
+          id: string
+          notes: string | null
+          publishing_entity_id: string
+          recouped_amount: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          advance_amount: number
+          advance_type?: string
+          balance_remaining?: number | null
+          company_id: string
+          contract_id?: string | null
+          created_at?: string
+          effective_date?: string | null
+          id?: string
+          notes?: string | null
+          publishing_entity_id: string
+          recouped_amount?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          advance_amount?: number
+          advance_type?: string
+          balance_remaining?: number | null
+          company_id?: string
+          contract_id?: string | null
+          created_at?: string
+          effective_date?: string | null
+          id?: string
+          notes?: string | null
+          publishing_entity_id?: string
+          recouped_amount?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_advance_ledger_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_advance_ledger_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_advance_ledger_publishing_entity_id_fkey"
+            columns: ["publishing_entity_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_user_access: {
+        Row: {
+          access_level: string
+          created_at: string
+          id: string
+          publishing_entity_id: string
+          user_id: string
+        }
+        Insert: {
+          access_level?: string
+          created_at?: string
+          id?: string
+          publishing_entity_id: string
+          user_id: string
+        }
+        Update: {
+          access_level?: string
+          created_at?: string
+          id?: string
+          publishing_entity_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_user_access_publishing_entity_id_fkey"
+            columns: ["publishing_entity_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       export_delivery_jobs: {
         Row: {
           attempt_count: number | null
@@ -3757,6 +3879,7 @@ export type Database = {
           payee_name: string
           payee_type: string
           payment_info: Json | null
+          publishing_entity_id: string | null
           updated_at: string
           user_id: string
           writer_id: string
@@ -3774,6 +3897,7 @@ export type Database = {
           payee_name: string
           payee_type: string
           payment_info?: Json | null
+          publishing_entity_id?: string | null
           updated_at?: string
           user_id: string
           writer_id: string
@@ -3791,6 +3915,7 @@ export type Database = {
           payee_name?: string
           payee_type?: string
           payment_info?: Json | null
+          publishing_entity_id?: string | null
           updated_at?: string
           user_id?: string
           writer_id?: string
@@ -3808,6 +3933,13 @@ export type Database = {
             columns: ["client_company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payees_publishing_entity_id_fkey"
+            columns: ["publishing_entity_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_entities"
             referencedColumns: ["id"]
           },
         ]
@@ -3985,6 +4117,7 @@ export type Database = {
           payee_id: string | null
           payout_id: string | null
           percentage_rate: number | null
+          publishing_entity_id: string | null
           updated_at: string
           user_id: string
           valid_from_date: string | null
@@ -4011,6 +4144,7 @@ export type Database = {
           payee_id?: string | null
           payout_id?: string | null
           percentage_rate?: number | null
+          publishing_entity_id?: string | null
           updated_at?: string
           user_id: string
           valid_from_date?: string | null
@@ -4037,6 +4171,7 @@ export type Database = {
           payee_id?: string | null
           payout_id?: string | null
           percentage_rate?: number | null
+          publishing_entity_id?: string | null
           updated_at?: string
           user_id?: string
           valid_from_date?: string | null
@@ -4063,6 +4198,13 @@ export type Database = {
             columns: ["payout_id"]
             isOneToOne: false
             referencedRelation: "payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_expenses_publishing_entity_id_fkey"
+            columns: ["publishing_entity_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_entities"
             referencedColumns: ["id"]
           },
           {
@@ -4655,6 +4797,65 @@ export type Database = {
         }
         Relationships: []
       }
+      publishing_entities: {
+        Row: {
+          administrator: string | null
+          administrator_type: string | null
+          cae_number: string | null
+          company_id: string
+          created_at: string
+          display_name: string | null
+          id: string
+          ipi_number: string | null
+          metadata: Json
+          name: string
+          pro_affiliation: string | null
+          status: string
+          territory: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          administrator?: string | null
+          administrator_type?: string | null
+          cae_number?: string | null
+          company_id: string
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          ipi_number?: string | null
+          metadata?: Json
+          name: string
+          pro_affiliation?: string | null
+          status?: string
+          territory?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          administrator?: string | null
+          administrator_type?: string | null
+          cae_number?: string | null
+          company_id?: string
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          ipi_number?: string | null
+          metadata?: Json
+          name?: string
+          pro_affiliation?: string | null
+          status?: string
+          territory?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publishing_entities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quarterly_balance_reports: {
         Row: {
           agreement_id: string | null
@@ -4820,6 +5021,7 @@ export type Database = {
           processed_at: string | null
           processed_by_user_id: string | null
           processing_count: number | null
+          publishing_entity_id: string | null
           source: Database["public"]["Enums"]["royalty_source"]
           statement_file_url: string | null
           statement_period_end: string | null
@@ -4842,6 +5044,7 @@ export type Database = {
           processed_at?: string | null
           processed_by_user_id?: string | null
           processing_count?: number | null
+          publishing_entity_id?: string | null
           source: Database["public"]["Enums"]["royalty_source"]
           statement_file_url?: string | null
           statement_period_end?: string | null
@@ -4864,6 +5067,7 @@ export type Database = {
           processed_at?: string | null
           processed_by_user_id?: string | null
           processing_count?: number | null
+          publishing_entity_id?: string | null
           source?: Database["public"]["Enums"]["royalty_source"]
           statement_file_url?: string | null
           statement_period_end?: string | null
@@ -4882,6 +5086,13 @@ export type Database = {
             columns: ["linked_statement_id"]
             isOneToOne: false
             referencedRelation: "royalties_import_staging"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reconciliation_batches_publishing_entity_id_fkey"
+            columns: ["publishing_entity_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_entities"
             referencedColumns: ["id"]
           },
         ]
@@ -5059,6 +5270,7 @@ export type Database = {
           media_type: string | null
           net_amount: number | null
           ownership_splits: Json | null
+          publishing_entity_id: string | null
           quantity: string | null
           quarter: string | null
           recoupable_expenses: boolean | null
@@ -5096,6 +5308,7 @@ export type Database = {
           media_type?: string | null
           net_amount?: number | null
           ownership_splits?: Json | null
+          publishing_entity_id?: string | null
           quantity?: string | null
           quarter?: string | null
           recoupable_expenses?: boolean | null
@@ -5133,6 +5346,7 @@ export type Database = {
           media_type?: string | null
           net_amount?: number | null
           ownership_splits?: Json | null
+          publishing_entity_id?: string | null
           quantity?: string | null
           quarter?: string | null
           recoupable_expenses?: boolean | null
@@ -5169,6 +5383,13 @@ export type Database = {
             columns: ["copyright_id"]
             isOneToOne: false
             referencedRelation: "copyrights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "royalty_allocations_publishing_entity_id_fkey"
+            columns: ["publishing_entity_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_entities"
             referencedColumns: ["id"]
           },
         ]
@@ -7384,6 +7605,10 @@ export type Database = {
       get_client_subscriber: {
         Args: { _client_user_id: string }
         Returns: string
+      }
+      get_company_consolidated_report: {
+        Args: { p_company_id: string }
+        Returns: Json
       }
       get_company_hierarchy_user_ids: {
         Args: { _company_id: string }
