@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Users, Building2, Eye, Settings, Shield } from 'lucide-react';
+import { Plus, Search, Users, Building2, Eye, Settings, Shield, Link2 } from 'lucide-react';
 import { CreateSubAccountDialog } from './CreateSubAccountDialog';
 import { ManageSubAccountUsersDialog } from './ManageSubAccountUsersDialog';
 import { ManageSubAccountModulesDialog } from './ManageSubAccountModulesDialog';
@@ -20,9 +20,25 @@ interface Company {
   subscription_tier: string;
   subscription_status: string;
   created_at: string;
+  company_type: string | null;
+  parent_company_id: string | null;
+  parent_company_name: string | null;
   user_count?: number;
   module_count?: number;
 }
+
+const formatCompanyType = (type: string | null): string => {
+  if (!type || type === 'standard') return 'Standard';
+  if (type === 'publishing_firm') return 'Publishing Firm';
+  if (type === 'client_label') return 'Client Label';
+  return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
+
+const getTypeBadgeClass = (type: string | null): string => {
+  if (type === 'publishing_firm') return 'bg-blue-100 text-blue-800 border-blue-200';
+  if (type === 'client_label') return 'bg-purple-100 text-purple-800 border-purple-200';
+  return '';
+};
 
 export function SubAccountDashboard() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -43,7 +59,7 @@ export function SubAccountDashboard() {
       setLoading(true);
       const { data: companiesData, error: companiesError } = await supabase
         .from('companies')
-        .select('*')
+        .select('*, parent:companies!parent_company_id(name)')
         .order('created_at', { ascending: false });
 
       if (companiesError) throw companiesError;
@@ -65,6 +81,7 @@ export function SubAccountDashboard() {
 
           return {
             ...company,
+            parent_company_name: (company as any).parent?.name || null,
             user_count: userCount || 0,
             module_count: moduleCount || 0,
           };
@@ -115,7 +132,9 @@ export function SubAccountDashboard() {
     (company) =>
       company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       company.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      company.contact_email.toLowerCase().includes(searchTerm.toLowerCase())
+      company.contact_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (company.company_type || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (company.parent_company_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const stats = {
@@ -208,7 +227,8 @@ export function SubAccountDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Company</TableHead>
+                     <TableHead>Company</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Tier</TableHead>
                     <TableHead>Status</TableHead>
@@ -224,7 +244,21 @@ export function SubAccountDashboard() {
                         <div>
                           <div className="font-medium">{company.name}</div>
                           <div className="text-sm text-muted-foreground">{company.display_name}</div>
+                          {company.parent_company_id && company.parent_company_name && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                              <Link2 className="h-3 w-3" />
+                              <span className="italic">Client of {company.parent_company_name}</span>
+                            </div>
+                          )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={company.company_type === 'standard' || !company.company_type ? 'outline' : 'default'}
+                          className={getTypeBadgeClass(company.company_type)}
+                        >
+                          {formatCompanyType(company.company_type)}
+                        </Badge>
                       </TableCell>
                       <TableCell>{company.contact_email}</TableCell>
                       <TableCell>
