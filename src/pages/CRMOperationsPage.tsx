@@ -5,8 +5,7 @@ import { useUserCompany } from "@/hooks/useUserCompany";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { ClientsManager } from "@/components/hierarchy/ClientsManager";
+import { Link, Navigate } from "react-router-dom";
 
 export default function CRMOperationsPage() {
   const { user } = useAuth();
@@ -35,23 +34,7 @@ export default function CRMOperationsPage() {
 
   // Sub-account users (publishing firms) see their client management view
   if (canManageClients && userCompany) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Building2 className="h-6 w-6" />
-            Account Management
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your client labels, users, and settings for {userCompany.display_name}
-          </p>
-        </div>
-        <ClientsManager
-          parentCompanyId={userCompany.id}
-          parentCompanyName={userCompany.display_name}
-        />
-      </div>
-    );
+    return <Navigate to={`/dashboard/operations/sub-accounts/${userCompany.id}`} replace />;
   }
 
   // Non-admin, non-publishing-firm users see access denied
