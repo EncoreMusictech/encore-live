@@ -1,37 +1,22 @@
 
 
-# Consolidate Redundant Client Navigation Items
+# Add operations@encoremusic.tech Admin Role in Database
 
-## Problem
-There are 4 overlapping client-related items across the sidebar and header, causing confusion:
+## Current State
+The email `operations@encoremusic.tech` (user ID: `1e1cebcc-8e99-4d8f-9cdd-e87c24ed7eee`) is already present in all hardcoded admin arrays across the frontend code. This change ensures the **database-level** admin role is also set.
 
-| Item | Location | Route | What It Does |
-|---|---|---|---|
-| **Client Portal** (sidebar) | Sidebar > Management | `/dashboard/client-admin` | Manage portal invitations and access |
-| **Manage Clients** (sidebar) | Sidebar > Management | `/dashboard/clients` | Create/manage client labels (same `ClientsManager` component as Operations > Clients tab) |
-| **Operations > Clients tab** | Sidebar > Management > Operations | `/dashboard/operations/sub-accounts/{id}` | Also uses `ClientsManager` -- identical functionality to "Manage Clients" |
-| **View Client Portal** (header) | Mobile hamburger menu | `/client-portal` | Admin preview of the external-facing portal |
+## Change
 
-## Changes
+Insert an `admin` role into the `user_roles` table for this user (using upsert to avoid duplicates):
 
-### 1. Remove "Manage Clients" sidebar button
-Since the **Operations > Clients tab** already provides the exact same `ClientsManager` component, the standalone "Manage Clients" link (`/dashboard/clients`) is fully redundant. Remove it from **both** sidebar Management sections in `CRMSidebar.tsx`.
+```text
+INSERT INTO public.user_roles (user_id, role)
+VALUES ('1e1cebcc-8e99-4d8f-9cdd-e87c24ed7eee', 'admin')
+ON CONFLICT (user_id, role) DO NOTHING;
+```
 
-### 2. Rename "Client Portal" sidebar item to "Portal Access"
-Rename the sidebar link from "Client Portal" to **"Portal Access"** to clearly distinguish it from the actual external-facing client portal (`/client-portal`). This makes it obvious this is about managing who gets access, not viewing the portal itself.
-
-### 3. Keep the header "View Client Portal" link as-is
-This serves a different purpose (admin preview of the external portal) and is only visible to administrators in the mobile menu. No change needed.
-
-### 4. Remove the `/dashboard/clients` route from App.tsx
-Since the standalone page is being removed, clean up the route entry and the `ClientManagementPage` import.
+This is a **data-only** change -- no code or schema modifications needed. The frontend hooks (`useUserRoles`, `useAdmin`, `useSuperAdmin`) will automatically pick up the database role.
 
 ## Files Changed
-
-| File | Change |
-|---|---|
-| `src/components/crm/CRMSidebar.tsx` | Remove "Manage Clients" sidebar items (2 locations: lines 243-250 and 368-375). Rename "Client Portal" to "Portal Access" (2 locations: lines 231 and 356). |
-| `src/App.tsx` | Remove route for `/dashboard/clients` (line 128) and the `ClientManagementPage` import (line 52). |
-
-The `ClientManagementPage.tsx` file itself can be kept for now (no harm) or deleted -- the important thing is it's no longer linked anywhere.
+None -- this is a database data insert only.
 
