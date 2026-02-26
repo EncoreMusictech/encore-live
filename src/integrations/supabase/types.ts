@@ -4504,6 +4504,74 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_error_logs: {
+        Row: {
+          action: string | null
+          company_id: string | null
+          company_name: string | null
+          created_at: string
+          error_details: Json | null
+          error_message: string
+          error_source: string
+          error_type: string
+          id: string
+          module: string | null
+          resolution_notes: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          company_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          error_details?: Json | null
+          error_message: string
+          error_source: string
+          error_type: string
+          id?: string
+          module?: string | null
+          resolution_notes?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          company_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          error_details?: Json | null
+          error_message?: string
+          error_source?: string
+          error_type?: string
+          id?: string
+          module?: string | null
+          resolution_notes?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_error_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       predictive_analytics_cache: {
         Row: {
           calculation_date: string

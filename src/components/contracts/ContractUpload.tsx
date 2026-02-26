@@ -12,6 +12,7 @@ import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from "lucide-reac
 import { useDropzone } from "react-dropzone";
 import { supabase } from "@/integrations/supabase/client";
 import { emitDataRefresh } from '@/lib/dataRefresh';
+import { logPlatformError } from '@/lib/platformErrorLogger';
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ContractReviewView } from './ContractReviewView';
@@ -422,6 +423,14 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       toast.success('Contract parsed successfully!');
     } catch (err: any) {
       console.error('Upload error:', err);
+      logPlatformError({
+        error_source: 'contract-upload',
+        error_type: 'file-processing',
+        error_message: err.message || 'Failed to process contract',
+        error_details: { stack: err.stack, fileName: selectedFile?.name },
+        module: 'contracts',
+        action: 'upload',
+      });
       setError(err.message || 'Failed to process contract');
       setUploadStatus('error');
       toast.error(`Failed to parse contract: ${err.message}`);
@@ -444,6 +453,14 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       onSuccess();
     } catch (err: any) {
       console.error('Contract creation error:', err);
+      logPlatformError({
+        error_source: 'contract-upload',
+        error_type: 'database',
+        error_message: err.message || 'Failed to create contract',
+        error_details: { stack: err.stack },
+        module: 'contracts',
+        action: 'create',
+      });
       toast.error('Failed to create contract');
       setError(err.message || 'Failed to create contract');
     }
