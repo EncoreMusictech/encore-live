@@ -3,9 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
+const notificationSound = new Audio('/sounds/message-notification.mp3');
+
 /**
  * Global listener for company_messages inserts.
- * Shows an on-screen toast and creates a bell notification
+ * Shows an on-screen toast, plays a sound, and creates a bell notification
  * whenever a new message arrives that wasn't sent by the current user.
  */
 export function useGlobalMessageNotifications() {
@@ -37,6 +39,10 @@ export function useGlobalMessageNotifications() {
 
           // Don't notify for own messages
           if (msg.sender_id === user.id) return;
+
+          // Play notification sound
+          notificationSound.currentTime = 0;
+          notificationSound.play().catch(() => {});
 
           // Show on-screen toast
           toast({
