@@ -23,7 +23,7 @@ export function useCompanyChat(companyId: string) {
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech', 'lawrence.berment@encoremusic.tech'];
   const isEncoreAdmin = adminEmails.includes(user?.email?.toLowerCase() || '');
 
   const scrollToBottom = useCallback(() => {

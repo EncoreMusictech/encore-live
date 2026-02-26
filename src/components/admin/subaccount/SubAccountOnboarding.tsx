@@ -47,7 +47,7 @@ export function SubAccountOnboarding({ companyId, companyName }: Props) {
   const { isViewingAsSubAccount } = useViewModeOptional();
   const { user } = useAuth();
   // Use raw admin check — NOT suppressed by view mode — so admins retain "god mode"
-  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech', 'lawrence.berment@encoremusic.tech'];
   const isRawAdmin = adminEmails.includes(user?.email?.toLowerCase() || '');
   // For checkbox permissions: when viewing as sub-account, treat as client (not admin)
   const isEncoreTeam = isRawAdmin && !isViewingAsSubAccount;

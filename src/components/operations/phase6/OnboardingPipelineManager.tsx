@@ -24,7 +24,7 @@ function PipelineChecklist({ companyId, phaseId }: { companyId: string; phaseId:
   const phase = ONBOARDING_PHASES.find(p => p.id === phaseId);
 
   // Admin check for permission enforcement
-  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech', 'lawrence.berment@encoremusic.tech'];
   const isAdmin = adminEmails.includes(user?.email?.toLowerCase() || '');
 
   if (!phase) return null;
