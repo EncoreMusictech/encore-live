@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { supabase } from "@/integrations/supabase/client";
+import { emitDataRefresh } from '@/lib/dataRefresh';
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ContractReviewView } from './ContractReviewView';
@@ -310,6 +311,7 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
         .eq('id', parsingResultId);
     }
 
+    emitDataRefresh('contracts');
     return contract;
   };
 

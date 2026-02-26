@@ -5,6 +5,8 @@ import { Tables, TablesInsert } from '@/integrations/supabase/types';
 import { useActivityLog } from '@/hooks/useActivityLog';
 import { useOptimisticUpdates } from '@/hooks/useOptimisticUpdates';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
+import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
+import { emitDataRefresh } from '@/lib/dataRefresh';
 
 export type Copyright = Tables<'copyrights'>;
 export type CopyrightWriter = Tables<'copyright_writers'>;
@@ -155,6 +157,7 @@ export const useCopyright = () => {
       // Confirm optimistic update
       confirmUpdate(updateId);
       setCopyrights(prev => [data, ...prev.filter(c => c.id !== tempCopyright.id)]);
+      emitDataRefresh('copyrights');
       
       // Log the create activity
       await logActivity({
@@ -228,6 +231,7 @@ export const useCopyright = () => {
       // Confirm optimistic update and update local state with server data
       confirmUpdate(updateId);
       setCopyrights(prev => prev.map(c => c.id === id ? data : c));
+      emitDataRefresh('copyrights');
       
       // Log the update activity
       await logActivity({
@@ -284,6 +288,7 @@ export const useCopyright = () => {
       });
       
       setCopyrights(prev => prev.filter(c => c.id !== id));
+      emitDataRefresh('copyrights');
       
       if (!options?.silent) {
         toast({
@@ -358,6 +363,8 @@ export const useCopyright = () => {
       return [];
     }
   };
+
+  useDataRefreshListener('copyrights', fetchCopyrights);
 
   // Set up real-time subscriptions - re-fetch when filter changes
   useEffect(() => {

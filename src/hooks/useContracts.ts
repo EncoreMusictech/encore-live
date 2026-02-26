@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tables, TablesInsert } from '@/integrations/supabase/types';
 import { useHierarchicalFiltering } from '@/hooks/useHierarchicalFiltering';
 import { useViewModeOptional } from '@/hooks/useViewModeOptional';
+import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
+import { emitDataRefresh } from '@/lib/dataRefresh';
 
 export type Contract = Tables<'contracts'>;
 export type ContractInsert = TablesInsert<'contracts'>;
@@ -85,6 +87,7 @@ export const useContracts = () => {
       if (error) throw error;
       
       await fetchContracts(); // Refresh the list
+      emitDataRefresh('contracts');
       
       toast({
         title: "Success",
@@ -115,6 +118,7 @@ export const useContracts = () => {
       if (error) throw error;
       
       await fetchContracts(); // Refresh the list
+      emitDataRefresh('contracts');
       
       toast({
         title: "Success",
@@ -143,6 +147,7 @@ export const useContracts = () => {
       if (error) throw error;
       
       await fetchContracts(); // Refresh the list
+      emitDataRefresh('contracts');
       
       toast({
         title: "Success",
@@ -526,6 +531,12 @@ export const useContracts = () => {
       return null;
     }
   };
+
+  const stableFetchContracts = useCallback(() => {
+    fetchContracts();
+  }, [filterKey]);
+
+  useDataRefreshListener('contracts', stableFetchContracts);
 
   useEffect(() => {
     fetchContracts();

@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
 import { useDataFiltering } from './useDataFiltering';
+import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
+import { emitDataRefresh } from '@/lib/dataRefresh';
 
 export interface Contact {
   id: string;
@@ -71,6 +73,7 @@ export function useContacts() {
         description: "Contact created successfully",
       });
 
+      emitDataRefresh('contacts');
       await fetchContacts();
       return data;
     } catch (error: any) {
@@ -100,6 +103,7 @@ export function useContacts() {
         description: "Contact updated successfully",
       });
 
+      emitDataRefresh('contacts');
       await fetchContacts();
       return data;
     } catch (error: any) {
@@ -127,6 +131,7 @@ export function useContacts() {
         description: "Contact deleted successfully",
       });
 
+      emitDataRefresh('contacts');
       await fetchContacts();
     } catch (error: any) {
       console.error('Error deleting contact:', error);
@@ -137,6 +142,12 @@ export function useContacts() {
       });
     }
   };
+
+  const stableFetchContacts = useCallback(() => {
+    fetchContacts();
+  }, [user, filterKey]);
+
+  useDataRefreshListener('contacts', stableFetchContacts);
 
   useEffect(() => {
     fetchContacts();

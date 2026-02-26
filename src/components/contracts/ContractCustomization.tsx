@@ -18,6 +18,7 @@ import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { emitDataRefresh } from '@/lib/dataRefresh';
 import { samplePDFs } from "./SamplePDFData";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoAccess } from "@/hooks/useDemoAccess";
@@ -231,6 +232,7 @@ export function ContractCustomization({ template, onBack, onSuccess }: ContractC
         showUpgradeModalForModule('contractManagement');
       }
       
+      emitDataRefresh('contracts');
       setShowSendOptions(true);
     } catch (error) {
       console.error('Error saving contract:', error);
