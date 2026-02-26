@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ArrowLeft, Send, FileText, Paperclip } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { emitDataRefresh } from '@/lib/dataRefresh';
 interface ContractField {
   id: string;
   type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox';
@@ -130,6 +131,7 @@ export const CustomizeContractForm: React.FC<CustomizeContractFormProps> = ({
     }
 
     toast({ title: 'Contract saved', description: 'Saved to My Contracts.' });
+    emitDataRefresh('contracts');
 
     if (onSave) {
       onSave(inserted ?? insertData);

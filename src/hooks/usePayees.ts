@@ -1,8 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useDataFiltering } from './useDataFiltering';
+import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
+import { emitDataRefresh } from '@/lib/dataRefresh';
 
 export function usePayees() {
   const [payees, setPayees] = useState<any[]>([]);
@@ -82,12 +84,19 @@ export function usePayees() {
         description: "Payee deleted successfully",
       });
 
+      emitDataRefresh('payees');
       // Refresh the list
       fetchPayees();
     } catch (error) {
       console.error('Error in deletePayee:', error);
     }
   };
+
+  const stableFetchPayees = useCallback(() => {
+    fetchPayees();
+  }, [filterKey]);
+
+  useDataRefreshListener('payees', stableFetchPayees);
 
   useEffect(() => {
     fetchPayees();

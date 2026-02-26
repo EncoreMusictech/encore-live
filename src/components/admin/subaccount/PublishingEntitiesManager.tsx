@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Building2, Edit2, Trash2, RefreshCw } from 'lucide-react';
+import { emitDataRefresh } from '@/lib/dataRefresh';
 
 interface PublishingEntity {
   id: string;
@@ -130,9 +131,10 @@ export function PublishingEntitiesManager({ companyId, companyName }: Publishing
       if (error) {
         toast({ title: 'Error', description: 'Failed to update entity', variant: 'destructive' });
       } else {
-        toast({ title: 'Updated', description: `${form.name} updated successfully` });
+      toast({ title: 'Updated', description: `${form.name} updated successfully` });
         setDialogOpen(false);
         fetchEntities();
+        emitDataRefresh('publishing-entities');
       }
     } else {
       const { error } = await supabase
@@ -142,9 +144,10 @@ export function PublishingEntitiesManager({ companyId, companyName }: Publishing
       if (error) {
         toast({ title: 'Error', description: 'Failed to create entity', variant: 'destructive' });
       } else {
-        toast({ title: 'Created', description: `${form.name} created successfully` });
+      toast({ title: 'Created', description: `${form.name} created successfully` });
         setDialogOpen(false);
         fetchEntities();
+        emitDataRefresh('publishing-entities');
       }
     }
     setSaving(false);

@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { emitDataRefresh } from '@/lib/dataRefresh';
 import { PublishingForm } from "./forms/PublishingForm";
 import { ArtistForm } from "./forms/ArtistForm";
 import { ProducerForm } from "./forms/ProducerForm";
@@ -99,6 +100,7 @@ export function ContractForm({ contractType, onCancel, onSuccess }: ContractForm
         showUpgradeModalForModule('contractManagement');
       }
       
+      emitDataRefresh('contracts');
       onSuccess();
     } catch (error) {
       console.error('Error:', error);

@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
 import { normalizeTerritoryCode } from '@/utils/territoryNormalizer';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
+import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
+import { emitDataRefresh } from '@/lib/dataRefresh';
 
 export interface RoyaltyAllocation {
   id: string;
@@ -264,6 +266,12 @@ export function useRoyaltyAllocations() {
       });
     }
   };
+
+  const stableFetchAllocations = useCallback(() => {
+    fetchAllocations();
+  }, [user, filterKey]);
+
+  useDataRefreshListener('royalties', stableFetchAllocations);
 
   useEffect(() => {
     fetchAllocations();
