@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { MessageCircle, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 interface BubbleMessage {
   id: string;
@@ -19,7 +18,6 @@ export function usePushBubble() {
 
 export function MessageBubbleOverlay() {
   const [bubbles, setBubbles] = useState<BubbleMessage[]>([]);
-  const navigate = useNavigate();
 
   useEffect(() => {
     pushBubble = (msg: BubbleMessage) => {
@@ -39,7 +37,7 @@ export function MessageBubbleOverlay() {
 
   const handleClick = (b: BubbleMessage) => {
     dismiss(b.id);
-    navigate('/dashboard/messages');
+    window.location.href = '/dashboard/messages';
   };
 
   if (bubbles.length === 0) return null;
