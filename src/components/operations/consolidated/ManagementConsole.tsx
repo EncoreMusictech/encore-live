@@ -18,9 +18,11 @@ import {
   Globe,
   Music,
   Crown,
-  Database
+  Database,
+  Bug
 } from "lucide-react";
 import { CatalogImportCenter } from "@/components/catalog/CatalogImportCenter";
+import { PlatformErrorLogsPanel } from "@/components/operations/PlatformErrorLogsPanel";
 
 interface ManagementConsoleProps {
   metrics: any;
@@ -90,13 +92,17 @@ export function ManagementConsole({ metrics }: ManagementConsoleProps) {
 
       {/* Enhanced Management Tabs */}
       <Tabs defaultValue="sub-accounts" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="sub-accounts">Sub-Accounts</TabsTrigger>
           <TabsTrigger value="access-control">Access Control</TabsTrigger>
           <TabsTrigger value="partnerships">Industry Partnerships</TabsTrigger>
           <TabsTrigger value="task-management">Task Management</TabsTrigger>
           <TabsTrigger value="user-analytics">User Analytics</TabsTrigger>
           <TabsTrigger value="catalog-import">Catalog Import</TabsTrigger>
+          <TabsTrigger value="error-logs" className="flex items-center gap-1">
+            <Bug className="h-3 w-3" />
+            Error Logs
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sub-accounts" className="space-y-6">
@@ -465,6 +471,10 @@ export function ManagementConsole({ metrics }: ManagementConsoleProps) {
 
         <TabsContent value="catalog-import" className="space-y-4">
           <CatalogImportCenter />
+        </TabsContent>
+
+        <TabsContent value="error-logs" className="space-y-4">
+          <PlatformErrorLogsPanel />
         </TabsContent>
       </Tabs>
     </div>

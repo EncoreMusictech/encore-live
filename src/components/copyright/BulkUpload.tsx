@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { isMLCFormat, parseMLCFormat, ParsedCopyright as MLCParsedCopyright } from '@/lib/mlc-csv-parser';
+import { logPlatformError } from '@/lib/platformErrorLogger';
 
 interface ParsedCopyright {
   work_title: string;
@@ -1014,6 +1015,22 @@ export const BulkUpload: React.FC<BulkUploadProps> = ({ onSuccess }) => {
     } catch (error) {
       console.error('Bulk upload error:', error);
       
+      // Log to platform error tracking
+      logPlatformError({
+        error_source: 'bulk-upload',
+        error_type: 'file-processing',
+        error_message: error instanceof Error ? error.message : 'Bulk upload failed',
+        error_details: {
+          successCount,
+          failureCount,
+          skippedCount,
+          errors: detailedErrors.slice(0, 20), // cap detail size
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+        module: 'copyrights',
+        action: 'upload',
+        severity: 'error',
+      });
       // Even on critical error, try to show what we processed
       setUploadResults({
         successCount,
