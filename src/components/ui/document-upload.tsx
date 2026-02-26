@@ -119,10 +119,21 @@ export const DocumentUpload = ({
   return (
     <div className={`space-y-4 ${className}`}>
       {!value ? (
-        <div>
+      <div>
           <div
-            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors cursor-pointer"
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+              'border-muted-foreground/25 hover:border-muted-foreground/50'
+            }`}
             onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const file = e.dataTransfer.files?.[0];
+              if (file) uploadFile(file);
+            }}
           >
             <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mb-1">
