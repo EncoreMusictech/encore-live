@@ -45,7 +45,7 @@ interface DemoAccessContextType {
 
 const DemoAccessContext = createContext<DemoAccessContextType | undefined>(undefined);
 
-const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
+const ADMIN_EMAILS = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech', 'lawrence.berment@encoremusic.tech'];
 const DEMO_EMAIL = 'demo@encoremusic.tech';
 
 const INITIAL_DEMO_LIMITS: DemoLimits = {

@@ -12,7 +12,7 @@ export const useAdmin = () => {
     const checkAdminStatus = () => {
       // Check if user is an admin (case-insensitive)
       const email = user?.email?.toLowerCase() || '';
-      const adminStatus = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'].includes(email);
+      const adminStatus = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech', 'lawrence.berment@encoremusic.tech'].includes(email);
       setIsAdmin(adminStatus);
       setLoading(false);
     };

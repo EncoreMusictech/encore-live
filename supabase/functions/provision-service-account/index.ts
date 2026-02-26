@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const allowedEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
+    const allowedEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech', 'lawrence.berment@encoremusic.tech'];
     
     // Also check user_roles table
     const adminClient = createClient(supabaseUrl, serviceRoleKey);

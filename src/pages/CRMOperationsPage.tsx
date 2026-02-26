@@ -13,7 +13,7 @@ export default function CRMOperationsPage() {
   const { userCompany, loading: companyLoading, canManageClients } = useUserCompany();
 
   // Check if user has ENCORE admin access
-  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
+  const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech', 'lawrence.berment@encoremusic.tech'];
   const isAdministrator = adminEmails.includes(user?.email?.toLowerCase() || '') || isAdmin;
 
   if (loading || companyLoading) {
