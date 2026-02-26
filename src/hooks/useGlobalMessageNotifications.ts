@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from '@/hooks/use-toast';
+import { usePushBubble } from '@/components/notifications/MessageBubbleOverlay';
 
-const notificationSound = new Audio('/sounds/message-notification.mp3');
+const notificationSound = new Audio('/sounds/bubble-pop.mp3');
+notificationSound.volume = 0.6;
 
 /**
  * Global listener for company_messages inserts.
@@ -13,6 +14,7 @@ const notificationSound = new Audio('/sounds/message-notification.mp3');
 export function useGlobalMessageNotifications() {
   const { user } = useAuth();
   const subscribedRef = useRef(false);
+  const pushBubble = usePushBubble();
 
   useEffect(() => {
     if (!user || subscribedRef.current) return;
@@ -44,12 +46,12 @@ export function useGlobalMessageNotifications() {
           notificationSound.currentTime = 0;
           notificationSound.play().catch(() => {});
 
-          // Show on-screen toast
-          toast({
-            title: `New message from ${msg.sender_name}`,
-            description: msg.content.length > 80
-              ? msg.content.slice(0, 80) + '…'
-              : msg.content,
+          // Show iOS-style bubble overlay
+          pushBubble({
+            id: msg.id,
+            senderName: msg.sender_name,
+            content: msg.content,
+            companyId: msg.company_id,
           });
 
           // Create a bell notification via RPC
