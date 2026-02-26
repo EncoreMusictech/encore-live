@@ -13,6 +13,7 @@ import { useDropzone } from "react-dropzone";
 import { supabase } from "@/integrations/supabase/client";
 import { emitDataRefresh } from '@/lib/dataRefresh';
 import { logPlatformError } from '@/lib/platformErrorLogger';
+import { showUploadFailure } from '@/hooks/useUploadFailureModal';
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ContractReviewView } from './ContractReviewView';
@@ -423,13 +424,20 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       toast.success('Contract parsed successfully!');
     } catch (err: any) {
       console.error('Upload error:', err);
+      const errorDetails = { stack: err.stack, fileName: selectedFile?.name };
       logPlatformError({
         error_source: 'contract-upload',
         error_type: 'file-processing',
         error_message: err.message || 'Failed to process contract',
-        error_details: { stack: err.stack, fileName: selectedFile?.name },
+        error_details: errorDetails,
         module: 'contracts',
         action: 'upload',
+      });
+      showUploadFailure({
+        title: 'Contract Upload Failed',
+        source: 'Contract Upload',
+        errorMessage: err.message || 'Failed to process contract',
+        details: errorDetails,
       });
       setError(err.message || 'Failed to process contract');
       setUploadStatus('error');
@@ -453,13 +461,20 @@ export const ContractUpload = ({ onBack, onSuccess }: ContractUploadProps) => {
       onSuccess();
     } catch (err: any) {
       console.error('Contract creation error:', err);
+      const errorDetails = { stack: err.stack };
       logPlatformError({
         error_source: 'contract-upload',
         error_type: 'database',
         error_message: err.message || 'Failed to create contract',
-        error_details: { stack: err.stack },
+        error_details: errorDetails,
         module: 'contracts',
         action: 'create',
+      });
+      showUploadFailure({
+        title: 'Contract Creation Failed',
+        source: 'Contract Upload',
+        errorMessage: err.message || 'Failed to create contract',
+        details: errorDetails,
       });
       toast.error('Failed to create contract');
       setError(err.message || 'Failed to create contract');

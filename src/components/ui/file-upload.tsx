@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { TrackTagsDisplay } from "@/components/audio/TrackTagsDisplay";
 import { logPlatformError } from "@/lib/platformErrorLogger";
+import { showUploadFailure } from "@/hooks/useUploadFailureModal";
 
 interface FileUploadProps {
   value?: string;
@@ -101,13 +102,20 @@ export const FileUpload = ({
       }
     } catch (error: any) {
       console.error('Upload error:', error);
+      const errorDetails = { fileName: file?.name, fileSize: file?.size, stack: error.stack };
       logPlatformError({
         error_source: 'file-processing',
         error_type: 'network',
         error_message: error.message || 'Failed to upload audio file',
-        error_details: { fileName: file?.name, fileSize: file?.size, stack: error.stack },
+        error_details: errorDetails,
         module: 'audio',
         action: 'upload',
+      });
+      showUploadFailure({
+        title: 'Audio Upload Failed',
+        source: 'Audio File Upload',
+        errorMessage: error.message || 'Failed to upload file',
+        details: errorDetails,
       });
       toast({
         title: "Upload failed",
