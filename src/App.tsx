@@ -12,6 +12,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminOrProtectedRoute from "@/components/AdminOrProtectedRoute";
 import DemoUpgradeModal from "@/components/DemoUpgradeModal";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { UploadFailureModal } from "@/components/ui/UploadFailureModal";
+import { GlobalMessageNotifier } from "@/components/GlobalMessageNotifier";
 import { SecurityProvider } from "@/components/SecurityProvider";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { TourOverlay } from "@/components/tour/TourOverlay";
@@ -94,6 +96,8 @@ const App = () => {
                     <TooltipProvider>
                        <Toaster />
                        <Sonner />
+                       <UploadFailureModal />
+                       <GlobalMessageNotifier />
                        <DisableLeavePrompt />
                        <DemoUpgradeModal />
                        <BrowserRouter>

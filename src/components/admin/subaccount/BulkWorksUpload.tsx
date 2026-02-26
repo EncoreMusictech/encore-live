@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { logPlatformError } from '@/lib/platformErrorLogger';
+import { showUploadFailure } from '@/hooks/useUploadFailureModal';
 
 interface BulkWorksUploadProps {
   companyId: string;
@@ -357,16 +358,23 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
 
     } catch (error: any) {
       console.error('Error uploading works:', error);
+      const errorDetails = { stack: error.stack, file_name: file?.name, company_id: companyId };
       await logPlatformError({
         error_source: 'bulk_works_upload',
         error_type: 'upload_fatal_error',
         error_message: error.message || 'Fatal error during bulk upload',
-        error_details: { stack: error.stack, file_name: file?.name, company_id: companyId },
+        error_details: errorDetails,
         module: 'sub_account_works',
         action: 'bulk_upload',
         severity: 'critical',
         company_id: companyId,
         company_name: companyName,
+      });
+      showUploadFailure({
+        title: 'Bulk Works Upload Failed',
+        source: 'Bulk Works Upload',
+        errorMessage: error.message || 'Fatal error during bulk upload',
+        details: errorDetails,
       });
       toast({
         title: 'Error',

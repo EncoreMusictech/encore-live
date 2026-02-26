@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { logPlatformError } from "@/lib/platformErrorLogger";
+import { showUploadFailure } from "@/hooks/useUploadFailureModal";
 
 interface DocumentUploadProps {
   value?: string;
@@ -72,13 +73,20 @@ export const DocumentUpload = ({
       });
     } catch (error: any) {
       console.error('Upload error:', error);
+      const errorDetails = { fileName: file?.name, fileSize: file?.size, stack: error.stack };
       logPlatformError({
         error_source: 'file-processing',
         error_type: 'network',
         error_message: error.message || 'Failed to upload document',
-        error_details: { fileName: file?.name, fileSize: file?.size, stack: error.stack },
+        error_details: errorDetails,
         module: 'documents',
         action: 'upload',
+      });
+      showUploadFailure({
+        title: 'Document Upload Failed',
+        source: 'Document Upload',
+        errorMessage: error.message || 'Failed to upload document',
+        details: errorDetails,
       });
       toast({
         title: "Upload failed",
