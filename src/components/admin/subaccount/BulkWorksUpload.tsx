@@ -270,7 +270,21 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
       <CardContent className="space-y-6">
         {/* File Upload */}
         <div className="space-y-4">
-          <div className="border-2 border-dashed rounded-lg p-8 text-center">
+            <div
+              className="border-2 border-dashed rounded-lg p-8 text-center"
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const file = e.dataTransfer.files?.[0];
+                if (file) {
+                  const fakeEvent = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  handleFileChange(fakeEvent);
+                }
+              }}
+            >
             <div className="flex flex-col items-center gap-4">
               <div className="p-4 bg-primary/10 rounded-full">
                 <FileSpreadsheet className="h-8 w-8 text-primary" />

@@ -61,6 +61,7 @@ import AcceptInvitation from "./pages/AcceptInvitation";
 import InvitedUserTerms from "./pages/InvitedUserTerms";
 import { DisableLeavePrompt } from "@/components/DisableLeavePrompt";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { useGlobalDropPrevention } from "@/hooks/useGlobalDropPrevention";
 
 
 
@@ -81,6 +82,7 @@ const getQueryClient = () => {
 };
 
 const App = () => {
+  useGlobalDropPrevention();
   return (
     <ErrorBoundary>
       <QueryClientProvider client={getQueryClient()}>
