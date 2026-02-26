@@ -51,6 +51,8 @@ import WhitelabelDashboard from "./pages/WhitelabelDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import SubAccountDetailPage from "./pages/SubAccountDetailPage";
 import ClientLabelDashboard from "./pages/ClientLabelDashboard";
+import MessagesPage from "./pages/MessagesPage";
+import { GlobalChatBubble } from "@/components/GlobalChatBubble";
 
 import RecoveryRedirect from "@/components/RecoveryRedirect";
 import TermsAndConditions from "./pages/TermsAndConditions";
@@ -107,7 +109,8 @@ const App = () => {
                             <TourProvider>
                              <ViewModeBanner />
                              <TourOverlay />
-                             <RecoveryRedirect />
+                              <RecoveryRedirect />
+                              <GlobalChatBubble />
                              <Routes>
                               <Route path="/auth" element={<Auth />} />
                               <Route path="/accept-invitation" element={<AcceptInvitation />} />
@@ -131,6 +134,7 @@ const App = () => {
                                 <Route path="blockchain" element={<CRMBlockchainPage />} />
                                 <Route path="walkthroughs" element={<ModuleWalkthroughsPage />} />
                                 <Route path="admin" element={<AdminDashboard />} />
+                                <Route path="messages" element={<MessagesPage />} />
                                 
                                 <Route path="client-view" element={<ClientLabelDashboard />} />
                               </Route>
