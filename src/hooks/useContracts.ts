@@ -55,9 +55,10 @@ export const useContracts = () => {
         query = applyClientCompanyIdFilter(query);
       } else {
         // When not viewing as a sub-account, only show the current user's own contracts
+        // Exclude contracts assigned to sub-accounts (client_company_id is not null)
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          query = query.eq('user_id', user.id);
+          query = query.eq('user_id', user.id).is('client_company_id', null);
         }
       }
       
