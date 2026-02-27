@@ -204,6 +204,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         const work = groupedWorks[i];
         const rowLabel = work.sourceRows.join(',');
 
+        let copyrightId: string | null = null;
         try {
           // Normalize ISRC: treat "N/A", "n/a", "none", "TBD", empty as null
           const normalizedIsrc = work.isrc && !/^(n\/?a|none|tbd|null|-)$/i.test(work.isrc.trim()) ? work.isrc.trim() : null;
@@ -258,6 +259,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
             failedRows.push({ row: rowLabel, title: work.title, error: `Copyright insert failed: ${copyrightError.message}`, details: { code: copyrightError.code } });
             throw copyrightError;
           }
+          copyrightId = copyright.id;
 
           // Insert recording if ISRC exists
           if (normalizedIsrc) {
@@ -324,6 +326,13 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           successCount++;
         } catch (error: any) {
           console.error(`Error processing work "${work.title}" (rows ${rowLabel}):`, error);
+          // Rollback: delete the orphaned copyright if it was created before the failure
+          if (copyrightId) {
+            console.warn(`Rolling back orphaned copyright ${copyrightId} for "${work.title}"`);
+            await supabase.from('copyright_recordings').delete().eq('copyright_id', copyrightId);
+            await supabase.from('copyright_writers').delete().eq('copyright_id', copyrightId);
+            await supabase.from('copyrights').delete().eq('id', copyrightId);
+          }
           failedCount++;
         }
 
