@@ -149,6 +149,19 @@ export default function SubAccountDetailPage() {
 
   return (
     <div className="space-y-6 p-6">
+      {/* Back link for ENCORE admins */}
+      {isEncoreAdmin && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-1 text-muted-foreground hover:text-foreground -mb-4"
+          onClick={() => navigate('/dashboard/operations')}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Sub-Accounts
+        </Button>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
           <div>
