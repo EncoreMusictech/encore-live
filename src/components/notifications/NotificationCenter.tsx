@@ -6,11 +6,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Bell, Search, Filter, Settings } from 'lucide-react';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useSharedNotifications } from '@/contexts/NotificationContext';
 import { NotificationItem } from './NotificationItem';
 
 export const NotificationCenter = () => {
-  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useSharedNotifications();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
 

@@ -20,6 +20,7 @@ import { TourOverlay } from "@/components/tour/TourOverlay";
 import EmailRestrictedRoute from "@/components/EmailRestrictedRoute";
 import { CRMLayout } from "@/components/crm/CRMLayout";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { CompanyBrandingProvider } from "@/components/CompanyBrandingProvider";
 import { ViewModeBanner } from "@/components/ViewModeBanner";
 import Index from "./pages/Index";
@@ -104,7 +105,8 @@ const App = () => {
                        <DemoUpgradeModal />
                        <BrowserRouter>
                          <ScrollToTop />
-                         <ViewModeProvider>
+                          <ViewModeProvider>
+                          <NotificationProvider>
                             <CompanyBrandingProvider>
                             <TourProvider>
                              <ViewModeBanner />
@@ -220,6 +222,7 @@ const App = () => {
                            </Routes>
                           </TourProvider>
                             </CompanyBrandingProvider>
+                          </NotificationProvider>
                         </ViewModeProvider>
                        </BrowserRouter>
                      </TooltipProvider>
