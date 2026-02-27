@@ -126,6 +126,7 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
         const row = dataRows[i];
         setProgress(Math.round(((i + 1) / dataRows.length) * 100));
 
+        let copyrightId: string | null = null;
         try {
           const artist = row[mapping.artist]?.toString().trim();
           const track = row[mapping.track]?.toString().trim();
@@ -164,6 +165,7 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
             .single();
 
           if (copyrightError) throw copyrightError;
+          copyrightId = copyright.id;
 
           // Create recording entry
           const { error: recordingError } = await supabase
@@ -192,10 +194,17 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
           if (catalogError) throw catalogError;
 
           existingCombos.add(comboKey);
+          copyrightId = null; // Clear — fully succeeded, no rollback needed
           successCount++;
 
         } catch (error: any) {
           console.error(`Error processing row ${i + 2}:`, error);
+          // Rollback: delete orphaned copyright if it was created before the failure
+          if (copyrightId) {
+            console.warn(`Rolling back orphaned copyright ${copyrightId} for row ${i + 2}`);
+            await supabase.from('copyright_recordings').delete().eq('copyright_id', copyrightId);
+            await supabase.from('copyrights').delete().eq('id', copyrightId);
+          }
           errors.push(`Row ${i + 2}: ${error.message}`);
           failedCount++;
         }
