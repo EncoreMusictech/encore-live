@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw, Brain } from "lucide-react";
 import { useUnifiedOperations } from "@/hooks/useUnifiedOperations";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { useSearchParams } from "react-router-dom";
 import { DataSeedButton } from "./DataSeedButton";
 import { OperationsHub } from "./consolidated/OperationsHub";
 import { BusinessIntelligence } from "./consolidated/BusinessIntelligence";
@@ -12,6 +13,8 @@ import { ManagementConsole } from "./consolidated/ManagementConsole";
 export function OperationsDashboard() {
   const { metrics, aiInsights, progressTargets, loading, error, refreshData } = useUnifiedOperations();
   const { hasRole } = useUserRoles();
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab');
 
   if (loading) {
     return (
@@ -81,7 +84,7 @@ export function OperationsDashboard() {
       </div>
 
       {/* Consolidated Tabs - 50% Reduction */}
-      <Tabs defaultValue={availableTabs[0]?.id || 'operations-hub'} className="space-y-6">
+      <Tabs defaultValue={initialTab || availableTabs[0]?.id || 'operations-hub'} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           {availableTabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id}>
