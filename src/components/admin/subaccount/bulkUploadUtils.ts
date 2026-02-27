@@ -98,7 +98,8 @@ function extractWriter(row: Record<string, any>): GroupedWriter | null {
   if (!fullName) return null;
 
   const shareRaw = row.writer_share ?? row.writer_1_ownership;
-  const share = parseFloat(String(shareRaw)) || 0;
+  const shareParsed = parseFloat(String(shareRaw)) || 0;
+  const share = (shareParsed > 0 && shareParsed <= 1) ? shareParsed * 100 : shareParsed;
 
   const controlledRaw = str(row.writer_controlled ?? row.writer_1_controlled);
   const controlled = /^(y|yes|c|true|1)$/i.test(controlledRaw);
@@ -122,6 +123,8 @@ function extractInlineWriters(row: Record<string, any>): GroupedWriter[] {
     const name = str(row[`writer_${i}_name`]);
     if (!name) continue;
     const shareRaw = row[`writer_${i}_ownership`];
+    const shareParsed = parseFloat(String(shareRaw)) || 0;
+    const shareNormalized = (shareParsed > 0 && shareParsed <= 1) ? shareParsed * 100 : shareParsed;
     const controlledRaw = str(row[`writer_${i}_controlled`]);
     writers.push({
       name,
@@ -129,7 +132,7 @@ function extractInlineWriters(row: Record<string, any>): GroupedWriter[] {
       lastName: '',
       ipi: str(row[`writer_${i}_ipi`]) || null,
       pro: str(row[`writer_${i}_pro`]) || null,
-      share: parseFloat(String(shareRaw)) || 0,
+      share: shareNormalized,
       controlled: /^(y|yes|c|true|1)$/i.test(controlledRaw),
       role: str(row[`writer_${i}_role`]) || 'composer',
     });
