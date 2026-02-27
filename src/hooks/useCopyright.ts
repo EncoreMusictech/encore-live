@@ -269,6 +269,15 @@ export const useCopyright = () => {
     try {
       const copyrightToDelete = copyrights.find(c => c.id === id);
       
+      // Remove matching catalog_items (by title + company_id) so Assigned Works stays in sync
+      if (copyrightToDelete?.work_title && copyrightToDelete?.client_company_id) {
+        await supabase
+          .from('catalog_items')
+          .delete()
+          .eq('company_id', copyrightToDelete.client_company_id)
+          .eq('title', copyrightToDelete.work_title);
+      }
+
       const { error } = await supabase
         .from('copyrights')
         .delete()

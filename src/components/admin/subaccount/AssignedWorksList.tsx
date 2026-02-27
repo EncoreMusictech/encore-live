@@ -2,10 +2,22 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Music } from 'lucide-react';
+import { Search, Music, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Work {
   id: string;
@@ -24,6 +36,7 @@ interface AssignedWorksListProps {
 export function AssignedWorksList({ companyId }: AssignedWorksListProps) {
   const [works, setWorks] = useState<Work[]>([]);
   const [loading, setLoading] = useState(true);
+  const [removing, setRemoving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
@@ -54,6 +67,33 @@ export function AssignedWorksList({ companyId }: AssignedWorksListProps) {
     }
   };
 
+  const handleRemoveAll = async () => {
+    try {
+      setRemoving(true);
+      const { error } = await supabase
+        .from('catalog_items')
+        .delete()
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      setWorks([]);
+      toast({
+        title: 'Works Removed',
+        description: `Successfully removed all assigned works.`,
+      });
+    } catch (error) {
+      console.error('Error removing works:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to remove works',
+        variant: 'destructive',
+      });
+    } finally {
+      setRemoving(false);
+    }
+  };
+
   const filteredWorks = works.filter(
     (work) =>
       work.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -62,11 +102,37 @@ export function AssignedWorksList({ companyId }: AssignedWorksListProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Assigned Works</CardTitle>
-        <CardDescription>
-          Works currently assigned to this sub-account ({works.length} total)
-        </CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between">
+        <div>
+          <CardTitle>Assigned Works</CardTitle>
+          <CardDescription>
+            Works currently assigned to this sub-account ({works.length} total)
+          </CardDescription>
+        </div>
+        {works.length > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={removing}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Remove All
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove all assigned works?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove all {works.length} works from this sub-account's catalog. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRemoveAll}>
+                  Remove All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Search */}
