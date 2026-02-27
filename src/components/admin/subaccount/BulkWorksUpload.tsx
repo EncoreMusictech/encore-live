@@ -223,6 +223,11 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           const uniqueId = crypto.randomUUID().substring(0, 8);
           const internalId = `${sanitizedTitle}-${typeSlug}-${uniqueId}`;
 
+          // Generate a unique work_id to avoid collisions on copyrights_work_id_key
+          const workIdDate = new Date().toISOString().replace(/[-:T]/g, '').substring(0, 8);
+          const workIdUnique = crypto.randomUUID().substring(0, 8);
+          const workId = `W${workIdDate}-${workIdUnique}`;
+
           // Insert copyright record
           // @ts-ignore - Avoid deep type instantiation
           const { data: copyright, error: copyrightError } = await supabase
@@ -232,6 +237,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
               work_title: work.title,
               work_type: work.workType,
               internal_id: internalId,
+              work_id: workId,
               iswc: work.iswc || null,
               album_title: work.albumTitle || null,
               notes: `Bulk uploaded for ${companyName}`,
