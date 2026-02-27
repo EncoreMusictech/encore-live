@@ -21,7 +21,7 @@ export const useCopyright = () => {
   const [writersCache, setWritersCache] = useState<{ [key: string]: CopyrightWriter[] }>({});
   const { toast } = useToast();
   const { logActivity } = useActivityLog();
-  const { applyUserIdFilter, applyEntityFilter, filterKey } = useDataFiltering();
+  const { applyUserIdFilter, applyEntityFilter, filterKey, isFilterActive } = useDataFiltering();
   const { 
     data: optimisticCopyrights, 
     setData: setOptimisticData,
@@ -65,8 +65,13 @@ export const useCopyright = () => {
           )
         `);
       
-      // Apply sub-account filtering if active
-      query = applyUserIdFilter(query);
+      // Apply sub-account filtering if active, otherwise scope to current user
+      if (isFilterActive) {
+        query = applyUserIdFilter(query);
+      } else {
+        // When not viewing as a sub-account, only show the current user's own copyrights
+        query = query.eq('user_id', user.id);
+      }
       // Apply publishing entity filter if active
       query = applyEntityFilter(query);
       const { data, error } = await query.order('created_at', { ascending: false });
