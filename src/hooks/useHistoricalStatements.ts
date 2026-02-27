@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataFiltering } from './useDataFiltering';
+import { useActingUser } from '@/hooks/useActingUser';
 
 export interface HistoricalStatement {
   id?: string;
@@ -44,6 +45,7 @@ export function useHistoricalStatements(artistName?: string) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { applyUserIdFilter, filterKey } = useDataFiltering();
+  const { getActingUserId } = useActingUser();
 
   const fetchStatements = useCallback(async (name?: string) => {
     if (!name && !artistName) return;
@@ -84,11 +86,13 @@ export function useHistoricalStatements(artistName?: string) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const actingUserId = await getActingUserId();
+
       const { data, error } = await supabase
         .from('deal_historical_statements')
         .insert({
           ...statement,
-          user_id: user.id,
+          user_id: actingUserId,
         })
         .select()
         .single();

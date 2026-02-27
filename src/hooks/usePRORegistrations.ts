@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useActingUser } from '@/hooks/useActingUser';
 
 export interface PRORegistrationSubmission {
   id: string;
@@ -43,6 +44,7 @@ export const usePRORegistrations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { getActingUserId } = useActingUser();
 
   const fetchSubmissions = useCallback(async () => {
     try {
@@ -88,6 +90,8 @@ export const usePRORegistrations = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const actingUserId = await getActingUserId();
+
       // Calculate expected ACK date (typically 5-10 business days for ASCAP)
       const expectedAckDate = new Date();
       expectedAckDate.setDate(expectedAckDate.getDate() + 7);
@@ -95,7 +99,7 @@ export const usePRORegistrations = () => {
       const { data: submission, error: submissionError } = await supabase
         .from('pro_registration_submissions')
         .insert({
-          user_id: user.id,
+          user_id: actingUserId,
           pro_name: proName,
           export_id: exportId,
           cwr_file_name: cwrFileName,

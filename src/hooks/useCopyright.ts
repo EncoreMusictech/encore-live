@@ -7,6 +7,7 @@ import { useOptimisticUpdates } from '@/hooks/useOptimisticUpdates';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
 import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
 import { emitDataRefresh } from '@/lib/dataRefresh';
+import { useActingUser } from '@/hooks/useActingUser';
 
 export type Copyright = Tables<'copyrights'>;
 export type CopyrightWriter = Tables<'copyright_writers'>;
@@ -22,6 +23,7 @@ export const useCopyright = () => {
   const { toast } = useToast();
   const { logActivity } = useActivityLog();
   const { applyUserIdFilter, applyEntityFilter, filterKey } = useDataFiltering();
+  const { getActingUserId } = useActingUser();
   const { 
     data: optimisticCopyrights, 
     setData: setOptimisticData,
@@ -117,34 +119,14 @@ export const useCopyright = () => {
 
     try {
       console.log('Creating copyright with data:', copyrightData);
-      // Ensure authenticated user (attempt refresh if needed)
-      let userId: string | null = null;
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        userId = user?.id ?? null;
-      } catch {}
-
-      if (!userId) {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          userId = session?.user?.id ?? null;
-        } catch {}
-      }
-
-      if (!userId) {
-        try {
-          await supabase.auth.refreshSession();
-          const { data: { user } } = await supabase.auth.getUser();
-          userId = user?.id ?? null;
-        } catch {}
-      }
-
-      if (!userId) throw new Error('No authenticated user');
+      
+      // Resolve acting user: uses service account when in sub-account context
+      const actingUserId = await getActingUserId();
 
       const { data, error } = await supabase
         .from('copyrights')
         .insert({
-          user_id: userId,
+          user_id: actingUserId,
           ...copyrightData
         })
         .select()
