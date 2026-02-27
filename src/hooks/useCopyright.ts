@@ -23,7 +23,7 @@ export const useCopyright = () => {
   const { toast } = useToast();
   const { logActivity } = useActivityLog();
   const { applyUserIdFilter, applyEntityFilter, filterKey } = useDataFiltering();
-  const { getActingUserId } = useActingUser();
+  const { getActingUserId, getActingUserIdForCompany } = useActingUser();
   const { 
     data: optimisticCopyrights, 
     setData: setOptimisticData,
@@ -121,7 +121,10 @@ export const useCopyright = () => {
       console.log('Creating copyright with data:', copyrightData);
       
       // Resolve acting user: uses service account when in sub-account context
-      const actingUserId = await getActingUserId();
+      // If client_company_id is provided (e.g. from sub-account detail page), resolve via that company
+      const actingUserId = copyrightData.client_company_id
+        ? await getActingUserIdForCompany(copyrightData.client_company_id)
+        : await getActingUserId();
 
       const { data, error } = await supabase
         .from('copyrights')
