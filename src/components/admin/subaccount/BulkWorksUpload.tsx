@@ -10,6 +10,7 @@ import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Download }
 import * as XLSX from 'xlsx';
 import { logPlatformError } from '@/lib/platformErrorLogger';
 import { showUploadFailure } from '@/hooks/useUploadFailureModal';
+import { groupRowsIntoWorks, type GroupedWork } from './bulkUploadUtils';
 
 interface BulkWorksUploadProps {
   companyId: string;
@@ -26,38 +27,61 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
   const handleDownloadTemplate = () => {
     const templateData = [
       {
-        work_title: 'Sample Song Title',
-        iswc: 'T-123456789-C',
-        album_title: 'Sample Album',
-        creation_date: '2024-01-15',
-        copyright_date: '2024-01-15',
-        language_code: 'EN',
-        work_type: 'original',
-        contains_sample: 'FALSE',
-        duration_seconds: 180,
-        notes: 'Sample copyright work',
-        writer_1_name: 'John Doe',
-        writer_1_ownership: 50,
-        writer_1_role: 'composer',
-        writer_1_ipi: '12345678',
-        writer_1_controlled: 'C',
-        writer_1_pro: 'ASCAP',
-        writer_2_name: 'Jane Smith',
-        writer_2_ownership: 50,
-        writer_2_role: 'lyricist',
-        writer_2_ipi: '87654321',
-        writer_2_controlled: 'C',
-        writer_2_pro: 'BMI',
-        publisher_1_name: 'Sample Music Publishing',
-        publisher_1_ownership: 100,
-        publisher_1_role: 'original_publisher',
-        publisher_1_ipi: '11111111',
-        publisher_1_pro: 'ASCAP',
-        recording_title: 'Sample Song Title',
-        recording_artist: 'John Doe & Jane Smith',
-        recording_isrc: 'USRC12345678',
-        recording_release_date: '2024-02-01',
-        recording_duration: 180,
+        'Work Title': 'Best Friends',
+        'Alternate Title': '',
+        'Main Artist': 'Sophia Grace',
+        'Featured Artist': '',
+        'ISRC': 'QMFEX1300002',
+        'ISWC': '',
+        'Album Title': 'Sample Album',
+        'Content (Clean / Explicit / Neither)': 'Clean',
+        'Name of Writer(s)': 'Donald Augustus Sales pka Hazel',
+        'First Name': 'Donald',
+        'Last Name': 'Sales',
+        'Share': 70,
+        'PRO': 'ASCAP',
+        'IPI': '423630488',
+        'Controlled (Y/N)': 'Y',
+        'Writer Role': 'composer',
+        'Notes': '',
+      },
+      {
+        'Work Title': '',
+        'Alternate Title': '',
+        'Main Artist': '',
+        'Featured Artist': '',
+        'ISRC': '',
+        'ISWC': '',
+        'Album Title': '',
+        'Content (Clean / Explicit / Neither)': '',
+        'Name of Writer(s)': 'Sophia Grace Brownlee',
+        'First Name': 'Sophia',
+        'Last Name': 'Brownlee',
+        'Share': 30,
+        'PRO': 'ASCAP',
+        'IPI': '766580896',
+        'Controlled (Y/N)': 'N',
+        'Writer Role': 'lyricist',
+        'Notes': '',
+      },
+      {
+        'Work Title': 'Another Song',
+        'Alternate Title': '',
+        'Main Artist': 'John Doe',
+        'Featured Artist': '',
+        'ISRC': 'USRC12345678',
+        'ISWC': 'T-123456789-C',
+        'Album Title': '',
+        'Content (Clean / Explicit / Neither)': '',
+        'Name of Writer(s)': 'John Doe',
+        'First Name': 'John',
+        'Last Name': 'Doe',
+        'Share': 100,
+        'PRO': 'BMI',
+        'IPI': '12345678',
+        'Controlled (Y/N)': 'Y',
+        'Writer Role': 'composer',
+        'Notes': '',
       },
     ];
 
@@ -65,13 +89,11 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Copyright Bulk Upload Template');
 
-    // Set column widths
     const cols = Object.keys(templateData[0]).map(key => ({ wch: Math.max(key.length + 4, 18) }));
     ws['!cols'] = cols;
 
     XLSX.writeFile(wb, 'copyright_bulk_upload_template.xlsx');
-
-    toast({ title: 'Template Downloaded', description: 'Open the file and fill in your works data.' });
+    toast({ title: 'Template Downloaded', description: 'Open the file and fill in your works data. Works with multiple writers use multiple rows (leave Work Title blank for additional writers).' });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,11 +105,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
 
   const handleUpload = async () => {
     if (!file) {
-      toast({
-        title: 'Error',
-        description: 'Please select a file to upload',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Please select a file to upload', variant: 'destructive' });
       return;
     }
 
@@ -95,7 +113,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
       setUploading(true);
       setProgress(0);
 
-      // Read the Excel/CSV file
+      // Parse the file
       let jsonData: Record<string, string>[];
       try {
         const data = await file.arrayBuffer();
@@ -104,30 +122,22 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, string>[];
       } catch (parseError: any) {
         await logPlatformError({
-          error_source: 'bulk_works_upload',
-          error_type: 'file_parse_error',
+          error_source: 'bulk_works_upload', error_type: 'file_parse_error',
           error_message: `Failed to parse uploaded file: ${parseError.message}`,
           error_details: { file_name: file.name, file_size: file.size, file_type: file.type, stack: parseError.stack },
-          module: 'sub_account_works',
-          action: 'bulk_upload_parse',
-          severity: 'error',
-          company_id: companyId,
-          company_name: companyName,
+          module: 'sub_account_works', action: 'bulk_upload_parse', severity: 'error',
+          company_id: companyId, company_name: companyName,
         });
         throw parseError;
       }
 
       if (!jsonData.length) {
         await logPlatformError({
-          error_source: 'bulk_works_upload',
-          error_type: 'empty_file',
+          error_source: 'bulk_works_upload', error_type: 'empty_file',
           error_message: 'Uploaded file contains no data rows',
           error_details: { file_name: file.name },
-          module: 'sub_account_works',
-          action: 'bulk_upload_validate',
-          severity: 'warning',
-          company_id: companyId,
-          company_name: companyName,
+          module: 'sub_account_works', action: 'bulk_upload_validate', severity: 'warning',
+          company_id: companyId, company_name: companyName,
         });
         toast({ title: 'Error', description: 'File contains no data rows', variant: 'destructive' });
         setUploading(false);
@@ -135,49 +145,42 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         return;
       }
 
-      setProgress(20);
+      setProgress(10);
+
+      // Group rows into works (handles both flat and PAQ multi-row formats)
+      const groupedWorks = groupRowsIntoWorks(jsonData);
+
+      if (!groupedWorks.length) {
+        toast({ title: 'Error', description: 'No works found in file. Ensure at least one row has a Work Title.', variant: 'destructive' });
+        setUploading(false);
+        setFile(null);
+        return;
+      }
+
+      setProgress(15);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         await logPlatformError({
-          error_source: 'bulk_works_upload',
-          error_type: 'auth_error',
+          error_source: 'bulk_works_upload', error_type: 'auth_error',
           error_message: 'User not authenticated during bulk upload',
-          error_details: { file_name: file.name, row_count: jsonData.length },
-          module: 'sub_account_works',
-          action: 'bulk_upload_auth',
-          severity: 'error',
-          company_id: companyId,
-          company_name: companyName,
+          error_details: { file_name: file.name, work_count: groupedWorks.length },
+          module: 'sub_account_works', action: 'bulk_upload_auth', severity: 'error',
+          company_id: companyId, company_name: companyName,
         });
         throw new Error('Not authenticated');
       }
 
       let successCount = 0;
       let failedCount = 0;
-      const failedRows: { row: number; title: string; error: string; details: any }[] = [];
+      const failedRows: { row: number | string; title: string; error: string; details: any }[] = [];
 
-      // Fetch all existing ISRCs for this user at once (performance optimization)
-      const { data: existingRecordings, error: recFetchErr } = await supabase
+      // Prefetch existing ISRCs for duplicate detection
+      const { data: existingRecordings } = await supabase
         .from('copyright_recordings')
         .select('isrc, copyright_id')
         .not('isrc', 'is', null);
 
-      if (recFetchErr) {
-        await logPlatformError({
-          error_source: 'bulk_works_upload',
-          error_type: 'db_query_error',
-          error_message: `Failed to fetch existing recordings: ${recFetchErr.message}`,
-          error_details: { code: recFetchErr.code, hint: recFetchErr.hint },
-          module: 'sub_account_works',
-          action: 'bulk_upload_prefetch',
-          severity: 'error',
-          company_id: companyId,
-          company_name: companyName,
-        });
-      }
-
-      // Get user's copyright IDs to filter recordings
       const { data: userCopyrights } = await supabase
         .from('copyrights')
         .select('id')
@@ -185,202 +188,180 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
 
       const userCopyrightIds = new Set(userCopyrights?.map(c => c.id) || []);
       const existingIsrcs = new Set(
-        existingRecordings
-          ?.filter(r => userCopyrightIds.has(r.copyright_id))
-          .map(r => r.isrc) || []
+        existingRecordings?.filter(r => userCopyrightIds.has(r.copyright_id)).map(r => r.isrc) || []
       );
-      
-      // Track ISRCs being added in this batch to prevent duplicates within upload
       const batchIsrcs = new Set<string>();
-      setProgress(15);
 
-      // Process each work
-      for (let i = 0; i < jsonData.length; i++) {
-        const work = jsonData[i] as Record<string, string>;
-        
+      setProgress(20);
+
+      // Process each grouped work
+      for (let i = 0; i < groupedWorks.length; i++) {
+        const work = groupedWorks[i];
+        const rowLabel = work.sourceRows.join(',');
+
         try {
-          const workTitle = work.title || work.work_title || 'Untitled';
-          const isrc = work.isrc || work.ISRC || null;
-          
-          // Determine work type: if title contains (Video), it's a video, otherwise audio
-          const isVideo = /\(video\)/i.test(workTitle);
-          const workType = isVideo ? 'Video' : 'Audio Recording';
-          
-          // Check for ISRC duplicates (both existing and within current batch)
-          if (isrc) {
-            if (existingIsrcs.has(isrc)) {
-              const msg = `ISRC duplicate in database (${isrc})`;
-              failedRows.push({ row: i + 1, title: workTitle, error: msg, details: { isrc, duplicate_type: 'database' } });
+          // ISRC duplicate checks
+          if (work.isrc) {
+            if (existingIsrcs.has(work.isrc)) {
+              failedRows.push({ row: rowLabel, title: work.title, error: `ISRC duplicate in database (${work.isrc})`, details: { isrc: work.isrc, duplicate_type: 'database' } });
               failedCount++;
-              setProgress(15 + ((i + 1) / jsonData.length) * 85);
+              setProgress(20 + ((i + 1) / groupedWorks.length) * 75);
               continue;
             }
-            if (batchIsrcs.has(isrc)) {
-              const msg = `ISRC duplicate in upload batch (${isrc})`;
-              failedRows.push({ row: i + 1, title: workTitle, error: msg, details: { isrc, duplicate_type: 'batch' } });
+            if (batchIsrcs.has(work.isrc)) {
+              failedRows.push({ row: rowLabel, title: work.title, error: `ISRC duplicate in upload batch (${work.isrc})`, details: { isrc: work.isrc, duplicate_type: 'batch' } });
               failedCount++;
-              setProgress(15 + ((i + 1) / jsonData.length) * 85);
+              setProgress(20 + ((i + 1) / groupedWorks.length) * 75);
               continue;
             }
-            batchIsrcs.add(isrc);
+            batchIsrcs.add(work.isrc);
           }
-          
-          // Generate unique internal_id with UUID to prevent any duplicates
-          const sanitizedTitle = workTitle
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '')
-            .substring(0, 40);
-          const typeSlug = workType.toLowerCase().replace(/\s+/g, '-');
+
+          // Generate unique internal_id
+          const sanitizedTitle = work.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 40);
+          const typeSlug = work.workType.toLowerCase().replace(/\s+/g, '-');
           const uniqueId = crypto.randomUUID().substring(0, 8);
           const internalId = `${sanitizedTitle}-${typeSlug}-${uniqueId}`;
-          
+
+          // Generate a unique work_id to avoid collisions on copyrights_work_id_key
+          const workIdDate = new Date().toISOString().replace(/[-:T]/g, '').substring(0, 8);
+          const workIdUnique = crypto.randomUUID().substring(0, 8);
+          const workId = `W${workIdDate}-${workIdUnique}`;
+
+          // Insert copyright record
           // @ts-ignore - Avoid deep type instantiation
           const { data: copyright, error: copyrightError } = await supabase
             .from('copyrights')
             .insert({
               user_id: user.id,
-              work_title: workTitle,
-              work_type: workType,
+              work_title: work.title,
+              work_type: work.workType,
               internal_id: internalId,
+              work_id: workId,
               iswc: work.iswc || null,
+              album_title: work.albumTitle || null,
               notes: `Bulk uploaded for ${companyName}`,
             })
             .select()
             .single();
 
           if (copyrightError) {
-            failedRows.push({ row: i + 1, title: workTitle, error: `Copyright insert failed: ${copyrightError.message}`, details: { code: copyrightError.code, hint: copyrightError.hint, internalId } });
+            failedRows.push({ row: rowLabel, title: work.title, error: `Copyright insert failed: ${copyrightError.message}`, details: { code: copyrightError.code } });
             throw copyrightError;
           }
 
-          // Create recording entry with ISRC if provided
-          if (isrc) {
+          // Insert recording if ISRC exists
+          if (work.isrc) {
             const { error: recordingError } = await supabase
               .from('copyright_recordings')
               .insert({
                 copyright_id: copyright.id,
-                isrc: isrc,
-                recording_title: workTitle,
-                artist_name: work.artist || work.writer || null,
+                isrc: work.isrc,
+                recording_title: work.title,
+                artist_name: work.artist || null,
               });
 
             if (recordingError) {
-              failedRows.push({ row: i + 1, title: workTitle, error: `Recording insert failed: ${recordingError.message}`, details: { code: recordingError.code, isrc, copyright_id: copyright.id } });
+              failedRows.push({ row: rowLabel, title: work.title, error: `Recording insert failed: ${recordingError.message}`, details: { code: recordingError.code, isrc: work.isrc } });
               throw recordingError;
             }
           }
 
-          // Link to sub-account
+          // Insert writers
+          if (work.writers.length > 0) {
+            for (const writer of work.writers) {
+              const { error: writerError } = await supabase
+                .from('copyright_writers')
+                .insert({
+                  copyright_id: copyright.id,
+                  writer_name: writer.name,
+                  ipi_number: writer.ipi || null,
+                  ownership_percentage: writer.share,
+                  pro_affiliation: writer.pro || null,
+                  controlled_status: writer.controlled ? 'C' : 'NC',
+                  writer_role: writer.role || 'composer',
+                });
+
+              if (writerError) {
+                console.error(`Writer insert failed for "${writer.name}":`, writerError);
+                // Non-fatal: log but continue with other writers
+              }
+            }
+          }
+
+          // Link to sub-account catalog
           // @ts-ignore - Avoid deep type instantiation
           const { error: linkError } = await supabase
             .from('catalog_items')
             .insert({
               company_id: companyId,
               user_id: user.id,
-              title: workTitle,
-              artist: work.artist || work.writer || 'Unknown',
-              isrc: isrc,
-              metadata: { 
-                copyright_id: copyright.id, 
+              title: work.title,
+              artist: work.artist || (work.writers[0]?.name) || 'Unknown',
+              isrc: work.isrc,
+              metadata: {
+                copyright_id: copyright.id,
                 bulk_upload: true,
-                work_type: workType 
+                work_type: work.workType,
+                writer_count: work.writers.length,
               },
             });
 
           if (linkError) {
-            failedRows.push({ row: i + 1, title: workTitle, error: `Catalog link failed: ${linkError.message}`, details: { code: linkError.code, copyright_id: copyright.id } });
+            failedRows.push({ row: rowLabel, title: work.title, error: `Catalog link failed: ${linkError.message}`, details: { code: linkError.code } });
             throw linkError;
           }
 
           successCount++;
         } catch (error: any) {
-          console.error(`Error processing row ${i + 1}:`, error);
+          console.error(`Error processing work "${work.title}" (rows ${rowLabel}):`, error);
           failedCount++;
         }
 
-        setProgress(15 + ((i + 1) / jsonData.length) * 85);
+        setProgress(20 + ((i + 1) / groupedWorks.length) * 75);
       }
 
-      // Log ALL failures to platform_error_logs in one shot
+      // Log failures
       if (failedRows.length > 0) {
         await logPlatformError({
-          error_source: 'bulk_works_upload',
-          error_type: 'row_processing_failures',
-          error_message: `${failedRows.length} of ${jsonData.length} rows failed during bulk upload for ${companyName}`,
-          error_details: {
-            file_name: file.name,
-            total_rows: jsonData.length,
-            success_count: successCount,
-            failed_count: failedCount,
-            failed_rows: failedRows,
-            uploaded_by: user.email,
-          },
-          module: 'sub_account_works',
-          action: 'bulk_upload_process',
-          severity: failedRows.length === jsonData.length ? 'critical' : 'error',
-          company_id: companyId,
-          company_name: companyName,
+          error_source: 'bulk_works_upload', error_type: 'row_processing_failures',
+          error_message: `${failedRows.length} of ${groupedWorks.length} works failed during bulk upload for ${companyName}`,
+          error_details: { file_name: file.name, total_works: groupedWorks.length, success_count: successCount, failed_count: failedCount, failed_rows: failedRows, uploaded_by: user.email },
+          module: 'sub_account_works', action: 'bulk_upload_process',
+          severity: failedRows.length === groupedWorks.length ? 'critical' : 'error',
+          company_id: companyId, company_name: companyName,
         });
       }
 
-      // Also log success for audit trail
+      // Log success for audit trail
       if (successCount > 0) {
         await logPlatformError({
-          error_source: 'bulk_works_upload',
-          error_type: 'upload_completed',
-          error_message: `Bulk upload completed: ${successCount}/${jsonData.length} works succeeded for ${companyName}`,
-          error_details: {
-            file_name: file.name,
-            total_rows: jsonData.length,
-            success_count: successCount,
-            failed_count: failedCount,
-            uploaded_by: user.email,
-          },
-          module: 'sub_account_works',
-          action: 'bulk_upload_complete',
+          error_source: 'bulk_works_upload', error_type: 'upload_completed',
+          error_message: `Bulk upload completed: ${successCount}/${groupedWorks.length} works succeeded for ${companyName}`,
+          error_details: { file_name: file.name, total_works: groupedWorks.length, total_raw_rows: jsonData.length, success_count: successCount, failed_count: failedCount, uploaded_by: user.email },
+          module: 'sub_account_works', action: 'bulk_upload_complete',
           severity: failedCount > 0 ? 'warning' : 'info',
-          company_id: companyId,
-          company_name: companyName,
+          company_id: companyId, company_name: companyName,
         });
       }
 
-      setResults({
-        success: successCount,
-        failed: failedCount,
-        total: jsonData.length,
-      });
-
-      toast({
-        title: 'Upload Complete',
-        description: `Successfully uploaded ${successCount} of ${jsonData.length} works`,
-      });
+      setResults({ success: successCount, failed: failedCount, total: groupedWorks.length });
+      toast({ title: 'Upload Complete', description: `Successfully uploaded ${successCount} of ${groupedWorks.length} works` });
 
     } catch (error: any) {
       console.error('Error uploading works:', error);
       const errorDetails = { stack: error.stack, file_name: file?.name, company_id: companyId };
       await logPlatformError({
-        error_source: 'bulk_works_upload',
-        error_type: 'upload_fatal_error',
+        error_source: 'bulk_works_upload', error_type: 'upload_fatal_error',
         error_message: error.message || 'Fatal error during bulk upload',
-        error_details: errorDetails,
-        module: 'sub_account_works',
-        action: 'bulk_upload',
-        severity: 'critical',
-        company_id: companyId,
-        company_name: companyName,
+        error_details: errorDetails, module: 'sub_account_works', action: 'bulk_upload',
+        severity: 'critical', company_id: companyId, company_name: companyName,
       });
       showUploadFailure({
-        title: 'Bulk Works Upload Failed',
-        source: 'Bulk Works Upload',
-        errorMessage: error.message || 'Fatal error during bulk upload',
-        details: errorDetails,
+        title: 'Bulk Works Upload Failed', source: 'Bulk Works Upload',
+        errorMessage: error.message || 'Fatal error during bulk upload', details: errorDetails,
       });
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to upload works',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: error.message || 'Failed to upload works', variant: 'destructive' });
     } finally {
       setUploading(false);
       setFile(null);
@@ -512,12 +493,14 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           <CardContent className="text-sm space-y-2">
             <p>Your file should include the following columns:</p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li><strong>work_title</strong> (required)</li>
-              <li><strong>iswc</strong>, <strong>album_title</strong>, <strong>work_type</strong>, <strong>language_code</strong> (optional)</li>
-              <li><strong>writer_1_name</strong>, <strong>writer_1_ownership</strong>, <strong>writer_1_role</strong>, <strong>writer_1_ipi</strong>, <strong>writer_1_controlled</strong>, <strong>writer_1_pro</strong> (up to 2 writers)</li>
-              <li><strong>publisher_1_name</strong>, <strong>publisher_1_ownership</strong>, <strong>publisher_1_role</strong>, <strong>publisher_1_ipi</strong>, <strong>publisher_1_pro</strong></li>
-              <li><strong>recording_title</strong>, <strong>recording_artist</strong>, <strong>recording_isrc</strong>, <strong>recording_release_date</strong>, <strong>recording_duration</strong></li>
+              <li><strong>Work Title</strong> (required — first row of each work)</li>
+              <li><strong>Main Artist</strong>, <strong>Featured Artist</strong>, <strong>ISRC</strong>, <strong>ISWC</strong>, <strong>Album Title</strong> (optional)</li>
+              <li><strong>Name of Writer(s)</strong>, <strong>First Name</strong>, <strong>Last Name</strong>, <strong>Share</strong>, <strong>PRO</strong>, <strong>IPI</strong>, <strong>Controlled (Y/N)</strong></li>
             </ul>
+            <p className="text-muted-foreground mt-2">
+              <strong>Multi-writer works:</strong> Place additional writers on subsequent rows with a blank Work Title. 
+              Empty rows between works are ignored.
+            </p>
           </CardContent>
         </Card>
       </CardContent>

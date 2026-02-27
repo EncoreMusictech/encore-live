@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { updatePageMetadata } from "@/utils/seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,32 +57,54 @@ export default function CRMCopyrightPage() {
     updatePageMetadata('copyrightManagement');
   }, []);
 
-  // Load writers and recordings for each copyright
+  // Load writers and recordings for all copyrights in batch
   useEffect(() => {
     const loadWritersAndRecordings = async () => {
-      const writersData: {[key: string]: any[]} = {};
-      const recordingsData: {[key: string]: any[]} = {};
+      if (copyrights.length === 0) return;
       
-      for (const copyright of copyrights) {
-        try {
-          const [copyrightWriters, copyrightRecordings] = await Promise.all([
-            getWritersForCopyright(copyright.id),
-            getRecordingsForCopyright(copyright.id)
-          ]);
-          writersData[copyright.id] = copyrightWriters;
-          recordingsData[copyright.id] = copyrightRecordings;
-        } catch (error) {
-          console.error('Error loading copyright data:', error);
+      const copyrightIds = copyrights.map(c => c.id);
+      
+      try {
+        // Batch fetch all writers in a single query
+        const { data: allWriters, error: writersError } = await supabase
+          .from('copyright_writers')
+          .select('*')
+          .in('copyright_id', copyrightIds);
+        
+        if (writersError) {
+          console.error('Error batch-loading writers:', writersError);
+        } else {
+          const writersData: {[key: string]: any[]} = {};
+          (allWriters || []).forEach(w => {
+            if (!writersData[w.copyright_id]) writersData[w.copyright_id] = [];
+            writersData[w.copyright_id].push(w);
+          });
+          setWriters(writersData);
         }
+
+        // Batch fetch all recordings in a single query
+        const { data: allRecordings, error: recordingsError } = await supabase
+          .from('copyright_recordings')
+          .select('*')
+          .in('copyright_id', copyrightIds);
+        
+        if (recordingsError) {
+          console.error('Error batch-loading recordings:', recordingsError);
+        } else {
+          const recordingsData: {[key: string]: any[]} = {};
+          (allRecordings || []).forEach(r => {
+            if (!recordingsData[r.copyright_id]) recordingsData[r.copyright_id] = [];
+            recordingsData[r.copyright_id].push(r);
+          });
+          setRecordings(recordingsData);
+        }
+      } catch (error) {
+        console.error('Error loading copyright data:', error);
       }
-      setWriters(writersData);
-      setRecordings(recordingsData);
     };
 
-    if (copyrights.length > 0) {
-      loadWritersAndRecordings();
-    }
-  }, [copyrights, getWritersForCopyright, getRecordingsForCopyright]);
+    loadWritersAndRecordings();
+  }, [copyrights]);
 
   const getRegistrationStatusBadge = (status: string) => {
     switch (status) {
