@@ -1,9 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
 import { getQuarterFromDate } from '@/lib/utils';
+import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
 
 export interface ReconciliationBatch {
   id: string;
@@ -781,6 +782,12 @@ export function useReconciliationBatches() {
       return false;
     }
   };
+
+  const stableFetchBatches = useCallback(() => {
+    fetchBatches();
+  }, [user]);
+
+  useDataRefreshListener('royalties', stableFetchBatches);
 
   useEffect(() => {
     fetchBatches();
