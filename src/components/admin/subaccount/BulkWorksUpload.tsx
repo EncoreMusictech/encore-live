@@ -171,6 +171,34 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         throw new Error('Not authenticated');
       }
 
+      // Resolve the effective user_id for this sub-account:
+      // 1. Try the company's service account first
+      // 2. Fall back to the first active company_user
+      // 3. Last resort: use the current (admin) user
+      let effectiveUserId = user.id;
+
+      const { data: serviceAccount } = await supabase
+        .from('company_service_accounts')
+        .select('service_user_id')
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (serviceAccount?.service_user_id) {
+        effectiveUserId = serviceAccount.service_user_id;
+      } else {
+        const { data: companyUser } = await supabase
+          .from('company_users')
+          .select('user_id')
+          .eq('company_id', companyId)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle();
+
+        if (companyUser?.user_id) {
+          effectiveUserId = companyUser.user_id;
+        }
+      }
+
       let successCount = 0;
       let failedCount = 0;
       const failedRows: { row: number | string; title: string; error: string; details: any }[] = [];
@@ -184,8 +212,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
       const { data: userCopyrights } = await supabase
         .from('copyrights')
         .select('id')
-        .eq('user_id', user.id);
-
+        .eq('user_id', effectiveUserId);
       const userCopyrightIds = new Set(userCopyrights?.map(c => c.id) || []);
       const existingIsrcs = new Set(
         existingRecordings?.filter(r => userCopyrightIds.has(r.copyright_id)).map(r => r.isrc) || []
@@ -233,7 +260,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           const { data: copyright, error: copyrightError } = await supabase
             .from('copyrights')
             .insert({
-              user_id: user.id,
+              user_id: effectiveUserId,
               work_title: work.title,
               work_type: work.workType,
               internal_id: internalId,
@@ -295,7 +322,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
             .from('catalog_items')
             .insert({
               company_id: companyId,
-              user_id: user.id,
+              user_id: effectiveUserId,
               title: work.title,
               artist: work.artist || (work.writers[0]?.name) || 'Unknown',
               isrc: work.isrc,
