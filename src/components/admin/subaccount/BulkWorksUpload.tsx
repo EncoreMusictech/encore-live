@@ -200,21 +200,24 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         const rowLabel = work.sourceRows.join(',');
 
         try {
+          // Normalize ISRC: treat "N/A", "n/a", "none", "TBD", empty as null
+          const normalizedIsrc = work.isrc && !/^(n\/?a|none|tbd|null|-)$/i.test(work.isrc.trim()) ? work.isrc.trim() : null;
+
           // ISRC duplicate checks
-          if (work.isrc) {
-            if (existingIsrcs.has(work.isrc)) {
-              failedRows.push({ row: rowLabel, title: work.title, error: `ISRC duplicate in database (${work.isrc})`, details: { isrc: work.isrc, duplicate_type: 'database' } });
+          if (normalizedIsrc) {
+            if (existingIsrcs.has(normalizedIsrc)) {
+              failedRows.push({ row: rowLabel, title: work.title, error: `ISRC duplicate in database (${normalizedIsrc})`, details: { isrc: normalizedIsrc, duplicate_type: 'database' } });
               failedCount++;
               setProgress(20 + ((i + 1) / groupedWorks.length) * 75);
               continue;
             }
-            if (batchIsrcs.has(work.isrc)) {
-              failedRows.push({ row: rowLabel, title: work.title, error: `ISRC duplicate in upload batch (${work.isrc})`, details: { isrc: work.isrc, duplicate_type: 'batch' } });
+            if (batchIsrcs.has(normalizedIsrc)) {
+              failedRows.push({ row: rowLabel, title: work.title, error: `ISRC duplicate in upload batch (${normalizedIsrc})`, details: { isrc: normalizedIsrc, duplicate_type: 'batch' } });
               failedCount++;
               setProgress(20 + ((i + 1) / groupedWorks.length) * 75);
               continue;
             }
-            batchIsrcs.add(work.isrc);
+            batchIsrcs.add(normalizedIsrc);
           }
 
           // Generate unique internal_id
@@ -251,18 +254,18 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           }
 
           // Insert recording if ISRC exists
-          if (work.isrc) {
+          if (normalizedIsrc) {
             const { error: recordingError } = await supabase
               .from('copyright_recordings')
               .insert({
                 copyright_id: copyright.id,
-                isrc: work.isrc,
+                isrc: normalizedIsrc,
                 recording_title: work.title,
                 artist_name: work.artist || null,
               });
 
             if (recordingError) {
-              failedRows.push({ row: rowLabel, title: work.title, error: `Recording insert failed: ${recordingError.message}`, details: { code: recordingError.code, isrc: work.isrc } });
+              failedRows.push({ row: rowLabel, title: work.title, error: `Recording insert failed: ${recordingError.message}`, details: { code: recordingError.code, isrc: normalizedIsrc } });
               throw recordingError;
             }
           }
@@ -298,7 +301,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
               user_id: user.id,
               title: work.title,
               artist: work.artist || (work.writers[0]?.name) || 'Unknown',
-              isrc: work.isrc,
+              isrc: normalizedIsrc,
               metadata: {
                 copyright_id: copyright.id,
                 bulk_upload: true,
