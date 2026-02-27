@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useActingUser } from '@/hooks/useActingUser';
 
 export interface WriterMatchResult {
   writer_id: string;
@@ -23,6 +24,7 @@ export interface WriterPayoutSummary {
 export const useWriterPayouts = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { getActingUserId } = useActingUser();
   const [processing, setProcessing] = useState(false);
 
   // Match royalty allocations to writers by name
@@ -105,12 +107,13 @@ export const useWriterPayouts = () => {
           continue;
         }
 
+        const writerActingUserId = await getActingUserId();
         // Ensure a contact exists for this writer
         let contact;
         const { data: existingContact } = await supabase
           .from('contacts')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', writerActingUserId)
           .eq('name', writerMatch.writer_name)
           .eq('contact_type', 'writer')
           .maybeSingle();
@@ -122,7 +125,7 @@ export const useWriterPayouts = () => {
           const { data: newContact, error: contactError } = await supabase
             .from('contacts')
             .insert({
-              user_id: user.id,
+              user_id: (await getActingUserId()),
               name: writerMatch.writer_name,
               contact_type: 'writer'
             })
@@ -137,7 +140,7 @@ export const useWriterPayouts = () => {
         const { data: payout, error: payoutError } = await supabase
           .from('payouts')
           .insert({
-            user_id: user.id,
+            user_id: (await getActingUserId()),
             payee_id: payee.id, // Required by validation trigger
             client_id: contact.id, // Use contact ID
             period: `Q${quarter} ${year}`,
@@ -238,7 +241,7 @@ export const useWriterPayouts = () => {
           await supabase
             .from('quarterly_balance_reports')
             .insert({
-              user_id: user.id,
+              user_id: (await getActingUserId()),
               payee_id: payee.id,
               quarter: quarter,
               year: year,

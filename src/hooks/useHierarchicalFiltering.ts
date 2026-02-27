@@ -41,8 +41,9 @@ export function useHierarchicalFiltering(): UseHierarchicalFilteringReturn {
   const [loading, setLoading] = useState(false);
 
   const loadFilterConfig = useCallback(async () => {
-    // No filtering for system mode
-    if (!isViewingAsSubAccount || !viewContext?.companyId) {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
       setFilterConfig({
         userIds: [],
         companyIds: [],
@@ -50,6 +51,71 @@ export function useHierarchicalFiltering(): UseHierarchicalFilteringReturn {
         isActive: false,
         serviceAccountUserId: null,
       });
+      return;
+    }
+
+    // Standard mode (not view-as): still scope to user's active company buckets
+    if (!isViewingAsSubAccount || !viewContext?.companyId) {
+      try {
+        const { data: memberships, error: membershipsError } = await supabase
+          .from('company_users')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        if (membershipsError) throw membershipsError;
+
+        const companyIds = Array.from(new Set((memberships || []).map(m => m.company_id).filter(Boolean)));
+
+        if (companyIds.length === 0) {
+          setFilterConfig({
+            userIds: [user.id],
+            companyIds: [],
+            mode: 'single',
+            isActive: true,
+            serviceAccountUserId: null,
+          });
+          return;
+        }
+
+        const [{ data: companyUsers, error: usersError }, { data: serviceAccounts, error: serviceError }] = await Promise.all([
+          supabase
+            .from('company_users')
+            .select('user_id')
+            .in('company_id', companyIds)
+            .eq('status', 'active'),
+          supabase
+            .from('company_service_accounts')
+            .select('service_user_id')
+            .in('company_id', companyIds),
+        ]);
+
+        if (usersError) throw usersError;
+        if (serviceError) throw serviceError;
+
+        const scopedUserIds = Array.from(new Set([
+          ...(companyUsers?.map(u => u.user_id) || []),
+          ...(serviceAccounts?.map(sa => sa.service_user_id) || []),
+          user.id,
+        ]));
+
+        setFilterConfig({
+          userIds: scopedUserIds,
+          companyIds,
+          mode: companyIds.length > 1 ? 'aggregate' : 'single',
+          isActive: true,
+          serviceAccountUserId: null,
+        });
+      } catch (error) {
+        console.error('Error loading default hierarchical scope:', error);
+        setFilterConfig({
+          userIds: [user.id],
+          companyIds: [],
+          mode: 'single',
+          isActive: true,
+          serviceAccountUserId: null,
+        });
+      }
       return;
     }
 
@@ -199,11 +265,15 @@ export function useHierarchicalFiltering(): UseHierarchicalFilteringReturn {
       return 'Showing all data';
     }
 
-    if (filterConfig.mode === 'aggregate') {
-      return `Aggregated view: ${viewContext?.companyName} + ${filterConfig.companyIds.length - 1} client labels`;
+    if (!viewContext?.companyName) {
+      return `Scoped to ${filterConfig.companyIds.length || 1} account bucket${(filterConfig.companyIds.length || 1) !== 1 ? 's' : ''}`;
     }
 
-    return `Filtered to ${viewContext?.companyName} (${filterConfig.userIds.length} user${filterConfig.userIds.length !== 1 ? 's' : ''})`;
+    if (filterConfig.mode === 'aggregate') {
+      return `Aggregated view: ${viewContext.companyName} + ${filterConfig.companyIds.length - 1} client labels`;
+    }
+
+    return `Filtered to ${viewContext.companyName} (${filterConfig.userIds.length} user${filterConfig.userIds.length !== 1 ? 's' : ''})`;
   }, [filterConfig, viewContext?.companyName]);
 
   return {

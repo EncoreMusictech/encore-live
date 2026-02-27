@@ -7,6 +7,7 @@ import { useOptimisticUpdates } from '@/hooks/useOptimisticUpdates';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
 import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
 import { emitDataRefresh } from '@/lib/dataRefresh';
+import { useActingUser } from '@/hooks/useActingUser';
 
 export type Copyright = Tables<'copyrights'>;
 export type CopyrightWriter = Tables<'copyright_writers'>;
@@ -21,7 +22,8 @@ export const useCopyright = () => {
   const [writersCache, setWritersCache] = useState<{ [key: string]: CopyrightWriter[] }>({});
   const { toast } = useToast();
   const { logActivity } = useActivityLog();
-  const { applyUserIdFilter, applyEntityFilter, filterKey } = useDataFiltering();
+  const { applyUserIdFilter, applyClientCompanyIdFilter, applyEntityFilter, isUserInScope, isCompanyInScope, filterKey } = useDataFiltering();
+  const { getActingUserId, getActingUserIdForCompany } = useActingUser();
   const { 
     data: optimisticCopyrights, 
     setData: setOptimisticData,
@@ -65,8 +67,9 @@ export const useCopyright = () => {
           )
         `);
       
-      // Apply sub-account filtering if active
+      // Apply tenant filtering
       query = applyUserIdFilter(query);
+      query = applyClientCompanyIdFilter(query);
       // Apply publishing entity filter if active
       query = applyEntityFilter(query);
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -101,7 +104,7 @@ export const useCopyright = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast, clearAllPending, loading, applyUserIdFilter, applyEntityFilter]);
+  }, [toast, clearAllPending, loading, applyUserIdFilter, applyClientCompanyIdFilter, applyEntityFilter]);
 
   const createCopyright = async (copyrightData: CopyrightInsert, options?: { silent?: boolean }) => {
     const tempCopyright: Copyright = {
@@ -117,34 +120,17 @@ export const useCopyright = () => {
 
     try {
       console.log('Creating copyright with data:', copyrightData);
-      // Ensure authenticated user (attempt refresh if needed)
-      let userId: string | null = null;
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        userId = user?.id ?? null;
-      } catch {}
-
-      if (!userId) {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          userId = session?.user?.id ?? null;
-        } catch {}
-      }
-
-      if (!userId) {
-        try {
-          await supabase.auth.refreshSession();
-          const { data: { user } } = await supabase.auth.getUser();
-          userId = user?.id ?? null;
-        } catch {}
-      }
-
-      if (!userId) throw new Error('No authenticated user');
+      
+      // Resolve acting user: uses service account when in sub-account context
+      // If client_company_id is provided (e.g. from sub-account detail page), resolve via that company
+      const actingUserId = copyrightData.client_company_id
+        ? await getActingUserIdForCompany(copyrightData.client_company_id)
+        : await getActingUserId();
 
       const { data, error } = await supabase
         .from('copyrights')
         .insert({
-          user_id: userId,
+          user_id: actingUserId,
           ...copyrightData
         })
         .select()
@@ -269,6 +255,15 @@ export const useCopyright = () => {
     try {
       const copyrightToDelete = copyrights.find(c => c.id === id);
       
+      // Remove matching catalog_items (by title + company_id) so Assigned Works stays in sync
+      if (copyrightToDelete?.work_title && copyrightToDelete?.client_company_id) {
+        await supabase
+          .from('catalog_items')
+          .delete()
+          .eq('company_id', copyrightToDelete.client_company_id)
+          .eq('title', copyrightToDelete.work_title);
+      }
+
       const { error } = await supabase
         .from('copyrights')
         .delete()
@@ -388,11 +383,16 @@ export const useCopyright = () => {
           switch (payload.eventType) {
             case 'INSERT':
               setCopyrights(prev => {
+                const newRecord = payload.new as Copyright;
+                if (!isUserInScope(newRecord.user_id) || !isCompanyInScope(newRecord.client_company_id)) {
+                  return prev;
+                }
+
                 // Avoid duplicates
-                const exists = prev.some(c => c.id === payload.new.id);
+                const exists = prev.some(c => c.id === newRecord.id);
                 if (!exists) {
-                  console.log('Adding new copyright from real-time:', payload.new);
-                  return [payload.new as Copyright, ...prev];
+                  console.log('Adding new copyright from real-time:', newRecord);
+                  return [newRecord, ...prev];
                 }
                 return prev;
               });
@@ -400,16 +400,24 @@ export const useCopyright = () => {
               
             case 'UPDATE':
               setCopyrights(prev => {
-                const updated = prev.map(c => 
-                  c.id === payload.new.id ? payload.new as Copyright : c
+                const updatedRecord = payload.new as Copyright;
+                const inScope = isUserInScope(updatedRecord.user_id) && isCompanyInScope(updatedRecord.client_company_id);
+
+                // If record moved out of scope, remove it from current view
+                if (!inScope) {
+                  return prev.filter(c => c.id !== updatedRecord.id);
+                }
+
+                const updated = prev.map(c =>
+                  c.id === updatedRecord.id ? updatedRecord : c
                 );
-                console.log('Updated copyright from real-time:', payload.new);
+                console.log('Updated copyright from real-time:', updatedRecord);
                 console.log('PRO Status in real-time update:', {
-                  ascap_status: payload.new.ascap_status,
-                  bmi_status: payload.new.bmi_status,
-                  socan_status: payload.new.socan_status,
-                  sesac_status: payload.new.sesac_status,
-                  mlc_status: payload.new.mlc_status
+                  ascap_status: updatedRecord.ascap_status,
+                  bmi_status: updatedRecord.bmi_status,
+                  socan_status: updatedRecord.socan_status,
+                  sesac_status: updatedRecord.sesac_status,
+                  mlc_status: updatedRecord.mlc_status
                 });
                 return updated;
               });

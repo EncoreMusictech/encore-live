@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
+import { useActingUser } from '@/hooks/useActingUser';
 
 export interface Agreement {
   id: string;
@@ -43,6 +44,7 @@ export function usePayeeHierarchy() {
   const [payees, setPayees] = useState<Payee[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { getActingUserId } = useActingUser();
 
   // Fetch all agreements (contracts)
   const fetchAgreements = async () => {
@@ -113,7 +115,7 @@ export function usePayeeHierarchy() {
         .select('id')
         .eq('agreement_id', agreementId)
         .eq('publisher_name', publisherName)
-        .eq('user_id', user.id)
+        .eq('user_id', (await getActingUserId()))
         .single();
 
       if (existingPublisher) {
@@ -128,7 +130,7 @@ export function usePayeeHierarchy() {
           publisher_name: publisherName,
           contact_info: {},
           agreement_id: agreementId,
-          user_id: user.id,
+          user_id: (await getActingUserId()),
         } as any)
         .select()
         .single();
@@ -216,7 +218,7 @@ export function usePayeeHierarchy() {
         .select('id')
         .eq('original_publisher_id', originalPublisherId)
         .eq('writer_name', writerName)
-        .eq('user_id', user.id)
+        .eq('user_id', (await getActingUserId()))
         .single();
 
       if (existingWriter) {
@@ -231,7 +233,7 @@ export function usePayeeHierarchy() {
           writer_name: writerName,
           contact_info: {},
           original_publisher_id: originalPublisherId,
-          user_id: user.id,
+          user_id: (await getActingUserId()),
         } as any)
         .select()
         .single();
@@ -294,7 +296,7 @@ export function usePayeeHierarchy() {
           publisher_name: publisherData.publisher_name,
           contact_info: publisherData.contact_info,
           agreement_id: publisherData.agreement_id,
-          user_id: user.id,
+          user_id: (await getActingUserId()),
         } as any)
         .select()
         .single();
@@ -330,7 +332,7 @@ export function usePayeeHierarchy() {
           writer_name: writerData.writer_name,
           contact_info: writerData.contact_info,
           original_publisher_id: writerData.original_publisher_id,
-          user_id: user.id,
+          user_id: (await getActingUserId()),
         } as any)
         .select()
         .single();
@@ -364,7 +366,7 @@ export function usePayeeHierarchy() {
         .from('payees')
         .update({
           ...payeeData,
-          user_id: user.id,
+          user_id: (await getActingUserId()),
         })
         .eq('id', payeeId)
         .select()
@@ -399,7 +401,7 @@ export function usePayeeHierarchy() {
         .from('payees')
         .insert({
           ...payeeData,
-          user_id: user.id,
+          user_id: (await getActingUserId()),
         })
         .select()
         .single();

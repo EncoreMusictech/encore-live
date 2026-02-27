@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Upload, FileSpreadsheet, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useActingUser } from '@/hooks/useActingUser';
 
 interface SmartCSVImporterProps {
   companyId: string;
@@ -28,6 +29,7 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
     failed: 0,
     errors: []
   });
+  const { getActingUserIdForCompany } = useActingUser();
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -82,6 +84,9 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
         throw new Error("Authentication required");
       }
 
+      // Resolve acting user: service account for the sub-account, NOT the admin
+      const actingUserId = await getActingUserIdForCompany(companyId);
+
       // Read the file
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
@@ -121,6 +126,7 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
         const row = dataRows[i];
         setProgress(Math.round(((i + 1) / dataRows.length) * 100));
 
+        let copyrightId: string | null = null;
         try {
           const artist = row[mapping.artist]?.toString().trim();
           const track = row[mapping.track]?.toString().trim();
@@ -150,7 +156,8 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
             .from('copyrights')
             .insert({
               work_title: track,
-              user_id: user.id,
+              user_id: actingUserId,
+              client_company_id: companyId,
               work_type: mediaType,
               status: 'registered'
             })
@@ -158,6 +165,7 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
             .single();
 
           if (copyrightError) throw copyrightError;
+          copyrightId = copyright.id;
 
           // Create recording entry
           const { error: recordingError } = await supabase
@@ -179,17 +187,24 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
               artist: artist,
               isrc: isrc,
               company_id: companyId,
-              user_id: user.id,
+              user_id: actingUserId,
               format: format
             });
 
           if (catalogError) throw catalogError;
 
           existingCombos.add(comboKey);
+          copyrightId = null; // Clear — fully succeeded, no rollback needed
           successCount++;
 
         } catch (error: any) {
           console.error(`Error processing row ${i + 2}:`, error);
+          // Rollback: delete orphaned copyright if it was created before the failure
+          if (copyrightId) {
+            console.warn(`Rolling back orphaned copyright ${copyrightId} for row ${i + 2}`);
+            await supabase.from('copyright_recordings').delete().eq('copyright_id', copyrightId);
+            await supabase.from('copyrights').delete().eq('id', copyrightId);
+          }
           errors.push(`Row ${i + 2}: ${error.message}`);
           failedCount++;
         }

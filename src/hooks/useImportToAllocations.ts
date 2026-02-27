@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { RoyaltiesImportStaging } from './useRoyaltiesImport';
 import { RoyaltyAllocationInsert } from './useRoyaltyAllocations';
+import { useActingUser } from '@/hooks/useActingUser';
 
 export interface ImportToAllocationParams {
   stagingRecordId: string;
@@ -13,6 +14,7 @@ export interface ImportToAllocationParams {
 export function useImportToAllocations() {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const { getActingUserId } = useActingUser();
 
   const importToAllocations = async ({ stagingRecordId, selectedRows }: ImportToAllocationParams) => {
     if (!user) return null;
@@ -42,8 +44,10 @@ export function useImportToAllocations() {
         return null;
       }
 
+      const actingUserId = await getActingUserId();
+
       console.log('Creating allocations:', rowsToImport.map((row: any) => ({
-        user_id: user.id,
+        user_id: actingUserId,
         batch_id: stagingRecord.batch_id,
         song_title: row['WORK TITLE'] || row['Song Title'] || 'Unknown Title',
         artist: row['WORK WRITERS'] || row.artist || row.performer || null,
@@ -69,7 +73,7 @@ export function useImportToAllocations() {
 
       // Transform mapped data to royalty allocations
       const allocations: RoyaltyAllocationInsert[] = rowsToImport.map((row: any) => ({
-        user_id: user.id,
+        user_id: actingUserId,
         batch_id: stagingRecord.batch_id,
         song_title: row['WORK TITLE'] || row['Song Title'] || 'Unknown Title',
         artist: row['WORK WRITERS'] || row.artist || row.performer || null,

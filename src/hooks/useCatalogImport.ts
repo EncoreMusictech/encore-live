@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import * as XLSX from 'xlsx';
+import { useActingUser } from '@/hooks/useActingUser';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import {
@@ -38,6 +39,7 @@ export function useCatalogImport() {
   const [batch, setBatch] = useState<ImportBatch | null>(null);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const { getActingUserId } = useActingUser();
 
   // ── Step 1: Parse XLSX ─────────────────────────────────────
   const parseFile = useCallback(async (file: File) => {
@@ -135,11 +137,13 @@ export function useCatalogImport() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const actingUserId = await getActingUserId();
+
       // Create batch
       const { data: batchData, error: batchErr } = await supabase
         .from('catalog_import_batches')
         .insert({
-          user_id: user.id,
+          user_id: actingUserId,
           file_name: fileName,
           total_rows: stagingRows.length,
           valid_rows: stagingRows.filter(r => r.validation_status === 'valid').length,
@@ -161,7 +165,7 @@ export function useCatalogImport() {
       for (let i = 0; i < stagingRows.length; i += BATCH_SIZE) {
         const chunk = stagingRows.slice(i, i + BATCH_SIZE).map(row => ({
           import_batch_id: batchId,
-          user_id: user.id,
+          user_id: actingUserId,
           source_sheet: row.source_sheet,
           work_title: row.work_title,
           artist_name: row.artist_name,

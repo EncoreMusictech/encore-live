@@ -6,6 +6,8 @@ import { normalizeTerritoryCode } from '@/utils/territoryNormalizer';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
 import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
 import { emitDataRefresh } from '@/lib/dataRefresh';
+import { useActingUser } from '@/hooks/useActingUser';
+import { useViewModeOptional } from '@/hooks/useViewModeOptional';
 
 export interface RoyaltyAllocation {
   id: string;
@@ -13,6 +15,7 @@ export interface RoyaltyAllocation {
   royalty_id: string;
   work_id: string;
   batch_id?: string;
+  client_company_id?: string;
   copyright_id?: string;
   song_title: string;
   isrc?: string;
@@ -65,7 +68,9 @@ export function useRoyaltyAllocations() {
   const [allocations, setAllocations] = useState<RoyaltyAllocation[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { applyUserIdFilter, applyEntityFilter, filterKey } = useDataFiltering();
+  const { applyUserIdFilter, applyClientCompanyIdFilter, applyEntityFilter, filterKey } = useDataFiltering();
+  const { getActingUserId, getActingUserIdForCompany } = useActingUser();
+  const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
 
   const fetchAllocations = async () => {
     if (!user) return;
@@ -87,8 +92,9 @@ export function useRoyaltyAllocations() {
           )
         `);
       
-      // Apply sub-account filtering if active
+      // Apply tenant filtering
       query = applyUserIdFilter(query);
+      query = applyClientCompanyIdFilter(query);
       // Apply publishing entity filter if active
       query = applyEntityFilter(query);
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -118,10 +124,19 @@ export function useRoyaltyAllocations() {
         ? normalizeTerritoryCode(allocationData.country)
         : undefined;
       
+      const resolvedClientCompanyId = allocationData.client_company_id ?? (
+        isViewingAsSubAccount ? viewContext?.companyId ?? null : null
+      );
+
+      const actingUserId = resolvedClientCompanyId
+        ? await getActingUserIdForCompany(resolvedClientCompanyId)
+        : await getActingUserId();
+
       const insertData = {
         ...allocationData,
         country: normalizedCountry,
-        user_id: user.id,
+        user_id: actingUserId,
+        client_company_id: resolvedClientCompanyId,
       };
       
       console.log('Final insert data:', insertData);
@@ -269,7 +284,7 @@ export function useRoyaltyAllocations() {
 
   const stableFetchAllocations = useCallback(() => {
     fetchAllocations();
-  }, [user, filterKey]);
+  }, [user, filterKey, isViewingAsSubAccount, viewContext?.companyId]);
 
   useDataRefreshListener('royalties', stableFetchAllocations);
 

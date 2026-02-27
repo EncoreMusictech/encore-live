@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tables, TablesInsert } from '@/integrations/supabase/types';
 import { useHierarchicalFiltering } from '@/hooks/useHierarchicalFiltering';
 import { useViewModeOptional } from '@/hooks/useViewModeOptional';
+import { useActingUser } from '@/hooks/useActingUser';
 import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
 import { emitDataRefresh } from '@/lib/dataRefresh';
 
@@ -23,21 +24,16 @@ export const useContracts = () => {
   const { toast } = useToast();
   const { applyUserIdFilter, applyClientCompanyIdFilter, filterKey, filterConfig } = useHierarchicalFiltering();
   const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
+  const { getActingUserId: getActingUserIdBase, getActingUserIdForCompany } = useActingUser();
 
-  // When in view-as mode, write operations use the company's service account.
-  // If no service account has been provisioned yet, fall back to the first company user.
-  // Audit logs still record the real Encore admin as the actor (via ViewModeContext audit logging).
-  const getActingUserId = async (): Promise<string> => {
-    if (isViewingAsSubAccount) {
-      if (filterConfig.serviceAccountUserId) {
-        return filterConfig.serviceAccountUserId;
-      }
-      if (filterConfig.userIds.length > 0) {
-        return filterConfig.userIds[0];
-      }
+  // Resolve acting user for write operations.
+  // When a client_company_id is provided (e.g. from sub-account detail page),
+  // resolve via that company's service account regardless of view mode.
+  const resolveActingUserId = async (clientCompanyId?: string | null): Promise<string> => {
+    if (clientCompanyId) {
+      return getActingUserIdForCompany(clientCompanyId);
     }
-    const { data: { user } } = await supabase.auth.getUser();
-    return user!.id;
+    return getActingUserIdBase();
   };
 
   const fetchContracts = async () => {
@@ -73,7 +69,7 @@ export const useContracts = () => {
 
   const createContract = async (contractData: Omit<ContractInsert, 'user_id'>) => {
     try {
-      const actingUserId = await getActingUserId();
+      const actingUserId = await resolveActingUserId((contractData as any).client_company_id);
 
       const { data, error } = await supabase
         .from('contracts')
@@ -166,8 +162,6 @@ export const useContracts = () => {
 
   const duplicateContract = async (originalId: string) => {
     try {
-      const actingUserId = await getActingUserId();
-
       // Fetch the original contract with all related data
       const { data: originalContract, error: fetchError } = await supabase
         .from('contracts')
@@ -181,6 +175,8 @@ export const useContracts = () => {
 
       if (fetchError) throw fetchError;
       if (!originalContract) throw new Error('Contract not found');
+
+      const actingUserId = await resolveActingUserId(originalContract.client_company_id);
 
       // Create duplicate contract data, excluding fields that should be unique/auto-generated
       const {
