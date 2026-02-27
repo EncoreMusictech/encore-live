@@ -22,7 +22,7 @@ export const useCopyright = () => {
   const [writersCache, setWritersCache] = useState<{ [key: string]: CopyrightWriter[] }>({});
   const { toast } = useToast();
   const { logActivity } = useActivityLog();
-  const { applyUserIdFilter, applyEntityFilter, filterKey } = useDataFiltering();
+  const { applyUserIdFilter, applyClientCompanyIdFilter, applyEntityFilter, isUserInScope, isCompanyInScope, filterKey } = useDataFiltering();
   const { getActingUserId, getActingUserIdForCompany } = useActingUser();
   const { 
     data: optimisticCopyrights, 
@@ -67,8 +67,9 @@ export const useCopyright = () => {
           )
         `);
       
-      // Apply sub-account filtering if active
+      // Apply tenant filtering
       query = applyUserIdFilter(query);
+      query = applyClientCompanyIdFilter(query);
       // Apply publishing entity filter if active
       query = applyEntityFilter(query);
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -103,7 +104,7 @@ export const useCopyright = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast, clearAllPending, loading, applyUserIdFilter, applyEntityFilter]);
+  }, [toast, clearAllPending, loading, applyUserIdFilter, applyClientCompanyIdFilter, applyEntityFilter]);
 
   const createCopyright = async (copyrightData: CopyrightInsert, options?: { silent?: boolean }) => {
     const tempCopyright: Copyright = {
@@ -382,11 +383,16 @@ export const useCopyright = () => {
           switch (payload.eventType) {
             case 'INSERT':
               setCopyrights(prev => {
+                const newRecord = payload.new as Copyright;
+                if (!isUserInScope(newRecord.user_id) || !isCompanyInScope(newRecord.client_company_id)) {
+                  return prev;
+                }
+
                 // Avoid duplicates
-                const exists = prev.some(c => c.id === payload.new.id);
+                const exists = prev.some(c => c.id === newRecord.id);
                 if (!exists) {
-                  console.log('Adding new copyright from real-time:', payload.new);
-                  return [payload.new as Copyright, ...prev];
+                  console.log('Adding new copyright from real-time:', newRecord);
+                  return [newRecord, ...prev];
                 }
                 return prev;
               });
@@ -394,16 +400,24 @@ export const useCopyright = () => {
               
             case 'UPDATE':
               setCopyrights(prev => {
-                const updated = prev.map(c => 
-                  c.id === payload.new.id ? payload.new as Copyright : c
+                const updatedRecord = payload.new as Copyright;
+                const inScope = isUserInScope(updatedRecord.user_id) && isCompanyInScope(updatedRecord.client_company_id);
+
+                // If record moved out of scope, remove it from current view
+                if (!inScope) {
+                  return prev.filter(c => c.id !== updatedRecord.id);
+                }
+
+                const updated = prev.map(c =>
+                  c.id === updatedRecord.id ? updatedRecord : c
                 );
-                console.log('Updated copyright from real-time:', payload.new);
+                console.log('Updated copyright from real-time:', updatedRecord);
                 console.log('PRO Status in real-time update:', {
-                  ascap_status: payload.new.ascap_status,
-                  bmi_status: payload.new.bmi_status,
-                  socan_status: payload.new.socan_status,
-                  sesac_status: payload.new.sesac_status,
-                  mlc_status: payload.new.mlc_status
+                  ascap_status: updatedRecord.ascap_status,
+                  bmi_status: updatedRecord.bmi_status,
+                  socan_status: updatedRecord.socan_status,
+                  sesac_status: updatedRecord.sesac_status,
+                  mlc_status: updatedRecord.mlc_status
                 });
                 return updated;
               });
