@@ -34,20 +34,31 @@ export function useDataFiltering() {
 
       setLoading(true);
       try {
-        // Get all user IDs associated with this company
-        const { data: companyUsers, error } = await supabase
-          .from('company_users')
-          .select('user_id')
-          .eq('company_id', viewContext.companyId)
-          .eq('status', 'active');
+        // Get all user IDs associated with this company, including service account
+        const [
+          { data: companyUsers, error },
+          { data: serviceAccountUserId }
+        ] = await Promise.all([
+          supabase
+            .from('company_users')
+            .select('user_id')
+            .eq('company_id', viewContext.companyId)
+            .eq('status', 'active'),
+          supabase.rpc('get_company_service_account_user_id', {
+            _company_id: viewContext.companyId,
+          }),
+        ]);
 
         if (error) throw error;
 
         const userIds = companyUsers?.map(cu => cu.user_id) || [];
+        const scopedUserIds = serviceAccountUserId
+          ? Array.from(new Set([...userIds, serviceAccountUserId]))
+          : userIds;
 
         setFilterConfig({
           companyId: viewContext.companyId,
-          companyUserIds: userIds,
+          companyUserIds: scopedUserIds,
           isFilterActive: true,
         });
       } catch (error) {
