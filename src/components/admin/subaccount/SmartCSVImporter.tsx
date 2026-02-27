@@ -156,6 +156,7 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
             .insert({
               work_title: track,
               user_id: actingUserId,
+              client_company_id: companyId,
               work_type: mediaType,
               status: 'registered'
             })

@@ -242,6 +242,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
             .from('copyrights')
             .insert({
               user_id: actingUserId,
+              client_company_id: companyId,
               work_title: work.title,
               work_type: work.workType,
               internal_id: internalId,
