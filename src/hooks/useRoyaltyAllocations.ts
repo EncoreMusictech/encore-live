@@ -65,7 +65,7 @@ export function useRoyaltyAllocations() {
   const [allocations, setAllocations] = useState<RoyaltyAllocation[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { applyUserIdFilter, applyEntityFilter, filterKey } = useDataFiltering();
+  const { applyUserIdFilter, applyEntityFilter, filterKey, isFilterActive } = useDataFiltering();
 
   const fetchAllocations = async () => {
     if (!user) return;
@@ -86,9 +86,12 @@ export function useRoyaltyAllocations() {
             )
           )
         `);
-      
-      // Apply sub-account filtering if active
-      query = applyUserIdFilter(query);
+      // Apply sub-account filtering if active, otherwise scope to current user
+      if (isFilterActive) {
+        query = applyUserIdFilter(query);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
       // Apply publishing entity filter if active
       query = applyEntityFilter(query);
       const { data, error } = await query.order('created_at', { ascending: false });
