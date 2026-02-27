@@ -155,7 +155,7 @@ export default function SubAccountDetailPage() {
           variant="ghost"
           size="sm"
           className="gap-1 text-muted-foreground hover:text-foreground -mb-4"
-          onClick={() => navigate('/dashboard/operations')}
+          onClick={() => navigate('/dashboard/operations?tab=management-console')}
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Sub-Accounts
