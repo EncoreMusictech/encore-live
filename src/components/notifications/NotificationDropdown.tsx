@@ -10,11 +10,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useSharedNotifications } from "@/contexts/NotificationContext";
 import { NotificationItem } from "./NotificationItem";
 
 export function NotificationDropdown() {
-  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useSharedNotifications();
 
   const handleNotificationClick = (notificationId: string, isRead: boolean) => {
     if (!isRead) {
