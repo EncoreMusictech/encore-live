@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { useActingUser } from '@/hooks/useActingUser';
 
 export interface RoyaltiesImportStaging {
   id: string;
@@ -37,6 +38,7 @@ export function useRoyaltiesImport(batchId?: string) {
   const [mappingConfigs, setMappingConfigs] = useState<SourceMappingConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { getActingUserId } = useActingUser();
 
   const fetchStagingRecords = async () => {
     if (!user) return;
@@ -88,7 +90,7 @@ export function useRoyaltiesImport(batchId?: string) {
         .from('royalties_import_staging')
         .insert({
           ...recordData,
-          user_id: user.id,
+          user_id: (await getActingUserId()),
         })
         .select()
         .single();

@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Upload, FileSpreadsheet, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useActingUser } from '@/hooks/useActingUser';
 
 interface SmartCSVImporterProps {
   companyId: string;
@@ -28,6 +29,7 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
     failed: 0,
     errors: []
   });
+  const { getActingUserIdForCompany } = useActingUser();
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -81,6 +83,9 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
       if (authError || !user) {
         throw new Error("Authentication required");
       }
+
+      // Resolve acting user: service account for the sub-account, NOT the admin
+      const actingUserId = await getActingUserIdForCompany(companyId);
 
       // Read the file
       const arrayBuffer = await file.arrayBuffer();
@@ -150,7 +155,7 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
             .from('copyrights')
             .insert({
               work_title: track,
-              user_id: user.id,
+              user_id: actingUserId,
               work_type: mediaType,
               status: 'registered'
             })
@@ -179,7 +184,7 @@ export const SmartCSVImporter: React.FC<SmartCSVImporterProps> = ({ companyId, c
               artist: artist,
               isrc: isrc,
               company_id: companyId,
-              user_id: user.id,
+              user_id: actingUserId,
               format: format
             });
 

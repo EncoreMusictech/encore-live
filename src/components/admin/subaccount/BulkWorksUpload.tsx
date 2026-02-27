@@ -11,6 +11,7 @@ import * as XLSX from 'xlsx';
 import { logPlatformError } from '@/lib/platformErrorLogger';
 import { showUploadFailure } from '@/hooks/useUploadFailureModal';
 import { groupRowsIntoWorks, type GroupedWork } from './bulkUploadUtils';
+import { useActingUser } from '@/hooks/useActingUser';
 
 interface BulkWorksUploadProps {
   companyId: string;
@@ -23,6 +24,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<{ success: number; failed: number; total: number } | null>(null);
   const { toast } = useToast();
+  const { getActingUserIdForCompany } = useActingUser();
 
   const handleDownloadTemplate = () => {
     const templateData = [
@@ -171,6 +173,9 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         throw new Error('Not authenticated');
       }
 
+      // Resolve the acting user: service account for the sub-account, NOT the admin
+      const actingUserId = await getActingUserIdForCompany(companyId);
+
       let successCount = 0;
       let failedCount = 0;
       const failedRows: { row: number | string; title: string; error: string; details: any }[] = [];
@@ -184,7 +189,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
       const { data: userCopyrights } = await supabase
         .from('copyrights')
         .select('id')
-        .eq('user_id', user.id);
+        .eq('user_id', actingUserId);
 
       const userCopyrightIds = new Set(userCopyrights?.map(c => c.id) || []);
       const existingIsrcs = new Set(
@@ -236,7 +241,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           const { data: copyright, error: copyrightError } = await supabase
             .from('copyrights')
             .insert({
-              user_id: user.id,
+              user_id: actingUserId,
               work_title: work.title,
               work_type: work.workType,
               internal_id: internalId,
@@ -298,7 +303,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
             .from('catalog_items')
             .insert({
               company_id: companyId,
-              user_id: user.id,
+              user_id: actingUserId,
               title: work.title,
               artist: work.artist || (work.writers[0]?.name) || 'Unknown',
               isrc: normalizedIsrc,
