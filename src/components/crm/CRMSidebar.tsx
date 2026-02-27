@@ -336,7 +336,7 @@ export function CRMSidebar() {
         </SidebarGroup>
 
         {/* Management section for sub-account users */}
-        {!isAdmin && userCompany && (
+        {!isAdmin && userCompany && !isDemo && (
           <SidebarGroup>
             <SidebarGroupLabel>Management</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -374,14 +374,14 @@ export function CRMSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>}
-                <SidebarMenuItem>
+                {!isDemo && <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/pricing" className="flex items-center">
                       <CreditCard className="mr-2 h-4 w-4" />
                       Manage Subscription
                     </Link>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
+                </SidebarMenuItem>}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/contact" className="flex items-center">
