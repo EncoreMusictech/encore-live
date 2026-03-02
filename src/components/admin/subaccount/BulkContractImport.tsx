@@ -319,7 +319,8 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
               territories: row.territories ? row.territories.split(',').map(t => t.trim()) : null,
               publishing_entity_id: row.publishing_entity_id || null,
               administrator: row.administrator || null,
-              original_publisher: row.original_publisher || null,
+              original_publisher: row.original_publisher
+                || (row.counterparty_name ? `${row.counterparty_name} Publishing Designee` : null),
               financial_terms: {
                 post_term_collection_months: row.post_term_collection_months || null,
                 post_term_collection_end_date: postTermEnd,

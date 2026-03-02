@@ -340,13 +340,16 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
             }
           }
 
-          // Insert original publisher if provided
-          if (work.originalPublisher) {
+          // Insert original publisher — default to "[First Writer] Publishing Designee" if blank
+          const resolvedOriginalPublisher = work.originalPublisher
+            || (work.writers.length > 0 ? `${work.writers[0].name} Publishing Designee` : null);
+
+          if (resolvedOriginalPublisher) {
             const { error: publisherError } = await supabase
               .from('copyright_publishers')
               .insert({
                 copyright_id: copyright.id,
-                publisher_name: work.originalPublisher,
+                publisher_name: resolvedOriginalPublisher,
                 publisher_role: 'original_publisher',
                 ownership_percentage: 0,
               });
