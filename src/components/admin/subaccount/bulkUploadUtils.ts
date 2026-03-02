@@ -156,6 +156,17 @@ function str(v: any): string {
   return String(v).trim();
 }
 
+/** ISRC/ISWC placeholder values that should be treated as null */
+const PLACEHOLDER_VALUES = new Set(['n/a', 'na', 'none', 'tbd', '-', '', 'null', 'pending', 'unknown']);
+
+/** Normalize an identifier, returning null for placeholder values */
+export function normalizeIdentifier(value: string | null | undefined): string | null {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  if (PLACEHOLDER_VALUES.has(trimmed.toLowerCase())) return null;
+  return trimmed || null;
+}
+
 /**
  * Groups flat rows into works, supporting both:
  * - Flat format: every row has a title, writers in writer_N_* columns
@@ -191,8 +202,8 @@ export function groupRowsIntoWorks(rawRows: Record<string, any>[]): GroupedWork[
         alternateTitle: str(row.alternate_title) || null,
         artist: str(row.main_artist) || null,
         featuredArtist: str(row.featured_artist) || null,
-        isrc: str(row.isrc) || null,
-        iswc: str(row.iswc) || null,
+        isrc: normalizeIdentifier(row.isrc),
+        iswc: normalizeIdentifier(row.iswc),
         albumTitle: str(row.album_title) || null,
         workType: isVideo ? 'Video' : 'Audio Recording',
         contentRating: str(row.content_rating) || null,
