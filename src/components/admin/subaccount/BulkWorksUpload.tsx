@@ -35,7 +35,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         'ISWC': '',
         'Album Title': 'Sample Album',
         'Administrator': 'PAQ Publishing',
-        'Content (Clean / Explicit / Neither)': 'Clean',
+        'Original Publisher': 'PAQ Music Publishing LLC',
         'Name of Writer(s)': 'Donald Augustus Sales pka Hazel',
         'First Name': 'Donald',
         'Last Name': 'Sales',
@@ -55,7 +55,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         'ISWC': '',
         'Album Title': '',
         'Administrator': '',
-        'Content (Clean / Explicit / Neither)': '',
+        'Original Publisher': '',
         'Name of Writer(s)': 'Sophia Grace Brownlee',
         'First Name': 'Sophia',
         'Last Name': 'Brownlee',
@@ -75,7 +75,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         'ISWC': 'T-123456789-C',
         'Album Title': '',
         'Administrator': '',
-        'Content (Clean / Explicit / Neither)': '',
+        'Original Publisher': '',
         'Name of Writer(s)': 'John Doe',
         'First Name': 'John',
         'Last Name': 'Doe',
@@ -340,6 +340,23 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
             }
           }
 
+          // Insert original publisher if provided
+          if (work.originalPublisher) {
+            const { error: publisherError } = await supabase
+              .from('copyright_publishers')
+              .insert({
+                copyright_id: copyright.id,
+                publisher_name: work.originalPublisher,
+                publisher_role: 'original_publisher',
+                ownership_percentage: 0,
+              });
+
+            if (publisherError) {
+              console.error(`Publisher insert failed for "${work.originalPublisher}":`, publisherError);
+              // Non-fatal: log but continue
+            }
+          }
+
           // Link to sub-account catalog
           // @ts-ignore - Avoid deep type instantiation
           const { error: linkError } = await supabase
@@ -547,6 +564,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
               <li><strong>Work Title</strong> (required — first row of each work)</li>
               <li><strong>Main Artist</strong>, <strong>Featured Artist</strong>, <strong>ISRC</strong>, <strong>ISWC</strong>, <strong>Album Title</strong> (optional)</li>
               <li><strong>Administrator</strong> — assigns the work to a publishing entity (must match an existing entity name)</li>
+              <li><strong>Original Publisher</strong> — the original publisher name for the work</li>
               <li><strong>Name of Writer(s)</strong>, <strong>First Name</strong>, <strong>Last Name</strong>, <strong>Share</strong>, <strong>PRO</strong>, <strong>IPI</strong>, <strong>Controlled (Y/N)</strong></li>
             </ul>
             <p className="text-muted-foreground mt-2">
