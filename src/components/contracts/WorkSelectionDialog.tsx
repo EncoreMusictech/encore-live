@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Plus, CheckCircle, Music, Calendar, Clock, User, Building } from 'lucide-react';
@@ -55,7 +56,13 @@ export function WorkSelectionDialog({
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWorks, setSelectedWorks] = useState<Set<string>>(new Set());
-  const [writersMap, setWritersMap] = useState<Record<string, string[]>>({});
+  const [writersMap, setWritersMap] = useState<Record<string, Array<{
+    writer_name: string;
+    ownership_percentage: number;
+    controlled_status: string | null;
+    pro_affiliation: string | null;
+  }>>>({});
+  const [recordingsMap, setRecordingsMap] = useState<Record<string, string>>({});
   const [workInheritance, setWorkInheritance] = useState<{[key: string]: {
     inherits_royalty_splits: boolean;
     inherits_recoupment_status: boolean;
@@ -64,25 +71,42 @@ export function WorkSelectionDialog({
     work_specific_rate_reduction: number;
   }}>({});
 
-  // Fetch writers for all copyrights to enable songwriter search
+  // Fetch writers and recordings for all copyrights
   useEffect(() => {
     if (copyrights.length === 0) return;
+    const ids = copyrights.map(c => c.id);
+
     const fetchWriters = async () => {
-      const ids = copyrights.map(c => c.id);
       const { data } = await supabase
         .from('copyright_writers')
-        .select('copyright_id, writer_name')
+        .select('copyright_id, writer_name, ownership_percentage, controlled_status, pro_affiliation')
         .in('copyright_id', ids);
       if (data) {
-        const map: Record<string, string[]> = {};
+        const map: Record<string, typeof data> = {};
         data.forEach(w => {
           if (!map[w.copyright_id]) map[w.copyright_id] = [];
-          map[w.copyright_id].push(w.writer_name);
+          map[w.copyright_id].push(w);
         });
         setWritersMap(map);
       }
     };
+
+    const fetchRecordings = async () => {
+      const { data } = await supabase
+        .from('copyright_recordings')
+        .select('copyright_id, artist_name')
+        .in('copyright_id', ids);
+      if (data) {
+        const map: Record<string, string> = {};
+        data.forEach(r => {
+          if (r.artist_name && !map[r.copyright_id]) map[r.copyright_id] = r.artist_name;
+        });
+        setRecordingsMap(map);
+      }
+    };
+
     fetchWriters();
+    fetchRecordings();
   }, [copyrights]);
 
   // Filter copyrights based on search term (including songwriter)
@@ -93,9 +117,44 @@ export function WorkSelectionDialog({
       copyright.album_title?.toLowerCase().includes(term) ||
       copyright.internal_id?.toLowerCase().includes(term) ||
       copyright.iswc?.toLowerCase().includes(term) ||
-      writersMap[copyright.id]?.some(name => name.toLowerCase().includes(term))
+      writersMap[copyright.id]?.some(w => w.writer_name.toLowerCase().includes(term))
     );
   });
+
+  const allFilteredSelected = filteredCopyrights.length > 0 && filteredCopyrights.every(c => selectedWorks.has(c.id));
+  const someFilteredSelected = filteredCopyrights.some(c => selectedWorks.has(c.id));
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      // Deselect all filtered
+      const newSelected = new Set(selectedWorks);
+      const newInheritance = { ...workInheritance };
+      filteredCopyrights.forEach(c => {
+        newSelected.delete(c.id);
+        delete newInheritance[c.id];
+      });
+      setSelectedWorks(newSelected);
+      setWorkInheritance(newInheritance);
+    } else {
+      // Select all filtered
+      const newSelected = new Set(selectedWorks);
+      const newInheritance = { ...workInheritance };
+      filteredCopyrights.forEach(c => {
+        newSelected.add(c.id);
+        if (!newInheritance[c.id]) {
+          newInheritance[c.id] = {
+            inherits_royalty_splits: true,
+            inherits_recoupment_status: true,
+            inherits_controlled_status: true,
+            work_specific_advance: 0,
+            work_specific_rate_reduction: 0
+          };
+        }
+      });
+      setSelectedWorks(newSelected);
+      setWorkInheritance(newInheritance);
+    }
+  };
 
   const toggleWorkSelection = (copyrightId: string) => {
     const newSelected = new Set(selectedWorks);
@@ -383,77 +442,105 @@ export function WorkSelectionDialog({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-12">Select</TableHead>
+                        <TableHead className="w-10">
+                          <Checkbox
+                            checked={allFilteredSelected}
+                            ref={(el) => {
+                              if (el) {
+                                (el as any).indeterminate = someFilteredSelected && !allFilteredSelected;
+                              }
+                            }}
+                            onCheckedChange={toggleSelectAll}
+                            aria-label="Select all"
+                          />
+                        </TableHead>
+                        <TableHead>Work ID</TableHead>
                         <TableHead>Work Title</TableHead>
-                        <TableHead>Songwriter(s)</TableHead>
-                        <TableHead>Internal ID</TableHead>
+                        <TableHead>Artist</TableHead>
+                        <TableHead>ISRC</TableHead>
+                        <TableHead>Media Type</TableHead>
+                        <TableHead>ISWC</TableHead>
                         <TableHead>Album</TableHead>
+                        <TableHead>Writers</TableHead>
+                        <TableHead>Controlled %</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>PRO Registration</TableHead>
-                        <TableHead>Created</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredCopyrights.map((copyright) => (
-                        <TableRow 
-                          key={copyright.id}
-                          className={selectedWorks.has(copyright.id) ? 'bg-accent' : ''}
-                        >
-                          <TableCell>
-                            <Button
-                              variant={selectedWorks.has(copyright.id) ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => toggleWorkSelection(copyright.id)}
-                            >
-                              {selectedWorks.has(copyright.id) ? (
-                                <CheckCircle className="h-4 w-4" />
-                              ) : (
-                                <Plus className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
+                      {filteredCopyrights.map((copyright) => {
+                        const writers = writersMap[copyright.id] || [];
+                        const controlledPct = writers
+                          .filter(w => w.controlled_status === 'C')
+                          .reduce((sum, w) => sum + (w.ownership_percentage || 0), 0);
+
+                        return (
+                          <TableRow 
+                            key={copyright.id}
+                            className={`cursor-pointer ${selectedWorks.has(copyright.id) ? 'bg-accent' : ''}`}
+                            onClick={() => toggleWorkSelection(copyright.id)}
+                          >
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedWorks.has(copyright.id)}
+                                onCheckedChange={() => toggleWorkSelection(copyright.id)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs font-mono">
+                                {copyright.work_id || '-'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
                               <div className="font-medium">{copyright.work_title}</div>
-                              {copyright.iswc && (
-                                <div className="text-xs text-muted-foreground">ISWC: {copyright.iswc}</div>
-                              )}
-                              {copyright.akas && copyright.akas.length > 0 && (
-                                <div className="text-xs text-muted-foreground">
-                                  AKA: {copyright.akas.join(', ')}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {recordingsMap[copyright.id] || '-'}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {copyright.isrc || '-'}
+                            </TableCell>
+                            <TableCell>
+                              {copyright.work_type ? (
+                                <Badge variant="outline" className="text-xs">{copyright.work_type}</Badge>
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {copyright.iswc || '-'}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {copyright.album_title || '-'}
+                            </TableCell>
+                            <TableCell>
+                              {writers.length > 0 ? (
+                                <div className="space-y-1 text-sm">
+                                  {writers.slice(0, 2).map((w, i) => (
+                                    <div key={i}>
+                                      <span className="font-medium">{w.writer_name}</span>
+                                      {w.ownership_percentage ? (
+                                        <span className="text-muted-foreground"> ({w.ownership_percentage}%)</span>
+                                      ) : null}
+                                      {w.pro_affiliation && (
+                                        <div className="text-xs text-muted-foreground">{w.pro_affiliation}</div>
+                                      )}
+                                    </div>
+                                  ))}
+                                  {writers.length > 2 && (
+                                    <span className="text-xs text-muted-foreground">+{writers.length - 2} more</span>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm text-muted-foreground">
-                              {writersMap[copyright.id]?.length
-                                ? writersMap[copyright.id].join(', ')
-                                : '-'}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{copyright.internal_id || 'No ID'}</Badge>
-                          </TableCell>
-                          <TableCell>{copyright.album_title || '-'}</TableCell>
-                          <TableCell>
-                            <Badge variant={copyright.status === 'published' ? 'default' : 'secondary'}>
-                              {copyright.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {getRegistrationStatus(copyright)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Calendar className="h-3 w-3" />
-                              {formatDate(copyright.created_at)}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell className="text-sm font-medium">
+                              {controlledPct > 0 ? `${controlledPct}%` : '-'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={copyright.status === 'published' ? 'default' : 'secondary'}>
+                                {copyright.status}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </CardContent>
