@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useContracts } from '@/hooks/useContracts';
 import { supabase } from '@/integrations/supabase/client';
-import { Download, FileSpreadsheet, Upload, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Download, FileSpreadsheet, Upload, CheckCircle2, XCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface BulkContractImportProps {
@@ -39,6 +39,8 @@ interface ParsedRow {
   publishing_entity_id?: string;
   errors: string[];
   warnings: string[];
+  duplicateAction: 'new' | 'update' | 'skip';
+  existingContractId?: string;
 }
 
 const VALID_CONTRACT_TYPES = ['publishing', 'artist', 'producer', 'sync', 'distribution'];
@@ -49,7 +51,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
   const [showValidation, setShowValidation] = useState(false);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [results, setResults] = useState<{ success: number; failed: number; skipped: number; total: number; royaltyReady: number } | null>(null);
+  const [results, setResults] = useState<{ success: number; failed: number; skipped: number; updated: number; total: number; royaltyReady: number } | null>(null);
   const { toast } = useToast();
   const { createContract } = useContracts();
 
@@ -87,6 +89,9 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
   }, [companyId]);
 
   const hasEntities = entityNames.length > 0;
+
+  const duplicateRows = parsedRows.filter(r => r.existingContractId);
+  const duplicateCount = duplicateRows.length;
 
   const handleDownloadTemplate = () => {
     const templateData = [
@@ -142,6 +147,18 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, any>[];
 
+    // Fetch existing contracts for duplicate detection
+    const { data: existingContracts } = await supabase
+      .from('contracts')
+      .select('id, title, counterparty_name, contract_type')
+      .eq('client_company_id', companyId);
+
+    const existingMap = new Map<string, string>();
+    for (const c of existingContracts || []) {
+      const key = `${c.title}|${c.counterparty_name}|${c.contract_type}`.toLowerCase();
+      existingMap.set(key, c.id);
+    }
+
     const rows: ParsedRow[] = jsonData.map((row) => {
       const errors: string[] = [];
       const warnings: string[] = [];
@@ -181,10 +198,15 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
         warnings.push('No publishing entity specified — contract will be unscoped');
       }
 
+      // Duplicate detection
+      const contractTypeResolved = cType || 'publishing';
+      const dupKey = `${title}|${counterparty}|${contractTypeResolved}`.toLowerCase();
+      const existingId = existingMap.get(dupKey);
+
       return {
         title,
         counterparty_name: counterparty,
-        contract_type: cType || 'publishing',
+        contract_type: contractTypeResolved,
         start_date: row.start_date?.toString(),
         end_date: row.end_date?.toString(),
         post_term_collection_end_date: row.post_term_collection_end_date?.toString(),
@@ -203,6 +225,8 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
         publishing_entity_id: resolvedEntityId,
         errors,
         warnings,
+        duplicateAction: existingId ? 'update' : 'new',
+        existingContractId: existingId,
       };
     });
 
@@ -210,9 +234,19 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
     setShowValidation(true);
   };
 
+  const setDuplicateAction = (idx: number, action: 'update' | 'skip') => {
+    setParsedRows(prev => prev.map((r, i) => i === idx ? { ...r, duplicateAction: action } : r));
+  };
+
+  const setAllDuplicateActions = (action: 'update' | 'skip') => {
+    setParsedRows(prev => prev.map(r => r.existingContractId ? { ...r, duplicateAction: action } : r));
+  };
+
   const handleImport = async () => {
-    const validRows = parsedRows.filter(r => r.errors.length === 0);
-    if (validRows.length === 0) {
+    const actionableRows = parsedRows.filter(r => r.errors.length === 0 && r.duplicateAction !== 'skip');
+    const skippedRows = parsedRows.filter(r => r.errors.length === 0 && r.duplicateAction === 'skip');
+
+    if (actionableRows.length === 0 && skippedRows.length === 0) {
       toast({ title: 'No valid rows', description: 'Fix validation errors before importing.', variant: 'destructive' });
       return;
     }
@@ -222,8 +256,10 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
 
     let success = 0;
     let failed = 0;
-    let skipped = 0;
+    let updated = 0;
     let royaltyReady = 0;
+    const skipped = skippedRows.length;
+    const totalActionable = actionableRows.length;
     const BATCH_SIZE = 10;
 
     // Pre-flight auth check
@@ -234,26 +270,10 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
       return;
     }
 
-    // Fetch existing contracts for duplicate detection
-    const { data: existingContracts } = await supabase
-      .from('contracts')
-      .select('title, counterparty_name, contract_type')
-      .eq('client_company_id', companyId);
-
-    const existingKeys = new Set(
-      (existingContracts || []).map(c => `${c.title}|${c.counterparty_name}|${c.contract_type}`.toLowerCase())
-    );
-
-    for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
-      const batch = validRows.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < actionableRows.length; i += BATCH_SIZE) {
+      const batch = actionableRows.slice(i, i + BATCH_SIZE);
 
       for (const row of batch) {
-        const key = `${row.title}|${row.counterparty_name}|${row.contract_type}`.toLowerCase();
-        if (existingKeys.has(key)) {
-          skipped++;
-          continue;
-        }
-
         let retries = 0;
         const maxRetries = 3;
         let succeeded = false;
@@ -268,7 +288,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
               postTermEnd = end.toISOString().split('T')[0];
             }
 
-            const contract = await createContract({
+            const contractFields = {
               title: row.title,
               counterparty_name: row.counterparty_name,
               contract_type: row.contract_type as any,
@@ -277,43 +297,98 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
               advance_amount: row.advance_amount || null,
               commission_percentage: row.commission_percentage || null,
               territories: row.territories ? row.territories.split(',').map(t => t.trim()) : null,
-              client_company_id: companyId,
-              contract_status: 'draft' as any,
               publishing_entity_id: row.publishing_entity_id || null,
               financial_terms: {
                 post_term_collection_months: row.post_term_collection_months || null,
                 post_term_collection_end_date: postTermEnd,
               },
-            } as any);
+            };
 
-            if (contract && row.party_name) {
-              await supabase.from('contract_interested_parties').insert({
-                contract_id: contract.id,
-                name: row.party_name,
-                party_type: row.party_type || 'writer',
-                performance_percentage: row.performance_pct || 0,
-                mechanical_percentage: row.mechanical_pct || 0,
-                synch_percentage: row.synch_pct || 0,
-                controlled_status: 'C',
-              });
+            if (row.duplicateAction === 'update' && row.existingContractId) {
+              // UPDATE existing contract
+              const { error: updateError } = await supabase
+                .from('contracts')
+                .update({
+                  ...contractFields,
+                  updated_at: new Date().toISOString(),
+                } as any)
+                .eq('id', row.existingContractId);
 
-              // Check if splits are valid
-              if (row.performance_pct === 100 && row.mechanical_pct === 100 && row.synch_pct === 100) {
-                royaltyReady++;
+              if (updateError) throw updateError;
+
+              // Delete and re-insert interested parties
+              await supabase
+                .from('contract_interested_parties')
+                .delete()
+                .eq('contract_id', row.existingContractId);
+
+              if (row.party_name) {
+                await supabase.from('contract_interested_parties').insert({
+                  contract_id: row.existingContractId,
+                  name: row.party_name,
+                  party_type: row.party_type || 'writer',
+                  performance_percentage: row.performance_pct || 0,
+                  mechanical_percentage: row.mechanical_pct || 0,
+                  synch_percentage: row.synch_pct || 0,
+                  controlled_status: 'C',
+                });
+
+                if (row.performance_pct === 100 && row.mechanical_pct === 100 && row.synch_pct === 100) {
+                  royaltyReady++;
+                }
               }
-            }
 
-            if (contract && row.work_title) {
-              await supabase.from('contract_schedule_works').insert({
-                contract_id: contract.id,
-                song_title: row.work_title,
-                isrc: row.work_isrc || null,
-              });
-            }
+              // Delete and re-insert schedule works
+              await supabase
+                .from('contract_schedule_works')
+                .delete()
+                .eq('contract_id', row.existingContractId);
 
-            existingKeys.add(key);
-            succeeded = true;
-            success++;
+              if (row.work_title) {
+                await supabase.from('contract_schedule_works').insert({
+                  contract_id: row.existingContractId,
+                  song_title: row.work_title,
+                  isrc: row.work_isrc || null,
+                });
+              }
+
+              succeeded = true;
+              updated++;
+            } else {
+              // CREATE new contract
+              const contract = await createContract({
+                ...contractFields,
+                client_company_id: companyId,
+                contract_status: 'draft' as any,
+              } as any);
+
+              if (contract && row.party_name) {
+                await supabase.from('contract_interested_parties').insert({
+                  contract_id: contract.id,
+                  name: row.party_name,
+                  party_type: row.party_type || 'writer',
+                  performance_percentage: row.performance_pct || 0,
+                  mechanical_percentage: row.mechanical_pct || 0,
+                  synch_percentage: row.synch_pct || 0,
+                  controlled_status: 'C',
+                });
+
+                if (row.performance_pct === 100 && row.mechanical_pct === 100 && row.synch_pct === 100) {
+                  royaltyReady++;
+                }
+              }
+
+              if (contract && row.work_title) {
+                await supabase.from('contract_schedule_works').insert({
+                  contract_id: contract.id,
+                  song_title: row.work_title,
+                  isrc: row.work_isrc || null,
+                });
+              }
+
+              succeeded = true;
+              success++;
+            }
           } catch (err) {
             retries++;
             if (retries > maxRetries) {
@@ -326,12 +401,12 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
         }
       }
 
-      setProgress(Math.round(((i + batch.length) / validRows.length) * 100));
+      setProgress(Math.round(((i + batch.length) / totalActionable) * 100));
     }
 
-    setResults({ success, failed, skipped, total: validRows.length, royaltyReady });
+    setResults({ success, failed, skipped, updated, total: totalActionable + skipped, royaltyReady });
     setImporting(false);
-    toast({ title: 'Import Complete', description: `${success} of ${validRows.length} contracts imported.` });
+    toast({ title: 'Import Complete', description: `${success} created, ${updated} updated, ${skipped} skipped.` });
   };
 
   return (
@@ -392,11 +467,33 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Validation Results</h3>
               <div className="flex gap-2">
-                <Badge variant="default">{parsedRows.filter(r => r.errors.length === 0).length} valid</Badge>
+                <Badge variant="default">{parsedRows.filter(r => r.errors.length === 0 && r.duplicateAction === 'new').length} new</Badge>
+                {duplicateCount > 0 && (
+                  <Badge className="bg-amber-500 text-white hover:bg-amber-600">
+                    {duplicateCount} duplicate{duplicateCount !== 1 ? 's' : ''}
+                  </Badge>
+                )}
                 <Badge variant="destructive">{parsedRows.filter(r => r.errors.length > 0).length} errors</Badge>
                 <Badge variant="secondary">{parsedRows.filter(r => r.warnings.length > 0).length} warnings</Badge>
               </div>
             </div>
+
+            {duplicateCount > 0 && (
+              <Alert>
+                <RefreshCw className="h-4 w-4" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span>{duplicateCount} contract{duplicateCount !== 1 ? 's' : ''} already exist{duplicateCount === 1 ? 's' : ''}. Choose to update or skip each one.</span>
+                  <div className="flex gap-2 ml-4 shrink-0">
+                    <Button size="sm" variant="outline" onClick={() => setAllDuplicateActions('update')}>
+                      Update All
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setAllDuplicateActions('skip')}>
+                      Skip All
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div className="max-h-[400px] overflow-auto border rounded-md">
               <table className="w-full text-sm">
@@ -408,12 +505,17 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
                     <th className="p-2 text-left">Type</th>
                     {hasEntities && <th className="p-2 text-left">Publishing Entity</th>}
                     <th className="p-2 text-left">Post-Term</th>
+                    <th className="p-2 text-left">Action</th>
                     <th className="p-2 text-left">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {parsedRows.map((row, idx) => (
-                    <tr key={idx} className={row.errors.length > 0 ? 'bg-destructive/5' : row.warnings.length > 0 ? 'bg-amber-500/5' : ''}>
+                    <tr key={idx} className={
+                      row.errors.length > 0 ? 'bg-destructive/5' :
+                      row.existingContractId ? 'bg-amber-500/5' :
+                      row.warnings.length > 0 ? 'bg-amber-500/5' : ''
+                    }>
                       <td className="p-2">{idx + 1}</td>
                       <td className="p-2">{row.title || <span className="text-destructive italic">Missing</span>}</td>
                       <td className="p-2">{row.counterparty_name || <span className="text-destructive italic">Missing</span>}</td>
@@ -430,6 +532,30 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
                         </td>
                       )}
                       <td className="p-2">{row.post_term_collection_months ? `${row.post_term_collection_months}mo` : '—'}</td>
+                      <td className="p-2">
+                        {row.existingContractId ? (
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant={row.duplicateAction === 'update' ? 'default' : 'outline'}
+                              className="h-6 px-2 text-xs"
+                              onClick={() => setDuplicateAction(idx, 'update')}
+                            >
+                              Update
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={row.duplicateAction === 'skip' ? 'secondary' : 'outline'}
+                              className="h-6 px-2 text-xs"
+                              onClick={() => setDuplicateAction(idx, 'skip')}
+                            >
+                              Skip
+                            </Button>
+                          </div>
+                        ) : (
+                          <Badge variant="default" className="text-xs bg-green-600 hover:bg-green-700">New</Badge>
+                        )}
+                      </td>
                       <td className="p-2">
                         {row.errors.length > 0 ? (
                           <span className="text-destructive text-xs">{row.errors.join('; ')}</span>
@@ -449,9 +575,12 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
               <Button
                 onClick={handleImport}
                 className="flex-1"
-                disabled={parsedRows.filter(r => r.errors.length === 0).length === 0}
+                disabled={parsedRows.filter(r => r.errors.length === 0 && r.duplicateAction !== 'skip').length === 0}
               >
-                Import {parsedRows.filter(r => r.errors.length === 0).length} Valid Contracts
+                Import {parsedRows.filter(r => r.errors.length === 0 && r.duplicateAction === 'new').length} New
+                {parsedRows.filter(r => r.errors.length === 0 && r.duplicateAction === 'update').length > 0 &&
+                  ` + Update ${parsedRows.filter(r => r.errors.length === 0 && r.duplicateAction === 'update').length}`
+                }
               </Button>
               <Button variant="outline" onClick={() => { setShowValidation(false); setFile(null); setParsedRows([]); }}>
                 Cancel
@@ -473,14 +602,18 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
 
         {results && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle></CardHeader>
                 <CardContent><div className="text-2xl font-bold">{results.total}</div></CardContent>
               </Card>
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Success</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Created</CardTitle></CardHeader>
                 <CardContent><div className="text-2xl font-bold text-green-600">{results.success}</div></CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Updated</CardTitle></CardHeader>
+                <CardContent><div className="text-2xl font-bold text-amber-600">{results.updated}</div></CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Failed</CardTitle></CardHeader>
@@ -494,7 +627,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
             {results.skipped > 0 && (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{results.skipped} duplicate contracts were skipped.</AlertDescription>
+                <AlertDescription>{results.skipped} duplicate contract{results.skipped !== 1 ? 's were' : ' was'} skipped.</AlertDescription>
               </Alert>
             )}
             <Button variant="outline" onClick={() => { setResults(null); setFile(null); setParsedRows([]); setShowValidation(false); }} className="w-full">
