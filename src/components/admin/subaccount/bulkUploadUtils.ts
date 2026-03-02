@@ -25,6 +25,7 @@ export interface GroupedWork {
   workType: string;
   contentRating: string | null;
   notes: string | null;
+  administrator: string | null;
   writers: GroupedWriter[];
   /** 1-indexed row numbers from the original spreadsheet */
   sourceRows: number[];
@@ -67,6 +68,11 @@ const COLUMN_ALIASES: Record<string, string> = {
   'IPI Number': 'writer_ipi',
   'Writer Role': 'writer_role',
   'writer_role': 'writer_role',
+  'Administrator': 'administrator',
+  'administrator': 'administrator',
+  'Entity': 'administrator',
+  'entity': 'administrator',
+  'Publishing Entity': 'administrator',
 };
 
 /** Normalize a raw row's keys using the alias map */
@@ -186,6 +192,7 @@ export function groupRowsIntoWorks(rawRows: Record<string, any>[]): GroupedWork[
         workType: isVideo ? 'Video' : 'Audio Recording',
         contentRating: str(row.content_rating) || null,
         notes: str(row.notes) || null,
+        administrator: str(row.administrator) || null,
         writers: [],
         sourceRows: [rowNum],
       };
