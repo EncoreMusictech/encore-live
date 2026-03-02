@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Plus, CheckCircle, Music, Calendar, Clock, User, Building } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useCopyright } from '@/hooks/useCopyright';
 import { useContracts } from '@/hooks/useContracts';
 import { EnhancedScheduleWorkForm } from './EnhancedScheduleWorkForm';
@@ -54,6 +55,7 @@ export function WorkSelectionDialog({
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWorks, setSelectedWorks] = useState<Set<string>>(new Set());
+  const [writersMap, setWritersMap] = useState<Record<string, string[]>>({});
   const [workInheritance, setWorkInheritance] = useState<{[key: string]: {
     inherits_royalty_splits: boolean;
     inherits_recoupment_status: boolean;
@@ -62,13 +64,38 @@ export function WorkSelectionDialog({
     work_specific_rate_reduction: number;
   }}>({});
 
-  // Filter copyrights based on search term
-  const filteredCopyrights = copyrights.filter(copyright => 
-    copyright.work_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    copyright.album_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    copyright.internal_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    copyright.iswc?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Fetch writers for all copyrights to enable songwriter search
+  useEffect(() => {
+    if (copyrights.length === 0) return;
+    const fetchWriters = async () => {
+      const ids = copyrights.map(c => c.id);
+      const { data } = await supabase
+        .from('copyright_writers')
+        .select('copyright_id, writer_name')
+        .in('copyright_id', ids);
+      if (data) {
+        const map: Record<string, string[]> = {};
+        data.forEach(w => {
+          if (!map[w.copyright_id]) map[w.copyright_id] = [];
+          map[w.copyright_id].push(w.writer_name);
+        });
+        setWritersMap(map);
+      }
+    };
+    fetchWriters();
+  }, [copyrights]);
+
+  // Filter copyrights based on search term (including songwriter)
+  const filteredCopyrights = copyrights.filter(copyright => {
+    const term = searchTerm.toLowerCase();
+    return (
+      copyright.work_title.toLowerCase().includes(term) ||
+      copyright.album_title?.toLowerCase().includes(term) ||
+      copyright.internal_id?.toLowerCase().includes(term) ||
+      copyright.iswc?.toLowerCase().includes(term) ||
+      writersMap[copyright.id]?.some(name => name.toLowerCase().includes(term))
+    );
+  });
 
   const toggleWorkSelection = (copyrightId: string) => {
     const newSelected = new Set(selectedWorks);
@@ -197,7 +224,7 @@ export function WorkSelectionDialog({
             <div className="flex items-center gap-2">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by title, album, internal ID, or ISWC..."
+                placeholder="Search by title, album, internal ID, ISWC, or songwriter..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-1"
@@ -358,6 +385,7 @@ export function WorkSelectionDialog({
                       <TableRow>
                         <TableHead className="w-12">Select</TableHead>
                         <TableHead>Work Title</TableHead>
+                        <TableHead>Songwriter(s)</TableHead>
                         <TableHead>Internal ID</TableHead>
                         <TableHead>Album</TableHead>
                         <TableHead>Status</TableHead>
@@ -395,6 +423,13 @@ export function WorkSelectionDialog({
                                   AKA: {copyright.akas.join(', ')}
                                 </div>
                               )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm text-muted-foreground">
+                              {writersMap[copyright.id]?.length
+                                ? writersMap[copyright.id].join(', ')
+                                : '-'}
                             </div>
                           </TableCell>
                           <TableCell>
