@@ -37,6 +37,8 @@ interface ParsedRow {
   work_isrc?: string;
   publishing_entity?: string;
   publishing_entity_id?: string;
+  administrator?: string;
+  original_publisher?: string;
   errors: string[];
   warnings: string[];
   duplicateAction: 'new' | 'update' | 'skip';
@@ -116,6 +118,8 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
         work_title: 'Example Song',
         work_isrc: 'USRC12345678',
         publishing_entity: hasEntities ? entityNames[0] : '',
+        administrator: 'PAQ Publishing',
+        original_publisher: 'PAQ Music Publishing LLC',
       },
     ];
 
@@ -223,6 +227,8 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
         synch_pct: sync || undefined,
         work_title: row.work_title?.toString()?.trim(),
         work_isrc: row.work_isrc?.toString()?.trim(),
+        administrator: row.administrator?.toString()?.trim() || undefined,
+        original_publisher: row.original_publisher?.toString()?.trim() || undefined,
         publishing_entity: entityValue || undefined,
         publishing_entity_id: resolvedEntityId,
         errors,
@@ -312,6 +318,8 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
               commission_percentage: row.commission_percentage || null,
               territories: row.territories ? row.territories.split(',').map(t => t.trim()) : null,
               publishing_entity_id: row.publishing_entity_id || null,
+              administrator: row.administrator || null,
+              original_publisher: row.original_publisher || null,
               financial_terms: {
                 post_term_collection_months: row.post_term_collection_months || null,
                 post_term_collection_end_date: postTermEnd,
@@ -673,6 +681,8 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
                 <li><strong>post_term_collection_months</strong>, <strong>post_term_collection_end_date</strong></li>
                 <li><strong>party_name</strong>, <strong>party_type</strong>, splits: <strong>performance_pct</strong>, <strong>mechanical_pct</strong>, <strong>synch_pct</strong></li>
                 <li><strong>work_title</strong>, <strong>work_isrc</strong></li>
+                <li><strong>administrator</strong> — the administrator/entity name for the contract</li>
+                <li><strong>original_publisher</strong> — the original publisher name</li>
                 {hasEntities && (
                   <li><strong>publishing_entity</strong>: {entityNames.join(', ')}</li>
                 )}
