@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Search } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { WorkSelectionDialog } from "./WorkSelectionDialog";
 import { CopyrightDetailsModal } from "../copyright/CopyrightDetailsModal";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ScheduleWorksTableProps {
   contractId: string;
@@ -16,17 +18,50 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   const [isSpotifyFetching, setIsSpotifyFetching] = useState(false);
   const [selectedCopyrightId, setSelectedCopyrightId] = useState<string | null>(null);
   const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [writersMap, setWritersMap] = useState<Record<string, string[]>>({});
   const { contracts, removeScheduleWork, refetch } = useContracts();
-
-  // Debug logging
-  console.log('ScheduleWorksTable - Contract ID:', contractId);
-  console.log('ScheduleWorksTable - Contracts:', contracts.length);
 
   const contract = contracts.find(c => c.id === contractId);
   const scheduleWorks = contract?.contract_schedule_works || [];
-  
-  console.log('ScheduleWorksTable - Contract found:', !!contract);
-  console.log('ScheduleWorksTable - Schedule works count:', scheduleWorks.length);
+
+  // Fetch writers for works that have a copyright_id
+  useEffect(() => {
+    const copyrightIds = scheduleWorks
+      .map(w => w.copyright_id)
+      .filter((id): id is string => !!id);
+    if (copyrightIds.length === 0) { setWritersMap({}); return; }
+
+    const fetchWriters = async () => {
+      const { data } = await supabase
+        .from('copyright_writers')
+        .select('copyright_id, writer_name')
+        .in('copyright_id', copyrightIds);
+      if (data) {
+        const map: Record<string, string[]> = {};
+        data.forEach(w => {
+          if (!map[w.copyright_id]) map[w.copyright_id] = [];
+          map[w.copyright_id].push(w.writer_name);
+        });
+        setWritersMap(map);
+      }
+    };
+    fetchWriters();
+  }, [scheduleWorks.length]);
+
+  const filteredWorks = useMemo(() => {
+    if (!searchTerm) return scheduleWorks;
+    const term = searchTerm.toLowerCase();
+    return scheduleWorks.filter(work =>
+      work.song_title?.toLowerCase().includes(term) ||
+      work.artist_name?.toLowerCase().includes(term) ||
+      work.album_title?.toLowerCase().includes(term) ||
+      work.work_id?.toLowerCase().includes(term) ||
+      work.isrc?.toLowerCase().includes(term) ||
+      work.iswc?.toLowerCase().includes(term) ||
+      (work.copyright_id && writersMap[work.copyright_id]?.some(name => name.toLowerCase().includes(term)))
+    );
+  }, [scheduleWorks, searchTerm, writersMap]);
 
   const handleRemoveWork = async (workId: string) => {
     try {
@@ -38,7 +73,7 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
 
   const handleWorkAdded = () => {
     setIsAddDialogOpen(false);
-    refetch(); // Refresh the contracts data
+    refetch();
   };
 
   const handleViewCopyright = (copyrightId: string) => {
@@ -47,7 +82,6 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   };
 
   const handleDialogClose = () => {
-    // Only allow dialog to close if not fetching Spotify data
     if (!isSpotifyFetching) {
       setIsAddDialogOpen(false);
     }
@@ -95,67 +129,89 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
           No works in schedule yet. Click "Add Work" to link works to this contract.
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Song Title</TableHead>
-              <TableHead>Artist</TableHead>
-              <TableHead>Album</TableHead>
-              <TableHead>Work ID</TableHead>
-              <TableHead>ISRC</TableHead>
-              <TableHead>Inheritance</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {scheduleWorks.map((work) => (
-              <TableRow key={work.id}>
-                <TableCell>
-                  <div className="font-medium">{work.song_title}</div>
-                  {work.iswc && (
-                    <div className="text-sm text-muted-foreground">ISWC: {work.iswc}</div>
-                  )}
-                </TableCell>
-                <TableCell>{work.artist_name || '-'}</TableCell>
-                <TableCell>{work.album_title || '-'}</TableCell>
-                <TableCell>{work.work_id || '-'}</TableCell>
-                <TableCell>{work.isrc || '-'}</TableCell>
-                <TableCell>
-                  <div className="text-xs space-y-1">
-                    {work.inherits_royalty_splits && <div>✓ Royalty Splits</div>}
-                    {work.inherits_recoupment_status && <div>✓ Recoupment</div>}
-                    {work.inherits_controlled_status && <div>✓ Controlled Status</div>}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {work.copyright_id && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        title="View in Copyright Module"
-                        onClick={() => handleViewCopyright(work.copyright_id)}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveWork(work.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by title, artist, songwriter, work ID, ISRC..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1"
+            />
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
+              {filteredWorks.length} of {scheduleWorks.length} works
+            </span>
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Song Title</TableHead>
+                <TableHead>Artist</TableHead>
+                <TableHead>Album</TableHead>
+                <TableHead>Work ID</TableHead>
+                <TableHead>ISRC</TableHead>
+                <TableHead>Inheritance</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredWorks.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                    No works match "{searchTerm}"
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredWorks.map((work) => (
+                  <TableRow key={work.id}>
+                    <TableCell>
+                      <div className="font-medium">{work.song_title}</div>
+                      {work.iswc && (
+                        <div className="text-sm text-muted-foreground">ISWC: {work.iswc}</div>
+                      )}
+                    </TableCell>
+                    <TableCell>{work.artist_name || '-'}</TableCell>
+                    <TableCell>{work.album_title || '-'}</TableCell>
+                    <TableCell>{work.work_id || '-'}</TableCell>
+                    <TableCell>{work.isrc || '-'}</TableCell>
+                    <TableCell>
+                      <div className="text-xs space-y-1">
+                        {work.inherits_royalty_splits && <div>✓ Royalty Splits</div>}
+                        {work.inherits_recoupment_status && <div>✓ Recoupment</div>}
+                        {work.inherits_controlled_status && <div>✓ Controlled Status</div>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {work.copyright_id && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            title="View in Copyright Module"
+                            onClick={() => handleViewCopyright(work.copyright_id)}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveWork(work.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
-      {/* Copyright Details Modal */}
       <CopyrightDetailsModal
         isOpen={isCopyrightModalOpen}
         onOpenChange={setIsCopyrightModalOpen}
