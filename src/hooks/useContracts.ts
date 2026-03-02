@@ -445,9 +445,12 @@ export const useContracts = () => {
 
       console.log('Existing parties in contract:', existingParties?.length || 0, existingParties);
 
-      // Create interested party records for each writer
+      // Only inherit controlled writers into the contract's interested parties
+      const controlledWriters = copyrightWriters.filter(w => w.controlled_status === 'C');
+      console.log('Controlled writers to inherit:', controlledWriters.length, 'of', copyrightWriters.length);
+
       const newParties = [];
-      for (const writer of copyrightWriters) {
+      for (const writer of controlledWriters) {
         // Check if this writer already exists in the contract
         const exists = existingParties?.some(party => 
           party.name === writer.writer_name || 
