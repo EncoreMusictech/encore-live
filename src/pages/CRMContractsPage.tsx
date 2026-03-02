@@ -107,7 +107,7 @@ export default function CRMContractsPage() {
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     
     const activeContracts = contracts.filter(contract => 
-      contract.contract_status === 'signed'
+      contract.contract_status === 'active' || contract.contract_status === 'signed'
     ).length;
     
     const pendingSignatures = contracts.filter(contract => 
