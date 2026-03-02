@@ -34,6 +34,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         'ISRC': 'QMFEX1300002',
         'ISWC': '',
         'Album Title': 'Sample Album',
+        'Publisher': 'Kobalt Music Publishing',
         'Content (Clean / Explicit / Neither)': 'Clean',
         'Name of Writer(s)': 'Donald Augustus Sales pka Hazel',
         'First Name': 'Donald',
@@ -53,6 +54,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         'ISRC': '',
         'ISWC': '',
         'Album Title': '',
+        'Publisher': '',
         'Content (Clean / Explicit / Neither)': '',
         'Name of Writer(s)': 'Sophia Grace Brownlee',
         'First Name': 'Sophia',
@@ -72,6 +74,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         'ISRC': 'USRC12345678',
         'ISWC': 'T-123456789-C',
         'Album Title': '',
+        'Publisher': '',
         'Content (Clean / Explicit / Neither)': '',
         'Name of Writer(s)': 'John Doe',
         'First Name': 'John',
@@ -221,6 +224,23 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
 
       setProgress(20);
 
+      // Prefetch publishing entities for publisher name resolution
+      const { data: publishingEntities } = await supabase
+        .from('publishing_entities')
+        .select('id, name, display_name')
+        .eq('company_id', companyId)
+        .eq('status', 'active');
+
+      const resolveEntityId = (publisherName: string | null): string | null => {
+        if (!publisherName || !publishingEntities?.length) return null;
+        const normalized = publisherName.toLowerCase().trim();
+        const match = publishingEntities.find(
+          e => e.name?.toLowerCase().trim() === normalized ||
+               e.display_name?.toLowerCase().trim() === normalized
+        );
+        return match?.id || null;
+      };
+
       // Process each grouped work
       for (let i = 0; i < groupedWorks.length; i++) {
         const work = groupedWorks[i];
@@ -255,6 +275,9 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           const workIdUnique = crypto.randomUUID().substring(0, 8);
           const workId = `W${workIdDate}-${workIdUnique}`;
 
+          // Resolve publisher to entity ID
+          const publishingEntityId = resolveEntityId(work.publisher);
+
           // Insert copyright record
           // @ts-ignore - Avoid deep type instantiation
           const { data: copyright, error: copyrightError } = await supabase
@@ -267,6 +290,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
               work_id: workId,
               iswc: work.iswc || null,
               album_title: work.albumTitle || null,
+              publishing_entity_id: publishingEntityId,
               notes: `Bulk uploaded for ${companyName}`,
             })
             .select()

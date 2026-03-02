@@ -25,6 +25,7 @@ export interface GroupedWork {
   workType: string;
   contentRating: string | null;
   notes: string | null;
+  publisher: string | null;
   writers: GroupedWriter[];
   /** 1-indexed row numbers from the original spreadsheet */
   sourceRows: number[];
@@ -55,6 +56,11 @@ const COLUMN_ALIASES: Record<string, string> = {
   'content_rating': 'content_rating',
   'notes': 'notes',
   'Notes': 'notes',
+  // Publisher column
+  'Publisher': 'publisher',
+  'publisher': 'publisher',
+  'Publishing Entity': 'publisher',
+  'publishing_entity': 'publisher',
   // Writer columns from PAQ format
   'Name of Writer(s)': 'writer_name',
   'First Name': 'writer_first_name',
@@ -186,6 +192,7 @@ export function groupRowsIntoWorks(rawRows: Record<string, any>[]): GroupedWork[
         workType: isVideo ? 'Video' : 'Audio Recording',
         contentRating: str(row.content_rating) || null,
         notes: str(row.notes) || null,
+        publisher: str(row.publisher) || null,
         writers: [],
         sourceRows: [rowNum],
       };
