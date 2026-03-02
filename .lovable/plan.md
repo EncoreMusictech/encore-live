@@ -1,44 +1,54 @@
 
+# Bulk Contract Import: Duplicate Detection with Update Prompt
 
-# Fix: Percentage Share Normalization in Bulk Upload
+## Problem
+Currently, when a bulk contract import template contains a contract that already exists (matched by title + counterparty + type), the system silently skips it and reports "X duplicate contracts were skipped." The user has no way to update existing contract terms via bulk import.
 
-## The Problem
+## Solution
+Add a duplicate detection step during validation that identifies matching contracts in the database, then present the user with a clear choice for each duplicate: **update the existing contract** or **skip it**. New contracts proceed as normal.
 
-Excel stores percentage-formatted cells as decimals internally. A cell displaying **70%** is stored as **0.70** in the file. When `XLSX.utils.sheet_to_json()` reads it, it returns `0.70`, not `70`. The system's `ownership_percentage` column uses a 0-100 scale, so `0.70` gets stored directly -- showing as 0.70% instead of 70%.
+## Implementation Steps
 
-## The Rule
+### 1. Enhanced Validation with Duplicate Detection
+During `validateAndPreview()`, after parsing rows, query the `contracts` table for this company to find matches. For each parsed row, check if a contract with the same `title + counterparty_name + contract_type` already exists. Mark matched rows with a `duplicate` status and store the existing contract's `id`.
 
-In `bulkUploadUtils.ts`, after parsing the raw share value, apply this normalization:
+### 2. New State & UI for Duplicate Resolution
+- Add a `duplicateAction` field to `ParsedRow`: `'update' | 'skip' | 'new'`
+- Add an `existingContractId` field to store the matched contract ID
+- In the validation preview table, show a new "Status" column indicating "New", "Duplicate - Update", or "Duplicate - Skip"
+- Add toggle controls (e.g., a dropdown or button) on each duplicate row so the user can choose update vs. skip
+- Add a "Select All Duplicates" toggle to bulk-set all duplicates to update or skip
 
-1. If the parsed value is between 0 and 1 (exclusive of both endpoints being exactly 0 or 1 is ambiguous, but 1.0 could mean 1% or 100%), treat values **<= 1.0** as Excel-decimal format and multiply by 100
-2. If the value is already > 1 (e.g., `70`), assume it is already in percentage scale and use as-is
-3. Edge case: a value of exactly `1.0` should be treated as 100% (since 1% ownership is rare and would typically be written as `1` in a non-percentage-formatted cell)
+### 3. Updated Import Logic
+Modify `handleImport()` to handle three cases per row:
+- **New** (`duplicateAction === 'new'`): Create contract as before (current behavior)
+- **Update** (`duplicateAction === 'update'`): Use `supabase.from('contracts').update(...)` on the existing contract ID to update terms (title, dates, advance, commission, territories, financial_terms, etc.). Also upsert interested parties and schedule works.
+- **Skip** (`duplicateAction === 'skip'`): Skip as before
 
-Concretely:
+### 4. Results Summary Update
+- Add an "Updated" count to the results summary alongside Success/Failed/Skipped
+- Show a card for updated contracts in the results grid
 
+## Technical Details
+
+**Files to modify:**
+- `src/components/admin/subaccount/BulkContractImport.tsx` -- all changes are in this single file
+
+**ParsedRow interface additions:**
+```text
+duplicateAction: 'new' | 'update' | 'skip'
+existingContractId?: string
 ```
-if share > 0 and share <= 1 → share = share * 100
-```
 
-## Changes
+**Duplicate detection query (during validation):**
+Fetch existing contracts for the company with `select('id, title, counterparty_name, contract_type')` and build a lookup map keyed by `title|counterparty|type` (lowercased). During row parsing, check each row against this map.
 
-**File: `src/components/admin/subaccount/bulkUploadUtils.ts`**
+**Update logic for duplicates marked as "update":**
+- Update the `contracts` row: `supabase.from('contracts').update({...fields}).eq('id', existingContractId)`
+- Delete and re-insert interested parties and schedule works for that contract to reflect the new import data
+- This ensures a clean replacement of terms from the spreadsheet
 
-Update the `extractWriter` function (around line 100-101) and the `extractInlineWriters` function (around line 125) to normalize the share value after parsing:
-
-```
-const shareRaw = parseFloat(String(...)) || 0;
-const share = (shareRaw > 0 && shareRaw <= 1) ? shareRaw * 100 : shareRaw;
-```
-
-This single change applies to both PAQ-style grouped rows and flat inline writer columns, fixing all upload paths.
-
-## Why This Is Safe
-
-- A share of `0.70` becomes `70` (correct)
-- A share of `70` stays `70` (correct)
-- A share of `0.50` becomes `50` (correct)  
-- A share of `1.0` becomes `100` (correct -- sole writer)
-- A share of `0` stays `0` (correct -- no share)
-- Backward compatible with uploads that already use whole numbers
-
+**Validation table UI changes:**
+- Add a column showing "New" (green badge), "Duplicate" (amber badge with update/skip toggle)
+- Duplicate rows get an inline button group: "Update" / "Skip"
+- A top-level action to "Update All Duplicates" or "Skip All Duplicates"
