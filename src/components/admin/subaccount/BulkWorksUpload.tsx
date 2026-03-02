@@ -34,6 +34,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         'ISRC': 'QMFEX1300002',
         'ISWC': '',
         'Album Title': 'Sample Album',
+        'Administrator': 'PAQ Publishing',
         'Content (Clean / Explicit / Neither)': 'Clean',
         'Name of Writer(s)': 'Donald Augustus Sales pka Hazel',
         'First Name': 'Donald',
@@ -53,6 +54,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         'ISRC': '',
         'ISWC': '',
         'Album Title': '',
+        'Administrator': '',
         'Content (Clean / Explicit / Neither)': '',
         'Name of Writer(s)': 'Sophia Grace Brownlee',
         'First Name': 'Sophia',
@@ -72,6 +74,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
         'ISRC': 'USRC12345678',
         'ISWC': 'T-123456789-C',
         'Album Title': '',
+        'Administrator': '',
         'Content (Clean / Explicit / Neither)': '',
         'Name of Writer(s)': 'John Doe',
         'First Name': 'John',
@@ -219,6 +222,21 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
       );
       const batchIsrcs = new Set<string>();
 
+      // Prefetch publishing entities for this company to resolve Administrator names
+      const { data: publishingEntities } = await supabase
+        .from('publishing_entities')
+        .select('id, name, display_name, administrator')
+        .eq('company_id', companyId)
+        .eq('status', 'active');
+
+      // Build lookup map: lowercase name/display_name/administrator → entity id
+      const entityLookup = new Map<string, string>();
+      for (const entity of publishingEntities || []) {
+        if (entity.name) entityLookup.set(entity.name.toLowerCase(), entity.id);
+        if (entity.display_name) entityLookup.set(entity.display_name.toLowerCase(), entity.id);
+        if (entity.administrator) entityLookup.set(entity.administrator.toLowerCase(), entity.id);
+      }
+
       setProgress(20);
 
       // Process each grouped work
@@ -255,6 +273,11 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           const workIdUnique = crypto.randomUUID().substring(0, 8);
           const workId = `W${workIdDate}-${workIdUnique}`;
 
+          // Resolve publishing entity from Administrator column
+          const resolvedEntityId = work.administrator
+            ? entityLookup.get(work.administrator.toLowerCase()) || null
+            : null;
+
           // Insert copyright record
           // @ts-ignore - Avoid deep type instantiation
           const { data: copyright, error: copyrightError } = await supabase
@@ -267,6 +290,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
               work_id: workId,
               iswc: work.iswc || null,
               album_title: work.albumTitle || null,
+              publishing_entity_id: resolvedEntityId,
               notes: `Bulk uploaded for ${companyName}`,
             })
             .select()
@@ -522,6 +546,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
               <li><strong>Work Title</strong> (required — first row of each work)</li>
               <li><strong>Main Artist</strong>, <strong>Featured Artist</strong>, <strong>ISRC</strong>, <strong>ISWC</strong>, <strong>Album Title</strong> (optional)</li>
+              <li><strong>Administrator</strong> — assigns the work to a publishing entity (must match an existing entity name)</li>
               <li><strong>Name of Writer(s)</strong>, <strong>First Name</strong>, <strong>Last Name</strong>, <strong>Share</strong>, <strong>PRO</strong>, <strong>IPI</strong>, <strong>Controlled (Y/N)</strong></li>
             </ul>
             <p className="text-muted-foreground mt-2">
