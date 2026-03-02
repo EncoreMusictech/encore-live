@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { useContracts } from '@/hooks/useContracts';
+// Direct supabase inserts used instead of useContracts().createContract to avoid per-row side effects
 import { supabase } from '@/integrations/supabase/client';
 import { Download, FileSpreadsheet, Upload, CheckCircle2, XCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -53,7 +53,9 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<{ success: number; failed: number; skipped: number; updated: number; total: number; royaltyReady: number } | null>(null);
   const { toast } = useToast();
-  const { createContract } = useContracts();
+  // We intentionally do NOT use useContracts().createContract here because
+  // it calls fetchContracts() + shows a toast after every single insert,
+  // causing race conditions and UI spam during bulk operations.
 
   // Fetch publishing entities for this company
   const [entityMap, setEntityMap] = useState<Map<string, string>>(new Map());
@@ -253,6 +255,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
 
     setImporting(true);
     setProgress(0);
+    console.log(`Bulk import starting: ${actionableRows.length} actionable, ${skippedRows.length} skipped, ${parsedRows.filter(r => r.errors.length > 0).length} with errors`);
 
     let success = 0;
     let failed = 0;
@@ -262,12 +265,23 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
     const totalActionable = actionableRows.length;
     const BATCH_SIZE = 10;
 
-    // Pre-flight auth check
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    // Pre-flight auth check — resolve service account for sub-account writes
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) {
       toast({ title: 'Error', description: 'Not authenticated', variant: 'destructive' });
       setImporting(false);
       return;
+    }
+
+    // Use service account if available for this sub-account, otherwise fall back to current user
+    let actingUserId = authUser.id;
+    const { data: serviceAccount } = await supabase
+      .from('company_service_accounts')
+      .select('service_user_id')
+      .eq('company_id', companyId)
+      .maybeSingle();
+    if (serviceAccount?.service_user_id) {
+      actingUserId = serviceAccount.service_user_id;
     }
 
     for (let i = 0; i < actionableRows.length; i += BATCH_SIZE) {
@@ -355,12 +369,19 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
               succeeded = true;
               updated++;
             } else {
-              // CREATE new contract
-              const contract = await createContract({
-                ...contractFields,
-                client_company_id: companyId,
-                contract_status: 'draft' as any,
-              } as any);
+              // CREATE new contract — direct insert to avoid per-row fetchContracts/toast
+              const { data: contract, error: insertError } = await supabase
+                .from('contracts')
+                .insert({
+                  user_id: actingUserId,
+                  ...contractFields,
+                  client_company_id: companyId,
+                  contract_status: 'draft',
+                } as any)
+                .select()
+                .single();
+
+              if (insertError) throw insertError;
 
               if (contract && row.party_name) {
                 await supabase.from('contract_interested_parties').insert({
