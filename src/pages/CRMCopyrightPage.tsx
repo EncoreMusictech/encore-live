@@ -57,47 +57,54 @@ export default function CRMCopyrightPage() {
     updatePageMetadata('copyrightManagement');
   }, []);
 
-  // Load writers and recordings for all copyrights in batch
+  // Load writers and recordings for all copyrights in batched chunks
   useEffect(() => {
     const loadWritersAndRecordings = async () => {
       if (copyrights.length === 0) return;
       
       const copyrightIds = copyrights.map(c => c.id);
+      const CHUNK_SIZE = 100; // Avoid URL length limits
       
       try {
-        // Batch fetch all writers in a single query
-        const { data: allWriters, error: writersError } = await supabase
-          .from('copyright_writers')
-          .select('*')
-          .in('copyright_id', copyrightIds);
-        
-        if (writersError) {
-          console.error('Error batch-loading writers:', writersError);
-        } else {
-          const writersData: {[key: string]: any[]} = {};
-          (allWriters || []).forEach(w => {
-            if (!writersData[w.copyright_id]) writersData[w.copyright_id] = [];
-            writersData[w.copyright_id].push(w);
-          });
-          setWriters(writersData);
+        // Batch fetch writers in chunks
+        const writersData: {[key: string]: any[]} = {};
+        for (let i = 0; i < copyrightIds.length; i += CHUNK_SIZE) {
+          const chunk = copyrightIds.slice(i, i + CHUNK_SIZE);
+          const { data: chunkWriters, error: writersError } = await supabase
+            .from('copyright_writers')
+            .select('*')
+            .in('copyright_id', chunk);
+          
+          if (writersError) {
+            console.error('Error batch-loading writers chunk:', writersError);
+          } else {
+            (chunkWriters || []).forEach(w => {
+              if (!writersData[w.copyright_id]) writersData[w.copyright_id] = [];
+              writersData[w.copyright_id].push(w);
+            });
+          }
         }
+        setWriters(writersData);
 
-        // Batch fetch all recordings in a single query
-        const { data: allRecordings, error: recordingsError } = await supabase
-          .from('copyright_recordings')
-          .select('*')
-          .in('copyright_id', copyrightIds);
-        
-        if (recordingsError) {
-          console.error('Error batch-loading recordings:', recordingsError);
-        } else {
-          const recordingsData: {[key: string]: any[]} = {};
-          (allRecordings || []).forEach(r => {
-            if (!recordingsData[r.copyright_id]) recordingsData[r.copyright_id] = [];
-            recordingsData[r.copyright_id].push(r);
-          });
-          setRecordings(recordingsData);
+        // Batch fetch recordings in chunks
+        const recordingsData: {[key: string]: any[]} = {};
+        for (let i = 0; i < copyrightIds.length; i += CHUNK_SIZE) {
+          const chunk = copyrightIds.slice(i, i + CHUNK_SIZE);
+          const { data: chunkRecordings, error: recordingsError } = await supabase
+            .from('copyright_recordings')
+            .select('*')
+            .in('copyright_id', chunk);
+          
+          if (recordingsError) {
+            console.error('Error batch-loading recordings chunk:', recordingsError);
+          } else {
+            (chunkRecordings || []).forEach(r => {
+              if (!recordingsData[r.copyright_id]) recordingsData[r.copyright_id] = [];
+              recordingsData[r.copyright_id].push(r);
+            });
+          }
         }
+        setRecordings(recordingsData);
       } catch (error) {
         console.error('Error loading copyright data:', error);
       }
