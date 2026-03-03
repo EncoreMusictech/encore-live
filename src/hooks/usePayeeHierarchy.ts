@@ -86,12 +86,19 @@ export function usePayeeHierarchy() {
   // Get the user ID to use for write operations
   const getWriteUserId = () => effectiveUserId || user?.id;
 
-  // Get scoped user IDs for read queries
+  // Get scoped user IDs for read queries (includes service account)
   const getScopedUserIds = (): string[] => {
+    const ids = new Set<string>();
     if (isFilterActive && companyUserIds.length > 0) {
-      return companyUserIds;
+      companyUserIds.forEach(id => ids.add(id));
+    } else if (user) {
+      ids.add(user.id);
     }
-    return user ? [user.id] : [];
+    // Always include the effective (service account) user ID so we can find records we just wrote
+    if (effectiveUserId) {
+      ids.add(effectiveUserId);
+    }
+    return Array.from(ids);
   };
 
   // Apply user scope to a read query
@@ -184,7 +191,7 @@ export function usePayeeHierarchy() {
         .eq('agreement_id', agreementId)
         .eq('publisher_name', publisherName);
       checkQuery = applyScopedFilter(checkQuery);
-      const { data: existingPublisher } = await checkQuery.single();
+      const { data: existingPublisher } = await checkQuery.maybeSingle();
 
       if (existingPublisher) {
         await fetchOriginalPublishers(agreementId);
@@ -283,7 +290,7 @@ export function usePayeeHierarchy() {
         .eq('original_publisher_id', originalPublisherId)
         .eq('writer_name', writerName);
       checkQuery = applyScopedFilter(checkQuery);
-      const { data: existingWriter } = await checkQuery.single();
+      const { data: existingWriter } = await checkQuery.maybeSingle();
 
       if (existingWriter) {
         await fetchWriters(originalPublisherId);
