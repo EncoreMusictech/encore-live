@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
+import { useDataFiltering } from './useDataFiltering';
 
 export interface Agreement {
   id: string;
@@ -43,17 +44,25 @@ export function usePayeeHierarchy() {
   const [payees, setPayees] = useState<Payee[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { applyUserIdFilter, filterKey, isFilterActive, companyId } = useDataFiltering();
 
-  // Fetch all agreements (contracts)
+  // Fetch all agreements (contracts) scoped to sub-account
   const fetchAgreements = async () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('contracts')
         .select('id, agreement_id, title, counterparty_name')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      if (isFilterActive && companyId) {
+        query = query.eq('client_company_id', companyId);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setAgreements(data || []);
@@ -429,7 +438,7 @@ export function usePayeeHierarchy() {
       fetchAgreements();
       setLoading(false);
     }
-  }, [user]);
+  }, [user, filterKey]);
 
   return {
     agreements,
