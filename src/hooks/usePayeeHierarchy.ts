@@ -503,6 +503,139 @@ export function usePayeeHierarchy() {
     }
   };
 
+  // Build payees from agreement using primary interested parties
+  const buildPayeesFromAgreement = async (agreementId: string): Promise<{ created: number; existing: number; errors: number }> => {
+    if (!user) throw new Error('Not authenticated');
+    const writeUserId = getWriteUserId();
+    if (!writeUserId) throw new Error('No effective user ID');
+
+    // 1) Get contract details
+    const { data: contract, error: contractError } = await supabase
+      .from('contracts')
+      .select('id, commission_percentage, counterparty_name')
+      .eq('id', agreementId)
+      .maybeSingle();
+    if (contractError) throw contractError;
+
+    const commission = contract?.commission_percentage || 0;
+    const defaultSplit = Math.max(0, 100 - commission);
+
+    // 2) Ensure an Original Publisher exists (scoped)
+    let publisherId: string | null = null;
+    let pubQuery = supabase
+      .from('original_publishers')
+      .select('id')
+      .eq('agreement_id', agreementId)
+      .order('created_at', { ascending: true });
+    pubQuery = applyScopedFilter(pubQuery);
+    const { data: pubs, error: pubsError } = await pubQuery;
+    if (pubsError) throw pubsError;
+
+    if (pubs && pubs.length > 0) {
+      publisherId = pubs[0].id;
+    } else {
+      const createdPublisher = await autoGenerateOriginalPublisher(agreementId);
+      if (createdPublisher) {
+        publisherId = createdPublisher.id;
+      } else {
+        // Re-fetch after potential race
+        let retryQuery = supabase
+          .from('original_publishers')
+          .select('id')
+          .eq('agreement_id', agreementId)
+          .order('created_at', { ascending: true });
+        retryQuery = applyScopedFilter(retryQuery);
+        const { data: pubs2 } = await retryQuery;
+        publisherId = pubs2 && pubs2.length > 0 ? pubs2[0].id : null;
+      }
+    }
+
+    if (!publisherId) {
+      throw new Error('Unable to determine or create an original publisher for this agreement.');
+    }
+
+    // 3) Fetch primary interested parties (writers, not merged)
+    const { data: parties, error: partiesError } = await supabase
+      .from('contract_interested_parties')
+      .select('*')
+      .eq('contract_id', agreementId)
+      .eq('party_type', 'writer')
+      .is('merged_into_id', null);
+    if (partiesError) throw partiesError;
+
+    if (!parties || parties.length === 0) {
+      return { created: 0, existing: 0, errors: 0 };
+    }
+
+    let created = 0;
+    let existing = 0;
+    let errors = 0;
+
+    for (const party of parties) {
+      const writerName = party.name?.trim();
+      if (!writerName) continue;
+
+      // Find or create writer under publisher (scoped)
+      let writerId: string | null = null;
+      let writerQuery = supabase
+        .from('writers')
+        .select('id')
+        .eq('original_publisher_id', publisherId)
+        .eq('writer_name', writerName);
+      writerQuery = applyScopedFilter(writerQuery);
+      const { data: existingWriter } = await writerQuery.maybeSingle();
+
+      if (existingWriter?.id) {
+        writerId = existingWriter.id;
+      } else {
+        const newWriter = await createWriter({ writer_name: writerName, contact_info: {}, original_publisher_id: publisherId });
+        writerId = newWriter?.id || null;
+      }
+
+      if (!writerId) { errors++; continue; }
+
+      // Check if payee already exists (scoped)
+      let payeeQuery = supabase
+        .from('payees')
+        .select('id')
+        .eq('writer_id', writerId);
+      payeeQuery = applyScopedFilter(payeeQuery);
+      const { data: existingPayee } = await payeeQuery.maybeSingle();
+
+      if (existingPayee?.id) { existing++; continue; }
+
+      // Splits from interested party or default
+      const performance = (party.performance_percentage ?? defaultSplit) as number;
+      const mechanical = (party.mechanical_percentage ?? defaultSplit) as number;
+      const sync = (party.synch_percentage ?? defaultSplit) as number;
+
+      const contactInfo: any = {
+        email: party.email || undefined,
+        phone: party.phone || undefined,
+        address: party.address || undefined,
+        tax_id: party.tax_id || undefined,
+      };
+
+      const paymentInfo = {
+        default_splits: { performance, mechanical, synchronization: sync },
+        payment_settings: { threshold: 100, frequency: 'quarterly' },
+      };
+
+      const createdPayee = await createPayee({
+        payee_name: writerName,
+        payee_type: 'writer',
+        contact_info: contactInfo,
+        payment_info: paymentInfo,
+        writer_id: writerId,
+        is_primary: false,
+      });
+
+      if (createdPayee?.id) created++; else errors++;
+    }
+
+    return { created, existing, errors };
+  };
+
   useEffect(() => {
     if (user) {
       fetchAgreements();
@@ -526,5 +659,6 @@ export function usePayeeHierarchy() {
     updatePayee,
     autoGenerateOriginalPublisher,
     autoGenerateWriter,
+    buildPayeesFromAgreement,
   };
 }
