@@ -45,7 +45,7 @@ export function WorkSelectionDialog({
   const copyrights = propCopyrights || copyrightHook.copyrights;
   const loading = propLoading !== undefined ? propLoading : copyrightHook.loading;
   
-  const { addScheduleWork } = useContracts();
+  const { addScheduleWork, addScheduleWorksBatch } = useContracts();
   
   // Debug logging for copyrights data
   console.log('WorkSelectionDialog - Copyrights:', { 
@@ -213,9 +213,9 @@ export function WorkSelectionDialog({
     try {
       console.log('Adding selected works to contract:', { contractId, selectedWorksCount: selectedWorks.size });
       
-      for (const copyrightId of selectedWorks) {
+      const worksToAdd = Array.from(selectedWorks).map(copyrightId => {
         const copyright = copyrights.find(c => c.id === copyrightId);
-        if (!copyright) continue;
+        if (!copyright) return null;
 
         const inheritance = workInheritance[copyrightId] || {
           inherits_royalty_splits: true,
@@ -225,32 +225,36 @@ export function WorkSelectionDialog({
           work_specific_rate_reduction: 0
         };
 
-        console.log('Adding work to schedule:', {
-          copyrightId,
-          workTitle: copyright.work_title,
-          inheritance
-        });
-
-        await addScheduleWork(contractId, {
+        return {
           copyright_id: copyrightId,
           song_title: copyright.work_title,
-          artist_name: null, // We'll get this from recordings if available
+          artist_name: null as string | null,
           album_title: copyright.album_title,
           work_id: copyright.work_id,
-          isrc: null, // We'll get this from recordings if available
+          isrc: null as string | null,
           iswc: copyright.iswc,
           inherits_royalty_splits: inheritance.inherits_royalty_splits,
           inherits_recoupment_status: inheritance.inherits_recoupment_status,
           inherits_controlled_status: inheritance.inherits_controlled_status,
           work_specific_advance: inheritance.work_specific_advance,
           work_specific_rate_reduction: inheritance.work_specific_rate_reduction
+        };
+      }).filter(Boolean) as any[];
+
+      const results = await addScheduleWorksBatch(contractId, worksToAdd);
+
+      if (results.failed > 0) {
+        toast({
+          title: `Added ${results.success} work(s), ${results.failed} failed`,
+          description: results.errors.slice(0, 3).join('\n'),
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `Added ${results.success} work(s) to contract schedule.`,
         });
       }
-
-      toast({
-        title: "Success",
-        description: `Added ${selectedWorks.size} work(s) to contract schedule.`,
-      });
 
       onSuccess();
     } catch (error) {
