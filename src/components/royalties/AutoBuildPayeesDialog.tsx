@@ -82,7 +82,8 @@ export function AutoBuildPayeesDialog({ open, onOpenChange, onCompleted }: AutoB
         .from('contract_interested_parties')
         .select('*')
         .eq('contract_id', selectedAgreement)
-        .eq('party_type', 'writer');
+        .eq('party_type', 'writer')
+        .is('merged_into_id', null);
       if (partiesError) throw partiesError;
 
       if (!parties || parties.length === 0) {

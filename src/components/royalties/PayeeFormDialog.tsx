@@ -134,6 +134,7 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
         .from('contract_interested_parties')
         .select('performance_percentage, mechanical_percentage, synch_percentage')
         .eq('contract_id', agreementId)
+        .is('merged_into_id', null)
         .limit(1)
         .single();
 

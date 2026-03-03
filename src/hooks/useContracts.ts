@@ -282,7 +282,7 @@ export const useContracts = () => {
 
   // Interested Parties Management
   // Note: client_company_id is auto-populated by database trigger from parent contract
-  const addInterestedParty = async (contractId: string, partyData: Omit<ContractInterestedParty, 'id' | 'contract_id' | 'created_at' | 'updated_at' | 'client_company_id'>) => {
+  const addInterestedParty = async (contractId: string, partyData: Omit<ContractInterestedParty, 'id' | 'contract_id' | 'created_at' | 'updated_at' | 'client_company_id' | 'merged_into_id' | 'merged_at'>) => {
     try {
       const { data, error } = await supabase
         .from('contract_interested_parties')
@@ -646,6 +646,44 @@ export const useContracts = () => {
     }
   };
 
+  // Merge interested parties: link secondaries under a primary
+  const mergeInterestedParties = async (primaryId: string, secondaryIds: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('contract_interested_parties')
+        .update({ merged_into_id: primaryId, merged_at: new Date().toISOString() } as any)
+        .in('id', secondaryIds);
+
+      if (error) throw error;
+
+      await fetchContracts();
+      toast({ title: "Success", description: `Merged ${secondaryIds.length} parties under primary` });
+    } catch (error) {
+      console.error('Error merging parties:', error);
+      toast({ title: "Error", description: "Failed to merge parties", variant: "destructive" });
+      throw error;
+    }
+  };
+
+  // Unmerge: restore a secondary party as independent
+  const unmergeInterestedParty = async (partyId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contract_interested_parties')
+        .update({ merged_into_id: null, merged_at: null } as any)
+        .eq('id', partyId);
+
+      if (error) throw error;
+
+      await fetchContracts();
+      toast({ title: "Success", description: "Party unmerged and restored as independent" });
+    } catch (error) {
+      console.error('Error unmerging party:', error);
+      toast({ title: "Error", description: "Failed to unmerge party", variant: "destructive" });
+      throw error;
+    }
+  };
+
   // Validation functions
   const validateRoyaltySplits = async (contractId: string) => {
     try {
@@ -680,6 +718,8 @@ export const useContracts = () => {
     addInterestedParty,
     updateInterestedParty,
     removeInterestedParty,
+    mergeInterestedParties,
+    unmergeInterestedParty,
     addScheduleWork,
     addScheduleWorksBatch,
     removeScheduleWork,

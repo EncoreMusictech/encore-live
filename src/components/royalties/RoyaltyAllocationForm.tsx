@@ -78,7 +78,8 @@ export function RoyaltyAllocationForm({ onCancel, allocation }: RoyaltyAllocatio
       const { data: ip } = await supabase
         .from('contract_interested_parties')
         .select('name, controlled_status, contract_id')
-        .in('contract_id', contractIds);
+        .in('contract_id', contractIds)
+        .is('merged_into_id', null);
 
       (ip || []).forEach((p: any) => {
         const key = normalizeName(p.name);

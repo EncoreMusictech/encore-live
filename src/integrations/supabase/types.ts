@@ -1802,6 +1802,8 @@ export type Database = {
           ipi_number: string | null
           karaoke_percentage: number | null
           mechanical_percentage: number | null
+          merged_at: string | null
+          merged_into_id: string | null
           name: string
           original_publisher: string | null
           party_type: string
@@ -1829,6 +1831,8 @@ export type Database = {
           ipi_number?: string | null
           karaoke_percentage?: number | null
           mechanical_percentage?: number | null
+          merged_at?: string | null
+          merged_into_id?: string | null
           name: string
           original_publisher?: string | null
           party_type?: string
@@ -1856,6 +1860,8 @@ export type Database = {
           ipi_number?: string | null
           karaoke_percentage?: number | null
           mechanical_percentage?: number | null
+          merged_at?: string | null
+          merged_into_id?: string | null
           name?: string
           original_publisher?: string | null
           party_type?: string
@@ -1879,6 +1885,13 @@ export type Database = {
             columns: ["contract_id"]
             isOneToOne: false
             referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_interested_parties_merged_into_id_fkey"
+            columns: ["merged_into_id"]
+            isOneToOne: false
+            referencedRelation: "contract_interested_parties"
             referencedColumns: ["id"]
           },
         ]
