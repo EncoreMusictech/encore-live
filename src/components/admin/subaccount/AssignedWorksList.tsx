@@ -67,15 +67,74 @@ export function AssignedWorksList({ companyId }: AssignedWorksListProps) {
     }
   };
 
+  const handleRemoveWork = async (work: Work) => {
+    try {
+      // Remove the catalog item
+      const { error } = await supabase
+        .from('catalog_items')
+        .delete()
+        .eq('id', work.id);
+
+      if (error) throw error;
+
+      // Also remove matching copyright by title + company_id
+      await supabase
+        .from('copyrights')
+        .delete()
+        .eq('client_company_id', companyId)
+        .eq('work_title', work.title);
+
+      // Also remove from any contract schedules by title + company_id
+      await supabase
+        .from('contract_schedule_works')
+        .delete()
+        .eq('client_company_id', companyId)
+        .eq('song_title', work.title);
+
+      setWorks(prev => prev.filter(w => w.id !== work.id));
+      toast({
+        title: 'Work Removed',
+        description: `Successfully removed "${work.title}".`,
+      });
+    } catch (error) {
+      console.error('Error removing work:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to remove work',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleRemoveAll = async () => {
     try {
       setRemoving(true);
+
+      // Collect titles for cross-deletion
+      const titles = works.map(w => w.title);
+
       const { error } = await supabase
         .from('catalog_items')
         .delete()
         .eq('company_id', companyId);
 
       if (error) throw error;
+
+      // Also remove matching copyrights
+      if (titles.length > 0) {
+        await supabase
+          .from('copyrights')
+          .delete()
+          .eq('client_company_id', companyId)
+          .in('work_title', titles);
+
+        // Also remove from contract schedules
+        await supabase
+          .from('contract_schedule_works')
+          .delete()
+          .eq('client_company_id', companyId)
+          .in('song_title', titles);
+      }
 
       setWorks([]);
       toast({
@@ -166,6 +225,7 @@ export function AssignedWorksList({ companyId }: AssignedWorksListProps) {
                   <TableHead>ISRC</TableHead>
                   <TableHead>Format</TableHead>
                   <TableHead>Added</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -181,6 +241,16 @@ export function AssignedWorksList({ companyId }: AssignedWorksListProps) {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {new Date(work.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveWork(work)}
+                        className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
