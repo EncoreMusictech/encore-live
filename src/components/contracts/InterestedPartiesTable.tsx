@@ -7,11 +7,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Trash2, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Trash2, AlertCircle, Merge, Unlink, Eye, EyeOff } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MergePartiesDialog } from "./MergePartiesDialog";
 
 interface InterestedPartiesTableProps {
   contractId: string;
@@ -20,11 +21,19 @@ interface InterestedPartiesTableProps {
 export function InterestedPartiesTable({ contractId }: InterestedPartiesTableProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [validationResults, setValidationResults] = useState<any[]>([]);
-  const { contracts, addInterestedParty, removeInterestedParty, validateRoyaltySplits } = useContracts();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [showMerged, setShowMerged] = useState(false);
+  const { contracts, addInterestedParty, removeInterestedParty, validateRoyaltySplits, mergeInterestedParties, unmergeInterestedParty } = useContracts();
   const { toast } = useToast();
 
   const contract = contracts.find(c => c.id === contractId);
-  const interestedParties = contract?.contract_interested_parties || [];
+  const allParties = contract?.contract_interested_parties || [];
+  
+  // Separate primary/independent parties from merged ones
+  const primaryParties = allParties.filter(p => !(p as any).merged_into_id);
+  const mergedParties = allParties.filter(p => (p as any).merged_into_id);
+  const visibleParties = showMerged ? allParties : primaryParties;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -54,29 +63,13 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
       await addInterestedParty(contractId, formData);
       setIsAddDialogOpen(false);
       setFormData({
-        name: "",
-        dba_alias: "",
-        party_type: "writer",
-        controlled_status: "NC",
-        cae_number: "",
-        ipi_number: "",
-        affiliation: "",
-        performance_percentage: 0,
-        mechanical_percentage: 0,
-        print_percentage: 0,
-        synch_percentage: 0,
-        grand_rights_percentage: 0,
-        karaoke_percentage: 0,
-        original_publisher: "",
-        administrator_role: "",
-        co_publisher: "",
-        email: "",
-        phone: "",
-        address: "",
-        tax_id: "",
+        name: "", dba_alias: "", party_type: "writer", controlled_status: "NC",
+        cae_number: "", ipi_number: "", affiliation: "",
+        performance_percentage: 0, mechanical_percentage: 0, print_percentage: 0,
+        synch_percentage: 0, grand_rights_percentage: 0, karaoke_percentage: 0,
+        original_publisher: "", administrator_role: "", co_publisher: "",
+        email: "", phone: "", address: "", tax_id: "",
       });
-      
-      // Validate splits after adding
       const results = await validateRoyaltySplits(contractId);
       setValidationResults(results || []);
     } catch (error) {
@@ -87,8 +80,6 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
   const handleRemoveParty = async (partyId: string) => {
     try {
       await removeInterestedParty(partyId);
-      
-      // Validate splits after removing
       const results = await validateRoyaltySplits(contractId);
       setValidationResults(results || []);
     } catch (error) {
@@ -96,8 +87,30 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
     }
   };
 
+  const handleToggleSelect = (partyId: string, checked: boolean) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (checked) next.add(partyId);
+      else next.delete(partyId);
+      return next;
+    });
+  };
+
+  const handleMergeConfirm = async (primaryId: string, secondaryIds: string[]) => {
+    await mergeInterestedParties(primaryId, secondaryIds);
+    setSelectedIds(new Set());
+    const results = await validateRoyaltySplits(contractId);
+    setValidationResults(results || []);
+  };
+
+  const handleUnmerge = async (partyId: string) => {
+    await unmergeInterestedParty(partyId);
+    const results = await validateRoyaltySplits(contractId);
+    setValidationResults(results || []);
+  };
+
   const getControlledTotal = () => {
-    return interestedParties
+    return primaryParties
       .filter(party => party.controlled_status === 'C')
       .reduce((total, party) => {
         return total + Math.max(
@@ -106,6 +119,12 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
           party.synch_percentage || 0
         );
       }, 0);
+  };
+
+  const selectedParties = allParties.filter(p => selectedIds.has(p.id));
+  const getPrimaryName = (mergedIntoId: string) => {
+    const primary = allParties.find(p => p.id === mergedIntoId);
+    return primary?.name || 'Unknown';
   };
 
   const partyTypes = [
@@ -130,204 +149,133 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            Interested Parties
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Party
+            <span>Interested Parties</span>
+            <div className="flex items-center gap-2">
+              {mergedParties.length > 0 && (
+                <Button variant="outline" size="sm" onClick={() => setShowMerged(!showMerged)} className="gap-1">
+                  {showMerged ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showMerged ? 'Hide' : 'Show'} Merged ({mergedParties.length})
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Add Interested Party</DialogTitle>
-                  <DialogDescription>
-                    Add a contributor to this contract with their royalty splits and rights
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="grid gap-6">
-                  {/* Party Details */}
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        placeholder="Legal or credited name"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="dba_alias">DBA / Alias</Label>
-                      <Input
-                        id="dba_alias"
-                        value={formData.dba_alias}
-                        onChange={(e) => setFormData({...formData, dba_alias: e.target.value})}
-                        placeholder="Professional alias"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="party_type">Party Type</Label>
-                      <Select onValueChange={(value) => setFormData({...formData, party_type: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {partyTypes.map(type => (
-                            <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="controlled_status">Controlled Status</Label>
-                      <Select onValueChange={(value) => setFormData({...formData, controlled_status: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="C">Controlled (C)</SelectItem>
-                          <SelectItem value="NC">Non-Controlled (NC)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="affiliation">PRO Affiliation</Label>
-                      <Select onValueChange={(value) => setFormData({...formData, affiliation: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select PRO" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {affiliations.map(aff => (
-                            <SelectItem key={aff} value={aff}>{aff}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Royalty Splits */}
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Royalty Splits by Right Type (%)</h4>
-                    <div className="grid md:grid-cols-3 gap-4">
+              )}
+              {selectedIds.size >= 2 && (
+                <Button variant="outline" size="sm" onClick={() => setMergeDialogOpen(true)} className="gap-1">
+                  <Merge className="h-4 w-4" />
+                  Merge Selected ({selectedIds.size})
+                </Button>
+              )}
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2" size="sm">
+                    <Plus className="h-4 w-4" />
+                    Add Party
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add Interested Party</DialogTitle>
+                    <DialogDescription>
+                      Add a contributor to this contract with their royalty splits and rights
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="grid gap-6">
+                    <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="performance_percentage">Performance</Label>
-                        <Input
-                          id="performance_percentage"
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={formData.performance_percentage}
-                          onChange={(e) => setFormData({...formData, performance_percentage: parseFloat(e.target.value) || 0})}
-                        />
+                        <Label htmlFor="name">Name *</Label>
+                        <Input id="name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Legal or credited name" />
                       </div>
-                      
                       <div className="space-y-2">
-                        <Label htmlFor="mechanical_percentage">Mechanical</Label>
-                        <Input
-                          id="mechanical_percentage"
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={formData.mechanical_percentage}
-                          onChange={(e) => setFormData({...formData, mechanical_percentage: parseFloat(e.target.value) || 0})}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="synch_percentage">Synch</Label>
-                        <Input
-                          id="synch_percentage"
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={formData.synch_percentage}
-                          onChange={(e) => setFormData({...formData, synch_percentage: parseFloat(e.target.value) || 0})}
-                        />
+                        <Label htmlFor="dba_alias">DBA / Alias</Label>
+                        <Input id="dba_alias" value={formData.dba_alias} onChange={(e) => setFormData({...formData, dba_alias: e.target.value})} placeholder="Professional alias" />
                       </div>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="print_percentage">Print</Label>
-                        <Input
-                          id="print_percentage"
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={formData.print_percentage}
-                          onChange={(e) => setFormData({...formData, print_percentage: parseFloat(e.target.value) || 0})}
-                        />
+                        <Label htmlFor="party_type">Party Type</Label>
+                        <Select onValueChange={(value) => setFormData({...formData, party_type: value})}>
+                          <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                          <SelectContent>
+                            {partyTypes.map(type => (
+                              <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                      
                       <div className="space-y-2">
-                        <Label htmlFor="grand_rights_percentage">Grand Rights</Label>
-                        <Input
-                          id="grand_rights_percentage"
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={formData.grand_rights_percentage}
-                          onChange={(e) => setFormData({...formData, grand_rights_percentage: parseFloat(e.target.value) || 0})}
-                        />
+                        <Label htmlFor="controlled_status">Controlled Status</Label>
+                        <Select onValueChange={(value) => setFormData({...formData, controlled_status: value})}>
+                          <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="C">Controlled (C)</SelectItem>
+                            <SelectItem value="NC">Non-Controlled (NC)</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                      
                       <div className="space-y-2">
-                        <Label htmlFor="karaoke_percentage">Karaoke</Label>
-                        <Input
-                          id="karaoke_percentage"
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={formData.karaoke_percentage}
-                          onChange={(e) => setFormData({...formData, karaoke_percentage: parseFloat(e.target.value) || 0})}
-                        />
+                        <Label htmlFor="affiliation">PRO Affiliation</Label>
+                        <Select onValueChange={(value) => setFormData({...formData, affiliation: value})}>
+                          <SelectTrigger><SelectValue placeholder="Select PRO" /></SelectTrigger>
+                          <SelectContent>
+                            {affiliations.map(aff => (
+                              <SelectItem key={aff} value={aff}>{aff}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Contact Info */}
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        placeholder="contact@email.com"
-                      />
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Royalty Splits by Right Type (%)</h4>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="performance_percentage">Performance</Label>
+                          <Input id="performance_percentage" type="number" min="0" max="100" value={formData.performance_percentage} onChange={(e) => setFormData({...formData, performance_percentage: parseFloat(e.target.value) || 0})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="mechanical_percentage">Mechanical</Label>
+                          <Input id="mechanical_percentage" type="number" min="0" max="100" value={formData.mechanical_percentage} onChange={(e) => setFormData({...formData, mechanical_percentage: parseFloat(e.target.value) || 0})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="synch_percentage">Synch</Label>
+                          <Input id="synch_percentage" type="number" min="0" max="100" value={formData.synch_percentage} onChange={(e) => setFormData({...formData, synch_percentage: parseFloat(e.target.value) || 0})} />
+                        </div>
+                      </div>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="print_percentage">Print</Label>
+                          <Input id="print_percentage" type="number" min="0" max="100" value={formData.print_percentage} onChange={(e) => setFormData({...formData, print_percentage: parseFloat(e.target.value) || 0})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="grand_rights_percentage">Grand Rights</Label>
+                          <Input id="grand_rights_percentage" type="number" min="0" max="100" value={formData.grand_rights_percentage} onChange={(e) => setFormData({...formData, grand_rights_percentage: parseFloat(e.target.value) || 0})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="karaoke_percentage">Karaoke</Label>
+                          <Input id="karaoke_percentage" type="number" min="0" max="100" value={formData.karaoke_percentage} onChange={(e) => setFormData({...formData, karaoke_percentage: parseFloat(e.target.value) || 0})} />
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                        placeholder="Phone number"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="flex justify-end gap-3">
-                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleAddParty} disabled={!formData.name}>
-                      Add Party
-                    </Button>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="contact@email.com" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input id="phone" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="Phone number" />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3">
+                      <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+                      <Button onClick={handleAddParty} disabled={!formData.name}>Add Party</Button>
+                    </div>
                   </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardTitle>
           <CardDescription>
             Manage all contributors and their rights splits. Total Controlled: {getControlledTotal().toFixed(1)}%
@@ -344,7 +292,7 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
             </Alert>
           )}
           
-          {interestedParties.length === 0 ? (
+          {allParties.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No interested parties added yet. Click "Add Party" to get started.
             </div>
@@ -352,6 +300,7 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10"></TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
@@ -362,46 +311,82 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {interestedParties.map((party) => (
-                  <TableRow key={party.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{party.name}</div>
-                        {party.dba_alias && (
-                          <div className="text-sm text-muted-foreground">DBA: {party.dba_alias}</div>
+                {visibleParties.map((party) => {
+                  const isMerged = !!(party as any).merged_into_id;
+                  return (
+                    <TableRow key={party.id} className={isMerged ? 'opacity-50 bg-muted/30' : ''}>
+                      <TableCell>
+                        {!isMerged && (
+                          <Checkbox
+                            checked={selectedIds.has(party.id)}
+                            onCheckedChange={(checked) => handleToggleSelect(party.id, !!checked)}
+                          />
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {party.party_type.charAt(0).toUpperCase() + party.party_type.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={party.controlled_status === 'C' ? 'default' : 'secondary'}>
-                        {party.controlled_status === 'C' ? 'Controlled' : 'Non-Controlled'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{party.performance_percentage}%</TableCell>
-                    <TableCell>{party.mechanical_percentage}%</TableCell>
-                    <TableCell>{party.synch_percentage}%</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveParty(party.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <div className={isMerged ? 'pl-4' : ''}>
+                          <div className="font-medium">{party.name}</div>
+                          {party.dba_alias && (
+                            <div className="text-sm text-muted-foreground">DBA: {party.dba_alias}</div>
+                          )}
+                          {isMerged && (
+                            <Badge variant="outline" className="mt-1 text-xs">
+                              Linked to: {getPrimaryName((party as any).merged_into_id)}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {party.party_type.charAt(0).toUpperCase() + party.party_type.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={party.controlled_status === 'C' ? 'default' : 'secondary'}>
+                          {party.controlled_status === 'C' ? 'Controlled' : 'Non-Controlled'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{party.performance_percentage}%</TableCell>
+                      <TableCell>{party.mechanical_percentage}%</TableCell>
+                      <TableCell>{party.synch_percentage}%</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {isMerged ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleUnmerge(party.id)}
+                              title="Unmerge"
+                            >
+                              <Unlink className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveParty(party.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
         </CardContent>
       </Card>
+
+      <MergePartiesDialog
+        open={mergeDialogOpen}
+        onOpenChange={setMergeDialogOpen}
+        parties={selectedParties}
+        onConfirm={handleMergeConfirm}
+      />
     </div>
   );
 }
