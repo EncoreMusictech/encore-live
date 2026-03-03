@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useViewModeOptional } from '@/hooks/useViewModeOptional';
 import { SubAccountChat } from '@/components/admin/subaccount/SubAccountChat';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,19 +23,20 @@ interface CompanyThread {
 export default function MessagesPage() {
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
+  const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
   const [companies, setCompanies] = useState<CompanyThread[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<CompanyThread | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  // Only ENCORE team emails should see all company threads
+  // Only ENCORE team emails should see all company threads (and not when viewing as sub-account)
   const encoreEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
-  const isEncoreTeam = isAdmin && encoreEmails.includes(user?.email?.toLowerCase() || '');
+  const isEncoreTeam = isAdmin && encoreEmails.includes(user?.email?.toLowerCase() || '') && !isViewingAsSubAccount;
 
   useEffect(() => {
     if (!user) return;
     fetchCompanies();
-  }, [user, isAdmin]);
+  }, [user, isAdmin, isViewingAsSubAccount, viewContext?.companyId]);
 
   const fetchCompanies = async () => {
     try {
@@ -105,28 +107,48 @@ export default function MessagesPage() {
           setSelectedCompany(threads[0]);
         }
       } else {
-        // Non-admin: find their company memberships
-        const { data: memberships } = await supabase
-          .from('company_users')
-          .select('company_id, companies(id, name, display_name)')
-          .eq('user_id', user!.id)
-          .eq('status', 'active');
+        // When viewing as sub-account, scope to that specific company
+        if (isViewingAsSubAccount && viewContext?.companyId) {
+          const { data: company } = await supabase
+            .from('companies')
+            .select('id, name, display_name')
+            .eq('id', viewContext.companyId)
+            .maybeSingle();
 
-        const threads: CompanyThread[] = (memberships || [])
-          .filter(m => m.companies)
-          .map(m => {
-            const c = m.companies as any;
-            return {
-              id: c.id,
-              name: c.name,
-              display_name: c.display_name,
+          if (company) {
+            const threads: CompanyThread[] = [{
+              id: company.id,
+              name: company.name,
+              display_name: company.display_name,
               unreadCount: 0,
-            };
-          });
+            }];
+            setCompanies(threads);
+            setSelectedCompany(threads[0]);
+          }
+        } else {
+          // Non-admin: find their company memberships
+          const { data: memberships } = await supabase
+            .from('company_users')
+            .select('company_id, companies(id, name, display_name)')
+            .eq('user_id', user!.id)
+            .eq('status', 'active');
 
-        setCompanies(threads);
-        if (threads.length > 0) {
-          setSelectedCompany(threads[0]);
+          const threads: CompanyThread[] = (memberships || [])
+            .filter(m => m.companies)
+            .map(m => {
+              const c = m.companies as any;
+              return {
+                id: c.id,
+                name: c.name,
+                display_name: c.display_name,
+                unreadCount: 0,
+              };
+            });
+
+          setCompanies(threads);
+          if (threads.length > 0) {
+            setSelectedCompany(threads[0]);
+          }
         }
       }
     } catch (err) {
