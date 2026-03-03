@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useViewModeOptional } from "@/hooks/useViewModeOptional";
+import { useDataFiltering } from "@/hooks/useDataFiltering";
 import { SubAccountOnboarding } from "@/components/admin/subaccount/SubAccountOnboarding";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ export function CRMDashboard() {
   const { isAdmin } = useUserRoles();
   const { isDemo } = useDemoAccess();
   const { isViewingAsSubAccount, isAggregateView, viewContext } = useViewModeOptional();
+  const { applyUserIdFilter, isFilterActive, filterKey, companyId: filterCompanyId } = useDataFiltering();
   
   // Debug logging for isDemo status
   console.log('🔍 CRMDashboard - Debug Info:', {
@@ -69,10 +71,6 @@ export function CRMDashboard() {
     const fetchDashboardData = async () => {
       if (!user) return;
 
-      // When viewing as a sub-account, scope ALL data queries to that company
-      // In aggregate view (All Clients), don't filter by company - show all user's data
-      const companyId = (isViewingAsSubAccount && !isAggregateView) ? viewContext?.companyId : null;
-
       try {
         // Fetch user modules
         const { data: moduleData } = await supabase
@@ -82,34 +80,55 @@ export function CRMDashboard() {
 
         setUserModules(moduleData?.map(item => item.module_id) || []);
 
-        // Build scoped queries — filter by client_company_id when in sub-account view
-        const contractsQuery = supabase
-          .from('contracts')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-        if (companyId) contractsQuery.eq('client_company_id', companyId);
-
-        const copyrightsQuery = supabase
+        // --- Copyrights: owned by sub-account users (filter by user_id) ---
+        let copyrightsQuery = supabase
           .from('copyrights')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-        if (companyId) copyrightsQuery.eq('client_company_id', companyId);
+          .select('id', { count: 'exact', head: true });
+        if (isFilterActive) {
+          copyrightsQuery = applyUserIdFilter(copyrightsQuery);
+        } else {
+          copyrightsQuery = copyrightsQuery.eq('user_id', user.id);
+        }
 
-        const syncQuery = supabase
+        // --- Contracts: owned by admin with client_company_id scoping ---
+        let contractsQuery = supabase
+          .from('contracts')
+          .select('id', { count: 'exact', head: true });
+        if (isFilterActive && filterCompanyId) {
+          contractsQuery = contractsQuery.eq('client_company_id', filterCompanyId);
+        } else if (!isFilterActive) {
+          contractsQuery = contractsQuery.eq('user_id', user.id).is('client_company_id', null);
+        }
+
+        // --- Sync Licenses: filter by user_id ---
+        let syncQuery = supabase
           .from('sync_licenses')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
+          .select('id', { count: 'exact', head: true });
+        if (isFilterActive) {
+          syncQuery = applyUserIdFilter(syncQuery);
+        } else {
+          syncQuery = syncQuery.eq('user_id', user.id);
+        }
 
-        const royaltiesQuery = supabase
+        // --- Royalties: use client_company_id when scoped ---
+        let royaltiesQuery = supabase
           .from('royalty_allocations')
-          .select('gross_royalty_amount')
-          .eq('user_id', user.id);
-        if (companyId) royaltiesQuery.eq('client_company_id', companyId);
+          .select('gross_royalty_amount');
+        if (isFilterActive && filterCompanyId) {
+          royaltiesQuery = royaltiesQuery.eq('client_company_id', filterCompanyId);
+        } else if (!isFilterActive) {
+          royaltiesQuery = royaltiesQuery.eq('user_id', user.id);
+        }
 
-        const catalogQuery = supabase
+        // --- Catalog valuations ---
+        let catalogQuery = supabase
           .from('catalog_valuations')
-          .select('valuation_amount')
-          .eq('user_id', user.id);
+          .select('valuation_amount');
+        if (isFilterActive) {
+          catalogQuery = applyUserIdFilter(catalogQuery);
+        } else {
+          catalogQuery = catalogQuery.eq('user_id', user.id);
+        }
 
         const [contractsResult, copyrightsResult, syncResult, royaltiesResult, catalogResult] = await Promise.all([
           contractsQuery,
@@ -135,14 +154,17 @@ export function CRMDashboard() {
           catalogValue: Math.round(totalCatalogValue)
         });
 
-        // Fetch recent activity scoped to company
-        const recentContractsQuery = supabase
+        // Fetch recent activity scoped appropriately
+        let recentContractsQuery = supabase
           .from('contracts')
           .select('id, title, counterparty_name, created_at, contract_status')
-          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(3);
-        if (companyId) recentContractsQuery.eq('client_company_id', companyId);
+        if (isFilterActive && filterCompanyId) {
+          recentContractsQuery = recentContractsQuery.eq('client_company_id', filterCompanyId);
+        } else if (!isFilterActive) {
+          recentContractsQuery = recentContractsQuery.eq('user_id', user.id).is('client_company_id', null);
+        }
 
         const { data: recentContracts } = await recentContractsQuery;
 
@@ -167,7 +189,7 @@ export function CRMDashboard() {
     };
 
     fetchDashboardData();
-  }, [user, isViewingAsSubAccount, isAggregateView, viewContext?.companyId]);
+  }, [user, isFilterActive, filterKey, filterCompanyId]);
 
   const modules = [
     {
