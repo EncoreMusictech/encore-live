@@ -27,6 +27,10 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
+  // Only ENCORE team emails should see all company threads
+  const encoreEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
+  const isEncoreTeam = isAdmin && encoreEmails.includes(user?.email?.toLowerCase() || '');
+
   useEffect(() => {
     if (!user) return;
     fetchCompanies();
@@ -39,7 +43,7 @@ export default function MessagesPage() {
       // Encore admins see all companies, sub-account users see only their own
       let companyIds: string[] = [];
 
-      if (isAdmin) {
+      if (isEncoreTeam) {
         // Get all companies that have messages
         const { data: msgCompanies } = await supabase
           .from('company_messages')
