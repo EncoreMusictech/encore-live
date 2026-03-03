@@ -1,0 +1,1 @@
+DELETE FROM contract_schedule_works WHERE contract_id = '4e669899-56ca-414f-9581-03c7cd4ec609';
