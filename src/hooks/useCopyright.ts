@@ -283,6 +283,12 @@ export const useCopyright = () => {
           .eq('title', copyrightToDelete.work_title);
       }
 
+      // Remove from any contract schedules that reference this copyright
+      await supabase
+        .from('contract_schedule_works')
+        .delete()
+        .eq('copyright_id', id);
+
       const { error } = await supabase
         .from('copyrights')
         .delete()
