@@ -1,0 +1,1 @@
+ALTER TABLE public.bulk_upload_jobs ADD COLUMN error_log JSONB DEFAULT '[]'::jsonb;

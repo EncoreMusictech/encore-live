@@ -452,6 +452,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
               failed_works: failedCount,
               total_works: groupedWorks.length,
               status: failedCount === groupedWorks.length ? 'failed' : 'completed',
+              error_log: failedRows.length > 0 ? failedRows : [],
             })
             .eq('id', jobId);
         } catch (e) {

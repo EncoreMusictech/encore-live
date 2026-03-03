@@ -356,6 +356,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string | null
+          error_log: Json | null
           failed_works: number | null
           file_name: string
           id: string
@@ -367,6 +368,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string | null
+          error_log?: Json | null
           failed_works?: number | null
           file_name: string
           id?: string
@@ -378,6 +380,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string | null
+          error_log?: Json | null
           failed_works?: number | null
           file_name?: string
           id?: string
