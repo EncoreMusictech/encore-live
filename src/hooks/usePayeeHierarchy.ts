@@ -43,8 +43,68 @@ export function usePayeeHierarchy() {
   const [writers, setWriters] = useState<Writer[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [effectiveUserId, setEffectiveUserId] = useState<string | null>(null);
   const { user } = useAuth();
-  const { applyUserIdFilter, filterKey, isFilterActive, companyId } = useDataFiltering();
+  const { applyUserIdFilter, filterKey, isFilterActive, companyId, companyUserIds } = useDataFiltering();
+
+  // Resolve the effective user ID for write operations
+  useEffect(() => {
+    const resolveEffectiveUserId = async () => {
+      if (!user) {
+        setEffectiveUserId(null);
+        return;
+      }
+
+      if (isFilterActive && companyId) {
+        // Try to get the service account for this company
+        try {
+          const { data: serviceAccountId } = await supabase.rpc(
+            'get_company_service_account_user_id',
+            { _company_id: companyId }
+          );
+          if (serviceAccountId) {
+            setEffectiveUserId(serviceAccountId);
+            return;
+          }
+          // Fallback: use the first active company user
+          if (companyUserIds.length > 0) {
+            setEffectiveUserId(companyUserIds[0]);
+            return;
+          }
+        } catch (error) {
+          console.error('Error resolving effective user ID:', error);
+        }
+      }
+
+      // Default to authenticated user
+      setEffectiveUserId(user.id);
+    };
+
+    resolveEffectiveUserId();
+  }, [user, isFilterActive, companyId, companyUserIds]);
+
+  // Get the user ID to use for write operations
+  const getWriteUserId = () => effectiveUserId || user?.id;
+
+  // Get scoped user IDs for read queries
+  const getScopedUserIds = (): string[] => {
+    if (isFilterActive && companyUserIds.length > 0) {
+      return companyUserIds;
+    }
+    return user ? [user.id] : [];
+  };
+
+  // Apply user scope to a read query
+  const applyScopedFilter = (query: any) => {
+    const userIds = getScopedUserIds();
+    if (userIds.length === 1) {
+      return query.eq('user_id', userIds[0]);
+    }
+    if (userIds.length > 1) {
+      return query.in('user_id', userIds);
+    }
+    return query;
+  };
 
   // Fetch all agreements (contracts) scoped to sub-account
   const fetchAgreements = async () => {
@@ -78,8 +138,9 @@ export function usePayeeHierarchy() {
     try {
       let query = supabase
         .from('original_publishers')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('*');
+
+      query = applyScopedFilter(query);
 
       if (agreementId) {
         query = query.eq('agreement_id', agreementId);
@@ -92,7 +153,6 @@ export function usePayeeHierarchy() {
       
       // If no original publishers exist for this agreement, auto-generate one
       if (agreementId && (!data || data.length === 0)) {
-        // Use setTimeout to avoid race conditions from multiple rapid calls
         setTimeout(() => autoGenerateOriginalPublisher(agreementId), 100);
       }
     } catch (error: any) {
@@ -103,9 +163,10 @@ export function usePayeeHierarchy() {
   // Auto-generate original publisher with default name
   const autoGenerateOriginalPublisher = async (agreementId: string) => {
     if (!user) return;
+    const writeUserId = getWriteUserId();
+    if (!writeUserId) return;
 
     try {
-      // Get the agreement details to extract writer name
       const { data: agreementData, error: agreementError } = await supabase
         .from('contracts')
         .select('counterparty_name')
@@ -116,17 +177,16 @@ export function usePayeeHierarchy() {
 
       const publisherName = `${agreementData.counterparty_name} Publishing Designee`;
 
-      // Check if a publisher with this name already exists for this agreement
-      const { data: existingPublisher } = await supabase
+      // Check if exists using scoped user IDs
+      let checkQuery = supabase
         .from('original_publishers')
         .select('id')
         .eq('agreement_id', agreementId)
-        .eq('publisher_name', publisherName)
-        .eq('user_id', user.id)
-        .single();
+        .eq('publisher_name', publisherName);
+      checkQuery = applyScopedFilter(checkQuery);
+      const { data: existingPublisher } = await checkQuery.single();
 
       if (existingPublisher) {
-        // Publisher already exists, just refresh the list
         await fetchOriginalPublishers(agreementId);
         return existingPublisher;
       }
@@ -137,13 +197,12 @@ export function usePayeeHierarchy() {
           publisher_name: publisherName,
           contact_info: {},
           agreement_id: agreementId,
-          user_id: user.id,
+          user_id: writeUserId,
         } as any)
         .select()
         .single();
 
       if (error) {
-        // If it's a duplicate key error, just refresh and return
         if (error.code === '23505') {
           await fetchOriginalPublishers(agreementId);
           return null;
@@ -151,7 +210,6 @@ export function usePayeeHierarchy() {
         throw error;
       }
 
-      // Refresh the original publishers list
       await fetchOriginalPublishers(agreementId);
       
       toast({
@@ -173,8 +231,9 @@ export function usePayeeHierarchy() {
     try {
       let query = supabase
         .from('writers')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('*');
+
+      query = applyScopedFilter(query);
 
       if (originalPublisherId) {
         query = query.eq('original_publisher_id', originalPublisherId);
@@ -185,7 +244,6 @@ export function usePayeeHierarchy() {
       if (error) throw error;
       setWriters(data || []);
       
-      // If no writers exist for this original publisher, auto-generate one
       if (originalPublisherId && (!data || data.length === 0)) {
         setTimeout(() => autoGenerateWriter(originalPublisherId), 100);
       }
@@ -197,9 +255,10 @@ export function usePayeeHierarchy() {
   // Auto-generate writer with default name
   const autoGenerateWriter = async (originalPublisherId: string) => {
     if (!user) return;
+    const writeUserId = getWriteUserId();
+    if (!writeUserId) return;
 
     try {
-      // Get the original publisher and agreement details
       const { data: publisherData, error: publisherError } = await supabase
         .from('original_publishers')
         .select('publisher_name, agreement_id')
@@ -208,7 +267,6 @@ export function usePayeeHierarchy() {
 
       if (publisherError) throw publisherError;
 
-      // Get the agreement counterparty name
       const { data: agreementData, error: agreementError } = await supabase
         .from('contracts')
         .select('counterparty_name')
@@ -219,17 +277,15 @@ export function usePayeeHierarchy() {
 
       const writerName = agreementData.counterparty_name;
 
-      // Check if a writer with this name already exists for this original publisher
-      const { data: existingWriter } = await supabase
+      let checkQuery = supabase
         .from('writers')
         .select('id')
         .eq('original_publisher_id', originalPublisherId)
-        .eq('writer_name', writerName)
-        .eq('user_id', user.id)
-        .single();
+        .eq('writer_name', writerName);
+      checkQuery = applyScopedFilter(checkQuery);
+      const { data: existingWriter } = await checkQuery.single();
 
       if (existingWriter) {
-        // Writer already exists, just refresh the list
         await fetchWriters(originalPublisherId);
         return existingWriter;
       }
@@ -240,13 +296,12 @@ export function usePayeeHierarchy() {
           writer_name: writerName,
           contact_info: {},
           original_publisher_id: originalPublisherId,
-          user_id: user.id,
+          user_id: writeUserId,
         } as any)
         .select()
         .single();
 
       if (error) {
-        // If it's a duplicate key error, just refresh and return
         if (error.code === '23505') {
           await fetchWriters(originalPublisherId);
           return null;
@@ -254,7 +309,6 @@ export function usePayeeHierarchy() {
         throw error;
       }
 
-      // Refresh the writers list
       await fetchWriters(originalPublisherId);
       
       toast({
@@ -276,8 +330,9 @@ export function usePayeeHierarchy() {
     try {
       let query = supabase
         .from('payees')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('*');
+
+      query = applyScopedFilter(query);
 
       if (writerId) {
         query = query.eq('writer_id', writerId);
@@ -295,6 +350,8 @@ export function usePayeeHierarchy() {
   // Create original publisher
   const createOriginalPublisher = async (publisherData: { publisher_name: string; contact_info: any; agreement_id: string; }) => {
     if (!user) return null;
+    const writeUserId = getWriteUserId();
+    if (!writeUserId) return null;
 
     try {
       const { data, error } = await supabase
@@ -303,7 +360,7 @@ export function usePayeeHierarchy() {
           publisher_name: publisherData.publisher_name,
           contact_info: publisherData.contact_info,
           agreement_id: publisherData.agreement_id,
-          user_id: user.id,
+          user_id: writeUserId,
         } as any)
         .select()
         .single();
@@ -331,6 +388,8 @@ export function usePayeeHierarchy() {
   // Create writer
   const createWriter = async (writerData: { writer_name: string; contact_info: any; original_publisher_id: string; }) => {
     if (!user) return null;
+    const writeUserId = getWriteUserId();
+    if (!writeUserId) return null;
 
     try {
       const { data, error } = await supabase
@@ -339,7 +398,7 @@ export function usePayeeHierarchy() {
           writer_name: writerData.writer_name,
           contact_info: writerData.contact_info,
           original_publisher_id: writerData.original_publisher_id,
-          user_id: user.id,
+          user_id: writeUserId,
         } as any)
         .select()
         .single();
@@ -367,13 +426,15 @@ export function usePayeeHierarchy() {
   // Update payee
   const updatePayee = async (payeeId: string, payeeData: { payee_name: string; payee_type: string; contact_info: any; payment_info: any; writer_id: string; is_primary: boolean; }) => {
     if (!user) return null;
+    const writeUserId = getWriteUserId();
+    if (!writeUserId) return null;
 
     try {
       const { data, error } = await supabase
         .from('payees')
         .update({
           ...payeeData,
-          user_id: user.id,
+          user_id: writeUserId,
         })
         .eq('id', payeeId)
         .select()
@@ -402,14 +463,23 @@ export function usePayeeHierarchy() {
   // Create payee
   const createPayee = async (payeeData: { payee_name: string; payee_type: string; contact_info: any; payment_info: any; writer_id: string; is_primary: boolean; }) => {
     if (!user) return null;
+    const writeUserId = getWriteUserId();
+    if (!writeUserId) return null;
 
     try {
+      const insertData: any = {
+        ...payeeData,
+        user_id: writeUserId,
+      };
+
+      // Set client_company_id when creating in sub-account context
+      if (isFilterActive && companyId) {
+        insertData.client_company_id = companyId;
+      }
+
       const { data, error } = await supabase
         .from('payees')
-        .insert({
-          ...payeeData,
-          user_id: user.id,
-        })
+        .insert(insertData)
         .select()
         .single();
 
