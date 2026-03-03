@@ -352,6 +352,50 @@ export type Database = {
         }
         Relationships: []
       }
+      bulk_upload_jobs: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          failed_works: number | null
+          file_name: string
+          id: string
+          status: string | null
+          successful_works: number | null
+          total_works: number | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          failed_works?: number | null
+          file_name: string
+          id?: string
+          status?: string | null
+          successful_works?: number | null
+          total_works?: number | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          failed_works?: number | null
+          file_name?: string
+          id?: string
+          status?: string | null
+          successful_works?: number | null
+          total_works?: number | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_upload_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bundle_products: {
         Row: {
           annual_price: number | null
@@ -641,6 +685,7 @@ export type Database = {
       catalog_items: {
         Row: {
           artist: string
+          bulk_upload_job_id: string | null
           catalog_number: string | null
           company_id: string
           created_at: string | null
@@ -658,6 +703,7 @@ export type Database = {
         }
         Insert: {
           artist: string
+          bulk_upload_job_id?: string | null
           catalog_number?: string | null
           company_id: string
           created_at?: string | null
@@ -675,6 +721,7 @@ export type Database = {
         }
         Update: {
           artist?: string
+          bulk_upload_job_id?: string | null
           catalog_number?: string | null
           company_id?: string
           created_at?: string | null
@@ -691,6 +738,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "catalog_items_bulk_upload_job_id_fkey"
+            columns: ["bulk_upload_job_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_upload_jobs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "catalog_items_company_id_fkey"
             columns: ["company_id"]
@@ -2470,6 +2524,7 @@ export type Database = {
           ascap_work_id: string | null
           bmi_status: string | null
           bmi_work_id: string | null
+          bulk_upload_job_id: string | null
           catalogue_number: string | null
           client_company_id: string | null
           collection_territories: string[] | null
@@ -2525,6 +2580,7 @@ export type Database = {
           ascap_work_id?: string | null
           bmi_status?: string | null
           bmi_work_id?: string | null
+          bulk_upload_job_id?: string | null
           catalogue_number?: string | null
           client_company_id?: string | null
           collection_territories?: string[] | null
@@ -2580,6 +2636,7 @@ export type Database = {
           ascap_work_id?: string | null
           bmi_status?: string | null
           bmi_work_id?: string | null
+          bulk_upload_job_id?: string | null
           catalogue_number?: string | null
           client_company_id?: string | null
           collection_territories?: string[] | null
@@ -2629,6 +2686,13 @@ export type Database = {
           work_type?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "copyrights_bulk_upload_job_id_fkey"
+            columns: ["bulk_upload_job_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_upload_jobs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "copyrights_client_company_id_fkey"
             columns: ["client_company_id"]

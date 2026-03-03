@@ -1,10 +1,8 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, List } from 'lucide-react';
+import { Upload, List, History } from 'lucide-react';
 import { BulkWorksUpload } from './BulkWorksUpload';
 import { AssignedWorksList } from './AssignedWorksList';
+import { BulkUploadHistory } from './BulkUploadHistory';
 
 interface SubAccountWorksProps {
   companyId: string;
@@ -23,6 +21,10 @@ export function SubAccountWorks({ companyId, companyName }: SubAccountWorksProps
           <List className="h-4 w-4 mr-2" />
           Assigned Works
         </TabsTrigger>
+        <TabsTrigger value="history">
+          <History className="h-4 w-4 mr-2" />
+          Upload History
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="upload">
@@ -31,6 +33,10 @@ export function SubAccountWorks({ companyId, companyName }: SubAccountWorksProps
 
       <TabsContent value="list">
         <AssignedWorksList companyId={companyId} />
+      </TabsContent>
+
+      <TabsContent value="history">
+        <BulkUploadHistory companyId={companyId} />
       </TabsContent>
     </Tabs>
   );

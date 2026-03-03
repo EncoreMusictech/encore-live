@@ -239,6 +239,29 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
 
       setProgress(20);
 
+      // Create bulk upload job record
+      let jobId: string | null = null;
+      try {
+        // @ts-ignore
+        const { data: jobData, error: jobError } = await supabase
+          .from('bulk_upload_jobs')
+          .insert({
+            company_id: companyId,
+            file_name: file.name,
+            uploaded_by: user.id,
+            total_works: groupedWorks.length,
+            status: 'processing',
+          })
+          .select('id')
+          .single();
+
+        if (!jobError && jobData) {
+          jobId = jobData.id;
+        }
+      } catch (e) {
+        console.warn('Failed to create bulk upload job record:', e);
+      }
+
       // Process each grouped work
       for (let i = 0; i < groupedWorks.length; i++) {
         const work = groupedWorks[i];
@@ -292,6 +315,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
               album_title: work.albumTitle || null,
               publishing_entity_id: resolvedEntityId,
               notes: `Bulk uploaded for ${companyName}`,
+              ...(jobId ? { bulk_upload_job_id: jobId } : {}),
             })
             .select()
             .single();
@@ -376,6 +400,7 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
                 work_type: work.workType,
                 writer_count: work.writers.length,
               },
+              ...(jobId ? { bulk_upload_job_id: jobId } : {}),
             });
 
           if (linkError) {
@@ -414,6 +439,24 @@ export function BulkWorksUpload({ companyId, companyName }: BulkWorksUploadProps
           severity: failedCount > 0 ? 'warning' : 'info',
           company_id: companyId, company_name: companyName,
         });
+      }
+
+      // Update the bulk upload job record with final counts
+      if (jobId) {
+        try {
+          // @ts-ignore
+          await supabase
+            .from('bulk_upload_jobs')
+            .update({
+              successful_works: successCount,
+              failed_works: failedCount,
+              total_works: groupedWorks.length,
+              status: failedCount === groupedWorks.length ? 'failed' : 'completed',
+            })
+            .eq('id', jobId);
+        } catch (e) {
+          console.warn('Failed to update bulk upload job record:', e);
+        }
       }
 
       setResults({ success: successCount, failed: failedCount, total: groupedWorks.length });
