@@ -46,7 +46,7 @@ export function CRMDashboard() {
   const { subscription_tier } = useSubscription();
   const { isAdmin } = useUserRoles();
   const { isDemo } = useDemoAccess();
-  const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
+  const { isViewingAsSubAccount, isAggregateView, viewContext } = useViewModeOptional();
   
   // Debug logging for isDemo status
   console.log('🔍 CRMDashboard - Debug Info:', {
@@ -70,7 +70,8 @@ export function CRMDashboard() {
       if (!user) return;
 
       // When viewing as a sub-account, scope ALL data queries to that company
-      const companyId = isViewingAsSubAccount ? viewContext?.companyId : null;
+      // In aggregate view (All Clients), don't filter by company - show all user's data
+      const companyId = (isViewingAsSubAccount && !isAggregateView) ? viewContext?.companyId : null;
 
       try {
         // Fetch user modules
@@ -166,7 +167,7 @@ export function CRMDashboard() {
     };
 
     fetchDashboardData();
-  }, [user, isViewingAsSubAccount, viewContext?.companyId]);
+  }, [user, isViewingAsSubAccount, isAggregateView, viewContext?.companyId]);
 
   const modules = [
     {
