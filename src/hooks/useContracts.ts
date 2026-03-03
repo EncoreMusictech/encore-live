@@ -502,6 +502,35 @@ export const useContracts = () => {
     }
   };
 
+  // Batch add multiple works without per-item toasts or refetches
+  const addScheduleWorksBatch = async (contractId: string, worksData: Array<Omit<ContractScheduleWork, 'id' | 'contract_id' | 'created_at' | 'updated_at' | 'client_company_id'>>) => {
+    const results: { success: number; failed: number; errors: string[] } = { success: 0, failed: 0, errors: [] };
+
+    for (const workData of worksData) {
+      try {
+        const { error } = await supabase
+          .from('contract_schedule_works')
+          .insert({ contract_id: contractId, ...workData })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        if (workData.inherits_royalty_splits && workData.copyright_id) {
+          await inheritWritersFromCopyright(contractId, workData.copyright_id);
+        }
+
+        results.success++;
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push(`${workData.song_title}: ${error.message}`);
+      }
+    }
+
+    await fetchContracts();
+    return results;
+  };
+
   const removeScheduleWork = async (workId: string) => {
     try {
       const { error } = await supabase
@@ -563,6 +592,7 @@ export const useContracts = () => {
     updateInterestedParty,
     removeInterestedParty,
     addScheduleWork,
+    addScheduleWorksBatch,
     removeScheduleWork,
     validateRoyaltySplits,
     refetch: fetchContracts
