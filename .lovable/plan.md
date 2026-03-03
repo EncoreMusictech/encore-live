@@ -1,32 +1,75 @@
 
 
-## Plan: Review Failed Works in Upload History
+## Merge/Unmerge Interested Parties with Hierarchy Link
 
 ### Problem
-When a bulk upload has failures (e.g., 9 of 622), users have no way to see *which* works failed or *why*. The failure details (`failedRows` array) are only logged to `platform_error_logs` and never persisted on the job record.
+Duplicate interested parties exist on contracts (e.g., "Ayoola Ogundeyi" at 0% and "Ayoola Olatokunbo Ogundeyi" at 12.5%). Users need to consolidate these under a primary party for royalty calculation purposes, but must be able to reverse the action.
 
-### Approach
+### Key Requirements (revised from previous plan)
+1. **Primary party's percentages are adopted** -- no summing of splits
+2. **Secondary parties are NOT deleted** -- instead, a parent-child link is created
+3. **Unmerge** is supported to restore the original independent state
+4. **Downstream impact on "Build Payees from Agreement"** must be understood
 
-**1. Add `error_log` JSONB column to `bulk_upload_jobs`** (migration)
-- Stores the `failedRows` array: `[{ row, title, error, details }]`
+### Database Change
 
-**2. Update `BulkWorksUpload.tsx`**
-- When updating the job record on completion, also save `failedRows` into the new `error_log` column
+Add two columns to `contract_interested_parties`:
 
-**3. Update `BulkUploadHistory.tsx`**
-- Make each job row clickable (or add an expand/details button) when `failed_works > 0`
-- Show a collapsible panel or dialog listing each failed work with: row number, work title, and error reason
-- Include the error log in the fetched data from `bulk_upload_jobs`
-
-### Database Migration
 ```sql
-ALTER TABLE public.bulk_upload_jobs
-  ADD COLUMN error_log JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.contract_interested_parties
+  ADD COLUMN merged_into_id UUID REFERENCES public.contract_interested_parties(id) ON DELETE SET NULL,
+  ADD COLUMN merged_at TIMESTAMPTZ;
 ```
 
-### File Changes
+- `merged_into_id`: points to the primary party this record is subordinate to (NULL = independent/primary)
+- `merged_at`: timestamp of when the merge occurred (NULL = not merged)
 
-- **Migration file** — Add `error_log` JSONB column
-- **`BulkWorksUpload.tsx`** (~line 450) — Include `error_log: failedRows` in the job update call
-- **`BulkUploadHistory.tsx`** — Add `error_log` to the interface and fetch; render a expandable failure details table per job showing row numbers, titles, and error messages
+No records are deleted. A merged (secondary) party is simply marked with `merged_into_id` pointing to the chosen primary.
+
+### UI Changes
+
+**`InterestedPartiesTable.tsx`**
+- Add checkboxes for multi-select on each row
+- "Merge Selected" button appears when 2+ parties are checked
+- Opens `MergePartiesDialog` showing selected parties with radio buttons to pick the primary
+- Merged (secondary) rows are visually indented/dimmed with a "Linked to: [Primary Name]" badge and an "Unmerge" button
+- Merged rows are hidden from the main table by default (toggle to show them)
+
+**New: `MergePartiesDialog.tsx`**
+- Shows selected parties side-by-side
+- Radio group to choose primary party
+- Preview: "The primary party's splits will be used for all royalty calculations. Secondary parties will be linked but retained."
+- On confirm: sets `merged_into_id` on all non-primary selected parties
+
+**Unmerge action**
+- Available on each merged (secondary) row
+- Clears `merged_into_id` and `merged_at`, restoring the party as independent
+
+### Hook Changes (`useContracts.ts`)
+
+Add two functions:
+- `mergeInterestedParties(primaryId, secondaryIds[])` -- updates secondary records with `merged_into_id = primaryId, merged_at = now()`
+- `unmergeInterestedParty(partyId)` -- sets `merged_into_id = null, merged_at = null`
+
+### Impact on "Build Payees from Agreement"
+
+**Current behavior**: `AutoBuildPayeesDialog` queries `contract_interested_parties` where `party_type = 'writer'` and creates a writer + payee for every row. This is what causes duplicate payees.
+
+**New behavior**: The query will add a filter: `.is('merged_into_id', null)` -- only independent/primary parties are used to build payees. Secondary (merged) parties are skipped entirely since their royalty rights are represented by the primary party.
+
+This means:
+- The primary party's name, splits (performance/mechanical/synch), and contact info are used for the payee
+- No duplicate payees are created for secondary parties
+- If a user later unmerges, the restored party becomes eligible for payee creation on the next "Build Payees" run
+
+The same filter is applied in `RoyaltyAllocationForm.tsx` and `PayeeFormDialog.tsx` wherever `contract_interested_parties` are queried for royalty calculations.
+
+### Files to Create/Modify
+- **Migration**: Add `merged_into_id` and `merged_at` columns
+- **Create**: `src/components/contracts/MergePartiesDialog.tsx`
+- **Modify**: `src/components/contracts/InterestedPartiesTable.tsx` (checkboxes, merge button, merged row display, unmerge button)
+- **Modify**: `src/hooks/useContracts.ts` (add merge/unmerge functions)
+- **Modify**: `src/components/royalties/AutoBuildPayeesDialog.tsx` (filter out merged parties)
+- **Modify**: `src/components/royalties/PayeeFormDialog.tsx` (filter out merged parties)
+- **Modify**: `src/components/royalties/RoyaltyAllocationForm.tsx` (filter out merged parties)
 
