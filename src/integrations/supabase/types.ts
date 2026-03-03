@@ -352,6 +352,59 @@ export type Database = {
         }
         Relationships: []
       }
+      bulk_contract_import_jobs: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          error_log: Json | null
+          failed_contracts: number | null
+          file_name: string
+          id: string
+          skipped_contracts: number | null
+          status: string | null
+          successful_contracts: number | null
+          total_contracts: number | null
+          updated_contracts: number | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          error_log?: Json | null
+          failed_contracts?: number | null
+          file_name: string
+          id?: string
+          skipped_contracts?: number | null
+          status?: string | null
+          successful_contracts?: number | null
+          total_contracts?: number | null
+          updated_contracts?: number | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          error_log?: Json | null
+          failed_contracts?: number | null
+          file_name?: string
+          id?: string
+          skipped_contracts?: number | null
+          status?: string | null
+          successful_contracts?: number | null
+          total_contracts?: number | null
+          updated_contracts?: number | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_contract_import_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bulk_upload_jobs: {
         Row: {
           company_id: string
