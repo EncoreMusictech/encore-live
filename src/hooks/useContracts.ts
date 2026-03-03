@@ -506,29 +506,118 @@ export const useContracts = () => {
   const addScheduleWorksBatch = async (contractId: string, worksData: Array<Omit<ContractScheduleWork, 'id' | 'contract_id' | 'created_at' | 'updated_at' | 'client_company_id'>>) => {
     const results: { success: number; failed: number; errors: string[] } = { success: 0, failed: 0, errors: [] };
 
-    for (const workData of worksData) {
+    // Insert schedule works in batches of 50 for efficiency
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < worksData.length; i += BATCH_SIZE) {
+      const batch = worksData.slice(i, i + BATCH_SIZE);
+      const rows = batch.map(w => ({ contract_id: contractId, ...w }));
+
       try {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('contract_schedule_works')
-          .insert({ contract_id: contractId, ...workData })
-          .select()
-          .single();
+          .insert(rows)
+          .select();
 
         if (error) throw error;
-
-        if (workData.inherits_royalty_splits && workData.copyright_id) {
-          await inheritWritersFromCopyright(contractId, workData.copyright_id);
-        }
-
-        results.success++;
+        results.success += (data?.length || batch.length);
       } catch (error: any) {
-        results.failed++;
-        results.errors.push(`${workData.song_title}: ${error.message}`);
+        // Fall back to individual inserts for this batch so partial success is captured
+        for (const workData of batch) {
+          try {
+            const { error: singleError } = await supabase
+              .from('contract_schedule_works')
+              .insert({ contract_id: contractId, ...workData })
+              .select()
+              .single();
+            if (singleError) throw singleError;
+            results.success++;
+          } catch (e: any) {
+            results.failed++;
+            results.errors.push(`${workData.song_title}: ${e.message}`);
+          }
+        }
+      }
+    }
+
+    // Batch writer inheritance: collect unique copyright_ids that need inheritance
+    const copyrightIdsToInherit = worksData
+      .filter(w => w.inherits_royalty_splits && w.copyright_id)
+      .map(w => w.copyright_id!)
+      .filter((id, idx, arr) => arr.indexOf(id) === idx); // deduplicate
+
+    if (copyrightIdsToInherit.length > 0) {
+      try {
+        await inheritWritersBatchFromCopyrights(contractId, copyrightIdsToInherit);
+      } catch (err) {
+        console.error('Batch writer inheritance error:', err);
       }
     }
 
     await fetchContracts();
     return results;
+  };
+
+  // Batch inherit writers from multiple copyrights at once
+  const inheritWritersBatchFromCopyrights = async (contractId: string, copyrightIds: string[]) => {
+    const CHUNK = 100;
+
+    // 1. Fetch all writers for all copyrights in chunks
+    let allWriters: any[] = [];
+    for (let i = 0; i < copyrightIds.length; i += CHUNK) {
+      const chunk = copyrightIds.slice(i, i + CHUNK);
+      const { data } = await supabase
+        .from('copyright_writers')
+        .select('*')
+        .in('copyright_id', chunk);
+      if (data) allWriters = allWriters.concat(data);
+    }
+
+    // Only controlled writers
+    const controlledWriters = allWriters.filter(w => w.controlled_status === 'C');
+    if (controlledWriters.length === 0) return;
+
+    // 2. Fetch existing interested parties once
+    const { data: existingParties } = await supabase
+      .from('contract_interested_parties')
+      .select('name, ipi_number')
+      .eq('contract_id', contractId);
+
+    const existingSet = new Set(
+      (existingParties || []).map(p => `${p.name}||${p.ipi_number || ''}`)
+    );
+
+    // 3. Deduplicate writers across all copyrights
+    const seenWriters = new Set<string>();
+    const newParties: any[] = [];
+
+    for (const writer of controlledWriters) {
+      const key = `${writer.writer_name}||${writer.ipi_number || ''}`;
+      if (existingSet.has(key) || seenWriters.has(key)) continue;
+      seenWriters.add(key);
+
+      newParties.push({
+        contract_id: contractId,
+        name: writer.writer_name,
+        party_type: 'writer',
+        ipi_number: writer.ipi_number,
+        controlled_status: writer.controlled_status || 'NC',
+        performance_percentage: writer.performance_share || writer.ownership_percentage || 0,
+        mechanical_percentage: writer.mechanical_share || writer.ownership_percentage || 0,
+        synch_percentage: writer.synchronization_share || writer.ownership_percentage || 0,
+        print_percentage: 0,
+        grand_rights_percentage: 0,
+        karaoke_percentage: 0,
+        affiliation: writer.pro_affiliation,
+      });
+    }
+
+    // 4. Bulk insert new parties in batches
+    for (let i = 0; i < newParties.length; i += CHUNK) {
+      const batch = newParties.slice(i, i + CHUNK);
+      await supabase.from('contract_interested_parties').insert(batch);
+    }
+
+    console.log(`Batch inherited ${newParties.length} unique writers from ${copyrightIds.length} copyrights`);
   };
 
   const removeScheduleWork = async (workId: string) => {
