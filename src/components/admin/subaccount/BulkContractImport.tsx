@@ -253,6 +253,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
   const handleImport = async () => {
     const actionableRows = parsedRows.filter(r => r.errors.length === 0 && r.duplicateAction !== 'skip');
     const skippedRows = parsedRows.filter(r => r.errors.length === 0 && r.duplicateAction === 'skip');
+    const errorRows = parsedRows.filter(r => r.errors.length > 0);
 
     if (actionableRows.length === 0 && skippedRows.length === 0) {
       toast({ title: 'No valid rows', description: 'Fix validation errors before importing.', variant: 'destructive' });
@@ -261,7 +262,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
 
     setImporting(true);
     setProgress(0);
-    console.log(`Bulk import starting: ${actionableRows.length} actionable, ${skippedRows.length} skipped, ${parsedRows.filter(r => r.errors.length > 0).length} with errors`);
+    console.log(`Bulk import starting: ${actionableRows.length} actionable, ${skippedRows.length} skipped, ${errorRows.length} with errors`);
 
     let success = 0;
     let failed = 0;
@@ -270,13 +271,40 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
     const skipped = skippedRows.length;
     const totalActionable = actionableRows.length;
     const BATCH_SIZE = 10;
+    const failedRows: { row: number | string; title: string; error: string; details?: any }[] = [];
 
-    // Pre-flight auth check — resolve service account for sub-account writes
+    // Add validation errors as pre-failed rows
+    errorRows.forEach((row, idx) => {
+      const originalIdx = parsedRows.indexOf(row);
+      failedRows.push({
+        row: originalIdx + 1,
+        title: row.title || 'Unknown',
+        error: row.errors.join('; '),
+      });
+    });
+
+    // Create the job record upfront
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) {
       toast({ title: 'Error', description: 'Not authenticated', variant: 'destructive' });
       setImporting(false);
       return;
+    }
+
+    const { data: jobRecord, error: jobError } = await supabase
+      .from('bulk_contract_import_jobs')
+      .insert({
+        company_id: companyId,
+        file_name: file?.name || 'unknown',
+        total_contracts: totalActionable + skipped + errorRows.length,
+        status: 'processing',
+        uploaded_by: authUser.id,
+      } as any)
+      .select()
+      .single();
+
+    if (jobError) {
+      console.error('Failed to create job record:', jobError);
     }
 
     // Use service account if available for this sub-account, otherwise fall back to current user
@@ -297,6 +325,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
         let retries = 0;
         const maxRetries = 3;
         let succeeded = false;
+        const originalIdx = parsedRows.indexOf(row);
 
         while (retries <= maxRetries && !succeeded) {
           try {
@@ -419,11 +448,17 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
               succeeded = true;
               success++;
             }
-          } catch (err) {
+          } catch (err: any) {
             retries++;
             if (retries > maxRetries) {
               console.error(`Failed to import row "${row.title}":`, err);
               failed++;
+              failedRows.push({
+                row: originalIdx + 1,
+                title: row.title || 'Unknown',
+                error: err?.message || 'Unknown error',
+                details: err?.details || undefined,
+              });
             } else {
               await new Promise(r => setTimeout(r, 1000 * Math.pow(2, retries)));
             }
@@ -434,7 +469,24 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
       setProgress(Math.round(((i + batch.length) / totalActionable) * 100));
     }
 
-    setResults({ success, failed, skipped, updated, total: totalActionable + skipped, royaltyReady });
+    const totalFailed = failed + errorRows.length;
+
+    // Update job record with final results
+    if (jobRecord) {
+      await supabase
+        .from('bulk_contract_import_jobs')
+        .update({
+          status: totalFailed > 0 ? (success > 0 || updated > 0 ? 'completed_with_errors' : 'failed') : 'completed',
+          successful_contracts: success,
+          updated_contracts: updated,
+          skipped_contracts: skipped,
+          failed_contracts: totalFailed,
+          error_log: failedRows,
+        } as any)
+        .eq('id', jobRecord.id);
+    }
+
+    setResults({ success, failed: totalFailed, skipped, updated, total: totalActionable + skipped + errorRows.length, royaltyReady });
     setImporting(false);
     toast({ title: 'Import Complete', description: `${success} created, ${updated} updated, ${skipped} skipped.` });
   };

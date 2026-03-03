@@ -1,8 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, FileSpreadsheet, List } from 'lucide-react';
+import { Upload, FileSpreadsheet, List, History } from 'lucide-react';
 import { SubAccountContractUpload } from './SubAccountContractUpload';
 import { BulkContractImport } from './BulkContractImport';
 import { SubAccountContractsList } from './SubAccountContractsList';
+import { BulkContractImportHistory } from './BulkContractImportHistory';
 
 interface SubAccountContractsProps {
   companyId: string;
@@ -26,6 +27,10 @@ export function SubAccountContracts({ companyId, companyName }: SubAccountContra
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             Bulk Import
           </TabsTrigger>
+          <TabsTrigger value="import-history">
+            <History className="h-4 w-4 mr-2" />
+            Import History
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="contracts-list">
@@ -38,6 +43,10 @@ export function SubAccountContracts({ companyId, companyName }: SubAccountContra
 
         <TabsContent value="bulk-import">
           <BulkContractImport companyId={companyId} companyName={companyName} />
+        </TabsContent>
+
+        <TabsContent value="import-history">
+          <BulkContractImportHistory companyId={companyId} />
         </TabsContent>
       </Tabs>
     </div>
