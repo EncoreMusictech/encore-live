@@ -71,38 +71,47 @@ export function WorkSelectionDialog({
     work_specific_rate_reduction: number;
   }}>({});
 
-  // Fetch writers and recordings for all copyrights
+  // Fetch writers and recordings for all copyrights in chunked batches
   useEffect(() => {
     if (copyrights.length === 0) return;
     const ids = copyrights.map(c => c.id);
+    const CHUNK_SIZE = 100;
 
     const fetchWriters = async () => {
-      const { data } = await supabase
-        .from('copyright_writers')
-        .select('copyright_id, writer_name, ownership_percentage, controlled_status, pro_affiliation')
-        .in('copyright_id', ids);
-      if (data) {
-        const map: Record<string, typeof data> = {};
-        data.forEach(w => {
+      const map: Record<string, Array<{
+        writer_name: string;
+        ownership_percentage: number;
+        controlled_status: string | null;
+        pro_affiliation: string | null;
+        copyright_id: string;
+      }>> = {};
+      for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        const chunk = ids.slice(i, i + CHUNK_SIZE);
+        const { data } = await supabase
+          .from('copyright_writers')
+          .select('copyright_id, writer_name, ownership_percentage, controlled_status, pro_affiliation')
+          .in('copyright_id', chunk);
+        (data || []).forEach(w => {
           if (!map[w.copyright_id]) map[w.copyright_id] = [];
           map[w.copyright_id].push(w);
         });
-        setWritersMap(map);
       }
+      setWritersMap(map);
     };
 
     const fetchRecordings = async () => {
-      const { data } = await supabase
-        .from('copyright_recordings')
-        .select('copyright_id, artist_name')
-        .in('copyright_id', ids);
-      if (data) {
-        const map: Record<string, string> = {};
-        data.forEach(r => {
+      const map: Record<string, string> = {};
+      for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        const chunk = ids.slice(i, i + CHUNK_SIZE);
+        const { data } = await supabase
+          .from('copyright_recordings')
+          .select('copyright_id, artist_name')
+          .in('copyright_id', chunk);
+        (data || []).forEach(r => {
           if (r.artist_name && !map[r.copyright_id]) map[r.copyright_id] = r.artist_name;
         });
-        setRecordingsMap(map);
       }
+      setRecordingsMap(map);
     };
 
     fetchWriters();
