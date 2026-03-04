@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, AlertCircle, Merge, Unlink, Eye, EyeOff } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Trash2, AlertCircle, Merge, Unlink, Eye, EyeOff, Pencil, Check, X, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -51,6 +52,8 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
   const [showMerged, setShowMerged] = useState(false);
   const [allParties, setAllParties] = useState<InterestedParty[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<Partial<InterestedParty>>({});
   const { toast } = useToast();
 
   const fetchParties = useCallback(async () => {
@@ -177,6 +180,46 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
       await fetchParties();
     } catch (error) {
       console.error('Error unmerging party:', error);
+    }
+  };
+
+  const startEditing = (party: InterestedParty) => {
+    setEditingId(party.id);
+    setEditValues({
+      party_type: party.party_type,
+      controlled_status: party.controlled_status,
+      performance_percentage: party.performance_percentage ?? 0,
+      mechanical_percentage: party.mechanical_percentage ?? 0,
+      synch_percentage: party.synch_percentage ?? 0,
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditValues({});
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId) return;
+    try {
+      const { error } = await supabase
+        .from('contract_interested_parties')
+        .update({
+          party_type: editValues.party_type,
+          controlled_status: editValues.controlled_status,
+          performance_percentage: editValues.performance_percentage,
+          mechanical_percentage: editValues.mechanical_percentage,
+          synch_percentage: editValues.synch_percentage,
+        })
+        .eq('id', editingId);
+      if (error) throw error;
+      toast({ title: "Saved", description: "Royalty rates updated." });
+      setEditingId(null);
+      setEditValues({});
+      await fetchParties();
+    } catch (error) {
+      console.error('Error updating party:', error);
+      toast({ title: "Error", description: "Failed to update party.", variant: "destructive" });
     }
   };
 
@@ -352,8 +395,18 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
               </Dialog>
             </div>
           </CardTitle>
-          <CardDescription>
-            Manage all contributors and their rights splits. Total Controlled: {getControlledTotal().toFixed(1)}%
+          <CardDescription className="flex items-center gap-2">
+            <span>Manage all contributors and their rights splits. Total Controlled: {getControlledTotal().toFixed(1)}%</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>These percentages determine how royalty revenue is distributed. Performance, Mechanical, and Synch splits are applied to matching revenue types during payout generation. Only Controlled (C) parties receive payable outputs.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </CardDescription>
         </CardHeader>
         
@@ -412,38 +465,79 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {party.party_type.charAt(0).toUpperCase() + party.party_type.slice(1)}
-                        </Badge>
+                        {editingId === party.id ? (
+                          <Select value={editValues.party_type} onValueChange={(v) => setEditValues({...editValues, party_type: v})}>
+                            <SelectTrigger className="h-8 w-[130px]"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {partyTypes.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant="outline">
+                            {party.party_type.charAt(0).toUpperCase() + party.party_type.slice(1)}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={party.controlled_status === 'C' ? 'default' : 'secondary'}>
-                          {party.controlled_status === 'C' ? 'Controlled' : 'Non-Controlled'}
-                        </Badge>
+                        {editingId === party.id ? (
+                          <Select value={editValues.controlled_status} onValueChange={(v) => setEditValues({...editValues, controlled_status: v})}>
+                            <SelectTrigger className="h-8 w-[100px]"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="C">Controlled</SelectItem>
+                              <SelectItem value="NC">Non-Controlled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant={party.controlled_status === 'C' ? 'default' : 'secondary'}>
+                            {party.controlled_status === 'C' ? 'Controlled' : 'Non-Controlled'}
+                          </Badge>
+                        )}
                       </TableCell>
-                      <TableCell>{party.performance_percentage}%</TableCell>
-                      <TableCell>{party.mechanical_percentage}%</TableCell>
-                      <TableCell>{party.synch_percentage}%</TableCell>
+                      <TableCell>
+                        {editingId === party.id ? (
+                          <Input type="number" min="0" max="100" className="h-8 w-20" value={editValues.performance_percentage ?? 0} onChange={(e) => setEditValues({...editValues, performance_percentage: parseFloat(e.target.value) || 0})} />
+                        ) : (
+                          <span>{party.performance_percentage ?? 0}%</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingId === party.id ? (
+                          <Input type="number" min="0" max="100" className="h-8 w-20" value={editValues.mechanical_percentage ?? 0} onChange={(e) => setEditValues({...editValues, mechanical_percentage: parseFloat(e.target.value) || 0})} />
+                        ) : (
+                          <span>{party.mechanical_percentage ?? 0}%</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingId === party.id ? (
+                          <Input type="number" min="0" max="100" className="h-8 w-20" value={editValues.synch_percentage ?? 0} onChange={(e) => setEditValues({...editValues, synch_percentage: parseFloat(e.target.value) || 0})} />
+                        ) : (
+                          <span>{party.synch_percentage ?? 0}%</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          {isMerged ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleUnmerge(party.id)}
-                              title="Unmerge"
-                            >
+                          {editingId === party.id ? (
+                            <>
+                              <Button variant="ghost" size="sm" onClick={handleSaveEdit} className="text-green-600 hover:text-green-700">
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={cancelEditing}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : isMerged ? (
+                            <Button variant="ghost" size="sm" onClick={() => handleUnmerge(party.id)} title="Unmerge">
                               <Unlink className="h-4 w-4" />
                             </Button>
                           ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveParty(party.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <>
+                              <Button variant="ghost" size="sm" onClick={() => startEditing(party)} title="Edit rates">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleRemoveParty(party.id)} className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
                           )}
                         </div>
                       </TableCell>
