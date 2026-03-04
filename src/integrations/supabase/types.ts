@@ -2108,6 +2108,63 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_work_interested_parties: {
+        Row: {
+          contract_id: string
+          contract_schedule_work_id: string
+          controlled_status: string
+          created_at: string
+          id: string
+          mechanical_percentage: number
+          party_id: string
+          party_name: string
+          party_type: string
+          performance_percentage: number
+          synch_percentage: number
+        }
+        Insert: {
+          contract_id: string
+          contract_schedule_work_id: string
+          controlled_status?: string
+          created_at?: string
+          id?: string
+          mechanical_percentage?: number
+          party_id: string
+          party_name: string
+          party_type?: string
+          performance_percentage?: number
+          synch_percentage?: number
+        }
+        Update: {
+          contract_id?: string
+          contract_schedule_work_id?: string
+          controlled_status?: string
+          created_at?: string
+          id?: string
+          mechanical_percentage?: number
+          party_id?: string
+          party_name?: string
+          party_type?: string
+          performance_percentage?: number
+          synch_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_work_interested_parties_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_work_interested_parties_contract_schedule_work_id_fkey"
+            columns: ["contract_schedule_work_id"]
+            isOneToOne: false
+            referencedRelation: "contract_schedule_works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           administrator: string | null
@@ -5493,6 +5550,7 @@ export type Database = {
           batch_id: string | null
           client_company_id: string | null
           comments: string | null
+          contract_schedule_work_id: string | null
           controlled_status:
             | Database["public"]["Enums"]["controlled_status"]
             | null
@@ -5504,6 +5562,7 @@ export type Database = {
           id: string
           isrc: string | null
           iswc: string | null
+          line_type: string | null
           mapped_data: Json | null
           media_sub_type: string | null
           media_type: string | null
@@ -5515,6 +5574,8 @@ export type Database = {
           recoupable_expenses: boolean | null
           revenue_source: string | null
           revenue_type: string | null
+          revenue_type_confidence: string | null
+          rights_basis: string | null
           royalty_id: string
           share: string | null
           song_title: string
@@ -5532,6 +5593,7 @@ export type Database = {
           batch_id?: string | null
           client_company_id?: string | null
           comments?: string | null
+          contract_schedule_work_id?: string | null
           controlled_status?:
             | Database["public"]["Enums"]["controlled_status"]
             | null
@@ -5543,6 +5605,7 @@ export type Database = {
           id?: string
           isrc?: string | null
           iswc?: string | null
+          line_type?: string | null
           mapped_data?: Json | null
           media_sub_type?: string | null
           media_type?: string | null
@@ -5554,6 +5617,8 @@ export type Database = {
           recoupable_expenses?: boolean | null
           revenue_source?: string | null
           revenue_type?: string | null
+          revenue_type_confidence?: string | null
+          rights_basis?: string | null
           royalty_id: string
           share?: string | null
           song_title: string
@@ -5571,6 +5636,7 @@ export type Database = {
           batch_id?: string | null
           client_company_id?: string | null
           comments?: string | null
+          contract_schedule_work_id?: string | null
           controlled_status?:
             | Database["public"]["Enums"]["controlled_status"]
             | null
@@ -5582,6 +5648,7 @@ export type Database = {
           id?: string
           isrc?: string | null
           iswc?: string | null
+          line_type?: string | null
           mapped_data?: Json | null
           media_sub_type?: string | null
           media_type?: string | null
@@ -5593,6 +5660,8 @@ export type Database = {
           recoupable_expenses?: boolean | null
           revenue_source?: string | null
           revenue_type?: string | null
+          revenue_type_confidence?: string | null
+          rights_basis?: string | null
           royalty_id?: string
           share?: string | null
           song_title?: string
@@ -5618,6 +5687,13 @@ export type Database = {
             columns: ["client_company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "royalty_allocations_contract_schedule_work_id_fkey"
+            columns: ["contract_schedule_work_id"]
+            isOneToOne: false
+            referencedRelation: "contract_schedule_works"
             referencedColumns: ["id"]
           },
           {

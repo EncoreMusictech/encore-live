@@ -6,6 +6,8 @@ import { useAsyncOperation } from './useAsyncOperation';
 import { useOptimisticUpdates } from './useOptimisticUpdates';
 import { useRetryLogic } from './useRetryLogic';
 import { useDataFiltering } from './useDataFiltering';
+import { isControlled } from '@/utils/isControlled';
+import { resolveOwnershipSplits, ResolvedSplits } from '@/utils/resolveOwnershipSplits';
 
 export interface Payout {
   id: string;
@@ -517,24 +519,50 @@ export function usePayouts() {
           const dealModel = agreement?.contract_deal_model || 'ownership_split';
 
           if (dealModel === 'ownership_split') {
-            // Fetch interested parties
-            const { data: parties } = await supabase
-              .from('contract_interested_parties')
-              .select('id, name, performance_percentage, mechanical_percentage, synch_percentage, party_type, controlled_status')
-              .eq('contract_id', agreementId);
-
-            // Scope allocations to contract works
+            // [FIX 2/5] Schedule works: id, copyright_id, inherits_royalty_splits, created_at filtered by contract_id
             const { data: scheduleWorks } = await supabase
               .from('contract_schedule_works')
-              .select('copyright_id')
+              .select('id, copyright_id, inherits_royalty_splits, created_at')
               .eq('contract_id', agreementId)
               .not('copyright_id', 'is', null);
 
-            const copyrightIds = scheduleWorks?.map(sw => sw.copyright_id).filter(Boolean) || [];
+            // Deterministic copyright → work map
+            const copyrightToWorkMap = new Map<string, string>();
+            const seenCopyrights = new Map<string, any>();
+            for (const work of (scheduleWorks || [])) {
+              if (!work.copyright_id) continue;
+              const existing = seenCopyrights.get(work.copyright_id);
+              if (!existing) {
+                seenCopyrights.set(work.copyright_id, work);
+                copyrightToWorkMap.set(work.copyright_id, work.id);
+              } else {
+                console.warn(`Duplicate copyright_id ${work.copyright_id} in schedule works. Deterministic resolution applied.`);
+                const preferNew =
+                  (work.inherits_royalty_splits === false && existing.inherits_royalty_splits !== false) ||
+                  (work.inherits_royalty_splits === existing.inherits_royalty_splits &&
+                    new Date(work.created_at) > new Date(existing.created_at));
+                if (preferNew) {
+                  seenCopyrights.set(work.copyright_id, work);
+                  copyrightToWorkMap.set(work.copyright_id, work.id);
+                }
+              }
+            }
+
+            const copyrightIds = Array.from(copyrightToWorkMap.keys());
+
+            // [FIX 3] Split cache keyed by ${contractId}:${workId} or ${contractId}:contract
+            const splitCache = new Map<string, ResolvedSplits>();
+            async function getCachedSplits(cId: string, wId?: string | null): Promise<ResolvedSplits> {
+              const key = wId ? `${cId}:${wId}` : `${cId}:contract`;
+              if (splitCache.has(key)) return splitCache.get(key)!;
+              const result = await resolveOwnershipSplits(cId, wId);
+              splitCache.set(key, result);
+              return result;
+            }
 
             let royaltiesQuery = supabase
               .from('royalty_allocations')
-              .select('id, gross_royalty_amount, net_amount, revenue_type, country')
+              .select('id, gross_royalty_amount, net_amount, revenue_type, country, copyright_id, line_type, revenue_type_confidence, rights_basis')
               .eq('user_id', user?.id)
               .gte('created_at', periodStart)
               .lte('created_at', periodEnd + 'T23:59:59');
@@ -548,19 +576,37 @@ export function usePayouts() {
 
             const grossRoyalties = (royalties || []).reduce((s, r) => s + (r.gross_royalty_amount || 0), 0);
 
-            // Calculate controlled net payable using ownership splits
+            // Per-allocation split resolution with stop conditions
             let controlledTotal = 0;
+            const SPLIT_FIELD_MAP: Record<string, string> = {
+              performance: 'performance_percentage',
+              mechanical: 'mechanical_percentage',
+              synch: 'synch_percentage',
+            };
+
             for (const allocation of royalties || []) {
               const gross = allocation.gross_royalty_amount || 0;
               const revenueType = allocation.revenue_type;
-              if (!revenueType) continue;
 
-              for (const party of (parties || [])) {
-                if (party.controlled_status !== 'C') continue;
-                const splitField = revenueType === 'performance' ? 'performance_percentage'
-                  : revenueType === 'mechanical' ? 'mechanical_percentage'
-                  : revenueType === 'synch' ? 'synch_percentage'
-                  : 'performance_percentage'; // fallback for 'other'
+              // [FIX 4] Stop conditions — continue without allocating
+              if (!revenueType) continue;
+              if (revenueType === 'other') continue;
+              if (allocation.revenue_type_confidence === 'low') continue;
+              if (allocation.rights_basis === 'exclude_from_splits') continue;
+              if (allocation.line_type && allocation.line_type !== 'royalty') continue;
+
+              const workId = allocation.copyright_id
+                ? copyrightToWorkMap.get(allocation.copyright_id) ?? null
+                : null;
+
+              const splits = await getCachedSplits(agreementId, workId);
+              if (!splits.valid) continue;
+
+              const splitField = SPLIT_FIELD_MAP[revenueType] || 'performance_percentage';
+
+              // [FIX 7] Track uncontrolled_total per allocation
+              for (const party of splits.parties) {
+                if (!party.is_controlled) continue;
                 const splitPct = (party as any)[splitField] || 0;
                 controlledTotal += gross * (splitPct / 100);
               }
