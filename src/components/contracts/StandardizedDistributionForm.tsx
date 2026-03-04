@@ -136,7 +136,7 @@ export function StandardizedDistributionForm({
   demoData 
 }: StandardizedDistributionFormProps) {
   const [formData, setFormData] = useState(defaultFormData);
-  const { createContract } = useContracts();
+  const { createContract, updateContract } = useContracts();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -276,19 +276,24 @@ export function StandardizedDistributionForm({
 
   const handleSave = async () => {
     try {
-      const contract = await createContract({
-        contract_type: 'distribution',
+      const contractPayload = {
+        contract_type: 'distribution' as const,
         title: formData.agreementTitle,
         counterparty_name: formData.counterparty,
-        contract_status: 'draft',
+        contract_status: 'draft' as const,
         start_date: formData.effectiveDate,
         end_date: formData.expirationDate,
         notes: formData.notes,
         contract_data: formData
-      });
+      };
 
-      if (contract?.id) {
-        updateFormData({ contractId: contract.id });
+      if (formData.contractId) {
+        await updateContract(formData.contractId, contractPayload);
+      } else {
+        const contract = await createContract(contractPayload);
+        if (contract?.id) {
+          updateFormData({ contractId: contract.id });
+        }
       }
 
       toast({
@@ -307,17 +312,23 @@ export function StandardizedDistributionForm({
 
   const handleSubmit = async () => {
     try {
-      const contract = await createContract({
-        contract_type: 'distribution',
+      const contractPayload = {
+        contract_type: 'distribution' as const,
         title: formData.agreementTitle,
         counterparty_name: formData.counterparty,
-        contract_status: 'active',
+        contract_status: 'active' as const,
         signature_status: 'pending',
         start_date: formData.effectiveDate,
         end_date: formData.expirationDate,
         notes: formData.notes,
         contract_data: formData
-      });
+      };
+
+      if (formData.contractId) {
+        await updateContract(formData.contractId, contractPayload);
+      } else {
+        await createContract(contractPayload);
+      }
 
       toast({
         title: "Agreement submitted",
