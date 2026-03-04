@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Link2, Music } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useRoyaltySplitting } from "@/hooks/useRoyaltySplitting";
+// useRoyaltySplitting import removed – splitting deferred to payout stage
 
 interface AllocationSongMatchDialogProps {
   open: boolean;
@@ -36,7 +36,8 @@ export function AllocationSongMatchDialog({
   const [copyrights, setCopyrights] = useState<Copyright[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCopyright, setSelectedCopyright] = useState<string>("");
-  const { autoSplitIfNeeded } = useRoyaltySplitting();
+  // Phase 6: Auto-splitting at import/match time is deprecated.
+  // Splits are now applied during payout calculation.
 
   const searchCopyrights = async () => {
     if (!searchTerm.trim()) return;
@@ -125,25 +126,15 @@ export function AllocationSongMatchDialog({
         updatedAllocations = updated?.map(u => u.id) || [allocationId];
       }
 
-      // Auto-split all updated allocations by controlled writers immediately when matched
-      let splitCount = 0;
-      for (const allocationIdToSplit of updatedAllocations) {
-        try {
-          const wasSplit = await autoSplitIfNeeded(allocationIdToSplit);
-          if (wasSplit) splitCount++;
-        } catch (splitError) {
-          console.warn(`Failed to auto-split allocation ${allocationIdToSplit}:`, splitError);
-          // Continue with other allocations even if one fails
-        }
-      }
+      // Phase 6: Auto-splitting at match time is deprecated.
+      // Splits are now calculated during payout processing.
 
       onMatch(selectedCopyright, selectedWork.work_title);
       onOpenChange(false);
       
-      const splitMessage = splitCount > 0 ? ` and automatically split ${splitCount} allocation(s) by controlled writers` : '';
       toast({
         title: "Success",
-        description: `Successfully matched ${updatedAllocations.length} allocation(s) to "${selectedWork.work_title}"${splitMessage}`,
+        description: `Successfully matched ${updatedAllocations.length} allocation(s) to "${selectedWork.work_title}"`,
       });
     } catch (error) {
       console.error('Error matching song:', error);

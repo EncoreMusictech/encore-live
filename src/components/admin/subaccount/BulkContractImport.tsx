@@ -385,7 +385,9 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
                   controlled_status: 'C',
                 });
 
-                if (row.performance_pct === 100 && row.mechanical_pct === 100 && row.synch_pct === 100) {
+                // Phase 7: Use validate_royalty_splits RPC for royalty-ready check
+                const { data: splits } = await supabase.rpc('validate_royalty_splits', { contract_id_param: row.existingContractId });
+                if (splits && splits.every((s: any) => s.is_valid)) {
                   royaltyReady++;
                 }
               }
@@ -435,7 +437,9 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
                   controlled_status: 'C',
                 });
 
-                if (row.performance_pct === 100 && row.mechanical_pct === 100 && row.synch_pct === 100) {
+                // Phase 7: Use validate_royalty_splits RPC for royalty-ready check
+                const { data: splits } = await supabase.rpc('validate_royalty_splits', { contract_id_param: contract.id });
+                if (splits && splits.every((s: any) => s.is_valid)) {
                   royaltyReady++;
                 }
               }
