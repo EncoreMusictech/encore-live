@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -56,6 +57,7 @@ import MessagesPage from "./pages/MessagesPage";
 import { GlobalChatBubble } from "@/components/GlobalChatBubble";
 
 import RecoveryRedirect from "@/components/RecoveryRedirect";
+const PayoutReconciliationSanityCheck = React.lazy(() => import("@/dev/sanityChecks/PayoutReconciliationSanityCheck"));
 import TermsAndConditions from "./pages/TermsAndConditions";
 import TrialSignup from "./pages/TrialSignup";
 import NAMMPitchPage from "./pages/NAMMPitchPage";
@@ -214,8 +216,14 @@ const App = () => {
                                 </ProtectedRoute>
                               } />
                              
-                             {/* Demo Routes */}
-                             
+                             {/* Demo / Dev Routes */}
+                             <Route path="/dev/sanity/payout-reconciliation" element={
+                               <AdminOrProtectedRoute>
+                                 <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading…</div>}>
+                                   <PayoutReconciliationSanityCheck />
+                                 </Suspense>
+                               </AdminOrProtectedRoute>
+                             } />
                              
                               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                               <Route path="*" element={<NotFound />} />
