@@ -9,6 +9,15 @@ import { ContractInterestedParties } from "./forms/shared/ContractInterestedPart
 import { ProducerForm } from "./forms/ProducerForm";
 import { Music, FileText, DollarSign, Users, Clock, CheckCircle, UserCheck, ListMusic } from "lucide-react";
 import { ContractWorks } from "./forms/shared/ContractWorks";
+
+// Stable module-level component wrappers to prevent remounting on parent re-render
+const ProducerWorksStep = (props: any) => <ContractWorks {...props} contractType="producer" />;
+const ProducerBasicInfoStep = (props: any) => (
+  <ContractBasicInfoAndParties {...props} contractType="producer agreement" partyLabels={{ firstParty: 'Artist/Label', secondParty: 'Producer' }} />
+);
+const ProducerInterestedPartiesStep = (props: any) => (
+  <ContractInterestedParties {...props} contractType="producer agreement" />
+);
 import { useContracts } from "@/hooks/useContracts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -230,13 +239,7 @@ export function StandardizedProducerForm({
       title: "Basic Info & Parties",
       description: "Agreement details, timeline, and party information",
       icon: FileText,
-      component: (props: any) => (
-        <ContractBasicInfoAndParties
-          {...props}
-          contractType="producer agreement"
-          partyLabels={{ firstParty: 'Artist/Label', secondParty: 'Producer' }}
-        />
-      ),
+      component: ProducerBasicInfoStep,
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
     },
     {
@@ -252,24 +255,14 @@ export function StandardizedProducerForm({
       title: "Schedule of Works",
       description: "Select and manage musical works for this agreement",
       icon: ListMusic,
-      component: (props: any) => (
-        <ContractWorks
-          {...props}
-          contractType="producer"
-        />
-      )
+      component: ProducerWorksStep
     },
     {
       id: "interested_parties",
       title: "Interested Parties",
       description: "Manage ownership and interested parties",
       icon: UserCheck,
-      component: (props: any) => (
-        <ContractInterestedParties
-          {...props}
-          contractType="producer agreement"
-        />
-      )
+      component: ProducerInterestedPartiesStep
     },
     {
       id: "review",

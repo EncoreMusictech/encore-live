@@ -9,6 +9,15 @@ import { ContractInterestedParties } from "./forms/shared/ContractInterestedPart
 import { SyncForm } from "./forms/SyncForm";
 import { Film, FileText, DollarSign, Users, Globe, CheckCircle, Music, UserCheck, ListMusic } from "lucide-react";
 import { ContractWorks } from "./forms/shared/ContractWorks";
+
+// Stable module-level component wrappers to prevent remounting on parent re-render
+const SyncWorksStep = (props: any) => <ContractWorks {...props} contractType="sync" />;
+const SyncBasicInfoStep = (props: any) => (
+  <ContractBasicInfoAndParties {...props} contractType="sync license" partyLabels={{ firstParty: 'Rights Holder', secondParty: 'Production Company' }} />
+);
+const SyncInterestedPartiesStep = (props: any) => (
+  <ContractInterestedParties {...props} contractType="sync license" />
+);
 import { useContracts } from "@/hooks/useContracts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -246,13 +255,7 @@ export function StandardizedSyncForm({
       title: "Basic Info & Parties",
       description: "License details, timeline, and party information",
       icon: FileText,
-      component: (props: any) => (
-        <ContractBasicInfoAndParties
-          {...props}
-          contractType="sync license"
-          partyLabels={{ firstParty: 'Rights Holder', secondParty: 'Production Company' }}
-        />
-      ),
+      component: SyncBasicInfoStep,
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
     },
     {
@@ -268,24 +271,14 @@ export function StandardizedSyncForm({
       title: "Schedule of Works",
       description: "Select and manage musical works for this agreement",
       icon: ListMusic,
-      component: (props: any) => (
-        <ContractWorks
-          {...props}
-          contractType="sync"
-        />
-      )
+      component: SyncWorksStep
     },
     {
       id: "interested_parties",
       title: "Interested Parties",
       description: "Manage ownership and interested parties",
       icon: UserCheck,
-      component: (props: any) => (
-        <ContractInterestedParties
-          {...props}
-          contractType="sync license"
-        />
-      )
+      component: SyncInterestedPartiesStep
     },
     {
       id: "review",

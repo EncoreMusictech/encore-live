@@ -12,6 +12,15 @@ import { useToast } from '@/hooks/use-toast';
 import { FileText, Users, Music, DollarSign, UserCheck, Eye, BookOpen, ListMusic, Star } from 'lucide-react';
 import { ContractWorks } from './forms/shared/ContractWorks';
 
+// Stable module-level component wrappers to prevent remounting on parent re-render
+const PublishingWorksStep = (props: any) => <ContractWorks {...props} contractType="publishing" />;
+const PublishingBasicInfoStep = (props: any) => (
+  <ContractBasicInfoAndParties {...props} contractType="publishing agreement" partyLabels={{ firstParty: 'Publisher', secondParty: 'Writer/Songwriter' }} />
+);
+const PublishingInterestedPartiesStep = (props: any) => (
+  <ContractInterestedParties {...props} contractType="publishing agreement" />
+);
+
 // Publishing agreement types
 const publishingTypes = [
   {
@@ -290,13 +299,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
       title: 'Basic Info & Parties',
       description: 'Agreement details, timeline, and party information',
       icon: FileText,
-      component: (props: any) => (
-        <ContractBasicInfoAndParties
-          {...props}
-          contractType="publishing agreement"
-          partyLabels={{ firstParty: 'Publisher', secondParty: 'Writer/Songwriter' }}
-        />
-      ),
+      component: PublishingBasicInfoStep,
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
     },
     {
@@ -312,24 +315,14 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
       title: 'Schedule of Works',
       description: 'Select and manage musical works for this agreement',
       icon: ListMusic,
-      component: (props: any) => (
-        <ContractWorks
-          {...props}
-          contractType="publishing"
-        />
-      )
+      component: PublishingWorksStep
     },
     {
       id: 'interested_parties',
       title: 'Interested Parties',
       description: 'Manage ownership and interested parties',
       icon: UserCheck,
-      component: (props: any) => (
-        <ContractInterestedParties
-          {...props}
-          contractType="publishing agreement"
-        />
-      )
+      component: PublishingInterestedPartiesStep
     },
     {
       id: 'review',

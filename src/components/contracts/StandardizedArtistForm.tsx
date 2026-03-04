@@ -12,6 +12,15 @@ import { useToast } from '@/hooks/use-toast';
 import { FileText, Users, Music, DollarSign, UserCheck, Eye, Briefcase, ListMusic } from 'lucide-react';
 import { ContractWorks } from './forms/shared/ContractWorks';
 
+// Stable module-level component wrappers to prevent remounting on parent re-render
+const ArtistWorksStep = (props: any) => <ContractWorks {...props} contractType="artist" />;
+const ArtistBasicInfoStep = (props: any) => (
+  <ContractBasicInfoAndParties {...props} contractType="artist agreement" partyLabels={{ firstParty: 'Label/Company', secondParty: 'Artist' }} />
+);
+const ArtistInterestedPartiesStep = (props: any) => (
+  <ContractInterestedParties {...props} contractType="artist agreement" />
+);
+
 // Artist agreement types
 const artistTypes = [
   {
@@ -207,13 +216,7 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
       title: 'Basic Info & Parties',
       description: 'Agreement details, timeline, and party information',
       icon: FileText,
-      component: (props: any) => (
-        <ContractBasicInfoAndParties
-          {...props}
-          contractType="artist agreement"
-          partyLabels={{ firstParty: 'Label/Company', secondParty: 'Artist' }}
-        />
-      ),
+      component: ArtistBasicInfoStep,
       validation: () => !!(formData.agreementTitle && formData.counterparty && formData.effectiveDate)
     },
     {
@@ -229,24 +232,14 @@ export const StandardizedArtistForm: React.FC<StandardizedArtistFormProps> = ({
       title: 'Schedule of Works',
       description: 'Select and manage musical works for this agreement',
       icon: ListMusic,
-      component: (props: any) => (
-        <ContractWorks
-          {...props}
-          contractType="artist"
-        />
-      )
+      component: ArtistWorksStep
     },
     {
       id: 'interested_parties',
       title: 'Interested Parties',
       description: 'Manage ownership and interested parties',
       icon: UserCheck,
-      component: (props: any) => (
-        <ContractInterestedParties
-          {...props}
-          contractType="artist agreement"
-        />
-      )
+      component: ArtistInterestedPartiesStep
     },
     {
       id: 'review',
