@@ -977,63 +977,6 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
                     Add Writer
                   </Button>
                 </div>
-              {/* Publishers */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Publishers</h4>
-                  <Button type="button" variant="outline" size="sm" onClick={addPublisher}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Publisher
-                  </Button>
-                </div>
-                
-                {publishers.map((publisher) => (
-                  <Card key={publisher.id} className="p-4">
-                    <div className="grid md:grid-cols-4 gap-4">
-                      <div className="space-y-2">
-                        <Label>Publisher Name *</Label>
-                        <Input
-                          value={publisher.name}
-                          onChange={(e) => updatePublisher(publisher.id, 'name', e.target.value)}
-                          placeholder="Publisher name"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label>IPI Number</Label>
-                        <Input
-                          value={publisher.ipi}
-                          onChange={(e) => updatePublisher(publisher.id, 'ipi', e.target.value)}
-                          placeholder="IPI number"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label>Share (%)</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={publisher.share}
-                          onChange={(e) => updatePublisher(publisher.id, 'share', parseFloat(e.target.value) || 0)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-end">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removePublisher(publisher.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
             </CardContent>
           </CollapsibleContent>
         </Card>
