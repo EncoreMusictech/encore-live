@@ -47,6 +47,34 @@ interface ParsedRow {
 
 const VALID_CONTRACT_TYPES = ['publishing', 'artist', 'producer', 'sync', 'distribution'];
 
+/**
+ * Convert a value to an ISO date string (YYYY-MM-DD).
+ * Handles Excel serial date numbers (days since 1899-12-30) and regular date strings.
+ */
+function parseDate(value: unknown): string | undefined {
+  if (value == null || value === '') return undefined;
+
+  // Excel serial number detection: a pure number (or numeric string) typically 1-99999
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!isNaN(num) && num > 1000 && num < 100000) {
+    // Excel epoch is 1899-12-30 (accounting for the Lotus 1-2-3 leap year bug)
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const ms = excelEpoch.getTime() + Math.round(num) * 86400000;
+    const d = new Date(ms);
+    return d.toISOString().split('T')[0];
+  }
+
+  // Try parsing as a regular date string
+  const str = String(value).trim();
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().split('T')[0];
+  }
+
+  // Return as-is if we can't parse (will likely fail at DB level with a clear error)
+  return str || undefined;
+}
+
 export function BulkContractImport({ companyId, companyName }: BulkContractImportProps) {
   const [file, setFile] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
@@ -213,9 +241,9 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
         title,
         counterparty_name: counterparty,
         contract_type: contractTypeResolved,
-        start_date: row.start_date?.toString(),
-        end_date: row.end_date?.toString(),
-        post_term_collection_end_date: row.post_term_collection_end_date?.toString(),
+        start_date: parseDate(row.start_date),
+        end_date: parseDate(row.end_date),
+        post_term_collection_end_date: parseDate(row.post_term_collection_end_date),
         post_term_collection_months: postTermMonths,
         advance_amount: row.advance_amount ? parseFloat(row.advance_amount) : undefined,
         commission_percentage: row.commission_percentage ? parseFloat(row.commission_percentage) : undefined,
