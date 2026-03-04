@@ -18,6 +18,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AudioPlayer } from '../copyright/AudioPlayer';
 import { ArtistSelector } from '../copyright/ArtistSelector';
+import { WriterAgreementSection } from '../copyright/WriterAgreementSection';
+import { getAllPROs } from '@/data/cmo-territories';
 import { formatSpotifyMetadata, autoFormatField, handleISWCInput, handleISRCInput } from '@/lib/music-metadata-formats';
 import { useFormPersistence } from '@/hooks/useFormPersistence';
 
@@ -624,9 +626,6 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
     "Performance", "Mechanical", "Synchronization", "Print", "Grand Rights", "Karaoke"
   ];
 
-  const affiliations = [
-    "ASCAP", "BMI", "SESAC", "SOCAN", "PRS", "GEMA", "SACEM", "Other"
-  ];
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -829,14 +828,13 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Writers & Publishers ({totalWriterShare}% total)
+                  Writers
+                  <Badge variant="secondary">{writers.length} writers • {totalWriterShare}% total</Badge>
+                  {totalControlledShare > 0 && (
+                    <Badge variant="default">{totalControlledShare}% controlled</Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {totalControlledShare > 0 && (
-                    <Badge variant={totalControlledShare <= 100 ? "default" : "destructive"}>
-                      {totalControlledShare}% Controlled
-                    </Badge>
-                  )}
                   {totalWriterShare === 100 ? (
                     <CheckCircle className="h-5 w-5 text-green-600" />
                   ) : (
@@ -849,19 +847,9 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
           
           <CollapsibleContent>
             <CardContent className="space-y-4">
-              {/* Writers */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Writers</h4>
-                  <Button type="button" variant="outline" size="sm" onClick={addWriter}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Writer
-                  </Button>
-                </div>
-                
-                {writers.map((writer) => (
-                  <Card key={writer.id} className="p-4">
-                    <div className="grid md:grid-cols-4 gap-4">
+              {writers.map((writer) => (
+                  <Card key={writer.id} className="p-4 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
                         <Label>Writer Name *</Label>
                         <Input
@@ -872,20 +860,21 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
                       </div>
                       
                       <div className="space-y-2">
-                        <Label>IPI Number</Label>
+                        <Label>Writer IPI</Label>
                         <Input
                           value={writer.ipi}
                           onChange={(e) => updateWriter(writer.id, 'ipi', e.target.value)}
-                          placeholder="IPI number"
+                          placeholder="123456789"
                         />
                       </div>
                       
                       <div className="space-y-2">
-                        <Label>Ownership Share (%) *</Label>
+                        <Label>Writer Share %</Label>
                         <Input
                           type="number"
                           min="0"
                           max="100"
+                          step="0.01"
                           value={writer.share}
                           onChange={(e) => updateWriter(writer.id, 'share', parseFloat(e.target.value) || 0)}
                         />
@@ -893,45 +882,81 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
                       
                       <div className="space-y-2">
                         <Label>PRO Affiliation</Label>
-                        <Select onValueChange={(value) => updateWriter(writer.id, 'proAffiliation', value)}>
+                        <Select
+                          value={writer.proAffiliation}
+                          onValueChange={(value) => updateWriter(writer.id, 'proAffiliation', value)}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select PRO" />
                           </SelectTrigger>
-                          <SelectContent>
-                            {affiliations.map(aff => (
-                              <SelectItem key={aff} value={aff}>{aff}</SelectItem>
+                          <SelectContent className="max-h-60 overflow-y-auto">
+                            {getAllPROs().map(pro => (
+                              <SelectItem key={`${pro.value}-${pro.territory}`} value={pro.value}>
+                                {pro.label}
+                              </SelectItem>
                             ))}
+                            <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Controlled Status</Label>
-                        <Select 
+                        <Label>Publisher Name</Label>
+                        <Input
+                          value={writer.publisherName}
+                          onChange={(e) => updateWriter(writer.id, 'publisherName', e.target.value)}
+                          placeholder="Publisher Name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Publisher IPI</Label>
+                        <Input
+                          value={writer.publisherIpi}
+                          onChange={(e) => updateWriter(writer.id, 'publisherIpi', e.target.value)}
+                          placeholder="Publisher IPI Number"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Agreement Section */}
+                    <div className="space-y-2">
+                      <Label>Writer Agreements</Label>
+                      <WriterAgreementSection 
+                        writerName={writer.name}
+                        onControlledStatusChange={(hasAgreements) => {
+                          if (hasAgreements && writer.controlled !== 'C') {
+                            updateWriter(writer.id, 'controlled', 'C');
+                          }
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <Label>Controlled?</Label>
+                        <Select
                           value={writer.controlled}
                           onValueChange={(value: 'C' | 'NC') => updateWriter(writer.id, 'controlled', value)}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="w-32">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="C">Controlled (C)</SelectItem>
-                            <SelectItem value="NC">Non-Controlled (NC)</SelectItem>
+                            <SelectItem value="C">C (Controlled)</SelectItem>
+                            <SelectItem value="NC">NC (Non-Controlled)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      
-                      <div className="flex items-end">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeWriter(writer.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeWriter(writer.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   </Card>
                 ))}
@@ -941,8 +966,17 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
                     No writers added yet. Click "Add Writer" to get started.
                   </div>
                 )}
-              </div>
 
+                <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-medium">Total Controlled: {totalControlledShare.toFixed(2)}%</p>
+                    <p className="text-sm text-muted-foreground">Total Writer Share: {totalWriterShare.toFixed(2)}%</p>
+                  </div>
+                  <Button type="button" onClick={addWriter} variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Writer
+                  </Button>
+                </div>
               {/* Publishers */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
