@@ -29,8 +29,7 @@ export interface FixtureResult {
  *   We provide a placeholder UUID to satisfy the TypeScript Insert type; the trigger overwrites it.
  * - contract_status: defaults to 'draft'. Confirmed: calculatePayoutTotals does NOT filter by status.
  */
-export async function createFixtures(userId: string): Promise<FixtureResult> {
-  const runId = crypto.randomUUID().slice(0, 8);
+export async function createFixtures(runId: string, userId: string): Promise<FixtureResult> {
 
   // 1. Contact
   const { data: contact, error: contactErr } = await supabase
@@ -81,9 +80,9 @@ export async function createFixtures(userId: string): Promise<FixtureResult> {
 
   // 4. Copyrights (3)
   const copyrightInserts = [
-    { user_id: userId, work_title: `Sanity-CR1-${runId}`, notes: runId },
-    { user_id: userId, work_title: `Sanity-CR2-${runId}`, notes: runId },
-    { user_id: userId, work_title: `Sanity-CR3-${runId}`, notes: runId },
+    { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+    { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+    { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
   ];
   const { data: copyrights, error: crErr } = await supabase
     .from('copyrights')
