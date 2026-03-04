@@ -334,18 +334,12 @@ export function ContractList({ onEdit, contracts: propContracts }: ContractListP
       } else {
         const deletedCount = deletedRows?.length || 0;
         const skippedCount = contractsWithConnections.length;
-        if (deletedCount > 0) {
-          toast({
-            title: "Bulk Delete Complete",
-            description: `Successfully deleted ${deletedCount} contract(s)${skippedCount > 0 ? `, ${skippedCount} skipped (have royalty connections)` : ''}`,
-          });
-        } else {
-          toast({
-            title: "Delete Blocked",
-            description: `The selected contract${contractsToDelete.length > 1 ? 's are' : ' is'} protected and cannot be deleted. This may be due to their status or active connections.`,
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Bulk Delete Complete",
+          description: deletedCount > 0
+            ? `Successfully deleted ${deletedCount} contract(s)${skippedCount > 0 ? `, ${skippedCount} skipped (have royalty connections)` : ''}`
+            : `The selected contract(s) were already removed or could not be found.`,
+        });
         await fetchContracts();
       }
     } catch (err) {
