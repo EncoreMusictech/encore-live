@@ -272,53 +272,18 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
     }
   }, [toast]);
 
-  // Debounce the metadata fetching when song title changes with defensive programming
-  useEffect(() => {
-    if (!formData.song_title || formData.song_title.length < 3) return;
-    
-    console.log('Setting up Spotify search timeout for:', formData.song_title);
-    const timeoutId = setTimeout(() => {
-      // Use local flag to prevent state updates after unmount
-      let isMounted = true;
-      
-      const performSpotifyFetch = async () => {
-        try {
-          console.log('Triggering Spotify search for:', formData.song_title);
-          if (isMounted) {
-            await fetchSpotifyMetadata(formData.song_title, formData.artist_name);
-          }
-        } catch (error) {
-          if (isMounted) {
-            console.error('Spotify fetch error in debounced effect:', error);
-          }
-        }
-      };
-      
-      performSpotifyFetch();
-      
-      return () => {
-        isMounted = false;
-      };
-    }, 1000);
-
-    return () => clearTimeout(timeoutId);
-   }, [formData.song_title, formData.artist_name]); // Controlled dependencies
-
-   // Debounce metadata fetching when artist changes manually
-   useEffect(() => {
-     // Only run when both song title and artist are provided
-     if (!formData.song_title || !formData.artist_name || formData.song_title.length < 3) {
-       return;
-     }
-     
-     console.log('Setting up Spotify search for artist change:', formData.artist_name);
-     const timeoutId = setTimeout(() => {
-       console.log('Triggering Spotify search with artist:', formData.song_title, formData.artist_name);
-       fetchSpotifyMetadata(formData.song_title, formData.artist_name);
-     }, 1500); // Slightly longer delay for artist changes
-
-     return () => clearTimeout(timeoutId);
-    }, [formData.artist_name]); // Remove other deps to prevent infinite loops
+  // Manual Spotify metadata fetch triggered by button
+  const handleFetchSpotifyMetadata = () => {
+    if (formData.song_title && formData.song_title.length >= 3) {
+      fetchSpotifyMetadata(formData.song_title, formData.artist_name);
+    } else {
+      toast({
+        title: "Enter a Song Title",
+        description: "Please enter at least 3 characters for the song title before fetching metadata.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const addWriter = () => {
     const newWriter: Writer = {
@@ -651,6 +616,22 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
                 </div>
               </div>
 
+              {/* Manual Spotify Fetch Button */}
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleFetchSpotifyMetadata}
+                  disabled={spotifyLoading || !formData.song_title || formData.song_title.length < 3}
+                  className="gap-2"
+                >
+                  {spotifyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  {spotifyLoading ? 'Fetching...' : 'Fetch Spotify Metadata'}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Enter a song title (and optionally artist) then click to pull metadata
+                </span>
+              </div>
 
               {/* Additional Metadata */}
               <div className="grid md:grid-cols-3 gap-4">
