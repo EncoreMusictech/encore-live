@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
 import { normalizeTerritoryCode } from '@/utils/territoryNormalizer';
+import { isControlled } from '@/utils/isControlled';
+import { resolveOwnershipSplits, ResolvedSplits } from '@/utils/resolveOwnershipSplits';
 
 // ── Interfaces ────────────────────────────────────────────────────────
 
@@ -45,6 +47,17 @@ export interface PartyBreakdown {
   net_payable: number;
   controlled_status: string;
   split_percentage: number;
+  split_source: 'contract' | 'work';
+  calculated_amount: number;
+  is_controlled: boolean;
+}
+
+export interface ReconciliationEntry {
+  allocation_id: string;
+  reason: string;
+  gross_amount: number;
+  revenue_type: string | null;
+  country: string | null;
 }
 
 export interface AgreementCalculationResult {
@@ -58,6 +71,13 @@ export interface AgreementCalculationResult {
   calculation_method: 'agreement_based' | 'manual';
   agreement_id?: string;
   contract_deal_model: string;
+  // ── reconciliation tracking ──
+  excluded_total: number;
+  unpayable_total: number;
+  needs_review_total: number;
+  excluded_allocations: ReconciliationEntry[];
+  unpayable_allocations: ReconciliationEntry[];
+  needs_review_allocations: ReconciliationEntry[];
   // ── backward-compat fields used by PayoutForm / PayoutList ──
   net_royalties: number;
   commission_deduction: number;
@@ -69,22 +89,46 @@ export interface AgreementCalculationResult {
 
 // ── Revenue-type → split field map ────────────────────────────────────
 
-const SPLIT_FIELD_MAP: Record<string, keyof ContractParty> = {
+const SPLIT_FIELD_MAP: Record<string, string> = {
   performance: 'performance_percentage',
   mechanical: 'mechanical_percentage',
   synch: 'synch_percentage',
 };
 
-function getPartySplitForRevenueType(party: ContractParty, revenueType: string): number {
-  const field = SPLIT_FIELD_MAP[revenueType];
-  if (field) return (party[field] as number) || 0;
-  // 'other' – average of all three as a fallback
-  return (
-    ((party.performance_percentage || 0) +
-      (party.mechanical_percentage || 0) +
-      (party.synch_percentage || 0)) /
-    3
-  );
+// ── Copyright → Work map builder ──────────────────────────────────────
+
+interface ScheduleWork {
+  id: string;
+  copyright_id: string | null;
+  inherits_royalty_splits: boolean | null;
+  created_at: string;
+}
+
+function buildCopyrightToWorkMap(works: ScheduleWork[]): Map<string, string> {
+  const map = new Map<string, string>();
+  const seen = new Map<string, ScheduleWork>();
+
+  for (const work of works) {
+    if (!work.copyright_id) continue;
+    const existing = seen.get(work.copyright_id);
+    if (!existing) {
+      seen.set(work.copyright_id, work);
+      map.set(work.copyright_id, work.id);
+    } else {
+      // Deterministic: prefer inherits_royalty_splits = false, then latest created_at
+      console.warn(`Duplicate copyright_id ${work.copyright_id} in schedule works for same contract. Applying deterministic resolution.`);
+      const preferNew =
+        (work.inherits_royalty_splits === false && existing.inherits_royalty_splits !== false) ||
+        (work.inherits_royalty_splits === existing.inherits_royalty_splits &&
+          new Date(work.created_at) > new Date(existing.created_at));
+      if (preferNew) {
+        seen.set(work.copyright_id, work);
+        map.set(work.copyright_id, work.id);
+      }
+    }
+  }
+
+  return map;
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────
@@ -211,7 +255,7 @@ export function useAgreementCalculation() {
     }
   };
 
-  // ── Phase 4a: Fetch ALL interested parties (not just writers) ──────
+  // ── Fetch ALL interested parties (not just writers) ────────────────
 
   const getAgreementParties = async (agreementId: string): Promise<ContractParty[]> => {
     try {
@@ -253,19 +297,17 @@ export function useAgreementCalculation() {
     allocationCountry: string | null | undefined,
     contractTerritories: string[] | null | undefined,
   ): boolean => {
-    // Empty/null territories = worldwide (all eligible)
     if (!contractTerritories || contractTerritories.length === 0) return true;
-    if (!allocationCountry) return true; // can't exclude without data
+    if (!allocationCountry) return true;
 
     const normalised = normalizeTerritoryCode(allocationCountry);
-    // Check for "Worldwide" / "WW" marker
     if (contractTerritories.some(t => t.toUpperCase() === 'WORLDWIDE' || t.toUpperCase() === 'WW')) {
       return true;
     }
     return contractTerritories.some(t => normalizeTerritoryCode(t) === normalised);
   };
 
-  // ── Phase 4d: Ownership-split calculation ──────────────────────────
+  // ── Ownership-split calculation ────────────────────────────────────
 
   const calculateAgreementBasedRoyalties = async (
     agreementId: string,
@@ -288,36 +330,66 @@ export function useAgreementCalculation() {
       const territories: string[] =
         agreement.territories || (agreement.contract_data as any)?.territory_restrictions || [];
 
-      // 2. Fetch interested parties
-      const parties = await getAgreementParties(agreementId);
-      const controlledParties = parties.filter(p => p.controlled_status === 'C');
+      // Reconciliation tracking arrays
+      const excludedAllocations: ReconciliationEntry[] = [];
+      const unpayableAllocations: ReconciliationEntry[] = [];
+      const needsReviewAllocations: ReconciliationEntry[] = [];
+      let excludedTotal = 0;
+      let unpayableTotal = 0;
+      let needsReviewTotal = 0;
 
-      if (controlledParties.length === 0 && dealModel === 'ownership_split') {
-        toast({
-          title: 'No controlled parties',
-          description: 'This agreement has no controlled parties for calculation',
-          variant: 'destructive',
-        });
-        return null;
+      // Commission deduction (only for commission-only model)
+      let commissionDeduction = 0;
+
+      if (dealModel === 'ownership_split') {
+        // Quick contract-level check for controlled parties
+        const { data: contractParties } = await supabase
+          .from('contract_interested_parties')
+          .select('controlled_status')
+          .eq('contract_id', agreementId);
+
+        const hasControlled = (contractParties || []).some(p => isControlled(p.controlled_status));
+        if (!hasControlled) {
+          toast({
+            title: 'No controlled parties',
+            description: 'This agreement has no controlled parties for calculation',
+            variant: 'destructive',
+          });
+          return null;
+        }
       }
 
-      // 3. Fetch scoped allocations (linked via contract_schedule_works / copyright_id)
+      // 2. Fetch schedule works filtered by contract_id [FIX 2]
       const { data: scheduleWorks } = await supabase
         .from('contract_schedule_works')
-        .select('copyright_id')
+        .select('id, copyright_id, inherits_royalty_splits, created_at')
         .eq('contract_id', agreementId)
         .not('copyright_id', 'is', null);
 
-      const copyrightIds = scheduleWorks?.map(sw => sw.copyright_id).filter(Boolean) || [];
+      const copyrightToWorkMap = buildCopyrightToWorkMap(
+        (scheduleWorks || []) as ScheduleWork[],
+      );
+      const copyrightIds = Array.from(copyrightToWorkMap.keys());
 
+      // Split cache keyed by ${contractId}:${workId} or ${contractId}:contract [FIX 3]
+      const splitCache = new Map<string, ResolvedSplits>();
+
+      async function getCachedSplits(contractId: string, workId?: string | null): Promise<ResolvedSplits> {
+        const key = workId ? `${contractId}:${workId}` : `${contractId}:contract`;
+        if (splitCache.has(key)) return splitCache.get(key)!;
+        const result = await resolveOwnershipSplits(contractId, workId);
+        splitCache.set(key, result);
+        return result;
+      }
+
+      // 3. Fetch scoped allocations
       let royaltiesQuery = supabase
         .from('royalty_allocations')
-        .select('id, gross_royalty_amount, net_amount, revenue_type, country, copyright_id')
+        .select('id, gross_royalty_amount, net_amount, revenue_type, country, copyright_id, line_type, revenue_type_confidence, rights_basis')
         .eq('user_id', user?.id)
         .gte('created_at', periodStart)
         .lte('created_at', periodEnd + 'T23:59:59');
 
-      // Scope to contract works if possible
       if (copyrightIds.length > 0) {
         royaltiesQuery = royaltiesQuery.in('copyright_id', copyrightIds);
       }
@@ -328,12 +400,9 @@ export function useAgreementCalculation() {
       // 4. Calculate based on deal model
       let grossRoyalties = 0;
       let territoryExclusions = 0;
-      let unallocatableAmount = 0;
-      let commissionDeduction = 0;
       const partyBreakdowns: PartyBreakdown[] = [];
 
       if (dealModel === 'ownership_split') {
-        // ── Ownership-split model ──
         for (const allocation of royalties || []) {
           const gross = allocation.gross_royalty_amount || 0;
           grossRoyalties += gross;
@@ -344,28 +413,88 @@ export function useAgreementCalculation() {
             continue;
           }
 
-          // Revenue type check
-          const revenueType = allocation.revenue_type;
-          if (!revenueType) {
-            unallocatableAmount += gross;
+          const allocEntry = {
+            allocation_id: allocation.id,
+            gross_amount: gross,
+            revenue_type: allocation.revenue_type,
+            country: allocation.country,
+          };
+
+          // ── Stop conditions [FIX 4] ──
+          // When met, add to list and continue without allocating
+
+          if (!allocation.revenue_type) {
+            unpayableAllocations.push({ ...allocEntry, reason: 'missing_revenue_type' });
+            unpayableTotal += gross;
             continue;
           }
 
-          // Apply per-party splits
-          for (const party of parties) {
-            const splitPct = getPartySplitForRevenueType(party, revenueType);
-            const partyGrossShare = gross * (splitPct / 100);
+          if (allocation.revenue_type === 'other') {
+            needsReviewAllocations.push({ ...allocEntry, reason: 'revenue_type_other' });
+            needsReviewTotal += gross;
+            continue;
+          }
+
+          if (allocation.revenue_type_confidence === 'low') {
+            needsReviewAllocations.push({ ...allocEntry, reason: 'low_confidence' });
+            needsReviewTotal += gross;
+            continue;
+          }
+
+          if (allocation.rights_basis === 'exclude_from_splits') {
+            excludedAllocations.push({ ...allocEntry, reason: 'excluded_rights_basis' });
+            excludedTotal += gross;
+            continue;
+          }
+
+          if (allocation.line_type && allocation.line_type !== 'royalty') {
+            excludedAllocations.push({ ...allocEntry, reason: 'non_royalty_line_type' });
+            excludedTotal += gross;
+            continue;
+          }
+
+          // Look up work from copyright
+          const workId = allocation.copyright_id
+            ? copyrightToWorkMap.get(allocation.copyright_id) ?? null
+            : null;
+
+          // Resolve splits (cached)
+          const splits = await getCachedSplits(agreementId, workId);
+
+          if (!splits.valid) {
+            unpayableAllocations.push({ ...allocEntry, reason: 'invalid_split_totals' });
+            unpayableTotal += gross;
+            continue;
+          }
+
+          // ── Allocate per-party ──
+          let uncontrolledTotal = 0;
+          const revenueType = allocation.revenue_type;
+          const splitField = SPLIT_FIELD_MAP[revenueType] || 'performance_percentage';
+
+          for (const party of splits.parties) {
+            const splitPct = (party as any)[splitField] || 0;
+            const calculatedAmount = gross * (splitPct / 100);
+            const partyIsControlled = party.is_controlled;
+            const payableAmount = partyIsControlled ? calculatedAmount : 0;
+
+            if (!partyIsControlled) {
+              uncontrolledTotal += calculatedAmount; // [FIX 7]
+            }
 
             partyBreakdowns.push({
               party_id: party.id,
               party_name: party.name,
               party_type: party.party_type,
               revenue_type: revenueType,
-              gross_share: partyGrossShare,
-              recoupment_applied: 0, // Phase 8
-              net_payable: party.controlled_status === 'C' ? partyGrossShare : 0,
+              gross_share: calculatedAmount,
+              recoupment_applied: 0,
+              net_payable: payableAmount,
               controlled_status: party.controlled_status,
               split_percentage: splitPct,
+              split_source: splits.split_source,
+              calculated_amount: calculatedAmount,
+              is_controlled: partyIsControlled,
             });
           }
         }
@@ -392,10 +521,9 @@ export function useAgreementCalculation() {
           return sum + (isRecoupable ? e.amount : 0);
         }, 0) || 0;
 
-      // 6. Recoupment (Phase 8 – per-party using entity_advance_ledger)
+      // 6. Recoupment
       let advanceRecoupment = 0;
       if (dealModel === 'ownership_split') {
-        // Get remaining advance balance from ledger
         const { data: ledger } = await supabase
           .from('entity_advance_ledger')
           .select('balance_remaining')
@@ -405,14 +533,13 @@ export function useAgreementCalculation() {
         const remainingAdvance = ledger?.balance_remaining || 0;
 
         if (remainingAdvance > 0) {
-          // Apply recoupment proportionally to controlled parties
           const totalControlledPayable = partyBreakdowns
-            .filter(pb => pb.controlled_status === 'C')
+            .filter(pb => pb.is_controlled)
             .reduce((s, pb) => s + pb.net_payable, 0);
 
           let recoupedSoFar = 0;
           for (const pb of partyBreakdowns) {
-            if (pb.controlled_status !== 'C') continue;
+            if (!pb.is_controlled) continue;
             const partyRecoup = Math.min(
               pb.net_payable,
               remainingAdvance * (pb.net_payable / (totalControlledPayable || 1)),
@@ -431,7 +558,7 @@ export function useAgreementCalculation() {
 
       // 7. Totals
       const controlledNetPayable = partyBreakdowns
-        .filter(pb => pb.controlled_status === 'C')
+        .filter(pb => pb.is_controlled)
         .reduce((s, pb) => s + pb.net_payable, 0);
 
       const netPayable =
@@ -445,11 +572,18 @@ export function useAgreementCalculation() {
         net_payable: netPayable,
         advance_recoupment: advanceRecoupment,
         territory_exclusions: territoryExclusions,
-        unallocatable_amount: unallocatableAmount,
+        unallocatable_amount: unpayableTotal,
         party_breakdowns: partyBreakdowns,
         calculation_method: 'agreement_based',
         agreement_id: agreementId,
         contract_deal_model: dealModel,
+        // reconciliation
+        excluded_total: excludedTotal,
+        unpayable_total: unpayableTotal,
+        needs_review_total: needsReviewTotal,
+        excluded_allocations: excludedAllocations,
+        unpayable_allocations: unpayableAllocations,
+        needs_review_allocations: needsReviewAllocations,
         // backward-compat
         net_royalties: grossRoyalties - commissionDeduction,
         commission_deduction: commissionDeduction,
@@ -518,6 +652,12 @@ export function useAgreementCalculation() {
         party_breakdowns: [],
         calculation_method: 'manual',
         contract_deal_model: 'manual',
+        excluded_total: 0,
+        unpayable_total: 0,
+        needs_review_total: 0,
+        excluded_allocations: [],
+        unpayable_allocations: [],
+        needs_review_allocations: [],
         // backward-compat
         net_royalties: grossRoyalties,
         commission_deduction: 0,
