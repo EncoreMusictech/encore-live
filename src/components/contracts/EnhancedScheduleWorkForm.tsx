@@ -525,11 +525,13 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
       });
 
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving work:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('Contract ID used:', contractId);
       toast({
         title: "Error",
-        description: "Failed to save work to schedule",
+        description: error?.message || error?.details || "Failed to save work to schedule",
         variant: "destructive",
       });
     } finally {
