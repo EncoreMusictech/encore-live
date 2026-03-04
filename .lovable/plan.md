@@ -1,37 +1,51 @@
 
 
-## Plan: Payout Reconciliation Sanity Check — Final Implementation
+## Plan: Fix work_id collision + runId ownership + cleanup safety
 
-Two minor additions to the approved plan, then build all three files.
+Three targeted edits across two files. No new files.
 
-### Edit 1: Period window safety
+---
 
-In `PayoutReconciliationSanityCheck.tsx`, set:
+### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
+
+**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
+
+**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
 ```ts
-const periodStart = new Date(Date.now() - 2 * 86400000); // now - 2 days
-const periodEnd = new Date(Date.now() + 2 * 86400000);   // now + 2 days
+const copyrightInserts = [
+  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+];
 ```
-This prevents timing drift from causing silent misses.
+The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
 
-### Edit 2: Fixture completeness assertion
+---
 
-After `createFixtures` returns, immediately check:
+### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
+
+**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
 ```ts
-const fixture_allocation_count = result.allocationIds.length;
-// Assert: fixture_allocation_count == 8 (before engine call)
+const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
+setRunId(currentRunId);
+const fixtures = await createFixtures(currentRunId, user.id);
 ```
 
-Add `fixture_allocation_count` to output JSON alongside `fetched_count`. Assertion 7 becomes:
-
-| 7 | `fixture_allocation_count == 8 AND fetched_count == 8` AND bucket counts 2/2/2 | Catches partial inserts AND miscategorization |
-
-This separates "did we insert 8?" from "did the engine see 8?" — if fixture count is 7 but fetched is 7, the problem is inserts not the engine.
-
-### Files (unchanged from approved plan, plus above edits)
-
-1. **`src/dev/sanityChecks/payoutReconciliationData.ts`** — fixture factory
-2. **`src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`** — UI with 7 assertions (assertion 7 now includes fixture count check), ±2 day period window
-3. **`src/App.tsx`** — add lazy route at `/dev/sanity/payout-reconciliation`
-
-Everything else per the approved plan. Ready to implement.
+**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
+```ts
+} finally {
+  if (!skipCleanup && currentRunId) {
+    try {
+      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
+      if (cleanupErrors.length > 0) {
+        console.warn('Cleanup errors:', cleanupErrors);
+      }
+    } catch (e) {
+      console.error('Cleanup failed:', e);
+    }
+  }
+  setRunning(false);
+}
+```
+Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
 
