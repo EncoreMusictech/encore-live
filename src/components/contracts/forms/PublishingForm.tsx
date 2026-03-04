@@ -118,6 +118,29 @@ export function PublishingForm({ data, onChange }: PublishingFormProps) {
               </Select>
             </div>
           </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Advance Amount ($)</Label>
+              <Input
+                type="number"
+                value={data.advance_amount || ""}
+                onChange={(e) => updateData('advance_amount', e.target.value)}
+                placeholder="e.g., 25000"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Royalty Rate (%)</Label>
+              <Input
+                type="number"
+                max="100"
+                value={data.royalty_rate || ""}
+                onChange={(e) => updateData('royalty_rate', e.target.value)}
+                placeholder="e.g., 50"
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 

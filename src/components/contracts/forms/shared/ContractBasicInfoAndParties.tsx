@@ -2,16 +2,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { CalendarIcon, FileText, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CalendarIcon, FileText, Users, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useCallback, memo } from "react";
+import { useCallback, memo, useState } from "react";
 
+const TERRITORY_OPTIONS = [
+  { value: "worldwide", label: "Worldwide" },
+  { value: "north_america", label: "North America" },
+  { value: "europe", label: "Europe" },
+  { value: "uk", label: "United Kingdom" },
+  { value: "us", label: "United States" },
+  { value: "canada", label: "Canada" },
+  { value: "australia", label: "Australia" },
+  { value: "asia_pacific", label: "Asia Pacific" },
+  { value: "latin_america", label: "Latin America" },
+];
 interface ContractBasicInfoAndPartiesProps {
   data: any;
   onChange: (data: any) => void;
@@ -36,7 +49,7 @@ function ContractBasicInfoAndPartiesComponent({
   }, [onChange, data]);
 
   return (
-    <div className="space-y-6" onMouseDownCapture={(e) => e.stopPropagation()} onClickCapture={(e) => e.stopPropagation()} onFocusCapture={(e) => e.stopPropagation()} onKeyDownCapture={(e) => { if (e.key !== 'Tab') e.stopPropagation(); }}>
+    <div className="space-y-6">
       {/* Basic Information Section */}
       <Card>
         <CardHeader>
@@ -133,23 +146,64 @@ function ContractBasicInfoAndPartiesComponent({
 
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="territory">Territory</Label>
-              <Select 
-                value={data.territory || "worldwide"}
-                onValueChange={(value) => updateData('territory', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select territory" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="worldwide">Worldwide</SelectItem>
-                  <SelectItem value="north_america">North America</SelectItem>
-                  <SelectItem value="europe">Europe</SelectItem>
-                  <SelectItem value="uk">United Kingdom</SelectItem>
-                  <SelectItem value="us">United States</SelectItem>
-                  <SelectItem value="canada">Canada</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Territories</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal min-h-[40px] h-auto"
+                  >
+                    {(data.territories && data.territories.length > 0) ? (
+                      <div className="flex flex-wrap gap-1">
+                        {data.territories.map((t: string) => {
+                          const opt = TERRITORY_OPTIONS.find(o => o.value === t);
+                          return (
+                            <Badge key={t} variant="secondary" className="text-xs">
+                              {opt?.label || t}
+                              <X
+                                className="ml-1 h-3 w-3 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateData('territories', data.territories.filter((v: string) => v !== t));
+                                }}
+                              />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">No territories selected (defaults to Worldwide)</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-2" align="start">
+                  <div className="space-y-1">
+                    {TERRITORY_OPTIONS.map((opt) => {
+                      const selected = (data.territories || []).includes(opt.value);
+                      return (
+                        <div
+                          key={opt.value}
+                          className="flex items-center gap-2 p-2 rounded hover:bg-accent cursor-pointer"
+                          onClick={() => {
+                            const current: string[] = data.territories || [];
+                            if (selected) {
+                              updateData('territories', current.filter(v => v !== opt.value));
+                            } else {
+                              updateData('territories', [...current, opt.value]);
+                            }
+                          }}
+                        >
+                          <Checkbox checked={selected} />
+                          <span className="text-sm">{opt.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                Leave empty for Worldwide coverage. Select specific territories to restrict.
+              </p>
             </div>
 
             <div className="space-y-2">
