@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, ExternalLink, Search } from "lucide-react";
+import { Dialog, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { Plus, Trash2, ExternalLink, Search, X } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { WorkSelectionDialog } from "./WorkSelectionDialog";
 import { CopyrightDetailsModal } from "../copyright/CopyrightDetailsModal";
@@ -94,11 +95,11 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
           Works linked to this contract inherit royalty and party metadata
         </p>
         <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
-          if (!open && !isSpotifyFetching) {
-            setIsAddDialogOpen(false);
-          } else if (open) {
+          if (open) {
             setIsAddDialogOpen(true);
           }
+          // Only allow closing via explicit actions (close button, cancel button)
+          // Don't auto-close from onOpenChange to prevent Select/Popover portal interactions from closing the dialog
         }}>
           <DialogTrigger asChild>
             <Button className="gap-2">
@@ -106,21 +107,42 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
               Add Work
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
-            <DialogHeader>
-              <DialogTitle>Add Work to Schedule</DialogTitle>
-              <DialogDescription>
-                Select existing works from your copyright catalog or create new works to add to this contract
-              </DialogDescription>
-            </DialogHeader>
-            
-            <WorkSelectionDialog 
-              contractId={contractId}
-              onSuccess={handleWorkAdded}
-              onCancel={handleDialogClose}
-              onSpotifyFetchChange={setIsSpotifyFetching}
-            />
-          </DialogContent>
+          <DialogPortal>
+            <DialogOverlay />
+            <DialogPrimitive.Content 
+              className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-7xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card text-card-foreground p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-h-[90vh] overflow-y-auto"
+              onPointerDownOutside={(e) => e.preventDefault()} 
+              onInteractOutside={(e) => e.preventDefault()}
+              onEscapeKeyDown={(e) => {
+                if (!isSpotifyFetching) {
+                  setIsAddDialogOpen(false);
+                } else {
+                  e.preventDefault();
+                }
+              }}
+            >
+              <button
+                onClick={() => { if (!isSpotifyFetching) setIsAddDialogOpen(false); }}
+                className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </button>
+              <DialogHeader>
+                <DialogTitle>Add Work to Schedule</DialogTitle>
+                <DialogDescription>
+                  Select existing works from your copyright catalog or create new works to add to this contract
+                </DialogDescription>
+              </DialogHeader>
+              
+              <WorkSelectionDialog 
+                contractId={contractId}
+                onSuccess={handleWorkAdded}
+                onCancel={handleDialogClose}
+                onSpotifyFetchChange={setIsSpotifyFetching}
+              />
+            </DialogPrimitive.Content>
+          </DialogPortal>
         </Dialog>
       </div>
 
