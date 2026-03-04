@@ -412,15 +412,24 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
     setLoading(true);
     
     try {
-      // Get current user
+      // Get the contract owner's user_id so copyright is attributed correctly
+      const { data: contractData } = await supabase
+        .from('contracts')
+        .select('user_id')
+        .eq('id', contractId)
+        .single();
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
+      
+      // Use contract owner's user_id for copyright attribution (important for sub-account filtering)
+      const copyrightUserId = contractData?.user_id || user.id;
 
       // First create the copyright work
       const { data: copyrightData, error: copyrightError } = await supabase
         .from('copyrights')
         .insert({
-          user_id: user.id,
+          user_id: copyrightUserId,
           work_title: formData.song_title,
           work_type: formData.work_type,
           language_code: formData.language_code,
@@ -519,9 +528,74 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
 
       if (scheduleError) throw scheduleError;
 
+      // Auto-create interested parties from writers and publishers
+      const existingParties = await supabase
+        .from('contract_interested_parties')
+        .select('name')
+        .eq('contract_id', contractId);
+      
+      const existingNames = new Set((existingParties.data || []).map(p => p.name.toLowerCase()));
+      
+      const newParties: Array<{
+        contract_id: string;
+        name: string;
+        party_type: string;
+        performance_percentage: number;
+        mechanical_percentage: number;
+        synch_percentage: number;
+        controlled_status: string;
+        ipi_number: string | null;
+        affiliation: string | null;
+      }> = [];
+
+      for (const writer of writers) {
+        if (!existingNames.has(writer.name.toLowerCase())) {
+          newParties.push({
+            contract_id: contractId,
+            name: writer.name,
+            party_type: 'writer',
+            performance_percentage: writer.share,
+            mechanical_percentage: writer.share,
+            synch_percentage: writer.share,
+            controlled_status: writer.controlled || 'no',
+            ipi_number: writer.ipi || null,
+            affiliation: writer.proAffiliation || null,
+          });
+          existingNames.add(writer.name.toLowerCase());
+        }
+      }
+
+      for (const publisher of publishers) {
+        if (!existingNames.has(publisher.name.toLowerCase())) {
+          newParties.push({
+            contract_id: contractId,
+            name: publisher.name,
+            party_type: 'publisher',
+            performance_percentage: publisher.share,
+            mechanical_percentage: publisher.share,
+            synch_percentage: publisher.share,
+            controlled_status: 'yes',
+            ipi_number: publisher.ipi || null,
+            affiliation: publisher.proAffiliation || null,
+          });
+          existingNames.add(publisher.name.toLowerCase());
+        }
+      }
+
+      if (newParties.length > 0) {
+        const { error: partiesError } = await supabase
+          .from('contract_interested_parties')
+          .insert(newParties);
+        
+        if (partiesError) {
+          console.error('Error auto-creating interested parties:', partiesError);
+          // Non-fatal - work was still added
+        }
+      }
+
       toast({
         title: "Success",
-        description: "Work added to schedule with full copyright registration",
+        description: `Work added to schedule${newParties.length > 0 ? ` with ${newParties.length} interested ${newParties.length === 1 ? 'party' : 'parties'} auto-created` : ' with full copyright registration'}`,
       });
 
       onSuccess();
