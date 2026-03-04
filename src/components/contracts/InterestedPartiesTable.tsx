@@ -77,9 +77,10 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
     fetchParties();
   }, [fetchParties]);
 
-  const primaryParties = allParties.filter(p => !p.merged_into_id);
-  const mergedParties = allParties.filter(p => !!p.merged_into_id);
-  const visibleParties = showMerged ? allParties : primaryParties;
+  const controlledParties = allParties.filter(p => ['C', 'Controlled', 'Y'].includes(p.controlled_status));
+  const primaryParties = controlledParties.filter(p => !p.merged_into_id);
+  const mergedParties = controlledParties.filter(p => !!p.merged_into_id);
+  const visibleParties = showMerged ? controlledParties : primaryParties;
 
   const [formData, setFormData] = useState({
     name: "",
