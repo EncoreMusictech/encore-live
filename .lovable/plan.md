@@ -1,34 +1,40 @@
-# Contract-Compliant Royalty Calculation Engine
 
-## Status: ✅ All 8 Phases Implemented
 
-### Phase 1: Database Schema Migration ✅
-- `revenue_type` on `royalty_allocations` (performance/mechanical/synch/other)
-- `contract_deal_model` on `contracts` (ownership_split/commission_only)
-- Audit columns on `payout_royalties` (party_id, split_percentage, ownership_snapshot, etc.)
-- `validate_royalty_splits` updated with ±0.01 tolerance for all 6 right types
+## How Royalty Rates Are Applied
 
-### Phase 2: Revenue Type Classifier ✅
-- `src/utils/revenueTypeClassifier.ts` — maps statement fields to revenue types
+The royalty split percentages on the Interested Parties table (Performance %, Mechanical %, Synch %) determine how incoming royalty revenue is distributed to each party during payout generation:
 
-### Phase 3: Import Enhancement ✅
-- `useImportToAllocations.ts` classifies `revenue_type` during import
+1. **Revenue Classification**: Each royalty allocation is classified by type (performance, mechanical, synch, other) using the revenue type classifier.
+2. **Split Application**: When payouts are calculated, the system looks up interested parties for the contract and applies the corresponding percentage for that revenue type. For example, if a $1,000 performance royalty comes in and Writer A has `performance_percentage = 50%`, they receive $500.
+3. **Controlled vs Non-Controlled**: Only "Controlled" (C) parties generate payable outputs. Non-Controlled parties are recorded for audit but don't produce payouts.
+4. **Validation**: The system validates that all party splits for each right type sum to 100% (within tolerance) before payouts can be processed.
 
-### Phase 4: Agreement Calculation Engine Rewrite ✅
-- `useAgreementCalculation.ts` fully rewritten with ownership-split model
-- `getAgreementParties` fetches all party types with `controlled_status`
-- Per-right-type splits, territory checks, new interfaces
+## Plan: Make Royalty Rates Inline-Editable
 
-### Phase 5: Payout Totals Update ✅
-- `calculatePayoutTotals` scopes allocations to contract works
-- Ownership-split and commission-only models supported
+Currently the percentage cells are read-only text. The plan is to make them editable directly in the table row.
 
-### Phase 6: Splitting Moved to Payout Stage ✅
-- Auto-splitting removed from import/match time
-- `useWriterPayouts.ts` creates audit snapshots with per-right splits
+### Changes to `src/components/contracts/InterestedPartiesTable.tsx`
 
-### Phase 7: Royalty Ready Validation ✅
-- `BulkContractImport.tsx` uses `validate_royalty_splits` RPC
+1. **Add inline editing state**: Track which party row is being edited and its pending values.
 
-### Phase 8: Recoupment After Allocation ✅
-- Per-party recoupment using `entity_advance_ledger`
+2. **Replace static percentage cells** (lines 424-426) with editable `Input` fields:
+   - Each cell becomes a number input (0-100) that updates on change.
+   - Include a small save/cancel button set per row, or auto-save on blur.
+
+3. **Add an `handleUpdateParty` function** that calls:
+   ```ts
+   await supabase
+     .from('contract_interested_parties')
+     .update({ performance_percentage, mechanical_percentage, synch_percentage, ... })
+     .eq('id', partyId);
+   ```
+
+4. **Add an edit toggle per row** in the Actions column (pencil icon) that switches between view and edit mode for that row. On save, persist to Supabase and refresh.
+
+5. **Also allow editing**: `controlled_status` and `party_type` inline via dropdowns when in edit mode.
+
+6. **Add a brief explanation** in the `CardDescription` or as a tooltip explaining how these percentages drive royalty payouts.
+
+### Files Modified
+- `src/components/contracts/InterestedPartiesTable.tsx` — add inline editing for percentage fields, controlled status, and party type with save/cancel per row.
+
