@@ -106,7 +106,7 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
               Add Work
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Add Work to Schedule</DialogTitle>
               <DialogDescription>
