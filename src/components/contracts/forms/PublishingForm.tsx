@@ -58,27 +58,6 @@ export function PublishingForm({ data, onChange }: PublishingFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>Territory</Label>
-              <Select 
-                value={data.territory} 
-                onValueChange={(value) => updateData('territory', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select territory" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="worldwide">Worldwide</SelectItem>
-                  <SelectItem value="north_america">North America</SelectItem>
-                  <SelectItem value="europe">Europe</SelectItem>
-                  <SelectItem value="uk">United Kingdom</SelectItem>
-                  <SelectItem value="us">United States</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="space-y-2">
               <Label>Duration (Years)</Label>
               <Input
                 type="number"
