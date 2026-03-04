@@ -1,116 +1,105 @@
 
 
-## Updated Plan: Contract-Compliant Split Resolution and Payout Engine Update
+## QA Validation Results: Split Resolution and Payout Engine
 
-All 7 fixes applied. Changes from the previous revision are marked with **[FIX]**.
+### Check 1: Split Resolution Fallback — PASS in useAgreementCalculation, PASS in usePayouts
 
----
+**useAgreementCalculation.ts (lines 457-462):**
+```
+const workId = allocation.copyright_id
+  ? copyrightToWorkMap.get(allocation.copyright_id) ?? null
+  : null;
+const splits = await getCachedSplits(agreementId, workId);
+```
+If copyright_id is missing or not in the map, `workId` becomes `null`, and `getCachedSplits` resolves to contract-level splits via the resolver's first branch. Correct.
 
-### Phase 1: Schema Migration
-
-**1a.** Create `contract_work_interested_parties` table (unchanged from prior revision).
-
-**1b.** Add 4 nullable columns to `royalty_allocations`: `contract_schedule_work_id` (FK), `line_type`, `revenue_type_confidence`, `rights_basis`.
-
-**1c. Guardrail validation trigger** — `BEFORE INSERT OR UPDATE` on `royalty_allocations`. **[FIX 1]** The trigger validates, when not null:
-
-- `revenue_type` in `{performance, mechanical, synch, other}`
-- `line_type` in `{royalty, fee, adjustment, withholding, recoupment}`
-- `revenue_type_confidence` in `{high, medium, low}`
-- `rights_basis` in `{ownership_split_by_right_type, exclude_from_splits}`
+**usePayouts.ts (lines 598-602):** Same pattern. Correct.
 
 ---
 
-### Phase 2: New Utilities
+### Check 2: Stop Conditions — FAIL in usePayouts.ts
 
-**`src/utils/isControlled.ts`** — Returns `true` when `controlled_status` is in `['C', 'Controlled', 'Y']` (case-insensitive).
+**useAgreementCalculation.ts (lines 423-468):** All 5 stop conditions use `continue` and push to the correct reconciliation array with reason strings. Each adds `gross` to `excludedTotal`, `unpayableTotal`, or `needsReviewTotal`. **PASS.**
 
-**`src/utils/resolveOwnershipSplits.ts`** — `resolveOwnershipSplits(contractId, contractScheduleWorkId?)`:
-- workId null → `contract_interested_parties` → `split_source: 'contract'`
-- workId exists → check `inherits_royalty_splits`: true → contract-level; false/null → check `contract_work_interested_parties` → rows found = `'work'`, else fallback to contract-level
-- Normalize null percentages to 0, validate perf/mech/synch sums = 100% (±0.01) across ALL parties
-- Return `{ parties: ResolvedParty[], split_source, valid, errors }`
+**usePayouts.ts (lines 591-596):** Stop conditions are bare `continue` statements with NO reconciliation tracking:
+```js
+if (!revenueType) continue;           // no unpayable tracking
+if (revenueType === 'other') continue; // no needs_review tracking
+if (allocation.revenue_type_confidence === 'low') continue;
+if (allocation.rights_basis === 'exclude_from_splits') continue;
+if (allocation.line_type && allocation.line_type !== 'royalty') continue;
+```
+Also line 603: `if (!splits.valid) continue;` — no `invalid_split_totals` tracking.
 
----
+**The return object (lines 617-629) has no reconciliation fields** — no `excluded_total`, `unpayable_total`, `needs_review_total`, no detail arrays.
 
-### Phase 3: Update `src/hooks/useAgreementCalculation.ts`
-
-**Interface additions:** `PartyBreakdown` gets `split_source`, `calculated_amount`, `is_controlled`. `AgreementCalculationResult` gets `excluded_total`, `unpayable_total`, `needs_review_total`, plus detail arrays.
-
-In `calculateAgreementBasedRoyalties` (lines ~270-460):
-
-1. **[FIX 2]** Schedule works query selects `id, copyright_id, inherits_royalty_splits, created_at` and is filtered by `contract_id`.
-
-2. Pre-build maps:
-   - `copyrightToWorkMap: Map<string, string>` — deterministic: prefer `inherits_royalty_splits = false`, then latest `created_at`; log warning on duplicates
-   - **[FIX 3]** `splitCache: Map<string, ResolvedSplits>` keyed by `${contractId}:${workId}` or `${contractId}:contract`
-
-3. For each allocation:
-   - Look up `contract_schedule_work_id` from `copyrightToWorkMap`
-   - Apply stop conditions: `revenue_type` null → `unpayable_allocations[]`; `revenue_type === 'other'` → `needs_review_allocations[]`; `revenue_type_confidence === 'low'` → `needs_review_allocations[]`; `rights_basis === 'exclude_from_splits'` → `excluded_allocations[]`; `line_type` set and `!== 'royalty'` → `excluded_allocations[]`
-   - **[FIX 4]** When a stop condition is met, add the allocation to the appropriate list and continue to the next allocation without allocating.
-   - Call `resolveOwnershipSplits(contractId, workId)` (cached); if `valid === false` → `unpayable_allocations[]`, continue without allocating
-   - Allocate per-party: `calculated_amount` for all, `payable_amount` via `isControlled()`
-   - **[FIX 7]** Track `uncontrolled_total` per allocation after computing `calculated_amount` and `payable_amount`
-   - Include `split_source` in `PartyBreakdown`
-
-4. Result object includes `excluded_total`, `unpayable_total`, `needs_review_total`, and detail arrays (each entry: `allocation_id`, `reason`, `gross_amount`, `revenue_type`, `country`).
-
-5. Remove direct `getAgreementParties` call at line 292 for ownership_split — keep a quick contract-level query for the early controlled-party check.
+**FAIL. Fix required:** Add reconciliation arrays and totals to usePayouts.ts matching the useAgreementCalculation.ts pattern.
 
 ---
 
-### Phase 4: Update `src/hooks/usePayouts.ts` (lines ~519-567)
+### Check 3: Validation Tolerance and Null Normalization — PASS
 
-1. **[FIX 5]** Schedule works query selects `id, copyright_id, inherits_royalty_splits, created_at` and is filtered by `contract_id`.
-
-2. Build `copyrightToWorkMap` with deterministic duplicate handling.
-
-3. Resolve splits per allocation using utility + cache (keys: `${contractId}:${workId}` or `${contractId}:contract`).
-
-4. Apply same stop conditions and tracking arrays. **[FIX 4]** When a stop condition is met, add the allocation to the appropriate list and continue to the next allocation without allocating.
-
-5. Allocate per-party, aggregate per `revenue_type`. **[FIX 7]** Track `uncontrolled_total` per allocation after computing `calculated_amount` and `payable_amount`.
-
-6. Recoupment post-allocation unchanged.
+**resolveOwnershipSplits.ts:**
+- `normalizePercentage()` (line ~30): converts `null`/`undefined` to `0` before summing. Correct.
+- `validateSums()` (lines ~34-50): validates perf, mech, synch independently with `Math.abs(sum - 100) > 0.01` (TOLERANCE constant). Correct.
+- On invalid splits, returns `{ valid: false, errors: [...] }`.
+- In useAgreementCalculation.ts line 465: `reason: 'invalid_split_totals'` is stored. **PASS.**
+- In usePayouts.ts line 603: `continue` with no reason stored. **FAIL** (same issue as Check 2).
 
 ---
 
-### Phase 5: Audit Snapshot Enhancement
+### Check 4: Controlled Logic Consistency — PARTIAL PASS
 
-No schema change. In `ownership_snapshot` JSONB, include:
+Both engines import `isControlled` from `@/utils/isControlled.ts`. The resolver stores `is_controlled` on each `ResolvedParty`.
 
-- **[FIX 6]** `allocation_id`, `gross_amount`, `revenue_type`, `country`
-- `split_source` ("work" or "contract")
-- Resolved party rows with percentages
-- `line_type`, `revenue_type_confidence`, `rights_basis`
-- `calculated_amount` and `payable_amount` per party
-- `is_controlled` per party
-- `uncontrolled_total`
-- Exclusion/unpayable/needs_review reason if applicable
+**useAgreementCalculation.ts (line 478):** Uses `party.is_controlled` from resolved splits. Correct.
+
+**usePayouts.ts (line 609):** Uses `party.is_controlled`. Correct.
+
+However, **usePayouts.ts line 609** skips uncontrolled parties entirely (`if (!party.is_controlled) continue`) — it never computes `calculated_amount` for them and never tracks `uncontrolled_total`. In useAgreementCalculation.ts, both controlled and uncontrolled parties get `calculated_amount` computed, and `uncontrolled_total` is tracked (line 482). **PARTIAL FAIL** — usePayouts does not produce audit-consistent snapshots for uncontrolled parties.
 
 ---
 
-### Phase 6: Commission-Only Pass-Through
+### Check 5: Duplicate Schedule Work Handling — PASS
 
-No changes.
+**useAgreementCalculation.ts `buildCopyrightToWorkMap` (lines 107-132):**
+- Prefers `inherits_royalty_splits === false` over other values (line 121)
+- Falls back to latest `created_at` when equal (line 123)
+- Logs warning with `console.warn` (line 119)
+Correct.
+
+**usePayouts.ts (lines 530-548):** Identical logic inlined. Correct.
 
 ---
 
-### Files Changed
+### Summary of Issues Found
 
-| File | Change |
-|------|--------|
-| Migration SQL | New table, 4 columns on `royalty_allocations`, RLS, validation trigger (all 4 fields explicit) |
-| `src/utils/isControlled.ts` | New — centralized controlled status check |
-| `src/utils/resolveOwnershipSplits.ts` | New — split resolution with inherits flag, per-right-type validation |
-| `src/hooks/useAgreementCalculation.ts` | Contract-scoped work map + split cache, stop conditions (continue without allocating), per-allocation split resolution, uncontrolled_total tracking, reconciliation arrays |
-| `src/hooks/usePayouts.ts` | Same pattern for `calculatePayoutTotals` |
+| Check | useAgreementCalculation | usePayouts |
+|-------|------------------------|------------|
+| 1. Fallback | PASS | PASS |
+| 2. Stop conditions track totals | PASS | **FAIL** — bare `continue`, no arrays/totals |
+| 3. Null normalization + tolerance | PASS | PASS (resolver), **FAIL** (no reason stored) |
+| 4. Controlled consistency | PASS | **PARTIAL FAIL** — skips uncontrolled, no `uncontrolled_total` |
+| 5. Duplicate handling | PASS | PASS |
 
-### Implementation Order
+---
 
-1. Run schema migration
-2. Create `isControlled.ts` and `resolveOwnershipSplits.ts`
-3. Update `useAgreementCalculation.ts`
-4. Update `usePayouts.ts`
+### Required Fixes (usePayouts.ts only)
+
+**Fix A: Add reconciliation tracking to `calculatePayoutTotals`** (lines ~580-613)
+- Declare `excludedAllocations`, `unpayableAllocations`, `needsReviewAllocations` arrays and totals before the loop
+- Each stop condition pushes an entry with `allocation_id`, `reason`, `gross_amount`, `revenue_type`, `country` and adds to the appropriate total, then `continue`
+- Invalid splits push with reason `invalid_split_totals`
+
+**Fix B: Track all parties including uncontrolled** (lines ~608-612)
+- Compute `calculated_amount` for ALL parties, not just controlled
+- Track `uncontrolled_total` per allocation
+- Only add to `controlledTotal` for controlled parties (current behavior for the payable amount is correct, just needs the uncontrolled tracking added)
+
+**Fix C: Include reconciliation fields in return object** (lines ~617-629)
+- Add `excluded_total`, `unpayable_total`, `needs_review_total`
+- Add the three detail arrays
+- The return type from `calculatePayoutTotals` will need these fields added to its interface (or use a more permissive return)
+
+All three fixes are scoped to `src/hooks/usePayouts.ts`, lines ~580-629. No other files need changes.
 
