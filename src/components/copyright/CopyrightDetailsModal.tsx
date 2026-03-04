@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Edit2, Save, X } from "lucide-react";
-import { useCopyright, Copyright } from "@/hooks/useCopyright";
+import { Loader2, Edit2 } from "lucide-react";
+import { Copyright } from "@/hooks/useCopyright";
 import { EnhancedCopyrightForm } from "./EnhancedCopyrightForm";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CopyrightDetailsModalProps {
   isOpen: boolean;
@@ -16,29 +17,39 @@ export function CopyrightDetailsModal({ isOpen, onOpenChange, copyrightId }: Cop
   const [copyright, setCopyright] = useState<Copyright | null>(null);
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const { copyrights, refetch } = useCopyright();
   const { toast } = useToast();
 
-  // Fetch copyright details when modal opens
+  // Fetch copyright directly by ID, bypassing view-mode filtering
   useEffect(() => {
-    if (isOpen && copyrightId) {
+    if (!isOpen || !copyrightId) return;
+
+    const fetchCopyright = async () => {
       setLoading(true);
-      
-      // First try to find in existing copyrights list
-      const existingCopyright = copyrights.find(c => c.id === copyrightId);
-      if (existingCopyright) {
-        setCopyright(existingCopyright);
+      try {
+        const { data, error } = await supabase
+          .from('copyrights')
+          .select(`
+            *,
+            copyright_recordings!left(
+              id, isrc, recording_title, artist_name,
+              label_name, duration_seconds, release_date, recording_version
+            )
+          `)
+          .eq('id', copyrightId)
+          .single();
+
+        if (error) throw error;
+        setCopyright(data);
+      } catch (err) {
+        console.error('Error fetching copyright:', err);
+        setCopyright(null);
+      } finally {
         setLoading(false);
-      } else {
-        // If not in list, refetch all copyrights to get the latest data
-        refetch().then(() => {
-          const foundCopyright = copyrights.find(c => c.id === copyrightId);
-          setCopyright(foundCopyright || null);
-          setLoading(false);
-        });
       }
-    }
-  }, [isOpen, copyrightId, copyrights, refetch]);
+    };
+
+    fetchCopyright();
+  }, [isOpen, copyrightId]);
 
   const handleClose = () => {
     setIsEditing(false);
@@ -48,12 +59,16 @@ export function CopyrightDetailsModal({ isOpen, onOpenChange, copyrightId }: Cop
 
   const handleEditSuccess = () => {
     setIsEditing(false);
-    toast({
-      title: "Success",
-      description: "Copyright updated successfully",
-    });
-    // Refetch to get updated data
-    refetch();
+    toast({ title: "Success", description: "Copyright updated successfully" });
+    // Re-fetch updated data
+    if (copyrightId) {
+      supabase
+        .from('copyrights')
+        .select(`*, copyright_recordings!left(id, isrc, recording_title, artist_name, label_name, duration_seconds, release_date, recording_version)`)
+        .eq('id', copyrightId)
+        .single()
+        .then(({ data }) => { if (data) setCopyright(data); });
+    }
   };
 
   const handleEditCancel = () => {
@@ -95,7 +110,6 @@ export function CopyrightDetailsModal({ isOpen, onOpenChange, copyrightId }: Cop
               />
             ) : (
               <div className="space-y-6">
-                {/* Basic Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Work Title</label>
@@ -123,7 +137,6 @@ export function CopyrightDetailsModal({ isOpen, onOpenChange, copyrightId }: Cop
                   </div>
                 </div>
 
-                {/* Additional Info */}
                 {copyright.album_title && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Album</label>
@@ -145,7 +158,6 @@ export function CopyrightDetailsModal({ isOpen, onOpenChange, copyrightId }: Cop
                   </div>
                 )}
 
-                {/* PRO Registration Status */}
                 <div className="grid grid-cols-2 gap-4">
                   {copyright.ascap_work_id && (
                     <div>
@@ -173,7 +185,6 @@ export function CopyrightDetailsModal({ isOpen, onOpenChange, copyrightId }: Cop
                   )}
                 </div>
 
-                {/* Timestamps */}
                 <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                   <div>
                     <label className="font-medium">Created</label>
