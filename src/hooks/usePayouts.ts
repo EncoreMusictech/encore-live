@@ -578,6 +578,23 @@ export function usePayouts() {
 
             // Per-allocation split resolution with stop conditions
             let controlledTotal = 0;
+            let excludedTotal = 0;
+            let unpayableTotal = 0;
+            let needsReviewTotal = 0;
+            let uncontrolledTotal = 0;
+
+            interface ReconciliationEntry {
+              allocation_id: string;
+              reason: string;
+              gross_amount: number;
+              revenue_type: string | null;
+              country: string | null;
+            }
+
+            const excludedAllocations: ReconciliationEntry[] = [];
+            const unpayableAllocations: ReconciliationEntry[] = [];
+            const needsReviewAllocations: ReconciliationEntry[] = [];
+
             const SPLIT_FIELD_MAP: Record<string, string> = {
               performance: 'performance_percentage',
               mechanical: 'mechanical_percentage',
@@ -587,28 +604,62 @@ export function usePayouts() {
             for (const allocation of royalties || []) {
               const gross = allocation.gross_royalty_amount || 0;
               const revenueType = allocation.revenue_type;
+              const allocMeta = {
+                allocation_id: allocation.id,
+                gross_amount: gross,
+                revenue_type: revenueType ?? null,
+                country: (allocation as any).country ?? null,
+              };
 
-              // [FIX 4] Stop conditions — continue without allocating
-              if (!revenueType) continue;
-              if (revenueType === 'other') continue;
-              if (allocation.revenue_type_confidence === 'low') continue;
-              if (allocation.rights_basis === 'exclude_from_splits') continue;
-              if (allocation.line_type && allocation.line_type !== 'royalty') continue;
+              // Stop conditions — continue without allocating
+              if (!revenueType) {
+                unpayableAllocations.push({ ...allocMeta, reason: 'missing_revenue_type' });
+                unpayableTotal += gross;
+                continue;
+              }
+              if (revenueType === 'other') {
+                needsReviewAllocations.push({ ...allocMeta, reason: 'revenue_type_other' });
+                needsReviewTotal += gross;
+                continue;
+              }
+              if (allocation.revenue_type_confidence === 'low') {
+                needsReviewAllocations.push({ ...allocMeta, reason: 'low_confidence' });
+                needsReviewTotal += gross;
+                continue;
+              }
+              if (allocation.rights_basis === 'exclude_from_splits') {
+                excludedAllocations.push({ ...allocMeta, reason: 'exclude_from_splits' });
+                excludedTotal += gross;
+                continue;
+              }
+              if (allocation.line_type && allocation.line_type !== 'royalty') {
+                excludedAllocations.push({ ...allocMeta, reason: `non_royalty_line_type:${allocation.line_type}` });
+                excludedTotal += gross;
+                continue;
+              }
 
               const workId = allocation.copyright_id
                 ? copyrightToWorkMap.get(allocation.copyright_id) ?? null
                 : null;
 
               const splits = await getCachedSplits(agreementId, workId);
-              if (!splits.valid) continue;
+              if (!splits.valid) {
+                unpayableAllocations.push({ ...allocMeta, reason: 'invalid_split_totals' });
+                unpayableTotal += gross;
+                continue;
+              }
 
               const splitField = SPLIT_FIELD_MAP[revenueType] || 'performance_percentage';
 
-              // [FIX 7] Track uncontrolled_total per allocation
+              // Compute calculated_amount for ALL parties, track uncontrolled
               for (const party of splits.parties) {
-                if (!party.is_controlled) continue;
                 const splitPct = (party as any)[splitField] || 0;
-                controlledTotal += gross * (splitPct / 100);
+                const calculatedAmount = gross * (splitPct / 100);
+                if (party.is_controlled) {
+                  controlledTotal += calculatedAmount;
+                } else {
+                  uncontrolledTotal += calculatedAmount;
+                }
               }
             }
 
@@ -626,6 +677,13 @@ export function usePayouts() {
               calculation_method: 'agreement_based',
               agreement_id: agreementId,
               contract_deal_model: dealModel,
+              excluded_total: excludedTotal,
+              unpayable_total: unpayableTotal,
+              needs_review_total: needsReviewTotal,
+              uncontrolled_total: uncontrolledTotal,
+              excluded_allocations: excludedAllocations,
+              unpayable_allocations: unpayableAllocations,
+              needs_review_allocations: needsReviewAllocations,
             };
           } else {
             // Commission-only model – existing logic
