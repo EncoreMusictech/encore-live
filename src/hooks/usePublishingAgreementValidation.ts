@@ -123,7 +123,7 @@ export const usePublishingAgreementValidation = () => {
     const sequenceNumber = (existingContracts?.length || 0) + 1;
     const paddedSequence = String(sequenceNumber).padStart(3, '0');
     
-    return `AGR-${year}${month}${day}-${paddedSequence}`;
+    return `AGR-${paddedSequence}-${year}`;
   };
 
   return {

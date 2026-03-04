@@ -411,7 +411,7 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
             } else {
               // CREATE new contract — direct insert to avoid per-row fetchContracts/toast
               // Generate a unique agreement_id to avoid duplicate key collisions during rapid inserts
-              const uniqueAgreementId = `AGR-${new Date().getFullYear()}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+              const uniqueAgreementId = `AGR-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
               const { data: contract, error: insertError } = await supabase
                 .from('contracts')
                 .insert({
