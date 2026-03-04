@@ -210,12 +210,12 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
         errors.push('Post-term months must be a positive integer');
       }
 
-      // Validate splits warning
+      // Validate individual split values are within range (0-100)
       const perf = parseFloat(row.performance_pct) || 0;
       const mech = parseFloat(row.mechanical_pct) || 0;
       const sync = parseFloat(row.synch_pct) || 0;
-      if (row.party_name && (perf + mech + sync > 0) && (perf + mech + sync) !== 100 * 3) {
-        warnings.push(`Splits may not total 100% per right type (P:${perf}%, M:${mech}%, S:${sync}%)`);
+      if (row.party_name && [perf, mech, sync].some(v => v < 0 || v > 100)) {
+        warnings.push(`Split values must be between 0-100% (P:${perf}%, M:${mech}%, S:${sync}%)`);
       }
 
       // Publishing entity resolution
