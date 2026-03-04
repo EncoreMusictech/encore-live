@@ -557,7 +557,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
             performance_percentage: writer.share,
             mechanical_percentage: writer.share,
             synch_percentage: writer.share,
-            controlled_status: writer.controlled || 'no',
+            controlled_status: writer.controlled === 'C' ? 'C' : 'NC',
             ipi_number: writer.ipi || null,
             affiliation: writer.proAffiliation || null,
           });
@@ -574,7 +574,7 @@ export function EnhancedScheduleWorkForm({ contractId, onSuccess, onCancel, onSp
             performance_percentage: publisher.share,
             mechanical_percentage: publisher.share,
             synch_percentage: publisher.share,
-            controlled_status: 'yes',
+            controlled_status: 'C',
             ipi_number: publisher.ipi || null,
             affiliation: publisher.proAffiliation || null,
           });

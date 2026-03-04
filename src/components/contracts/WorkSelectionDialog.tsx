@@ -267,7 +267,7 @@ export function WorkSelectionDialog({
                 performance_percentage: writer.ownership_percentage || 0,
                 mechanical_percentage: writer.ownership_percentage || 0,
                 synch_percentage: writer.ownership_percentage || 0,
-                controlled_status: writer.controlled_status || 'no',
+                controlled_status: writer.controlled_status === 'C' ? 'C' : 'NC',
                 affiliation: writer.pro_affiliation || null,
               });
               existingNames.add(writer.writer_name.toLowerCase());
@@ -290,7 +290,7 @@ export function WorkSelectionDialog({
               performance_percentage: pub.ownership_percentage || 0,
               mechanical_percentage: pub.ownership_percentage || 0,
               synch_percentage: pub.ownership_percentage || 0,
-              controlled_status: 'yes',
+              controlled_status: 'C',
               affiliation: pub.pro_affiliation || null,
             });
             existingNames.add(pub.publisher_name.toLowerCase());
