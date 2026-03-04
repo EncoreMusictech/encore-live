@@ -29,13 +29,12 @@ export default function PayoutReconciliationSanityCheck() {
     setError(null);
 
     let fixtures: FixtureResult | null = null;
-    let currentRunId: string | null = null;
+    const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
+    setRunId(currentRunId);
 
     try {
       // 1. Create fixtures
-      fixtures = await createFixtures(user.id);
-      currentRunId = fixtures.runId;
-      setRunId(currentRunId);
+      fixtures = await createFixtures(currentRunId, user.id);
 
       const fixtureAllocationCount = fixtures.allocationIds.length;
 
@@ -216,12 +215,10 @@ export default function PayoutReconciliationSanityCheck() {
       });
     } catch (e: any) {
       setError(e.message || String(e));
-      if (currentRunId) setRunId(currentRunId);
     } finally {
-      // Cleanup
-      if (fixtures && !skipCleanup) {
+      if (!skipCleanup && currentRunId) {
         try {
-          const cleanupErrors = await cleanupFixtures(fixtures.runId, user.id);
+          const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
           if (cleanupErrors.length > 0) {
             console.warn('Cleanup errors:', cleanupErrors);
           }
