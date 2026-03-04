@@ -1,14 +1,16 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Plus, Trash2, ExternalLink, Search, X } from "lucide-react";
-import { useContracts } from "@/hooks/useContracts";
 import { WorkSelectionDialog } from "./WorkSelectionDialog";
 import { CopyrightDetailsModal } from "../copyright/CopyrightDetailsModal";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type ScheduleWork = Database['public']['Tables']['contract_schedule_works']['Row'];
 
 interface ScheduleWorksTableProps {
   contractId: string;
@@ -21,10 +23,35 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
   const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [writersMap, setWritersMap] = useState<Record<string, string[]>>({});
-  const { contracts, removeScheduleWork, refetch } = useContracts();
+  const [scheduleWorks, setScheduleWorks] = useState<ScheduleWork[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const contract = contracts.find(c => c.id === contractId);
-  const scheduleWorks = contract?.contract_schedule_works || [];
+  // Fetch schedule works directly by contractId instead of relying on useContracts
+  const fetchScheduleWorks = useCallback(async () => {
+    if (!contractId) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('contract_schedule_works')
+        .select('*')
+        .eq('contract_id', contractId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching schedule works:', error);
+        return;
+      }
+      setScheduleWorks(data || []);
+    } catch (err) {
+      console.error('Error in fetchScheduleWorks:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [contractId]);
+
+  useEffect(() => {
+    fetchScheduleWorks();
+  }, [fetchScheduleWorks]);
 
   // Fetch writers for works that have a copyright_id
   useEffect(() => {
@@ -48,7 +75,7 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
       }
     };
     fetchWriters();
-  }, [scheduleWorks.length]);
+  }, [scheduleWorks]);
 
   const filteredWorks = useMemo(() => {
     if (!searchTerm) return scheduleWorks;
@@ -66,7 +93,17 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
 
   const handleRemoveWork = async (workId: string) => {
     try {
-      await removeScheduleWork(workId);
+      const { error } = await supabase
+        .from('contract_schedule_works')
+        .delete()
+        .eq('id', workId);
+
+      if (error) {
+        console.error('Error removing work:', error);
+        return;
+      }
+      // Refresh the list
+      fetchScheduleWorks();
     } catch (error) {
       console.error('Error removing work:', error);
     }
@@ -74,7 +111,7 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
 
   const handleWorkAdded = () => {
     setIsAddDialogOpen(false);
-    refetch();
+    fetchScheduleWorks();
   };
 
   const handleViewCopyright = (copyrightId: string) => {
@@ -98,8 +135,6 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
           if (open) {
             setIsAddDialogOpen(true);
           }
-          // Only allow closing via explicit actions (close button, cancel button)
-          // Don't auto-close from onOpenChange to prevent Select/Popover portal interactions from closing the dialog
         }}>
           <DialogTrigger asChild>
             <Button className="gap-2">
@@ -148,7 +183,7 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
 
       {scheduleWorks.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
-          No works in schedule yet. Click "Add Work" to link works to this contract.
+          {loading ? "Loading works..." : "No works in schedule yet. Click \"Add Work\" to link works to this contract."}
         </div>
       ) : (
         <div className="space-y-4">
@@ -211,7 +246,7 @@ export function ScheduleWorksTable({ contractId }: ScheduleWorksTableProps) {
                             variant="ghost" 
                             size="sm" 
                             title="View in Copyright Module"
-                            onClick={() => handleViewCopyright(work.copyright_id)}
+                            onClick={() => handleViewCopyright(work.copyright_id!)}
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
