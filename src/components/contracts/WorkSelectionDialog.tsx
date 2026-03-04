@@ -243,6 +243,68 @@ export function WorkSelectionDialog({
 
       const results = await addScheduleWorksBatch(contractId, worksToAdd);
 
+      // Auto-create interested parties from the selected works' writers/publishers
+      try {
+        const selectedIds = Array.from(selectedWorks);
+        
+        // Get existing parties to avoid duplicates
+        const { data: existingParties } = await supabase
+          .from('contract_interested_parties')
+          .select('name')
+          .eq('contract_id', contractId);
+        const existingNames = new Set((existingParties || []).map(p => p.name.toLowerCase()));
+        
+        const newParties: any[] = [];
+        
+        for (const copyrightId of selectedIds) {
+          const writers = writersMap[copyrightId] || [];
+          for (const writer of writers) {
+            if (!existingNames.has(writer.writer_name.toLowerCase())) {
+              newParties.push({
+                contract_id: contractId,
+                name: writer.writer_name,
+                party_type: 'writer',
+                performance_percentage: writer.ownership_percentage || 0,
+                mechanical_percentage: writer.ownership_percentage || 0,
+                synch_percentage: writer.ownership_percentage || 0,
+                controlled_status: writer.controlled_status || 'no',
+                affiliation: writer.pro_affiliation || null,
+              });
+              existingNames.add(writer.writer_name.toLowerCase());
+            }
+          }
+        }
+        
+        // Fetch publishers for selected works
+        const { data: pubData } = await supabase
+          .from('copyright_publishers')
+          .select('copyright_id, publisher_name, ownership_percentage, pro_affiliation')
+          .in('copyright_id', selectedIds);
+        
+        for (const pub of (pubData || [])) {
+          if (!existingNames.has(pub.publisher_name.toLowerCase())) {
+            newParties.push({
+              contract_id: contractId,
+              name: pub.publisher_name,
+              party_type: 'publisher',
+              performance_percentage: pub.ownership_percentage || 0,
+              mechanical_percentage: pub.ownership_percentage || 0,
+              synch_percentage: pub.ownership_percentage || 0,
+              controlled_status: 'yes',
+              affiliation: pub.pro_affiliation || null,
+            });
+            existingNames.add(pub.publisher_name.toLowerCase());
+          }
+        }
+        
+        if (newParties.length > 0) {
+          await supabase.from('contract_interested_parties').insert(newParties);
+        }
+      } catch (partyError) {
+        console.error('Error auto-creating interested parties:', partyError);
+        // Non-fatal
+      }
+
       if (results.failed > 0) {
         toast({
           title: `Added ${results.success} work(s), ${results.failed} failed`,
@@ -428,15 +490,8 @@ export function WorkSelectionDialog({
                   <div>
                     <p>No copyright works found in your catalog.</p>
                     <p className="text-xs mt-2">
-                      Create your first work using the "Create New Work" tab above, or visit the Copyright Management module to register new works.
+                      Create your first work using the "Create New Work" tab above to register new works.
                     </p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      onClick={() => window.open('/copyright-management', '_blank')}
-                    >
-                      Open Copyright Management
-                    </Button>
                   </div>
                 )}
               </div>
