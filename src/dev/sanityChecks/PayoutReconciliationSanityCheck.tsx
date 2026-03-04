@@ -236,6 +236,17 @@ export default function PayoutReconciliationSanityCheck() {
     }
   };
 
+  const downloadJson = () => {
+    if (!output) return;
+    const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sanity-check-${runId ?? 'result'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const allPassed = assertions.length > 0 && assertions.every((a) => a.pass);
 
   return (
@@ -329,9 +340,14 @@ export default function PayoutReconciliationSanityCheck() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Output JSON</h2>
-            <button onClick={copyJson} className="text-xs px-3 py-1 rounded border border-border hover:bg-muted">
-              Copy JSON
-            </button>
+            <div className="flex gap-2">
+              <button onClick={downloadJson} className="text-xs px-3 py-1 rounded border border-border hover:bg-muted">
+                Download Results
+              </button>
+              <button onClick={copyJson} className="text-xs px-3 py-1 rounded border border-border hover:bg-muted">
+                Copy JSON
+              </button>
+            </div>
           </div>
           <pre className="rounded-lg border border-border bg-muted p-4 text-xs font-mono overflow-auto max-h-[600px] text-foreground">
             {JSON.stringify(output, null, 2)}
