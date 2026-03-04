@@ -85,7 +85,8 @@ export function ContractViewDialog({ contract, open, onOpenChange, onEdit }: Con
         .select('*')
         .eq('contract_id', contract.id);
 
-      setInterestedParties(parties || []);
+      const allParties = parties || [];
+      setInterestedParties(allParties);
       setScheduleWorks(works || []);
     } catch (error) {
       console.error('Error fetching contract details:', error);
@@ -196,55 +197,68 @@ export function ContractViewDialog({ contract, open, onOpenChange, onEdit }: Con
               </Card>
 
               {/* Key Metrics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-2xl font-bold">{interestedParties.length}</p>
-                        <p className="text-xs text-muted-foreground">Interested Parties</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <Music className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-2xl font-bold">{scheduleWorks.length}</p>
-                        <p className="text-xs text-muted-foreground">Works in Schedule</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              {(() => {
+                // Filter: controlled only, exclude merged (secondary) parties
+                const controlledParties = interestedParties.filter(
+                  p => ['C', 'Controlled', 'Y'].includes(p.controlled_status) && !(p as any).merged_into_id
+                );
+                // Dynamically calculate controlled share from performance splits of controlled, non-merged parties
+                const controlledSharePct = controlledParties.reduce(
+                  (sum, p) => sum + (p.performance_percentage || 0), 0
+                );
 
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-2xl font-bold">{contract.controlled_percentage || 0}%</p>
-                        <p className="text-xs text-muted-foreground">Controlled Share</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-2xl font-bold">{controlledParties.length}</p>
+                            <p className="text-xs text-muted-foreground">Controlled Parties</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-2">
+                          <Music className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-2xl font-bold">{scheduleWorks.length}</p>
+                            <p className="text-xs text-muted-foreground">Works in Schedule</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-2xl font-bold">{contract.territories?.length || 0}</p>
-                        <p className="text-xs text-muted-foreground">Territories</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-2">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-2xl font-bold">{controlledSharePct}%</p>
+                            <p className="text-xs text-muted-foreground">Controlled Share</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-2xl font-bold">{contract.territories?.length || 0}</p>
+                            <p className="text-xs text-muted-foreground">Territories</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })()}
 
               {/* Financial Overview */}
               <Card>
@@ -284,13 +298,21 @@ export function ContractViewDialog({ contract, open, onOpenChange, onEdit }: Con
                         <p className="text-xs text-red-600 mt-1">Fixed Amount</p>
                       </div>
                     )}
-                    {contract.controlled_percentage !== undefined && contract.controlled_percentage > 0 && (
-                      <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-purple-50 to-purple-100">
-                        <p className="text-2xl font-bold text-purple-600">{contract.controlled_percentage}%</p>
-                        <p className="text-sm text-muted-foreground">Controlled Share</p>
-                        <p className="text-xs text-purple-600 mt-1">Publishing Rights</p>
-                      </div>
-                    )}
+                    {(() => {
+                      const controlledParties = interestedParties.filter(
+                        p => ['C', 'Controlled', 'Y'].includes(p.controlled_status) && !(p as any).merged_into_id
+                      );
+                      const dynamicControlledPct = controlledParties.reduce(
+                        (sum, p) => sum + (p.performance_percentage || 0), 0
+                      );
+                      return dynamicControlledPct > 0 ? (
+                        <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-purple-50 to-purple-100">
+                          <p className="text-2xl font-bold text-purple-600">{dynamicControlledPct}%</p>
+                          <p className="text-sm text-muted-foreground">Controlled Share</p>
+                          <p className="text-xs text-purple-600 mt-1">Publishing Rights</p>
+                        </div>
+                      ) : null;
+                    })()}
                     
                     {/* Additional Financial Terms */}
                     {contract.financial_terms?.minimum_guarantee && (
