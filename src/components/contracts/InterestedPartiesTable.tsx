@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,10 +9,35 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, AlertCircle, Merge, Unlink, Eye, EyeOff } from "lucide-react";
-import { useContracts } from "@/hooks/useContracts";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MergePartiesDialog } from "./MergePartiesDialog";
+
+interface InterestedParty {
+  id: string;
+  name: string;
+  dba_alias?: string | null;
+  party_type: string;
+  controlled_status: string;
+  performance_percentage: number | null;
+  mechanical_percentage: number | null;
+  synch_percentage: number | null;
+  print_percentage?: number | null;
+  grand_rights_percentage?: number | null;
+  karaoke_percentage?: number | null;
+  ipi_number?: string | null;
+  cae_number?: string | null;
+  affiliation?: string | null;
+  original_publisher?: string | null;
+  administrator_role?: string | null;
+  co_publisher?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  tax_id?: string | null;
+  merged_into_id?: string | null;
+}
 
 interface InterestedPartiesTableProps {
   contractId: string;
@@ -24,15 +49,33 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [showMerged, setShowMerged] = useState(false);
-  const { contracts, addInterestedParty, removeInterestedParty, validateRoyaltySplits, mergeInterestedParties, unmergeInterestedParty } = useContracts();
+  const [allParties, setAllParties] = useState<InterestedParty[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const contract = contracts.find(c => c.id === contractId);
-  const allParties = contract?.contract_interested_parties || [];
-  
-  // Separate primary/independent parties from merged ones
-  const primaryParties = allParties.filter(p => !(p as any).merged_into_id);
-  const mergedParties = allParties.filter(p => (p as any).merged_into_id);
+  const fetchParties = useCallback(async () => {
+    if (!contractId) return;
+    try {
+      const { data, error } = await supabase
+        .from('contract_interested_parties')
+        .select('*')
+        .eq('contract_id', contractId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      setAllParties(data || []);
+    } catch (err) {
+      console.error('Error fetching interested parties:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [contractId]);
+
+  useEffect(() => {
+    fetchParties();
+  }, [fetchParties]);
+
+  const primaryParties = allParties.filter(p => !p.merged_into_id);
+  const mergedParties = allParties.filter(p => !!p.merged_into_id);
   const visibleParties = showMerged ? allParties : primaryParties;
 
   const [formData, setFormData] = useState({
@@ -60,7 +103,15 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
 
   const handleAddParty = async () => {
     try {
-      await addInterestedParty(contractId, formData);
+      const { error } = await supabase
+        .from('contract_interested_parties')
+        .insert({
+          contract_id: contractId,
+          ...formData,
+        });
+      if (error) throw error;
+      
+      toast({ title: "Success", description: "Interested party added." });
       setIsAddDialogOpen(false);
       setFormData({
         name: "", dba_alias: "", party_type: "writer", controlled_status: "NC",
@@ -70,18 +121,22 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
         original_publisher: "", administrator_role: "", co_publisher: "",
         email: "", phone: "", address: "", tax_id: "",
       });
-      const results = await validateRoyaltySplits(contractId);
-      setValidationResults(results || []);
+      await fetchParties();
     } catch (error) {
       console.error('Error adding party:', error);
+      toast({ title: "Error", description: "Failed to add party.", variant: "destructive" });
     }
   };
 
   const handleRemoveParty = async (partyId: string) => {
     try {
-      await removeInterestedParty(partyId);
-      const results = await validateRoyaltySplits(contractId);
-      setValidationResults(results || []);
+      const { error } = await supabase
+        .from('contract_interested_parties')
+        .delete()
+        .eq('id', partyId);
+      if (error) throw error;
+      toast({ title: "Removed", description: "Party removed." });
+      await fetchParties();
     } catch (error) {
       console.error('Error removing party:', error);
     }
@@ -97,16 +152,32 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
   };
 
   const handleMergeConfirm = async (primaryId: string, secondaryIds: string[]) => {
-    await mergeInterestedParties(primaryId, secondaryIds);
-    setSelectedIds(new Set());
-    const results = await validateRoyaltySplits(contractId);
-    setValidationResults(results || []);
+    try {
+      for (const secId of secondaryIds) {
+        await supabase
+          .from('contract_interested_parties')
+          .update({ merged_into_id: primaryId, merged_at: new Date().toISOString() })
+          .eq('id', secId);
+      }
+      toast({ title: "Merged", description: `Merged ${secondaryIds.length} parties.` });
+      setSelectedIds(new Set());
+      await fetchParties();
+    } catch (error) {
+      console.error('Error merging parties:', error);
+    }
   };
 
   const handleUnmerge = async (partyId: string) => {
-    await unmergeInterestedParty(partyId);
-    const results = await validateRoyaltySplits(contractId);
-    setValidationResults(results || []);
+    try {
+      await supabase
+        .from('contract_interested_parties')
+        .update({ merged_into_id: null, merged_at: null })
+        .eq('id', partyId);
+      toast({ title: "Unmerged", description: "Party restored." });
+      await fetchParties();
+    } catch (error) {
+      console.error('Error unmerging party:', error);
+    }
   };
 
   const getControlledTotal = () => {
@@ -143,6 +214,10 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
   const affiliations = [
     "ASCAP", "BMI", "SESAC", "SOCAN", "PRS", "GEMA", "SACEM", "Other"
   ];
+
+  if (loading) {
+    return <div className="text-center py-8 text-muted-foreground">Loading interested parties...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -312,7 +387,7 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
               </TableHeader>
               <TableBody>
                 {visibleParties.map((party) => {
-                  const isMerged = !!(party as any).merged_into_id;
+                  const isMerged = !!party.merged_into_id;
                   return (
                     <TableRow key={party.id} className={isMerged ? 'opacity-50 bg-muted/30' : ''}>
                       <TableCell>
@@ -331,7 +406,7 @@ export function InterestedPartiesTable({ contractId }: InterestedPartiesTablePro
                           )}
                           {isMerged && (
                             <Badge variant="outline" className="mt-1 text-xs">
-                              Linked to: {getPrimaryName((party as any).merged_into_id)}
+                              Linked to: {getPrimaryName(party.merged_into_id!)}
                             </Badge>
                           )}
                         </div>
