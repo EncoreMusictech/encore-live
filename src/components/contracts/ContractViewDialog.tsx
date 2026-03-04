@@ -371,26 +371,28 @@ export function ContractViewDialog({ contract, open, onOpenChange, onEdit }: Con
             </TabsContent>
 
             <TabsContent value="parties" className="space-y-6 mt-0">
-              {/* Interested Parties Tab */}
-              {interestedParties.length > 0 ? (
+              {/* Interested Parties Tab - Only controlled, non-merged parties */}
+              {(() => {
+                const controlledNonMerged = interestedParties.filter(
+                  p => ['C', 'Controlled', 'Y'].includes(p.controlled_status) && !(p as any).merged_into_id
+                );
+                return controlledNonMerged.length > 0 ? (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Users className="h-5 w-5" />
-                      Interested Parties ({interestedParties.length})
+                      Controlled Parties ({controlledNonMerged.length})
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {interestedParties.map((party) => (
-                        <div key={party.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                      {controlledNonMerged.map((party) => (
+                        <div key={party.id} className="border rounded-lg p-4 hover:bg-muted/50">
                           <div className="flex items-center justify-between mb-3">
                             <h4 className="font-semibold text-lg">{party.name}</h4>
                             <div className="flex gap-2">
                               <Badge variant="outline" className="capitalize">{party.party_type.replace('_', ' ')}</Badge>
-                              <Badge variant={party.controlled_status === 'C' ? 'default' : 'secondary'}>
-                                {party.controlled_status === 'C' ? 'Controlled' : 'Non-Controlled'}
-                              </Badge>
+                              <Badge variant="default">Controlled</Badge>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -428,11 +430,12 @@ export function ContractViewDialog({ contract, open, onOpenChange, onEdit }: Con
                 <Card>
                   <CardContent className="p-8 text-center">
                     <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Interested Parties</h3>
-                    <p className="text-muted-foreground">No parties have been added to this contract yet.</p>
+                    <h3 className="text-lg font-semibold mb-2">No Controlled Parties</h3>
+                    <p className="text-muted-foreground">No controlled parties have been added to this contract yet.</p>
                   </CardContent>
                 </Card>
-              )}
+              );
+              })()}
             </TabsContent>
 
             <TabsContent value="works" className="space-y-6 mt-0">
