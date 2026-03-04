@@ -38,6 +38,7 @@ export interface RoyaltyAllocation {
   iswc?: string;
   statement_id?: string;
   staging_record_id?: string;
+  revenue_type?: string | null;
   mapped_data?: any; // Store all original mapped data fields
   created_at: string;
   updated_at: string;

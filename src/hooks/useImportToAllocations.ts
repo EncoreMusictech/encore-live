@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { RoyaltiesImportStaging } from './useRoyaltiesImport';
 import { RoyaltyAllocationInsert } from './useRoyaltyAllocations';
+import { classifyRevenueType } from '@/utils/revenueTypeClassifier';
 
 export interface ImportToAllocationParams {
   stagingRecordId: string;
@@ -68,42 +69,53 @@ export function useImportToAllocations() {
       })));
 
       // Transform mapped data to royalty allocations
-      const allocations: RoyaltyAllocationInsert[] = rowsToImport.map((row: any) => ({
-        user_id: user.id,
-        batch_id: stagingRecord.batch_id,
-        song_title: row['WORK TITLE'] || row['Song Title'] || 'Unknown Title',
-        artist: row['WORK WRITERS'] || row.artist || row.performer || null,
-        isrc: row.ISRC || row.isrc || null,
-        gross_royalty_amount: parseFloat(row.GROSS || row['Gross Amount'] || '0'),
-        controlled_status: row.controlled_status || 'Controlled',
-        recoupable_expenses: Boolean(row.recoupable || false),
-        // ENCORE Standard Fields from mapped data
-        quarter: row.QUARTER || null,
-        source: row.SOURCE || stagingRecord.detected_source,
-        revenue_source: row['REVENUE SOURCE'] || null,
-        work_identifier: row['WORK IDENTIFIER'] || null,
-        work_writers: row['WORK WRITERS'] || null,
-        share: row.SHARE || null,
-        media_type: row['MEDIA TYPE'] || null,
-        media_sub_type: row['MEDIA SUB-TYPE'] || null,
-        country: row.COUNTRY || null,
-        quantity: row.QUANTITY || null,
-        gross_amount: parseFloat(row.GROSS || '0'),
-        net_amount: parseFloat(row.NET || '0'),
-        iswc: row.ISWC || null,
-        statement_id: stagingRecord.statement_id,
-        staging_record_id: stagingRecordId,
-        ownership_splits: row.ownership_splits || {},
-        comments: `Imported from ${stagingRecord.detected_source} statement: ${stagingRecord.original_filename}`,
-        // Store ALL mapped data fields for complete replication
-        mapped_data: {
-          ...row,
-          // Add Statement ID to the mapped data so it appears in the table
-          'Statement ID': stagingRecord.statement_id,
-          // Ensure we preserve the original source
-          'Statement Source': row['Statement Source'] || stagingRecord.detected_source
-        }
-      } as RoyaltyAllocationInsert));
+      const allocations: RoyaltyAllocationInsert[] = rowsToImport.map((row: any) => {
+        // Classify revenue type from statement fields
+        const revenueType = classifyRevenueType(
+          row['REVENUE SOURCE'] || row['revenue_source'],
+          row['MEDIA TYPE'] || row['media_type'],
+          row['MEDIA SUB-TYPE'] || row['media_sub_type'],
+        );
+
+        return {
+          user_id: user.id,
+          batch_id: stagingRecord.batch_id,
+          song_title: row['WORK TITLE'] || row['Song Title'] || 'Unknown Title',
+          artist: row['WORK WRITERS'] || row.artist || row.performer || null,
+          isrc: row.ISRC || row.isrc || null,
+          gross_royalty_amount: parseFloat(row.GROSS || row['Gross Amount'] || '0'),
+          controlled_status: row.controlled_status || 'Controlled',
+          recoupable_expenses: Boolean(row.recoupable || false),
+          // Revenue type classification
+          revenue_type: revenueType,
+          // ENCORE Standard Fields from mapped data
+          quarter: row.QUARTER || null,
+          source: row.SOURCE || stagingRecord.detected_source,
+          revenue_source: row['REVENUE SOURCE'] || null,
+          work_identifier: row['WORK IDENTIFIER'] || null,
+          work_writers: row['WORK WRITERS'] || null,
+          share: row.SHARE || null,
+          media_type: row['MEDIA TYPE'] || null,
+          media_sub_type: row['MEDIA SUB-TYPE'] || null,
+          country: row.COUNTRY || null,
+          quantity: row.QUANTITY || null,
+          gross_amount: parseFloat(row.GROSS || '0'),
+          net_amount: parseFloat(row.NET || '0'),
+          iswc: row.ISWC || null,
+          statement_id: stagingRecord.statement_id,
+          staging_record_id: stagingRecordId,
+          ownership_splits: row.ownership_splits || {},
+          comments: revenueType === null
+            ? `Imported from ${stagingRecord.detected_source} statement: ${stagingRecord.original_filename} [UNCLASSIFIED REVENUE TYPE]`
+            : `Imported from ${stagingRecord.detected_source} statement: ${stagingRecord.original_filename}`,
+          // Store ALL mapped data fields for complete replication
+          mapped_data: {
+            ...row,
+            'Statement ID': stagingRecord.statement_id,
+            'Statement Source': row['Statement Source'] || stagingRecord.detected_source
+          }
+        } as RoyaltyAllocationInsert;
+      });
 
       // Insert allocations (cast to any to bypass TypeScript issue with auto-generated fields)
       const { data: insertedAllocations, error: insertError } = await supabase

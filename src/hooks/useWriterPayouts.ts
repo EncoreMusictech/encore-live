@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
+import type { RevenueType } from '@/utils/revenueTypeClassifier';
 
 export interface WriterMatchResult {
   writer_id: string;
@@ -155,12 +156,58 @@ export const useWriterPayouts = () => {
 
         if (payoutError) throw payoutError;
 
-        // Link royalties to the payout
-        const payoutRoyalties = writerMatch.royalty_allocations.map(allocation => ({
-          payout_id: payout.id,
-          royalty_id: allocation.id,
-          allocated_amount: allocation.gross_royalty_amount || 0,
-        }));
+        // Phase 6: Create payout_royalties with ownership audit snapshots
+        // Look up contract interested parties for this writer to record splits
+        let writerParty: any = null;
+        const { data: payeeWriter } = await supabase
+          .from('writers')
+          .select('original_publisher_id, original_publishers!inner(agreement_id)')
+          .eq('id', writerMatch.writer_uuid)
+          .maybeSingle();
+
+        const agreementId = payeeWriter?.original_publishers?.agreement_id;
+        if (agreementId) {
+          const { data: parties } = await supabase
+            .from('contract_interested_parties')
+            .select('id, name, performance_percentage, mechanical_percentage, synch_percentage, controlled_status, party_type')
+            .eq('contract_id', agreementId)
+            .ilike('name', `%${writerMatch.writer_name}%`)
+            .maybeSingle();
+          writerParty = parties;
+        }
+
+        const payoutRoyalties = writerMatch.royalty_allocations.map((allocation: any) => {
+          const revenueType = allocation.revenue_type as RevenueType | null;
+          let splitPct = 100; // default if no party found
+          if (writerParty && revenueType) {
+            splitPct = revenueType === 'performance' ? writerParty.performance_percentage
+              : revenueType === 'mechanical' ? writerParty.mechanical_percentage
+              : revenueType === 'synch' ? writerParty.synch_percentage
+              : writerParty.performance_percentage; // fallback for 'other'
+          }
+          const allocatedAmount = (allocation.gross_royalty_amount || 0) * (splitPct / 100);
+
+          return {
+            payout_id: payout.id,
+            royalty_id: allocation.id,
+            allocated_amount: allocatedAmount,
+            revenue_type: revenueType || null,
+            party_id: writerParty?.id || null,
+            party_role: writerParty?.party_type || 'writer',
+            split_percentage: splitPct,
+            controlled_status: writerParty?.controlled_status || 'C',
+            contract_id: agreementId || null,
+            ownership_snapshot: writerParty ? {
+              party_name: writerParty.name,
+              performance_percentage: writerParty.performance_percentage,
+              mechanical_percentage: writerParty.mechanical_percentage,
+              synch_percentage: writerParty.synch_percentage,
+              controlled_status: writerParty.controlled_status,
+              applied_split: splitPct,
+              revenue_type: revenueType,
+            } : null,
+          };
+        });
 
         const { error: linkError } = await supabase
           .from('payout_royalties')

@@ -2120,6 +2120,7 @@ export type Database = {
           contact_name: string | null
           contact_phone: string | null
           contract_data: Json | null
+          contract_deal_model: string | null
           contract_status: Database["public"]["Enums"]["contract_status"]
           contract_type: Database["public"]["Enums"]["contract_type"]
           controlled_percentage: number | null
@@ -2166,6 +2167,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           contract_data?: Json | null
+          contract_deal_model?: string | null
           contract_status?: Database["public"]["Enums"]["contract_status"]
           contract_type: Database["public"]["Enums"]["contract_type"]
           controlled_percentage?: number | null
@@ -2212,6 +2214,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           contract_data?: Json | null
+          contract_deal_model?: string | null
           contract_status?: Database["public"]["Enums"]["contract_status"]
           contract_type?: Database["public"]["Enums"]["contract_type"]
           controlled_percentage?: number | null
@@ -4352,26 +4355,61 @@ export type Database = {
       payout_royalties: {
         Row: {
           allocated_amount: number
+          contract_id: string | null
+          controlled_status: string | null
           created_at: string
           id: string
+          ownership_snapshot: Json | null
+          party_id: string | null
+          party_role: string | null
           payout_id: string
+          revenue_type: string | null
           royalty_id: string
+          split_percentage: number | null
         }
         Insert: {
           allocated_amount?: number
+          contract_id?: string | null
+          controlled_status?: string | null
           created_at?: string
           id?: string
+          ownership_snapshot?: Json | null
+          party_id?: string | null
+          party_role?: string | null
           payout_id: string
+          revenue_type?: string | null
           royalty_id: string
+          split_percentage?: number | null
         }
         Update: {
           allocated_amount?: number
+          contract_id?: string | null
+          controlled_status?: string | null
           created_at?: string
           id?: string
+          ownership_snapshot?: Json | null
+          party_id?: string | null
+          party_role?: string | null
           payout_id?: string
+          revenue_type?: string | null
           royalty_id?: string
+          split_percentage?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payout_royalties_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_royalties_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "contract_interested_parties"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payout_royalties_payout_id_fkey"
             columns: ["payout_id"]
@@ -5476,6 +5514,7 @@ export type Database = {
           quarter: string | null
           recoupable_expenses: boolean | null
           revenue_source: string | null
+          revenue_type: string | null
           royalty_id: string
           share: string | null
           song_title: string
@@ -5514,6 +5553,7 @@ export type Database = {
           quarter?: string | null
           recoupable_expenses?: boolean | null
           revenue_source?: string | null
+          revenue_type?: string | null
           royalty_id: string
           share?: string | null
           song_title: string
@@ -5552,6 +5592,7 @@ export type Database = {
           quarter?: string | null
           recoupable_expenses?: boolean | null
           revenue_source?: string | null
+          revenue_type?: string | null
           royalty_id?: string
           share?: string | null
           song_title?: string

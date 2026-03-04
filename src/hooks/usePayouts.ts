@@ -87,6 +87,13 @@ export interface PayoutRoyalty {
   payout_id: string;
   royalty_id: string;
   allocated_amount: number;
+  revenue_type?: string;
+  party_id?: string;
+  party_role?: string;
+  split_percentage?: number;
+  controlled_status?: string;
+  contract_id?: string;
+  ownership_snapshot?: any;
   created_at: string;
 }
 
@@ -456,18 +463,6 @@ export function usePayouts() {
 
   const calculatePayoutTotals = async (clientId: string, periodStart: string, periodEnd: string, agreementId?: string) => {
     try {
-      // Calculate gross royalties from royalty allocations for the client and period
-      const { data: royalties, error: royaltyError } = await supabase
-        .from('royalty_allocations')
-        .select('gross_royalty_amount, net_amount')
-        .eq('user_id', user?.id)
-        .gte('created_at', periodStart)
-        .lte('created_at', periodEnd + 'T23:59:59');
-
-      if (royaltyError) throw royaltyError;
-
-      const grossRoyalties = royalties?.reduce((sum, r) => sum + (r.gross_royalty_amount || 0), 0) || 0;
-      
       // Get the contact name for this client to find associated payee
       const { data: contact, error: contactError } = await supabase
         .from('contacts')
@@ -477,176 +472,176 @@ export function usePayouts() {
 
       if (contactError && contactError.code !== 'PGRST116') throw contactError;
 
+      // Calculate recoupable expenses for this payee
       let totalRecoupableExpenses = 0;
-      
       if (contact?.name) {
-        // Find payees matching this contact name
         const { data: payees, error: payeeError } = await supabase
           .from('payees')
           .select('id')
           .eq('payee_name', contact.name)
           .eq('user_id', user?.id);
 
-        if (payeeError) throw payeeError;
-
-        if (payees && payees.length > 0) {
+        if (!payeeError && payees && payees.length > 0) {
           const payeeIds = payees.map(p => p.id);
-          
-          // Calculate total recoupable expenses for this payee from payout_expenses table
-          const { data: expenses, error: expenseError } = await supabase
+          const { data: expenses } = await supabase
             .from('payout_expenses')
             .select('amount, is_recoupable, expense_flags, expense_status')
             .in('payee_id', payeeIds)
             .eq('user_id', user?.id)
             .in('expense_status', ['pending', 'approved']);
 
-          if (expenseError) throw expenseError;
-
-          // Sum up recoupable expenses
           totalRecoupableExpenses = expenses?.reduce((sum, expense) => {
-            // Check for recoupable status from both legacy boolean field and new JSON field
             let isRecoupable = expense.is_recoupable;
-            
-            // Check the new JSON field if it exists
             if (expense.expense_flags && typeof expense.expense_flags === 'object') {
               try {
                 const flags = expense.expense_flags as Record<string, any>;
-                if (flags.recoupable === true) {
-                  isRecoupable = true;
-                }
-              } catch (e) {
-                // If JSON parsing fails, rely on legacy field
-              }
+                if (flags.recoupable === true) isRecoupable = true;
+              } catch (e) { /* ignore */ }
             }
-            
             return sum + (isRecoupable ? expense.amount : 0);
           }, 0) || 0;
-          
-          console.log(`Found ${expenses?.length || 0} expenses for payee(s), total recoupable: $${totalRecoupableExpenses}`);
-        } else {
-          console.log(`No payees found for contact: ${contact.name}`);
         }
       }
-      
-      // If agreement-based calculation is requested and agreementId is provided
+
+      // ── Agreement-based calculation (ownership-split or commission-only) ──
       if (agreementId) {
         try {
-          console.log('Using agreement-based calculation with agreementId:', agreementId);
           const { data: agreement, error: agreementError } = await supabase
             .from('contracts')
-            .select('commission_percentage, advance_amount')
+            .select('commission_percentage, advance_amount, contract_deal_model, territories, contract_data')
             .eq('id', agreementId)
             .single();
-            
-          if (agreementError) {
-            console.error('Agreement error:', agreementError);
-            throw agreementError;
-          }
-          
-          console.log('Agreement data:', agreement);
-          
-          // Get commission expenses for this period and client
-          const { data: commissionExpenses, error: expensesError } = await supabase
-            .from('payout_expenses')
-            .select('amount, is_percentage, percentage_rate')
-            .eq('user_id', user.id)
-            .eq('expense_status', 'approved')
-            .or('is_commission_fee.eq.true,expense_flags->>commission_fee.eq.true')
-            .gte('created_at', periodStart)
-            .lte('created_at', periodEnd + 'T23:59:59');
 
-          if (expensesError) {
-            console.error('Commission expenses error:', expensesError);
-            throw expensesError;
-          }
-          
-          console.log('Commission expenses found:', commissionExpenses);
-          
-          // Calculate commission from agreement percentage
-          const commissionRate = agreement?.commission_percentage || 0;
-          let commissionDeduction = grossRoyalties * (commissionRate / 100);
-          
-          console.log('Agreement commission rate:', commissionRate, 'Amount:', commissionDeduction);
-          
-          // Add commission expenses
-          if (commissionExpenses && commissionExpenses.length > 0) {
-            const additionalCommissions = commissionExpenses.reduce((sum, expense) => {
-              if (expense.is_percentage && expense.percentage_rate) {
-                return sum + (grossRoyalties * (expense.percentage_rate / 100));
-              } else {
-                return sum + (expense.amount || 0);
+          if (agreementError) throw agreementError;
+
+          const dealModel = agreement?.contract_deal_model || 'ownership_split';
+
+          if (dealModel === 'ownership_split') {
+            // Fetch interested parties
+            const { data: parties } = await supabase
+              .from('contract_interested_parties')
+              .select('id, name, performance_percentage, mechanical_percentage, synch_percentage, party_type, controlled_status')
+              .eq('contract_id', agreementId);
+
+            // Scope allocations to contract works
+            const { data: scheduleWorks } = await supabase
+              .from('contract_schedule_works')
+              .select('copyright_id')
+              .eq('contract_id', agreementId)
+              .not('copyright_id', 'is', null);
+
+            const copyrightIds = scheduleWorks?.map(sw => sw.copyright_id).filter(Boolean) || [];
+
+            let royaltiesQuery = supabase
+              .from('royalty_allocations')
+              .select('id, gross_royalty_amount, net_amount, revenue_type, country')
+              .eq('user_id', user?.id)
+              .gte('created_at', periodStart)
+              .lte('created_at', periodEnd + 'T23:59:59');
+
+            if (copyrightIds.length > 0) {
+              royaltiesQuery = royaltiesQuery.in('copyright_id', copyrightIds);
+            }
+
+            const { data: royalties, error: royaltyError } = await royaltiesQuery;
+            if (royaltyError) throw royaltyError;
+
+            const grossRoyalties = (royalties || []).reduce((s, r) => s + (r.gross_royalty_amount || 0), 0);
+
+            // Calculate controlled net payable using ownership splits
+            let controlledTotal = 0;
+            for (const allocation of royalties || []) {
+              const gross = allocation.gross_royalty_amount || 0;
+              const revenueType = allocation.revenue_type;
+              if (!revenueType) continue;
+
+              for (const party of (parties || [])) {
+                if (party.controlled_status !== 'C') continue;
+                const splitField = revenueType === 'performance' ? 'performance_percentage'
+                  : revenueType === 'mechanical' ? 'mechanical_percentage'
+                  : revenueType === 'synch' ? 'synch_percentage'
+                  : 'performance_percentage'; // fallback for 'other'
+                const splitPct = (party as any)[splitField] || 0;
+                controlledTotal += gross * (splitPct / 100);
               }
-            }, 0);
-            commissionDeduction += additionalCommissions;
-            console.log('Additional commission from expenses:', additionalCommissions, 'Total:', commissionDeduction);
+            }
+
+            const netPayable = Math.max(0, controlledTotal - totalRecoupableExpenses);
+
+            return {
+              gross_royalties: grossRoyalties,
+              net_royalties: controlledTotal,
+              total_expenses: totalRecoupableExpenses,
+              net_payable: netPayable,
+              royalties_to_date: grossRoyalties,
+              payments_to_date: 0,
+              amount_due: netPayable,
+              commission_deduction: 0,
+              calculation_method: 'agreement_based',
+              agreement_id: agreementId,
+              contract_deal_model: dealModel,
+            };
+          } else {
+            // Commission-only model – existing logic
+            let royaltiesQuery = supabase
+              .from('royalty_allocations')
+              .select('gross_royalty_amount, net_amount')
+              .eq('user_id', user?.id)
+              .gte('created_at', periodStart)
+              .lte('created_at', periodEnd + 'T23:59:59');
+
+            const { data: royalties, error: royaltyError } = await royaltiesQuery;
+            if (royaltyError) throw royaltyError;
+
+            const grossRoyalties = (royalties || []).reduce((s, r) => s + (r.gross_royalty_amount || 0), 0);
+            const commissionRate = agreement?.commission_percentage || 0;
+            const commissionDeduction = grossRoyalties * (commissionRate / 100);
+            const netRoyalties = grossRoyalties - commissionDeduction;
+            const netPayable = Math.max(0, netRoyalties - totalRecoupableExpenses);
+
+            return {
+              gross_royalties: grossRoyalties,
+              net_royalties: netRoyalties,
+              total_expenses: totalRecoupableExpenses,
+              net_payable: netPayable,
+              royalties_to_date: grossRoyalties,
+              payments_to_date: 0,
+              amount_due: netPayable,
+              commission_deduction: commissionDeduction,
+              calculation_method: 'agreement_based',
+              agreement_id: agreementId,
+              contract_deal_model: dealModel,
+            };
           }
-          
-          const netRoyalties = grossRoyalties - commissionDeduction;
-          const netPayable = Math.max(0, netRoyalties - totalRecoupableExpenses);
-          
-          return {
-            gross_royalties: grossRoyalties,
-            net_royalties: netRoyalties,
-            total_expenses: totalRecoupableExpenses,
-            net_payable: netPayable,
-            royalties_to_date: grossRoyalties,
-            payments_to_date: 0,
-            amount_due: netPayable,
-            commission_deduction: commissionDeduction,
-            calculation_method: 'agreement_based',
-            agreement_id: agreementId
-          };
         } catch (error) {
           console.error('Error in agreement-based calculation:', error);
-          // Fall back to manual calculation
+          // Fall through to manual
         }
       }
-      
-      // Manual calculation - now includes commission expenses
-      console.log('Using manual calculation - checking for commission expenses');
-      
-      let commissionDeduction = 0;
-      
-      // Even in manual calculation, check for commission expenses
-      try {
-        const { data: commissionExpenses, error: expensesError } = await supabase
-          .from('payout_expenses')
-          .select('amount, is_percentage, percentage_rate')
-          .eq('user_id', user.id)
-          .eq('expense_status', 'approved')
-          .or('is_commission_fee.eq.true,expense_flags->>commission_fee.eq.true')
-          .gte('created_at', periodStart)
-          .lte('created_at', periodEnd + 'T23:59:59');
 
-        if (!expensesError && commissionExpenses && commissionExpenses.length > 0) {
-          commissionDeduction = commissionExpenses.reduce((sum, expense) => {
-            if (expense.is_percentage && expense.percentage_rate) {
-              return sum + (grossRoyalties * (expense.percentage_rate / 100));
-            } else {
-              return sum + (expense.amount || 0);
-            }
-          }, 0);
-          console.log('Manual calculation - commission from expenses:', commissionDeduction);
-        } else {
-          console.log('Manual calculation - no commission expenses found');
-        }
-      } catch (error) {
-        console.error('Error fetching commission expenses in manual calculation:', error);
-      }
-      
-      const netRoyalties = grossRoyalties - commissionDeduction;
-      const netPayable = Math.max(0, netRoyalties - totalRecoupableExpenses);
-      
+      // ── Manual calculation ──
+      const { data: royalties, error: royaltyError } = await supabase
+        .from('royalty_allocations')
+        .select('gross_royalty_amount, net_amount')
+        .eq('user_id', user?.id)
+        .gte('created_at', periodStart)
+        .lte('created_at', periodEnd + 'T23:59:59');
+
+      if (royaltyError) throw royaltyError;
+
+      const grossRoyalties = (royalties || []).reduce((s, r) => s + (r.gross_royalty_amount || 0), 0);
+      const netPayable = Math.max(0, grossRoyalties - totalRecoupableExpenses);
+
       return {
         gross_royalties: grossRoyalties,
-        net_royalties: netRoyalties,
+        net_royalties: grossRoyalties,
         total_expenses: totalRecoupableExpenses,
         net_payable: netPayable,
         royalties_to_date: grossRoyalties,
         payments_to_date: 0,
         amount_due: netPayable,
-        commission_deduction: commissionDeduction,
-        calculation_method: 'manual'
+        commission_deduction: 0,
+        calculation_method: 'manual',
       };
     } catch (error: any) {
       console.error('Error calculating payout totals:', error);
