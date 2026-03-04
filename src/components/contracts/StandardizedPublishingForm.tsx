@@ -64,6 +64,7 @@ const defaultFormData = {
   effectiveDate: '',
   expirationDate: '',
   territory: 'worldwide',
+  territories: [] as string[],
   governingLaw: 'new_york',
   notes: '',
   
@@ -133,6 +134,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 3).toISOString().split('T')[0], // 3 years
         territory: 'worldwide',
+        territories: ['worldwide'],
         governingLaw: 'new_york',
         notes: 'Standard administration agreement with 15% admin fee. Includes collection and licensing services for all territories.',
         publisherShare: '0',
@@ -160,6 +162,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 5).toISOString().split('T')[0], // 5 years
         territory: 'worldwide',
+        territories: ['worldwide'],
         governingLaw: 'new_york',
         notes: 'Co-publishing agreement with 50/50 split and $25,000 advance. Includes full publishing rights and administration.',
         publisherShare: '50',
@@ -181,6 +184,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 7).toISOString().split('T')[0], // 7 years
         territory: 'worldwide',
+        territories: ['worldwide'],
         governingLaw: 'california',
         notes: 'Full publishing deal with $100K advance and 75% writer royalty rate. Publisher owns 100% of publishing rights.',
         publisherShare: '100',
@@ -202,6 +206,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 10).toISOString().split('T')[0], // 10 years
         territory: 'worldwide',
+        territories: ['worldwide'],
         governingLaw: 'new_york',
         notes: 'Joint venture publishing partnership with $75K advance and equal profit sharing. 10-year commitment with shared investment risk.',
         publisherShare: '50',
@@ -223,6 +228,7 @@ export const StandardizedPublishingForm: React.FC<StandardizedPublishingFormProp
         effectiveDate: new Date().toISOString().split('T')[0],
         expirationDate: '', // Perpetual rights, no expiration
         territory: 'worldwide',
+        territories: ['worldwide'],
         governingLaw: 'new_york',
         notes: 'Purchase of established catalog containing 150 works. Perpetual rights with one-time purchase price of $2.5M. Includes all master and publishing rights.',
         publisherShare: '100',
