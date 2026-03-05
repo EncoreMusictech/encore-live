@@ -250,8 +250,11 @@ export function welcomeEmail(opts: {
   clientName: string;
   role: string;
   appUrl?: string;
+  brandLogoUrl?: string;
+  brandName?: string;
 }): string {
   const appUrl = opts.appUrl || "https://www.encoremusic.tech";
+  const platformName = opts.brandName || "ENCORE";
   const body = `
     <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hello,</p>
     <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
@@ -273,9 +276,11 @@ export function welcomeEmail(opts: {
   return emailLayout({
     preheader: `Your ${opts.clientName} account is ready — sign in now`,
     headerIcon: "👋",
-    headerTitle: "Welcome to ENCORE",
+    headerTitle: `Welcome to ${platformName}`,
     headerSubtitle: `Your account for ${opts.clientName} is ready`,
     body,
+    brandLogoUrl: opts.brandLogoUrl,
+    brandName: opts.brandName,
   });
 }
 
