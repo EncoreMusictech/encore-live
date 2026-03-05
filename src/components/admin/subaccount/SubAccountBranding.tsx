@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Palette, Save, Eye, RotateCcw } from 'lucide-react';
+import { hslStringToHex, hexToHslString } from '@/lib/color-utils';
 
 interface BrandingConfig {
   enabled: boolean;
