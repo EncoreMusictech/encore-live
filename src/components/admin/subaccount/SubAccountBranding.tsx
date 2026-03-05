@@ -245,6 +245,18 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                 <div key={key} className="space-y-1">
                   <Label>{label}</Label>
                   <div className="flex gap-2 items-center">
+                    <input
+                      type="color"
+                      value={hslStringToHex(branding.colors[key])}
+                      onChange={(e) =>
+                        setBranding(prev => ({
+                          ...prev,
+                          colors: { ...prev.colors, [key]: hexToHslString(e.target.value) },
+                        }))
+                      }
+                      className="w-10 h-10 rounded-md border border-border shrink-0 cursor-pointer p-0.5 bg-transparent"
+                      title="Pick a color"
+                    />
                     <Input
                       placeholder="220 90% 56%"
                       value={branding.colors[key]}
@@ -255,10 +267,6 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                         }))
                       }
                       className="flex-1"
-                    />
-                    <div
-                      className="w-8 h-8 rounded-md border border-border shrink-0"
-                      style={{ backgroundColor: `hsl(${branding.colors[key]})` }}
                     />
                   </div>
                 </div>
