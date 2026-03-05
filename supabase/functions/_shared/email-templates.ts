@@ -292,14 +292,18 @@ export function clientInvitationEmail(opts: {
   acceptUrl: string;
   role: string;
   supportEmail?: string;
+  brandLogoUrl?: string;
+  brandName?: string;
 }): string {
   const supportEmail = opts.supportEmail || "support@encoremusic.tech";
   const roleLabel = opts.role === "admin" ? "an administrator" : opts.role === "user" ? "a team member" : "a client";
+  const platformName = opts.brandName || "ENCORE";
+  const isWhitelabel = !!opts.brandLogoUrl;
 
   const body = `
     <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hi ${opts.inviteeName},</p>
     <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 8px;">
-      You've been invited to join <strong style="color:${COLORS.text};">${opts.companyName}</strong> as ${roleLabel} on the ENCORE platform.
+      You've been invited to join <strong style="color:${COLORS.text};">${opts.companyName}</strong> as ${roleLabel}${isWhitelabel ? '.' : ' on the ENCORE platform.'}
     </p>
     <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 28px;">
       Click the button below to create your account and get started:
@@ -314,16 +318,24 @@ export function clientInvitationEmail(opts: {
     </p>
   `;
 
+  const headerSubtitle = isWhitelabel
+    ? `Join ${opts.companyName}`
+    : (opts.companyName && opts.companyName !== opts.subscriberName && opts.companyName !== 'ENCORE'
+        ? `Join ${opts.companyName} on ENCORE`
+        : `You're invited to ENCORE`);
+
   return emailLayout({
-    preheader: opts.companyName && opts.companyName !== opts.subscriberName && opts.companyName !== 'ENCORE'
-      ? `You've been invited to join ${opts.companyName} on ENCORE`
-      : `You've been invited to join ENCORE`,
+    preheader: isWhitelabel
+      ? `You've been invited to join ${opts.companyName}`
+      : (opts.companyName && opts.companyName !== opts.subscriberName && opts.companyName !== 'ENCORE'
+          ? `You've been invited to join ${opts.companyName} on ENCORE`
+          : `You've been invited to join ENCORE`),
     headerIcon: "✉️",
     headerTitle: "You're Invited!",
-    headerSubtitle: opts.companyName && opts.companyName !== opts.subscriberName && opts.companyName !== 'ENCORE'
-      ? `Join ${opts.companyName} on ENCORE`
-      : `You're invited to ENCORE`,
+    headerSubtitle,
     body,
+    brandLogoUrl: opts.brandLogoUrl,
+    brandName: opts.brandName,
   });
 }
 
