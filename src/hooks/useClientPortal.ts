@@ -198,12 +198,12 @@ export const useClientPortal = () => {
         const { error: sendError } = await supabase.functions.invoke('send-client-invitation', {
           body: {
             invitee_email: email,
-            // Optionally pass a name if you collect it elsewhere
             invitee_name: undefined,
             token: (data as any).invitation_token,
-            role: role, // Pass the role to determine email template and route
-            permissions: permissions, // Pass permissions for user role template
+            role: role,
+            permissions: permissions,
             subscriber_name: 'ENCORE',
+            subscriber_user_id: user?.id,
             site_url: 'https://www.encoremusic.tech',
             support_email: 'support@encoremusic.tech',
           },
