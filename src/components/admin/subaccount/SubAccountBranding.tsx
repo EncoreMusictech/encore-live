@@ -312,8 +312,10 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                       </div>
                     )}
                   </div>
+                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
         </>
       )}
 
