@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useTenant } from '@/contexts/TenantContext';
 import { Upload, Palette, Globe, Settings, Users, Crown } from 'lucide-react';
+import { hslStringToHex, hexToHslString } from '@/lib/color-utils';
 import { useToast } from '@/hooks/use-toast';
 
 export function BrandConfigurationPanel() {
