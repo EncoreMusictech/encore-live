@@ -237,9 +237,11 @@ const LiveChatInterface = () => {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            <div className="text-xs text-muted-foreground mt-2 text-center">
-              Powered by ENCORE AI Support
-            </div>
+            {!branding && (
+              <div className="text-xs text-muted-foreground mt-2 text-center">
+                Powered by ENCORE AI Support
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

@@ -88,16 +88,18 @@ export function IntroSlide({ artistName, isActive }: IntroSlideProps) {
         </div>
 
         {/* Subtitle reveal */}
-        <div 
-          className={cn(
-            'transition-all duration-500',
-            showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          )}
-        >
-          <p className="text-xl md:text-2xl text-muted-foreground">
-            Powered by ENCORE's Integrated Rights Management Platform
-          </p>
-        </div>
+        {!branding && (
+          <div 
+            className={cn(
+              'transition-all duration-500',
+              showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            )}
+          >
+            <p className="text-xl md:text-2xl text-muted-foreground">
+              Powered by ENCORE's Integrated Rights Management Platform
+            </p>
+          </div>
+        )}
 
         {/* Decorative musical notes floating */}
         {isActive && (
