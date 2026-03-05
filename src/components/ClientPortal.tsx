@@ -364,7 +364,7 @@ const ClientPortal = () => {
             )}
           </div>
         </div>
-        {branding && (
+        {!branding && (
           <div className="mt-3 text-xs opacity-50">Powered by ENCORE</div>
         )}
       </header>

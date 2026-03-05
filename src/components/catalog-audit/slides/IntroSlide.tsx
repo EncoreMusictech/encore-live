@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PresentationSlide } from '../PresentationSlide';
 import { cn } from '@/lib/utils';
 import { Music2 } from 'lucide-react';
+import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 
 interface IntroSlideProps {
   artistName: string;
