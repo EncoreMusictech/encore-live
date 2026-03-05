@@ -515,6 +515,8 @@ export function invitationReminderEmail(opts: {
   daysUntilExpiry: number;
   expiresAt: string;
   isUrgent: boolean;
+  brandLogoUrl?: string;
+  brandName?: string;
 }): string {
   const body = `
     <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hello,</p>
