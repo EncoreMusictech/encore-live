@@ -34,16 +34,28 @@ export function useDataFiltering() {
 
       setLoading(true);
       try {
-        // Get all user IDs associated with this company
-        const { data: companyUsers, error } = await supabase
-          .from('company_users')
-          .select('user_id')
-          .eq('company_id', viewContext.companyId)
-          .eq('status', 'active');
+        // Get all user IDs associated with this company (including service account)
+        const [companyUsersResult, serviceAccountResult] = await Promise.all([
+          supabase
+            .from('company_users')
+            .select('user_id')
+            .eq('company_id', viewContext.companyId)
+            .eq('status', 'active'),
+          supabase
+            .from('company_service_accounts')
+            .select('service_user_id')
+            .eq('company_id', viewContext.companyId)
+            .maybeSingle()
+        ]);
 
-        if (error) throw error;
+        if (companyUsersResult.error) throw companyUsersResult.error;
 
-        const userIds = companyUsers?.map(cu => cu.user_id) || [];
+        const userIds = companyUsersResult.data?.map(cu => cu.user_id) || [];
+        
+        // Include service account user_id so bulk-uploaded data is visible
+        if (serviceAccountResult.data?.service_user_id) {
+          userIds.push(serviceAccountResult.data.service_user_id);
+        }
 
         setFilterConfig({
           companyId: viewContext.companyId,
