@@ -548,6 +548,8 @@ export function invitationReminderEmail(opts: {
     headerSubtitle: `Expires in ${opts.daysUntilExpiry} day${opts.daysUntilExpiry !== 1 ? "s" : ""}`,
     body,
     accentColor: opts.isUrgent ? COLORS.danger : undefined,
+    brandLogoUrl: opts.brandLogoUrl,
+    brandName: opts.brandName,
   });
 }
 
