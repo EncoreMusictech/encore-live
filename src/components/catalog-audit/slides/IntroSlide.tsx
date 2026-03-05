@@ -10,6 +10,7 @@ interface IntroSlideProps {
 }
 
 export function IntroSlide({ artistName, isActive }: IntroSlideProps) {
+  const { branding } = useCompanyBranding();
   const [displayText, setDisplayText] = useState('');
   const [showTitle, setShowTitle] = useState(false);
   const [showSubtitle, setShowSubtitle] = useState(false);
