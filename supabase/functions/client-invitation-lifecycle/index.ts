@@ -78,6 +78,10 @@ const handler = async (req: Request): Promise<Response> => {
         for (const reminder of reminders as InvitationReminder[]) {
           try {
             const isUrgent = reminder.days_until_expiry <= 1;
+
+            // Resolve whitelabel branding for this subscriber
+            const branding = await resolveBrandingByUserId(reminder.subscriber_user_id);
+
             const subject = isUrgent 
               ? "⚠️ Your client portal invitation expires tomorrow!"
               : "📋 Reminder: Your client portal invitation expires soon";
@@ -86,13 +90,15 @@ const handler = async (req: Request): Promise<Response> => {
               daysUntilExpiry: reminder.days_until_expiry,
               expiresAt: reminder.expires_at,
               isUrgent,
+              brandLogoUrl: branding.logoUrl,
+              brandName: branding.brandName,
             });
 
             await sendGmail({
               to: [reminder.email],
               subject,
               html: emailHtml,
-              from: "Encore Music",
+              from: branding.brandName || "Encore Music",
             });
 
             await supabase.rpc('mark_invitation_reminder_sent', { invitation_id: reminder.id });
