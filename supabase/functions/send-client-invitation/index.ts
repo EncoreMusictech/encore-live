@@ -1,6 +1,7 @@
 import { sendGmail } from "../_shared/gmail.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { clientInvitationEmail } from "../_shared/email-templates.ts";
+import { resolveBrandingByUserId } from "../_shared/resolve-branding.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +15,7 @@ type InvitationPayload = {
   role?: 'client' | 'user' | 'admin';
   permissions?: Record<string, any>;
   subscriber_name?: string;
+  subscriber_user_id?: string;
   company_name?: string;
   site_url?: string;
   support_email?: string;
@@ -34,13 +36,23 @@ serve(async (req) => {
     const supportEmail = body.support_email || 'support@encoremusic.tech';
     const inviteeName = body.invitee_name || 'there';
 
+    // Resolve whitelabel branding for the subscriber
+    let brandLogoUrl: string | undefined;
+    let brandName: string | undefined;
+    if (body.subscriber_user_id) {
+      const branding = await resolveBrandingByUserId(body.subscriber_user_id);
+      brandLogoUrl = branding.logoUrl;
+      brandName = branding.brandName;
+    }
+
     let subject: string;
+    const displayCompany = brandName || companyName;
     if (role === 'client') {
-      subject = `You're invited to join ${companyName}`;
+      subject = `You're invited to join ${displayCompany}`;
     } else if (role === 'user') {
-      subject = `You're invited to join ${companyName} as a team member`;
+      subject = `You're invited to join ${displayCompany} as a team member`;
     } else if (role === 'admin') {
-      subject = `You're invited as an administrator for ${companyName}`;
+      subject = `You're invited as an administrator for ${displayCompany}`;
     } else {
       throw new Error('Invalid role specified');
     }
@@ -52,6 +64,8 @@ serve(async (req) => {
       acceptUrl,
       role,
       supportEmail,
+      brandLogoUrl,
+      brandName,
     });
 
     console.log(`Sending invitation email to ${body.invitee_email}`);
@@ -60,7 +74,7 @@ serve(async (req) => {
       to: [body.invitee_email],
       subject,
       html,
-      from: 'ENCORE',
+      from: brandName || 'ENCORE',
     });
 
     console.log('Email sent successfully:', result);
