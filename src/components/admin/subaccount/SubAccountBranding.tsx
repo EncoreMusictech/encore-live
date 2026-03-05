@@ -312,13 +312,8 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                       </div>
                     )}
                   </div>
-                </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="text-xs opacity-60">Powered by ENCORE</span>
-                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
         </>
       )}
 
