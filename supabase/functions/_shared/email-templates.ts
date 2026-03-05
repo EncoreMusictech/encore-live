@@ -24,7 +24,7 @@ const COLORS = {
   dangerDark: "#dc2626",
 };
 
-/** Base email wrapper with ENCORE branding */
+/** Base email wrapper — supports whitelabel branding override */
 function emailLayout(opts: {
   preheader?: string;
   headerIcon?: string;
@@ -33,9 +33,93 @@ function emailLayout(opts: {
   body: string;
   footerText?: string;
   accentColor?: string;
+  brandLogoUrl?: string;
+  brandName?: string;
 }): string {
   const accent = opts.accentColor || COLORS.primary;
   const year = new Date().getFullYear();
+  const isWhitelabel = !!opts.brandLogoUrl;
+  const displayName = opts.brandName || "ENCORE";
+
+  // Hero section: whitelabel shows only sub-account logo; default shows full ENCORE branding
+  const heroContent = isWhitelabel
+    ? `
+      <!-- Whitelabel logo -->
+      <tr>
+        <td style="padding:36px 40px 12px 40px;text-align:center;">
+          <img src="${opts.brandLogoUrl}" alt="${displayName}" width="180" style="display:inline-block;max-width:180px;height:auto;" />
+        </td>
+      </tr>
+      ${opts.headerTitle ? `
+      <tr>
+        <td style="padding:12px 40px 24px 40px;text-align:center;">
+          ${opts.headerIcon ? `<span style="font-size:24px;">${opts.headerIcon}</span><br/>` : ""}
+          <h2 style="margin:4px 0 0 0;font-size:19px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">${opts.headerTitle}</h2>
+          ${opts.headerSubtitle ? `<p style="margin:5px 0 0 0;font-size:13px;color:rgba(255,255,255,0.7);">${opts.headerSubtitle}</p>` : ""}
+        </td>
+      </tr>
+      ` : `<tr><td style="padding:0 0 24px 0;">&nbsp;</td></tr>`}
+    `
+    : `
+      <!-- Badge: ANALOG SOUL. DIGITAL SPINE. -->
+      <tr>
+        <td style="padding:28px 40px 0 40px;text-align:center;">
+          <div style="display:inline-block;background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.35);border-radius:50px;padding:7px 18px;">
+            <span style="display:inline-block;width:6px;height:6px;background:#8b5cf6;border-radius:50%;margin-right:2px;vertical-align:middle;"></span>
+            <span style="display:inline-block;width:6px;height:6px;background:#d4a843;border-radius:50%;margin-right:2px;vertical-align:middle;"></span>
+            <span style="display:inline-block;width:6px;height:6px;background:rgba(139,92,246,0.6);border-radius:50%;margin-right:5px;vertical-align:middle;"></span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:2px;color:#8b5cf6;vertical-align:middle;">ANALOG SOUL. DIGITAL SPINE.</span>
+          </div>
+        </td>
+      </tr>
+
+      <!-- ENCORE headline -->
+      <tr>
+        <td style="padding:14px 40px 0 40px;text-align:center;">
+          <img src="${LOGO_WITH_TITLE}" alt="ENCORE" width="180" style="display:inline-block;max-width:180px;height:auto;" />
+        </td>
+      </tr>
+
+      <!-- RIGHTS MANAGEMENT SYSTEMS pill -->
+      <tr>
+        <td style="padding:12px 40px 0 40px;text-align:center;">
+          <div style="display:inline-block;background:rgba(139,92,246,0.85);border-radius:14px;padding:8px 22px;">
+            <span style="font-size:12px;font-weight:800;color:#0f172a;letter-spacing:0.5px;">RIGHTS MANAGEMENT SYSTEMS</span>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Tagline -->
+      <tr>
+        <td style="padding:12px 40px 0 40px;text-align:center;">
+          <p style="margin:0;font-size:14px;font-weight:700;color:#8b5cf6;">Track your rights like you track your hits.</p>
+        </td>
+      </tr>
+
+      <!-- Accent divider -->
+      <tr>
+        <td style="padding:14px 40px 0 40px;text-align:center;">
+          <div style="height:2px;width:60px;margin:0 auto;border-radius:2px;background:linear-gradient(90deg,${accent},${COLORS.accent});"></div>
+        </td>
+      </tr>
+
+      ${opts.headerTitle ? `
+      <tr>
+        <td style="padding:12px 40px 24px 40px;text-align:center;">
+          ${opts.headerIcon ? `<span style="font-size:24px;">${opts.headerIcon}</span><br/>` : ""}
+          <h2 style="margin:4px 0 0 0;font-size:19px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">${opts.headerTitle}</h2>
+          ${opts.headerSubtitle ? `<p style="margin:5px 0 0 0;font-size:13px;color:rgba(255,255,255,0.7);">${opts.headerSubtitle}</p>` : ""}
+        </td>
+      </tr>
+      ` : `
+      <tr><td style="padding:0 0 24px 0;">&nbsp;</td></tr>
+      `}
+    `;
+
+  // Footer: whitelabel uses brand name; default uses ENCORE
+  const footerLogoSrc = isWhitelabel ? opts.brandLogoUrl! : LOGO_ICON;
+  const footerCompany = isWhitelabel ? displayName : "Encore Music Technology — Professional Music IP Management";
+  const footerCopyright = isWhitelabel ? displayName : "Encore Music";
 
   return `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -43,7 +127,7 @@ function emailLayout(opts: {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>${opts.headerTitle || "ENCORE"}</title>
+  <title>${opts.headerTitle || displayName}</title>
   <!--[if mso]><style>table,td{font-family:Arial,sans-serif!important}</style><![endif]-->
 </head>
 <body style="margin:0;padding:0;background-color:${COLORS.bgLight};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
@@ -57,7 +141,7 @@ function emailLayout(opts: {
         <!-- Main card -->
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:${COLORS.bgCard};border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
           
-          <!-- Hero Header with studio background -->
+          <!-- Hero Header -->
           <tr>
             <td style="padding:0;">
               <!--[if gte mso 9]>
@@ -67,60 +151,7 @@ function emailLayout(opts: {
               <![endif]-->
               <div style="background:url('${HERO_BG}') center/cover no-repeat #0f172a;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(15,23,42,0.85),rgba(99,102,241,0.35));">
-                  
-                  <!-- Badge: ANALOG SOUL. DIGITAL SPINE. -->
-                  <tr>
-                    <td style="padding:28px 40px 0 40px;text-align:center;">
-                      <div style="display:inline-block;background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.35);border-radius:50px;padding:7px 18px;">
-                        <span style="display:inline-block;width:6px;height:6px;background:#8b5cf6;border-radius:50%;margin-right:2px;vertical-align:middle;"></span>
-                        <span style="display:inline-block;width:6px;height:6px;background:#d4a843;border-radius:50%;margin-right:2px;vertical-align:middle;"></span>
-                        <span style="display:inline-block;width:6px;height:6px;background:rgba(139,92,246,0.6);border-radius:50%;margin-right:5px;vertical-align:middle;"></span>
-                        <span style="font-size:10px;font-weight:700;letter-spacing:2px;color:#8b5cf6;vertical-align:middle;">ANALOG SOUL. DIGITAL SPINE.</span>
-                      </div>
-                    </td>
-                  </tr>
-
-                  <!-- ENCORE! headline -->
-                  <tr>
-                    <td style="padding:14px 40px 0 40px;text-align:center;">
-                      <img src="${LOGO_WITH_TITLE}" alt="ENCORE" width="180" style="display:inline-block;max-width:180px;height:auto;" />
-                    </td>
-                  </tr>
-
-                  <!-- RIGHTS MANAGEMENT SYSTEMS pill -->
-                  <tr>
-                    <td style="padding:12px 40px 0 40px;text-align:center;">
-                      <div style="display:inline-block;background:rgba(139,92,246,0.85);border-radius:14px;padding:8px 22px;">
-                        <span style="font-size:12px;font-weight:800;color:#0f172a;letter-spacing:0.5px;">RIGHTS MANAGEMENT SYSTEMS</span>
-                      </div>
-                    </td>
-                  </tr>
-
-                  <!-- Tagline -->
-                  <tr>
-                    <td style="padding:12px 40px 0 40px;text-align:center;">
-                      <p style="margin:0;font-size:14px;font-weight:700;color:#8b5cf6;">Track your rights like you track your hits.</p>
-                    </td>
-                  </tr>
-
-                  <!-- Accent divider -->
-                  <tr>
-                    <td style="padding:14px 40px 0 40px;text-align:center;">
-                      <div style="height:2px;width:60px;margin:0 auto;border-radius:2px;background:linear-gradient(90deg,${accent},${COLORS.accent});"></div>
-                    </td>
-                  </tr>
-
-                  ${opts.headerTitle ? `
-                  <tr>
-                    <td style="padding:12px 40px 24px 40px;text-align:center;">
-                      ${opts.headerIcon ? `<span style="font-size:24px;">${opts.headerIcon}</span><br/>` : ""}
-                      <h2 style="margin:4px 0 0 0;font-size:19px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">${opts.headerTitle}</h2>
-                      ${opts.headerSubtitle ? `<p style="margin:5px 0 0 0;font-size:13px;color:rgba(255,255,255,0.7);">${opts.headerSubtitle}</p>` : ""}
-                    </td>
-                  </tr>
-                  ` : `
-                  <tr><td style="padding:0 0 24px 0;">&nbsp;</td></tr>
-                  `}
+                  ${heroContent}
                 </table>
               </div>
               <!--[if gte mso 9]>
@@ -143,16 +174,16 @@ function emailLayout(opts: {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="border-top:1px solid ${COLORS.border};padding-top:24px;text-align:center;">
-                    <img src="${LOGO_ICON}" alt="ENCORE" width="28" style="display:inline-block;max-width:28px;height:auto;margin-bottom:12px;" />
+                    <img src="${footerLogoSrc}" alt="${displayName}" width="28" style="display:inline-block;max-width:28px;height:auto;margin-bottom:12px;" />
                     <p style="margin:0 0 4px 0;font-size:12px;color:${COLORS.textLight};">
-                      ${opts.footerText || "Encore Music Technology — Professional Music IP Management"}
+                      ${opts.footerText || footerCompany}
                     </p>
                     <p style="margin:0 0 6px 0;font-size:11px;color:${COLORS.textLight};">
-                      &copy; ${year} Encore Music. All rights reserved.
+                      &copy; ${year} ${footerCopyright}. All rights reserved.
                     </p>
-                    <p style="margin:0;font-size:11px;">
+                    ${!isWhitelabel ? `<p style="margin:0;font-size:11px;">
                       <a href="mailto:support@encoremusic.tech?subject=ENCORE%20Support%20Request" style="color:${COLORS.primary};text-decoration:none;">support@encoremusic.tech</a>
-                    </p>
+                    </p>` : ""}
                   </td>
                 </tr>
               </table>
@@ -219,8 +250,11 @@ export function welcomeEmail(opts: {
   clientName: string;
   role: string;
   appUrl?: string;
+  brandLogoUrl?: string;
+  brandName?: string;
 }): string {
   const appUrl = opts.appUrl || "https://www.encoremusic.tech";
+  const platformName = opts.brandName || "ENCORE";
   const body = `
     <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hello,</p>
     <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
@@ -242,9 +276,11 @@ export function welcomeEmail(opts: {
   return emailLayout({
     preheader: `Your ${opts.clientName} account is ready — sign in now`,
     headerIcon: "👋",
-    headerTitle: "Welcome to ENCORE",
+    headerTitle: `Welcome to ${platformName}`,
     headerSubtitle: `Your account for ${opts.clientName} is ready`,
     body,
+    brandLogoUrl: opts.brandLogoUrl,
+    brandName: opts.brandName,
   });
 }
 
@@ -256,14 +292,18 @@ export function clientInvitationEmail(opts: {
   acceptUrl: string;
   role: string;
   supportEmail?: string;
+  brandLogoUrl?: string;
+  brandName?: string;
 }): string {
   const supportEmail = opts.supportEmail || "support@encoremusic.tech";
   const roleLabel = opts.role === "admin" ? "an administrator" : opts.role === "user" ? "a team member" : "a client";
+  const platformName = opts.brandName || "ENCORE";
+  const isWhitelabel = !!opts.brandLogoUrl;
 
   const body = `
     <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hi ${opts.inviteeName},</p>
     <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 8px;">
-      You've been invited to join <strong style="color:${COLORS.text};">${opts.companyName}</strong> as ${roleLabel} on the ENCORE platform.
+      You've been invited to join <strong style="color:${COLORS.text};">${opts.companyName}</strong> as ${roleLabel}${isWhitelabel ? '.' : ' on the ENCORE platform.'}
     </p>
     <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 28px;">
       Click the button below to create your account and get started:
@@ -278,16 +318,24 @@ export function clientInvitationEmail(opts: {
     </p>
   `;
 
+  const headerSubtitle = isWhitelabel
+    ? `Join ${opts.companyName}`
+    : (opts.companyName && opts.companyName !== opts.subscriberName && opts.companyName !== 'ENCORE'
+        ? `Join ${opts.companyName} on ENCORE`
+        : `You're invited to ENCORE`);
+
   return emailLayout({
-    preheader: opts.companyName && opts.companyName !== opts.subscriberName && opts.companyName !== 'ENCORE'
-      ? `You've been invited to join ${opts.companyName} on ENCORE`
-      : `You've been invited to join ENCORE`,
+    preheader: isWhitelabel
+      ? `You've been invited to join ${opts.companyName}`
+      : (opts.companyName && opts.companyName !== opts.subscriberName && opts.companyName !== 'ENCORE'
+          ? `You've been invited to join ${opts.companyName} on ENCORE`
+          : `You've been invited to join ENCORE`),
     headerIcon: "✉️",
     headerTitle: "You're Invited!",
-    headerSubtitle: opts.companyName && opts.companyName !== opts.subscriberName && opts.companyName !== 'ENCORE'
-      ? `Join ${opts.companyName} on ENCORE`
-      : `You're invited to ENCORE`,
+    headerSubtitle,
     body,
+    brandLogoUrl: opts.brandLogoUrl,
+    brandName: opts.brandName,
   });
 }
 
@@ -467,6 +515,8 @@ export function invitationReminderEmail(opts: {
   daysUntilExpiry: number;
   expiresAt: string;
   isUrgent: boolean;
+  brandLogoUrl?: string;
+  brandName?: string;
 }): string {
   const body = `
     <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hello,</p>
@@ -498,6 +548,8 @@ export function invitationReminderEmail(opts: {
     headerSubtitle: `Expires in ${opts.daysUntilExpiry} day${opts.daysUntilExpiry !== 1 ? "s" : ""}`,
     body,
     accentColor: opts.isUrgent ? COLORS.danger : undefined,
+    brandLogoUrl: opts.brandLogoUrl,
+    brandName: opts.brandName,
   });
 }
 

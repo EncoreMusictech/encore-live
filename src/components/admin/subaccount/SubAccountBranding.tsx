@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Palette, Save, Eye, RotateCcw } from 'lucide-react';
+import { hslStringToHex, hexToHslString } from '@/lib/color-utils';
 
 interface BrandingConfig {
   enabled: boolean;
@@ -244,6 +245,18 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                 <div key={key} className="space-y-1">
                   <Label>{label}</Label>
                   <div className="flex gap-2 items-center">
+                    <input
+                      type="color"
+                      value={hslStringToHex(branding.colors[key])}
+                      onChange={(e) =>
+                        setBranding(prev => ({
+                          ...prev,
+                          colors: { ...prev.colors, [key]: hexToHslString(e.target.value) },
+                        }))
+                      }
+                      className="w-10 h-10 rounded-md border border-border shrink-0 cursor-pointer p-0.5 bg-transparent"
+                      title="Pick a color"
+                    />
                     <Input
                       placeholder="220 90% 56%"
                       value={branding.colors[key]}
@@ -254,10 +267,6 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                         }))
                       }
                       className="flex-1"
-                    />
-                    <div
-                      className="w-8 h-8 rounded-md border border-border shrink-0"
-                      style={{ backgroundColor: `hsl(${branding.colors[key]})` }}
                     />
                   </div>
                 </div>
@@ -303,9 +312,6 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                       </div>
                     )}
                   </div>
-                </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="text-xs opacity-60">Powered by ENCORE</span>
                 </div>
               </div>
             </CardContent>

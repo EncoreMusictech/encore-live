@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useTenant } from '@/contexts/TenantContext';
 import { Upload, Palette, Globe, Settings, Users, Crown } from 'lucide-react';
+import { hslStringToHex, hexToHslString } from '@/lib/color-utils';
 import { useToast } from '@/hooks/use-toast';
 
 export function BrandConfigurationPanel() {
@@ -178,6 +179,22 @@ export function BrandConfigurationPanel() {
                     <div key={key} className="space-y-2">
                       <Label htmlFor={key}>{key.charAt(0).toUpperCase() + key.slice(1)}</Label>
                       <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={hslStringToHex(value)}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            brand_config: {
+                              ...prev.brand_config,
+                              brand_colors: {
+                                ...prev.brand_config.brand_colors,
+                                [key]: hexToHslString(e.target.value),
+                              },
+                            },
+                          }))}
+                          className="w-10 h-10 rounded border border-border cursor-pointer p-0.5 bg-transparent shrink-0"
+                          title="Pick a color"
+                        />
                         <Input
                           id={key}
                           value={value}
@@ -192,10 +209,6 @@ export function BrandConfigurationPanel() {
                             },
                           }))}
                           placeholder="254 100% 76%"
-                        />
-                        <div 
-                          className="w-10 h-10 rounded border"
-                          style={{ backgroundColor: `hsl(${value})` }}
                         />
                       </div>
                     </div>

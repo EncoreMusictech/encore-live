@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PresentationSlide } from '../PresentationSlide';
 import { cn } from '@/lib/utils';
 import { Music2 } from 'lucide-react';
+import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 
 interface IntroSlideProps {
   artistName: string;
@@ -9,6 +10,7 @@ interface IntroSlideProps {
 }
 
 export function IntroSlide({ artistName, isActive }: IntroSlideProps) {
+  const { branding } = useCompanyBranding();
   const [displayText, setDisplayText] = useState('');
   const [showTitle, setShowTitle] = useState(false);
   const [showSubtitle, setShowSubtitle] = useState(false);
@@ -86,16 +88,18 @@ export function IntroSlide({ artistName, isActive }: IntroSlideProps) {
         </div>
 
         {/* Subtitle reveal */}
-        <div 
-          className={cn(
-            'transition-all duration-500',
-            showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          )}
-        >
-          <p className="text-xl md:text-2xl text-muted-foreground">
-            Powered by ENCORE's Integrated Rights Management Platform
-          </p>
-        </div>
+        {!branding && (
+          <div 
+            className={cn(
+              'transition-all duration-500',
+              showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            )}
+          >
+            <p className="text-xl md:text-2xl text-muted-foreground">
+              Powered by ENCORE's Integrated Rights Management Platform
+            </p>
+          </div>
+        )}
 
         {/* Decorative musical notes floating */}
         {isActive && (

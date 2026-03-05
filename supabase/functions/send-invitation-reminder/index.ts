@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { sendGmail } from "../_shared/gmail.ts";
 import { invitationReminderEmail } from "../_shared/email-templates.ts";
+import { resolveBrandingByUserId } from "../_shared/resolve-branding.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,8 +13,17 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { email, days_until_expiry, expires_at } = await req.json();
+    const { email, days_until_expiry, expires_at, subscriber_user_id } = await req.json();
     if (!email) throw new Error("Missing email");
+
+    // Resolve whitelabel branding
+    let brandLogoUrl: string | undefined;
+    let brandName: string | undefined;
+    if (subscriber_user_id) {
+      const branding = await resolveBrandingByUserId(subscriber_user_id);
+      brandLogoUrl = branding.logoUrl;
+      brandName = branding.brandName;
+    }
 
     const isUrgent = (days_until_expiry ?? 3) <= 1;
 
@@ -20,15 +31,17 @@ serve(async (req) => {
       daysUntilExpiry: days_until_expiry ?? 3,
       expiresAt: expires_at || new Date(Date.now() + days_until_expiry * 86400000).toISOString(),
       isUrgent,
+      brandLogoUrl,
+      brandName,
     });
 
     const result = await sendGmail({
       to: [email],
       subject: isUrgent
-        ? "⚠️ Your ENCORE invitation expires tomorrow!"
-        : "Reminder: Your ENCORE invitation expires soon",
+        ? "⚠️ Your invitation expires tomorrow!"
+        : "Reminder: Your invitation expires soon",
       html,
-      from: "ENCORE",
+      from: brandName || "ENCORE",
     });
 
     return new Response(JSON.stringify({ success: true, id: result.id }), {
