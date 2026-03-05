@@ -18,6 +18,7 @@ interface Message {
 }
 
 const LiveChatInterface = () => {
+  const { branding } = useCompanyBranding();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
