@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useTenant } from '@/contexts/TenantContext';
-import { Upload, Palette, Globe, Settings, Users, Crown } from 'lucide-react';
+import { Upload, Palette, Globe, Settings, Users, Crown, Loader2, X } from 'lucide-react';
 import { hslStringToHex, hexToHslString } from '@/lib/color-utils';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export function BrandConfigurationPanel() {
   const { tenantConfig, updateTenantConfig, loading } = useTenant();
