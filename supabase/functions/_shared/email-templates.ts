@@ -47,8 +47,11 @@ function emailLayout(opts: {
 
   // Hero section: whitelabel shows only sub-account logo; default shows full ENCORE branding
   const heroContent = isWhitelabel
-    ? `
-      <!-- Whitelabel logo -->
+    ? (() => {
+      const heroBg = opts.brandHeaderBgColor || "#0f172a";
+      const heroAccent = opts.brandPrimaryColor || accent;
+      return `
+      <!-- Whitelabel hero with brand colors -->
       <tr>
         <td style="padding:36px 40px 12px 40px;text-align:center;">
           <img src="${opts.brandLogoUrl}" alt="${displayName}" width="180" style="display:inline-block;max-width:180px;height:auto;" />
@@ -63,7 +66,8 @@ function emailLayout(opts: {
         </td>
       </tr>
       ` : `<tr><td style="padding:0 0 24px 0;">&nbsp;</td></tr>`}
-    `
+    `;
+    })()
     : `
       <!-- Badge: ANALOG SOUL. DIGITAL SPINE. -->
       <tr>
