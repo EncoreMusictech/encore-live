@@ -45,24 +45,28 @@ export function useCompanyBranding(): UseCompanyBrandingResult {
           // Admin viewing as sub-account — use that company
           companyId = viewContext.companyId;
         } else {
-          // Normal user — find their company
-          const { data: membership } = await supabase
+          // Normal user — check ALL their companies for branding
+          const { data: memberships } = await supabase
             .from('company_users')
             .select('company_id')
             .eq('user_id', user.id)
-            .eq('status', 'active')
-            .limit(1)
-            .maybeSingle();
+            .eq('status', 'active');
 
-          companyId = membership?.company_id || null;
-        }
-
-        if (!companyId) {
-          setLoading(false);
+          if (memberships && memberships.length > 0) {
+            // Try each company for branding, use the first match
+            for (const m of memberships) {
+              const resolved = await resolveBranding(m.company_id);
+              if (resolved) {
+                setBranding(resolved);
+                return;
+              }
+            }
+          }
+          // No branding found across any company
           return;
         }
 
-        // Try to get branding from this company
+        // View mode path — resolve branding for the viewed company
         const resolved = await resolveBranding(companyId);
         setBranding(resolved);
       } catch (err) {
