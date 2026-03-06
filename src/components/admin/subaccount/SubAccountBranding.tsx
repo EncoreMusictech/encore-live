@@ -190,13 +190,89 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Logo URL</Label>
-                <Input
-                  placeholder="https://example.com/logo.png"
-                  value={branding.logo_url}
-                  onChange={(e) => setBranding(prev => ({ ...prev, logo_url: e.target.value }))}
+                <Label>Logo</Label>
+                {/* Current logo preview */}
+                {branding.logo_url && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
+                    <img
+                      src={branding.logo_url}
+                      alt="Current logo"
+                      className="w-12 h-12 object-contain rounded"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <span className="text-sm text-muted-foreground truncate flex-1">
+                      {branding.logo_url.split('/').pop()}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 shrink-0"
+                      onClick={() => setBranding(prev => ({ ...prev, logo_url: '' }))}
+                      title="Remove logo"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+                {/* Upload or paste URL */}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => logoInputRef.current?.click()}
+                    className="shrink-0"
+                  >
+                    {uploading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
+                    {uploading ? 'Uploading...' : 'Upload Logo'}
+                  </Button>
+                  <Input
+                    placeholder="or paste logo URL"
+                    value={branding.logo_url}
+                    onChange={(e) => setBranding(prev => ({ ...prev, logo_url: e.target.value }))}
+                    className="flex-1"
+                  />
+                </div>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 2 * 1024 * 1024) {
+                      toast({ title: 'File too large', description: 'Logo must be under 2MB.', variant: 'destructive' });
+                      return;
+                    }
+                    setUploading(true);
+                    try {
+                      const ext = file.name.split('.').pop() || 'png';
+                      const path = `${companyId}/logo-${Date.now()}.${ext}`;
+                      const { error: uploadError } = await supabase.storage
+                        .from('company-logos')
+                        .upload(path, file, { cacheControl: '3600', upsert: false });
+                      if (uploadError) throw uploadError;
+                      const { data: { publicUrl } } = supabase.storage
+                        .from('company-logos')
+                        .getPublicUrl(path);
+                      setBranding(prev => ({ ...prev, logo_url: publicUrl }));
+                      toast({ title: 'Logo uploaded', description: 'Your logo has been uploaded successfully.' });
+                    } catch (err: any) {
+                      console.error('Logo upload error:', err);
+                      toast({ title: 'Upload failed', description: err.message || 'Failed to upload logo.', variant: 'destructive' });
+                    } finally {
+                      setUploading(false);
+                      if (logoInputRef.current) logoInputRef.current.value = '';
+                    }
+                  }}
                 />
-                <p className="text-xs text-muted-foreground">Replaces the ENCORE vinyl record in the portal header</p>
+                <p className="text-xs text-muted-foreground">PNG, JPG, SVG or WebP under 2MB. Replaces the ENCORE logo in the portal header.</p>
               </div>
               <div className="space-y-2">
                 <Label>Portal Display Name</Label>
