@@ -48,6 +48,8 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
   const [branding, setBranding] = useState<BrandingConfig>(DEFAULT_BRANDING);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
