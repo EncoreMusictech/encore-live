@@ -201,8 +201,12 @@ export default function AcceptInvitation() {
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
           <div className="flex items-center gap-2">
-            <Music className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold tracking-tight">ENCORE</span>
+            {branding?.logo_url ? (
+              <img src={branding.logo_url} alt={`${brandName} Logo`} className="h-8 w-8 object-contain" />
+            ) : (
+              <Music className="h-8 w-8 text-primary" />
+            )}
+            <span className="text-2xl font-bold tracking-tight">{brandName}</span>
           </div>
         </div>
 
