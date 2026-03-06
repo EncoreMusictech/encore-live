@@ -50,8 +50,46 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState<string>('');
   const logoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const handleFileSelected = (file: File) => {
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Logo must be under 2MB.', variant: 'destructive' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setRawImageSrc(reader.result as string);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (blob: Blob) => {
+    setCropperOpen(false);
+    setUploading(true);
+    try {
+      const path = `${companyId}/logo-${Date.now()}.png`;
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(path, blob, { cacheControl: '3600', upsert: false, contentType: 'image/png' });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(path);
+      setBranding(prev => ({ ...prev, logo_url: publicUrl }));
+      toast({ title: 'Logo uploaded', description: 'Your cropped logo has been uploaded.' });
+    } catch (err: any) {
+      console.error('Logo upload error:', err);
+      toast({ title: 'Upload failed', description: err.message || 'Failed to upload logo.', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  };
 
   useEffect(() => {
     fetchBranding();
