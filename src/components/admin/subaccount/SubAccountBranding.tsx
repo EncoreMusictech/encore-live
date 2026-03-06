@@ -248,9 +248,20 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                       variant="ghost"
                       size="sm"
                       className="h-7 px-2 shrink-0"
-                      onClick={() => {
-                        setRawImageSrc(branding.logo_url);
-                        setCropperOpen(true);
+                      onClick={async () => {
+                        try {
+                          const resp = await fetch(branding.logo_url);
+                          const blob = await resp.blob();
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setRawImageSrc(reader.result as string);
+                            setCropperOpen(true);
+                          };
+                          reader.readAsDataURL(blob);
+                        } catch {
+                          setRawImageSrc(branding.logo_url);
+                          setCropperOpen(true);
+                        }
                       }}
                       title="Re-crop logo"
                     >
