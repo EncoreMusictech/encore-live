@@ -191,13 +191,13 @@ export function CRMSidebar() {
     return <Sidebar className={collapsed ? "w-16" : "w-64"}>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         {!collapsed && <div className="flex items-center space-x-2">
-            <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-10 h-10 object-contain" />
+            <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-[60px] h-[60px] object-contain" />
             <div>
               <h2 className="font-headline font-bold text-lg">{sidebarName}</h2>
               <p className="text-xs text-muted-foreground">{viewContext?.companyName || 'Sub-Account View'}</p>
             </div>
           </div>}
-        {collapsed && <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-10 h-10 object-contain mx-auto" />}
+        {collapsed && <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-[60px] h-[60px] object-contain mx-auto" />}
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -302,13 +302,13 @@ export function CRMSidebar() {
   return <Sidebar className={collapsed ? "w-16" : "w-64"}>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         {!collapsed && <div className="flex items-center space-x-2">
-            <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-10 h-10 object-contain" />
+            <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-[60px] h-[60px] object-contain" />
             <div>
               <h2 className="font-headline font-bold text-lg">{sidebarName}</h2>
               <p className="text-xs text-muted-foreground">Rights Management System</p>
             </div>
           </div>}
-        {collapsed && <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-10 h-10 object-contain mx-auto" />}
+        {collapsed && <img src={sidebarLogo} alt={`${sidebarName} Logo`} className="w-[60px] h-[60px] object-contain mx-auto" />}
       </SidebarHeader>
 
       <SidebarContent>
