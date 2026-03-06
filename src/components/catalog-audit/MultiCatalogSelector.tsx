@@ -125,7 +125,7 @@ export function MultiCatalogSelector() {
             transition={{ delay: 0.2, duration: 0.5 }}
           >
             <h1 className="text-3xl md:text-4xl font-headline font-bold text-foreground mb-2">
-              <span className="text-primary">ENCORE</span> Multi-Catalog Audit
+              <span className="text-primary">{brandName}</span> Multi-Catalog Audit
             </h1>
             <p className="text-muted-foreground">
               Select multiple catalogs to generate an aggregated report

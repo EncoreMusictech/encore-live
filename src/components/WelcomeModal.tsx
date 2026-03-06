@@ -7,6 +7,7 @@ import { Sparkles, Music, FileText, TrendingUp, Users, CheckCircle, ArrowRight }
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 
 interface WelcomeModalProps {
   open: boolean;

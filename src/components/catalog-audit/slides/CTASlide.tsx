@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 
 interface CTASlideProps {
   artistName: string;

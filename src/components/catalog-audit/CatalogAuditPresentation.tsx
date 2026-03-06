@@ -39,7 +39,7 @@ const SLIDES = [
   { id: 'overview', label: 'Catalog Overview' },
   { id: 'gaps', label: 'Registration Gaps' },
   { id: 'impact', label: 'Financial Impact' },
-  { id: 'integration', label: 'ENCORE Integration' },
+  { id: 'integration', label: 'Platform Integration' },
   { id: 'cta', label: 'Call to Action' },
 ];
 

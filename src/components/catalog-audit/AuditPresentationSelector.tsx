@@ -112,7 +112,7 @@ export function AuditPresentationSelector() {
             </motion.div>
             
             <h1 className="text-4xl md:text-5xl font-headline font-bold text-foreground mb-3">
-              <span className="text-primary bg-gradient-to-r from-primary to-primary/80 bg-clip-text">ENCORE</span> Catalog Audit
+              <span className="text-primary bg-gradient-to-r from-primary to-primary/80 bg-clip-text">{brandName}</span> Catalog Audit
             </h1>
             <p className="text-muted-foreground text-lg flex items-center justify-center gap-2">
               <motion.span
