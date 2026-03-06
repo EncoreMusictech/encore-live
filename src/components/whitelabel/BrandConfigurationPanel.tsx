@@ -234,7 +234,9 @@ export function BrandConfigurationPanel() {
                         }
                       }}
                     />
-                    <p className="text-xs text-muted-foreground">PNG, JPG, SVG or WebP under 2MB</p>
+                    <p className="text-xs text-muted-foreground">
+                      PNG, JPG, SVG or WebP under 2MB. Recommended: <strong>512×512px</strong> (square). Min 128×128px for crisp display.
+                    </p>
                   </div>
                   
                   <div className="space-y-2">
