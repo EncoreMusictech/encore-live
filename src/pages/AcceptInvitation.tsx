@@ -222,7 +222,7 @@ export default function AcceptInvitation() {
         {step === 'create-account' && (
           <Card>
             <CardHeader className="text-center">
-              <CardTitle>Welcome to ENCORE</CardTitle>
+              <CardTitle>Welcome to {brandName}</CardTitle>
               <CardDescription>
                 Create your account to access the client portal
               </CardDescription>
