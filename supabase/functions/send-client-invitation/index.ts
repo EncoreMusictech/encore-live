@@ -39,10 +39,16 @@ serve(async (req) => {
     // Resolve whitelabel branding for the subscriber
     let brandLogoUrl: string | undefined;
     let brandName: string | undefined;
+    let brandPrimaryColor: string | undefined;
+    let brandAccentColor: string | undefined;
+    let brandHeaderBgColor: string | undefined;
     if (body.subscriber_user_id) {
       const branding = await resolveBrandingByUserId(body.subscriber_user_id);
       brandLogoUrl = branding.logoUrl;
       brandName = branding.brandName;
+      brandPrimaryColor = branding.primaryColor;
+      brandAccentColor = branding.accentColor;
+      brandHeaderBgColor = branding.headerBgColor;
     }
 
     let subject: string;
@@ -66,6 +72,9 @@ serve(async (req) => {
       supportEmail,
       brandLogoUrl,
       brandName,
+      brandPrimaryColor,
+      brandAccentColor,
+      brandHeaderBgColor,
     });
 
     console.log(`Sending invitation email to ${body.invitee_email}`);
