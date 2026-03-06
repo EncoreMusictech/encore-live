@@ -17,12 +17,14 @@ interface WelcomeModalProps {
 const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { branding } = useCompanyBranding();
+  const brandName = branding?.display_name || 'Encore Music';
   const [currentStep, setCurrentStep] = useState(0);
   const [completing, setCompleting] = useState(false);
 
   const steps = [
     {
-      title: "Welcome to Encore Music! 🎵",
+      title: `Welcome to ${brandName}! 🎵`,
       subtitle: "Your comprehensive music industry management platform",
       icon: Sparkles,
       content: (
