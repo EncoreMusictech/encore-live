@@ -1,51 +1,36 @@
 
 
-## Plan: Fix work_id collision + runId ownership + cleanup safety
+## Plan: Logo Upload for Sub-account Branding
 
-Three targeted edits across two files. No new files.
+### Summary
+Add a file upload option alongside the existing Logo URL input in the branding configuration. Logos are stored in a new `company-logos` Supabase storage bucket, and the resulting public URL is set as the `logo_url` in branding settings.
 
----
+### Changes
 
-### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
+#### 1. Create `company-logos` storage bucket
+**New migration file**
 
-**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
+- Create a public bucket `company-logos` with image-only MIME type restrictions (PNG, JPG, SVG, WebP) and a 2MB size limit.
+- RLS policies: authenticated users can upload/update/delete files in a path prefixed by the company ID, and anyone can read (public bucket).
 
-**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
-```ts
-const copyrightInserts = [
-  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-];
-```
-The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
+#### 2. Add upload UI to `SubAccountBranding.tsx`
+**File: `src/components/admin/subaccount/SubAccountBranding.tsx`** (~lines 189-198)
 
----
+Replace the single Logo URL input with a two-option approach:
+- **Upload button**: Uses a hidden `<input type="file" accept="image/*">` triggered by a button. On file select, uploads to `company-logos/{companyId}/logo.{ext}` via `supabase.storage`, gets the public URL, and sets it as `branding.logo_url`.
+- **OR paste URL**: Keep the existing text input as a fallback for users who already have a hosted logo.
+- Show a small preview thumbnail of the current logo (whether uploaded or URL-pasted).
+- Show upload progress/loading state during the upload.
 
-### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
+The upload path uses the `companyId` prop already available in the component, ensuring each sub-account's logo is isolated.
 
-**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
-```ts
-const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
-setRunId(currentRunId);
-const fixtures = await createFixtures(currentRunId, user.id);
-```
+#### 3. Apply same upload option to `BrandConfigurationPanel.tsx`
+**File: `src/components/whitelabel/BrandConfigurationPanel.tsx`**
 
-**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
-```ts
-} finally {
-  if (!skipCleanup && currentRunId) {
-    try {
-      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
-      if (cleanupErrors.length > 0) {
-        console.warn('Cleanup errors:', cleanupErrors);
-      }
-    } catch (e) {
-      console.error('Cleanup failed:', e);
-    }
-  }
-  setRunning(false);
-}
-```
-Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
+Add the same upload capability to the enterprise-level brand configuration panel for consistency.
+
+### Technical Details
+- Storage path: `company-logos/{companyId}/logo-{timestamp}.{ext}` (timestamp avoids browser caching issues on re-upload)
+- On successful upload, the public URL from `supabase.storage.from('company-logos').getPublicUrl(...)` is written into `branding.logo_url`
+- No new database tables needed — the URL is stored in the existing `companies.settings.branding.logo_url` JSON field
 
