@@ -3,6 +3,26 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 interface BrandingResult {
   logoUrl?: string;
   brandName?: string;
+  accentColor?: string;
+  primaryColor?: string;
+  headerBgColor?: string;
+}
+
+/** Convert HSL string like "220 90% 56%" to hex for email use */
+function hslToHex(hslStr: string): string | undefined {
+  if (!hslStr) return undefined;
+  const parts = hslStr.trim().split(/\s+/);
+  if (parts.length < 3) return undefined;
+  const h = parseFloat(parts[0]);
+  const s = parseFloat(parts[1]) / 100;
+  const l = parseFloat(parts[2]) / 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
 }
 
 /**
@@ -26,9 +46,13 @@ export async function resolveCompanyBranding(companyId: string): Promise<Brandin
 
     const settings = data.settings as Record<string, any> | null;
     if (settings?.branding?.enabled && settings.branding.logo_url) {
+      const colors = settings.branding.colors || {};
       return {
         logoUrl: settings.branding.logo_url,
         brandName: settings.branding.display_name || undefined,
+        primaryColor: hslToHex(colors.primary),
+        accentColor: hslToHex(colors.accent),
+        headerBgColor: hslToHex(colors.headerBg),
       };
     }
 

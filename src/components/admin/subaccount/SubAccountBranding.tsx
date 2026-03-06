@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Palette, Save, Eye, RotateCcw, Upload, Loader2, X, Crop } from 'lucide-react';
+import { Palette, Save, Eye, RotateCcw, Upload, Loader2, X, Crop, Mail } from 'lucide-react';
 import { hslStringToHex, hexToHslString } from '@/lib/color-utils';
 import { LogoCropper } from './LogoCropper';
 
@@ -52,6 +52,8 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
   const [uploading, setUploading] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState<string>('');
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testEmail, setTestEmail] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -429,6 +431,56 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                   </div>
                 </div>
               </div>
+            </CardContent>
+           </Card>
+
+          {/* Send Test Email */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                Send Test Email
+              </CardTitle>
+              <CardDescription>
+                Send a branded test email to verify your whitelabel configuration looks correct
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="recipient@example.com"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  disabled={sendingTest || !testEmail}
+                  onClick={async () => {
+                    setSendingTest(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke('send-test-email', {
+                        body: { company_id: companyId, to_email: testEmail },
+                      });
+                      if (error) throw error;
+                      if (data?.error) throw new Error(data.error);
+                      toast({ title: 'Test email sent', description: `Branded test email sent to ${testEmail}.` });
+                    } catch (err: any) {
+                      console.error('Test email error:', err);
+                      toast({ title: 'Failed', description: err.message || 'Could not send test email.', variant: 'destructive' });
+                    } finally {
+                      setSendingTest(false);
+                    }
+                  }}
+                >
+                  {sendingTest ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+                  {sendingTest ? 'Sending...' : 'Send Test'}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                <strong>Note:</strong> Save your branding settings before sending a test email to see the latest changes.
+              </p>
             </CardContent>
           </Card>
         </>

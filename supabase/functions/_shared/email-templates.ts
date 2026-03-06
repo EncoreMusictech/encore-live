@@ -35,16 +35,23 @@ function emailLayout(opts: {
   accentColor?: string;
   brandLogoUrl?: string;
   brandName?: string;
+  brandPrimaryColor?: string;
+  brandAccentColor?: string;
+  brandHeaderBgColor?: string;
 }): string {
-  const accent = opts.accentColor || COLORS.primary;
+  const accent = opts.brandPrimaryColor || opts.accentColor || COLORS.primary;
+  const accentSecondary = opts.brandAccentColor || COLORS.accent;
   const year = new Date().getFullYear();
   const isWhitelabel = !!opts.brandLogoUrl;
   const displayName = opts.brandName || "ENCORE";
 
   // Hero section: whitelabel shows only sub-account logo; default shows full ENCORE branding
   const heroContent = isWhitelabel
-    ? `
-      <!-- Whitelabel logo -->
+    ? (() => {
+      const heroBg = opts.brandHeaderBgColor || "#0f172a";
+      const heroAccent = opts.brandPrimaryColor || accent;
+      return `
+      <!-- Whitelabel hero with brand colors -->
       <tr>
         <td style="padding:36px 40px 12px 40px;text-align:center;">
           <img src="${opts.brandLogoUrl}" alt="${displayName}" width="180" style="display:inline-block;max-width:180px;height:auto;" />
@@ -59,7 +66,8 @@ function emailLayout(opts: {
         </td>
       </tr>
       ` : `<tr><td style="padding:0 0 24px 0;">&nbsp;</td></tr>`}
-    `
+    `;
+    })()
     : `
       <!-- Badge: ANALOG SOUL. DIGITAL SPINE. -->
       <tr>
@@ -144,16 +152,20 @@ function emailLayout(opts: {
           <!-- Hero Header -->
           <tr>
             <td style="padding:0;">
-              <!--[if gte mso 9]>
-              <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;height:320px;">
-                <v:fill type="frame" src="${HERO_BG}" color="#0f172a" />
-                <v:textbox inset="0,0,0,0">
-              <![endif]-->
-              <div style="background:url('${HERO_BG}') center/cover no-repeat #0f172a;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(15,23,42,0.85),rgba(99,102,241,0.35));">
-                  ${heroContent}
-                </table>
-              </div>
+               <!--[if gte mso 9]>
+               <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;height:320px;">
+                 <v:fill type="frame" src="${isWhitelabel ? '' : HERO_BG}" color="${isWhitelabel ? (opts.brandHeaderBgColor || '#0f172a') : '#0f172a'}" />
+                 <v:textbox inset="0,0,0,0">
+               <![endif]-->
+               <div style="background:${isWhitelabel
+                 ? `linear-gradient(135deg, ${opts.brandHeaderBgColor || '#0f172a'}, ${opts.brandPrimaryColor || accent})`
+                 : `url('${HERO_BG}') center/cover no-repeat #0f172a`};">
+                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${isWhitelabel
+                   ? 'transparent'
+                   : 'linear-gradient(135deg,rgba(15,23,42,0.85),rgba(99,102,241,0.35))'};">
+                   ${heroContent}
+                 </table>
+               </div>
               <!--[if gte mso 9]>
                 </v:textbox>
               </v:rect>
@@ -252,6 +264,9 @@ export function welcomeEmail(opts: {
   appUrl?: string;
   brandLogoUrl?: string;
   brandName?: string;
+  brandPrimaryColor?: string;
+  brandAccentColor?: string;
+  brandHeaderBgColor?: string;
 }): string {
   const appUrl = opts.appUrl || "https://www.encoremusic.tech";
   const platformName = opts.brandName || "ENCORE";
@@ -267,7 +282,7 @@ export function welcomeEmail(opts: {
         ${detailRow("Role", `<span style="text-transform:capitalize;">${opts.role}</span>`)}
       </table>
     `, "🔑")}
-    ${ctaButton("Sign In to Your Account", `${appUrl}/auth`)}
+    ${ctaButton("Sign In to Your Account", `${appUrl}/auth`, opts.brandPrimaryColor)}
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-top:20px;">
       <p style="margin:0;font-size:13px;color:#92400e;">⚠️ <strong>Important:</strong> Please change your password after your first login for security.</p>
     </div>
@@ -281,6 +296,9 @@ export function welcomeEmail(opts: {
     body,
     brandLogoUrl: opts.brandLogoUrl,
     brandName: opts.brandName,
+    brandPrimaryColor: opts.brandPrimaryColor,
+    brandAccentColor: opts.brandAccentColor,
+    brandHeaderBgColor: opts.brandHeaderBgColor,
   });
 }
 
@@ -294,6 +312,9 @@ export function clientInvitationEmail(opts: {
   supportEmail?: string;
   brandLogoUrl?: string;
   brandName?: string;
+  brandPrimaryColor?: string;
+  brandAccentColor?: string;
+  brandHeaderBgColor?: string;
 }): string {
   const supportEmail = opts.supportEmail || "support@encoremusic.tech";
   const roleLabel = opts.role === "admin" ? "an administrator" : opts.role === "user" ? "a team member" : "a client";
@@ -308,13 +329,13 @@ export function clientInvitationEmail(opts: {
     <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 28px;">
       Click the button below to create your account and get started:
     </p>
-    ${ctaButton("Accept Invitation", opts.acceptUrl)}
+    ${ctaButton("Accept Invitation", opts.acceptUrl, opts.brandPrimaryColor)}
     <p style="font-size:13px;color:${COLORS.textLight};line-height:1.6;margin:24px 0 0;border-top:1px solid ${COLORS.border};padding-top:16px;">
       If the button doesn't work, copy and paste this link:<br/>
-      <a href="${opts.acceptUrl}" style="color:${COLORS.primary};word-break:break-all;font-size:12px;">${opts.acceptUrl}</a>
+      <a href="${opts.acceptUrl}" style="color:${opts.brandPrimaryColor || COLORS.primary};word-break:break-all;font-size:12px;">${opts.acceptUrl}</a>
     </p>
     <p style="font-size:13px;color:${COLORS.textLight};margin:12px 0 0;">
-      This invitation expires in 7 days. Questions? Contact <a href="mailto:${supportEmail}?subject=Invitation%20Question%20-%20${encodeURIComponent(opts.companyName)}" style="color:${COLORS.primary};">${supportEmail}</a>.
+      This invitation expires in 7 days. Questions? Contact <a href="mailto:${supportEmail}?subject=Invitation%20Question%20-%20${encodeURIComponent(opts.companyName)}" style="color:${opts.brandPrimaryColor || COLORS.primary};">${supportEmail}</a>.
     </p>
   `;
 
@@ -336,6 +357,9 @@ export function clientInvitationEmail(opts: {
     body,
     brandLogoUrl: opts.brandLogoUrl,
     brandName: opts.brandName,
+    brandPrimaryColor: opts.brandPrimaryColor,
+    brandAccentColor: opts.brandAccentColor,
+    brandHeaderBgColor: opts.brandHeaderBgColor,
   });
 }
 
@@ -894,5 +918,61 @@ export function gettingStartedOperationsEmail(opts: {
     headerTitle: "Getting Started with Operations",
     headerSubtitle: "Submit your contracts and works",
     body,
+  });
+}
+
+/** Test branding email — verifies whitelabel appearance */
+export function testBrandingEmail(opts: {
+  brandName: string;
+  brandLogoUrl?: string;
+  brandPrimaryColor?: string;
+  brandAccentColor?: string;
+  brandHeaderBgColor?: string;
+}): string {
+  const platformName = opts.brandName || "ENCORE";
+  const primaryHex = opts.brandPrimaryColor || COLORS.primary;
+  const accentHex = opts.brandAccentColor || COLORS.accent;
+  const headerBgHex = opts.brandHeaderBgColor || COLORS.dark;
+
+  const body = `
+    <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hello,</p>
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
+      This is a <strong style="color:${COLORS.text};">test email</strong> from <strong style="color:${COLORS.text};">${platformName}</strong> to verify your whitelabel branding configuration.
+    </p>
+
+    ${infoBox(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${detailRow("Brand Name", platformName)}
+        ${detailRow("Primary Color", `<span style="display:inline-block;width:14px;height:14px;background:${primaryHex};border-radius:3px;vertical-align:middle;margin-right:6px;border:1px solid ${COLORS.border};"></span> ${primaryHex}`)}
+        ${detailRow("Accent Color", `<span style="display:inline-block;width:14px;height:14px;background:${accentHex};border-radius:3px;vertical-align:middle;margin-right:6px;border:1px solid ${COLORS.border};"></span> ${accentHex}`)}
+        ${detailRow("Header BG", `<span style="display:inline-block;width:14px;height:14px;background:${headerBgHex};border-radius:3px;vertical-align:middle;margin-right:6px;border:1px solid ${COLORS.border};"></span> ${headerBgHex}`)}
+        ${detailRow("Logo", opts.brandLogoUrl ? "✅ Configured" : "❌ Not set")}
+      </table>
+    `, "🎨")}
+
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 8px;">
+      Below is a sample CTA button styled with your brand colors:
+    </p>
+    ${ctaButton("Sample Button", "https://www.encoremusic.tech", primaryHex)}
+
+    <div style="background:${COLORS.bgLight};border:1px solid ${COLORS.border};border-radius:8px;padding:14px 18px;margin-top:20px;">
+      <p style="margin:0;font-size:13px;color:${COLORS.textMuted};">
+        ✅ If the colors above match your brand configuration, your whitelabel emails are correctly set up. 
+        All future emails to your clients will use this branding.
+      </p>
+    </div>
+  `;
+
+  return emailLayout({
+    preheader: `${platformName} — Whitelabel branding test email`,
+    headerIcon: "🎨",
+    headerTitle: `${platformName} Branding Test`,
+    headerSubtitle: "Verifying your whitelabel email configuration",
+    body,
+    brandLogoUrl: opts.brandLogoUrl,
+    brandName: opts.brandName,
+    brandPrimaryColor: opts.brandPrimaryColor,
+    brandAccentColor: opts.brandAccentColor,
+    brandHeaderBgColor: opts.brandHeaderBgColor,
   });
 }
