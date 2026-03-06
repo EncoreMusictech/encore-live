@@ -17,6 +17,8 @@ export function BrandConfigurationPanel() {
   const { tenantConfig, updateTenantConfig, loading } = useTenant();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     tenant_name: tenantConfig?.tenant_name || '',
