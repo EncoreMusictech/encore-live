@@ -272,7 +272,9 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                     }
                   }}
                 />
-                <p className="text-xs text-muted-foreground">PNG, JPG, SVG or WebP under 2MB. Replaces the ENCORE logo in the portal header.</p>
+                <p className="text-xs text-muted-foreground">
+                  PNG, JPG, SVG or WebP under 2MB. Recommended size: <strong>512×512px</strong> (square). Minimum 128×128px for crisp display across sidebar, header, and emails. Replaces the ENCORE logo in the portal.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Portal Display Name</Label>
