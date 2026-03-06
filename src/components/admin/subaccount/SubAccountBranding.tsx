@@ -52,6 +52,8 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
   const [uploading, setUploading] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState<string>('');
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testEmail, setTestEmail] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
