@@ -19,7 +19,49 @@ export function BrandConfigurationPanel() {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState<string>('');
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelected = (file: File) => {
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Logo must be under 2MB.', variant: 'destructive' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setRawImageSrc(reader.result as string);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (blob: Blob) => {
+    setCropperOpen(false);
+    setUploadingLogo(true);
+    try {
+      const slug = formData.tenant_slug || 'enterprise';
+      const path = `${slug}/logo-${Date.now()}.png`;
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(path, blob, { cacheControl: '3600', upsert: false, contentType: 'image/png' });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(path);
+      setFormData(prev => ({
+        ...prev,
+        brand_config: { ...prev.brand_config, logo_url: publicUrl },
+      }));
+      toast({ title: 'Logo uploaded', description: 'Your cropped logo has been uploaded.' });
+    } catch (err: any) {
+      console.error('Logo upload error:', err);
+      toast({ title: 'Upload failed', description: err.message || 'Failed to upload logo.', variant: 'destructive' });
+    } finally {
+      setUploadingLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  };
 
   const [formData, setFormData] = useState({
     tenant_name: tenantConfig?.tenant_name || '',
