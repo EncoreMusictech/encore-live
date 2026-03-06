@@ -312,6 +312,9 @@ export function clientInvitationEmail(opts: {
   supportEmail?: string;
   brandLogoUrl?: string;
   brandName?: string;
+  brandPrimaryColor?: string;
+  brandAccentColor?: string;
+  brandHeaderBgColor?: string;
 }): string {
   const supportEmail = opts.supportEmail || "support@encoremusic.tech";
   const roleLabel = opts.role === "admin" ? "an administrator" : opts.role === "user" ? "a team member" : "a client";
@@ -326,13 +329,13 @@ export function clientInvitationEmail(opts: {
     <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 28px;">
       Click the button below to create your account and get started:
     </p>
-    ${ctaButton("Accept Invitation", opts.acceptUrl)}
+    ${ctaButton("Accept Invitation", opts.acceptUrl, opts.brandPrimaryColor)}
     <p style="font-size:13px;color:${COLORS.textLight};line-height:1.6;margin:24px 0 0;border-top:1px solid ${COLORS.border};padding-top:16px;">
       If the button doesn't work, copy and paste this link:<br/>
-      <a href="${opts.acceptUrl}" style="color:${COLORS.primary};word-break:break-all;font-size:12px;">${opts.acceptUrl}</a>
+      <a href="${opts.acceptUrl}" style="color:${opts.brandPrimaryColor || COLORS.primary};word-break:break-all;font-size:12px;">${opts.acceptUrl}</a>
     </p>
     <p style="font-size:13px;color:${COLORS.textLight};margin:12px 0 0;">
-      This invitation expires in 7 days. Questions? Contact <a href="mailto:${supportEmail}?subject=Invitation%20Question%20-%20${encodeURIComponent(opts.companyName)}" style="color:${COLORS.primary};">${supportEmail}</a>.
+      This invitation expires in 7 days. Questions? Contact <a href="mailto:${supportEmail}?subject=Invitation%20Question%20-%20${encodeURIComponent(opts.companyName)}" style="color:${opts.brandPrimaryColor || COLORS.primary};">${supportEmail}</a>.
     </p>
   `;
 
@@ -354,6 +357,9 @@ export function clientInvitationEmail(opts: {
     body,
     brandLogoUrl: opts.brandLogoUrl,
     brandName: opts.brandName,
+    brandPrimaryColor: opts.brandPrimaryColor,
+    brandAccentColor: opts.brandAccentColor,
+    brandHeaderBgColor: opts.brandHeaderBgColor,
   });
 }
 
