@@ -432,8 +432,7 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                 </div>
               </div>
             </CardContent>
-          </Card>
-        </>
+           </Card>
 
           {/* Send Test Email */}
           <Card>
