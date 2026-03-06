@@ -3,7 +3,11 @@ import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 
 // Store original CSS variable values so we can restore them
 const ORIGINAL_VALUES: Record<string, string> = {};
-const BRANDING_VARS = ['--primary', '--accent', '--ring', '--electric-lavender', '--music-purple'];
+const BRANDING_VARS = [
+  '--primary', '--accent', '--ring', '--electric-lavender', '--music-purple',
+  '--sidebar-primary', '--sidebar-accent-foreground',
+  '--dusty-gold', '--music-gold',
+];
 
 function captureOriginals() {
   if (Object.keys(ORIGINAL_VALUES).length > 0) return;
@@ -22,6 +26,10 @@ function applyBranding(colors: { primary: string; accent: string; headerBg: stri
   root.style.setProperty('--ring', colors.primary);
   root.style.setProperty('--electric-lavender', colors.primary);
   root.style.setProperty('--music-purple', colors.primary);
+  root.style.setProperty('--sidebar-primary', colors.primary);
+  root.style.setProperty('--sidebar-accent-foreground', colors.accent);
+  root.style.setProperty('--dusty-gold', colors.accent);
+  root.style.setProperty('--music-gold', colors.accent);
 }
 
 function restoreBranding() {
