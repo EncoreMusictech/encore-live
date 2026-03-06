@@ -45,18 +45,33 @@ function emailLayout(opts: {
   const isWhitelabel = !!opts.brandLogoUrl;
   const displayName = opts.brandName || "ENCORE";
 
-  // Hero section: whitelabel shows only sub-account logo; default shows full ENCORE branding
+  // Hero section: whitelabel keeps same background image, overlays brand colors & logo
   const heroContent = isWhitelabel
     ? (() => {
-      const heroBg = opts.brandHeaderBgColor || "#0f172a";
-      const heroAccent = opts.brandPrimaryColor || accent;
       return `
-      <!-- Whitelabel hero with brand colors -->
+      <!-- Whitelabel hero — same bg image, brand logo -->
       <tr>
-        <td style="padding:36px 40px 12px 40px;text-align:center;">
+        <td style="padding:28px 40px 0 40px;text-align:center;">
           <img src="${opts.brandLogoUrl}" alt="${displayName}" width="180" style="display:inline-block;max-width:180px;height:auto;" />
         </td>
       </tr>
+
+      <!-- Brand name pill -->
+      <tr>
+        <td style="padding:12px 40px 0 40px;text-align:center;">
+          <div style="display:inline-block;background:${accent};border-radius:14px;padding:8px 22px;">
+            <span style="font-size:12px;font-weight:800;color:#ffffff;letter-spacing:0.5px;">${displayName.toUpperCase()}</span>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Accent divider -->
+      <tr>
+        <td style="padding:14px 40px 0 40px;text-align:center;">
+          <div style="height:2px;width:60px;margin:0 auto;border-radius:2px;background:linear-gradient(90deg,${accent},${accentSecondary});"></div>
+        </td>
+      </tr>
+
       ${opts.headerTitle ? `
       <tr>
         <td style="padding:12px 40px 24px 40px;text-align:center;">
