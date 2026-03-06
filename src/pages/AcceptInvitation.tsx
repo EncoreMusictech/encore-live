@@ -19,6 +19,7 @@ export default function AcceptInvitation() {
   const { branding } = useCompanyBranding();
   const brandName = branding?.display_name || 'ENCORE';
   const { toast } = useToast();
+  const token = searchParams.get('token');
 
   const [step, setStep] = useState<Step>('loading');
   const [errorMessage, setErrorMessage] = useState('');

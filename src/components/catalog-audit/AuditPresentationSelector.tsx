@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { AnimatedMusicBackground } from './AnimatedMusicBackground';
+import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 
 interface RecentSearch {
   id: string;
@@ -20,6 +21,8 @@ interface RecentSearch {
 export function AuditPresentationSelector() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { branding } = useCompanyBranding();
+  const brandName = branding?.display_name || 'ENCORE';
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
