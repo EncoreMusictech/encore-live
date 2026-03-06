@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Crop, ZoomIn, Minimize2 } from 'lucide-react';
+import { Crop, ZoomIn, Maximize2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LogoCropperProps {
   open: boolean;
@@ -13,7 +14,17 @@ interface LogoCropperProps {
   onCropComplete: (croppedBlob: Blob) => void;
 }
 
-async function getCroppedImg(imageSrc: string, pixelCrop: Area, padding: number): Promise<Blob> {
+function getImageDimensions(imageSrc: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = reject;
+    img.src = imageSrc;
+  });
+}
+
+async function getCroppedImg(imageSrc: string, pixelCrop: Area, scale: number): Promise<Blob> {
   const image = new Image();
   image.crossOrigin = 'anonymous';
   await new Promise<void>((resolve, reject) => {
@@ -28,12 +39,11 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area, padding: number)
   canvas.height = size;
   const ctx = canvas.getContext('2d')!;
 
-  // Clear canvas (transparent background)
   ctx.clearRect(0, 0, size, size);
 
-  // Calculate the drawable area after padding
-  const pad = Math.round(size * (padding / 100));
-  const drawSize = size - pad * 2;
+  // scale: 100 = fill entire frame, 50 = half size centered
+  const drawSize = Math.round(size * (scale / 100));
+  const offset = Math.round((size - drawSize) / 2);
 
   ctx.drawImage(
     image,
@@ -41,8 +51,8 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area, padding: number)
     pixelCrop.y,
     pixelCrop.width,
     pixelCrop.height,
-    pad,
-    pad,
+    offset,
+    offset,
     drawSize,
     drawSize
   );
@@ -59,17 +69,39 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area, padding: number)
 export function LogoCropper({ open, imageSrc, onClose, onCropComplete }: LogoCropperProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [padding, setPadding] = useState(0);
+  const [scale, setScale] = useState(100);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const onCropAreaComplete = useCallback((_: Area, croppedPixels: Area) => {
     setCroppedAreaPixels(croppedPixels);
   }, []);
 
   const handleConfirm = async () => {
-    if (!croppedAreaPixels) return;
-    const blob = await getCroppedImg(imageSrc, croppedAreaPixels, padding);
-    onCropComplete(blob);
+    setIsProcessing(true);
+    try {
+      let cropArea = croppedAreaPixels;
+
+      // Fallback: if user never moved/zoomed, crop the entire image
+      if (!cropArea) {
+        const dims = await getImageDimensions(imageSrc);
+        const minSide = Math.min(dims.width, dims.height);
+        cropArea = {
+          x: Math.round((dims.width - minSide) / 2),
+          y: Math.round((dims.height - minSide) / 2),
+          width: minSide,
+          height: minSide,
+        };
+      }
+
+      const blob = await getCroppedImg(imageSrc, cropArea, scale);
+      onCropComplete(blob);
+    } catch (err) {
+      console.error('Crop failed:', err);
+      toast.error('Failed to crop image. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -81,7 +113,7 @@ export function LogoCropper({ open, imageSrc, onClose, onCropComplete }: LogoCro
             Crop Logo
           </DialogTitle>
           <DialogDescription>
-            Adjust the crop area, zoom, and padding to frame your logo perfectly.
+            Adjust the crop area, zoom, and scale to frame your logo perfectly.
           </DialogDescription>
         </DialogHeader>
 
@@ -122,32 +154,33 @@ export function LogoCropper({ open, imageSrc, onClose, onCropComplete }: LogoCro
 
           <div className="space-y-1.5">
             <Label className="flex items-center gap-2 text-sm">
-              <Minimize2 className="h-4 w-4" /> Padding ({padding}%)
+              <Maximize2 className="h-4 w-4" /> Scale ({scale}%)
             </Label>
             <Slider
-              value={[padding]}
-              min={0}
-              max={40}
+              value={[scale]}
+              min={50}
+              max={100}
               step={1}
-              onValueChange={([v]) => setPadding(v)}
+              onValueChange={([v]) => setScale(v)}
             />
             <p className="text-xs text-muted-foreground">
-              Adds transparent space around the logo to make it appear smaller
+              100% = logo fills the full frame. Lower values add transparent space around the logo.
             </p>
           </div>
         </div>
 
-        {/* Live size preview */}
-        {padding > 0 && (
+        {scale < 100 && (
           <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
             <div
               className="w-16 h-16 rounded border border-dashed border-muted-foreground/30 flex items-center justify-center"
-              style={{ padding: `${(padding / 100) * 64}px` }}
             >
-              <div className="w-full h-full bg-primary/20 rounded-sm" />
+              <div
+                className="bg-primary/20 rounded-sm"
+                style={{ width: `${(scale / 100) * 64}px`, height: `${(scale / 100) * 64}px` }}
+              />
             </div>
             <span className="text-xs text-muted-foreground">
-              Logo will use {100 - padding * 2}% of the 512×512 frame
+              Logo will use {scale}% of the 512×512 frame
             </span>
           </div>
         )}
@@ -157,8 +190,11 @@ export function LogoCropper({ open, imageSrc, onClose, onCropComplete }: LogoCro
         </p>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleConfirm}>Apply Crop</Button>
+          <Button variant="outline" onClick={onClose} disabled={isProcessing}>Cancel</Button>
+          <Button onClick={handleConfirm} disabled={isProcessing}>
+            {isProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Apply Crop
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
