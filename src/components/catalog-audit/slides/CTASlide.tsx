@@ -26,8 +26,10 @@ export function CTASlide({
   isGeneratingPDF = false,
   shareUrl
 }: CTASlideProps) {
+  const { branding } = useCompanyBranding();
+  const brandName = branding?.display_name || 'ENCORE';
   const currentUrl = shareUrl || window.location.href;
-  const shareText = `Check out this catalog audit for ${artistName} - Discover uncollected royalties with ENCORE`;
+  const shareText = `Check out this catalog audit for ${artistName} - Discover uncollected royalties with ${brandName}`;
 
   const handleShare = (platform: 'copy' | 'linkedin' | 'facebook' | 'instagram' | 'tiktok') => {
     const encodedUrl = encodeURIComponent(currentUrl);
