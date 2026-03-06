@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Palette, Save, Eye, RotateCcw, Upload, Loader2, X, Crop } from 'lucide-react';
+import { Palette, Save, Eye, RotateCcw, Upload, Loader2, X, Crop, Mail } from 'lucide-react';
 import { hslStringToHex, hexToHslString } from '@/lib/color-utils';
 import { LogoCropper } from './LogoCropper';
 
