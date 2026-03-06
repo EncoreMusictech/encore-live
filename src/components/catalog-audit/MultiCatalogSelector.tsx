@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useMultiCatalogAudit } from '@/hooks/useMultiCatalogAudit';
 import { format } from 'date-fns';
+import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 
 interface AvailableCatalog {
   id: string;
@@ -22,6 +23,8 @@ interface AvailableCatalog {
 export function MultiCatalogSelector() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { branding } = useCompanyBranding();
+  const brandName = branding?.display_name || 'ENCORE';
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [availableCatalogs, setAvailableCatalogs] = useState<AvailableCatalog[]>([]);
@@ -125,7 +128,7 @@ export function MultiCatalogSelector() {
             transition={{ delay: 0.2, duration: 0.5 }}
           >
             <h1 className="text-3xl md:text-4xl font-headline font-bold text-foreground mb-2">
-              <span className="text-primary">ENCORE</span> Multi-Catalog Audit
+              <span className="text-primary">{brandName}</span> Multi-Catalog Audit
             </h1>
             <p className="text-muted-foreground">
               Select multiple catalogs to generate an aggregated report

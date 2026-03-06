@@ -7,6 +7,7 @@ import { Sparkles, Music, FileText, TrendingUp, Users, CheckCircle, ArrowRight }
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 
 interface WelcomeModalProps {
   open: boolean;
@@ -16,12 +17,14 @@ interface WelcomeModalProps {
 const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { branding } = useCompanyBranding();
+  const brandName = branding?.display_name || 'Encore Music';
   const [currentStep, setCurrentStep] = useState(0);
   const [completing, setCompleting] = useState(false);
 
   const steps = [
     {
-      title: "Welcome to Encore Music! 🎵",
+      title: `Welcome to ${brandName}! 🎵`,
       subtitle: "Your comprehensive music industry management platform",
       icon: Sparkles,
       content: (
@@ -141,7 +144,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
       if (error) throw error;
 
       toast({
-        title: "Welcome to Encore Music!",
+        title: `Welcome to ${brandName}!`,
         description: "Your account setup is complete. Let's get started!",
       });
 
@@ -151,7 +154,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
       console.error('Error completing onboarding:', error);
       toast({
         title: "Setup Complete",
-        description: "Welcome to Encore Music!",
+        description: `Welcome to ${brandName}!`,
       });
       onClose();
     } finally {

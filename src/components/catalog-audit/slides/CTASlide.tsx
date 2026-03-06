@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 
 interface CTASlideProps {
   artistName: string;
@@ -25,8 +26,10 @@ export function CTASlide({
   isGeneratingPDF = false,
   shareUrl
 }: CTASlideProps) {
+  const { branding } = useCompanyBranding();
+  const brandName = branding?.display_name || 'ENCORE';
   const currentUrl = shareUrl || window.location.href;
-  const shareText = `Check out this catalog audit for ${artistName} - Discover uncollected royalties with ENCORE`;
+  const shareText = `Check out this catalog audit for ${artistName} - Discover uncollected royalties with ${brandName}`;
 
   const handleShare = (platform: 'copy' | 'linkedin' | 'facebook' | 'instagram' | 'tiktok') => {
     const encodedUrl = encodeURIComponent(currentUrl);
@@ -70,7 +73,7 @@ export function CTASlide({
             Ready to recover your royalties?
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Let ENCORE help {artistName} collect what they've earned
+            Let {brandName} help {artistName} collect what they've earned
           </p>
         </div>
 

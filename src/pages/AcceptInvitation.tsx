@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,8 @@ export default function AcceptInvitation() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, signIn } = useAuth();
+  const { branding } = useCompanyBranding();
+  const brandName = branding?.display_name || 'ENCORE';
   const { toast } = useToast();
   const token = searchParams.get('token');
 
@@ -198,8 +201,12 @@ export default function AcceptInvitation() {
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
           <div className="flex items-center gap-2">
-            <Music className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold tracking-tight">ENCORE</span>
+            {branding?.logo_url ? (
+              <img src={branding.logo_url} alt={`${brandName} Logo`} className="h-8 w-8 object-contain" />
+            ) : (
+              <Music className="h-8 w-8 text-primary" />
+            )}
+            <span className="text-2xl font-bold tracking-tight">{brandName}</span>
           </div>
         </div>
 
@@ -215,7 +222,7 @@ export default function AcceptInvitation() {
         {step === 'create-account' && (
           <Card>
             <CardHeader className="text-center">
-              <CardTitle>Welcome to ENCORE</CardTitle>
+              <CardTitle>Welcome to {brandName}</CardTitle>
               <CardDescription>
                 Create your account to access the client portal
               </CardDescription>

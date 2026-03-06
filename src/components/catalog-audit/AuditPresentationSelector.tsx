@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { AnimatedMusicBackground } from './AnimatedMusicBackground';
+import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 
 interface RecentSearch {
   id: string;
@@ -20,6 +21,8 @@ interface RecentSearch {
 export function AuditPresentationSelector() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { branding } = useCompanyBranding();
+  const brandName = branding?.display_name || 'ENCORE';
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
@@ -112,7 +115,7 @@ export function AuditPresentationSelector() {
             </motion.div>
             
             <h1 className="text-4xl md:text-5xl font-headline font-bold text-foreground mb-3">
-              <span className="text-primary bg-gradient-to-r from-primary to-primary/80 bg-clip-text">ENCORE</span> Catalog Audit
+              <span className="text-primary bg-gradient-to-r from-primary to-primary/80 bg-clip-text">{brandName}</span> Catalog Audit
             </h1>
             <p className="text-muted-foreground text-lg flex items-center justify-center gap-2">
               <motion.span
