@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Palette, Save, Eye, RotateCcw, Upload, Loader2, X } from 'lucide-react';
+import { Palette, Save, Eye, RotateCcw, Upload, Loader2, X, Crop } from 'lucide-react';
 import { hslStringToHex, hexToHslString } from '@/lib/color-utils';
 import { LogoCropper } from './LogoCropper';
 
@@ -242,6 +242,19 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                     <span className="text-sm text-muted-foreground truncate flex-1">
                       {branding.logo_url.split('/').pop()}
                     </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 shrink-0"
+                      onClick={() => {
+                        setRawImageSrc(branding.logo_url);
+                        setCropperOpen(true);
+                      }}
+                      title="Re-crop logo"
+                    >
+                      <Crop className="h-4 w-4 mr-1" />
+                      <span className="text-xs">Re-crop</span>
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
