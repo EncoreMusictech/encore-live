@@ -12,6 +12,7 @@ import { Upload, Palette, Globe, Settings, Users, Crown, Loader2, X } from 'luci
 import { hslStringToHex, hexToHslString } from '@/lib/color-utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { LogoCropper } from '@/components/admin/subaccount/LogoCropper';
 
 export function BrandConfigurationPanel() {
   const { tenantConfig, updateTenantConfig, loading } = useTenant();
