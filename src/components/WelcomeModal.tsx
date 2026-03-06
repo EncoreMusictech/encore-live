@@ -144,7 +144,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
       if (error) throw error;
 
       toast({
-        title: "Welcome to Encore Music!",
+        title: `Welcome to ${brandName}!`,
         description: "Your account setup is complete. Let's get started!",
       });
 
@@ -154,7 +154,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
       console.error('Error completing onboarding:', error);
       toast({
         title: "Setup Complete",
-        description: "Welcome to Encore Music!",
+        description: `Welcome to ${brandName}!`,
       });
       onClose();
     } finally {

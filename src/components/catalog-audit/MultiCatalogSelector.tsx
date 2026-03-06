@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useMultiCatalogAudit } from '@/hooks/useMultiCatalogAudit';
 import { format } from 'date-fns';
+import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 
 interface AvailableCatalog {
   id: string;
@@ -22,6 +23,8 @@ interface AvailableCatalog {
 export function MultiCatalogSelector() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { branding } = useCompanyBranding();
+  const brandName = branding?.display_name || 'ENCORE';
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [availableCatalogs, setAvailableCatalogs] = useState<AvailableCatalog[]>([]);

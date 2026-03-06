@@ -73,7 +73,7 @@ export function CTASlide({
             Ready to recover your royalties?
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Let ENCORE help {artistName} collect what they've earned
+            Let {brandName} help {artistName} collect what they've earned
           </p>
         </div>
 
