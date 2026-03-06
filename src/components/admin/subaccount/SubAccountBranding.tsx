@@ -245,6 +245,19 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="h-7 px-2 shrink-0"
+                      onClick={() => {
+                        setRawImageSrc(branding.logo_url);
+                        setCropperOpen(true);
+                      }}
+                      title="Re-crop logo"
+                    >
+                      <Crop className="h-4 w-4 mr-1" />
+                      <span className="text-xs">Re-crop</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-7 w-7 p-0 shrink-0"
                       onClick={() => setBranding(prev => ({ ...prev, logo_url: '' }))}
                       title="Remove logo"
