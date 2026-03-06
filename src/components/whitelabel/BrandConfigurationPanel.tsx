@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,14 +8,17 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useTenant } from '@/contexts/TenantContext';
-import { Upload, Palette, Globe, Settings, Users, Crown } from 'lucide-react';
+import { Upload, Palette, Globe, Settings, Users, Crown, Loader2, X } from 'lucide-react';
 import { hslStringToHex, hexToHslString } from '@/lib/color-utils';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export function BrandConfigurationPanel() {
   const { tenantConfig, updateTenantConfig, loading } = useTenant();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     tenant_name: tenantConfig?.tenant_name || '',
@@ -141,19 +144,97 @@ export function BrandConfigurationPanel() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="logo_url">Logo URL</Label>
-                    <Input
-                      id="logo_url"
-                      value={formData.brand_config.logo_url}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        brand_config: {
-                          ...prev.brand_config,
-                          logo_url: e.target.value,
-                        },
-                      }))}
-                      placeholder="https://example.com/logo.png"
+                    <Label htmlFor="logo_url">Logo</Label>
+                    {formData.brand_config.logo_url && (
+                      <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
+                        <img
+                          src={formData.brand_config.logo_url}
+                          alt="Current logo"
+                          className="w-12 h-12 object-contain rounded"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                        <span className="text-sm text-muted-foreground truncate flex-1">
+                          {formData.brand_config.logo_url.split('/').pop()}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 shrink-0"
+                          onClick={() => setFormData(prev => ({
+                            ...prev,
+                            brand_config: { ...prev.brand_config, logo_url: '' },
+                          }))}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={uploadingLogo}
+                        onClick={() => logoInputRef.current?.click()}
+                        className="shrink-0"
+                      >
+                        {uploadingLogo ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4 mr-2" />
+                        )}
+                        {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                      </Button>
+                      <Input
+                        id="logo_url"
+                        value={formData.brand_config.logo_url}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          brand_config: { ...prev.brand_config, logo_url: e.target.value },
+                        }))}
+                        placeholder="or paste logo URL"
+                        className="flex-1"
+                      />
+                    </div>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 2 * 1024 * 1024) {
+                          toast({ title: 'File too large', description: 'Logo must be under 2MB.', variant: 'destructive' });
+                          return;
+                        }
+                        setUploadingLogo(true);
+                        try {
+                          const ext = file.name.split('.').pop() || 'png';
+                          const slug = formData.tenant_slug || 'enterprise';
+                          const path = `${slug}/logo-${Date.now()}.${ext}`;
+                          const { error: uploadError } = await supabase.storage
+                            .from('company-logos')
+                            .upload(path, file, { cacheControl: '3600', upsert: false });
+                          if (uploadError) throw uploadError;
+                          const { data: { publicUrl } } = supabase.storage
+                            .from('company-logos')
+                            .getPublicUrl(path);
+                          setFormData(prev => ({
+                            ...prev,
+                            brand_config: { ...prev.brand_config, logo_url: publicUrl },
+                          }));
+                          toast({ title: 'Logo uploaded', description: 'Your logo has been uploaded successfully.' });
+                        } catch (err: any) {
+                          console.error('Logo upload error:', err);
+                          toast({ title: 'Upload failed', description: err.message || 'Failed to upload logo.', variant: 'destructive' });
+                        } finally {
+                          setUploadingLogo(false);
+                          if (logoInputRef.current) logoInputRef.current.value = '';
+                        }
+                      }}
                     />
+                    <p className="text-xs text-muted-foreground">PNG, JPG, SVG or WebP under 2MB</p>
                   </div>
                   
                   <div className="space-y-2">
