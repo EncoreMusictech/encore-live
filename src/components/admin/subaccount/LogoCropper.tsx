@@ -106,7 +106,7 @@ export function LogoCropper({ open, imageSrc, onClose, onCropComplete }: LogoCro
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-lg" style={{ zIndex: 100 }}>
+      <DialogContent className="sm:max-w-2xl" style={{ zIndex: 100 }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Crop className="h-5 w-5 text-primary" />
@@ -118,7 +118,7 @@ export function LogoCropper({ open, imageSrc, onClose, onCropComplete }: LogoCro
         </DialogHeader>
 
         {imageSrc && (
-          <div className="relative w-full h-[300px] bg-muted rounded-lg overflow-hidden">
+          <div className="relative w-full h-[450px] bg-muted rounded-lg overflow-hidden">
             <Cropper
               image={imageSrc}
               crop={crop}
