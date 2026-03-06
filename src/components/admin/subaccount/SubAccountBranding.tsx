@@ -282,38 +282,21 @@ export function SubAccountBranding({ companyId }: SubAccountBrandingProps) {
                   type="file"
                   accept="image/png,image/jpeg,image/svg+xml,image/webp"
                   className="hidden"
-                  onChange={async (e) => {
+                  onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (!file) return;
-                    if (file.size > 2 * 1024 * 1024) {
-                      toast({ title: 'File too large', description: 'Logo must be under 2MB.', variant: 'destructive' });
-                      return;
-                    }
-                    setUploading(true);
-                    try {
-                      const ext = file.name.split('.').pop() || 'png';
-                      const path = `${companyId}/logo-${Date.now()}.${ext}`;
-                      const { error: uploadError } = await supabase.storage
-                        .from('company-logos')
-                        .upload(path, file, { cacheControl: '3600', upsert: false });
-                      if (uploadError) throw uploadError;
-                      const { data: { publicUrl } } = supabase.storage
-                        .from('company-logos')
-                        .getPublicUrl(path);
-                      setBranding(prev => ({ ...prev, logo_url: publicUrl }));
-                      toast({ title: 'Logo uploaded', description: 'Your logo has been uploaded successfully.' });
-                    } catch (err: any) {
-                      console.error('Logo upload error:', err);
-                      toast({ title: 'Upload failed', description: err.message || 'Failed to upload logo.', variant: 'destructive' });
-                    } finally {
-                      setUploading(false);
-                      if (logoInputRef.current) logoInputRef.current.value = '';
-                    }
+                    if (file) handleFileSelected(file);
                   }}
                 />
                 <p className="text-xs text-muted-foreground">
-                  PNG, JPG, SVG or WebP under 2MB. Recommended size: <strong>512×512px</strong> (square). Minimum 128×128px for crisp display across sidebar, header, and emails. Replaces the ENCORE logo in the portal.
+                  <strong>Recommended:</strong> Transparent <strong>PNG</strong> with no background, 512×512px (square). Min 128×128px. Under 2MB. A crop tool will appear after selecting a file to ensure correct sizing.
                 </p>
+
+                <LogoCropper
+                  open={cropperOpen}
+                  imageSrc={rawImageSrc}
+                  onClose={() => { setCropperOpen(false); if (logoInputRef.current) logoInputRef.current.value = ''; }}
+                  onCropComplete={handleCropComplete}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Portal Display Name</Label>

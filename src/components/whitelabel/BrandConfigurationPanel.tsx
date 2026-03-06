@@ -244,42 +244,21 @@ export function BrandConfigurationPanel() {
                       type="file"
                       accept="image/png,image/jpeg,image/svg+xml,image/webp"
                       className="hidden"
-                      onChange={async (e) => {
+                      onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (file.size > 2 * 1024 * 1024) {
-                          toast({ title: 'File too large', description: 'Logo must be under 2MB.', variant: 'destructive' });
-                          return;
-                        }
-                        setUploadingLogo(true);
-                        try {
-                          const ext = file.name.split('.').pop() || 'png';
-                          const slug = formData.tenant_slug || 'enterprise';
-                          const path = `${slug}/logo-${Date.now()}.${ext}`;
-                          const { error: uploadError } = await supabase.storage
-                            .from('company-logos')
-                            .upload(path, file, { cacheControl: '3600', upsert: false });
-                          if (uploadError) throw uploadError;
-                          const { data: { publicUrl } } = supabase.storage
-                            .from('company-logos')
-                            .getPublicUrl(path);
-                          setFormData(prev => ({
-                            ...prev,
-                            brand_config: { ...prev.brand_config, logo_url: publicUrl },
-                          }));
-                          toast({ title: 'Logo uploaded', description: 'Your logo has been uploaded successfully.' });
-                        } catch (err: any) {
-                          console.error('Logo upload error:', err);
-                          toast({ title: 'Upload failed', description: err.message || 'Failed to upload logo.', variant: 'destructive' });
-                        } finally {
-                          setUploadingLogo(false);
-                          if (logoInputRef.current) logoInputRef.current.value = '';
-                        }
+                        if (file) handleFileSelected(file);
                       }}
                     />
                     <p className="text-xs text-muted-foreground">
-                      PNG, JPG, SVG or WebP under 2MB. Recommended: <strong>512×512px</strong> (square). Min 128×128px for crisp display.
+                      <strong>Recommended:</strong> Transparent <strong>PNG</strong> with no background, 512×512px (square). Min 128×128px. Under 2MB.
                     </p>
+
+                    <LogoCropper
+                      open={cropperOpen}
+                      imageSrc={rawImageSrc}
+                      onClose={() => { setCropperOpen(false); if (logoInputRef.current) logoInputRef.current.value = ''; }}
+                      onCropComplete={handleCropComplete}
+                    />
                   </div>
                   
                   <div className="space-y-2">
