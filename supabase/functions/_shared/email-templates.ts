@@ -908,3 +908,59 @@ export function gettingStartedOperationsEmail(opts: {
     body,
   });
 }
+
+/** Test branding email — verifies whitelabel appearance */
+export function testBrandingEmail(opts: {
+  brandName: string;
+  brandLogoUrl?: string;
+  brandPrimaryColor?: string;
+  brandAccentColor?: string;
+  brandHeaderBgColor?: string;
+}): string {
+  const platformName = opts.brandName || "ENCORE";
+  const primaryHex = opts.brandPrimaryColor || COLORS.primary;
+  const accentHex = opts.brandAccentColor || COLORS.accent;
+  const headerBgHex = opts.brandHeaderBgColor || COLORS.dark;
+
+  const body = `
+    <p style="font-size:16px;color:${COLORS.text};margin:0 0 16px;">Hello,</p>
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 24px;">
+      This is a <strong style="color:${COLORS.text};">test email</strong> from <strong style="color:${COLORS.text};">${platformName}</strong> to verify your whitelabel branding configuration.
+    </p>
+
+    ${infoBox(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${detailRow("Brand Name", platformName)}
+        ${detailRow("Primary Color", `<span style="display:inline-block;width:14px;height:14px;background:${primaryHex};border-radius:3px;vertical-align:middle;margin-right:6px;border:1px solid ${COLORS.border};"></span> ${primaryHex}`)}
+        ${detailRow("Accent Color", `<span style="display:inline-block;width:14px;height:14px;background:${accentHex};border-radius:3px;vertical-align:middle;margin-right:6px;border:1px solid ${COLORS.border};"></span> ${accentHex}`)}
+        ${detailRow("Header BG", `<span style="display:inline-block;width:14px;height:14px;background:${headerBgHex};border-radius:3px;vertical-align:middle;margin-right:6px;border:1px solid ${COLORS.border};"></span> ${headerBgHex}`)}
+        ${detailRow("Logo", opts.brandLogoUrl ? "✅ Configured" : "❌ Not set")}
+      </table>
+    `, "🎨")}
+
+    <p style="font-size:15px;color:${COLORS.textMuted};line-height:1.7;margin:0 0 8px;">
+      Below is a sample CTA button styled with your brand colors:
+    </p>
+    ${ctaButton("Sample Button", "https://www.encoremusic.tech", primaryHex)}
+
+    <div style="background:${COLORS.bgLight};border:1px solid ${COLORS.border};border-radius:8px;padding:14px 18px;margin-top:20px;">
+      <p style="margin:0;font-size:13px;color:${COLORS.textMuted};">
+        ✅ If the colors above match your brand configuration, your whitelabel emails are correctly set up. 
+        All future emails to your clients will use this branding.
+      </p>
+    </div>
+  `;
+
+  return emailLayout({
+    preheader: `${platformName} — Whitelabel branding test email`,
+    headerIcon: "🎨",
+    headerTitle: `${platformName} Branding Test`,
+    headerSubtitle: "Verifying your whitelabel email configuration",
+    body,
+    brandLogoUrl: opts.brandLogoUrl,
+    brandName: opts.brandName,
+    brandPrimaryColor: opts.brandPrimaryColor,
+    brandAccentColor: opts.brandAccentColor,
+    brandHeaderBgColor: opts.brandHeaderBgColor,
+  });
+}
