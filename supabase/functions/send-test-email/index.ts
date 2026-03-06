@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { testBrandingEmail } from "../_shared/email-templates.ts";
+import { clientInvitationEmail, testBrandingEmail } from "../_shared/email-templates.ts";
 import { resolveCompanyBranding } from "../_shared/resolve-branding.ts";
 import { sendGmail } from "../_shared/gmail.ts";
 
@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { company_id, to_email } = await req.json();
+    const { company_id, to_email, template } = await req.json();
 
     if (!company_id || !to_email) {
       return new Response(
@@ -29,19 +29,41 @@ serve(async (req) => {
 
     const brandName = branding.brandName || "ENCORE";
 
-    // Generate the test email HTML
-    const html = testBrandingEmail({
-      brandName,
-      brandLogoUrl: branding.logoUrl,
-      brandPrimaryColor: branding.primaryColor,
-      brandAccentColor: branding.accentColor,
-      brandHeaderBgColor: branding.headerBgColor,
-    });
+    let html: string;
+    let subject: string;
+
+    if (template === "invitation" || template === "client-invitation") {
+      // Send a sample client invitation email
+      html = clientInvitationEmail({
+        inviteeName: "Sample User",
+        companyName: brandName,
+        subscriberName: brandName,
+        acceptUrl: "https://www.encoremusic.tech/accept-invitation?token=sample-test-token",
+        role: "client",
+        supportEmail: "support@encoremusic.tech",
+        brandLogoUrl: branding.logoUrl,
+        brandName: branding.brandName,
+        brandPrimaryColor: branding.primaryColor,
+        brandAccentColor: branding.accentColor,
+        brandHeaderBgColor: branding.headerBgColor,
+      });
+      subject = `${brandName} — Sample Client Invitation`;
+    } else {
+      // Default: branding test email
+      html = testBrandingEmail({
+        brandName,
+        brandLogoUrl: branding.logoUrl,
+        brandPrimaryColor: branding.primaryColor,
+        brandAccentColor: branding.accentColor,
+        brandHeaderBgColor: branding.headerBgColor,
+      });
+      subject = `${brandName} — Whitelabel Branding Test`;
+    }
 
     // Send via Gmail
     const result = await sendGmail({
       to: [to_email],
-      subject: `${brandName} — Whitelabel Branding Test`,
+      subject,
       html,
       from: brandName,
     });

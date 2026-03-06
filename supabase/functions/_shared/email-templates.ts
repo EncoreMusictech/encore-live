@@ -45,18 +45,33 @@ function emailLayout(opts: {
   const isWhitelabel = !!opts.brandLogoUrl;
   const displayName = opts.brandName || "ENCORE";
 
-  // Hero section: whitelabel shows only sub-account logo; default shows full ENCORE branding
+  // Hero section: whitelabel keeps same background image, overlays brand colors & logo
   const heroContent = isWhitelabel
     ? (() => {
-      const heroBg = opts.brandHeaderBgColor || "#0f172a";
-      const heroAccent = opts.brandPrimaryColor || accent;
       return `
-      <!-- Whitelabel hero with brand colors -->
+      <!-- Whitelabel hero — same bg image, brand logo -->
       <tr>
-        <td style="padding:36px 40px 12px 40px;text-align:center;">
+        <td style="padding:28px 40px 0 40px;text-align:center;">
           <img src="${opts.brandLogoUrl}" alt="${displayName}" width="180" style="display:inline-block;max-width:180px;height:auto;" />
         </td>
       </tr>
+
+      <!-- Brand name pill -->
+      <tr>
+        <td style="padding:12px 40px 0 40px;text-align:center;">
+          <div style="display:inline-block;background:${accent};border-radius:14px;padding:8px 22px;">
+            <span style="font-size:12px;font-weight:800;color:#ffffff;letter-spacing:0.5px;">${displayName.toUpperCase()}</span>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Accent divider -->
+      <tr>
+        <td style="padding:14px 40px 0 40px;text-align:center;">
+          <div style="height:2px;width:60px;margin:0 auto;border-radius:2px;background:linear-gradient(90deg,${accent},${accentSecondary});"></div>
+        </td>
+      </tr>
+
       ${opts.headerTitle ? `
       <tr>
         <td style="padding:12px 40px 24px 40px;text-align:center;">
@@ -153,15 +168,13 @@ function emailLayout(opts: {
           <tr>
             <td style="padding:0;">
                <!--[if gte mso 9]>
-               <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;height:320px;">
-                 <v:fill type="frame" src="${isWhitelabel ? '' : HERO_BG}" color="${isWhitelabel ? (opts.brandHeaderBgColor || '#0f172a') : '#0f172a'}" />
-                 <v:textbox inset="0,0,0,0">
+                 <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;height:320px;">
+                   <v:fill type="frame" src="${HERO_BG}" color="#0f172a" />
+                   <v:textbox inset="0,0,0,0">
                <![endif]-->
-               <div style="background:${isWhitelabel
-                 ? `linear-gradient(135deg, ${opts.brandHeaderBgColor || '#0f172a'}, ${opts.brandPrimaryColor || accent})`
-                 : `url('${HERO_BG}') center/cover no-repeat #0f172a`};">
+               <div style="background:url('${HERO_BG}') center/cover no-repeat #0f172a;">
                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${isWhitelabel
-                   ? 'transparent'
+                   ? `linear-gradient(135deg,${opts.brandHeaderBgColor || 'rgba(15,23,42,0.85)'}e0,${accent}80)`
                    : 'linear-gradient(135deg,rgba(15,23,42,0.85),rgba(99,102,241,0.35))'};">
                    ${heroContent}
                  </table>
