@@ -35,8 +35,12 @@ function emailLayout(opts: {
   accentColor?: string;
   brandLogoUrl?: string;
   brandName?: string;
+  brandPrimaryColor?: string;
+  brandAccentColor?: string;
+  brandHeaderBgColor?: string;
 }): string {
-  const accent = opts.accentColor || COLORS.primary;
+  const accent = opts.brandPrimaryColor || opts.accentColor || COLORS.primary;
+  const accentSecondary = opts.brandAccentColor || COLORS.accent;
   const year = new Date().getFullYear();
   const isWhitelabel = !!opts.brandLogoUrl;
   const displayName = opts.brandName || "ENCORE";
