@@ -65,30 +65,35 @@ export function LogoCropper({ open, imageSrc, onClose, onCropComplete }: LogoCro
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" style={{ zIndex: 100 }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Crop className="h-5 w-5 text-primary" />
             Crop Logo
           </DialogTitle>
+          <DialogDescription>
+            Adjust the crop area and zoom to frame your logo perfectly.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="relative w-full h-[350px] bg-muted rounded-lg overflow-hidden">
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            aspect={1}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={onCropAreaComplete}
-            cropShape="rect"
-            showGrid={false}
-            style={{
-              containerStyle: { borderRadius: '0.5rem' },
-            }}
-          />
-        </div>
+        {imageSrc && (
+          <div className="relative w-full h-[350px] bg-muted rounded-lg overflow-hidden">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropAreaComplete}
+              cropShape="rect"
+              showGrid={false}
+              style={{
+                containerStyle: { borderRadius: '0.5rem' },
+              }}
+            />
+          </div>
+        )}
 
         <div className="space-y-2 pt-2">
           <Label className="flex items-center gap-2 text-sm">
