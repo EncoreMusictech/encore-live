@@ -88,8 +88,10 @@ export function LogoCropper({ open, imageSrc, onClose, onCropComplete }: LogoCro
               onCropComplete={onCropAreaComplete}
               cropShape="rect"
               showGrid={false}
+              objectFit="contain"
               style={{
                 containerStyle: { borderRadius: '0.5rem' },
+                mediaStyle: { objectFit: 'contain' },
               }}
             />
           </div>
@@ -102,7 +104,7 @@ export function LogoCropper({ open, imageSrc, onClose, onCropComplete }: LogoCro
           <Slider
             value={[zoom]}
             min={1}
-            max={3}
+            max={10}
             step={0.05}
             onValueChange={([v]) => setZoom(v)}
           />
