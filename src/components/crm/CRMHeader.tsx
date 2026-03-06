@@ -39,7 +39,7 @@ export function CRMHeader() {
           <SidebarTrigger />
           <div className="flex items-center space-x-2">
             <Link to="/" className="flex items-center space-x-2">
-              <img src={headerLogo} alt={`${headerName} Logo`} className="w-8 h-8 object-contain" />
+              <img src={headerLogo} alt={`${headerName} Logo`} className="w-10 h-10 object-contain" />
               <h1 className="text-xl font-headline font-bold">{headerName}</h1>
             </Link>
             {displayTier && <Badge variant="secondary" className="text-xs">
