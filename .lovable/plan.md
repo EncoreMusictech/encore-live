@@ -1,51 +1,29 @@
 
 
-## Plan: Fix work_id collision + runId ownership + cleanup safety
+## Problem Analysis
 
-Three targeted edits across two files. No new files.
+Two issues:
 
----
+1. **"Apply Crop" button silently fails** — The `handleConfirm` function returns early if `croppedAreaPixels` is `null`. When re-cropping an existing image (especially a data URL from fetch), `react-easy-crop` may not fire `onCropComplete` until the user actually moves/zooms the crop. So if a user opens the modal and immediately clicks "Apply Crop" without adjusting anything, nothing happens.
 
-### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
+2. **Padding is confusing and counterproductive** — You're right: adding padding *shrinks* the logo by adding transparent space around it. You want the opposite — a way to make the logo **bigger** to match the ENCORE logo dimensions. The padding slider is working against your goal.
 
-**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
+## Plan
 
-**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
-```ts
-const copyrightInserts = [
-  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-];
-```
-The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
+### 1. Fix "Apply Crop" button
+- Remove the `if (!croppedAreaPixels) return` guard
+- Instead, if `croppedAreaPixels` is null, fall back to cropping the entire image (full dimensions)
+- Add a loading/disabled state to the button during processing
+- Add try/catch with a toast error message so failures are visible
 
----
+### 2. Replace "Padding" with "Scale" slider
+- Remove the padding slider and all padding logic
+- Replace with a **Scale** slider (range: 50%–100%, default 100%)
+- 100% = logo fills the entire 512×512 frame (what you want to match ENCORE)
+- Lower values = logo appears smaller within the frame
+- Update `getCroppedImg` to use scale instead of padding (mathematically similar but the mental model is inverted — higher = bigger)
+- Update the label and description to be intuitive: "Scale (100% = full size)"
 
-### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
-
-**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
-```ts
-const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
-setRunId(currentRunId);
-const fixtures = await createFixtures(currentRunId, user.id);
-```
-
-**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
-```ts
-} finally {
-  if (!skipCleanup && currentRunId) {
-    try {
-      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
-      if (cleanupErrors.length > 0) {
-        console.warn('Cleanup errors:', cleanupErrors);
-      }
-    } catch (e) {
-      console.error('Cleanup failed:', e);
-    }
-  }
-  setRunning(false);
-}
-```
-Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
+### Files to Edit
+- `src/components/admin/subaccount/LogoCropper.tsx` — both fixes
 
