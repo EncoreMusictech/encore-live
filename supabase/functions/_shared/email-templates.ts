@@ -264,6 +264,9 @@ export function welcomeEmail(opts: {
   appUrl?: string;
   brandLogoUrl?: string;
   brandName?: string;
+  brandPrimaryColor?: string;
+  brandAccentColor?: string;
+  brandHeaderBgColor?: string;
 }): string {
   const appUrl = opts.appUrl || "https://www.encoremusic.tech";
   const platformName = opts.brandName || "ENCORE";
@@ -279,7 +282,7 @@ export function welcomeEmail(opts: {
         ${detailRow("Role", `<span style="text-transform:capitalize;">${opts.role}</span>`)}
       </table>
     `, "🔑")}
-    ${ctaButton("Sign In to Your Account", `${appUrl}/auth`)}
+    ${ctaButton("Sign In to Your Account", `${appUrl}/auth`, opts.brandPrimaryColor)}
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-top:20px;">
       <p style="margin:0;font-size:13px;color:#92400e;">⚠️ <strong>Important:</strong> Please change your password after your first login for security.</p>
     </div>
@@ -293,6 +296,9 @@ export function welcomeEmail(opts: {
     body,
     brandLogoUrl: opts.brandLogoUrl,
     brandName: opts.brandName,
+    brandPrimaryColor: opts.brandPrimaryColor,
+    brandAccentColor: opts.brandAccentColor,
+    brandHeaderBgColor: opts.brandHeaderBgColor,
   });
 }
 
