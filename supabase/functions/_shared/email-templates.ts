@@ -172,11 +172,9 @@ function emailLayout(opts: {
                  <v:fill type="frame" src="${isWhitelabel ? '' : HERO_BG}" color="${isWhitelabel ? (opts.brandHeaderBgColor || '#0f172a') : '#0f172a'}" />
                  <v:textbox inset="0,0,0,0">
                <![endif]-->
-               <div style="background:${isWhitelabel
-                 ? `linear-gradient(135deg, ${opts.brandHeaderBgColor || '#0f172a'}, ${opts.brandPrimaryColor || accent})`
-                 : `url('${HERO_BG}') center/cover no-repeat #0f172a`};">
+               <div style="background:url('${HERO_BG}') center/cover no-repeat #0f172a;">
                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${isWhitelabel
-                   ? 'transparent'
+                   ? `linear-gradient(135deg,${opts.brandHeaderBgColor || 'rgba(15,23,42,0.85)'}e0,${accent}80)`
                    : 'linear-gradient(135deg,rgba(15,23,42,0.85),rgba(99,102,241,0.35))'};">
                    ${heroContent}
                  </table>
