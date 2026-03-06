@@ -118,7 +118,7 @@ export function LogoCropper({ open, imageSrc, onClose, onCropComplete }: LogoCro
         </DialogHeader>
 
         {imageSrc && (
-          <div className="relative w-full h-[300px] bg-muted rounded-lg overflow-hidden">
+          <div className="relative w-full h-[450px] bg-muted rounded-lg overflow-hidden">
             <Cropper
               image={imageSrc}
               crop={crop}
