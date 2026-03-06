@@ -1,51 +1,44 @@
 
 
-## Plan: Fix work_id collision + runId ownership + cleanup safety
+## Plan: Apply Sub-account Branding Globally Across Entire App
 
-Three targeted edits across two files. No new files.
+### Problem
+Currently, the `CompanyBrandingProvider` only overrides 5 CSS variables (`--primary`, `--accent`, `--ring`, `--electric-lavender`, `--music-purple`). The sidebar and header already swap the logo/name via `useCompanyBranding`, but several areas still hardcode "ENCORE" text or miss applying the `headerBg` color. When a sub-account user logs in, branding should feel complete — no ENCORE references, full color theming.
 
----
+### Changes
 
-### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
+#### 1. Expand `CompanyBrandingProvider` CSS variable coverage
+**File: `src/components/CompanyBrandingProvider.tsx`**
 
-**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
+Add more CSS variables to the `BRANDING_VARS` list and `applyBranding` function:
+- `--sidebar-primary` → set to `colors.primary`
+- `--sidebar-accent-foreground` → set to `colors.accent`
+- `--dusty-gold` → set to `colors.accent`
+- `--music-gold` → set to `colors.accent`
+- `--gradient-primary` → rebuild gradient using `colors.primary` and `colors.accent`
+- `--gradient-accent` → rebuild gradient using `colors.accent` and `colors.primary`
+- `--shadow-elegant` → rebuild using `colors.primary`
+- `--shadow-glow` → rebuild using `colors.primary`
 
-**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
-```ts
-const copyrightInserts = [
-  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-];
-```
-The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
+This ensures buttons, badges, gradients, glows, sidebar highlights, and accent text all use the sub-account's color palette.
 
----
+#### 2. Replace hardcoded "ENCORE" text when branding is active
+**Files to edit:**
 
-### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
+- **`src/components/WelcomeModal.tsx`**: Use `useCompanyBranding` — replace "Welcome to Encore Music!" with "Welcome to {brandName}!" when branding is active. Same for the toast messages.
 
-**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
-```ts
-const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
-setRunId(currentRunId);
-const fixtures = await createFixtures(currentRunId, user.id);
-```
+- **`src/pages/AcceptInvitation.tsx`**: Use `useCompanyBranding` — replace the "ENCORE" logo text and "Welcome to ENCORE" card title with the brand name. Also swap the `<Music>` icon for the brand logo when available.
 
-**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
-```ts
-} finally {
-  if (!skipCleanup && currentRunId) {
-    try {
-      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
-      if (cleanupErrors.length > 0) {
-        console.warn('Cleanup errors:', cleanupErrors);
-      }
-    } catch (e) {
-      console.error('Cleanup failed:', e);
-    }
-  }
-  setRunning(false);
-}
-```
-Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
+- **`src/components/catalog-audit/AuditPresentationSelector.tsx`**: Replace the hardcoded `ENCORE` span in the heading with the brand name when branding is active.
+
+#### 3. Already handled (no changes needed)
+These areas already correctly swap logo/name based on `useCompanyBranding`:
+- `CRMSidebar` — uses `sidebarLogo` / `sidebarName`
+- `CRMHeader` — uses `headerLogo` / `headerName`
+- `ClientPortal` — uses `useClientBranding` for logo/name/colors
+- `LiveChatInterface` — hides "Powered by ENCORE" when branding active
+- `IntroSlide` — hides "Powered by ENCORE's..." when branding active
+
+#### Technical Detail
+No new hooks or data changes needed. `useCompanyBranding` already resolves the correct branding for logged-in sub-account users via their company membership. The `CompanyBrandingProvider` wraps the entire app in `App.tsx`, so expanding its CSS variable coverage automatically themes everything.
 
