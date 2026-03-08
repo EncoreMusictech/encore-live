@@ -9,7 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 // Direct supabase inserts used instead of useContracts().createContract to avoid per-row side effects
 import { supabase } from '@/integrations/supabase/client';
-import { Download, FileSpreadsheet, Upload, CheckCircle2, XCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Download, FileSpreadsheet, Upload, CheckCircle2, XCircle, AlertCircle, Loader2, RefreshCw, FileDown } from 'lucide-react';
+import { downloadPrefilledContracts } from '@/utils/generatePrefillContracts';
 import * as XLSX from 'xlsx';
 
 interface BulkContractImportProps {
