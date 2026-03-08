@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useViewModeOptional } from '@/hooks/useViewModeOptional';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ export default function SubAccountDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isViewingAsSubAccount } = useViewModeOptional();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [userCount, setUserCount] = useState(0);
@@ -49,7 +51,7 @@ export default function SubAccountDetailPage() {
 
   // Determine if this is an ENCORE admin (not a sub-account team member)
   const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
-  const isEncoreAdmin = adminEmails.includes(user?.email?.toLowerCase() || '');
+  const isEncoreAdmin = adminEmails.includes(user?.email?.toLowerCase() || '') && !isViewingAsSubAccount;
 
   // Check if the logged-in user is an admin of THIS sub-account company
   const [isSubAccountAdmin, setIsSubAccountAdmin] = useState(false);
