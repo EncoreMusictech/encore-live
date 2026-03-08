@@ -9,8 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 // Direct supabase inserts used instead of useContracts().createContract to avoid per-row side effects
 import { supabase } from '@/integrations/supabase/client';
-import { Download, FileSpreadsheet, Upload, CheckCircle2, XCircle, AlertCircle, Loader2, RefreshCw, FileDown } from 'lucide-react';
-import { downloadPrefilledContracts } from '@/utils/generatePrefillContracts';
+import { Download, FileSpreadsheet, Upload, CheckCircle2, XCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface BulkContractImportProps {
@@ -535,16 +534,10 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
             <CardTitle>Bulk Contract Import</CardTitle>
             <CardDescription>Import multiple contracts for {companyName} via spreadsheet.</CardDescription>
           </div>
-          <div className="flex gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
-              <Download className="h-4 w-4 mr-2" />
-              Download Template
-            </Button>
-            <Button variant="outline" size="sm" onClick={downloadPrefilledContracts}>
-              <FileDown className="h-4 w-4 mr-2" />
-              Pre-filled Example
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={handleDownloadTemplate} className="shrink-0">
+            <Download className="h-4 w-4 mr-2" />
+            Download Template
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
