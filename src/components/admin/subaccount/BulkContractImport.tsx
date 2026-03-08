@@ -535,10 +535,16 @@ export function BulkContractImport({ companyId, companyName }: BulkContractImpor
             <CardTitle>Bulk Contract Import</CardTitle>
             <CardDescription>Import multiple contracts for {companyName} via spreadsheet.</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={handleDownloadTemplate} className="shrink-0">
-            <Download className="h-4 w-4 mr-2" />
-            Download Template
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Template
+            </Button>
+            <Button variant="outline" size="sm" onClick={downloadPrefilledContracts}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Pre-filled Example
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
