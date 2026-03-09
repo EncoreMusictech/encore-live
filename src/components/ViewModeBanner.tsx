@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Button } from '@/components/ui/button';
 import { Eye, X, Building2, Users, ChevronRight } from 'lucide-react';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useToast } from '@/hooks/use-toast';
