@@ -485,7 +485,9 @@ serve(async (req) => {
     });
 
     if (!tokenResponse.ok) {
-      throw new Error('Failed to get Spotify access token');
+      const tokenErrorBody = await tokenResponse.text();
+      console.error(`Spotify token error: ${tokenResponse.status} - ${tokenErrorBody}`);
+      throw new Error(`Failed to get Spotify access token: ${tokenResponse.status}`);
     }
 
     const tokenData: SpotifyTokenResponse = await tokenResponse.json();
