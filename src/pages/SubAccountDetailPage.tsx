@@ -311,7 +311,7 @@ export default function SubAccountDetailPage() {
           )}
         </TabsList>
 
-        {(isEncoreAdmin || isSubAccountAdmin) && (
+        {hasFullAccess && (
           <TabsContent value="overview" className="space-y-6">
             <SubAccountOverview company={company} onUpdate={fetchCompanyDetails} />
           </TabsContent>
@@ -321,55 +321,55 @@ export default function SubAccountDetailPage() {
           <SubAccountOnboarding companyId={company.id} companyName={company.name} />
         </TabsContent>
 
-        {(isEncoreAdmin || isSubAccountAdmin) && (
+        {hasFullAccess && (
           <TabsContent value="messages" className="space-y-6">
             <SubAccountChat companyId={company.id} companyName={company.name} />
           </TabsContent>
         )}
 
-        {(isEncoreAdmin || isSubAccountAdmin) && (isPublishingFirm || hasChildren) && (
+        {hasFullAccess && (isPublishingFirm || hasChildren) && (
           <TabsContent value="clients" className="space-y-6">
             <ClientsManager parentCompanyId={company.id} parentCompanyName={company.display_name} />
           </TabsContent>
         )}
 
-        {(isEncoreAdmin || isSubAccountAdmin) && (
+        {hasFullAccess && (
           <TabsContent value="users" className="space-y-6">
             <SubAccountUsers companyId={company.id} onUpdate={fetchCompanyDetails} />
           </TabsContent>
         )}
 
-        {(isEncoreAdmin || isSubAccountAdmin) && (
+        {hasFullAccess && (
           <TabsContent value="modules" className="space-y-6">
             <SubAccountModules companyId={company.id} onUpdate={fetchCompanyDetails} />
           </TabsContent>
         )}
 
-        {(isEncoreAdmin || isSubAccountAdmin) && (
+        {hasFullAccess && (
           <TabsContent value="works" className="space-y-6">
             <SubAccountWorks companyId={company.id} companyName={company.name} />
           </TabsContent>
         )}
 
-        {(isEncoreAdmin || isSubAccountAdmin) && (
+        {hasFullAccess && (
           <TabsContent value="settings" className="space-y-6">
             <SubAccountSettings company={company} onUpdate={fetchCompanyDetails} />
           </TabsContent>
         )}
 
-        {(isEncoreAdmin || isSubAccountAdmin) && (
+        {hasFullAccess && (
           <TabsContent value="contracts" className="space-y-6">
             <SubAccountContracts companyId={company.id} companyName={company.name} />
           </TabsContent>
         )}
 
-        {(isEncoreAdmin || isSubAccountAdmin) && (
+        {hasFullAccess && (
           <TabsContent value="entities" className="space-y-6">
             <PublishingEntitiesManager companyId={company.id} companyName={company.name} />
           </TabsContent>
         )}
 
-        {(isEncoreAdmin || isSubAccountAdmin) && whitelabelEnabled && (
+        {hasFullAccess && whitelabelEnabled && (
           <TabsContent value="branding" className="space-y-6">
             <SubAccountBranding companyId={company.id} />
           </TabsContent>
