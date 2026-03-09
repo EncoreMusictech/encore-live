@@ -255,55 +255,55 @@ export default function SubAccountDetailPage() {
             <ClipboardList className="h-4 w-4 mr-2" />
             Onboarding
           </TabsTrigger>
-          {(isEncoreAdmin || isSubAccountAdmin) && (
+          {hasFullAccess && (
             <TabsTrigger value="messages">
               <MessageCircle className="h-4 w-4 mr-2" />
               Messages
             </TabsTrigger>
           )}
-          {(isEncoreAdmin || isSubAccountAdmin) && (isPublishingFirm || hasChildren) && (
+          {hasFullAccess && (isPublishingFirm || hasChildren) && (
             <TabsTrigger value="clients">
               <Briefcase className="h-4 w-4 mr-2" />
               Clients
             </TabsTrigger>
           )}
-          {(isEncoreAdmin || isSubAccountAdmin) && (
+          {hasFullAccess && (
             <TabsTrigger value="users">
               <Users className="h-4 w-4 mr-2" />
               Users
             </TabsTrigger>
           )}
-          {(isEncoreAdmin || isSubAccountAdmin) && (
+          {hasFullAccess && (
             <TabsTrigger value="modules">
               <Shield className="h-4 w-4 mr-2" />
               Modules
             </TabsTrigger>
           )}
-          {(isEncoreAdmin || isSubAccountAdmin) && (
+          {hasFullAccess && (
             <TabsTrigger value="works">
               <Upload className="h-4 w-4 mr-2" />
               Works
             </TabsTrigger>
           )}
-          {(isEncoreAdmin || isSubAccountAdmin) && (
+          {hasFullAccess && (
             <TabsTrigger value="contracts">
               <FileText className="h-4 w-4 mr-2" />
               Contracts
             </TabsTrigger>
           )}
-          {(isEncoreAdmin || isSubAccountAdmin) && (
+          {hasFullAccess && (
             <TabsTrigger value="entities">
               <Layers className="h-4 w-4 mr-2" />
               Entities
             </TabsTrigger>
           )}
-          {(isEncoreAdmin || isSubAccountAdmin) && (
+          {hasFullAccess && (
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
               Settings
             </TabsTrigger>
           )}
-          {(isEncoreAdmin || isSubAccountAdmin) && whitelabelEnabled && (
+          {hasFullAccess && whitelabelEnabled && (
             <TabsTrigger value="branding">
               <Palette className="h-4 w-4 mr-2" />
               Branding
