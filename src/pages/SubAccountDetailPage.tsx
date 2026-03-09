@@ -53,6 +53,7 @@ export default function SubAccountDetailPage() {
   const adminEmails = ['info@encoremusic.tech', 'support@encoremusic.tech', 'operations@encoremusic.tech'];
   const isEncoreEmail = adminEmails.includes(user?.email?.toLowerCase() || '');
   const isEncoreAdmin = isEncoreEmail && !isViewingAsSubAccount;
+  const hasFullAccess = isEncoreEmail || isSubAccountAdmin;
 
   // Check if the logged-in user is an admin of THIS sub-account company
   const [isSubAccountAdmin, setIsSubAccountAdmin] = useState(false);
