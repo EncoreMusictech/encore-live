@@ -485,7 +485,9 @@ serve(async (req) => {
     });
 
     if (!tokenResponse.ok) {
-      throw new Error('Failed to get Spotify access token');
+      const tokenErrorBody = await tokenResponse.text();
+      console.error(`Spotify token error: ${tokenResponse.status} - ${tokenErrorBody}`);
+      throw new Error(`Failed to get Spotify access token: ${tokenResponse.status}`);
     }
 
     const tokenData: SpotifyTokenResponse = await tokenResponse.json();
@@ -603,7 +605,9 @@ serve(async (req) => {
       );
 
       if (!searchResponse.ok) {
-        throw new Error('Failed to search for artist');
+        const searchErrorBody = await searchResponse.text();
+        console.error(`Spotify search error: ${searchResponse.status} - ${searchErrorBody}`);
+        throw new Error(`Failed to search for artist: Spotify returned ${searchResponse.status}`);
       }
 
       searchData = await searchResponse.json();
