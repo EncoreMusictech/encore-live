@@ -414,6 +414,16 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         music_type: data.music_type === '' ? null : data.music_type,
         music_use: data.music_use === '' ? null : data.music_use,
         smpte: data.smpte === '' ? null : data.smpte,
+        // Constrained enum fields - must be null not empty string
+        rights_clearance_type: data.rights_clearance_type === '' ? null : data.rights_clearance_type,
+        currency: data.currency === '' ? null : data.currency,
+        synch_status: data.synch_status === '' ? null : data.synch_status,
+        payment_status: data.payment_status === '' ? null : data.payment_status,
+        invoice_status: data.invoice_status === '' ? null : data.invoice_status,
+        payment_method: data.payment_method === '' ? null : data.payment_method,
+        instrumental_vocal: data.instrumental_vocal === '' ? null : data.instrumental_vocal,
+        music_prominence: data.music_prominence === '' ? null : data.music_prominence,
+        contract_execution_status: data.contract_execution_status === '' ? null : data.contract_execution_status,
         // Convert Date objects to ISO strings
         request_received: sanitizeDateField(data.request_received),
         term_start: sanitizeDateField(data.term_start),
