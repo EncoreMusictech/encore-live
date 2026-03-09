@@ -1,4 +1,4 @@
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Button } from '@/components/ui/button';
 import { Eye, X, Building2, Users, ChevronRight } from 'lucide-react';
 import { useViewMode } from '@/contexts/ViewModeContext';
