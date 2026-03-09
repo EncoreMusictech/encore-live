@@ -386,6 +386,13 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         return isNaN(parsed) ? null : parsed;
       };
 
+      // Helper to convert Date objects to ISO strings
+      const sanitizeDateField = (value: any) => {
+        if (value instanceof Date) return value.toISOString();
+        if (value === '' || value === undefined || value === null) return null;
+        return value;
+      };
+
       const sanitizedData = {
         ...data,
         // Convert numeric fields
@@ -394,8 +401,8 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         advance_amount: sanitizeNumericField(data.advance_amount),
         backend_percentage: sanitizeNumericField(data.backend_percentage),
         scene_duration_seconds: sanitizeNumericField(data.scene_duration_seconds),
-        // Convert empty strings to null for other fields
-        project_title: data.project_title === '' ? null : data.project_title,
+        // Convert empty strings to null for text fields
+        project_title: data.project_title || 'Untitled',
         synch_agent: data.synch_agent === '' ? null : data.synch_agent,
         media_type: data.media_type === '' ? null : data.media_type,
         platforms: data.platforms === '' ? null : data.platforms,
@@ -407,6 +414,18 @@ export const SyncLicenseForm = ({ open, onOpenChange, license }: SyncLicenseForm
         music_type: data.music_type === '' ? null : data.music_type,
         music_use: data.music_use === '' ? null : data.music_use,
         smpte: data.smpte === '' ? null : data.smpte,
+        // Convert Date objects to ISO strings
+        request_received: sanitizeDateField(data.request_received),
+        term_start: sanitizeDateField(data.term_start),
+        term_end: sanitizeDateField(data.term_end),
+        payment_due_date: sanitizeDateField(data.payment_due_date),
+        contract_sent_date: sanitizeDateField(data.contract_sent_date),
+        contract_signed_date: sanitizeDateField(data.contract_signed_date),
+        contract_executed_date: sanitizeDateField(data.contract_executed_date),
+        contract_expiry_date: sanitizeDateField(data.contract_expiry_date),
+        approval_issued: sanitizeDateField(data.approval_issued),
+        license_issued: sanitizeDateField(data.license_issued),
+        payment_received: sanitizeDateField(data.payment_received),
       };
       
       const submissionData = {
