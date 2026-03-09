@@ -1,4 +1,3 @@
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Eye, X, Building2, Users, ChevronRight } from 'lucide-react';
 import { useViewMode } from '@/contexts/ViewModeContext';
@@ -77,50 +76,46 @@ export function ViewModeBanner() {
   };
 
   return (
-    <div className="sticky top-0 z-40 w-full border-b bg-warning/10 backdrop-blur supports-[backdrop-filter]:bg-warning/5">
-      <Alert className="rounded-none border-0 bg-transparent py-3">
-        <div className="flex items-center justify-between w-full gap-4">
-          <div className="flex items-center gap-3 flex-1">
+    <>
+      {/* Fixed banner - always on top */}
+      <div className="fixed top-0 left-0 right-0 z-[9999] w-full border-b-2 border-warning bg-warning/95 text-warning-foreground shadow-lg">
+        <div className="flex items-center justify-between w-full gap-4 px-4 py-2">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className={cn(
-              "flex items-center gap-2 px-3 py-1 rounded-full border",
-              isAggregateView 
-                ? "bg-primary/20 border-primary/30" 
-                : "bg-warning/20 border-warning/30"
+              "flex items-center gap-2 px-3 py-1 rounded-full border shrink-0",
+              "bg-background/20 border-background/30"
             )}>
               {getModeIcon()}
-              <span className={cn(
-                "text-sm font-semibold",
-                isAggregateView ? "text-primary" : "text-warning-foreground"
-              )}>
+              <span className="text-sm font-bold">
                 {getModeLabel()}
               </span>
             </div>
-            <AlertDescription className="text-sm font-medium m-0 flex items-center gap-1">
+            <span className="text-sm font-medium flex items-center gap-1 truncate">
               {renderBreadcrumb()}
-              <span className="text-muted-foreground ml-2">
-                — All data and permissions are limited to this scope.
+              <span className="opacity-80 ml-2 hidden sm:inline">
+                — All data is scoped to this account.
               </span>
-            </AlertDescription>
+            </span>
           </div>
           
           <div className="flex items-center gap-2 shrink-0">
-            {/* Entity scope selector for companies with publishing entities */}
             <EntityScopeSelector />
-            {/* Client scope selector for publishing firms */}
             <ClientScopeSelector />
             
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={handleExit}
-              className="border-warning/30 hover:bg-warning/20"
+              className="font-bold"
             >
               <X className="h-4 w-4 mr-2" />
               Exit View Mode
             </Button>
           </div>
         </div>
-      </Alert>
-    </div>
+      </div>
+      {/* Spacer to push content below the fixed banner */}
+      <div className="h-[44px] w-full shrink-0" />
+    </>
   );
 }

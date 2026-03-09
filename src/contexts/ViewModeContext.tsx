@@ -35,11 +35,29 @@ export function ViewModeProvider({ children }: { children: ReactNode }) {
   const [viewContext, setViewContext] = useState<ViewContext | null>(null);
   const navigate = useNavigate();
 
+  // Maximum view mode session duration: 8 hours
+  const MAX_VIEW_SESSION_MS = 8 * 60 * 60 * 1000;
+
   const loadViewContext = () => {
     const stored = sessionStorage.getItem('viewContext');
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
+
+        // Auto-cleanup stale sessions based on sessionId timestamp
+        if (parsed.sessionId) {
+          const match = parsed.sessionId.match(/^session-(\d+)-/);
+          if (match) {
+            const createdAt = parseInt(match[1], 10);
+            if (Date.now() - createdAt > MAX_VIEW_SESSION_MS) {
+              console.warn('[ViewMode] Stale view session detected, auto-clearing.');
+              sessionStorage.removeItem('viewContext');
+              setViewContext(null);
+              return;
+            }
+          }
+        }
+
         // Ensure viewScope has a default value
         if (!parsed.viewScope) {
           parsed.viewScope = 'single';
