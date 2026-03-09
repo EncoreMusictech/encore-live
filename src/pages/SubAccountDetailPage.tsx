@@ -243,9 +243,9 @@ export default function SubAccountDetailPage() {
       </div>
 
       {/* Tabs — sub-account admins see all tabs for their own account */}
-      <Tabs defaultValue={(isEncoreAdmin || isSubAccountAdmin) ? "overview" : "onboarding"} className="space-y-6">
+      <Tabs defaultValue={hasFullAccess ? "overview" : "onboarding"} className="space-y-6">
         <TabsList>
-          {(isEncoreAdmin || isSubAccountAdmin) && (
+          {hasFullAccess && (
             <TabsTrigger value="overview">
               <Building2 className="h-4 w-4 mr-2" />
               Overview
