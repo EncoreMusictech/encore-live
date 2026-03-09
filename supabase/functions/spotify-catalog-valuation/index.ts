@@ -495,7 +495,7 @@ serve(async (req) => {
     let artist: SpotifyArtist | null = null;
     let searchData: any = { artists: { items: [] } };
     
-    if (artistId) {
+    if (artistId && artistId !== 'undefined' && artistId !== 'null') {
       console.log(`Using provided artistId: ${artistId}`);
       
       // Check if it's a Spotify ID, MusicBrainz ID, or PRO ID
