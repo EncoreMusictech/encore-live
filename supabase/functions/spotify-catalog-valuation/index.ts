@@ -605,7 +605,9 @@ serve(async (req) => {
       );
 
       if (!searchResponse.ok) {
-        throw new Error('Failed to search for artist');
+        const searchErrorBody = await searchResponse.text();
+        console.error(`Spotify search error: ${searchResponse.status} - ${searchErrorBody}`);
+        throw new Error(`Failed to search for artist: Spotify returned ${searchResponse.status}`);
       }
 
       searchData = await searchResponse.json();
