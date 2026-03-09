@@ -1,51 +1,32 @@
 
 
-## Plan: Fix work_id collision + runId ownership + cleanup safety
+## Problem
 
-Three targeted edits across two files. No new files.
+When an ENCORE admin enters "View as User" mode, `isEncoreAdmin` becomes `false` (line 54: `&& !isViewingAsSubAccount`). Since the admin is not actually a member of the sub-account company, `isSubAccountAdmin` is also `false`. This hides all tabs except "Onboarding".
 
----
+The user wants all tabs/features restored in view mode — only the "Back to Sub-Accounts" link should be hidden.
 
-### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
+## Solution
 
-**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
+Split the admin check into two concerns:
 
-**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
-```ts
-const copyrightInserts = [
-  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
-];
-```
-The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
+1. **`isEncoreAdmin`** — stays as-is (suppressed in view mode) — used ONLY for the "Back to Sub-Accounts" button and the Service Account Provisioner.
+2. **`hasFullAccess`** — a new boolean that is `true` when the user is an ENCORE admin (regardless of view mode) OR a sub-account admin. Used for all tab visibility.
 
----
+### Changes
 
-### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
+**File: `src/pages/SubAccountDetailPage.tsx`**
 
-**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
-```ts
-const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
-setRunId(currentRunId);
-const fixtures = await createFixtures(currentRunId, user.id);
-```
+- Add a new variable:
+  ```ts
+  const isEncoreEmail = adminEmails.includes(user?.email?.toLowerCase() || '');
+  const isEncoreAdmin = isEncoreEmail && !isViewingAsSubAccount;
+  const hasFullAccess = isEncoreEmail || isSubAccountAdmin;
+  ```
 
-**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
-```ts
-} finally {
-  if (!skipCleanup && currentRunId) {
-    try {
-      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
-      if (cleanupErrors.length > 0) {
-        console.warn('Cleanup errors:', cleanupErrors);
-      }
-    } catch (e) {
-      console.error('Cleanup failed:', e);
-    }
-  }
-  setRunning(false);
-}
-```
-Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
+- Replace all `(isEncoreAdmin || isSubAccountAdmin)` checks for tabs/content with `hasFullAccess`
+- Keep `isEncoreAdmin` only for the "Back to Sub-Accounts" button (line 155) and ServiceAccountProvisioner (line 191)
+- Update default tab: `defaultValue={hasFullAccess ? "overview" : "onboarding"}`
+
+This ensures that in "View as User" mode, the admin still sees all tabs (simulating full sub-account admin access) but cannot navigate back to the sub-accounts list.
 
