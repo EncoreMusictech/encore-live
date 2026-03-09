@@ -49,32 +49,69 @@ export const useCopyright = () => {
         return;
       }
 
-      let query = supabase
-        .from('copyrights')
-        .select(`
-          *,
-          copyright_recordings!left(
-            id,
-            isrc,
-            recording_title,
-            artist_name,
-            label_name,
-            duration_seconds,
-            release_date,
-            recording_version
-          )
-        `);
-      
-      // Apply sub-account filtering if active, otherwise scope to current user
-      if (isFilterActive) {
-        query = applyUserIdFilter(query);
-      } else {
-        // When not viewing as a sub-account, only show the current user's own copyrights
-        query = query.eq('user_id', user.id);
+      const buildQuery = (range?: { from: number; to: number }) => {
+        let q = supabase
+          .from('copyrights')
+          .select(`
+            *,
+            copyright_recordings!left(
+              id,
+              isrc,
+              recording_title,
+              artist_name,
+              label_name,
+              duration_seconds,
+              release_date,
+              recording_version
+            )
+          `);
+        
+        // Apply sub-account filtering if active, otherwise scope to current user
+        if (isFilterActive) {
+          q = applyUserIdFilter(q);
+        } else {
+          q = q.eq('user_id', user.id);
+        }
+        q = applyEntityFilter(q);
+        q = q.order('created_at', { ascending: false });
+        if (range) {
+          q = q.range(range.from, range.to);
+        }
+        return q;
+      };
+
+      // Fetch in pages of 1000 to overcome Supabase default row limit
+      const PAGE_SIZE = 1000;
+      let allData: any[] = [];
+      let page = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        const { data: pageData, error: pageError } = await buildQuery({ from, to });
+        
+        if (pageError) {
+          console.error('Error fetching copyrights page:', pageError);
+          if (pageError.code !== 'PGRST116') {
+            toast({
+              title: "Error",
+              description: "Failed to load copyrights. Please try refreshing the page.",
+              variant: "destructive",
+            });
+          }
+          setCopyrights([]);
+          setLoading(false);
+          return;
+        }
+
+        allData = allData.concat(pageData || []);
+        hasMore = (pageData?.length || 0) === PAGE_SIZE;
+        page++;
       }
-      // Apply publishing entity filter if active
-      query = applyEntityFilter(query);
-      const { data, error } = await query.order('created_at', { ascending: false });
+
+      const data = allData;
+      const error = null;
 
       if (error) {
         console.error('Error fetching copyrights:', error);
