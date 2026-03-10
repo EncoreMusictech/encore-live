@@ -6,6 +6,7 @@ import { useHierarchicalFiltering } from '@/hooks/useHierarchicalFiltering';
 import { useViewModeOptional } from '@/hooks/useViewModeOptional';
 import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
 import { emitDataRefresh } from '@/lib/dataRefresh';
+import { useDataFiltering } from '@/hooks/useDataFiltering';
 
 export type Contract = Tables<'contracts'>;
 export type ContractInsert = TablesInsert<'contracts'>;
@@ -23,6 +24,7 @@ export const useContracts = () => {
   const { toast } = useToast();
   const { applyUserIdFilter, applyClientCompanyIdFilter, filterKey, filterConfig } = useHierarchicalFiltering();
   const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
+  const { publishingEntityId, applyEntityFilter, filterKey: entityFilterKey } = useDataFiltering();
 
   // When in view-as mode, write operations use the company's service account.
   // If no service account has been provisioned yet, fall back to the first company user.
@@ -60,6 +62,11 @@ export const useContracts = () => {
         if (user) {
           query = query.eq('user_id', user.id).is('client_company_id', null);
         }
+      }
+
+      // Apply publishing entity filter when an entity is selected
+      if (publishingEntityId) {
+        query = applyEntityFilter(query);
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -700,13 +707,13 @@ export const useContracts = () => {
 
   const stableFetchContracts = useCallback(() => {
     fetchContracts();
-  }, [filterKey]);
+  }, [filterKey, entityFilterKey]);
 
   useDataRefreshListener('contracts', stableFetchContracts);
 
   useEffect(() => {
     fetchContracts();
-  }, [filterKey]); // Re-fetch when filter changes
+  }, [filterKey, entityFilterKey]); // Re-fetch when filter or entity changes
 
   return {
     contracts,
