@@ -6,6 +6,7 @@ import { useHierarchicalFiltering } from '@/hooks/useHierarchicalFiltering';
 import { useViewModeOptional } from '@/hooks/useViewModeOptional';
 import { useDataRefreshListener } from '@/hooks/useDataRefreshListener';
 import { emitDataRefresh } from '@/lib/dataRefresh';
+import { useDataFiltering } from '@/hooks/useDataFiltering';
 
 export type Contract = Tables<'contracts'>;
 export type ContractInsert = TablesInsert<'contracts'>;
