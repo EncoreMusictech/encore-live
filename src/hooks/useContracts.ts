@@ -24,6 +24,7 @@ export const useContracts = () => {
   const { toast } = useToast();
   const { applyUserIdFilter, applyClientCompanyIdFilter, filterKey, filterConfig } = useHierarchicalFiltering();
   const { isViewingAsSubAccount, viewContext } = useViewModeOptional();
+  const { publishingEntityId, applyEntityFilter, filterKey: entityFilterKey } = useDataFiltering();
 
   // When in view-as mode, write operations use the company's service account.
   // If no service account has been provisioned yet, fall back to the first company user.
