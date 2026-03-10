@@ -707,13 +707,13 @@ export const useContracts = () => {
 
   const stableFetchContracts = useCallback(() => {
     fetchContracts();
-  }, [filterKey]);
+  }, [filterKey, entityFilterKey]);
 
   useDataRefreshListener('contracts', stableFetchContracts);
 
   useEffect(() => {
     fetchContracts();
-  }, [filterKey]); // Re-fetch when filter changes
+  }, [filterKey, entityFilterKey]); // Re-fetch when filter or entity changes
 
   return {
     contracts,
