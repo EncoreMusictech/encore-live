@@ -63,6 +63,11 @@ export const useContracts = () => {
           query = query.eq('user_id', user.id).is('client_company_id', null);
         }
       }
+
+      // Apply publishing entity filter when an entity is selected
+      if (publishingEntityId) {
+        query = applyEntityFilter(query);
+      }
       
       const { data, error } = await query.order('created_at', { ascending: false });
 
