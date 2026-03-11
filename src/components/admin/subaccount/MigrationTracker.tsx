@@ -10,7 +10,9 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { AddWriterDialog } from './AddWriterDialog';
 import { ImportMigrationCsvDialog } from './ImportMigrationCsvDialog';
+import { MissingDataReportDialog } from './MissingDataReportDialog';
 import { RefreshCw, Trash2, Database } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 
 interface MigrationTrackerProps {
   companyId: string;
@@ -50,6 +52,12 @@ interface TrackingItem {
   created_at: string;
   updated_at: string;
 }
+
+const getBarColor = (pct: number) => {
+  if (pct >= 80) return 'hsl(142, 71%, 45%)';
+  if (pct >= 50) return 'hsl(48, 96%, 53%)';
+  return 'hsl(0, 84%, 60%)';
+};
 
 export function MigrationTracker({ companyId, companyName }: MigrationTrackerProps) {
   const [items, setItems] = useState<TrackingItem[]>([]);
@@ -227,6 +235,12 @@ export function MigrationTracker({ companyId, companyName }: MigrationTrackerPro
     return acc;
   }, {});
 
+  // Donut chart data
+  const donutData = [
+    { name: 'Complete', value: completedCheckpoints },
+    { name: 'Remaining', value: totalCheckpoints - completedCheckpoints },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -244,11 +258,39 @@ export function MigrationTracker({ companyId, companyName }: MigrationTrackerPro
             <CardTitle className="text-sm font-medium">Overall Migration Progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold mb-2">{overallProgress}%</div>
-            <Progress value={overallProgress} className="h-2" />
-            <p className="text-xs text-muted-foreground mt-1">
-              {completedCheckpoints} / {totalCheckpoints} checkpoints ({items.length} writers)
-            </p>
+            {items.length > 0 ? (
+              <div className="flex items-center gap-4">
+                <div className="w-[120px] h-[120px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={donutData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={35}
+                        outerRadius={55}
+                        dataKey="value"
+                        startAngle={90}
+                        endAngle={-270}
+                        strokeWidth={0}
+                      >
+                        <Cell fill="hsl(142, 71%, 45%)" />
+                        <Cell fill="hsl(var(--muted))" />
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold">{overallProgress}%</div>
+                  <p className="text-xs text-muted-foreground">
+                    {completedCheckpoints} / {totalCheckpoints} checkpoints
+                  </p>
+                  <p className="text-xs text-muted-foreground">{items.length} writers</p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-2xl font-bold">0%</div>
+            )}
           </CardContent>
         </Card>
 
@@ -256,15 +298,24 @@ export function MigrationTracker({ companyId, companyName }: MigrationTrackerPro
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Checkpoint Breakdown</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-2">
-              {checkpointStats.map(cp => (
-                <div key={cp.key} className="text-center">
-                  <div className="text-sm font-medium">{cp.pct}%</div>
-                  <div className="text-xs text-muted-foreground">{cp.label}</div>
-                </div>
-              ))}
-            </div>
+          <CardContent className="p-0 pr-4 pb-4">
+            {items.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={checkpointStats} layout="vertical" margin={{ left: 60, right: 10, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" domain={[0, 100]} tickFormatter={v => `${v}%`} fontSize={11} />
+                  <YAxis type="category" dataKey="label" fontSize={11} width={55} />
+                  <Tooltip formatter={(value: number) => [`${value}%`, 'Complete']} />
+                  <Bar dataKey="pct" radius={[0, 4, 4, 0]} barSize={16}>
+                    {checkpointStats.map((entry, index) => (
+                      <Cell key={index} fill={getBarColor(entry.pct)} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="p-4 text-sm text-muted-foreground">No data yet</div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -286,6 +337,7 @@ export function MigrationTracker({ companyId, companyName }: MigrationTrackerPro
           <Badge variant="secondary">{filteredItems.length} writers</Badge>
         </div>
         <div className="flex items-center gap-2">
+          <MissingDataReportDialog items={items} companyName={companyName} />
           <Button variant="outline" size="sm" onClick={syncFromDatabase} disabled={syncing || items.length === 0}>
             <Database className="h-4 w-4 mr-1" />
             {syncing ? 'Syncing...' : 'Sync from DB'}
