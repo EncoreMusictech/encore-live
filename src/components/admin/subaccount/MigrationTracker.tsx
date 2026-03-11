@@ -350,28 +350,7 @@ export function MigrationTracker({ companyId, companyName, readOnly = false }: M
                 Refresh
               </Button>
               <ImportMigrationCsvDialog companyId={companyId} onAdded={fetchItems} />
-              <AddWriterDialog companyId={companyId} entities={entities} onAdded={fetchItems} />
-            </>
-          )}
-          {readOnly && (
-            <Button variant="outline" size="sm" onClick={fetchItems}>
-              <RefreshCw className="h-4 w-4 mr-1" />
-              Refresh
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Tracking Table */}
-      {items.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Database className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-            <h3 className="font-medium mb-1">No writers tracked yet</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Add writers to begin tracking data migration progress for {companyName}.
-            </p>
-            <AddWriterDialog companyId={companyId} entities={entities} onAdded={fetchItems} />
+            {!readOnly && <AddWriterDialog companyId={companyId} entities={entities} onAdded={fetchItems} />}
           </CardContent>
         </Card>
       ) : (
