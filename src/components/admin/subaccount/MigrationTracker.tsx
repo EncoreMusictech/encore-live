@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { AddWriterDialog } from './AddWriterDialog';
+import { ImportMigrationCsvDialog } from './ImportMigrationCsvDialog';
 import { RefreshCw, Trash2, Database } from 'lucide-react';
 
 interface MigrationTrackerProps {
@@ -293,6 +294,7 @@ export function MigrationTracker({ companyId, companyName }: MigrationTrackerPro
             <RefreshCw className="h-4 w-4 mr-1" />
             Refresh
           </Button>
+          <ImportMigrationCsvDialog companyId={companyId} onAdded={fetchItems} />
           <AddWriterDialog companyId={companyId} entities={entities} onAdded={fetchItems} />
         </div>
       </div>
