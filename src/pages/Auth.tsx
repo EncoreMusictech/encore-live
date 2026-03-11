@@ -213,7 +213,6 @@ useEffect(() => {
         
         if (!response.error) {
           console.log('Demo user created, attempting sign in again...');
-          // Try to sign in again after creating the user
           const { error: secondSignInError } = await signIn('demo@encoremusic.tech', 'demo123');
           console.log('Second sign in attempt result:', { secondSignInError });
         } else {
@@ -221,6 +220,12 @@ useEffect(() => {
         }
       } else {
         console.log('Demo login successful on first attempt');
+      }
+
+      // Seed demo-specific notifications & messages (idempotent)
+      const { data: { user: demoUser } } = await supabase.auth.getUser();
+      if (demoUser) {
+        await seedDemoData(demoUser.id);
       }
     } catch (error) {
       console.error('Demo login error:', error);
