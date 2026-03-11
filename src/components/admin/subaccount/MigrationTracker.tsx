@@ -17,6 +17,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 interface MigrationTrackerProps {
   companyId: string;
   companyName: string;
+  readOnly?: boolean;
 }
 
 const CHECKPOINTS = [
@@ -59,7 +60,7 @@ const getBarColor = (pct: number) => {
   return 'hsl(0, 84%, 60%)';
 };
 
-export function MigrationTracker({ companyId, companyName }: MigrationTrackerProps) {
+export function MigrationTracker({ companyId, companyName, readOnly = false }: MigrationTrackerProps) {
   const [items, setItems] = useState<TrackingItem[]>([]);
   const [entities, setEntities] = useState<{ id: string; entity_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -338,16 +339,20 @@ export function MigrationTracker({ companyId, companyName }: MigrationTrackerPro
         </div>
         <div className="flex items-center gap-2">
           <MissingDataReportDialog items={items} companyName={companyName} />
-          <Button variant="outline" size="sm" onClick={syncFromDatabase} disabled={syncing || items.length === 0}>
-            <Database className="h-4 w-4 mr-1" />
-            {syncing ? 'Syncing...' : 'Sync from DB'}
-          </Button>
+          {!readOnly && (
+            <>
+              <Button variant="outline" size="sm" onClick={syncFromDatabase} disabled={syncing || items.length === 0}>
+                <Database className="h-4 w-4 mr-1" />
+                {syncing ? 'Syncing...' : 'Sync from DB'}
+              </Button>
+              <ImportMigrationCsvDialog companyId={companyId} onAdded={fetchItems} />
+              <AddWriterDialog companyId={companyId} entities={entities} onAdded={fetchItems} />
+            </>
+          )}
           <Button variant="outline" size="sm" onClick={fetchItems}>
             <RefreshCw className="h-4 w-4 mr-1" />
             Refresh
           </Button>
-          <ImportMigrationCsvDialog companyId={companyId} onAdded={fetchItems} />
-          <AddWriterDialog companyId={companyId} entities={entities} onAdded={fetchItems} />
         </div>
       </div>
 
@@ -360,7 +365,7 @@ export function MigrationTracker({ companyId, companyName }: MigrationTrackerPro
             <p className="text-sm text-muted-foreground mb-4">
               Add writers to begin tracking data migration progress for {companyName}.
             </p>
-            <AddWriterDialog companyId={companyId} entities={entities} onAdded={fetchItems} />
+            {!readOnly && <AddWriterDialog companyId={companyId} entities={entities} onAdded={fetchItems} />}
           </CardContent>
         </Card>
       ) : (
@@ -384,7 +389,7 @@ export function MigrationTracker({ companyId, companyName }: MigrationTrackerPro
                           {cp.label}
                         </TableHead>
                       ))}
-                      <TableHead className="w-[50px]" />
+                      {!readOnly && <TableHead className="w-[50px]" />}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -406,20 +411,23 @@ export function MigrationTracker({ companyId, companyName }: MigrationTrackerPro
                             <TableCell key={cp.key} className="text-center">
                               <Checkbox
                                 checked={item[cp.key]}
-                                onCheckedChange={() => toggleCheckpoint(item.id, cp.key, item[cp.key])}
+                                disabled={readOnly}
+                                onCheckedChange={() => !readOnly && toggleCheckpoint(item.id, cp.key, item[cp.key])}
                               />
                             </TableCell>
                           ))}
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                              onClick={() => deleteItem(item.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </TableCell>
+                          {!readOnly && (
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                onClick={() => deleteItem(item.id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       );
                     })}
