@@ -122,13 +122,12 @@ async function seedDemoMessages(userId: string) {
   if (existing?.company_id) {
     companyId = existing.company_id;
   } else {
-    // Remove any existing company memberships that point to the admin company
-    // (the demo user should NOT be in the Encore Music admin company for messages)
+    // Remove ALL existing company memberships for demo user
+    // (prevents seeing admin "Encore Music" messages)
     await supabase
       .from('company_users')
       .delete()
-      .eq('user_id', userId)
-      .neq('company_id', 'demo-music-publishing'); // safe: uuid won't match slug
+      .eq('user_id', userId);
     // Check if "Demo Music Publishing" company already exists
     const { data: co } = await supabase
       .from('companies')
