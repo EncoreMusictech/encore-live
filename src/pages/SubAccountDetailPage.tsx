@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList, Palette, FileText, MessageCircle, Layers } from 'lucide-react';
+import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList, Palette, FileText, MessageCircle, Layers, ListChecks } from 'lucide-react';
 import { ServiceAccountProvisioner } from '@/components/admin/subaccount/ServiceAccountProvisioner';
 import { SubAccountOverview } from '@/components/admin/subaccount/SubAccountOverview';
 import { SubAccountUsers } from '@/components/admin/subaccount/SubAccountUsers';
