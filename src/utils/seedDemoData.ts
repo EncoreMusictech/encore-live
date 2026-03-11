@@ -144,7 +144,7 @@ async function seedDemoMessages(userId: string) {
           name: 'Demo Music Publishing',
           display_name: 'Demo Music Publishing',
           slug: 'demo-music-publishing',
-          company_type: 'publisher',
+          company_type: 'standard',
           contact_email: 'demo@encoremusic.tech',
           created_by: userId,
         })
