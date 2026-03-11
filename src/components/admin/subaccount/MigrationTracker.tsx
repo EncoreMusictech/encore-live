@@ -17,6 +17,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 interface MigrationTrackerProps {
   companyId: string;
   companyName: string;
+  readOnly?: boolean;
 }
 
 const CHECKPOINTS = [
