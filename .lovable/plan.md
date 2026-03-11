@@ -1,37 +1,51 @@
 
 
-## Create Demo Notifications and Messages for ENCORE Demo Account
+## Plan: Fix work_id collision + runId ownership + cleanup safety
 
-### Problem
-The demo account (`demo@encoremusic.tech`) currently displays the ENCORE Admin's notifications (16 shown in the bell) and messages (22 in the chat bubble) because:
-1. Notifications are fetched by `user_id` — the demo user has none of its own
-2. Messages require company membership via `company_users` — the demo user has no company association
-3. The `createTestNotifications` utility exists but is never called for the demo user
+Three targeted edits across two files. No new files.
 
-### Plan
+---
 
-**1. Create a demo data seeding utility** (`src/utils/seedDemoData.ts`)
-- A function that runs after demo login to create demo-specific notifications and a demo company thread
-- Checks if demo data already exists (idempotent) before inserting
-- Creates ~8 realistic notifications for the demo user (contracts, royalties, sync opportunities, system alerts)
-- Creates a demo company ("Demo Music Publishing") if needed, associates the demo user, and seeds 4-5 sample messages showing a back-and-forth conversation with "ENCORE Support"
+### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
 
-**2. Update Auth.tsx to call seeding after demo login**
-- After successful demo login, call `seedDemoData(user.id)` to populate notifications and messages
-- This ensures the demo account always has fresh, relevant data on login
+**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
 
-**3. Update the `createTestNotifications` utility**
-- Add an idempotency check: skip if demo notifications already exist for this user
-- Keep existing notification types but make them clearly demo-themed
+**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
+```ts
+const copyrightInserts = [
+  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+];
+```
+The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
 
-### Technical Details
+---
 
-- **Notifications**: Insert directly into `notifications` table with `user_id` = demo user ID. The existing `useNotifications` hook will pick them up automatically via the `user_id` filter.
-- **Messages**: Create/find a "Demo Music Publishing" company in `companies`, ensure `company_users` membership for the demo user, then insert sample `company_messages`. The `MessagesPage` non-admin path fetches via `company_users` membership, so this will work.
-- **Idempotency**: Before inserting, check `notifications` count for the user and `company_users` membership to avoid duplicates on repeated logins.
-- **No schema changes needed** — all tables already exist.
+### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
 
-### Files to Create/Modify
-- **Create**: `src/utils/seedDemoData.ts` — main seeding orchestrator
-- **Modify**: `src/pages/Auth.tsx` — call seeding after demo login success
+**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
+```ts
+const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
+setRunId(currentRunId);
+const fixtures = await createFixtures(currentRunId, user.id);
+```
+
+**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
+```ts
+} finally {
+  if (!skipCleanup && currentRunId) {
+    try {
+      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
+      if (cleanupErrors.length > 0) {
+        console.warn('Cleanup errors:', cleanupErrors);
+      }
+    } catch (e) {
+      console.error('Cleanup failed:', e);
+    }
+  }
+  setRunning(false);
+}
+```
+Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
 
