@@ -23,6 +23,7 @@ import { SubAccountBranding } from '@/components/admin/subaccount/SubAccountBran
 import { SubAccountContracts } from '@/components/admin/subaccount/SubAccountContracts';
 import { SubAccountChat } from '@/components/admin/subaccount/SubAccountChat';
 import { PublishingEntitiesManager } from '@/components/admin/subaccount/PublishingEntitiesManager';
+import { MigrationTracker } from '@/components/admin/subaccount/MigrationTracker';
 
 interface Company {
   id: string;
