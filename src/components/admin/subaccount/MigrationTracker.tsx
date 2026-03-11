@@ -294,6 +294,7 @@ export function MigrationTracker({ companyId, companyName }: MigrationTrackerPro
             <RefreshCw className="h-4 w-4 mr-1" />
             Refresh
           </Button>
+          <ImportMigrationCsvDialog companyId={companyId} onAdded={fetchItems} />
           <AddWriterDialog companyId={companyId} entities={entities} onAdded={fetchItems} />
         </div>
       </div>
