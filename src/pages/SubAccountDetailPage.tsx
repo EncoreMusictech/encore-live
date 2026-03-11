@@ -377,6 +377,12 @@ export default function SubAccountDetailPage() {
           </TabsContent>
         )}
 
+        {isEncoreAdmin && (
+          <TabsContent value="migration" className="space-y-6">
+            <MigrationTracker companyId={company.id} companyName={company.name} />
+          </TabsContent>
+        )}
+
         {hasFullAccess && whitelabelEnabled && (
           <TabsContent value="branding" className="space-y-6">
             <SubAccountBranding companyId={company.id} />
