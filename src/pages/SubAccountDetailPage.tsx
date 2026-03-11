@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList, Palette, FileText, MessageCircle, Layers } from 'lucide-react';
+import { ArrowLeft, Building2, Users, Shield, Upload, Settings, Eye, Briefcase, ClipboardList, Palette, FileText, MessageCircle, Layers, ListChecks } from 'lucide-react';
 import { ServiceAccountProvisioner } from '@/components/admin/subaccount/ServiceAccountProvisioner';
 import { SubAccountOverview } from '@/components/admin/subaccount/SubAccountOverview';
 import { SubAccountUsers } from '@/components/admin/subaccount/SubAccountUsers';
@@ -23,6 +23,7 @@ import { SubAccountBranding } from '@/components/admin/subaccount/SubAccountBran
 import { SubAccountContracts } from '@/components/admin/subaccount/SubAccountContracts';
 import { SubAccountChat } from '@/components/admin/subaccount/SubAccountChat';
 import { PublishingEntitiesManager } from '@/components/admin/subaccount/PublishingEntitiesManager';
+import { MigrationTracker } from '@/components/admin/subaccount/MigrationTracker';
 
 interface Company {
   id: string;
@@ -298,6 +299,12 @@ export default function SubAccountDetailPage() {
               Entities
             </TabsTrigger>
           )}
+          {isEncoreAdmin && (
+            <TabsTrigger value="migration">
+              <ListChecks className="h-4 w-4 mr-2" />
+              Migration Tracker
+            </TabsTrigger>
+          )}
           {hasFullAccess && (
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
@@ -367,6 +374,12 @@ export default function SubAccountDetailPage() {
         {hasFullAccess && (
           <TabsContent value="entities" className="space-y-6">
             <PublishingEntitiesManager companyId={company.id} companyName={company.name} />
+          </TabsContent>
+        )}
+
+        {isEncoreAdmin && (
+          <TabsContent value="migration" className="space-y-6">
+            <MigrationTracker companyId={company.id} companyName={company.name} />
           </TabsContent>
         )}
 

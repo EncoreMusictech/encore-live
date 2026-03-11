@@ -1,70 +1,51 @@
 
 
-## Internal Migration Tracker — Built into Sub-Account Detail Page
+## Plan: Fix work_id collision + runId ownership + cleanup safety
 
-Instead of requiring a CSV upload, ENCORE admins would build and maintain the migration tracker directly within each sub-account's detail page. Here's the recommended approach:
+Three targeted edits across two files. No new files.
 
-### Where It Lives
+---
 
-A new **"Migration Tracker"** tab on the `SubAccountDetailPage` (visible only to ENCORE admins), sitting alongside the existing Onboarding, Contracts, Works, and Entities tabs. This is the natural place — it's already scoped to a specific sub-account (`companyId`).
+### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
 
-### How It Works
+**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
 
-**1. Same `migration_tracking_items` table**, but populated via UI instead of CSV:
+**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
+```ts
+const copyrightInserts = [
+  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+];
+```
+The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
 
-```text
-migration_tracking_items
-├── company_id (FK → companies)
-├── entity_name        ← dropdown populated from company's publishing_entities
-├── administrator      ← text or dropdown
-├── original_publisher ← text or dropdown  
-├── writer_name        ← text input (the contract/writer row label)
-├── 9 boolean checkpoints (contract_entered, copyrights_entered, etc.)
+---
+
+### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
+
+**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
+```ts
+const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
+setRunId(currentRunId);
+const fixtures = await createFixtures(currentRunId, user.id);
 ```
 
-**2. ENCORE admin workflow:**
-- Navigate to Sub-Account Detail → "Migration Tracker" tab
-- Click "Add Writer" to create a new tracking row (entity, publisher, writer name — all checkpoints default FALSE)
-- Bulk-add option: paste a list of writer names + select entity/publisher, creates multiple rows at once
-- Toggle checkpoints as migration progresses (each toggle updates the DB immediately)
-- Auto-populate from existing data: a "Sync from DB" button that scans the sub-account's `contracts`, `copyrights`, `contract_schedule_works`, and `payees` tables to auto-check applicable checkpoints
-
-**3. The Analytics Dashboard** (in `OnboardingPipelineManager` analytics tab) then queries `migration_tracking_items` for the selected sub-account and displays the same completeness metrics — it doesn't care whether the data came from CSV or was entered manually.
-
-### Key UI Components
-
-- **`MigrationTracker`** — the main tab component with an editable table of writer rows, grouped by entity. Inline checkbox toggles for each checkpoint. Add/delete row controls. Filter by entity.
-- **`MigrationTrackerRow`** — single writer row with 9 checkbox cells + entity/publisher/writer fields (editable inline or via popover)
-- **`AddWriterDialog`** — form to add one or multiple writers (entity dropdown, publisher input, writer name textarea for bulk entry)
-- **`SyncFromDatabaseButton`** — reads live DB tables and auto-checks checkpoints where data exists (e.g., if a contract exists for this writer, mark `contract_entered = true`)
-
-### Auto-Sync Logic (the "Sync from DB" feature)
-
-For each tracking row, cross-reference:
-- `contract_entered` → check `contracts` where `counterparty_name ILIKE writer_name` and `client_company_id = companyId`
-- `copyrights_entered` → check `contract_schedule_works` joined to `copyrights` for that contract
-- `schedules_attached` → check `contract_schedule_works` count > 0 for that contract
-- `payees_created` → check `payees` where `payee_name ILIKE writer_name` and matches company hierarchy
-
-This gives admins a one-click way to reconcile the tracker against reality without manually checking each box.
-
-### Files
-
-- **Create**: `src/components/admin/subaccount/MigrationTracker.tsx` — main tracker component
-- **Create**: `src/components/admin/subaccount/AddWriterDialog.tsx` — add writer(s) dialog
-- **Modify**: `src/pages/SubAccountDetailPage.tsx` — add Migration Tracker tab (ENCORE admin only)
-- **Migration**: Create `migration_tracking_items` table with RLS (ENCORE team read/write)
-- **Modify**: `src/components/operations/phase6/OnboardingPipelineManager.tsx` — analytics tab queries this table for the selected company
-
-### Comparison: CSV vs Internal Tracker
-
-| | CSV Import | Internal Tracker |
-|---|---|---|
-| Initial setup | Upload spreadsheet | Add writers manually or bulk-paste |
-| Updates | Re-upload or manual DB edits | Toggle checkboxes in UI |
-| Auto-reconciliation | Manual comparison | "Sync from DB" button |
-| Audit trail | None | `updated_at` timestamps per row |
-| Multi-user | Spreadsheet conflicts | Real-time, scoped by sub-account |
-
-The internal tracker is strictly better for ongoing use. CSV import could still be offered as a "bootstrap" option (upload a CSV to populate the tracker initially), but the day-to-day workflow would be the in-app tracker.
+**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
+```ts
+} finally {
+  if (!skipCleanup && currentRunId) {
+    try {
+      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
+      if (cleanupErrors.length > 0) {
+        console.warn('Cleanup errors:', cleanupErrors);
+      }
+    } catch (e) {
+      console.error('Cleanup failed:', e);
+    }
+  }
+  setRunning(false);
+}
+```
+Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
 
