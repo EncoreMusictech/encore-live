@@ -299,12 +299,12 @@ export default function SubAccountDetailPage() {
               Entities
             </TabsTrigger>
           )}
-          {isEncoreAdmin && (
-            <TabsTrigger value="migration">
-              <ListChecks className="h-4 w-4 mr-2" />
-              Migration Tracker
-            </TabsTrigger>
-          )}
+        {hasFullAccess && (
+          <TabsTrigger value="migration">
+            <ListChecks className="h-4 w-4 mr-2" />
+            Migration Tracker
+          </TabsTrigger>
+        )}
           {hasFullAccess && (
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
