@@ -417,7 +417,8 @@ export function MigrationTracker({ companyId, companyName, readOnly = false }: M
                             <TableCell key={cp.key} className="text-center">
                               <Checkbox
                                 checked={item[cp.key]}
-                                onCheckedChange={() => toggleCheckpoint(item.id, cp.key, item[cp.key])}
+                                disabled={readOnly}
+                                onCheckedChange={() => !readOnly && toggleCheckpoint(item.id, cp.key, item[cp.key])}
                               />
                             </TableCell>
                           ))}
