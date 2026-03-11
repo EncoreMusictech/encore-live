@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientPortal } from '@/hooks/useClientPortal';
 import { fetchActiveCompanyMemberships, isInternalEnterpriseMembership } from '@/lib/companyMembership';
+import { seedDemoData } from '@/utils/seedDemoData';
 
 
 const Auth = () => {
