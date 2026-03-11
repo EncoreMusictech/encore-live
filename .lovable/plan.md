@@ -1,36 +1,51 @@
 
 
-## Updated Plan: Send Migration Tracker Update Email (with Upload Instructions)
+## Plan: Fix work_id collision + runId ownership + cleanup safety
 
-Same plan as previously approved, with the email body now including two additional sections describing how PAQ Publishing admins can independently upload contracts and copyrights.
+Three targeted edits across two files. No new files.
 
-### Email Content Additions
+---
 
-After the "How to Use the Migration Tracker" section, add:
+### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
 
-**Uploading Contracts**
-- Navigate to your Account Detail page and select the **Contracts** tab
-- Click the **Upload** tab to upload individual contract PDFs
-- Our AI-powered parser will automatically extract key terms, interested parties, and schedules from the PDF
-- Review the extracted data across three tabs: Details, PDF Preview, and Analysis
-- Confirm and save — the contract will be linked to your account and visible in the Contracts List
-- For bulk imports, use the **Bulk Import** tab to upload a spreadsheet of contract metadata
+**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
 
-**Uploading Copyrights / Works**
-- Navigate to the **Works** tab in your Account Detail page
-- Click the **Upload** tab to upload a spreadsheet of your works catalog
-- The system accepts standard spreadsheet formats with columns for work title, writers, publishers, ISWC, and other metadata
-- Review the grouped and validated works before committing them to the database
-- Uploaded works will appear in the Works List and can be linked to contracts
+**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
+```ts
+const copyrightInserts = [
+  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+];
+```
+The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
 
-### Files
+---
 
-- **Create**: `supabase/functions/send-migration-update/index.ts` — edge function using `sendGmail` from `_shared/gmail.ts` and `emailLayout` from `_shared/email-templates.ts`, with the full email HTML inline containing all sections (tracker overview, data security, upload instructions, Phase 4 action items, Phase 5 preview). Sends to the provided `to_email` parameter.
+### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
 
-### Technical Details
+**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
+```ts
+const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
+setRunId(currentRunId);
+const fixtures = await createFixtures(currentRunId, user.id);
+```
 
-- Follows the same pattern as `send-catalog-valuation-onboarding` (CORS headers, `sendGmail`, serve handler)
-- Single `to_email` + `company_name` body params
-- Deploy via `deploy_edge_functions` after creation
-- Test send to `info@encoremusic.tech`
+**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
+```ts
+} finally {
+  if (!skipCleanup && currentRunId) {
+    try {
+      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
+      if (cleanupErrors.length > 0) {
+        console.warn('Cleanup errors:', cleanupErrors);
+      }
+    } catch (e) {
+      console.error('Cleanup failed:', e);
+    }
+  }
+  setRunning(false);
+}
+```
+Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
 
