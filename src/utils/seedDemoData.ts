@@ -107,12 +107,13 @@ async function seedDemoNotifications(userId: string) {
 // ── Company & Messages ─────────────────────────────────────────
 
 async function seedDemoMessages(userId: string) {
-  // Check if user already has a company membership
+  // Check if user already has a membership to the DEMO company specifically
   const { data: existing } = await supabase
     .from('company_users')
-    .select('company_id')
+    .select('company_id, companies!inner(slug)')
     .eq('user_id', userId)
     .eq('status', 'active')
+    .eq('companies.slug', 'demo-music-publishing')
     .limit(1)
     .maybeSingle();
 
@@ -121,6 +122,13 @@ async function seedDemoMessages(userId: string) {
   if (existing?.company_id) {
     companyId = existing.company_id;
   } else {
+    // Remove any existing company memberships that point to the admin company
+    // (the demo user should NOT be in the Encore Music admin company for messages)
+    await supabase
+      .from('company_users')
+      .delete()
+      .eq('user_id', userId)
+      .neq('company_id', 'demo-music-publishing'); // safe: uuid won't match slug
     // Check if "Demo Music Publishing" company already exists
     const { data: co } = await supabase
       .from('companies')
