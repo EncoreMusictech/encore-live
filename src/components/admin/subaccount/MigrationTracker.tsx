@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { AddWriterDialog } from './AddWriterDialog';
+import { ImportMigrationCsvDialog } from './ImportMigrationCsvDialog';
 import { RefreshCw, Trash2, Database } from 'lucide-react';
 
 interface MigrationTrackerProps {
