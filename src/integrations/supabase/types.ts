@@ -3789,6 +3789,74 @@ export type Database = {
         }
         Relationships: []
       }
+      migration_tracking_items: {
+        Row: {
+          administrator: string | null
+          beginning_balance_entered: boolean
+          client_assets_granted: boolean
+          client_portal_created: boolean
+          company_id: string
+          contract_entered: boolean
+          contract_terms_confirmed: boolean
+          copyrights_entered: boolean
+          created_at: string
+          entity_name: string | null
+          id: string
+          original_publisher: string | null
+          payee_splits_confirmed: boolean
+          payees_created: boolean
+          schedules_attached: boolean
+          updated_at: string
+          writer_name: string
+        }
+        Insert: {
+          administrator?: string | null
+          beginning_balance_entered?: boolean
+          client_assets_granted?: boolean
+          client_portal_created?: boolean
+          company_id: string
+          contract_entered?: boolean
+          contract_terms_confirmed?: boolean
+          copyrights_entered?: boolean
+          created_at?: string
+          entity_name?: string | null
+          id?: string
+          original_publisher?: string | null
+          payee_splits_confirmed?: boolean
+          payees_created?: boolean
+          schedules_attached?: boolean
+          updated_at?: string
+          writer_name: string
+        }
+        Update: {
+          administrator?: string | null
+          beginning_balance_entered?: boolean
+          client_assets_granted?: boolean
+          client_portal_created?: boolean
+          company_id?: string
+          contract_entered?: boolean
+          contract_terms_confirmed?: boolean
+          copyrights_entered?: boolean
+          created_at?: string
+          entity_name?: string | null
+          id?: string
+          original_publisher?: string | null
+          payee_splits_confirmed?: boolean
+          payees_created?: boolean
+          schedules_attached?: boolean
+          updated_at?: string
+          writer_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migration_tracking_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       module_products: {
         Row: {
           annual_price: number | null
