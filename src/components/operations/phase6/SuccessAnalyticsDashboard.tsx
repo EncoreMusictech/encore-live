@@ -6,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CheckCircle, XCircle, Building2 } from 'lucide-react';
+import { MissingDataReportDialog } from '@/components/admin/subaccount/MissingDataReportDialog';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 
 const CHECKPOINTS = [
   { key: 'contract_entered', label: 'Contract' },
@@ -34,13 +36,18 @@ interface CompanyOption {
   display_name: string;
 }
 
+const getBarColor = (pct: number) => {
+  if (pct >= 80) return 'hsl(142, 71%, 45%)';
+  if (pct >= 50) return 'hsl(48, 96%, 53%)';
+  return 'hsl(0, 84%, 60%)';
+};
+
 export function SuccessAnalyticsDashboard() {
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [items, setItems] = useState<TrackingItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch companies that have onboarding progress
   useEffect(() => {
     const fetchCompanies = async () => {
       const { data } = await supabase
@@ -62,7 +69,6 @@ export function SuccessAnalyticsDashboard() {
     fetchCompanies();
   }, []);
 
-  // Fetch tracking items for selected company
   const fetchItems = useCallback(async () => {
     if (!selectedCompanyId) return;
     setLoading(true);
@@ -80,7 +86,6 @@ export function SuccessAnalyticsDashboard() {
     fetchItems();
   }, [fetchItems]);
 
-  // Stats
   const totalCheckpoints = items.length * CHECKPOINTS.length;
   const completedCheckpoints = items.reduce((acc, item) => {
     return acc + CHECKPOINTS.filter(cp => item[cp.key]).length;
@@ -92,13 +97,29 @@ export function SuccessAnalyticsDashboard() {
     return { ...cp, completed, total: items.length, pct: items.length > 0 ? Math.round((completed / items.length) * 100) : 0 };
   });
 
-  // Entity breakdown
+  const donutData = [
+    { name: 'Complete', value: completedCheckpoints },
+    { name: 'Remaining', value: totalCheckpoints - completedCheckpoints },
+  ];
+
   const entityGroups = items.reduce<Record<string, TrackingItem[]>>((acc, item) => {
     const group = item.entity_name || 'Unassigned';
     if (!acc[group]) acc[group] = [];
     acc[group].push(item);
     return acc;
   }, {});
+
+  // Stacked bar data per entity
+  const entityBarData = Object.entries(entityGroups).map(([name, entityItems]) => {
+    const row: Record<string, any> = { name };
+    CHECKPOINTS.forEach(cp => {
+      row[cp.label] = entityItems.filter(i => i[cp.key]).length;
+    });
+    row.total = entityItems.length;
+    return row;
+  });
+
+  const selectedCompany = companies.find(c => c.id === selectedCompanyId);
 
   if (companies.length === 0) {
     return (
@@ -111,19 +132,24 @@ export function SuccessAnalyticsDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Company selector */}
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-medium">Sub-Account:</span>
-        <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-          <SelectTrigger className="w-[280px]">
-            <SelectValue placeholder="Select sub-account..." />
-          </SelectTrigger>
-          <SelectContent>
-            {companies.map(c => (
-              <SelectItem key={c.id} value={c.id}>{c.display_name || c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Company selector + Report */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium">Sub-Account:</span>
+          <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+            <SelectTrigger className="w-[280px]">
+              <SelectValue placeholder="Select sub-account..." />
+            </SelectTrigger>
+            <SelectContent>
+              {companies.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.display_name || c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {items.length > 0 && (
+          <MissingDataReportDialog items={items} companyName={selectedCompany?.display_name || selectedCompany?.name} />
+        )}
       </div>
 
       {loading ? (
@@ -137,34 +163,90 @@ export function SuccessAnalyticsDashboard() {
         </div>
       ) : (
         <>
-          {/* Overall progress */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Overall Migration Completeness</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold mb-2">{overallPct}%</div>
-              <Progress value={overallPct} className="h-3 mb-2" />
-              <p className="text-xs text-muted-foreground">
-                {completedCheckpoints} / {totalCheckpoints} checkpoints across {items.length} writers
-              </p>
-            </CardContent>
-          </Card>
+          {/* Overall progress + Checkpoint bar chart */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Overall Migration Completeness</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <div className="w-[120px] h-[120px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={donutData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={35}
+                          outerRadius={55}
+                          dataKey="value"
+                          startAngle={90}
+                          endAngle={-270}
+                          strokeWidth={0}
+                        >
+                          <Cell fill="hsl(142, 71%, 45%)" />
+                          <Cell fill="hsl(var(--muted))" />
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold">{overallPct}%</div>
+                    <p className="text-xs text-muted-foreground">
+                      {completedCheckpoints} / {totalCheckpoints} checkpoints
+                    </p>
+                    <p className="text-xs text-muted-foreground">{items.length} writers</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Checkpoint breakdown */}
-          <div className="grid grid-cols-3 md:grid-cols-9 gap-3">
-            {checkpointStats.map(cp => (
-              <Card key={cp.key}>
-                <CardContent className="p-3 text-center">
-                  <div className="text-lg font-bold">{cp.pct}%</div>
-                  <div className="text-xs text-muted-foreground">{cp.label}</div>
-                  <div className="text-xs text-muted-foreground">{cp.completed}/{cp.total}</div>
-                </CardContent>
-              </Card>
-            ))}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Checkpoint Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 pr-4 pb-4">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={checkpointStats} layout="vertical" margin={{ left: 60, right: 10, top: 5, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" domain={[0, 100]} tickFormatter={v => `${v}%`} fontSize={11} />
+                    <YAxis type="category" dataKey="label" fontSize={11} width={55} />
+                    <Tooltip formatter={(value: number) => [`${value}%`, 'Complete']} />
+                    <Bar dataKey="pct" radius={[0, 4, 4, 0]} barSize={16}>
+                      {checkpointStats.map((entry, index) => (
+                        <Cell key={index} fill={getBarColor(entry.pct)} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Entity breakdown */}
+          {/* Entity stacked bar chart */}
+          {entityBarData.length > 1 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Completion by Entity</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 pr-4 pb-4">
+                <ResponsiveContainer width="100%" height={Math.max(150, entityBarData.length * 40)}>
+                  <BarChart data={entityBarData} layout="vertical" margin={{ left: 100, right: 10, top: 5, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" fontSize={11} />
+                    <YAxis type="category" dataKey="name" fontSize={11} width={95} />
+                    <Tooltip />
+                    {CHECKPOINTS.map((cp, i) => (
+                      <Bar key={cp.key} dataKey={cp.label} stackId="a" fill={`hsl(${(i * 40) % 360}, 60%, 55%)`} />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Entity detail tables */}
           {Object.entries(entityGroups).map(([entityName, entityItems]) => {
             const entityTotal = entityItems.length * CHECKPOINTS.length;
             const entityCompleted = entityItems.reduce((acc, item) => acc + CHECKPOINTS.filter(cp => item[cp.key]).length, 0);

@@ -1,29 +1,51 @@
 
 
-## Enhance Checkpoint Breakdown with Charts & Missing Data Report
+## Plan: Fix work_id collision + runId ownership + cleanup safety
 
-### What Changes
+Three targeted edits across two files. No new files.
 
-**1. Checkpoint Breakdown Charts** — Replace the plain text percentages in both `SuccessAnalyticsDashboard` and `MigrationTracker` with Recharts visualizations:
-- **Bar chart**: Horizontal bars for each of the 9 checkpoints showing completion % (color-coded green/yellow/red by threshold)
-- **Radial/Pie chart**: Overall completion donut in the summary card
-- **Stacked bar per entity**: Shows each entity's checkpoint completion side-by-side
+---
 
-**2. Missing Information Report** — A "Run Report" button that generates a filterable table of all incomplete items:
-- Groups by checkpoint type (e.g., "Missing Payees", "Missing Schedules")
-- Each group lists the writers who are missing that checkpoint, with entity and administrator info
-- Export to CSV option so admins can share the gap analysis externally
-- Rendered in a dialog or collapsible section
+### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
 
-### Files
+**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
 
-- **Modify**: `src/components/operations/phase6/SuccessAnalyticsDashboard.tsx` — Add Recharts bar chart for checkpoint stats, donut for overall, stacked bars for entity breakdown, and a "Run Report" button that opens a missing-data dialog
-- **Modify**: `src/components/admin/subaccount/MigrationTracker.tsx` — Add the same bar chart to the "Checkpoint Breakdown" card and a "Run Report" button in the controls bar
-- **Create**: `src/components/admin/subaccount/MissingDataReportDialog.tsx` — Dialog component that computes and displays all incomplete checkpoints grouped by type, with CSV export via PapaParse
+**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
+```ts
+const copyrightInserts = [
+  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+];
+```
+The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
 
-### Technical Details
+---
 
-- Uses `recharts` `BarChart` (horizontal via `layout="vertical"`) and `PieChart` with inner radius for the donut — both already available in the project
-- Missing data report computed client-side from the existing `items` array — no new queries needed
-- CSV export uses `papaparse` `unparse()` to generate a downloadable `.csv` with columns: Writer, Entity, Administrator, Missing Checkpoints
+### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
+
+**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
+```ts
+const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
+setRunId(currentRunId);
+const fixtures = await createFixtures(currentRunId, user.id);
+```
+
+**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
+```ts
+} finally {
+  if (!skipCleanup && currentRunId) {
+    try {
+      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
+      if (cleanupErrors.length > 0) {
+        console.warn('Cleanup errors:', cleanupErrors);
+      }
+    } catch (e) {
+      console.error('Cleanup failed:', e);
+    }
+  }
+  setRunning(false);
+}
+```
+Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
 
