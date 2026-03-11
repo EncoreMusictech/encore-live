@@ -339,16 +339,26 @@ export function MigrationTracker({ companyId, companyName, readOnly = false }: M
         </div>
         <div className="flex items-center gap-2">
           <MissingDataReportDialog items={items} companyName={companyName} />
-          <Button variant="outline" size="sm" onClick={syncFromDatabase} disabled={syncing || items.length === 0}>
-            <Database className="h-4 w-4 mr-1" />
-            {syncing ? 'Syncing...' : 'Sync from DB'}
-          </Button>
-          <Button variant="outline" size="sm" onClick={fetchItems}>
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Refresh
-          </Button>
-          <ImportMigrationCsvDialog companyId={companyId} onAdded={fetchItems} />
-          <AddWriterDialog companyId={companyId} entities={entities} onAdded={fetchItems} />
+          {!readOnly && (
+            <>
+              <Button variant="outline" size="sm" onClick={syncFromDatabase} disabled={syncing || items.length === 0}>
+                <Database className="h-4 w-4 mr-1" />
+                {syncing ? 'Syncing...' : 'Sync from DB'}
+              </Button>
+              <Button variant="outline" size="sm" onClick={fetchItems}>
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
+              <ImportMigrationCsvDialog companyId={companyId} onAdded={fetchItems} />
+              <AddWriterDialog companyId={companyId} entities={entities} onAdded={fetchItems} />
+            </>
+          )}
+          {readOnly && (
+            <Button variant="outline" size="sm" onClick={fetchItems}>
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Refresh
+            </Button>
+          )}
         </div>
       </div>
 
