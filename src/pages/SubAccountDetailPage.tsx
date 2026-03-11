@@ -377,9 +377,9 @@ export default function SubAccountDetailPage() {
           </TabsContent>
         )}
 
-        {isEncoreAdmin && (
+        {hasFullAccess && (
           <TabsContent value="migration" className="space-y-6">
-            <MigrationTracker companyId={company.id} companyName={company.name} />
+            <MigrationTracker companyId={company.id} companyName={company.name} readOnly={!isEncoreAdmin} />
           </TabsContent>
         )}
 

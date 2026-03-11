@@ -60,7 +60,7 @@ const getBarColor = (pct: number) => {
   return 'hsl(0, 84%, 60%)';
 };
 
-export function MigrationTracker({ companyId, companyName }: MigrationTrackerProps) {
+export function MigrationTracker({ companyId, companyName, readOnly = false }: MigrationTrackerProps) {
   const [items, setItems] = useState<TrackingItem[]>([]);
   const [entities, setEntities] = useState<{ id: string; entity_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
