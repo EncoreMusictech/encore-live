@@ -78,9 +78,9 @@ export function MigrationTracker({ companyId, companyName }: MigrationTrackerPro
   const fetchEntities = useCallback(async () => {
     const { data } = await supabase
       .from('publishing_entities')
-      .select('id, entity_name')
+      .select('id, name')
       .eq('company_id', companyId);
-    setEntities(data || []);
+    setEntities((data || []).map(e => ({ id: e.id, entity_name: e.name })));
   }, [companyId]);
 
   useEffect(() => {
