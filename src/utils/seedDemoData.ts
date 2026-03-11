@@ -1,15 +1,37 @@
 import { supabase } from '@/integrations/supabase/client';
+import { seedDemoCopyrights } from './demo/seedDemoCopyrights';
+import { seedDemoContracts } from './demo/seedDemoContracts';
+import { seedDemoSyncLicenses } from './demo/seedDemoSync';
+import { seedDemoRoyalties } from './demo/seedDemoRoyalties';
+import { seedDemoPayeeHierarchy } from './demo/seedDemoPayees';
+import { seedDemoCatalogValuation } from './demo/seedDemoValuation';
 
 /**
- * Seeds demo-specific notifications and company messages for the demo account.
+ * Seeds demo-specific data for the demo account.
  * Idempotent — skips if data already exists.
  */
 export async function seedDemoData(userId: string) {
   try {
+    // Phase 1: Notifications + Messages (independent)
     await Promise.all([
       seedDemoNotifications(userId),
       seedDemoMessages(userId),
     ]);
+
+    // Phase 2: Copyrights first (other modules depend on IDs)
+    const copyrightIds = await seedDemoCopyrights(userId);
+
+    // Phase 3: Contract (depends on copyright IDs)
+    const contractId = await seedDemoContracts(userId, copyrightIds);
+
+    // Phase 4: Everything else (depends on copyrights and/or contract)
+    await Promise.all([
+      seedDemoSyncLicenses(userId, copyrightIds),
+      seedDemoRoyalties(userId, copyrightIds),
+      seedDemoPayeeHierarchy(userId, contractId),
+      seedDemoCatalogValuation(userId),
+    ]);
+
     console.log('Demo data seeding complete');
   } catch (err) {
     console.error('Demo data seeding error:', err);
@@ -24,7 +46,7 @@ async function seedDemoNotifications(userId: string) {
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId);
 
-  if ((count ?? 0) >= 5) return; // already seeded
+  if ((count ?? 0) >= 5) return;
 
   const notifications: Array<{
     user_id: string;
@@ -38,65 +60,65 @@ async function seedDemoNotifications(userId: string) {
       user_id: userId,
       type: 'contract_signed',
       priority: 'high',
-      title: 'Publishing Agreement Signed',
-      message: 'Your co-publishing agreement with "Starlight Records" has been fully executed.',
-      data: { contractId: 'demo-contract-1', contractTitle: 'Co-Publishing — Starlight Records' },
+      title: 'Co-Publishing Agreement Executed',
+      message: 'Your co-publishing agreement with Alicia Keys (AGR-2026010101) has been fully executed.',
+      data: { contractId: 'demo-contract-1', contractTitle: 'Alicia Keys — Co-Publishing Agreement' },
     },
     {
       user_id: userId,
       type: 'royalty_statement',
       priority: 'medium',
-      title: 'Q1 2026 Royalty Statement Ready',
-      message: 'Your quarterly royalty statement for Q1 2026 is available. Total earnings: $4,215.80.',
-      data: { amount: 4215.80, period: 'Q1 2026' },
+      title: 'Q4 2025 Royalty Statement Ready',
+      message: 'Your quarterly royalty statement for Q4 2025 is available. Total earnings: $22,623.75.',
+      data: { amount: 22623.75, period: 'Q4 2025' },
     },
     {
       user_id: userId,
       type: 'sync_opportunity',
       priority: 'medium',
-      title: 'New Sync Brief — Netflix Series',
-      message: 'Netflix is seeking indie-pop tracks for an upcoming drama series. Your catalog matches their brief.',
-      data: { platform: 'Netflix', genre: 'indie-pop', deadline: '2026-04-01' },
+      title: 'Sync License Issued — Netflix "City Lights"',
+      message: 'Sync license for "Empire State of Mind (Part II)" in Netflix drama "City Lights" has been issued. Fee: $30,000.',
+      data: { platform: 'Netflix', fee: 30000, work: 'Empire State of Mind (Part II)' },
     },
     {
       user_id: userId,
       type: 'payment_processed',
       priority: 'high',
-      title: 'Royalty Payment Deposited',
-      message: 'A royalty payment of $1,892.33 has been deposited to your account via direct deposit.',
-      data: { amount: 1892.33, paymentMethod: 'Direct Deposit' },
+      title: 'Sync Payment Deposited',
+      message: 'A sync licensing payment of $30,000 from Netflix has been deposited to your account.',
+      data: { amount: 30000, paymentMethod: 'Wire Transfer', source: 'Netflix' },
     },
     {
       user_id: userId,
       type: 'copyright_registered',
       priority: 'medium',
-      title: 'Copyright Registration Complete',
-      message: '"Golden Hour (Demo Mix)" has been registered with BMI successfully.',
-      data: { workTitle: 'Golden Hour (Demo Mix)', pro: 'BMI' },
+      title: '8 Works Registered Successfully',
+      message: 'All 8 Alicia Keys works have been registered with ASCAP successfully.',
+      data: { worksCount: 8, pro: 'ASCAP', artist: 'Alicia Keys' },
     },
     {
       user_id: userId,
       type: 'contract_expiring',
       priority: 'medium',
-      title: 'Sync License Expiring',
-      message: 'Your sync license with "Bright Horizon Films" expires in 14 days. Consider renewal.',
-      data: { contractId: 'demo-sync-2', daysRemaining: 14 },
+      title: 'Sync License Term Reminder',
+      message: 'Your sync license with Netflix for "City Lights" is active through May 2030.',
+      data: { contractId: 'demo-sync-1', daysRemaining: 1542 },
     },
     {
       user_id: userId,
       type: 'system_alert',
       priority: 'low',
-      title: 'New Feature: AI Catalog Analysis',
-      message: 'Try out the new AI-powered catalog valuation tools — now available in your dashboard.',
-      data: { feature: 'AI Catalog Analysis', module: 'catalog-valuation' },
+      title: 'Catalog Valuation Updated',
+      message: 'Your Alicia Keys catalog valuation has been updated: $12.5M (87% confidence).',
+      data: { valuation: 12500000, confidence: 87, artist: 'Alicia Keys' },
     },
     {
       user_id: userId,
       type: 'contract_pending',
       priority: 'high',
-      title: 'Contract Awaiting Your Signature',
-      message: 'A distribution agreement with "Worldwide Audio" is pending your review and signature.',
-      data: { contractId: 'demo-dist-3', urgency: 'high' },
+      title: 'Recoupment Status Update',
+      message: 'The $500K advance for Alicia Keys co-publishing agreement is 35% recouped ($175K recovered).',
+      data: { advance: 500000, recouped: 175000, percentage: 35 },
     },
   ];
 
@@ -107,7 +129,6 @@ async function seedDemoNotifications(userId: string) {
 // ── Company & Messages ─────────────────────────────────────────
 
 async function seedDemoMessages(userId: string) {
-  // Check if user already has a membership to the DEMO company specifically
   const { data: existing } = await supabase
     .from('company_users')
     .select('company_id, companies!inner(slug)')
@@ -122,13 +143,11 @@ async function seedDemoMessages(userId: string) {
   if (existing?.company_id) {
     companyId = existing.company_id;
   } else {
-    // Remove ALL existing company memberships for demo user
-    // (prevents seeing admin "Encore Music" messages)
     await supabase
       .from('company_users')
       .delete()
       .eq('user_id', userId);
-    // Check if "Demo Music Publishing" company already exists
+
     const { data: co } = await supabase
       .from('companies')
       .select('id')
@@ -158,7 +177,6 @@ async function seedDemoMessages(userId: string) {
       companyId = newCo.id;
     }
 
-    // Link user to company
     const { error: cuErr } = await supabase.from('company_users').insert({
       company_id: companyId,
       user_id: userId,
@@ -169,13 +187,12 @@ async function seedDemoMessages(userId: string) {
     if (cuErr) console.error('Demo company_users insert error:', cuErr);
   }
 
-  // Check if messages already exist for this company
   const { count } = await supabase
     .from('company_messages')
     .select('*', { count: 'exact', head: true })
     .eq('company_id', companyId);
 
-  if ((count ?? 0) >= 3) return; // already seeded
+  if ((count ?? 0) >= 3) return;
 
   const now = Date.now();
   const messages = [
@@ -184,7 +201,7 @@ async function seedDemoMessages(userId: string) {
       sender_id: userId,
       sender_email: 'demo@encoremusic.tech',
       sender_name: 'Demo User',
-      content: 'Hi team! I just uploaded my Q1 royalty statements. Can you confirm they\'ve been processed?',
+      content: 'Hi team! The Alicia Keys co-publishing agreement has been fully executed. Can you confirm the 8 works are registered with ASCAP?',
       is_encore_admin: false,
       created_at: new Date(now - 3600000 * 4).toISOString(),
       read_by: JSON.stringify([]),
@@ -194,7 +211,7 @@ async function seedDemoMessages(userId: string) {
       sender_id: userId,
       sender_email: 'support@encoremusic.tech',
       sender_name: 'ENCORE Support',
-      content: 'Hi! Yes, we\'ve received your Q1 statements. Processing is underway — you\'ll see updated balances within 24 hours.',
+      content: 'Yes! All 8 works are now registered. We\'ve also processed the Q4 2025 royalty statement — total earnings of $22,623.75 across sync, performance, mechanical, and streaming.',
       is_encore_admin: true,
       created_at: new Date(now - 3600000 * 3).toISOString(),
       read_by: JSON.stringify([]),
@@ -204,7 +221,7 @@ async function seedDemoMessages(userId: string) {
       sender_id: userId,
       sender_email: 'demo@encoremusic.tech',
       sender_name: 'Demo User',
-      content: 'Great, thank you! Also, I noticed a new sync opportunity notification — is that from the Netflix brief?',
+      content: 'Great! I saw the Netflix sync license for "Empire State of Mind (Part II)" was issued. Has the $30K payment been received?',
       is_encore_admin: false,
       created_at: new Date(now - 3600000 * 2).toISOString(),
       read_by: JSON.stringify([]),
@@ -214,7 +231,7 @@ async function seedDemoMessages(userId: string) {
       sender_id: userId,
       sender_email: 'support@encoremusic.tech',
       sender_name: 'ENCORE Support',
-      content: 'That\'s correct! Netflix is looking for indie-pop tracks for their upcoming series. Your catalog is a strong match — would you like us to submit on your behalf?',
+      content: 'The $30,000 sync fee from Netflix has been received and deposited. The fee allocations have been split per the agreement — Alicia Keys (50%), Al Shuckburgh (15%), and Demo Music Publishing (35%).',
       is_encore_admin: true,
       created_at: new Date(now - 3600000).toISOString(),
       read_by: JSON.stringify([]),
@@ -224,7 +241,7 @@ async function seedDemoMessages(userId: string) {
       sender_id: userId,
       sender_email: 'demo@encoremusic.tech',
       sender_name: 'Demo User',
-      content: 'Yes, please go ahead and submit! Let me know if you need any additional metadata or stems.',
+      content: 'Perfect. Can you also update the catalog valuation? The latest streaming numbers should push it above $12M.',
       is_encore_admin: false,
       created_at: new Date(now - 1800000).toISOString(),
       read_by: JSON.stringify([]),

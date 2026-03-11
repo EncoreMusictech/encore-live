@@ -1,84 +1,51 @@
 
 
-## Seed Comprehensive Alicia Keys Demo Data Across All ENCORE Modules
+## Plan: Fix work_id collision + runId ownership + cleanup safety
 
-### Overview
-Populate the demo account with interconnected Alicia Keys data so every module shows realistic, cross-referenced information. The data flows: **Copyrights** (works + writers) → **Contracts** (publishing agreement + interested parties + schedule of works) → **Sync Licensing** (a licensed sync deal referencing those copyrights) → **Royalties** (allocations from the sync deal + a statement import) → **Payees** (hierarchy built from the agreement) → **Catalog Valuation** (valuation record) → **Deal Simulator** (saved scenario with historical statements).
+Three targeted edits across two files. No new files.
 
-### Data Design
+---
 
-All records use `user_id = demo_user_id` (`d2005882-9591-4564-b3e1-48617dc3bc1d`).
+### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
 
-**1. Copyrights** (8 Alicia Keys works + writers)
-Works: "If I Ain't Got You", "No One", "Fallin'", "Girl on Fire", "Empire State of Mind (Part II)", "Unbreakable", "Try Sleeping with a Broken Heart", "Superwoman". Each with `copyright_writers` (Alicia Keys as controlled writer + co-writers where applicable), ISWCs, PRO registrations.
+**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
 
-**2. Copyright Recordings** 
-Linked ISRCs and recording metadata for each copyright.
+**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
+```ts
+const copyrightInserts = [
+  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+];
+```
+The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
 
-**3. Contract** — "Alicia Keys Co-Publishing Agreement"
-- `agreement_id`: AGR-2026010101
-- `counterparty_name`: Alicia Keys
-- `administrator`: Demo Music Publishing
-- `contract_type`: co_publishing
-- `commission_percentage`: 25
-- `advance_amount`: 500000
-- Fully executed status
+---
 
-**4. Contract Interested Parties** (3 entries)
-- Alicia Keys (Writer, Controlled, perf: 50%, mech: 50%, sync: 50%)
-- Kerry Brothers Jr. (Writer, Controlled, perf: 25%, mech: 25%, sync: 25%)
-- Demo Music Publishing (Publisher, Controlled, perf: 25%, mech: 25%, sync: 25%)
+### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
 
-**5. Contract Schedule Works**
-All 8 copyrights linked to the agreement via `copyright_id`.
+**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
+```ts
+const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
+setRunId(currentRunId);
+const fixtures = await createFixtures(currentRunId, user.id);
+```
 
-**6. Sync License** — "Netflix Drama — 'Empire State of Mind (Part II)'"
-- Status: Licensed, Invoice: Paid, linked to copyright IDs
-- `pub_fee`: 15000, `master_fee`: 15000
-- `production_company`: Netflix
-- `media_type`: TV Series
-- Fee allocations with controlled amounts
-
-**7. Royalty Allocations** (4 entries)
-- Sync royalty from the Netflix deal (linked to sync license)
-- 3 publishing royalty allocations (performance, mechanical, streaming) for Q4 2025
-
-**8. Royalties Import Staging** — "Q4 2025 Publishing Statement"
-- `detected_source`: Demo Music Publishing
-- `processing_status`: processed
-- `mapped_data` with summary metrics
-
-**9. Payee Hierarchy**
-- Original Publisher: Demo Music Publishing (linked to agreement)
-- Writers: Alicia Keys, Kerry Brothers Jr. (linked to original publisher)
-- Payees: Alicia Keys, Kerry Brothers Jr. (linked to writers, with split percentages)
-
-**10. Catalog Valuation** — Alicia Keys catalog
-- `artist_name`: Alicia Keys
-- `valuation_amount`: 12500000
-- `total_streams`, `monthly_listeners`, etc.
-
-**11. Deal Historical Statements** (8 quarters of data for Alicia Keys)
-- Q1 2024 through Q4 2025, with realistic revenue breakdown
-
-**12. Deal Scenario** — "Alicia Keys — Netflix Sync Deal Analysis"
-- Pre-loaded with selected tracks, deal terms, and projections
-
-### Implementation
-
-**1. Expand `src/utils/seedDemoData.ts`**
-Add new seeding functions called from `seedDemoData()`:
-- `seedDemoCopyrights(userId)` — copyrights + copyright_writers + copyright_recordings
-- `seedDemoContracts(userId)` — contract + interested parties + schedule works
-- `seedDemoSyncLicenses(userId)` — sync license with fee allocations
-- `seedDemoRoyalties(userId)` — royalty allocations + staging record
-- `seedDemoPayeeHierarchy(userId)` — original_publishers + writers + payees
-- `seedDemoCatalogValuation(userId)` — catalog_valuations + deal_historical_statements + deal_scenarios
-
-Each function checks for existing data (idempotent) before inserting.
-
-**2. No schema changes needed** — all tables already exist.
-
-### Files
-- **Modify**: `src/utils/seedDemoData.ts` — add all seeding functions
+**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
+```ts
+} finally {
+  if (!skipCleanup && currentRunId) {
+    try {
+      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
+      if (cleanupErrors.length > 0) {
+        console.warn('Cleanup errors:', cleanupErrors);
+      }
+    } catch (e) {
+      console.error('Cleanup failed:', e);
+    }
+  }
+  setRunning(false);
+}
+```
+Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
 
