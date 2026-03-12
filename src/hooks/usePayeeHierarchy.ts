@@ -510,7 +510,7 @@ export function usePayeeHierarchy() {
     }
   };
 
-  // Build payees from agreement using primary interested parties
+  // Build payees from agreement using primary controlled interested parties
   const buildPayeesFromAgreement = async (agreementId: string): Promise<{ created: number; existing: number; errors: number }> => {
     if (!user) throw new Error('Not authenticated');
     const writeUserId = getWriteUserId();
@@ -561,16 +561,22 @@ export function usePayeeHierarchy() {
       throw new Error('Unable to determine or create an original publisher for this agreement.');
     }
 
-    // 3) Fetch primary interested parties (writers, not merged)
-    const { data: parties, error: partiesError } = await supabase
+    // 3) Fetch primary controlled interested parties (writers AND publishers, not merged)
+    //    Only controlled parties ('C', 'Controlled', 'Y') should become payees
+    const { data: allParties, error: partiesError } = await supabase
       .from('contract_interested_parties')
       .select('*')
       .eq('contract_id', agreementId)
-      .eq('party_type', 'writer')
       .is('merged_into_id', null);
     if (partiesError) throw partiesError;
 
-    if (!parties || parties.length === 0) {
+    // Filter to only controlled parties using the same logic as the payout engine
+    const controlledParties = (allParties || []).filter(p => {
+      const status = (p.controlled_status || '').trim().toUpperCase();
+      return status === 'C' || status === 'CONTROLLED' || status === 'Y';
+    });
+
+    if (controlledParties.length === 0) {
       return { created: 0, existing: 0, errors: 0 };
     }
 
@@ -578,7 +584,7 @@ export function usePayeeHierarchy() {
     let existing = 0;
     let errors = 0;
 
-    for (const party of parties) {
+    for (const party of controlledParties) {
       const writerName = party.name?.trim();
       if (!writerName) continue;
 
