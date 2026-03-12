@@ -584,7 +584,7 @@ export function usePayeeHierarchy() {
     let existing = 0;
     let errors = 0;
 
-    for (const party of parties) {
+    for (const party of controlledParties) {
       const writerName = party.name?.trim();
       if (!writerName) continue;
 
