@@ -182,7 +182,7 @@ export function usePayeeHierarchy() {
 
       if (agreementError) throw agreementError;
 
-      const publisherName = `${agreementData.counterparty_name} Publishing Designee`;
+      const publisherName = agreementData.counterparty_name;
 
       // Check if exists using scoped user IDs
       let checkQuery = supabase
