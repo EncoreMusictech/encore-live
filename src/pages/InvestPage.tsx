@@ -425,12 +425,8 @@ function SlideCTA() {
           </Button>
         </div>
         <div className="flex items-center gap-4 text-xs sm:text-sm text-muted-foreground pt-2">
-          <a href="tel:+1234567890" className="flex items-center gap-1.5 hover:text-foreground transition-colors">
-            <Phone className="h-3.5 w-3.5" /> Contact Us
-          </a>
-          <span className="text-border">|</span>
-          <a href="https://encorights.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-foreground transition-colors">
-            <Globe className="h-3.5 w-3.5" /> encorights.com
+          <a href="https://encoremusic.tech" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-foreground transition-colors">
+            <Globe className="h-3.5 w-3.5" /> encoremusic.tech
           </a>
         </div>
       </div>
