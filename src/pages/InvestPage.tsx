@@ -8,7 +8,7 @@ import {
   Shuffle, FileSpreadsheet, Users, Ban, Cpu,
   Shield, Zap, Layers, CheckCircle2, XCircle,
   TrendingUp, DollarSign, Target, Building2, Handshake,
-  ArrowRight, Phone, Mail, Calendar, Globe,
+  ArrowRight, Mail, Calendar, Globe,
   Music, FileText, BarChart3, UserCheck, Minus,
   Maximize2, Minimize2, ChevronLeft, ChevronRight, Play, X,
 } from 'lucide-react';
