@@ -1,13 +1,165 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { sendGmail } from "../_shared/gmail.ts";
+import type { EmailAttachment } from "../_shared/gmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function migrationUpdateEmail(companyName: string): string {
+// ---------- Types ----------
+interface CheckpointBreakdown {
+  label: string;
+  pct: number;
+}
+
+interface WriterRow {
+  writer_name: string;
+  entity_name?: string;
+  administrator?: string;
+  checkpoints?: Record<string, boolean>;
+}
+
+interface MigrationStats {
+  overall_progress: number;
+  total_writers: number;
+  completed_checkpoints: number;
+  total_checkpoints: number;
+  checkpoint_breakdown: CheckpointBreakdown[];
+  writers?: WriterRow[];
+}
+
+// ---------- QuickChart URL builders ----------
+function buildDoughnutChartUrl(pct: number): string {
+  const config = {
+    type: "doughnut",
+    data: {
+      datasets: [{
+        data: [pct, 100 - pct],
+        backgroundColor: ["#6366f1", "#e2e8f0"],
+        borderWidth: 0,
+      }],
+    },
+    options: {
+      cutoutPercentage: 70,
+      plugins: {
+        doughnutlabel: {
+          labels: [
+            { text: `${pct}%`, font: { size: 36, weight: "bold" }, color: "#1e293b" },
+            { text: "Complete", font: { size: 14 }, color: "#64748b" },
+          ],
+        },
+      },
+      legend: { display: false },
+    },
+  };
+  return `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(config))}&w=280&h=280&bkg=white`;
+}
+
+function buildBarChartUrl(breakdown: CheckpointBreakdown[]): string {
+  const labels = breakdown.map((b) => b.label);
+  const data = breakdown.map((b) => b.pct);
+  const colors = data.map((d) => (d >= 80 ? "#22c55e" : d >= 50 ? "#f59e0b" : "#ef4444"));
+
+  const config = {
+    type: "horizontalBar",
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors,
+        barThickness: 22,
+      }],
+    },
+    options: {
+      legend: { display: false },
+      scales: {
+        xAxes: [{ ticks: { min: 0, max: 100, callback: "{value}%" }, gridLines: { color: "#f1f5f9" } }],
+        yAxes: [{ ticks: { font: { size: 11 } }, gridLines: { display: false } }],
+      },
+      plugins: {
+        datalabels: { display: true, anchor: "end", align: "end", formatter: "{value}%", font: { weight: "bold", size: 11 } },
+      },
+    },
+  };
+  return `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(config))}&w=520&h=${Math.max(200, breakdown.length * 40)}&bkg=white`;
+}
+
+// ---------- Completion Report HTML section ----------
+function completionReportSection(stats: MigrationStats): string {
+  const doughnutUrl = buildDoughnutChartUrl(stats.overall_progress);
+  const barUrl = buildBarChartUrl(stats.checkpoint_breakdown);
+
+  return `
+  <!-- Completion Report -->
+  <div style="background:#f8fafc;border-radius:10px;padding:24px;margin-bottom:24px;border:1px solid #e2e8f0;">
+    <h2 style="margin:0 0 16px;font-size:18px;font-weight:700;color:#1e293b;text-align:center;">📊 Migration Completion Report</h2>
+
+    <!-- Overall Progress Doughnut -->
+    <div style="text-align:center;margin-bottom:20px;">
+      <img src="${doughnutUrl}" width="280" height="280" alt="Overall Progress: ${stats.overall_progress}%" style="display:inline-block;" />
+    </div>
+
+    <!-- Summary Stats -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      <tr>
+        <td style="text-align:center;padding:12px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;">
+          <div style="font-size:28px;font-weight:800;color:#6366f1;">${stats.total_writers}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px;">Writers</div>
+        </td>
+        <td width="12"></td>
+        <td style="text-align:center;padding:12px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;">
+          <div style="font-size:28px;font-weight:800;color:#22c55e;">${stats.completed_checkpoints}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px;">Completed</div>
+        </td>
+        <td width="12"></td>
+        <td style="text-align:center;padding:12px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;">
+          <div style="font-size:28px;font-weight:800;color:#334155;">${stats.total_checkpoints}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px;">Total Checkpoints</div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Per-Checkpoint Breakdown Bar Chart -->
+    <div style="text-align:center;">
+      <img src="${barUrl}" width="520" alt="Checkpoint Breakdown" style="display:inline-block;max-width:100%;height:auto;" />
+    </div>
+
+    <p style="font-size:12px;color:#94a3b8;text-align:center;margin:16px 0 0;">
+      📎 A detailed CSV progress report is attached to this email.
+    </p>
+  </div>`;
+}
+
+// ---------- CSV generation ----------
+function generateCsv(stats: MigrationStats): string {
+  const writers = stats.writers || [];
+  const checkpointLabels = stats.checkpoint_breakdown.map((b) => b.label);
+
+  // Header row
+  const header = ["Writer Name", "Entity", "Administrator", ...checkpointLabels, "Completion %"].join(",");
+
+  const rows = writers.map((w) => {
+    const cpValues = checkpointLabels.map((label) => {
+      const val = w.checkpoints?.[label];
+      return val ? "Yes" : "No";
+    });
+    const completed = cpValues.filter((v) => v === "Yes").length;
+    const pct = checkpointLabels.length > 0 ? Math.round((completed / checkpointLabels.length) * 100) : 0;
+    const escapeCsv = (s: string | undefined) => {
+      if (!s) return "";
+      return s.includes(",") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    return [escapeCsv(w.writer_name), escapeCsv(w.entity_name), escapeCsv(w.administrator), ...cpValues, `${pct}%`].join(",");
+  });
+
+  return [header, ...rows].join("\r\n");
+}
+
+// ---------- Email template ----------
+function migrationUpdateEmail(companyName: string, stats?: MigrationStats): string {
   const year = new Date().getFullYear();
+  const reportSection = stats ? completionReportSection(stats) : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -33,6 +185,9 @@ function migrationUpdateEmail(companyName: string): string {
 
 <!-- Body -->
 <tr><td style="background:#ffffff;padding:32px 40px;border-radius:0 0 12px 12px;">
+
+  <!-- Completion Report (charts) -->
+  ${reportSection}
 
   <!-- Intro -->
   <p style="font-size:15px;color:#334155;line-height:1.6;margin:0 0 20px;">
@@ -152,22 +307,38 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { to_email, company_name } = await req.json();
+    const { to_email, company_name, stats } = await req.json();
 
     if (!to_email) {
       throw new Error("Missing required field: to_email");
     }
 
     const companyName = company_name || "Your Company";
-    console.log("[MIGRATION-UPDATE] Sending to:", to_email, "for company:", companyName);
+    const migrationStats: MigrationStats | undefined = stats;
 
-    const htmlContent = migrationUpdateEmail(companyName);
+    console.log("[MIGRATION-UPDATE] Sending to:", to_email, "for company:", companyName, "has stats:", !!migrationStats);
+
+    const htmlContent = migrationUpdateEmail(companyName, migrationStats);
+
+    // Build attachments
+    const attachments: EmailAttachment[] = [];
+    if (migrationStats) {
+      const csvContent = generateCsv(migrationStats);
+      const csvBase64 = btoa(unescape(encodeURIComponent(csvContent)));
+      attachments.push({
+        filename: `${companyName.replace(/\s+/g, "_")}_Migration_Progress_Report.csv`,
+        mimeType: "text/csv",
+        content: csvBase64,
+      });
+      console.log("[MIGRATION-UPDATE] CSV attachment generated, length:", csvBase64.length);
+    }
 
     const result = await sendGmail({
       to: [to_email],
-      subject: `${companyName} — Migration Tracker Update & Upload Instructions`,
+      subject: `${companyName} — Migration Completion Report`,
       html: htmlContent,
       from: "Encore Music",
+      attachments: attachments.length > 0 ? attachments : undefined,
     });
 
     console.log("[MIGRATION-UPDATE] Email sent successfully:", result);
