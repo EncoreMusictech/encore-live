@@ -23,7 +23,7 @@ interface PayeeFormDialogProps {
   preselectedPublisher?: { agreementId: string; publisherId: string } | null;
 }
 
-export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormDialogProps) {
+export function PayeeFormDialog({ open, onOpenChange, editingPayee, preselectedPublisher }: PayeeFormDialogProps) {
   const {
     agreements,
     originalPublishers,
