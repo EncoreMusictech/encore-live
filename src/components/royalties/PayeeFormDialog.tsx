@@ -20,6 +20,7 @@ interface PayeeFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingPayee?: any; // PayeeWithHierarchy from PayeesTable
+  preselectedPublisher?: { agreementId: string; publisherId: string } | null;
 }
 
 export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormDialogProps) {
