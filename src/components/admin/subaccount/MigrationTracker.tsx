@@ -69,6 +69,9 @@ export function MigrationTracker({ companyId, companyName, readOnly = false }: M
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [entityFilter, setEntityFilter] = useState<string>('all');
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
   const { toast } = useToast();
 
   const fetchItems = useCallback(async () => {
