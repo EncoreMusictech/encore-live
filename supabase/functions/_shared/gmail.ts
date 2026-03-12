@@ -7,6 +7,14 @@
  *   GMAIL_SENDER_EMAIL          – e.g. noreply@encoremusic.tech
  */
 
+// -- types --
+export interface EmailAttachment {
+  filename: string;
+  mimeType: string;
+  /** Base64-encoded file content */
+  content: string;
+}
+
 // -- helpers for base64url encoding (no padding) --
 function base64url(input: Uint8Array): string {
   const binStr = Array.from(input, (b) => String.fromCharCode(b)).join("");
@@ -91,22 +99,47 @@ function buildMimeMessage(opts: {
   subject: string;
   html: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
 }): string {
-  const boundary = `boundary_${crypto.randomUUID().replace(/-/g, "")}`;
   const toHeader = opts.to.join(", ");
 
   // RFC 2047 encode subject for non-ASCII characters (emoji, accented chars)
   const encodedSubject = /[^\x20-\x7E]/.test(opts.subject)
     ? `=?UTF-8?B?${btoa(unescape(encodeURIComponent(opts.subject)))}?=`
     : opts.subject;
+
   let headers = `From: ${opts.from}\r\nTo: ${toHeader}\r\nSubject: ${encodedSubject}\r\n`;
   if (opts.replyTo) {
     headers += `Reply-To: ${opts.replyTo}\r\n`;
   }
-  headers += `MIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n`;
+  headers += `MIME-Version: 1.0\r\n`;
 
-  const body = `--${boundary}\r\nContent-Type: text/html; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n${btoa(unescape(encodeURIComponent(opts.html)))}\r\n--${boundary}--`;
+  const hasAttachments = opts.attachments && opts.attachments.length > 0;
 
+  if (!hasAttachments) {
+    // Simple HTML-only message
+    const altBoundary = `alt_${crypto.randomUUID().replace(/-/g, "")}`;
+    headers += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n\r\n`;
+    const body = `--${altBoundary}\r\nContent-Type: text/html; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n${btoa(unescape(encodeURIComponent(opts.html)))}\r\n--${altBoundary}--`;
+    return headers + body;
+  }
+
+  // multipart/mixed with nested multipart/alternative for HTML + attachment parts
+  const mixedBoundary = `mixed_${crypto.randomUUID().replace(/-/g, "")}`;
+  const altBoundary = `alt_${crypto.randomUUID().replace(/-/g, "")}`;
+
+  headers += `Content-Type: multipart/mixed; boundary="${mixedBoundary}"\r\n\r\n`;
+
+  // HTML part (nested in multipart/alternative)
+  let body = `--${mixedBoundary}\r\nContent-Type: multipart/alternative; boundary="${altBoundary}"\r\n\r\n`;
+  body += `--${altBoundary}\r\nContent-Type: text/html; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n${btoa(unescape(encodeURIComponent(opts.html)))}\r\n--${altBoundary}--\r\n`;
+
+  // Attachment parts
+  for (const att of opts.attachments!) {
+    body += `--${mixedBoundary}\r\nContent-Type: ${att.mimeType}; name="${att.filename}"\r\nContent-Disposition: attachment; filename="${att.filename}"\r\nContent-Transfer-Encoding: base64\r\n\r\n${att.content}\r\n`;
+  }
+
+  body += `--${mixedBoundary}--`;
   return headers + body;
 }
 
@@ -120,6 +153,7 @@ export async function sendGmail(opts: {
   html: string;
   from?: string; // Display name portion, e.g. "Encore Music Support"
   replyTo?: string;
+  attachments?: EmailAttachment[];
 }): Promise<{ id: string; threadId: string }> {
   const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
   const senderEmail = Deno.env.get("GMAIL_SENDER_EMAIL");
@@ -152,6 +186,7 @@ export async function sendGmail(opts: {
     subject: opts.subject,
     html: opts.html,
     replyTo: opts.replyTo,
+    attachments: opts.attachments,
   });
 
   const encodedMessage = btoa(unescape(encodeURIComponent(raw)))
