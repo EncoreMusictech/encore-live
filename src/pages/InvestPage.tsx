@@ -8,7 +8,7 @@ import {
   Shuffle, FileSpreadsheet, Users, Ban, Cpu,
   Shield, Zap, Layers, CheckCircle2, XCircle,
   TrendingUp, DollarSign, Target, Building2, Handshake,
-  ArrowRight, Phone, Mail, Calendar, Globe,
+  ArrowRight, Mail, Calendar, Globe,
   Music, FileText, BarChart3, UserCheck, Minus,
   Maximize2, Minimize2, ChevronLeft, ChevronRight, Play, X,
 } from 'lucide-react';
@@ -419,18 +419,14 @@ function SlideCTA() {
             </a>
           </Button>
           <Button variant="outline" size="lg" asChild>
-            <a href="mailto:invest@encorights.com">
-              <Mail className="mr-2 h-4 w-4" /> invest@encorights.com
+            <a href="mailto:info@encoremusic.tech">
+              <Mail className="mr-2 h-4 w-4" /> info@encoremusic.tech
             </a>
           </Button>
         </div>
         <div className="flex items-center gap-4 text-xs sm:text-sm text-muted-foreground pt-2">
-          <a href="tel:+1234567890" className="flex items-center gap-1.5 hover:text-foreground transition-colors">
-            <Phone className="h-3.5 w-3.5" /> Contact Us
-          </a>
-          <span className="text-border">|</span>
-          <a href="https://encorights.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-foreground transition-colors">
-            <Globe className="h-3.5 w-3.5" /> encorights.com
+          <a href="https://encoremusic.tech" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-foreground transition-colors">
+            <Globe className="h-3.5 w-3.5" /> encoremusic.tech
           </a>
         </div>
       </div>
