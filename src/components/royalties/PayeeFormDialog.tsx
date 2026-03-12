@@ -233,9 +233,9 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee, preselectedP
         payment_frequency: paymentSettings.frequency || "quarterly",
       });
     } else if (!editingPayee && open) {
-      // Reset form for new payee
-      setSelectedAgreement("");
-      setSelectedPublisher("");
+      // Reset form for new payee, with optional preselection
+      setSelectedAgreement(preselectedPublisher?.agreementId || "");
+      setSelectedPublisher(preselectedPublisher?.publisherId || "");
       setSelectedWriter("");
       setShowCreateContract(false);
       setContractData({
