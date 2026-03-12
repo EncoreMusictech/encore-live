@@ -1,67 +1,51 @@
 
 
-# Investment Page for ENCORE
+## Plan: Fix work_id collision + runId ownership + cleanup safety
 
-## Overview
-Create a dedicated `/invest` route with a polished, scroll-driven investment page that mirrors the deck's narrative: Problem → Solution → Market → Financials → Team → CTA. Uses animated counters, gradient sections, and the existing design system.
+Three targeted edits across two files. No new files.
 
-## Page Structure (Single Component: `src/pages/InvestPage.tsx`)
+---
 
-### Section 1: Hero
-- "ENCORE Rights Management Systems" headline with "Opportunity Deck" subtitle
-- Tagline: "Track your rights like you track your hits."
-- CTA: "Schedule a Call" (links to Calendly) + "View Product" (links to /features)
+### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
 
-### Section 2: The Problem
-- 5 pain points from the deck in a grid with icons:
-  - Rights scattered across platforms
-  - Royalties tracked manually
-  - Creators don't know what they're owed
-  - Middlemen take 10-20%
-  - Old systems can't handle today's music economy
-- Bold quote: "Every day, someone, somewhere is getting screwed in the music industry."
+**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
 
-### Section 3: Our Solution
-- Modular features list: Catalog Valuation, Contract & Copyright Mgmt, Sync Licensing, Royalties Processing, Client Portals
-- Key differentiators: No commissions EVER, AI-powered, Unlimited scale, Customizable modules
+**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
+```ts
+const copyrightInserts = [
+  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+];
+```
+The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
 
-### Section 4: Market Opportunity
-- Three animated counter cards using existing `AnimatedCounter`:
-  - $7.8B Global Music Rights Market (2033)
-  - $45B Royalty & Rights Management Software (2033)
-  - $9.73B Publishing Admin Software (2030)
-- Source citation footnote
+---
 
-### Section 5: Competitive Landscape
-- Visual comparison table: ENCORE vs Curve, Songtrust, Mogul
-- Highlighting ENCORE's modular + no-commission model
+### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
 
-### Section 6: Financial Projections
-- Year 1 net sales target, growth rate, profit margin stats
-- Simple bar/visual for revenue trajectory
+**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
+```ts
+const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
+setRunId(currentRunId);
+const fixtures = await createFixtures(currentRunId, user.id);
+```
 
-### Section 7: The Ask
-- "$350K Pre-Seed SAFE" prominent display
-- Use of funds breakdown as styled progress bars or pie visual:
-  - Consultants 46.2%, IT/Dev 26.2%, Tradeshows 8.7%, Community 7.7%, Content 5.2%, GTM 4.4%, Contingencies 0.8%
-
-### Section 8: Exit Opportunities
-- Cards showing acquisition paths: Publishing admin companies, Rights tech platforms, Distributors/SaaS roll-ups, Strategic deals
-
-### Section 9: Team
-- 4 team member cards (Janishia Jones CEO, Lawrence Berment CTO, Monet Little Head of CS, Kebu Commissiong VP Sales)
-- Advisory board: Hazel Savage, Chris McMurty
-
-### Section 10: Contact CTA
-- "Innovation Starts Here" with phone, website, and Schedule Demo button
-
-## Technical Details
-
-### Files to create/modify:
-1. **Create** `src/pages/InvestPage.tsx` - Full investment page component
-2. **Modify** `src/App.tsx` - Add `/invest` route (public, no auth required)
-
-### Dependencies: Uses existing `AnimatedCounter`, `Card`, `Button`, `Badge` components. Framer Motion for scroll-triggered animations. No new packages needed.
-
-### Design: Dark gradient sections alternating with card-based light sections, consistent with existing brand (electric-lavender, dusty-gold, jet-black tokens). Responsive grid layouts.
+**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
+```ts
+} finally {
+  if (!skipCleanup && currentRunId) {
+    try {
+      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
+      if (cleanupErrors.length > 0) {
+        console.warn('Cleanup errors:', cleanupErrors);
+      }
+    } catch (e) {
+      console.error('Cleanup failed:', e);
+    }
+  }
+  setRunning(false);
+}
+```
+Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
 

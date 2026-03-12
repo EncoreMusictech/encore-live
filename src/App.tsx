@@ -62,6 +62,7 @@ import TermsAndConditions from "./pages/TermsAndConditions";
 import TrialSignup from "./pages/TrialSignup";
 import NAMMPitchPage from "./pages/NAMMPitchPage";
 import CatalogAuditPresentationPage from "./pages/CatalogAuditPresentationPage";
+import InvestPage from "./pages/InvestPage";
 import PaymentSetup from "./pages/PaymentSetup";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import AcceptInvitation from "./pages/AcceptInvitation";
@@ -208,6 +209,7 @@ const App = () => {
                              <Route path="/documentation" element={<DocumentationPage />} />
                              <Route path="/namm-pitch" element={<NAMMPitchPage />} />
                              <Route path="/catalog-audit" element={<CatalogAuditPresentationPage />} />
+                             <Route path="/invest" element={<InvestPage />} />
                               <Route path="/whitelabel" element={
                                 <ProtectedRoute>
                                   <ErrorBoundary>
