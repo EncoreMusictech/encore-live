@@ -1,46 +1,21 @@
-import React, { useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AnimatedCounter } from '@/components/catalog-audit/AnimatedCounter';
-import { Progress } from '@/components/ui/progress';
 import {
   Shuffle, FileSpreadsheet, Users, Ban, Cpu,
-  Shield, Zap, Layers, Globe, CheckCircle2, XCircle,
+  Shield, Zap, Layers, CheckCircle2, XCircle,
   TrendingUp, DollarSign, Target, Building2, Handshake,
-  ArrowRight, Phone, Mail, Calendar, ChevronDown,
-  Music, Scale, FileText, BarChart3, UserCheck,
-  Minus
+  ArrowRight, ArrowLeft, Phone, Mail, Calendar, Globe,
+  Music, FileText, BarChart3, UserCheck, Minus,
+  Maximize2, Minimize2, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
-/* ─── helpers ─── */
-function Section({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  const ref = useRef<HTMLElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-80px' });
-  return (
-    <motion.section
-      ref={ref}
-      initial={{ opacity: 0, y: 40 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      className={className}
-    >
-      {children}
-    </motion.section>
-  );
-}
+/* ════════════════════════ SLIDE DATA ════════════════════════ */
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="font-accent text-xs tracking-widest text-dusty-gold uppercase mb-2 block">
-      {children}
-    </span>
-  );
-}
-
-/* ─── data ─── */
 const painPoints = [
   { icon: Shuffle, title: 'Rights Scattered', desc: 'Across platforms, drives, and inboxes — no single source of truth.' },
   { icon: FileSpreadsheet, title: 'Manual Tracking', desc: 'Royalties still managed in spreadsheets and guesswork.' },
@@ -64,7 +39,7 @@ const differentiators = [
   { icon: Shield, label: 'Modular & Customizable' },
 ];
 
-const compMatrix: { feature: string; encore: boolean | string; curve: boolean | string; songtrust: boolean | string; mogul: boolean | string }[] = [
+const compMatrix = [
   { feature: 'Commission-Free', encore: true, curve: false, songtrust: false, mogul: false },
   { feature: 'Modular Pricing', encore: true, curve: false, songtrust: false, mogul: false },
   { feature: 'Catalog Valuation', encore: true, curve: false, songtrust: false, mogul: false },
@@ -82,13 +57,13 @@ const funds = [
   { label: 'Community Building', pct: 7.7, color: 'bg-primary/60' },
   { label: 'Content Creation', pct: 5.2, color: 'bg-dusty-gold/70' },
   { label: 'Go-to-Market', pct: 4.4, color: 'bg-electric-lavender/50' },
-  { label: 'Contingencies', pct: 0.8, color: 'bg-muted-foreground' },
+  { label: 'Contingencies', pct: 0.8, color: 'bg-muted-foreground/60' },
 ];
 
 const exits = [
-  { icon: Building2, title: 'Publishing Admin Co\'s', desc: 'Kobalt, Songtrust, CD Baby Pro — seeking tech bolt-ons.' },
-  { icon: Cpu, title: 'Rights-Tech Platforms', desc: 'Utopia Music, JKBX, anotherblock — consolidating the stack.' },
-  { icon: Globe, title: 'Distributors / SaaS', desc: 'DistroKid, TuneCore, Stem — expanding into admin tools.' },
+  { icon: Building2, title: 'Publishing Admin', desc: 'Kobalt, Songtrust, CD Baby Pro — seeking tech bolt-ons.' },
+  { icon: Cpu, title: 'Rights-Tech', desc: 'Utopia Music, JKBX, anotherblock — consolidating the stack.' },
+  { icon: Globe, title: 'Distributors / SaaS', desc: 'DistroKid, TuneCore, Stem — expanding into admin.' },
   { icon: Handshake, title: 'Strategic Acquirers', desc: 'Major labels & PE funds chasing rights infrastructure.' },
 ];
 
@@ -104,376 +79,508 @@ const advisors = [
   { name: 'Chris McMurtry', note: 'Music tech investor & advisor.' },
 ];
 
-/* ─── check / x renderer ─── */
+/* ════════════════════════ HELPERS ════════════════════════ */
+
 function CellIcon({ val }: { val: boolean | string }) {
-  if (val === true) return <CheckCircle2 className="h-5 w-5 text-success mx-auto" />;
-  if (val === false) return <XCircle className="h-5 w-5 text-muted-foreground/40 mx-auto" />;
-  return <Minus className="h-5 w-5 text-dusty-gold mx-auto" />;
+  if (val === true) return <CheckCircle2 className="h-[28px] w-[28px] text-success mx-auto" />;
+  if (val === false) return <XCircle className="h-[28px] w-[28px] text-muted-foreground/40 mx-auto" />;
+  return <Minus className="h-[28px] w-[28px] text-dusty-gold mx-auto" />;
 }
 
-/* ═══════════════════════════════════════════ PAGE ═══════════════════════════════════════════ */
-
-export default function InvestPage() {
+function SlideLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background text-foreground font-body overflow-x-hidden">
+    <span className="font-accent uppercase tracking-[0.2em] text-dusty-gold" style={{ fontSize: 18 }}>
+      {children}
+    </span>
+  );
+}
 
-      {/* ── 1. HERO ── */}
-      <section className="relative min-h-[90vh] flex items-center justify-center px-6 overflow-hidden">
-        {/* glow bg */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-primary/10 blur-[160px]" />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-dusty-gold/8 blur-[120px]" />
-        </div>
+/* ════════════════════════ INDIVIDUAL SLIDES ════════════════════════ */
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-10 max-w-4xl text-center space-y-8"
-        >
-          <Badge variant="outline" className="border-dusty-gold/40 text-dusty-gold font-accent text-xs px-4 py-1">
-            Pre-Seed Opportunity
-          </Badge>
+function SlideHero() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center px-[120px] gap-[40px]">
+      <Badge variant="outline" className="border-dusty-gold/40 text-dusty-gold font-accent px-[24px] py-[8px]" style={{ fontSize: 16 }}>
+        Pre-Seed Opportunity
+      </Badge>
+      <h1 className="font-headline leading-[1.05] tracking-tight" style={{ fontSize: 96 }}>
+        <span className="bg-gradient-primary bg-clip-text text-transparent">ENCORE</span>
+        <br />
+        <span className="text-foreground" style={{ fontSize: 72 }}>Rights Management</span>
+      </h1>
+      <p className="text-muted-foreground max-w-[900px] leading-relaxed" style={{ fontSize: 32 }}>
+        Track your rights like you track your hits.
+      </p>
+      <div className="flex gap-[24px] pt-[16px]">
+        <Button variant="fader" className="px-[40px] py-[16px] h-auto" style={{ fontSize: 22 }} asChild>
+          <a href="https://calendly.com" target="_blank" rel="noopener noreferrer">
+            <Calendar className="mr-[12px]" style={{ width: 24, height: 24 }} /> Schedule a Call
+          </a>
+        </Button>
+        <Button variant="studio" className="px-[40px] py-[16px] h-auto" style={{ fontSize: 22 }} asChild>
+          <Link to="/features">
+            View Product <ArrowRight className="ml-[12px]" style={{ width: 24, height: 24 }} />
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
 
-          <h1 className="font-headline text-5xl sm:text-6xl lg:text-7xl leading-[1.05] tracking-tight">
-            <span className="bg-gradient-primary bg-clip-text text-transparent">ENCORE</span>
-            <br />
-            <span className="text-foreground">Rights Management</span>
-          </h1>
-
-          <p className="text-xl sm:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Track your rights like you track your hits.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-4 pt-2">
-            <Button size="lg" variant="fader" className="text-base px-8" asChild>
-              <a href="https://calendly.com" target="_blank" rel="noopener noreferrer">
-                <Calendar className="mr-2 h-5 w-5" /> Schedule a Call
-              </a>
-            </Button>
-            <Button size="lg" variant="studio" className="text-base px-8" asChild>
-              <Link to="/features">
-                View Product <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
+function SlideProblem() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-[100px] gap-[48px]">
+      <div className="text-center space-y-[12px]">
+        <SlideLabel>The Problem</SlideLabel>
+        <h2 className="font-headline" style={{ fontSize: 56 }}>The Music Industry Has a Rights Problem</h2>
+      </div>
+      <div className="grid grid-cols-3 gap-[24px] w-full max-w-[1600px]">
+        {painPoints.map((p) => (
+          <div key={p.title} className="bg-card border border-border/50 rounded-lg p-[32px] space-y-[12px]">
+            <p.icon className="text-primary" style={{ width: 40, height: 40 }} />
+            <h3 className="font-headline" style={{ fontSize: 24 }}>{p.title}</h3>
+            <p className="text-muted-foreground leading-relaxed" style={{ fontSize: 18 }}>{p.desc}</p>
           </div>
-        </motion.div>
+        ))}
+      </div>
+      <blockquote className="max-w-[1100px] text-center border-l-4 border-dusty-gold pl-[32px] py-[12px] italic text-muted-foreground" style={{ fontSize: 24 }}>
+        "Every day, someone, somewhere is getting screwed in the music industry."
+      </blockquote>
+    </div>
+  );
+}
 
-        {/* scroll hint */}
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2"
-        >
-          <ChevronDown className="h-6 w-6 text-muted-foreground/50" />
-        </motion.div>
-      </section>
-
-      {/* ── 2. THE PROBLEM ── */}
-      <Section className="py-24 px-6">
-        <div className="max-w-6xl mx-auto space-y-16">
-          <div className="text-center space-y-4">
-            <SectionLabel>The Problem</SectionLabel>
-            <h2 className="font-headline text-3xl sm:text-4xl">The Music Industry Has a Rights Problem</h2>
+function SlideSolution() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-[100px] gap-[48px]">
+      <div className="text-center space-y-[12px]">
+        <SlideLabel>Our Solution</SlideLabel>
+        <h2 className="font-headline" style={{ fontSize: 56 }}>One Platform. Every Right. Zero Commission.</h2>
+      </div>
+      <div className="grid grid-cols-5 gap-[20px] w-full max-w-[1700px]">
+        {modules.map((m) => (
+          <div key={m.name} className="bg-card border border-border/50 rounded-lg p-[28px] space-y-[12px] text-center">
+            <div className="h-[56px] w-[56px] rounded-lg bg-primary/10 flex items-center justify-center mx-auto">
+              <m.icon className="text-primary" style={{ width: 28, height: 28 }} />
+            </div>
+            <h3 className="font-headline" style={{ fontSize: 22 }}>{m.name}</h3>
+            <p className="text-muted-foreground" style={{ fontSize: 16 }}>{m.desc}</p>
           </div>
+        ))}
+      </div>
+      <div className="flex gap-[20px]">
+        {differentiators.map((d) => (
+          <div key={d.label} className="flex items-center gap-[10px] bg-card border border-border rounded-full px-[24px] py-[12px]">
+            <d.icon className="text-dusty-gold" style={{ width: 22, height: 22 }} />
+            <span className="font-headline" style={{ fontSize: 18 }}>{d.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {painPoints.map((p) => (
-              <Card key={p.title} className="bg-card border-border/50 hover:border-primary/30 transition-colors">
-                <CardContent className="p-6 space-y-3">
-                  <p.icon className="h-8 w-8 text-primary" />
-                  <h3 className="font-headline text-lg">{p.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{p.desc}</p>
-                </CardContent>
-              </Card>
+function SlideMarket({ active }: { active: boolean }) {
+  const stats = [
+    { value: 7.8, suffix: 'B', label: 'Global Music Rights Market', year: '2033' },
+    { value: 45, suffix: 'B', label: 'Royalty & Rights Mgmt Software', year: '2033' },
+    { value: 9.73, suffix: 'B', label: 'Publishing Admin Software', year: '2030' },
+  ];
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-[100px] gap-[60px]">
+      <div className="text-center space-y-[12px]">
+        <SlideLabel>Market Opportunity</SlideLabel>
+        <h2 className="font-headline" style={{ fontSize: 56 }}>A Massive & Growing TAM</h2>
+      </div>
+      <div className="grid grid-cols-3 gap-[60px]">
+        {stats.map((s) => (
+          <div key={s.label} className="text-center space-y-[16px]">
+            <div className="font-headline text-primary" style={{ fontSize: 80 }}>
+              $<AnimatedCounter value={s.value} format="number" duration={2200} startAnimation={active} />
+              <span className="text-dusty-gold">{s.suffix}</span>
+            </div>
+            <p className="text-muted-foreground" style={{ fontSize: 22 }}>{s.label}</p>
+            <Badge variant="outline" className="border-border text-muted-foreground" style={{ fontSize: 14 }}>By {s.year}</Badge>
+          </div>
+        ))}
+      </div>
+      <p className="text-muted-foreground/50" style={{ fontSize: 14 }}>
+        Sources: Grand View Research, Fortune Business Insights, Straits Research
+      </p>
+    </div>
+  );
+}
+
+function SlideCompetitive() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-[100px] gap-[48px]">
+      <div className="text-center space-y-[12px]">
+        <SlideLabel>Competitive Landscape</SlideLabel>
+        <h2 className="font-headline" style={{ fontSize: 56 }}>Why ENCORE Wins</h2>
+      </div>
+      <div className="w-full max-w-[1400px] overflow-hidden rounded-xl border border-border">
+        <table className="w-full" style={{ fontSize: 20 }}>
+          <thead>
+            <tr className="bg-card">
+              <th className="text-left p-[20px] font-headline text-foreground" style={{ fontSize: 22 }}>Feature</th>
+              <th className="p-[20px] font-headline text-primary" style={{ fontSize: 22 }}>ENCORE</th>
+              <th className="p-[20px] font-headline text-muted-foreground" style={{ fontSize: 22 }}>Curve</th>
+              <th className="p-[20px] font-headline text-muted-foreground" style={{ fontSize: 22 }}>Songtrust</th>
+              <th className="p-[20px] font-headline text-muted-foreground" style={{ fontSize: 22 }}>Mogul</th>
+            </tr>
+          </thead>
+          <tbody>
+            {compMatrix.map((row, i) => (
+              <tr key={row.feature} className={i % 2 === 0 ? 'bg-background' : 'bg-card/50'}>
+                <td className="p-[16px] text-foreground font-medium">{row.feature}</td>
+                <td className="p-[16px] text-center"><CellIcon val={row.encore} /></td>
+                <td className="p-[16px] text-center"><CellIcon val={row.curve} /></td>
+                <td className="p-[16px] text-center"><CellIcon val={row.songtrust} /></td>
+                <td className="p-[16px] text-center"><CellIcon val={row.mogul} /></td>
+              </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SlideFinancials() {
+  const stats = [
+    { icon: Target, label: 'Year 1 Net Sales', value: '$480K' },
+    { icon: TrendingUp, label: 'Annual Growth', value: '150%+' },
+    { icon: DollarSign, label: 'Gross Margin', value: '80%+' },
+  ];
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-[100px] gap-[60px]">
+      <div className="text-center space-y-[12px]">
+        <SlideLabel>Financial Projections</SlideLabel>
+        <h2 className="font-headline" style={{ fontSize: 56 }}>Built for Profitable Growth</h2>
+      </div>
+      <div className="grid grid-cols-3 gap-[40px] w-full max-w-[1400px]">
+        {stats.map((s) => (
+          <div key={s.label} className="bg-card border border-border/50 rounded-xl p-[48px] text-center space-y-[16px]">
+            <s.icon className="text-dusty-gold mx-auto" style={{ width: 48, height: 48 }} />
+            <div className="font-headline text-primary" style={{ fontSize: 52 }}>{s.value}</div>
+            <p className="text-muted-foreground" style={{ fontSize: 22 }}>{s.label}</p>
           </div>
-
-          <blockquote className="max-w-3xl mx-auto text-center border-l-4 border-dusty-gold pl-6 py-4 italic text-lg text-muted-foreground">
-            "Every day, someone, somewhere is getting screwed in the music industry."
-          </blockquote>
-        </div>
-      </Section>
-
-      {/* ── 3. OUR SOLUTION ── */}
-      <Section className="py-24 px-6 bg-secondary/30">
-        <div className="max-w-6xl mx-auto space-y-16">
-          <div className="text-center space-y-4">
-            <SectionLabel>Our Solution</SectionLabel>
-            <h2 className="font-headline text-3xl sm:text-4xl">One Platform. Every Right. Zero Commission.</h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {modules.map((m) => (
-              <Card key={m.name} className="bg-card border-border/50 group hover:shadow-elegant transition-all">
-                <CardContent className="p-6 space-y-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <m.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="font-headline text-lg">{m.name}</h3>
-                  <p className="text-sm text-muted-foreground">{m.desc}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-4">
-            {differentiators.map((d) => (
-              <Badge key={d.label} variant="secondary" className="text-sm py-2 px-4 gap-2 bg-card border border-border">
-                <d.icon className="h-4 w-4 text-dusty-gold" />
-                {d.label}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* ── 4. MARKET OPPORTUNITY ── */}
-      <Section className="py-24 px-6">
-        <div className="max-w-5xl mx-auto space-y-16">
-          <div className="text-center space-y-4">
-            <SectionLabel>Market Opportunity</SectionLabel>
-            <h2 className="font-headline text-3xl sm:text-4xl">A Massive & Growing TAM</h2>
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-8">
-            {[
-              { value: 7.8, suffix: 'B', label: 'Global Music Rights Market', year: '2033' },
-              { value: 45, suffix: 'B', label: 'Royalty & Rights Mgmt Software', year: '2033' },
-              { value: 9.73, suffix: 'B', label: 'Publishing Admin Software', year: '2030' },
-            ].map((s) => {
-              const ref = useRef<HTMLDivElement>(null);
-              const inView = useInView(ref, { once: true });
-              return (
-                <div key={s.label} ref={ref} className="text-center space-y-2">
-                  <div className="font-headline text-4xl sm:text-5xl text-primary">
-                    $<AnimatedCounter value={s.value} format="number" duration={2200} startAnimation={inView} />
-                    <span className="text-dusty-gold">{s.suffix}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{s.label}</p>
-                  <Badge variant="outline" className="text-xs border-border text-muted-foreground">By {s.year}</Badge>
-                </div>
-              );
-            })}
-          </div>
-
-          <p className="text-xs text-center text-muted-foreground/60">
-            Sources: Grand View Research, Fortune Business Insights, Straits Research
-          </p>
-        </div>
-      </Section>
-
-      {/* ── 5. COMPETITIVE LANDSCAPE ── */}
-      <Section className="py-24 px-6 bg-secondary/30">
-        <div className="max-w-5xl mx-auto space-y-12">
-          <div className="text-center space-y-4">
-            <SectionLabel>Competitive Landscape</SectionLabel>
-            <h2 className="font-headline text-3xl sm:text-4xl">Why ENCORE Wins</h2>
-          </div>
-
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-card">
-                  <th className="text-left p-4 font-headline text-foreground">Feature</th>
-                  <th className="p-4 font-headline text-primary">ENCORE</th>
-                  <th className="p-4 font-headline text-muted-foreground">Curve</th>
-                  <th className="p-4 font-headline text-muted-foreground">Songtrust</th>
-                  <th className="p-4 font-headline text-muted-foreground">Mogul</th>
-                </tr>
-              </thead>
-              <tbody>
-                {compMatrix.map((row, i) => (
-                  <tr key={row.feature} className={i % 2 === 0 ? 'bg-background' : 'bg-card/50'}>
-                    <td className="p-4 text-foreground font-medium">{row.feature}</td>
-                    <td className="p-4 text-center"><CellIcon val={row.encore} /></td>
-                    <td className="p-4 text-center"><CellIcon val={row.curve} /></td>
-                    <td className="p-4 text-center"><CellIcon val={row.songtrust} /></td>
-                    <td className="p-4 text-center"><CellIcon val={row.mogul} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </Section>
-
-      {/* ── 6. FINANCIAL PROJECTIONS ── */}
-      <Section className="py-24 px-6">
-        <div className="max-w-5xl mx-auto space-y-12">
-          <div className="text-center space-y-4">
-            <SectionLabel>Financial Projections</SectionLabel>
-            <h2 className="font-headline text-3xl sm:text-4xl">Built for Profitable Growth</h2>
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-8">
-            {[
-              { icon: Target, label: 'Year 1 Net Sales Target', value: '$480K' },
-              { icon: TrendingUp, label: 'Annual Growth Rate', value: '150%+' },
-              { icon: DollarSign, label: 'Gross Margin', value: '80%+' },
-            ].map((s) => (
-              <Card key={s.label} className="bg-card border-border/50 text-center">
-                <CardContent className="p-8 space-y-3">
-                  <s.icon className="h-8 w-8 text-dusty-gold mx-auto" />
-                  <div className="font-headline text-3xl text-primary">{s.value}</div>
-                  <p className="text-sm text-muted-foreground">{s.label}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* simple revenue trajectory */}
-          <div className="max-w-xl mx-auto space-y-3">
-            <p className="text-sm text-muted-foreground text-center mb-4">Revenue Trajectory (Indexed)</p>
-            {['Year 1', 'Year 2', 'Year 3'].map((yr, i) => {
-              const pcts = [20, 55, 100];
-              return (
-                <div key={yr} className="flex items-center gap-4">
-                  <span className="w-16 text-xs text-muted-foreground text-right">{yr}</span>
-                  <div className="flex-1">
-                    <Progress value={pcts[i]} className="h-3 bg-secondary" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Section>
-
-      {/* ── 7. THE ASK ── */}
-      <Section className="py-24 px-6 bg-secondary/30">
-        <div className="max-w-5xl mx-auto space-y-14">
-          <div className="text-center space-y-4">
-            <SectionLabel>The Ask</SectionLabel>
-            <h2 className="font-headline text-4xl sm:text-5xl">
-              <span className="bg-gradient-primary bg-clip-text text-transparent">$350K</span>{' '}
-              Pre-Seed SAFE
-            </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto">
-              Fueling product, partnerships, and market entry to capture the rights-tech opportunity.
-            </p>
-          </div>
-
-          <div className="max-w-2xl mx-auto space-y-4">
-            {funds.map((f) => (
-              <div key={f.label} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-foreground">{f.label}</span>
-                  <span className="text-muted-foreground font-headline">{f.pct}%</span>
-                </div>
-                <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
-                  <motion.div
-                    className={`h-full rounded-full ${f.color}`}
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${f.pct}%` }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
-                  />
-                </div>
+        ))}
+      </div>
+      <div className="w-full max-w-[900px] space-y-[16px]">
+        <p className="text-muted-foreground text-center" style={{ fontSize: 18 }}>Revenue Trajectory</p>
+        {['Year 1', 'Year 2', 'Year 3'].map((yr, i) => {
+          const widths = ['20%', '55%', '100%'];
+          return (
+            <div key={yr} className="flex items-center gap-[20px]">
+              <span className="w-[80px] text-muted-foreground text-right" style={{ fontSize: 18 }}>{yr}</span>
+              <div className="flex-1 h-[20px] rounded-full bg-secondary overflow-hidden">
+                <div className="h-full rounded-full bg-primary" style={{ width: widths[i] }} />
               </div>
-            ))}
-          </div>
-        </div>
-      </Section>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
-      {/* ── 8. EXIT OPPORTUNITIES ── */}
-      <Section className="py-24 px-6">
-        <div className="max-w-5xl mx-auto space-y-12">
-          <div className="text-center space-y-4">
-            <SectionLabel>Exit Opportunities</SectionLabel>
-            <h2 className="font-headline text-3xl sm:text-4xl">Multiple Paths to Liquidity</h2>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {exits.map((e) => (
-              <Card key={e.title} className="bg-card border-border/50 hover:border-dusty-gold/40 transition-colors">
-                <CardContent className="p-6 space-y-3">
-                  <e.icon className="h-7 w-7 text-dusty-gold" />
-                  <h3 className="font-headline text-base">{e.title}</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{e.desc}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* ── 9. TEAM ── */}
-      <Section className="py-24 px-6 bg-secondary/30">
-        <div className="max-w-5xl mx-auto space-y-12">
-          <div className="text-center space-y-4">
-            <SectionLabel>Leadership</SectionLabel>
-            <h2 className="font-headline text-3xl sm:text-4xl">The Team Behind ENCORE</h2>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {team.map((t) => (
-              <Card key={t.name} className="bg-card border-border/50 text-center">
-                <CardContent className="p-6 space-y-3">
-                  <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center font-headline text-xl text-primary">
-                    {t.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <h3 className="font-headline text-base">{t.name}</h3>
-                  <Badge variant="outline" className="text-xs border-dusty-gold/30 text-dusty-gold">{t.role}</Badge>
-                  <p className="text-xs text-muted-foreground">{t.bio}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* advisors */}
-          <div className="text-center space-y-4">
-            <h3 className="font-headline text-lg text-muted-foreground">Advisory Board</h3>
-            <div className="flex flex-wrap justify-center gap-6">
-              {advisors.map((a) => (
-                <div key={a.name} className="text-center">
-                  <p className="font-headline text-sm text-foreground">{a.name}</p>
-                  <p className="text-xs text-muted-foreground">{a.note}</p>
-                </div>
-              ))}
+function SlideAsk({ active }: { active: boolean }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-[100px] gap-[48px]">
+      <div className="text-center space-y-[16px]">
+        <SlideLabel>The Ask</SlideLabel>
+        <h2 className="font-headline" style={{ fontSize: 72 }}>
+          <span className="bg-gradient-primary bg-clip-text text-transparent">$350K</span>{' '}
+          Pre-Seed SAFE
+        </h2>
+        <p className="text-muted-foreground max-w-[700px] mx-auto" style={{ fontSize: 24 }}>
+          Fueling product, partnerships, and market entry.
+        </p>
+      </div>
+      <div className="w-full max-w-[1000px] space-y-[16px]">
+        {funds.map((f) => (
+          <div key={f.label} className="space-y-[4px]">
+            <div className="flex justify-between" style={{ fontSize: 18 }}>
+              <span className="text-foreground">{f.label}</span>
+              <span className="text-muted-foreground font-headline">{f.pct}%</span>
+            </div>
+            <div className="h-[14px] rounded-full bg-secondary overflow-hidden">
+              {active && (
+                <motion.div
+                  className={`h-full rounded-full ${f.color}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${f.pct}%` }}
+                  transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
+                />
+              )}
             </div>
           </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SlideExits() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-[100px] gap-[60px]">
+      <div className="text-center space-y-[12px]">
+        <SlideLabel>Exit Opportunities</SlideLabel>
+        <h2 className="font-headline" style={{ fontSize: 56 }}>Multiple Paths to Liquidity</h2>
+      </div>
+      <div className="grid grid-cols-4 gap-[32px] w-full max-w-[1600px]">
+        {exits.map((e) => (
+          <div key={e.title} className="bg-card border border-border/50 rounded-xl p-[40px] space-y-[16px] text-center">
+            <e.icon className="text-dusty-gold mx-auto" style={{ width: 48, height: 48 }} />
+            <h3 className="font-headline" style={{ fontSize: 26 }}>{e.title}</h3>
+            <p className="text-muted-foreground leading-relaxed" style={{ fontSize: 18 }}>{e.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SlideTeam() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-[100px] gap-[48px]">
+      <div className="text-center space-y-[12px]">
+        <SlideLabel>Leadership</SlideLabel>
+        <h2 className="font-headline" style={{ fontSize: 56 }}>The Team Behind ENCORE</h2>
+      </div>
+      <div className="grid grid-cols-4 gap-[32px] w-full max-w-[1500px]">
+        {team.map((t) => (
+          <div key={t.name} className="bg-card border border-border/50 rounded-xl p-[36px] text-center space-y-[16px]">
+            <div className="mx-auto rounded-full bg-primary/10 flex items-center justify-center font-headline text-primary"
+              style={{ width: 80, height: 80, fontSize: 32 }}>
+              {t.name.split(' ').map(n => n[0]).join('')}
+            </div>
+            <h3 className="font-headline" style={{ fontSize: 24 }}>{t.name}</h3>
+            <Badge variant="outline" className="border-dusty-gold/30 text-dusty-gold" style={{ fontSize: 14 }}>{t.role}</Badge>
+            <p className="text-muted-foreground" style={{ fontSize: 17 }}>{t.bio}</p>
+          </div>
+        ))}
+      </div>
+      <div className="space-y-[12px] text-center">
+        <h3 className="font-headline text-muted-foreground" style={{ fontSize: 22 }}>Advisory Board</h3>
+        <div className="flex gap-[48px] justify-center">
+          {advisors.map((a) => (
+            <div key={a.name}>
+              <p className="font-headline text-foreground" style={{ fontSize: 20 }}>{a.name}</p>
+              <p className="text-muted-foreground" style={{ fontSize: 16 }}>{a.note}</p>
+            </div>
+          ))}
         </div>
-      </Section>
+      </div>
+    </div>
+  );
+}
 
-      {/* ── 10. CONTACT CTA ── */}
-      <Section className="py-28 px-6">
-        <div className="max-w-3xl mx-auto text-center space-y-8">
-          <SectionLabel>Let's Talk</SectionLabel>
-          <h2 className="font-headline text-4xl sm:text-5xl bg-gradient-primary bg-clip-text text-transparent">
-            Innovation Starts Here
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-            Join us in building the future of music rights management — where every creator gets what they're owed.
-          </p>
+function SlideCTA() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center px-[120px] gap-[40px]">
+      <SlideLabel>Let's Talk</SlideLabel>
+      <h2 className="font-headline bg-gradient-primary bg-clip-text text-transparent" style={{ fontSize: 80 }}>
+        Innovation Starts Here
+      </h2>
+      <p className="text-muted-foreground max-w-[800px]" style={{ fontSize: 28 }}>
+        Join us in building the future of music rights management — where every creator gets what they're owed.
+      </p>
+      <div className="flex gap-[24px] pt-[8px]">
+        <Button variant="fader" className="px-[40px] py-[16px] h-auto" style={{ fontSize: 22 }} asChild>
+          <a href="https://calendly.com" target="_blank" rel="noopener noreferrer">
+            <Calendar className="mr-[12px]" style={{ width: 24, height: 24 }} /> Schedule a Demo
+          </a>
+        </Button>
+        <Button variant="outline" className="px-[40px] py-[16px] h-auto" style={{ fontSize: 22 }} asChild>
+          <a href="mailto:invest@encorights.com">
+            <Mail className="mr-[12px]" style={{ width: 24, height: 24 }} /> invest@encorights.com
+          </a>
+        </Button>
+      </div>
+      <div className="flex items-center gap-[32px] text-muted-foreground pt-[16px]" style={{ fontSize: 20 }}>
+        <a href="tel:+1234567890" className="flex items-center gap-[10px] hover:text-foreground transition-colors">
+          <Phone style={{ width: 20, height: 20 }} /> Contact Us
+        </a>
+        <span className="text-border">|</span>
+        <a href="https://encorights.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-[10px] hover:text-foreground transition-colors">
+          <Globe style={{ width: 20, height: 20 }} /> encorights.com
+        </a>
+      </div>
+    </div>
+  );
+}
 
-          <div className="flex flex-wrap justify-center gap-4 pt-2">
-            <Button size="lg" variant="fader" className="text-base px-8" asChild>
-              <a href="https://calendly.com" target="_blank" rel="noopener noreferrer">
-                <Calendar className="mr-2 h-5 w-5" /> Schedule a Demo
-              </a>
-            </Button>
-            <Button size="lg" variant="outline" className="text-base px-8" asChild>
-              <a href="mailto:invest@encorights.com">
-                <Mail className="mr-2 h-5 w-5" /> invest@encorights.com
-              </a>
-            </Button>
+/* ════════════════════════ SLIDE DECK ENGINE ════════════════════════ */
+
+const SLIDE_W = 1920;
+const SLIDE_H = 1080;
+
+const slideVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0 }),
+};
+
+export default function InvestPage() {
+  const [current, setCurrent] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [scale, setScale] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const totalSlides = 10;
+
+  // Compute scale
+  const updateScale = useCallback(() => {
+    if (!containerRef.current) return;
+    const { clientWidth: w, clientHeight: h } = containerRef.current;
+    setScale(Math.min(w / SLIDE_W, h / SLIDE_H));
+  }, []);
+
+  useEffect(() => {
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, [updateScale]);
+
+  useEffect(() => {
+    // re-calc when fullscreen changes
+    setTimeout(updateScale, 100);
+  }, [isFullscreen, updateScale]);
+
+  const go = useCallback((idx: number) => {
+    if (idx < 0 || idx >= totalSlides || idx === current) return;
+    setDirection(idx > current ? 1 : -1);
+    setCurrent(idx);
+  }, [current, totalSlides]);
+
+  const next = useCallback(() => go(current + 1), [go, current]);
+  const prev = useCallback(() => go(current - 1), [go, current]);
+
+  // Keyboard
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+      if (e.key === 'Escape' && isFullscreen) document.exitFullscreen?.();
+      if (e.key === 'f' || e.key === 'F5') {
+        e.preventDefault();
+        containerRef.current?.requestFullscreen?.();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [next, prev, isFullscreen]);
+
+  // Fullscreen change
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (isFullscreen) document.exitFullscreen?.();
+    else containerRef.current?.requestFullscreen?.();
+  };
+
+  const renderSlide = (idx: number) => {
+    switch (idx) {
+      case 0: return <SlideHero />;
+      case 1: return <SlideProblem />;
+      case 2: return <SlideSolution />;
+      case 3: return <SlideMarket active={current === 3} />;
+      case 4: return <SlideCompetitive />;
+      case 5: return <SlideFinancials />;
+      case 6: return <SlideAsk active={current === 6} />;
+      case 7: return <SlideExits />;
+      case 8: return <SlideTeam />;
+      case 9: return <SlideCTA />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="w-full h-screen bg-background overflow-hidden relative select-none"
+      style={{ cursor: isFullscreen ? 'none' : 'default' }}
+    >
+      {/* Scaled slide area */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="relative" style={{ width: SLIDE_W, height: SLIDE_H, transform: `scale(${scale})`, transformOrigin: 'center center' }}>
+          {/* ambient glow */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 rounded-full bg-primary/8 blur-[200px]" style={{ width: 800, height: 800 }} />
           </div>
 
-          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground pt-4">
-            <a href="tel:+1234567890" className="flex items-center gap-2 hover:text-foreground transition-colors">
-              <Phone className="h-4 w-4" /> Contact Us
-            </a>
-            <span className="text-border">|</span>
-            <a href="https://encorights.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-foreground transition-colors">
-              <Globe className="h-4 w-4" /> encorights.com
-            </a>
-          </div>
+          <AnimatePresence custom={direction} mode="wait">
+            <motion.div
+              key={current}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0"
+            >
+              {renderSlide(current)}
+            </motion.div>
+          </AnimatePresence>
         </div>
-      </Section>
+      </div>
 
-      {/* footer spacer */}
-      <div className="h-8" />
+      {/* Bottom bar */}
+      <div className="absolute bottom-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4">
+        {/* Nav arrows */}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={prev} disabled={current === 0}
+            className="h-10 w-10 text-muted-foreground hover:text-foreground disabled:opacity-20">
+            <ChevronLeft className="h-6 w-6" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={next} disabled={current === totalSlides - 1}
+            className="h-10 w-10 text-muted-foreground hover:text-foreground disabled:opacity-20">
+            <ChevronRight className="h-6 w-6" />
+          </Button>
+        </div>
+
+        {/* Dots */}
+        <div className="flex items-center gap-2">
+          {Array.from({ length: totalSlides }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => go(i)}
+              className={`rounded-full transition-all duration-300 ${
+                i === current
+                  ? 'w-8 h-2 bg-primary'
+                  : 'w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/60'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Controls */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground font-headline">
+            {current + 1} / {totalSlides}
+          </span>
+          <Button variant="ghost" size="icon" onClick={toggleFullscreen}
+            className="h-10 w-10 text-muted-foreground hover:text-foreground">
+            {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-secondary z-50">
+        <motion.div
+          className="h-full bg-primary"
+          animate={{ width: `${((current + 1) / totalSlides) * 100}%` }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+        />
+      </div>
     </div>
   );
 }
