@@ -260,7 +260,7 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee, preselectedP
         payment_frequency: "quarterly",
       });
     }
-  }, [editingPayee, open]);
+  }, [editingPayee, open, preselectedPublisher]);
 
   const handlePayeeFormChange = (field: string, value: string | boolean) => {
     setPayeeData(prev => ({ ...prev, [field]: value }));
