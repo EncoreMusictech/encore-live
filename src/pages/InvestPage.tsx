@@ -118,7 +118,7 @@ function SlideHero({ onPlayDemo }: { onPlayDemo: () => void }) {
         </p>
         <div className="flex flex-wrap justify-center gap-3 pt-2">
           <Button variant="fader" size="lg" asChild>
-            <a href="https://calendly.com" target="_blank" rel="noopener noreferrer">
+            <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
               <Calendar className="mr-2 h-4 w-4" /> Schedule a Call
             </a>
           </Button>
@@ -414,7 +414,7 @@ function SlideCTA() {
         </p>
         <div className="flex flex-wrap justify-center gap-3 pt-1">
           <Button variant="fader" size="lg" asChild>
-            <a href="https://calendly.com" target="_blank" rel="noopener noreferrer">
+            <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
               <Calendar className="mr-2 h-4 w-4" /> Schedule a Demo
             </a>
           </Button>
