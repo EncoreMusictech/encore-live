@@ -384,6 +384,44 @@ export function MigrationTracker({ companyId, companyName, readOnly = false }: M
           <MissingDataReportDialog items={items} companyName={companyName} />
           {!readOnly && (
             <>
+              <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" disabled={items.length === 0}>
+                    <Mail className="h-4 w-4 mr-1" />
+                    Send Report Email
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Send Migration Report Email</DialogTitle>
+                    <DialogDescription>
+                      Send a migration progress report for {companyName} with charts and CSV attachment.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3 py-2">
+                    <div>
+                      <Label htmlFor="recipient-email">Recipient Email</Label>
+                      <Input
+                        id="recipient-email"
+                        type="email"
+                        placeholder="client@example.com"
+                        value={recipientEmail}
+                        onChange={e => setRecipientEmail(e.target.value)}
+                      />
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Progress: {overallProgress}% · {items.length} writers · {completedCheckpoints}/{totalCheckpoints} checkpoints
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={sendReportEmail} disabled={sendingEmail || !recipientEmail}>
+                      <Mail className="h-4 w-4 mr-1" />
+                      {sendingEmail ? 'Sending...' : 'Send Email'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <Button variant="outline" size="sm" onClick={syncFromDatabase} disabled={syncing || items.length === 0}>
                 <Database className="h-4 w-4 mr-1" />
                 {syncing ? 'Syncing...' : 'Sync from DB'}
