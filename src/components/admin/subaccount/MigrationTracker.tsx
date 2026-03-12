@@ -11,8 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 import { AddWriterDialog } from './AddWriterDialog';
 import { ImportMigrationCsvDialog } from './ImportMigrationCsvDialog';
 import { MissingDataReportDialog } from './MissingDataReportDialog';
-import { RefreshCw, Trash2, Database } from 'lucide-react';
+import { RefreshCw, Trash2, Database, Mail } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface MigrationTrackerProps {
   companyId: string;
