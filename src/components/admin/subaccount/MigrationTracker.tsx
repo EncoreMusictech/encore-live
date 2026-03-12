@@ -215,6 +215,43 @@ export function MigrationTracker({ companyId, companyName, readOnly = false }: M
     }
   };
 
+  const sendReportEmail = async () => {
+    if (!recipientEmail) return;
+    setSendingEmail(true);
+    try {
+      const stats = {
+        overall_progress: overallProgress,
+        total_writers: items.length,
+        completed_checkpoints: completedCheckpoints,
+        total_checkpoints: totalCheckpoints,
+        checkpoint_breakdown: checkpointStats.map(s => ({ label: s.label, pct: s.pct })),
+        writers: items.map(item => ({
+          writer_name: item.writer_name,
+          entity_name: item.entity_name || undefined,
+          administrator: item.administrator || undefined,
+          checkpoints: CHECKPOINTS.reduce((acc, cp) => ({
+            ...acc,
+            [cp.label]: item[cp.key],
+          }), {} as Record<string, boolean>),
+        })),
+      };
+
+      const { data, error } = await supabase.functions.invoke('send-migration-update', {
+        body: { to_email: recipientEmail, company_name: companyName, stats },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({ title: 'Email Sent', description: `Migration report sent to ${recipientEmail}` });
+      setEmailDialogOpen(false);
+    } catch (err: any) {
+      toast({ title: 'Error sending email', description: err.message, variant: 'destructive' });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   const filteredItems = entityFilter === 'all'
     ? items
     : items.filter(i => i.entity_name === entityFilter);
