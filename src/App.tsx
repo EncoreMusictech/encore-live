@@ -62,6 +62,7 @@ import TermsAndConditions from "./pages/TermsAndConditions";
 import TrialSignup from "./pages/TrialSignup";
 import NAMMPitchPage from "./pages/NAMMPitchPage";
 import CatalogAuditPresentationPage from "./pages/CatalogAuditPresentationPage";
+import InvestPage from "./pages/InvestPage";
 import PaymentSetup from "./pages/PaymentSetup";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import AcceptInvitation from "./pages/AcceptInvitation";
