@@ -419,8 +419,8 @@ function SlideCTA() {
             </a>
           </Button>
           <Button variant="outline" size="lg" asChild>
-            <a href="mailto:invest@encorights.com">
-              <Mail className="mr-2 h-4 w-4" /> invest@encorights.com
+            <a href="mailto:info@encoremusic.tech">
+              <Mail className="mr-2 h-4 w-4" /> info@encoremusic.tech
             </a>
           </Button>
         </div>
