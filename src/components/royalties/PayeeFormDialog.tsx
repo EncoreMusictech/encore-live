@@ -20,9 +20,10 @@ interface PayeeFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingPayee?: any; // PayeeWithHierarchy from PayeesTable
+  preselectedPublisher?: { agreementId: string; publisherId: string } | null;
 }
 
-export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormDialogProps) {
+export function PayeeFormDialog({ open, onOpenChange, editingPayee, preselectedPublisher }: PayeeFormDialogProps) {
   const {
     agreements,
     originalPublishers,
@@ -232,9 +233,9 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
         payment_frequency: paymentSettings.frequency || "quarterly",
       });
     } else if (!editingPayee && open) {
-      // Reset form for new payee
-      setSelectedAgreement("");
-      setSelectedPublisher("");
+      // Reset form for new payee, with optional preselection
+      setSelectedAgreement(preselectedPublisher?.agreementId || "");
+      setSelectedPublisher(preselectedPublisher?.publisherId || "");
       setSelectedWriter("");
       setShowCreateContract(false);
       setContractData({
@@ -259,7 +260,7 @@ export function PayeeFormDialog({ open, onOpenChange, editingPayee }: PayeeFormD
         payment_frequency: "quarterly",
       });
     }
-  }, [editingPayee, open]);
+  }, [editingPayee, open, preselectedPublisher]);
 
   const handlePayeeFormChange = (field: string, value: string | boolean) => {
     setPayeeData(prev => ({ ...prev, [field]: value }));
