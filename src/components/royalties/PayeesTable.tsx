@@ -325,6 +325,11 @@ function PayeeRow({ payee, onEdit, onDelete }: { payee: any; onEdit: () => void;
         <Badge variant={payee.payee_status === 'active' ? 'default' : 'secondary'} className="text-xs">
           {payee.payee_status || 'active'}
         </Badge>
+        {payee.payee_type && (
+          <Badge variant="outline" className="text-xs capitalize hidden sm:inline-flex">
+            {payee.payee_type}
+          </Badge>
+        )}
 
         {/* Splits tooltip */}
         {payee.payment_info?.default_splits && (
