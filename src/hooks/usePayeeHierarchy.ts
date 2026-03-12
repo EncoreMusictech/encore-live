@@ -527,42 +527,7 @@ export function usePayeeHierarchy() {
     const commission = contract?.commission_percentage || 0;
     const defaultSplit = Math.max(0, 100 - commission);
 
-    // 2) Ensure an Original Publisher exists (scoped)
-    let publisherId: string | null = null;
-    let pubQuery = supabase
-      .from('original_publishers')
-      .select('id')
-      .eq('agreement_id', agreementId)
-      .order('created_at', { ascending: true });
-    pubQuery = applyScopedFilter(pubQuery);
-    const { data: pubs, error: pubsError } = await pubQuery;
-    if (pubsError) throw pubsError;
-
-    if (pubs && pubs.length > 0) {
-      publisherId = pubs[0].id;
-    } else {
-      const createdPublisher = await autoGenerateOriginalPublisher(agreementId);
-      if (createdPublisher) {
-        publisherId = createdPublisher.id;
-      } else {
-        // Re-fetch after potential race
-        let retryQuery = supabase
-          .from('original_publishers')
-          .select('id')
-          .eq('agreement_id', agreementId)
-          .order('created_at', { ascending: true });
-        retryQuery = applyScopedFilter(retryQuery);
-        const { data: pubs2 } = await retryQuery;
-        publisherId = pubs2 && pubs2.length > 0 ? pubs2[0].id : null;
-      }
-    }
-
-    if (!publisherId) {
-      throw new Error('Unable to determine or create an original publisher for this agreement.');
-    }
-
-    // 3) Fetch primary controlled interested parties (writers AND publishers, not merged)
-    //    Only controlled parties ('C', 'Controlled', 'Y') should become payees
+    // 2) Fetch primary controlled interested parties (writers AND publishers, not merged)
     const { data: allParties, error: partiesError } = await supabase
       .from('contract_interested_parties')
       .select('*')
@@ -570,7 +535,7 @@ export function usePayeeHierarchy() {
       .is('merged_into_id', null);
     if (partiesError) throw partiesError;
 
-    // Filter to only controlled parties using the same logic as the payout engine
+    // Filter to only controlled parties
     const controlledParties = (allParties || []).filter(p => {
       const status = (p.controlled_status || '').trim().toUpperCase();
       return status === 'C' || status === 'CONTROLLED' || status === 'Y';
@@ -580,28 +545,65 @@ export function usePayeeHierarchy() {
       return { created: 0, existing: 0, errors: 0 };
     }
 
+    // 3) Determine the OP name from the publisher-type controlled party, or fall back to counterparty name
+    const publisherParty = controlledParties.find(p =>
+      (p.party_type || '').toLowerCase() === 'publisher'
+    );
+    const opName = publisherParty?.name?.trim() || contract?.counterparty_name || 'Unknown Publisher';
+
+    // 4) Find or create the Original Publisher record using the actual publisher name
+    let publisherId: string | null = null;
+    let pubQuery = supabase
+      .from('original_publishers')
+      .select('id')
+      .eq('agreement_id', agreementId);
+    pubQuery = applyScopedFilter(pubQuery);
+    const { data: pubs, error: pubsError } = await pubQuery.order('created_at', { ascending: true });
+    if (pubsError) throw pubsError;
+
+    if (pubs && pubs.length > 0) {
+      publisherId = pubs[0].id;
+    } else {
+      const createdPub = await createOriginalPublisher({
+        publisher_name: opName,
+        contact_info: publisherParty ? {
+          email: publisherParty.email || undefined,
+          phone: publisherParty.phone || undefined,
+          address: publisherParty.address || undefined,
+        } : {},
+        agreement_id: agreementId,
+      });
+      publisherId = createdPub?.id || null;
+    }
+
+    if (!publisherId) {
+      throw new Error('Unable to determine or create an original publisher for this agreement.');
+    }
+
     let created = 0;
     let existing = 0;
     let errors = 0;
 
     for (const party of controlledParties) {
-      const writerName = party.name?.trim();
-      if (!writerName) continue;
+      const partyName = party.name?.trim();
+      if (!partyName) continue;
 
-      // Find or create writer under publisher (scoped)
+      const partyType = (party.party_type || 'writer').toLowerCase();
+
+      // Find or create writer record under the OP (scoped)
       let writerId: string | null = null;
       let writerQuery = supabase
         .from('writers')
         .select('id')
         .eq('original_publisher_id', publisherId)
-        .eq('writer_name', writerName);
+        .eq('writer_name', partyName);
       writerQuery = applyScopedFilter(writerQuery);
       const { data: existingWriter } = await writerQuery.maybeSingle();
 
       if (existingWriter?.id) {
         writerId = existingWriter.id;
       } else {
-        const newWriter = await createWriter({ writer_name: writerName, contact_info: {}, original_publisher_id: publisherId });
+        const newWriter = await createWriter({ writer_name: partyName, contact_info: {}, original_publisher_id: publisherId });
         writerId = newWriter?.id || null;
       }
 
@@ -635,8 +637,8 @@ export function usePayeeHierarchy() {
       };
 
       const createdPayee = await createPayee({
-        payee_name: writerName,
-        payee_type: 'writer',
+        payee_name: partyName,
+        payee_type: partyType,
         contact_info: contactInfo,
         payment_info: paymentInfo,
         writer_id: writerId,
