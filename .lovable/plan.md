@@ -1,34 +1,51 @@
 
 
-## Add "Send Report Email" Button with Real Data to MigrationTracker
+## Plan: Fix work_id collision + runId ownership + cleanup safety
 
-### What this does
-Adds a **Send Report Email** button to the MigrationTracker controls bar that:
-1. Opens a dialog to enter/confirm the recipient email
-2. Automatically computes real stats from the already-loaded `items` state
-3. Calls `supabase.functions.invoke('send-migration-update')` with the real data
-4. After implementation, triggers a test email to `info@encoremusic.tech` with live PAQ Publishing data
+Three targeted edits across two files. No new files.
 
-### Data available (PAQ Publishing — live from DB)
-PAQ has migration tracking items across multiple entities (EMPIRE, etc.) with real checkpoint data — some contracts entered, some copyrights, some schedules. The button will pull from whatever is currently loaded in the component state.
+---
 
-### Changes
+### File 1: `src/dev/sanityChecks/payoutReconciliationData.ts`
 
-**File: `src/components/admin/subaccount/MigrationTracker.tsx`**
+**Change 1** — Signature: `createFixtures(runId: string, userId: string)` instead of generating `runId` internally. Remove line 33 (`const runId = ...`).
 
-1. Add imports: `Input`, `Label`, `Dialog` components, `Mail` icon
-2. Add state: `emailDialogOpen`, `recipientEmail`, `sendingEmail`
-3. Add `sendReportEmail` function that:
-   - Builds `stats` object from existing computed values (`overallProgress`, `completedCheckpoints`, `totalCheckpoints`, `checkpointStats`, `items`)
-   - Maps `items` to `writers` array with `{ writer_name, entity_name, administrator, checkpoints: { [cp.label]: item[cp.key] } }`
-   - Calls `supabase.functions.invoke('send-migration-update', { body: { to_email, company_name: companyName, stats } })`
-   - Shows success/error toast
-4. Add button + dialog in controls bar (next to "Sync from DB", only when `!readOnly` and `items.length > 0`):
-   - Button: `<Mail />` icon + "Send Report Email"
-   - Dialog: email input field + Send button
+**Change 2** — Copyright inserts (lines 83-87): add explicit `work_id` with random suffix:
+```ts
+const copyrightInserts = [
+  { user_id: userId, work_title: `Sanity-CR1-${runId}`, work_id: `SANITY-${runId}-CR1-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR2-${runId}`, work_id: `SANITY-${runId}-CR2-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+  { user_id: userId, work_title: `Sanity-CR3-${runId}`, work_id: `SANITY-${runId}-CR3-${crypto.randomUUID().slice(0, 6)}`, notes: runId },
+];
+```
+The `generate_work_id` trigger only fires when `work_id` is NULL, so explicit values bypass it entirely. The random suffix makes collisions impossible even if `runId` is reused.
 
-**After deploy**: Invoke edge function via curl to send test email to `info@encoremusic.tech` using real PAQ Publishing data from the database.
+---
 
-### No other files change
-The edge function already handles the `stats` object, QuickChart URLs, and CSV attachment.
+### File 2: `src/dev/sanityChecks/PayoutReconciliationSanityCheck.tsx`
+
+**Change 3** — Generate `runId` in component before calling factory (lines 34-38):
+```ts
+const currentRunId = 'sanity-' + crypto.randomUUID().slice(0, 8);
+setRunId(currentRunId);
+const fixtures = await createFixtures(currentRunId, user.id);
+```
+
+**Change 4** — Cleanup no longer depends on `fixtures` being non-null (lines 220-231):
+```ts
+} finally {
+  if (!skipCleanup && currentRunId) {
+    try {
+      const cleanupErrors = await cleanupFixtures(currentRunId, user.id);
+      if (cleanupErrors.length > 0) {
+        console.warn('Cleanup errors:', cleanupErrors);
+      }
+    } catch (e) {
+      console.error('Cleanup failed:', e);
+    }
+  }
+  setRunning(false);
+}
+```
+Uses `currentRunId` (always set before `createFixtures`) instead of `fixtures.runId`, so partial inserts get cleaned up even if the factory throws mid-way.
 

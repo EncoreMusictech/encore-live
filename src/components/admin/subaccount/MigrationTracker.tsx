@@ -11,8 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 import { AddWriterDialog } from './AddWriterDialog';
 import { ImportMigrationCsvDialog } from './ImportMigrationCsvDialog';
 import { MissingDataReportDialog } from './MissingDataReportDialog';
-import { RefreshCw, Trash2, Database } from 'lucide-react';
+import { RefreshCw, Trash2, Database, Mail } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface MigrationTrackerProps {
   companyId: string;
@@ -66,6 +69,9 @@ export function MigrationTracker({ companyId, companyName, readOnly = false }: M
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [entityFilter, setEntityFilter] = useState<string>('all');
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
   const { toast } = useToast();
 
   const fetchItems = useCallback(async () => {
@@ -209,6 +215,43 @@ export function MigrationTracker({ companyId, companyName, readOnly = false }: M
     }
   };
 
+  const sendReportEmail = async () => {
+    if (!recipientEmail) return;
+    setSendingEmail(true);
+    try {
+      const stats = {
+        overall_progress: overallProgress,
+        total_writers: items.length,
+        completed_checkpoints: completedCheckpoints,
+        total_checkpoints: totalCheckpoints,
+        checkpoint_breakdown: checkpointStats.map(s => ({ label: s.label, pct: s.pct })),
+        writers: items.map(item => ({
+          writer_name: item.writer_name,
+          entity_name: item.entity_name || undefined,
+          administrator: item.administrator || undefined,
+          checkpoints: CHECKPOINTS.reduce((acc, cp) => ({
+            ...acc,
+            [cp.label]: item[cp.key],
+          }), {} as Record<string, boolean>),
+        })),
+      };
+
+      const { data, error } = await supabase.functions.invoke('send-migration-update', {
+        body: { to_email: recipientEmail, company_name: companyName, stats },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({ title: 'Email Sent', description: `Migration report sent to ${recipientEmail}` });
+      setEmailDialogOpen(false);
+    } catch (err: any) {
+      toast({ title: 'Error sending email', description: err.message, variant: 'destructive' });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   const filteredItems = entityFilter === 'all'
     ? items
     : items.filter(i => i.entity_name === entityFilter);
@@ -341,6 +384,44 @@ export function MigrationTracker({ companyId, companyName, readOnly = false }: M
           <MissingDataReportDialog items={items} companyName={companyName} />
           {!readOnly && (
             <>
+              <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" disabled={items.length === 0}>
+                    <Mail className="h-4 w-4 mr-1" />
+                    Send Report Email
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Send Migration Report Email</DialogTitle>
+                    <DialogDescription>
+                      Send a migration progress report for {companyName} with charts and CSV attachment.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3 py-2">
+                    <div>
+                      <Label htmlFor="recipient-email">Recipient Email</Label>
+                      <Input
+                        id="recipient-email"
+                        type="email"
+                        placeholder="client@example.com"
+                        value={recipientEmail}
+                        onChange={e => setRecipientEmail(e.target.value)}
+                      />
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Progress: {overallProgress}% · {items.length} writers · {completedCheckpoints}/{totalCheckpoints} checkpoints
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={sendReportEmail} disabled={sendingEmail || !recipientEmail}>
+                      <Mail className="h-4 w-4 mr-1" />
+                      {sendingEmail ? 'Sending...' : 'Send Email'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <Button variant="outline" size="sm" onClick={syncFromDatabase} disabled={syncing || items.length === 0}>
                 <Database className="h-4 w-4 mr-1" />
                 {syncing ? 'Syncing...' : 'Sync from DB'}
