@@ -599,7 +599,7 @@ export default function InvestPage() {
                 <X className="h-5 w-5" />
               </Button>
               <video
-                src="/videos/MoM_Startup_Showcase.mp4"
+                src="/videos/Untitled_design.mp4"
                 controls
                 autoPlay
                 className="w-full h-full rounded-xl border border-border shadow-elegant"
