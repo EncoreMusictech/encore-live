@@ -209,6 +209,7 @@ const App = () => {
                              <Route path="/documentation" element={<DocumentationPage />} />
                              <Route path="/namm-pitch" element={<NAMMPitchPage />} />
                              <Route path="/catalog-audit" element={<CatalogAuditPresentationPage />} />
+                             <Route path="/invest" element={<InvestPage />} />
                               <Route path="/whitelabel" element={
                                 <ProtectedRoute>
                                   <ErrorBoundary>
