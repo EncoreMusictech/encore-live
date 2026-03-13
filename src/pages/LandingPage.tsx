@@ -466,7 +466,7 @@ const LandingPage = () => {
                     variant={tier.popular ? "default" : "outline"}
                     onClick={() => handleGetStarted(tier.tier)}
                   >
-                    {tier.tier === 'enterprise' ? 'Contact Sales' : 'Start Free Trial'}
+                    {tier.tier === 'enterprise' ? 'Contact Sales' : 'Schedule a Demo'}
                   </Button>
                 </CardContent>
               </Card>
