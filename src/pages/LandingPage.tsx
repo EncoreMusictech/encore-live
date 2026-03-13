@@ -233,9 +233,9 @@ const LandingPage = () => {
               <Button 
                 size="lg" 
                 className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-fader transition-all duration-300 hover:scale-105"
-                onClick={() => handleGetStarted()}
+                onClick={() => window.open("https://calendly.com/encoremts", "_blank")}
               >
-                Start Free Trial
+                Schedule a Demo
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button 
