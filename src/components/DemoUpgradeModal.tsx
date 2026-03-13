@@ -62,10 +62,10 @@ const DemoUpgradeModal = () => {
 
           <div className="flex flex-col gap-3">
             <Button 
-              onClick={handleSignUp}
+              onClick={() => window.open("https://calendly.com/encoremts", "_blank")}
               className="w-full bg-gradient-primary text-primary-foreground shadow-glow"
             >
-              Sign Up Now - Free Trial
+              Schedule a Demo
             </Button>
             
             <Button 
