@@ -233,9 +233,9 @@ const LandingPage = () => {
               <Button 
                 size="lg" 
                 className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-fader transition-all duration-300 hover:scale-105"
-                onClick={() => handleGetStarted()}
+                onClick={() => window.open("https://calendly.com/encoremts", "_blank")}
               >
-                Start Free Trial
+                Schedule a Demo
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button 
@@ -466,7 +466,7 @@ const LandingPage = () => {
                     variant={tier.popular ? "default" : "outline"}
                     onClick={() => handleGetStarted(tier.tier)}
                   >
-                    {tier.tier === 'enterprise' ? 'Contact Sales' : 'Start Free Trial'}
+                    {tier.tier === 'enterprise' ? 'Contact Sales' : 'Schedule a Demo'}
                   </Button>
                 </CardContent>
               </Card>
@@ -517,22 +517,14 @@ const LandingPage = () => {
                 size="lg" 
                 variant="secondary"
                 className="text-lg px-8 py-3"
-                onClick={() => handleGetStarted()}
+                onClick={() => window.open("https://calendly.com/encoremts", "_blank")}
               >
-                Start Free Trial - No Credit Card Required
+                Schedule a Demo
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="text-lg px-8 py-3 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
-                onClick={() => window.open("https://www.calendly.com/encoremts", "_blank")}
-              >
-                Schedule Demo
               </Button>
             </div>
             <div className="text-sm text-primary-foreground/60">
-              ✓ 14-day free trial ✓ No setup fees ✓ Cancel anytime
+              ✓ No setup fees ✓ Cancel anytime ✓ Dedicated support
             </div>
           </div>
         </div>

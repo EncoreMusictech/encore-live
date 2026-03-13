@@ -105,15 +105,6 @@ export function CTASlide({
             {isGeneratingPDF ? 'Generating...' : 'Download Report'}
           </Button>
 
-          <Button 
-            size="lg"
-            variant="outline"
-            className="border-accent/30 hover:bg-accent/10 text-accent px-8 py-6 text-lg gap-3"
-            onClick={() => window.open('/trial-signup', '_blank')}
-          >
-            <Rocket className="w-5 h-5" />
-            Start Free Trial
-          </Button>
         </div>
 
         {/* Contact & Share */}

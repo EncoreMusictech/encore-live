@@ -108,11 +108,11 @@ const Header = () => {
               </Button>
             </>
           ) : (
-            <Link to="/pricing">
+            <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
               <Button variant="fader" size="sm" className="font-body">
-                Start Free Trial
+                Schedule a Demo
               </Button>
-            </Link>
+            </a>
           )}
           <Sheet>
             <SheetTrigger asChild>

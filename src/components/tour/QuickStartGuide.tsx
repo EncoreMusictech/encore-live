@@ -215,8 +215,8 @@ export const QuickStartGuide = () => {
         <div className="pt-4 border-t">
           <p className="text-xs text-muted-foreground text-center">
             Ready to unlock unlimited access? 
-            <Button variant="link" className="h-auto p-0 ml-1 text-xs">
-              Sign up for a free trial
+            <Button variant="link" className="h-auto p-0 ml-1 text-xs" onClick={() => window.open("https://calendly.com/encoremts", "_blank")}>
+              Schedule a demo
             </Button>
           </p>
         </div>
