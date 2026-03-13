@@ -77,12 +77,6 @@ const DemoUpgradeModal = () => {
             </Button>
           </div>
 
-          <div className="text-center">
-            <Badge variant="secondary" className="bg-music-purple/10 text-music-purple">
-              <Crown className="w-3 h-3 mr-1" />
-              30-day free trial included
-            </Badge>
-          </div>
         </div>
       </DialogContent>
     </Dialog>

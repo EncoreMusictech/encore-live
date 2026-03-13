@@ -230,9 +230,9 @@ export function NAMMOnePager({ onDownloadPDF, isGenerating }: NAMMOnePagerProps)
         {/* CTA Footer */}
         <div className="bg-blue-600 rounded-xl p-5 flex items-center justify-between">
           <div className="text-white">
-            <h3 className="text-xl font-bold">Start Your Free Trial Today</h3>
+            <h3 className="text-xl font-bold">Schedule a Demo Today</h3>
             <p className="text-blue-100 text-sm mt-1">
-              No credit card required • 14-day full access • Cancel anytime
+              Dedicated support • Full platform access • Cancel anytime
             </p>
           </div>
           <div className="text-center">

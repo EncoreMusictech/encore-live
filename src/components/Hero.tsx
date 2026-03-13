@@ -60,19 +60,14 @@ const Hero = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
               <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-fader transition-all duration-300 hover:scale-105" asChild>
-                <Link to="/pricing">
-                  Start Free Trial
+                <a href="https://calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
+                  Schedule a Demo
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
+                </a>
               </Button>
               <Button variant="outline" size="lg" className="border-electric-lavender text-electric-lavender hover:bg-electric-lavender hover:text-jet-black transition-all duration-300" asChild>
                 <a href="/auth">
                   Try Now
-                </a>
-              </Button>
-              <Button variant="outline" size="lg" className="border-electric-lavender text-electric-lavender hover:bg-electric-lavender hover:text-jet-black transition-all duration-300" asChild>
-                <a href="https://www.calendly.com/encoremts" target="_blank" rel="noopener noreferrer">
-                  Schedule Demo
                 </a>
               </Button>
             </div>

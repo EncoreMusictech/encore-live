@@ -222,7 +222,7 @@ export default function UserCasePage() {
                       className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
                       onClick={() => createCheckout('bundle', 'starter')}
                     >
-                      Start 14-Day Free Trial
+                      Schedule a Demo
                     </Button>
                   </div>
                 )}
